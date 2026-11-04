@@ -17134,3 +17134,31 @@ def test_main_openapi_singularize_last_word_of_item_names(
             invalid_json=json.dumps({"actions_caches": [{"id": "x"}]}),
             expected_error_type="int_parsing",
         )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="first-read"), pytest.param(["--read-schema-version-per-document"], id="per-document")],
+)
+def test_main_openapi_read_schema_version_per_document(output_file: Path, extra_args: list[str]) -> None:
+    """Check a ``uniqueItems`` beside a ``$ref`` of an OpenAPI 3.1 document with the option (#5699).
+
+    OpenAPI 3.1 reads the keywords beside a ``$ref`` as JSON Schema 2020-12 does; without the option the schema
+    validators read the document as draft 7, so ``Holder(tags=['a', 'a'])`` is accepted.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "ref_sibling_unique_items_oas31.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[*extra_args, "--generate-schema-validators", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    if extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="read_schema_version_per_document_oas31",
+            model_name="Holder",
+            valid_json=json.dumps({"tags": ["a", "b"]}),
+            invalid_json=json.dumps({"tags": ["a", "a"]}),
+            expected_error_type="value_error",
+        )

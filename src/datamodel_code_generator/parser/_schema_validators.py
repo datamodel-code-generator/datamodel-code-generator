@@ -389,7 +389,7 @@ class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPyth
         """Recognize inert root annotations only in the standard generation context."""
 
     def _ref_siblings_apply_to(
-        self, schema: JsonSchemaObject, *, legacy: Literal["first-read", "parsed-document"]
+        self, schema: JsonSchemaObject, *, legacy: Literal["first-read", "parsed-document", "as-written"]
     ) -> bool:
         """Return whether the keywords beside the ``$ref`` of ``schema`` apply with it (``parser/jsonschema.py``)."""
 
@@ -710,9 +710,9 @@ def iter_property_count_validation_sources(
 ) -> Iterator[JsonSchemaObject]:
     """Yield count constraints from allOf, preserving JSON Schema $ref siblings.
 
-    A ``$ref`` member yields its own count keywords in every schema version (row
-    ``legacy-count-ref-member-as-written``), where the other source walkers ask its version
-    (``_ref_siblings_apply_to``).
+    A ``$ref`` member yields its own count keywords where its schema version applies the keywords beside a ``$ref``
+    (``_ref_siblings_apply_to``), as the other source walkers do; without --read-schema-version-per-document in every
+    version (row ``legacy-count-ref-member-as-written``).
     """
     yield obj
     for item in obj.allOf:
@@ -721,7 +721,8 @@ def iter_property_count_validation_sources(
         if not item.ref:
             yield from parser._iter_property_count_validation_sources(item, visited_refs)  # noqa: SLF001
             continue
-        yield item
+        if parser._ref_siblings_apply_to(item, legacy="as-written"):  # noqa: SLF001
+            yield item
         if (target := parser._unvisited_ref_target(item.ref, visited_refs)) is not None:  # noqa: SLF001
             yield from parser._iter_property_count_validation_sources(*target)  # noqa: SLF001
 

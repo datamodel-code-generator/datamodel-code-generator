@@ -19,6 +19,7 @@
 - `--input-model-ref-strategy`: Strategy for referenced types when using --input-model.
 - `--output`: Specify the destination path for generated Python code.
 - `--preset`: Apply an immutable built-in option preset.
+- `--read-schema-version-per-document`: Read each document by the schema version it declares.
 - `--schema-version`: Schema version to use for parsing.
 - `--schema-version-mode`: Schema version validation mode.
 - `--url`: Fetch a schema from a URL with custom HTTP headers.

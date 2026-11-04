@@ -1172,12 +1172,27 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         the primary path, with fallback to the alternative in Lenient mode.
         OpenAPI subclass uses its own SCHEMA_PATHS (#/components/schemas).
         """
+        return self._schema_paths_of(None)
+
+    @property
+    def _document_schema_paths(self) -> list[tuple[str, list[str]]]:
+        """Return the schema paths of the document being parsed.
+
+        They are those of its schema version under --read-schema-version-per-document, else ``schema_paths``, of the
+        document parsed at the first read (row ``legacy-first-read-dialect``).
+        """
+        if (dialect := self._dialect_at(None)) is None:
+            return self.schema_paths
+        return self._schema_paths_of(dialect.features)
+
+    def _schema_paths_of(self, features: JsonSchemaFeatures | None) -> list[tuple[str, list[str]]]:
+        """Return the schema paths of a document read with ``features`` (None: ``schema_features``), primary first."""
         # OpenAPI and other subclasses use their own SCHEMA_PATHS
         if list(_DEFAULT_SCHEMA_PATHS) != self.SCHEMA_PATHS:
             return [(s, s.lstrip("#/").split("/")) for s in self.SCHEMA_PATHS]
 
         # JsonSchema: use definitions_key from the schema features
-        primary_key = self._features_at(None).definitions_key
+        primary_key = (features or self.schema_features).definitions_key
         primary_path = f"#/{primary_key}"
         fallback_key = "$defs" if primary_key == "definitions" else "definitions"
         fallback_path = f"#/{fallback_key}"
@@ -1235,30 +1250,66 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         return self._read_dialect(self.raw_obj, kind="jsonschema").features.ref_sibling_keywords
 
-    def _features_at(self, at: JsonSchemaObject | SchemaLocation | None) -> JsonSchemaFeatures:  # noqa: ARG002
+    @cached_property
+    def _reads_schema_version_per_document(self) -> bool:
+        """Whether --read-schema-version-per-document reads each schema in the version of its own document.
+
+        A parser class from outside this package whose ``schema_features`` decides the version keeps that reading for
+        every document, with a warning, as the option would bypass it.
+        """
+        if not self.config.read_schema_version_per_document:
+            return False
+        owner = next(cls for cls in type(self).__mro__ if "schema_features" in cls.__dict__)
+        if owner.__module__.startswith("datamodel_code_generator."):
+            return True
+        warn(
+            f"--read-schema-version-per-document has no effect with {type(self).__name__}: "
+            f"{owner.__name__}.schema_features decides the schema version of every document",
+            stacklevel=2,
+        )
+        return False
+
+    def _dialect_at(self, at: JsonSchemaObject | SchemaLocation | None) -> DocumentDialect | None:
+        """Return the dialect of the document a schema object or location is in, None: the document being parsed.
+
+        It is read so under --read-schema-version-per-document only; without the option it is None, and the readers
+        keep their readings (row ``legacy-first-read-dialect``). A document no load recorded reads as the document
+        being parsed does by itself.
+        """
+        if not self._reads_schema_version_per_document:
+            return None
+        location = at.schema_location if isinstance(at, JsonSchemaObject) else at
+        parts = [location.document] if location is not None else list(self.model_resolver.current_root)
+        return self._document_dialects.get(self._schema_resource_document(parts)) or self._read_dialect(self.raw_obj)
+
+    def _features_at(self, at: JsonSchemaObject | SchemaLocation | None) -> JsonSchemaFeatures:
         """Return the schema features that read a schema object, or the schema value at a location.
 
-        None reads the document being parsed. Row ``legacy-first-read-dialect``: they are the features of the document
-        parsed at their first read (``schema_features``), for every document of the parse.
+        None reads the document being parsed. Under --read-schema-version-per-document they are those of the version
+        of its document; row ``legacy-first-read-dialect``: without it they are the features of the document parsed at
+        their first read (``schema_features``), for every document of the parse.
         """
+        if (dialect := self._dialect_at(at)) is not None:
+            return dialect.features
         return self.schema_features
 
     def _ref_siblings_apply_to(
-        self,
-        schema: JsonSchemaObject,  # noqa: ARG002
-        *,
-        legacy: Literal["first-read", "parsed-document"],
+        self, schema: JsonSchemaObject, *, legacy: Literal["first-read", "parsed-document", "as-written"]
     ) -> bool:
         """Return whether the keywords beside the ``$ref`` of ``schema`` apply with it, as its version reads them.
 
-        Row ``legacy-first-read-dialect`` keeps the reading each site had: ``first-read``, the JSON Schema draft of the
+        Under --read-schema-version-per-document the version is that of its document. Without it, row
+        ``legacy-first-read-dialect`` keeps the reading each site had: ``first-read``, the JSON Schema draft of the
         document parsed at the first read, for every parser class (``_ref_sibling_keywords_enabled``);
         ``parsed-document``, the version of the input document being parsed (``_ref_siblings_are_parts``), also for
-        the schemas of a document that a reference loads.
+        the schemas of a document that a reference loads; and row ``legacy-count-ref-member-as-written``:
+        ``as-written``, every version.
         """
+        if (dialect := self._dialect_at(schema)) is not None:
+            return dialect.features.ref_sibling_keywords
         if legacy == "first-read":
             return self._ref_sibling_keywords_enabled
-        return self._ref_siblings_are_parts
+        return legacy == "as-written" or self._ref_siblings_are_parts
 
     def _ref_siblings_are_parts_of(self, schema: JsonSchemaObject) -> bool:
         """Return whether the keywords beside the ``$ref`` of ``schema`` are parts of it.
@@ -7453,10 +7504,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return _schema_documents.iter_schema_resource_children(self, schema)
 
     def _schema_resource_identifier(
-        self, schema: dict[str, Any], id_field: str | None, *, is_root: bool
+        self, schema: dict[str, Any], id_field: str | None, *, is_root: bool, document: str
     ) -> tuple[str | None, object]:
         """Inherit draft identifiers while preserving fallbacks for roots and unknown dialects."""
-        return _schema_documents.schema_resource_identifier(self, schema, id_field, is_root=is_root)
+        return _schema_documents.schema_resource_identifier(self, schema, id_field, is_root=is_root, document=document)
 
     def _resolve_schema_resource_ref(self, reference: str, base: str, document: str, *, nested_scope: bool) -> str:
         """Resolve registered resources before considering a physical document fetch."""
@@ -7725,7 +7776,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _definition_entry_prefixes(self) -> tuple[tuple[str, ...], ...]:
         """Return the path segments after a document root that name a definitions container (``#/$defs``)."""
-        return tuple((schema_path,) for schema_path, _ in self.schema_paths)
+        return tuple((schema_path,) for schema_path, _ in self._document_schema_paths)
 
     def _is_named_schema_definition_path(self, path: list[str]) -> bool:
         """Check if path points to a named schema entry under a definitions container."""
@@ -8342,7 +8393,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 self._build_anchor_indexes(root_obj, path_parts)
                 definitions: dict[str, YamlValue] = {}
                 schema_path = ""
-                for schema_path_candidate, split_schema_path in self.schema_paths:
+                for schema_path_candidate, split_schema_path in self._document_schema_paths:
                     if definitions := cast("dict[str, YamlValue]", get_model_by_path(raw, split_schema_path)):
                         schema_path = schema_path_candidate
                         break

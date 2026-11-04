@@ -846,6 +846,9 @@ jsonschema/schema_validators_property_count_cross_module/property_parent.json	pa
 jsonschema/schema_validators_property_count_ref_collapse.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_validators_runtime_root_cross_module/a.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_validators_runtime_root_cross_module/z.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/schema_version_per_document/a_draft07.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/schema_version_per_document/b_2020_12.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/schema_version_per_document_refs/legacy_draft07.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/selective_constraint_kwargs.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/serialization_alias_same_name.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/serialize_as_any_import_fast_path.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -1780,6 +1783,7 @@ openapi/ref_edges/operation_refs.yaml::components.schemas.Identifier	payloads/na
 openapi/ref_merge_parameters.yaml::components.schemas.StatusString	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/ref_nullable.yaml::components.schemas.NonNullableChild	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/ref_nullable.yaml::components.schemas.NullableMerged	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/ref_sibling_unique_items_oas31.yaml::components.schemas.Tags	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/reference_object_siblings/api.yaml::paths./tags.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/reference_object_siblings/api.yaml::paths./tags.post.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/reference_to_object_properties.yaml::components.schemas.Id	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2764,6 +2768,9 @@ jsonschema/schema_validators_property_count_cross_module/property_parent.json	pa
 jsonschema/schema_validators_property_count_ref_collapse.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_validators_runtime_root_cross_module/a.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_validators_runtime_root_cross_module/z.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/schema_version_per_document/a_draft07.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/schema_version_per_document/b_2020_12.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/schema_version_per_document_refs/legacy_draft07.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/selective_constraint_kwargs.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/serialization_alias_same_name.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/serialize_as_any_import_fast_path.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3693,6 +3700,7 @@ openapi/ref_edges/operation_refs.yaml::components.schemas.Identifier	payloads/na
 openapi/ref_merge_parameters.yaml::components.schemas.StatusString	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/ref_nullable.yaml::components.schemas.NonNullableChild	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/ref_nullable.yaml::components.schemas.NullableMerged	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/ref_sibling_unique_items_oas31.yaml::components.schemas.Tags	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/reference_object_siblings/api.yaml::paths./tags.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/reference_object_siblings/api.yaml::paths./tags.post.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/reference_to_object_properties.yaml::components.schemas.Id	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

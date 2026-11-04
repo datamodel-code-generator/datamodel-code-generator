@@ -44,6 +44,8 @@ read-msgspec-union-bounds-exactly-practical	main/preset_opt_in_options/preset_se
 read-msgspec-union-bounds-exactly-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-msgspec-union-bounds-exactly-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-msgspec-union-bounds-exactly-practical].py
 read-nullable-beside-type-list-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-nullable-beside-type-list-practical].py
 read-nullable-beside-type-list-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-nullable-beside-type-list-standard].py
+read-schema-version-per-document-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-schema-version-per-document-practical]/
+read-schema-version-per-document-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-schema-version-per-document-standard]/	= main/preset_opt_in_options/preset_sets_opt_in_option[read-schema-version-per-document-practical]/
 read-unevaluated-properties-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-practical].py
 read-unevaluated-properties-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-practical].py
 singularize-last-word-of-item-names-practical	main/preset_opt_in_options/preset_sets_opt_in_option[singularize-last-word-of-item-names-practical].py

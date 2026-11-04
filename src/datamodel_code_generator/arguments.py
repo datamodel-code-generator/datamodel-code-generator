@@ -1485,6 +1485,17 @@ base_options.add_argument(
     choices=_values(VersionMode),
     default=None,
 )
+_flag(
+    base_options,
+    "--read-schema-version-per-document",
+    help="Read each document by the schema version it declares ($schema, or the openapi or asyncapi field); a "
+    "referenced document that declares none takes the version of the document whose reference loads it. The keywords "
+    "beside a $ref and the features of the version (const, prefixItems, $id, $defs) then apply as each document's "
+    "version says: a 2020-12 file of a directory read after a draft-07 one keeps the maximum beside an allOf $ref, an "
+    "OpenAPI 3.1 document reads $ref siblings as JSON Schema 2020-12 does, and a draft-07 document sets no "
+    "property-count rule for a minProperties beside an allOf $ref. Without it the version of the document parsed "
+    "first applies to every document, as in 0.88.0. No effect with an explicit --schema-version.",
+)
 
 # ======================================================================================
 # Options specific to GraphQL input schemas

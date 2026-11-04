@@ -1,0 +1,17 @@
+openapi: 3.1.0
+info:
+  title: Unique items beside a $ref
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Tags:
+      type: array
+      items:
+        type: string
+    Holder:
+      type: object
+      properties:
+        tags:
+          $ref: '#/components/schemas/Tags'
+          uniqueItems: true

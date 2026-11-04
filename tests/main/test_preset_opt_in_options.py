@@ -57,6 +57,7 @@ OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
     "--keep-first-character-of-path-keys",
     "--name-converted-payloads-by-message",
     "--singularize-last-word-of-item-names",
+    "--read-schema-version-per-document",
 )
 """The options the 20261104 presets set beyond the 20261027 presets."""
 
@@ -124,6 +125,12 @@ CASES_20261104: tuple[pytest.ParameterSet, ...] = (
         "openapi",
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="singularize-last-word-of-item-names",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "schema_version_per_document",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="read-schema-version-per-document",
     ),
 )
 """The inputs each opt-in option of the 20261104 presets changes."""

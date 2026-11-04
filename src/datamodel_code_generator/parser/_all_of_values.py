@@ -449,7 +449,7 @@ class AllOfValuesHost(Protocol):
         """Return the reference key a reference names."""
 
     def _ref_siblings_apply_to(
-        self, schema: JsonSchemaObject, *, legacy: Literal["first-read", "parsed-document"]
+        self, schema: JsonSchemaObject, *, legacy: Literal["first-read", "parsed-document", "as-written"]
     ) -> bool:
         """Return whether the keywords beside the ``$ref`` of ``schema`` apply with it (``parser/jsonschema.py``)."""
 

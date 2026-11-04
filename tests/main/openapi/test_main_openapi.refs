@@ -1750,6 +1750,9 @@ pydantic-v2-dataclass	main/openapi/openapi_read_only_write_only_variant_graph_de
 typed-dict	main/openapi/openapi_read_only_write_only_variant_graph_default.py	= main/openapi/openapi_read_only_write_only_variant_graph_default~read_only_write_only_variant_graph_default[typed-dict].py
 [test_main_openapi_read_only_write_only_variant_graph_schema_validators]
 	main/openapi/read_only_write_only_variant_graph_schema_validators.py
+[test_main_openapi_read_schema_version_per_document]
+first-read	main/openapi/main_openapi/read_schema_version_per_document[first-read].py
+per-document	main/openapi/main_openapi/read_schema_version_per_document[per-document].py
 [test_main_openapi_recursive_ref_discriminator]
 	main/openapi/recursive_ref_discriminator.py
 [test_main_openapi_recursive_ref_discriminator_pydantic_v2]
