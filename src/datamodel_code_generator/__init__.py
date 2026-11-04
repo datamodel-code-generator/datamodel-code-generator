@@ -1541,8 +1541,6 @@ def _module_texts(
     }
 
 
-_SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR = "Single-module output requires a file path, not a directory"
-_MODULAR_OUTPUT_FILE_ERROR = "Modular references require an output directory, not a file"
 _MODEL_METADATA_OUTPUT_DIRECTORY_ERROR = "Model metadata output requires a file path, not a directory"
 _INLINE_OBJECT_BODIES_HINT = (
     "request or response bodies of the paths or webhooks scope are typed inline, and "
@@ -1582,12 +1580,13 @@ def _write_results_to_output(  # noqa: PLR0913
     has_custom_file_header: bool,
 ) -> list[Path]:
     """Write one file or a sorted collection of generated modules to disk, and return the files written."""
-    from datamodel_code_generator._paths import names_directory  # noqa: PLC0415
+    from datamodel_code_generator._paths import MODULAR_OUTPUT_FILE_ERROR, layout_refusal, names_directory  # noqa: PLC0415
 
     if isinstance(results, str):
-        _ensure_file_output_path(output, _SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR)
+        if refusal := layout_refusal("module", output):
+            raise Error(refusal)
     elif not names_directory(output):
-        raise Error(_MODULAR_OUTPUT_FILE_ERROR)
+        raise Error(MODULAR_OUTPUT_FILE_ERROR)
     if config._logical_output is None and (isinstance(results, str) or output.is_dir()):  # noqa: SLF001
         from itertools import starmap  # noqa: PLC0415
 
@@ -1714,9 +1713,11 @@ def _emit_results(  # noqa: PLR0913
             has_custom_file_header=has_custom_file_header,
         )
     except OSError as e:
-        if isinstance(results, str) or not output.is_file():
+        from datamodel_code_generator._paths import layout_refusal  # noqa: PLC0415
+
+        if isinstance(results, str) or (refusal := layout_refusal("package", output)) is None:
             raise
-        raise Error(_MODULAR_OUTPUT_FILE_ERROR) from e
+        raise Error(refusal) from e
     if defer_formatting:
         _format_deferred_output(output, config, data_model_types, settings_path, written)
 

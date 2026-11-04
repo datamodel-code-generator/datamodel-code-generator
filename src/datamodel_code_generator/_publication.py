@@ -22,8 +22,8 @@ from datamodel_code_generator._paths import (
     concrete,
     concrete_parent,
     existing_ancestor,
-    files_under,
     lexical,
+    output_files,
     resolved,
     same_file,
 )
@@ -238,12 +238,12 @@ class StagedArtifact(NamedTuple):
         A file publishes to ``parent / target.name``, a directory's files below ``root``; nothing staged pairs nothing.
         """
         staged, target, root, parent, anchor = self
-        if staged.is_file():
-            yield StagedFile(staged, target, parent / target.name, anchor)
-            return
-        for staged_file in files_under(staged):
-            relative_path = staged_file.relative_to(staged)
-            yield StagedFile(staged_file, target / relative_path, root / relative_path, anchor)
+        for parts, staged_file in output_files(staged):
+            yield (
+                StagedFile(staged_file, target.joinpath(*parts), root.joinpath(*parts), anchor)
+                if parts
+                else StagedFile(staged_file, target, parent / target.name, anchor)
+            )
 
 
 class StagedOutputs(NamedTuple):

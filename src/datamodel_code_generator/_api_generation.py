@@ -29,7 +29,15 @@ from datamodel_code_generator._fastapi.packages import (
 from datamodel_code_generator._generation_timestamp import current_timestamp
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._module_paths import is_package_init
-from datamodel_code_generator._paths import concrete, concrete_parent, files_under, lexical, overlaps, resolved
+from datamodel_code_generator._paths import (
+    concrete,
+    concrete_parent,
+    lexical,
+    output_files,
+    output_layout,
+    overlaps,
+    resolved,
+)
 from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator._target_config import (
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
@@ -404,10 +412,10 @@ def _staging(stack: ExitStack, destination: Path, cwd: Path, around: Path | None
 def _staged_models(staged: Path, output: Path, encoding: str) -> tuple[ModelArtifact, ...]:
     from datamodel_code_generator._target_contract import ModelArtifact  # noqa: PLC0415
 
-    if staged.is_file():
-        return (ModelArtifact((output.name,), staged.read_bytes(), encoding),)
-    files = sorted((path.relative_to(staged).parts, path) for path in files_under(staged))
-    return tuple(ModelArtifact(parts, path.read_bytes(), encoding) for parts, path in files)
+    return tuple(
+        ModelArtifact(parts or (output.name,), path.read_bytes(), encoding)
+        for parts, path in sorted(output_files(staged))
+    )
 
 
 def _generate_models(
@@ -477,7 +485,7 @@ def _generate_models(
         return _Models(
             product=product,
             artifacts=artifacts,
-            single=staged_output.is_file(),
+            single=output_layout(staged_output) == "module",
             metadata=metadata_file,
             lock=lock,
             source=source,
