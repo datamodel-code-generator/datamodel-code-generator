@@ -720,9 +720,19 @@ def resolve_dynamic_ref(parser: SchemaRefsHost, item: JsonSchemaObject) -> str |
 
     Per JSON Schema 2020-12, a $dynamicRef first resolves like a $ref, and an anchor of its name in the dynamic
     scope then overrides that target. In code generation, the dynamic scope is resolved statically via index lookup.
+
+    The parse-time index only holds the anchors of the schemas parsed so far, so a $dynamicRef parsed before the
+    schemas that declare its anchor would miss the index and fall through to its edge, whose registry name the
+    last declaration of the anchor wins. The prepared document's anchor registry instead holds every declaration
+    from the start, in document order, so it decides which declaration is first regardless of parse order.
     """
     if not (ref := item.dynamicRef) or not ref.startswith("#"):
         return None
+    if parser._dynamic_anchors:  # noqa: SLF001
+        document = parser._current_dynamic_document()  # noqa: SLF001
+        for (anchor_document, _resource), anchors in parser._dynamic_anchors.items():  # noqa: SLF001
+            if anchor_document == document and (location := anchors.get(ref[1:])) is not None:
+                return f"#{location.partition('#')[2]}"
     return parser._dynamic_anchor_index.get(tuple(parser.model_resolver.current_root), {}).get(ref[1:])  # noqa: SLF001
 
 

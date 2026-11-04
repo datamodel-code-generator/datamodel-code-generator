@@ -12162,13 +12162,29 @@ def test_main_openapi_reserved_target_parsed_from_the_prepared_tree() -> None:
 
 
 def test_main_openapi_dynamic_anchor_registered_after_its_reference() -> None:
-    """A `$dynamicRef` parsed before the components that declare its anchor resolves through its edge.
+    """A `$dynamicRef` parsed before the components that declare its anchor resolves to the first of them.
 
-    `Holder` is parsed before `First` and `Second` register `$dynamicAnchor: T`, so `#T` resolves as a reference,
-    to the last component that declares the anchor; parsed after them it resolves to the first.
+    `Holder` is parsed before `First` and `Second` register `$dynamicAnchor: T` in the parse-time index, but
+    the prepared document's anchor registry holds every declaration from the start, so `#T` resolves to
+    `First`, the first declaration of the anchor in the document.
     """
     output = generate(
         OPEN_API_DATA_PATH / "dynamic_ref_anchor_parse_order.yaml",
+        input_file_type=InputFileType.OpenAPI,
+        disable_timestamp=True,
+        formatters=[Formatter.BUILTIN],
+    )
+    assert_output(str(output))
+
+
+def test_main_openapi_dynamic_anchor_registered_before_its_reference() -> None:
+    """A `$dynamicRef` parsed after the components that declare its anchor resolves to the same first one.
+
+    With `Holder` last, `#T` resolves to `First` as well: which declaration of a duplicated `$dynamicAnchor`
+    a `$dynamicRef` names does not depend on the order of the components.
+    """
+    output = generate(
+        OPEN_API_DATA_PATH / "dynamic_ref_anchor_parse_order_reversed.yaml",
         input_file_type=InputFileType.OpenAPI,
         disable_timestamp=True,
         formatters=[Formatter.BUILTIN],

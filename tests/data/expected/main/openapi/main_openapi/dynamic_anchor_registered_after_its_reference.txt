@@ -15,4 +15,4 @@ class Second(BaseModel):
 
 
 class Holder(BaseModel):
-    item: Second | None = None
+    item: First | None = None

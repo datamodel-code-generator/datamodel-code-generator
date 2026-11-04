@@ -1263,6 +1263,8 @@ tree-type-alias	main/openapi/dot_notation_collapse_reuse_models_tree//*.py
 	main/openapi/dot_notation_root_package_inheritance//*.py
 [test_main_openapi_dynamic_anchor_registered_after_its_reference]
 	main/openapi/main_openapi/dynamic_anchor_registered_after_its_reference.txt
+[test_main_openapi_dynamic_anchor_registered_before_its_reference]
+	main/openapi/main_openapi/dynamic_anchor_registered_before_its_reference.txt
 [test_main_openapi_dynamic_ref]
 	main/openapi/dynamic_ref.py
 [test_main_openapi_dynamic_ref_component_anchors]
