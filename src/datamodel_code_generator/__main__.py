@@ -423,7 +423,7 @@ def _remote_lock_plan(config: Config, pyproject_path: Path | None) -> _RemoteLoc
     """Resolve the project-relative default lock path without importing lock machinery."""
     from datamodel_code_generator._lock_plan import default_lock_parent, remote_lock_plan  # noqa: PLC0415
 
-    return remote_lock_plan(config, default_lock_parent(pyproject_path), "lexical")
+    return remote_lock_plan(config, default_lock_parent(pyproject_path))
 
 
 def _watch_remote_lock_setup(
