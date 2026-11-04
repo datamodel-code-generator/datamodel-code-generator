@@ -20,7 +20,14 @@ from datamodel_code_generator._config_fields import (
     names_file,
 )
 from datamodel_code_generator._context_scope import context_values
-from datamodel_code_generator._paths import concrete, existing_ancestor, lexical, names_directory, same_file
+from datamodel_code_generator._paths import (
+    concrete,
+    existing_ancestor,
+    lexical,
+    names_directory,
+    resolved,
+    same_file,
+)
 from datamodel_code_generator.util import _find_pyproject_toml as _nearest_pyproject_toml
 
 if TYPE_CHECKING:
@@ -88,7 +95,7 @@ def _path_variants(path: Path) -> frozenset[Path]:
     lexical_path = lexical(path)
     try:
         parent_resolved_path = concrete(lexical_path)
-        resolved_path = lexical_path.resolve(strict=False)
+        resolved_path = resolved(lexical_path)
     except (OSError, ValueError):
         return frozenset({lexical_path})
     return frozenset({lexical_path, parent_resolved_path, resolved_path})
@@ -112,7 +119,7 @@ def _symlink_event_paths(path: Path) -> frozenset[Path]:
 
 
 def _resolved_path(path: Path) -> Path:
-    return lexical(path).resolve(strict=False)
+    return resolved(lexical(path))
 
 
 def _path_fingerprint(path: Path) -> tuple[int, int, int]:
@@ -510,7 +517,7 @@ class WatchDependencies(_Weakrefable):
         """Accept recovery candidates before output exclusions and optional directory events."""
         snapshot = self._snapshot
         try:
-            resolved_path = path.resolve(strict=False)
+            resolved_path = resolved(path)
         except (OSError, ValueError):
             resolved_path = path
         path_variants = _path_variants(path)

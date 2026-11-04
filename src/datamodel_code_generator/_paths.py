@@ -57,9 +57,13 @@ def lexical(path: Path, base: Path | None = None) -> Path:
 
 
 def resolved(path: Path, base: Path | None = None) -> Path:
-    """Return the resolved form: ``~`` expanded, joined to ``base`` (or the working directory), symlinks resolved."""
+    """Return the resolved form: ``~`` expanded, joined to ``base`` (or the working directory), symlinks resolved.
+
+    A symlink loop stays as written from the link that starts it, on every Python version (``os.path.realpath``;
+    ``Path.resolve`` raises ``RuntimeError`` there before Python 3.13).
+    """
     expanded = path.expanduser()
-    return (expanded if base is None else base / expanded).resolve(strict=False)
+    return Path(os.path.realpath(expanded if base is None else base / expanded))
 
 
 def existing_ancestor(
@@ -92,7 +96,7 @@ def existing_ancestor(
 
 def concrete_parent(path: Path) -> Path:
     """Return the directory ``path`` is published into: its parent, with ``~`` expanded and symlinks resolved."""
-    return path.expanduser().parent.resolve(strict=False)
+    return resolved(path.expanduser().parent)
 
 
 def concrete(path: Path) -> Path:
