@@ -10,15 +10,15 @@ class Cat(BaseModel):
     first: str | None = None
 
 
-class PPet(BaseModel):
+class PPetModel(BaseModel):
     second: str | None = None
 
 
-class PPetModel(BaseModel):
+class PPetModel1(BaseModel):
     third: str | None = None
 
 
 class PHolder(BaseModel):
     first: Cat | None = None
-    second: PPet | None = None
-    third: PPetModel | None = None
+    second: PPetModel | None = None
+    third: PPetModel1 | None = None

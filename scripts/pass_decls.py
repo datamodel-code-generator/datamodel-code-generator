@@ -1390,7 +1390,7 @@ RECORD_GENERATED_CLASS_NAMES = PassDecl(
     Scope.GLOBAL,
     PassKind.BOOKKEEPING,
     reads=_facts(RenderFact.CLASS_NAMES),
-    condition="class names are collected",
+    condition="class names are collected, or the run records what it names",
 )
 RECORD_MODEL_PLACEMENT = PassDecl(
     "record_model_placement",

@@ -3977,7 +3977,8 @@ Rename generated model classes from a JSON mapping.
 
 The `--model-name-map` option applies explicit class names to generated models.
 Mapping keys can be canonical schema refs such as `#/definitions/Foo` or the
-current generated class name such as `Foo1`. Values are final Python class names.
+class name a model has in the output without the map, such as `Foo1`; the other
+models keep the names they have there. Values are final Python class names.
 
 This is useful when a schema cannot be edited but generated model names must be
 stable for public APIs or downstream code. Colliding mapped names fail instead

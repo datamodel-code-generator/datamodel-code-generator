@@ -64,7 +64,7 @@ if TYPE_CHECKING:
         StructuredRun,
         _StructureState,
     )
-    from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.reference import ModelResolver, Reference
     from datamodel_code_generator.types import DataType
 
 __all__ = [
@@ -133,6 +133,10 @@ class StructureHost(
     @property
     def formatters(self) -> list[Formatter] | None:
         """The configured formatters."""
+
+    @property
+    def model_resolver(self) -> ModelResolver:
+        """The resolver of class names, whose reserved names the per-module renames keep."""
 
     @property
     def shared_module_name(self) -> str:
@@ -405,11 +409,13 @@ def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataMod
             if base_class.reference is not None
             and (import_ := stand_ins.get(model_key_of(base_class.reference))) is not None
         )
+    module, dot, _ = models[0].reference.name.rpartition(".") if models else ("", "", "")
     scoped_model_resolver = scheme_resolver(
         "module",
         exclude_names=exclude_names,
         keeps_names=bool(parser.custom_class_name_generator),
         target_python_version=parser.target_python_version,
+        reserved_names=parser.model_resolver.reserved_names_in_module(f"{module}{dot}"),
     )
 
     model_names: dict[str, DataModel] = {}
@@ -431,7 +437,11 @@ def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataMod
     for model in models:
         duplicate_name = model.duplicate_class_name
         # check only first desired name
-        if duplicate_name and duplicate_name not in model_names:
+        if (
+            duplicate_name
+            and duplicate_name not in model_names
+            and not scoped_model_resolver.reserved_for_another(duplicate_name, model.path)
+        ):
             del model_names[model.class_name]
             parser._graph_builder.rename_model(model, class_name=duplicate_name, scheme="module")  # noqa: SLF001
             model_names[duplicate_name] = model

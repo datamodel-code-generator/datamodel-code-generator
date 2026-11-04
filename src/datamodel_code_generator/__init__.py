@@ -146,6 +146,7 @@ if TYPE_CHECKING:
         XMLSchemaParserConfigDict,
     )
     from datamodel_code_generator._types.generate_config_dict import GenerateConfigDict
+    from datamodel_code_generator._user_keys import ModelNameKeys, ModelNameRecord
     from datamodel_code_generator.config import (
         GenerateConfig,
         ParserConfig,
@@ -1972,6 +1973,8 @@ def _build_generation_parser(  # noqa: PLR0913, PLR0917
     reference_cache: Any | None = None,
     python_type_expressions: _PythonTypeExpressions | None = None,
     openapi_parser_factory: OpenAPIParserFactory | None = None,
+    model_name_keys: ModelNameKeys | None = None,
+    records_model_names: bool = False,
 ) -> Any:
     """Build one fresh parser using the caller's reference-resolution base."""
     jsonschema_version, openapi_version, asyncapi_version, xmlschema_version, protobuf_version = schema_versions
@@ -2005,6 +2008,8 @@ def _build_generation_parser(  # noqa: PLR0913, PLR0917
         untyped_nullable_maps=untyped_nullable_maps,
         yielding_names=yielding_names,
         document_roles=document_roles,
+        model_name_keys=model_name_keys,
+        records_model_names=records_model_names,
     )
     return parser
 
@@ -2311,6 +2316,8 @@ def _parse_again(  # noqa: PLR0913, PLR0917
     collect_model_metadata: bool,
     capture: GenerationCaptureSession[object] | None,
     openapi_parser_factory: OpenAPIParserFactory | None,
+    model_name_keys: ModelNameKeys | None,
+    records_model_names: bool,
     untyped_nullable_maps: bool = True,
     yielding_names: tuple[tuple[str, tuple[str, str | None]], ...] = (),
     document_roles: DocumentRoles = (),
@@ -2368,6 +2375,8 @@ def _parse_again(  # noqa: PLR0913, PLR0917
                 reference_cache=reference_cache,
                 python_type_expressions=python_type_expressions,
                 openapi_parser_factory=openapi_parser_factory,
+                model_name_keys=model_name_keys,
+                records_model_names=records_model_names,
             )
             try:
                 results = (_parse_collapse_root_models_retry if collapse_retry else _parse_with_disposal)(
@@ -2459,7 +2468,7 @@ def _dispose_capture_parser(parser: Any, capture: GenerationCaptureSession[objec
         capture.discard_attempt(parser)
 
 
-def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
+def _parse_generation(  # noqa: PLR0913, PLR0917
     input_: _GenerationInput,
     input_text: str | None,
     input_file_type: InputFileType,
@@ -2484,9 +2493,116 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
     capture: GenerationCaptureSession[object] | None = None,
     openapi_parser_factory: OpenAPIParserFactory | None = None,
 ) -> _ParsedGeneration:
-    """Parse, dispose, and retry narrow compatibility failures inside the output cwd."""
+    """Parse, dispose, and retry narrow compatibility failures inside the output cwd.
+
+    When ``--model-name-map`` has class-name keys, the input is first generated without them, quietly, and the keys
+    are translated to the models that run names (``_user_keys.translate_class_keys``); a run without them that fails
+    leaves the keys as written.
+    """
     if openapi_parser_factory is None and capture is not None:
         openapi_parser_factory = capture.parser_factory
+    from functools import partial  # noqa: PLC0415
+
+    run = partial(
+        _parse_generation_run,
+        input_,
+        input_text,
+        input_file_type,
+        source_override,
+        dataclass_arguments=dataclass_arguments,
+        skip_root_model=skip_root_model,
+        schema_versions=schema_versions,
+        diagnostic_source_path=diagnostic_source_path,
+        prefetched_source=prefetched_source,
+        parser_settings_path=parser_settings_path,
+        use_output_cwd=use_output_cwd,
+        output_context_path=output_context_path,
+        collect_model_metadata=collect_model_metadata,
+        openapi_parser_factory=openapi_parser_factory,
+    )
+    model_name_keys = None
+    from datamodel_code_generator._user_keys import class_name_keys, translate_class_keys  # noqa: PLC0415
+
+    if class_keys := class_name_keys(model_name_map := config.model_name_map or {}):
+        from datamodel_code_generator.reference import unmatched_model_name_keys_unreported  # noqa: PLC0415
+
+        without_class_keys = config.model_copy(
+            update={"model_name_map": {key: value for key, value in model_name_map.items() if key not in class_keys}}
+        )
+        record_template_data = _prepare_generation_extra_template_data(without_class_keys)
+        record_types, record_source, record_defer_formatting, record_options, record_expressions = (
+            _prepare_parser_common_options(
+                input_,
+                input_text,
+                input_file_type,
+                source_override,
+                without_class_keys,
+                record_template_data,
+                dataclass_arguments,
+                skip_root_model=skip_root_model,
+                remote_text_cache=DefaultPutDict()
+                if (cache := parser_options.get("remote_text_cache")) is None
+                else cache,
+            )
+        )
+        record_options["base_path"] = parser_options["base_path"]
+        try:
+            with quiet(), unmatched_model_name_keys_unreported():
+                _, record = run(
+                    without_class_keys,
+                    record_source,
+                    record_options,
+                    record_types,
+                    record_defer_formatting,
+                    record_template_data,
+                    python_type_expressions=record_expressions,
+                    records_model_names=True,
+                )
+        except Exception:  # noqa: BLE001
+            record = None
+        if record is not None:
+            model_name_keys = translate_class_keys(model_name_map, record)
+    return run(
+        config,
+        parser_source,
+        parser_options,
+        data_model_types,
+        defer_formatting,
+        extra_template_data,
+        python_type_expressions=python_type_expressions,
+        capture=capture,
+        model_name_keys=model_name_keys,
+    )[0]
+
+
+def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
+    input_: _GenerationInput,
+    input_text: str | None,
+    input_file_type: InputFileType,
+    source_override: Mapping[str, Any] | None,
+    config: GenerateConfig,
+    parser_source: _ParserSource,
+    parser_options: _SharedParserConfigDict,
+    data_model_types: DataModelSet,
+    defer_formatting: bool,  # noqa: FBT001
+    extra_template_data: defaultdict[str, dict[str, Any]] | None,
+    *,
+    dataclass_arguments: DataclassArguments,
+    python_type_expressions: _PythonTypeExpressions | None,
+    skip_root_model: bool,
+    schema_versions: _SchemaVersions,
+    diagnostic_source_path: Path | None,
+    prefetched_source: tuple[Path, bytes] | None,
+    parser_settings_path: Path | None,
+    use_output_cwd: bool,
+    output_context_path: Path,
+    collect_model_metadata: bool,
+    openapi_parser_factory: OpenAPIParserFactory | None,
+    capture: GenerationCaptureSession[object] | None = None,
+    model_name_keys: ModelNameKeys | None = None,
+    records_model_names: bool = False,
+) -> tuple[_ParsedGeneration, ModelNameRecord | None]:
+    """Parse one generation run, applying ``model_name_keys`` or recording what it names (``records_model_names``)."""
     # Phase 3: build before chdir so initial reference resolution keeps the caller's cwd.
     parser = _build_generation_parser(
         input_,
@@ -2501,6 +2617,8 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
         formatter_cwd=None if use_output_cwd else output_context_path,
         python_type_expressions=python_type_expressions,
         openapi_parser_factory=openapi_parser_factory,
+        model_name_keys=model_name_keys,
+        records_model_names=records_model_names,
     )
     from functools import partial  # noqa: PLC0415
 
@@ -2522,6 +2640,8 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
         collect_model_metadata=collect_model_metadata,
         capture=capture,
         openapi_parser_factory=openapi_parser_factory,
+        model_name_keys=model_name_keys,
+        records_model_names=records_model_names,
     )
     # Phase 4: initial parse, disposal, and the complete retry flow share the output cwd.
     with chdir(output_context_path if use_output_cwd else None), pydantic_floors_recorded() as floors:  # noqa: PLR1702
@@ -2600,6 +2720,7 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
             preserve_circular_root_models = parser.run_context.preserve_circular_root_models
             untyped_nullable_maps = parser.run_context.untyped_nullable_maps or parser.typed_nullable_maps
             document_roles = parser.run_context.document_roles
+        model_name_record = parser.model_resolver.model_name_record
         if capture is None:
             parser.dispose()
         else:
@@ -2681,7 +2802,14 @@ def _parse_generation(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
             UserWarning,
             stacklevel=2,
         )
-    return results, model_metadata, model_identities, data_model_types, defer_formatting, inline_object_bodies
+    return (
+        results,
+        model_metadata,
+        model_identities,
+        data_model_types,
+        defer_formatting,
+        inline_object_bodies,
+    ), model_name_record
 
 
 def _emit_generation(  # noqa: PLR0913
