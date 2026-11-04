@@ -17,7 +17,7 @@ that tests call or that other parts of the parser call stay on the parser as del
 
 from __future__ import annotations
 
-from contextlib import ExitStack
+from contextlib import ExitStack, contextmanager
 from itertools import chain
 from string import digits
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypeAlias, cast
@@ -34,6 +34,7 @@ from datamodel_code_generator.parser._origins import with_field_origin
 from datamodel_code_generator.parser._passes._shared import (
     _detach_deferred_inherited_field_parents,
     inherited_default_source,
+    with_dedupe_request_response_hint,
 )
 from datamodel_code_generator.parser._schema_dispatch import SchemaSite, TypedChild
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
@@ -52,7 +53,7 @@ from datamodel_code_generator.reference import (
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Generator, Iterable, Sequence
     from contextlib import AbstractContextManager
     from pathlib import Path
 
@@ -90,6 +91,7 @@ __all__ = [
     "get_separate_model_fields",
     "inherited_default_source",
     "join_rw_model_property_flags",
+    "legacy_rw_errors",
     "legacy_rw_variants",
     "lightweight_type_keys",
     "merge_inherited_field_overrides",
@@ -835,6 +837,22 @@ def legacy_rw_variants(parser: RwSplitHost) -> frozenset[str]:
     return frozenset({"legacy-rw-parsed-facts", "legacy-rw-unowned-parent-fields"})
 
 
+@contextmanager
+def legacy_rw_errors(parser: RwSplitHost) -> Generator[None]:
+    """Name ``--dedupe-request-response-variants`` in an error that the kept 0.86.0 decisions raise.
+
+    Without the option the facts of a key come from a temporary parse, the walk reads every reference of a key and the
+    inline models of an allOf parent's own fields are parsed at no owner path, as in 0.86.0. An input those reads stop
+    on stops with its error; the option decides from the schema graph and generates it.
+    """
+    try:
+        yield
+    except Error as error:
+        if parser._legacy_rw_variants:  # noqa: SLF001
+            error.message = with_dedupe_request_response_hint(error.message)
+        raise
+
+
 def collect_all_fields_for_request_response(
     parser: RwSplitHost,
     fields: list[DataModelFieldBase],
@@ -1100,8 +1118,6 @@ def get_rw_model_variant_graph_node(parser: RwSplitHost, resolved_ref: str) -> t
     and the models its parsed fields reference are edges too.
     """
     if "legacy-rw-parsed-facts" not in parser._legacy_rw_variants:  # noqa: SLF001
-        if _is_special_path(resolved_ref):
-            return False, ()
         return parser._get_ref_schema_rw_model_reference_facts(resolved_ref)  # noqa: SLF001
     facts = parser._get_ref_schema_rw_model_field_facts(resolved_ref)  # noqa: SLF001
     fields = parser._raw_inherited_fields_cache.get(resolved_ref)  # noqa: SLF001
@@ -1113,7 +1129,8 @@ def get_rw_model_variant_graph_node(parser: RwSplitHost, resolved_ref: str) -> t
         for data_type in field.data_type.all_data_types
         if (reference := data_type.reference) is not None
     }
-    has_inline_variant, raw_refs = parser._get_ref_schema_rw_model_reference_facts(resolved_ref)  # noqa: SLF001
+    with legacy_rw_errors(parser):
+        has_inline_variant, raw_refs = parser._get_ref_schema_rw_model_reference_facts(resolved_ref)  # noqa: SLF001
     nested_refs.update(dict.fromkeys(raw_refs))
     return (facts is not None and (facts[0] or facts[1])) or has_inline_variant, tuple(nested_refs)
 
@@ -1163,8 +1180,11 @@ def get_ref_schema_rw_model_reference_facts(
     The walk asks the dispatch tables what the model of the key types (``_DEFINITION_TABLE``,
     ``_typed_model_children``) and follows what that types in turn. It stops at the first flagged property: the
     references of a node that needs variants are never read (under ``legacy-rw-parsed-facts`` it reads them all,
-    as 0.86.0 did). A key that names no loadable schema has neither.
+    as 0.86.0 did). A key that names no loadable schema has neither, nor has a special path, which the parser makes
+    and no ``$ref`` names.
     """
+    if _is_special_path(resolved_ref):
+        return False, ()
     if (cached := parser._rw_model_references_cache.get(resolved_ref)) is not None:  # noqa: SLF001
         return cached
     try:
@@ -1379,7 +1399,11 @@ def get_rw_model_variant_reference(
             reference.loaded |= loaded
             return reference
 
-    if parser._ref_schema_exists(source_variant_ref := _get_rw_model_variant_source_path(base_reference, suffix)):  # noqa: SLF001
+    with legacy_rw_errors(parser):
+        source_variant_exists = parser._ref_schema_exists(  # noqa: SLF001
+            source_variant_ref := _get_rw_model_variant_source_path(base_reference, suffix)
+        )
+    if source_variant_exists:
         parser.model_resolver.add_ref(source_variant_ref, resolved=True)
 
     class_name_suffix = parser.model_resolver.class_name_suffix

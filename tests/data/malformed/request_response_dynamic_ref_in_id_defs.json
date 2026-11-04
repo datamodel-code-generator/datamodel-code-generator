@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Tree",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "readOnly": true
+    },
+    "child": {
+      "$ref": "#/$defs/Node"
+    }
+  },
+  "$defs": {
+    "Node": {
+      "$id": "https://example.com/node",
+      "$dynamicAnchor": "node",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "readOnly": true
+        },
+        "next": {
+          "$dynamicRef": "#node"
+        }
+      }
+    }
+  }
+}
