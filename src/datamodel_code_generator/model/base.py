@@ -2239,6 +2239,12 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     _DICT_KEYS_TAKE_ROOT_TYPE: ClassVar[bool] = False
     """Whether a dict key that names a model of the class may take its root type (hashability): the class wraps one
     root value, and its instances can be dict keys only when frozen."""
+    _BASE_FIELDS: ClassVar[_mro.MemberRule] = "collected"
+    """How a model of the class takes the fields it does not declare from its bases (`_mro.collect_members`): as
+    dataclasses, Pydantic and msgspec collect them; TypedDict output keeps the nearest declaration."""
+    _PYTHON_CHECKS_BASES: ClassVar[bool] = True
+    """Whether Python creates the class from its bases, refusing a base listed twice and bases whose orders C3 cannot
+    merge; a TypedDict merges the keys of its bases itself."""
     REQUIRES_FIELD_DEPENDENCY_ORDERING: ClassVar[bool] = False
     REQUIRES_TAGGED_UNION_DISCRIMINATOR: ClassVar[bool] = False
     REQUIRES_UNIQUE_FIELD_ALIASES: ClassVar[bool] = False
@@ -3655,6 +3661,31 @@ def linearize_data_models(
     return [node_of[key] for key in map(_model_key_of_model, order)]
 
 
+def inherited_root_field(model: DataModel) -> DataModelFieldBase:
+    """Return the field of a root model, or of the root model that the empty subclass reuse made of it inherits."""
+    while not model.fields:
+        model = _find_base_classes(model)[0]
+    return model.fields[0]
+
+
+def python_base_classes(model: DataModel) -> list[BaseClassDataType] | None:
+    """Return the bases Python creates the class of ``model`` from, where it refuses those the model lists, or None.
+
+    Python refuses a generated base listed twice and bases whose orders C3 cannot merge (`_mro.linearize`, row
+    ``python``); the bases are then listed once each, descendants first as `sort_data_models_for_mro` orders them.
+    """
+    if not model._PYTHON_CHECKS_BASES or (  # noqa: SLF001
+        _mro.linearize([model], _model_key_of_model, _find_base_classes, rule="python") is not None
+    ):
+        return None
+    bases = list({id(base.reference) if base.reference else id(base): base for base in model.base_classes}.values())
+    order = {
+        model_key_of(source.reference): index
+        for index, source in enumerate(sort_data_models_for_mro(_find_base_classes_of(bases)))
+    }
+    return sorted(bases, key=lambda base: order.get(model_key_of(base.reference), 0) if base.reference else 0)
+
+
 _ClassVarRow: TypeAlias = Literal["declared", "no-place"]
 """How a class variable counts among the fields a model has with its bases.
 
@@ -3693,16 +3724,26 @@ def _fields_of(model: DataModel) -> list[DataModelFieldBase]:
 
 
 def _effective_field_owners(
-    model: DataModel, ancestors: Sequence[DataModel], *, class_vars: _ClassVarRow = "declared"
+    model: DataModel,
+    ancestors: Sequence[DataModel],
+    *,
+    class_vars: _ClassVarRow = "declared",
+    stand_ins: Mapping[int, Reference | None] | None = None,
 ) -> dict[str, tuple[DataModel, DataModelFieldBase]]:
     """Return the field each name of ``model`` resolves to with its bases, and the model that declares it.
 
-    ``ancestors`` are the models ``model`` inherits from in its method resolution order (`linearize_data_models`). A
-    name keeps the place where the farthest of them declares it and takes the nearest declaration, the model's own
-    last (`_mro.resolve_members`); unnamed fields are left out. ``class_vars`` names how a class variable counts.
+    ``ancestors`` are the models ``model`` inherits from in its method resolution order (`linearize_data_models`),
+    ``stand_ins`` the bases overrides replaced. A name keeps the place where the farthest of them declares it and
+    takes the declaration the class of the model's row takes (``_BASE_FIELDS``), the model's own first; unnamed fields
+    are left out. ``class_vars`` names how a class variable counts.
     """
-    return _mro.resolve_members(
-        (model, *ancestors), _fields_of, _named_field if class_vars == "declared" else _named_instance_field
+    return _mro.collect_members(
+        (model, *ancestors),
+        _fields_of,
+        _named_field if class_vars == "declared" else _named_instance_field,
+        lambda base: direct_base_models(base, stand_ins),
+        _model_key_of_model,
+        rule=model._BASE_FIELDS,  # noqa: SLF001
     )
 
 
@@ -3748,4 +3789,9 @@ _rebuild_model_with_datamodel_namespace(DataModelFieldBase)
 
 def _find_base_classes(model: DataModel) -> list[DataModel]:
     """Get direct base class DataModels."""
-    return [b.reference.source for b in model.base_classes if b.reference and isinstance(b.reference.source, DataModel)]
+    return _find_base_classes_of(model.base_classes)
+
+
+def _find_base_classes_of(base_classes: Iterable[BaseClassDataType]) -> list[DataModel]:
+    """Return the generated models ``base_classes`` name."""
+    return [b.reference.source for b in base_classes if b.reference and isinstance(b.reference.source, DataModel)]

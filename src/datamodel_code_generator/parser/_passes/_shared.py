@@ -51,6 +51,8 @@ from datamodel_code_generator.model.base import (
     direct_base_models,
     get_inherited_fields,
     linearize_data_models,
+    python_base_classes,
+    sort_data_models_for_mro,
 )
 from datamodel_code_generator.model.enum import Enum, get_raw_enum_member_value
 from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
@@ -240,7 +242,7 @@ class MergedDuplicatesHost(Protocol):
         """The duplicates merged into a model, removed or made empty subclasses of it, by the id of that model."""
 
 
-class CollapsedReuseHost(GraphBuilderHost, MergedDuplicatesHost, Protocol):
+class CollapsedReuseHost(GenerationStoreHost, MergedDuplicatesHost, Protocol):
     """The duplicates collapsed reuse removed and the users it redirected, with the builder that redirects them."""
 
     @property
@@ -450,6 +452,25 @@ def _distinct_bases(host: GraphBuilderHost, base_dedup: BaseDedup, model: DataMo
         )
 
 
+def settle_python_bases(host: GenerationStoreHost, reference: Reference) -> None:
+    """Give every model that inherits ``reference``, however distant, bases Python creates its class from.
+
+    A merge changes what these models inherit, which may list a base twice or put a base before a model that inherits
+    it; each model Python would refuse takes the bases of `python_base_classes`, its ancestors first.
+    """
+    index = host.generation_store.index
+    descendants: dict[int, DataModel] = {}
+    pending = index.models_inheriting(reference)
+    while pending:
+        if id(model := pending.pop()) not in descendants:
+            descendants[id(model)] = model
+            pending.extend(index.models_inheriting(model.reference))
+    refused = [model for model in descendants.values() if python_base_classes(model) is not None]
+    for model in reversed(sort_data_models_for_mro(refused)):
+        if (bases := python_base_classes(model)) is not None:
+            host._graph_builder.set_base_classes(model, bases)  # noqa: SLF001
+
+
 def merge_duplicate(
     host: CollapsedReuseHost, duplicate: DataModel, canonical: DataModel, row: ShapeRow, *, keeps_duplicate_tags: bool
 ) -> list[DataType]:
@@ -472,6 +493,7 @@ def merge_duplicate(
         host._collapsed_reuse_models.setdefault(id(canonical), []).append(duplicate)  # noqa: SLF001
     if (base_dedup := row.base_dedup) is not None:
         _distinct_bases(host, base_dedup, duplicate)
+    settle_python_bases(host, canonical.reference)
     builder.retire_model(duplicate)
     return users
 
@@ -1011,7 +1033,7 @@ def require_update_action(
     )
 
 
-class ReuseSubclassHost(GraphBuilderHost, MergedDuplicatesHost, RecursionFactsHost, Protocol):
+class ReuseSubclassHost(GenerationStoreHost, MergedDuplicatesHost, RecursionFactsHost, Protocol):
     """The builder that replaces a reuse duplicate by a subclass, and the recursion facts the subclass may join."""
 
 
@@ -1039,6 +1061,7 @@ def subclass_duplicate(
     builder.redirect_model_reference_users(duplicate, users, inherited.reference)
     replace_model_in_list(models, duplicate, inherited)
     builder.replace_model(duplicate, inherited)
+    settle_python_bases(host, inherited.reference)
     return inherited if model_key_of(canonical.reference) in host._recursion_facts["require_update"] else None  # noqa: SLF001
 
 
@@ -1366,7 +1389,11 @@ def get_inherited_constructor_info(
                         inherited_stripped_none_names.add(field_name)
     effective_fields = {
         name: (field, owner, None if owner is model else inherited_defaults.get(id(field)))
-        for name, (owner, field) in _effective_field_owners(model, inherited_models).items()
+        for name, (owner, field) in _effective_field_owners(
+            model,
+            inherited_models,
+            stand_ins={} if early else host._base_stand_ins,  # noqa: SLF001
+        ).items()
     }
     conflicts = get_constructor_ordering_conflicts(model, effective_fields, required_assignment_names)
     return _InheritedConstructorInfo(

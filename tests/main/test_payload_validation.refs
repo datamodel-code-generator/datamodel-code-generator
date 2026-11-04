@@ -732,6 +732,7 @@ jsonschema/reuse_model_collapse_root_models_constraints.json	payloads/native_num
 jsonschema/reuse_model_collapse_with_root.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_model_discriminator_literal.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_model_inline_definitions.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/reuse_model_merged_bases_mro.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_model_same_name_references/common.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_model_same_name_references/other.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_scope_tree/schema_a.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -748,6 +749,8 @@ jsonschema/reuse_scope_tree_cross_module_users/left.json	payloads/native_numeric
 jsonschema/reuse_scope_tree_cross_module_users/right.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_scope_tree_enum/schema_a.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_scope_tree_enum/schema_b.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/reuse_scope_tree_merged_bases/a.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/reuse_scope_tree_merged_bases/b.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_scope_tree_multi/schema_a.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_scope_tree_multi/schema_b.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_scope_tree_multi/schema_c.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -756,6 +759,8 @@ jsonschema/reuse_scope_tree_no_conflict_dir/other.json	payloads/native_numeric_e
 jsonschema/reuse_scope_tree_no_conflict_dir/shared/schema.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_scope_tree_no_dup/schema_a.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_scope_tree_no_dup/schema_b.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/reuse_scope_tree_root_key/a.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/reuse_scope_tree_root_key/b.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_scope_tree_same_name_references/names.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_scope_tree_same_name_references/sizes.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_tree_nested_chain/schema_0.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2626,6 +2631,7 @@ jsonschema/reuse_model_collapse_root_models_constraints.json	payloads/native_num
 jsonschema/reuse_model_collapse_with_root.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_model_discriminator_literal.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_model_inline_definitions.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/reuse_model_merged_bases_mro.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_model_same_name_references/common.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_model_same_name_references/other.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_scope_tree/schema_a.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2642,6 +2648,8 @@ jsonschema/reuse_scope_tree_cross_module_users/left.json	payloads/native_numeric
 jsonschema/reuse_scope_tree_cross_module_users/right.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_scope_tree_enum/schema_a.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_scope_tree_enum/schema_b.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/reuse_scope_tree_merged_bases/a.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/reuse_scope_tree_merged_bases/b.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_scope_tree_multi/schema_a.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_scope_tree_multi/schema_b.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_scope_tree_multi/schema_c.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2650,6 +2658,8 @@ jsonschema/reuse_scope_tree_no_conflict_dir/other.json	payloads/native_numeric_e
 jsonschema/reuse_scope_tree_no_conflict_dir/shared/schema.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_scope_tree_no_dup/schema_a.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_scope_tree_no_dup/schema_b.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/reuse_scope_tree_root_key/a.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/reuse_scope_tree_root_key/b.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_scope_tree_same_name_references/names.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_scope_tree_same_name_references/sizes.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/reuse_tree_nested_chain/schema_0.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

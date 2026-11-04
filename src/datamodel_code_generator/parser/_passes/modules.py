@@ -67,6 +67,7 @@ from datamodel_code_generator.model.base import (
     _reference_names_model,
     _share_path_identity,
     get_inherited_fields,
+    inherited_root_field,
 )
 from datamodel_code_generator.model.enum import Enum, Member, _enum_class, enum_value_base, get_raw_enum_member_value
 from datamodel_code_generator.parser._graph_ids import UNRESOLVED_MODEL_KEY, keyed_models
@@ -2455,9 +2456,10 @@ def root_key_data_type(parser: ModulesHost, root_model: DataModel) -> DataType |
 
     The model-level type overrides apply to the copy, as the module of a root model processed later applies them to
     the root type itself. A container cannot be a key. Constraints that the root keeps as ``Field()`` arguments are
-    written into the string type as a key schema writes them; a root of another type cannot keep them.
+    written into the string type as a key schema writes them; a root of another type cannot keep them. The root field
+    is that of the root model the empty subclass that reuse makes of it inherits (`inherited_root_field`).
     """
-    root_field = root_model.fields[0]
+    root_field = inherited_root_field(root_model)
     root_type = root_field.data_type
     keywords = _root_constraint_keywords(root_field)
     string_type = parser.data_type_manager.get_data_type(Types.string)

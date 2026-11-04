@@ -1006,6 +1006,16 @@ class GenerationIndex:
             return ()
         return tuple(facts.data_type_facts[data_type_id] for data_type_id in data_type_ids)
 
+    def models_inheriting(self, reference: Reference) -> list[DataModel]:
+        """Return the models whose bases name ``reference``, once each, in the order of those bases."""
+        facts = self._view().facts
+        owners = (
+            facts.model_facts[fact.owner_model].model
+            for fact in self.data_type_facts_for_reference(reference)
+            if fact.role == "base"
+        )
+        return list({id(owner): owner for owner in owners}.values())
+
     def has_data_type_references(self, reference: Reference) -> bool:
         """Return whether any tracked data type currently points at ``reference``."""
         return bool(self._view().facts.sites_by_target.get(self._store.model_key(reference)))

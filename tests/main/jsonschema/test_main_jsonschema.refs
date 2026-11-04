@@ -6327,6 +6327,10 @@ custom_template_root_docstring_escaping.json-pydantic_v2.BaseModel-custom_templa
 	main/jsonschema/jsonschema_default_values_override.py
 [test_main_jsonschema_definitions_namespace]
 	main/jsonschema/definitions_v2_namespace.py
+[test_main_jsonschema_diamond_inherited_field_override]
+dataclasses.dataclass	main/jsonschema/main_jsonschema/diamond_inherited_field_override[dataclasses.dataclass].py
+msgspec.Struct	main/jsonschema/main_jsonschema/diamond_inherited_field_override[msgspec.Struct].py
+pydantic_v2.dataclass	main/jsonschema/main_jsonschema/diamond_inherited_field_override[pydantic_v2.dataclass].py
 [test_main_jsonschema_discriminated_oneof_allof_cycle]
 	main/jsonschema/jsonschema_discriminated_oneof_allof_cycle.py
 [test_main_jsonschema_discriminated_oneof_allof_cycle_use_union_operator]
@@ -7441,6 +7445,13 @@ typing.TypedDict-reserved_field_name_schema_typed_dict.py	main/jsonschema/reserv
 	main/jsonschema/reserved_property_dataclass.py
 [test_main_jsonschema_reserved_target_of_a_rewritten_document]
 	main/jsonschema/main_jsonschema/reserved_target_of_a_rewritten_document/
+[test_main_jsonschema_reuse_model_merged_bases_mro]
+collapse-dataclasses.dataclass	main/jsonschema/main_jsonschema/reuse_model_merged_bases_mro[collapse-dataclasses.dataclass].py
+collapse-msgspec.Struct	main/jsonschema/main_jsonschema/reuse_model_merged_bases_mro[collapse-msgspec.Struct].py
+collapse-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/reuse_model_merged_bases_mro[collapse-pydantic_v2.BaseModel].py
+subclass-dataclasses.dataclass	main/jsonschema/main_jsonschema/reuse_model_merged_bases_mro[subclass-dataclasses.dataclass].py
+subclass-msgspec.Struct	main/jsonschema/main_jsonschema/reuse_model_merged_bases_mro[subclass-msgspec.Struct].py
+subclass-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/reuse_model_merged_bases_mro[subclass-pydantic_v2.BaseModel].py
 [test_main_jsonschema_reuse_model_same_name_references]
 	main/jsonschema/reuse_model_same_name_references//*.py
 [test_main_jsonschema_reuse_scope_tree]
@@ -7461,6 +7472,9 @@ inherit	main/jsonschema/reuse_scope_tree_cross_module_users//*.py
 	main/jsonschema/reuse_scope_tree_enum//*.py
 [test_main_jsonschema_reuse_scope_tree_exact_imports]
 	main/jsonschema/reuse_scope_tree_exact_imports//*.py
+[test_main_jsonschema_reuse_scope_tree_merged_bases]
+msgspec.Struct	main/jsonschema/main_jsonschema/reuse_scope_tree_merged_bases[msgspec.Struct]/
+pydantic_v2.dataclass	main/jsonschema/main_jsonschema/reuse_scope_tree_merged_bases[pydantic_v2.dataclass]/
 [test_main_jsonschema_reuse_scope_tree_multi]
 	main/jsonschema/reuse_scope_tree_multi//*.py
 [test_main_jsonschema_reuse_scope_tree_no_conflict_dir]
@@ -7475,6 +7489,8 @@ collapse	main/jsonschema/reuse_type_overrides_tree_collapsed//*.py
 inherit	main/jsonschema/reuse_type_overrides_tree//*.py
 [test_main_jsonschema_reuse_scope_tree_relative_imports]
 	main/jsonschema/reuse_scope_tree_relative_import/external1.py
+[test_main_jsonschema_reuse_scope_tree_root_key]
+	main/jsonschema/main_jsonschema/reuse_scope_tree_root_key/
 [test_main_jsonschema_reuse_scope_tree_same_name_references]
 collapse	main/jsonschema/reuse_scope_tree_same_name_references_collapsed//*.py
 inherit	main/jsonschema/reuse_scope_tree_same_name_references//*.py

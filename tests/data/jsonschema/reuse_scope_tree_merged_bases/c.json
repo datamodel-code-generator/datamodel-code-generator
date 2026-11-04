@@ -1,0 +1,1 @@
+{"$schema": "http://json-schema.org/draft-07/schema#", "title": "C", "type": "object", "allOf": [{"$ref": "a.json"}, {"$ref": "b.json"}], "properties": {"y": {"type": "string"}}}

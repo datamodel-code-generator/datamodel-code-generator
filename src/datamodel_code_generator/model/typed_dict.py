@@ -44,6 +44,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
     from pathlib import Path
 
+    from datamodel_code_generator._mro import MemberRule
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.reference import Reference
     from datamodel_code_generator.types import DataType
@@ -73,6 +74,8 @@ class TypedDict(DataModel):
     SUPPORTS_TYPED_DICT_TOTAL_FALSE: ClassVar[bool] = True
     SUPPORTS_DESERIALIZED_DEFAULT_VALUES: ClassVar[bool] = False
     _FREEZES_FIELD_RENDER_PLANS: ClassVar[bool] = True
+    _PYTHON_CHECKS_BASES: ClassVar[bool] = False
+    _BASE_FIELDS: ClassVar[MemberRule] = "nearest"
 
     @classmethod
     @override
