@@ -817,6 +817,15 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         "DataModelFieldBase", "FIELD_ORIGIN_KEY", FactKind.BOOKKEEPING, (), Phase.MODULES, None, access=Access.DICT_KEY
     ),
     AttributeFact(
+        "DataModelFieldBase",
+        "_TYPE_LIST_UNIQUE_ITEMS_KEY",
+        FactKind.BOOKKEEPING,
+        (),
+        Phase.PARSE,
+        None,
+        access=Access.DICT_KEY,
+    ),
+    AttributeFact(
         "ConstraintsBase", "has_constraints", FactKind.CACHE, (), Phase.RENDER, None, access=Access.CACHED_PROPERTY
     ),
     AttributeFact(
