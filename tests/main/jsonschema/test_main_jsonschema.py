@@ -30276,6 +30276,41 @@ def test_main_read_only_write_only_boolean_property(output_file: Path, dedupe_ar
 
 
 @pytest.mark.parametrize(
+    "input_name",
+    [
+        pytest.param("read_only_write_only_constrained_union.json", id="unflagged"),
+        pytest.param("read_only_write_only_constrained_union_flagged.json", id="flagged"),
+    ],
+)
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_constrained_union(
+    output_file: Path, input_name: str, dedupe_args: list[str]
+) -> None:
+    """Write the root models of a constrained inline union once under the request/response split.
+
+    With --dedupe-request-response-variants the schema graph decides, so ``Holder.x`` takes ``X | X1``, the names it
+    takes without the split, with or without a readOnly property beside it; without it a temporary parse of
+    ``Holder`` builds ``X`` and ``X1``, which nothing references, and ``Holder.x`` takes ``X2 | X3``, as in 0.86.0.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            "--disable-timestamp",
+            "--field-constraints",
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+
+
+@pytest.mark.parametrize(
     ("input_name", "valid", "invalid"),
     [
         pytest.param(

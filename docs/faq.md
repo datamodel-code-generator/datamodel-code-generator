@@ -1143,9 +1143,9 @@ class Resource(BaseModel):
 | Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
-| Issue | [#5115](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5115) |
+| Issue | [#5115](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5115), [#6065](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6065) |
 
-**Affects:** `--read-only-write-only-model-type request-response` and `all`. The read and write variants are decided from the schema graph: no unreferenced duplicate variants, stable numbering, and the inline models of an `allOf` parent are written once. Some recursive schemas cannot be generated without the option, and the error names it.
+**Affects:** `--read-only-write-only-model-type request-response` and `all`. The read and write variants are decided from the schema graph: no unreferenced duplicate variants, stable numbering, and the inline models of an `allOf` parent are written once. The root models of a constrained inline union (`{"minLength": 1, "oneOf": [...]}`) are written once under the names they take without the split (`X`, `X1` instead of unused `X`, `X1` beside `X2`, `X3`). Some recursive schemas cannot be generated without the option, and the error names it.
 
 Schema (OpenAPI): `Child` inherits `Parent` through `allOf`, `Parent.id` is `readOnly`, and `Parent.payload` is an inline object. Command: `--read-only-write-only-model-type request-response`. `Payload1` is written but never referenced in the first block.
 
