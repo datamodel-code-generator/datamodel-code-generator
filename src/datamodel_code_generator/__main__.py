@@ -1973,7 +1973,7 @@ def _cleanup_job_transaction(
 
 def _staged_files(staged_plan: _StagedJobPlan) -> Iterator[_StagedFile]:
     """Return staged files paired with their final targets without removing directory extras."""
-    return iter(()) if staged_plan.staging is None else staged_plan.staging.files("fail")
+    return iter(()) if staged_plan.staging is None else staged_plan.staging.files()
 
 
 def _publish_staged_files(files: Iterable[tuple[Path, Path] | _StagedFile], targets: Sequence[Any] = ()) -> None:

@@ -1912,7 +1912,7 @@ def _generate_with_atomic_remote_update(
         if (artifact := staging.output) is not None:
             _refuse_output_layout(output_layout(artifact.staged), artifact.target)
         publish_staged_files([
-            *staging.files("legacy-api-skips-missing-metadata"),
+            *staging.files(),
             _staged_lock(remote_lock, lock_staging, lock_anchor),
         ])
         remote_lock.mark_committed()
