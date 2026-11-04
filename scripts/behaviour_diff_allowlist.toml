@@ -223,3 +223,11 @@ match = "^\\[type\\] (?:[\\w.]+:)?\\w+:\\w+: .* -> (?:Union\\[None, )?(?:list|di
 reason = "a container whose items are the union of several schemas (a closed array written as one list, msgspec's one dict of an object map) wrote the None that one position or value allows on the container (list[str] | None), so it rejected [null, \"x\"], which the schema accepts, and a required field accepted null; the None stays inside the container now (list[str | None]) (schema-mismatch fix)"
 decision = "#5327"
 release_note = "a closed array written as a list, and msgspec's dict of an object map, keep the null that one position or value allows inside the container (list[str | None]) instead of on the field (list[str] | None), so they accept null items and reject a null array as the schema does"
+
+[[accepted]]
+input = "*discriminator_mapping_other_document*"
+aspects = [ "type" ]
+match = "^\\[type\\] (?:[\\w.]+:)?Cat:pet_type: Literal\\['c', 'e'\\] -> Literal\\['e'\\]$"
+reason = "a discriminator mapping declared in b/base.yaml (c: ./cat.yaml) was located against the directory of the document holding the union, a/, so a/cat.yaml's Cat also took the tag c, which the schema gives to b/cat.yaml's CatModel; the mapping is read against the document that declares it now, so Cat keeps only its own tag e (schema-mismatch fix)"
+decision = "#6159"
+release_note = "a discriminator mapping declared in another document than the union is read against that document, so a variant no longer takes a tag the mapping gives another variant"
