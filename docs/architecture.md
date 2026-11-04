@@ -167,16 +167,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 217 | Shared generation options. |
-| `GenerateConfig` | 232 | Public `generate()` configuration. |
-| `ParserConfig` | 180 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 182 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 190 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 192 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 183 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 183 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 182 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 183 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 218 | Shared generation options. |
+| `GenerateConfig` | 233 | Public `generate()` configuration. |
+| `ParserConfig` | 181 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 183 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 191 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 193 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 184 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 184 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 183 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 184 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -846,7 +846,7 @@ Provisional reads, from the explicit edges:
 ### Decision Phase
 
 The `decide` segment (`DECIDE`, entered at B1 right after `apply_generic_base_class`) runs the decisions of the
-parser's registry, `Parser._DECISION_PASSES` (`parser/_phases.py`). The registry holds two decisions. `omit_held_null`
+parser's registry, `Parser._DECISION_PASSES` (`parser/_phases.py`). The registry holds three decisions. `omit_held_null`
 (`parser/_held_null.py`, `--omit-redundant-reference-null`, #5081): a type that names a model holding null itself (a
 root model or type alias whose type admits None, or an enum with a None member) drops the None it restates of that
 model; the None it writes itself stays. `omit_untaken_union_constraints` (`parser/_union_constraints.py`,
@@ -854,7 +854,11 @@ model; the None it writes itself stays. `omit_untaken_union_constraints` (`parse
 union writes as a `Field()` argument (`written_constraints`, what the renderer writes), leaves the field when the value
 of a member cannot take it (`DataTypeManager.member_constraint_keywords`) and every member keeps the check without it
 in the output (the call of its own field writes the keyword, the keyword applies to none of its values, or it is
-None); otherwise the field keeps it. A decision is a
+None); otherwise the field keeps it. `serialize_as_any_for_every_subclass` (`parser/_serialize_as_any.py`,
+`--use-serialize-as-any-for-every-subclass`, #5673): every live model is marked by whether a live model below it in the
+class hierarchy, at any depth and by the bases final at B1, declares fields of its own
+(`GenerationStore.mark_serialized_as_any`); a type that names a marked model, by its name or through its module, is
+written `SerializeAsAny[...]` under `--use-serialize-as-any`. A decision is a
 `DecisionPass`: a `DecisionSpec` (the name of its `PassDecl` in
 `DECISION_DECLS` of `scripts/pass_decls.py`, a global transform of `DECIDE` that reads and writes `Fact` members only,
 and the issue it fixes), the writer protocol of its

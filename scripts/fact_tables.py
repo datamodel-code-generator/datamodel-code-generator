@@ -983,6 +983,15 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     ),
     AttributeFact(
         "DataModel",
+        "serialized_as_any",
+        FactKind.FACT,
+        (Fact.FIELD_TYPES,),
+        Phase.DECIDE,
+        FreezePoint.B1,
+        store_ops=("mark_serialized_as_any",),
+    ),
+    AttributeFact(
+        "DataModel",
         "has_forward_reference",
         FactKind.PRESENTATION,
         (RenderFact.QUOTING,),

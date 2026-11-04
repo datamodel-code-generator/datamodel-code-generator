@@ -8912,6 +8912,17 @@ python-3.11-collapse-root-models	main/jsonschema/rust_unsupported_typed_extra_py
 	main/jsonschema/selective_constraint_kwargs.py
 [test_main_self_reference]
 	main/jsonschema/self_reference.py
+[test_main_serialize_as_any_every_subclass]
+every-subclass	main/jsonschema/main_jsonschema/main_serialize_as_any_every_subclass[every-subclass].dump.txt
+every-subclass	main/jsonschema/serialize_as_any_every_subclass.py	= main/jsonschema/serialize_as_any_every_subclass~main_serialize_as_any_every_subclass[every-subclass].py
+every-subclass-collapse	main/jsonschema/main_jsonschema/main_serialize_as_any_every_subclass[every-subclass-collapse].dump.txt
+every-subclass-collapse	main/jsonschema/serialize_as_any_every_subclass.py	= main/jsonschema/serialize_as_any_every_subclass~main_serialize_as_any_every_subclass[every-subclass-collapse].py
+every-subclass-reuse	main/jsonschema/main_jsonschema/main_serialize_as_any_every_subclass[every-subclass-reuse].dump.txt	= main/jsonschema/main_jsonschema/main_serialize_as_any_every_subclass[every-subclass-collapse].dump.txt
+every-subclass-reuse	main/jsonschema/serialize_as_any_every_subclass.py	= main/jsonschema/serialize_as_any_every_subclass~main_serialize_as_any_every_subclass[every-subclass-reuse].py
+released	main/jsonschema/main_jsonschema/main_serialize_as_any_every_subclass[released].dump.txt
+released	main/jsonschema/serialize_as_any_every_subclass.py
+released-reuse	main/jsonschema/main_jsonschema/main_serialize_as_any_every_subclass[released-reuse].dump.txt
+released-reuse	main/jsonschema/serialize_as_any_every_subclass.py	= main/jsonschema/serialize_as_any_every_subclass~main_serialize_as_any_every_subclass[released-reuse].py
 [test_main_serialize_as_any_import_fast_path]
 	main/jsonschema/serialize_as_any_import_fast_path.py
 [test_main_similar_nested_array]

@@ -1,0 +1,21 @@
+openapi: 3.0.0
+info: {title: serialize as any through modules, version: '1'}
+paths: {}
+components:
+  schemas:
+    c.Base:
+      type: object
+      properties: {b: {type: string}}
+    c.Child:
+      allOf:
+        - $ref: '#/components/schemas/c.Base'
+        - type: object
+          properties: {e: {type: string}}
+    b.Root:
+      type: array
+      items: {$ref: '#/components/schemas/c.Base'}
+    a.Holder:
+      type: object
+      properties:
+        r: {$ref: '#/components/schemas/b.Root'}
+        d: {$ref: '#/components/schemas/c.Base'}

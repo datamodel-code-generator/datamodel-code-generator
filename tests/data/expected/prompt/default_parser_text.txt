@@ -176,6 +176,7 @@
 - `--use-one-literal-as-default`: Use single literal value as default when enum has only one option.
 - `--use-root-model-sequence-interface`: Make non-null sequence-like Pydantic v2 RootModel classes implement col...
 - `--use-serialize-as-any`: Wrap fields with subtypes in Pydantic's SerializeAsAny.
+- `--use-serialize-as-any-for-every-subclass`: Wrap a field in SerializeAsAny when any subclass of its model add...
 - `--use-subclass-enum`: Generate typed Enum subclasses for enums with specific field types.
 
 ### Template Customization

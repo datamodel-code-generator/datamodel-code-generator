@@ -611,8 +611,22 @@ class DataTypeManager(_DataTypeManagerBase):
 # --- Pydantic v2 specific ---
 
 
+def _serialized_as_any(reference: Reference) -> bool | None:
+    """Return whether the final class hierarchy wraps a type naming ``reference``, None where nothing decided it.
+
+    --use-serialize-as-any-for-every-subclass decides it for every live model (``parser/_serialize_as_any.py``).
+    """
+    return getattr(reference.source, "serialized_as_any", None)
+
+
 def _writes_serialize_as_any(reference: Reference) -> bool:
-    """Return whether ``--use-serialize-as-any`` wraps a type naming ``reference``: a subclass adds fields."""
+    """Return whether ``--use-serialize-as-any`` wraps a type naming ``reference``: a subclass adds fields.
+
+    The final class hierarchy decides where it decided (``_serialized_as_any``); elsewhere a direct subclass that the
+    reference records as its child decides, as in 0.88.0.
+    """
+    if (decided := _serialized_as_any(reference)) is not None:
+        return decided
     return any(child.fields for child in reference.iter_data_model_children())
 
 
@@ -642,11 +656,18 @@ class PydanticV2DataType(DataType):
 
         return type_
 
+    @override
+    def _get_wrapped_alias_type_hint(self, alias: str) -> str:
+        """Wrap the module-qualified name of a model as its name is wrapped, where the class hierarchy decided it."""
+        if self.use_serialize_as_any and (reference := self.reference) is not None and _serialized_as_any(reference):
+            return subscript_text("SerializeAsAny", (alias,))
+        return alias
+
     def _needs_serialize_as_any_import(self) -> bool:
-        if not self.use_serialize_as_any:
+        if not self.use_serialize_as_any or self.reference is None:
             return False
-        if self._own_text or self.reference is None:
-            return False
+        if self._own_text:
+            return self.alias is not None and bool(_serialized_as_any(self.reference))
         return self._should_wrap_with_serialize_as_any()
 
     @property

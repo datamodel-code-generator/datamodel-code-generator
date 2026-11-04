@@ -872,6 +872,14 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "place."
         ),
     ),
+    PresetOptionGroup(
+        title="SerializeAsAny for every subclass",
+        config=PresetConfig(use_serialize_as_any_for_every_subclass=True),
+        description=(
+            "Under --use-serialize-as-any, wrap a field in SerializeAsAny when any subclass of its model in the "
+            "output adds fields, at any depth, after reuse merges the model and through its module."
+        ),
+    ),
 )
 
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
@@ -1153,7 +1161,9 @@ def render_presets_markdown() -> str:
             "`--use-msgspec-meta-for-map-keys`: the keys of a msgspec map whose keys propertyNames or "
             "patternProperties constrain are written as `Annotated[str, Meta(...)]`, so msgspec checks them, and "
             "`--rename-submodules-hidden-by-classes`: a submodule named like a class of its package is renamed "
-            "(`pkg/Warn_.py`), so importing it leaves the class in place."
+            "(`pkg/Warn_.py`), so importing it leaves the class in place, and "
+            "`--use-serialize-as-any-for-every-subclass`: under `--use-serialize-as-any` a field is wrapped in "
+            "`SerializeAsAny` when any subclass of its model in the output adds fields."
         ),
         "",
         (

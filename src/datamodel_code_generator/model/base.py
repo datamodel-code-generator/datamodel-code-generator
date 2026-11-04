@@ -2291,6 +2291,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     _INCLUDE_DICT_KEY_REFERENCE_CLASSES: ClassVar[Callable[[DataModel], bool] | None] = None
     _TYPED_EXTRA_DICT_KEY_CAPABILITY: ClassVar[Callable[[DataType], bool] | None] = None
     has_forward_reference: bool = False
+    serialized_as_any: bool | None = None
+    """Whether ``--use-serialize-as-any`` wraps a type naming the model, as the final class hierarchy decides under
+    --use-serialize-as-any-for-every-subclass; None where nothing decided it (``_writes_serialize_as_any``)."""
     discriminator_tag: tuple[Any, Any] | None = None
 
     @classmethod

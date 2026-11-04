@@ -894,6 +894,14 @@ _flag(
 )
 _flag(
     typing_options,
+    "--use-serialize-as-any-for-every-subclass",
+    help="Under --use-serialize-as-any, wrap a field in SerializeAsAny when any subclass of its model in the generated "
+    "output adds fields: at any depth, after --reuse-model or --collapse-reuse-models merges the model, and where the "
+    "field names the model through its module; without it only a field whose model has a direct subclass is wrapped, "
+    "as in 0.88.0 (Pydantic v2 only)",
+)
+_flag(
+    typing_options,
     "--use-generic-container-types",
     help="Use generic container types for type hinting (typing.Sequence, typing.Mapping). "
     "If `--use-standard-collections` option is set, then import from collections.abc instead of typing",

@@ -172,6 +172,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "drop_union_operator",
     "force_field_assignment",
     "mark_forward_references",
+    "mark_serialized_as_any",
     "mark_target_null",
     "override_type_import",
     "name_enum_member",
@@ -1540,6 +1541,13 @@ class GenerationStore:  # noqa: PLR0904
         bump_model(model)
 
     @staticmethod
+    @deprecated("Use GenerationStore.builder().mark_serialized_as_any() instead.", category=None)
+    def mark_serialized_as_any(model: DataModel, wrapped: bool) -> None:  # noqa: FBT001
+        """Record whether a type naming ``model`` is wrapped in ``SerializeAsAny``, which the types naming it read."""
+        model.serialized_as_any = wrapped
+        bump_model(model)
+
+    @staticmethod
     @deprecated("Use GenerationStore.builder().mark_target_null() instead.", category=None)
     def mark_target_null(data_type: DataType) -> None:
         """Mark the None of a new reference type as the one the schema it references admits.
@@ -2586,6 +2594,10 @@ class GraphBuilder:
     def mark_forward_references(self, model: DataModel) -> None:
         """Make a model write its fields for quoted forward references through the store."""
         self._store.mark_forward_references(model)  # ty: ignore[deprecated]
+
+    def mark_serialized_as_any(self, model: DataModel, wrapped: bool) -> None:  # noqa: FBT001
+        """Record whether a type naming ``model`` is wrapped in ``SerializeAsAny`` through the store."""
+        self._store.mark_serialized_as_any(model, wrapped)  # ty: ignore[deprecated]
 
     def mark_target_null(self, data_type: DataType) -> None:
         """Mark the None of a new reference type as the one the schema it references admits."""

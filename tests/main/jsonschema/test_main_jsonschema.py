@@ -5810,6 +5810,61 @@ def test_main_ref_nullable_import_fast_path(output_file: Path) -> None:
     )
 
 
+@pytest.mark.cli_doc(
+    options=["--use-serialize-as-any-for-every-subclass"],
+    option_description="""Wrap a field in SerializeAsAny when any subclass of its model adds fields.
+
+`--use-serialize-as-any` wraps a field whose model has a direct subclass that adds fields, as the subclasses recorded
+when the model was parsed tell, so a subclass two levels down, a subclass of a model that `--reuse-model` or
+`--collapse-reuse-models` merged into another, and a field that names its model through its module (`c.Base`) are left
+out and serialize as the base model. With this option the class hierarchy of the generated output decides: a field is
+wrapped when any subclass of its model, at any depth, adds fields (Pydantic v2 only).""",
+    input_schema="jsonschema/serialize_as_any_every_subclass.json",
+    cli_args=["--use-serialize-as-any", "--use-serialize-as-any-for-every-subclass", "--reuse-model"],
+    golden_output="main/jsonschema/serialize_as_any_every_subclass~main_serialize_as_any_every_subclass[every-subclass-reuse].py",
+    comparison_output="main/jsonschema/serialize_as_any_every_subclass~main_serialize_as_any_every_subclass[released-reuse].py",
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="released"),
+        pytest.param(["--reuse-model"], id="released-reuse"),
+        pytest.param(["--use-serialize-as-any-for-every-subclass"], id="every-subclass"),
+        pytest.param(["--use-serialize-as-any-for-every-subclass", "--reuse-model"], id="every-subclass-reuse"),
+        pytest.param(
+            ["--use-serialize-as-any-for-every-subclass", "--reuse-model", "--collapse-reuse-models"],
+            id="every-subclass-collapse",
+        ),
+    ],
+)
+def test_main_serialize_as_any_every_subclass(output_file: Path, extra_args: list[str]) -> None:
+    """Wrap a field in SerializeAsAny by the class hierarchy of the output under the every-subclass option.
+
+    ``Sub`` extends ``B``, which equals ``A``, and ``Leaf`` extends ``C`` through the empty ``Mid``. Without the option
+    ``Holder.c`` is not wrapped and loses ``w`` (#5673), and under ``--reuse-model`` neither is ``Holder.b``, which
+    loses ``y`` (#5672). With it every field whose model has a subclass that adds fields is wrapped, ``Holder.a`` too
+    once reuse makes ``B`` a subclass of ``A`` or collapses ``B`` into it, so the dump keeps the subclass fields.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "serialize_as_any_every_subclass.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--use-serialize-as-any"),
+            *extra_args,
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_model(output_file, "serialize_as_any_every_subclass", "Holder") as holder:
+        module = sys.modules[holder.__module__]
+        fields = {"b": module.Sub(x="1", y=2), "c": module.Leaf(z="1", w=3)}
+        if issubclass(module.Sub, module.A):
+            fields["a"] = module.Sub(x="2", y=4)
+        assert_output(json.dumps(holder(**fields).model_dump(mode="json"), sort_keys=True) + "\n", name="dump")
+
+
 def test_main_serialize_as_any_import_fast_path(output_file: Path) -> None:
     """Test SerializeAsAny reference fields keep generated imports."""
     run_main_and_assert(

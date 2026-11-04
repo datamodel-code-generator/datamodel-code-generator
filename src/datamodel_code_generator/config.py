@@ -277,6 +277,7 @@ class ParserConfig(BaseModel):
     http_timeout: float | None = None
     use_annotated: bool = False
     use_serialize_as_any: bool = False
+    use_serialize_as_any_for_every_subclass: bool = False
     use_non_positive_negative_number_constrained_types: bool = False
     use_decimal_for_multiple_of: bool = False
     use_decimal_in_field_forms: bool = False

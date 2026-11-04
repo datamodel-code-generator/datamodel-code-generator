@@ -1831,6 +1831,13 @@ modular-pydantic_v2	main/openapi/main_openapi/reuse_scope_tree_imports[modular-p
 	main/openapi/openapi_serialization_aliases_parameters.py
 [test_main_openapi_serialize_as_any_module_import_alias_pydantic_v2]
 	main/openapi/serialize_as_any_module_import_alias//*.py
+[test_main_openapi_serialize_as_any_module_qualified]
+every-subclass	main/openapi/main_openapi/serialize_as_any_module_qualified[every-subclass].dump.txt
+every-subclass	main/openapi/main_openapi/serialize_as_any_module_qualified[every-subclass]/
+every-subclass-exact-collapsed	main/openapi/main_openapi/serialize_as_any_module_qualified[every-subclass-exact-collapsed].dump.txt	= main/openapi/main_openapi/serialize_as_any_module_qualified[every-subclass].dump.txt
+every-subclass-exact-collapsed	main/openapi/main_openapi/serialize_as_any_module_qualified[every-subclass-exact-collapsed]/
+released	main/openapi/main_openapi/serialize_as_any_module_qualified[released].dump.txt
+released	main/openapi/main_openapi/serialize_as_any_module_qualified[released]/
 [test_main_openapi_serialize_as_any_pydantic_v2]
 	main/openapi/serialize_as_any_pydantic_v2.py
 [test_main_openapi_shadowed_imports]

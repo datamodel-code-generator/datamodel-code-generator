@@ -1416,6 +1416,10 @@
       "not_recommended": "runtime-behaviour",
       "reason": "Serializes subclasses by their runtime type; changes serialization."
     },
+    "use_serialize_as_any_for_every_subclass": {
+      "not_recommended": "preset",
+      "reason": "Pydantic v2 output under --use-serialize-as-any only: set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "read_unevaluated_properties": {
       "not_recommended": "preset",
       "reason": "Set by the 20261027 presets; the recommendation starts from a preset."

@@ -174,6 +174,7 @@ Generated model class and package behavior.
 - `--base-class`: Base Class (default: pydantic.BaseModel)
 - `--base-class-map`: Model-specific base class mapping (JSON or JSON file path). Example: '{"MyModel": "custom.BaseA", "OtherModel": "custom.BaseB"}'. Priority: base-class-map > customBasePath (in schema) > base-class.
 - `--use-serialize-as-any`: Use pydantic.SerializeAsAny for fields with types that have subtypes (Pydantic v2 only)
+- `--use-serialize-as-any-for-every-subclass`: Under --use-serialize-as-any, wrap a field in SerializeAsAny when any subclass of its model in the generated output adds fields: at any depth, after --reuse-model or --collapse-reuse-models merges the model, and where the field names the model through its module; without it only a field whose model has a direct subclass is wrapped, as in 0.88.0 (Pydantic v2 only)
 - `--use-one-literal-as-default`: Use one literal as default value for one literal field
 - `--use-subclass-enum`: Define generic Enum class as subclass with field type when enum has type (int, float, bytes, str)
 - `--model-extra-keys`: Add extra keys from schema extensions (x-* fields) to model_config json_schema_extra

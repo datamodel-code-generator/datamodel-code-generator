@@ -350,7 +350,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--name-converted-payloads-by-message --singularize-last-word-of-item-names",
         group=_G.MODEL_NAMING,
     ),
-    **_opts(_C.MODEL, "--use-one-literal-as-default --use-serialize-as-any"),
+    **_opts(_C.MODEL, "--use-one-literal-as-default --use-serialize-as-any --use-serialize-as-any-for-every-subclass"),
     **_opts(_C.MODEL, "--skip-root-model --use-root-model-sequence-interface", group=_G.ROOT_MODEL),
     **_opts(_C.MODEL, "--use-generic-base-class", group=_G.MODEL_SHAPE),
     **_opts(_C.MODEL, "--model-extra-keys --model-extra-keys-without-x-prefix"),

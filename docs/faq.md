@@ -813,6 +813,34 @@ class Order(BaseModel):
     detail: Warn_.Detail | None = None
 ```
 
+### `--use-serialize-as-any-for-every-subclass`
+
+| | |
+|---|---|
+| Option | `--use-serialize-as-any-for-every-subclass` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.89.0 |
+| Issue | [#5595](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5595), [#5672](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5672), [#5673](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5673) |
+
+**Affects:** Pydantic v2 output under `--use-serialize-as-any`. A field is wrapped in `SerializeAsAny` only when a direct subclass of its model adds fields, as recorded when the model was parsed: a subclass two levels down (#5673), a subclass of a model that `--reuse-model` or `--collapse-reuse-models` merged into another (#5672), and a field that names its model through its module (`c.Base`, #5595) are left out, so an instance of the subclass serializes as the base model. With the option the class hierarchy of the generated output decides: a field is wrapped when any subclass of its model, at any depth, adds fields.
+
+Schema: `Holder.c` references `C`, `Mid` extends `C` without fields and `Leaf` extends `Mid` with `w`.
+
+Without the option (same as 0.88.0):
+
+```python
+class Holder(BaseModel):
+    c: C | None = None
+```
+
+With the option:
+
+```python
+class Holder(BaseModel):
+    c: SerializeAsAny[C] | None = None
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.

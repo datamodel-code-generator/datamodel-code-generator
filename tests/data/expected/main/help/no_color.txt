@@ -381,6 +381,15 @@ Typing customization:
   --use-serialize-as-any
                         Use pydantic.SerializeAsAny for fields with types that
                         have subtypes (Pydantic v2 only)
+  --use-serialize-as-any-for-every-subclass
+                        Under --use-serialize-as-any, wrap a field in
+                        SerializeAsAny when any subclass of its model in the
+                        generated output adds fields: at any depth, after
+                        --reuse-model or --collapse-reuse-models merges the
+                        model, and where the field names the model through its
+                        module; without it only a field whose model has a
+                        direct subclass is wrapped, as in 0.88.0 (Pydantic v2
+                        only)
   --use-single-dict-for-object-maps
                         Type an object map, an object without properties whose
                         keys patternProperties or propertyNames constrain, as

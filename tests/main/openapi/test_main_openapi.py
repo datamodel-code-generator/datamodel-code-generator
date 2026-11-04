@@ -10516,6 +10516,41 @@ def test_main_openapi_serialize_as_any_pydantic_v2(output_file: Path) -> None:
     version.parse(pydantic.VERSION) < version.parse("2.0.0"),
     reason="Require Pydantic version 2.0.0 or later",
 )
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="released"),
+        pytest.param(["--use-serialize-as-any-for-every-subclass"], id="every-subclass"),
+        pytest.param(
+            ["--use-serialize-as-any-for-every-subclass", "--use-exact-imports", "--collapse-root-models"],
+            id="every-subclass-exact-collapsed",
+        ),
+    ],
+)
+def test_main_openapi_serialize_as_any_module_qualified(output_dir: Path, extra_args: list[str]) -> None:
+    """Wrap a field that names its model through its module in SerializeAsAny under the every-subclass option.
+
+    ``a.Holder.d`` names ``c.Base``, which ``c.Child`` extends, and ``b.Root`` holds a list of it. Without the option
+    ``d: c.Base`` and ``root: list[c.Base]`` are not wrapped, as the reference is written through its module (#5595),
+    and a ``Child`` serializes as a ``Base``; with it both are, as is the collapsed root under ``--use-exact-imports``.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "serialize_as_any_module_qualified.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--use-serialize-as-any"),
+            *extra_args,
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_package_module(output_dir, "a") as module:
+        child = importlib.import_module(f"{output_dir.name}.c").Child
+        holder = module.Holder(d=child(b="1", e="2"), r=[child(b="3", e="4")])
+        assert_output(json.dumps(holder.model_dump(mode="json"), sort_keys=True) + "\n", name="dump")
+
+
 def test_main_openapi_serialize_as_any_module_import_alias_pydantic_v2(output_dir: Path) -> None:
     """Test SerializeAsAny with modular output and dotted schema import aliases."""
     run_main_and_assert(

@@ -61,6 +61,9 @@ class DecisionStore(Protocol):
     def set_field_constraints(self, field_: Any, constraints: Any) -> None:
         """Write a field's constraints."""
 
+    def mark_serialized_as_any(self, model: Any, wrapped: bool) -> None:  # noqa: FBT001
+        """Record whether a type naming the model is wrapped in ``SerializeAsAny``."""
+
 
 @final
 @record
@@ -145,6 +148,11 @@ class _DecisionWriter:
             if value is not None and key not in keywords
         }
         self._store.set_field_constraints(field, type(constraints).model_validate(values))
+        self._changed[id(model)] = cast("DataModel", model)
+
+    def mark_serialized_as_any(self, model: ModelView, wrapped: bool) -> None:  # noqa: FBT001
+        """Record whether a type naming ``model`` is wrapped in ``SerializeAsAny`` (``SerializeAsAnyWriter``)."""
+        self._store.mark_serialized_as_any(model, wrapped)
         self._changed[id(model)] = cast("DataModel", model)
 
     def outcome(self, live_models: Iterable[DataModel]) -> DecisionOutcome:

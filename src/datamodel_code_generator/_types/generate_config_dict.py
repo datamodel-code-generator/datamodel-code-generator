@@ -182,6 +182,7 @@ class BaseGenerateConfig(TypedDict):
     locked: NotRequired[bool]
     use_annotated: NotRequired[bool]
     use_serialize_as_any: NotRequired[bool]
+    use_serialize_as_any_for_every_subclass: NotRequired[bool]
     use_non_positive_negative_number_constrained_types: NotRequired[bool]
     use_decimal_for_multiple_of: NotRequired[bool]
     use_decimal_in_field_forms: NotRequired[bool]

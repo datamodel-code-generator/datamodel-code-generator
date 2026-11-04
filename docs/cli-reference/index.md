@@ -11,7 +11,7 @@ This documentation is auto-generated from test cases.
 | 📁 [Base Options](base-options.md) | 15 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 47 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 36 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 58 | Model generation behavior |
+| 🏗️ [Model Customization](model-customization.md) | 59 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 11 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
@@ -398,6 +398,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-schema-description`](field-customization.md#use-schema-description)
 - [`--use-serialization-alias`](field-customization.md#use-serialization-alias)
 - [`--use-serialize-as-any`](model-customization.md#use-serialize-as-any)
+- [`--use-serialize-as-any-for-every-subclass`](model-customization.md#use-serialize-as-any-for-every-subclass)
 - [`--use-single-dict-for-object-maps`](typing-customization.md#use-single-dict-for-object-maps)
 - [`--use-single-line-docstring`](field-customization.md#use-single-line-docstring)
 - [`--use-single-value-enum-as-const`](typing-customization.md#use-single-value-enum-as-const)

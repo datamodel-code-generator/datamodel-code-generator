@@ -231,6 +231,7 @@ from datamodel_code_generator.parser._passes.imports import (
 )
 from datamodel_code_generator.parser._pipeline import PARSE_CALLER, Runner, parse_caller
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
+from datamodel_code_generator.parser._serialize_as_any import SERIALIZE_AS_ANY_FOR_EVERY_SUBCLASS
 from datamodel_code_generator.parser._stdout_repair import _TOP_LEVEL_FUTURE_IMPORT_PATTERN
 from datamodel_code_generator.parser._tag_plan import TagCapabilities, TagPlan, tag_capabilities
 from datamodel_code_generator.parser._union_constraints import OMIT_UNTAKEN_UNION_CONSTRAINTS
@@ -618,7 +619,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     _cache_local_sources_during_parse: ClassVar[bool] = False
     _cache_parsed_sources_from_path: ClassVar[bool] = False
     _collapses_list_item_root_models: ClassVar[bool] = True
-    _DECISION_PASSES: ClassVar[tuple[DecisionPass[Any], ...]] = (OMIT_HELD_NULL, OMIT_UNTAKEN_UNION_CONSTRAINTS)
+    _DECISION_PASSES: ClassVar[tuple[DecisionPass[Any], ...]] = (
+        OMIT_HELD_NULL,
+        SERIALIZE_AS_ANY_FOR_EVERY_SUBCLASS,
+        OMIT_UNTAKEN_UNION_CONSTRAINTS,
+    )
     """The decisions of the decision phase, in registration order; ``parser/_phases.py`` says how they run."""
     _http_fetch_session: _HTTPFetchSession | None = None
     _dropped_constraint_fields: DroppedConstraintFields = frozenset()

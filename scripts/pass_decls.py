@@ -1636,5 +1636,19 @@ DECISION_DECLS: Final[dict[str, PassDecl]] = {
         ),
         condition="--field-constraints",
     ),
+    "serialize_as_any_for_every_subclass": PassDecl(
+        "serialize_as_any_for_every_subclass",
+        Phase.DECIDE,
+        Scope.GLOBAL,
+        PassKind.TRANSFORM,
+        reads=frozenset({Fact.BASES, Fact.FIELD_SET}),
+        writes=frozenset({Fact.FIELD_TYPES}),
+        summary=(
+            "Marks each live model by whether a subclass at any depth adds fields, which wraps the types naming it in"
+            " SerializeAsAny."
+        ),
+        after=(After("omit_held_null", "marks the models whose referencing types the None omission rewrote"),),
+        condition="--use-serialize-as-any-for-every-subclass",
+    ),
 }
 """The declaration of each decision of the decision registries (``parser/_phases.py``), by the name its spec gives."""
