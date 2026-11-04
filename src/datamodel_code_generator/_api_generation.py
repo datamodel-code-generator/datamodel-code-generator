@@ -418,8 +418,14 @@ def _staged_models(staged: Path, output: Path, encoding: str) -> tuple[ModelArti
     )
 
 
-def _generate_models(
-    input_: _GenerationInput, config: GenerateConfig, target: TargetConfig, cwd: Path, *, use_output_cwd: bool
+def _generate_models(  # noqa: PLR0913
+    input_: _GenerationInput,
+    config: GenerateConfig,
+    target: TargetConfig,
+    cwd: Path,
+    *,
+    use_output_cwd: bool,
+    compares: bool = False,
 ) -> _Models:
     from datamodel_code_generator import (  # noqa: PLC0415
         _absolute_generation_path,  # pyright: ignore[reportPrivateUsage]
@@ -464,7 +470,7 @@ def _generate_models(
         )
         try:
             _run_generation(input_, staged, cwd, use_output_cwd=use_output_cwd, capture=session)
-            _refuse_output_layout(output_layout(staged_output), cwd / output)
+            _refuse_output_layout(output_layout(staged_output), cwd / output, compares=compares)
             artifacts = _staged_models(staged_output, output, prepared.encoding)
             metadata_file = None if metadata is None else (metadata, updates["emit_model_metadata"].read_bytes())
             product = session.take_product(artifacts, allow_empty_api=True)
@@ -1100,16 +1106,18 @@ def _quietly(cleanup: Callable[[], None]) -> None:
         cleanup()
 
 
-def _run_models(input_: _GenerationInput, effective: GenerateConfig, config: TargetConfig) -> _Models:
+def _run_models(
+    input_: _GenerationInput, effective: GenerateConfig, config: TargetConfig, *, compares: bool = False
+) -> _Models:
     from datamodel_code_generator import _uses_legacy_process_state  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
     from datamodel_code_generator._process_state import PROCESS_STATE_LOCK  # noqa: PLC0415
 
     if _uses_legacy_process_state(effective):
         with PROCESS_STATE_LOCK:
-            return _generate_models(input_, effective, config, Path.cwd(), use_output_cwd=True)
+            return _generate_models(input_, effective, config, Path.cwd(), use_output_cwd=True, compares=compares)
     with PROCESS_STATE_LOCK:
         cwd = Path.cwd()
-    return _generate_models(input_, effective, config, cwd, use_output_cwd=False)
+    return _generate_models(input_, effective, config, cwd, use_output_cwd=False, compares=compares)
 
 
 def plan_target(  # noqa: PLR0913
@@ -1123,6 +1131,7 @@ def plan_target(  # noqa: PLR0913
     models_module: bool = False,
     shown_root: Path | None = None,
     job: str = "",
+    compares: bool = False,
 ) -> PlannedTarget:
     """Render one target and its models without writing them, for a caller that compares or publishes them later.
 
@@ -1131,7 +1140,8 @@ def plan_target(  # noqa: PLR0913
     published together pass on the `timestamp` of the first, so the models they share carry one generation timestamp;
     without one, the files carry the current time. `models_module` plans models generated as one file as the module
     `<output>.py`, warnings name target paths relative to `shown_root`, or to the working directory without one, and
-    refusals name the batch `job` that plans the target.
+    refusals name the batch `job` that plans the target. A target planned for `compares` against another input reads no
+    destination, so its models are not refused for a layout that cannot replace it.
     """
     effective = prepare_target(input_, model_config, generator)
     config.check_target(effective.target_python_version)
@@ -1146,7 +1156,7 @@ def plan_target(  # noqa: PLR0913
         effective._generation_timestamp = (  # noqa: SLF001
             timestamp or current_timestamp()
         )
-    models = _run_models(input_, effective, config)
+    models = _run_models(input_, effective, config, compares=compares)
     try:
         return _Planner(
             models, effective, config, generator, models_module=models_module, shown_root=shown_root, job=job
