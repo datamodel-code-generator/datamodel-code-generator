@@ -1,0 +1,1 @@
+{"title": "Cat", "type": "object", "properties": {"pet_type": {"type": "string"}, "naps": {"type": "integer"}}, "required": ["pet_type"]}
