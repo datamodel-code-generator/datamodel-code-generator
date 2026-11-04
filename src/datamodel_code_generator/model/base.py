@@ -3655,6 +3655,13 @@ def linearize_data_models(
     return [node_of[key] for key in map(_model_key_of_model, order)]
 
 
+def inherited_root_field(model: DataModel) -> DataModelFieldBase:
+    """Return the field of a root model, or of the root model that the empty subclass reuse made of it inherits."""
+    while not model.fields:
+        model = _find_base_classes(model)[0]
+    return model.fields[0]
+
+
 _ClassVarRow: TypeAlias = Literal["declared", "no-place"]
 """How a class variable counts among the fields a model has with its bases.
 

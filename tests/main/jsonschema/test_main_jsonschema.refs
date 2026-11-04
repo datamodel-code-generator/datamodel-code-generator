@@ -7475,6 +7475,8 @@ collapse	main/jsonschema/reuse_type_overrides_tree_collapsed//*.py
 inherit	main/jsonschema/reuse_type_overrides_tree//*.py
 [test_main_jsonschema_reuse_scope_tree_relative_imports]
 	main/jsonschema/reuse_scope_tree_relative_import/external1.py
+[test_main_jsonschema_reuse_scope_tree_root_key]
+	main/jsonschema/main_jsonschema/reuse_scope_tree_root_key/
 [test_main_jsonschema_reuse_scope_tree_same_name_references]
 collapse	main/jsonschema/reuse_scope_tree_same_name_references_collapsed//*.py
 inherit	main/jsonschema/reuse_scope_tree_same_name_references//*.py

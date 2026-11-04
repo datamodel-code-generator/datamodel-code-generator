@@ -19924,6 +19924,26 @@ def test_main_jsonschema_reuse_scope_tree_warning(capsys: pytest.CaptureFixture[
     )
 
 
+def test_main_jsonschema_reuse_scope_tree_root_key(output_dir: Path) -> None:
+    """Type a dict key by the root type of the empty subclass that tree-scope reuse makes of a root model."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "reuse_scope_tree_root_key",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--reuse-model",
+            "--reuse-scope",
+            "tree",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
 def test_main_jsonschema_reuse_scope_tree_no_dup(output_dir: Path) -> None:
     """Test --reuse-scope=tree when there are no duplicate models."""
     run_main_and_assert(
