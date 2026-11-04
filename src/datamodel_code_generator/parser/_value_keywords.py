@@ -27,8 +27,10 @@ from datamodel_code_generator._constraint_applicability import (
     enforced_keywords,
     holds_number_format,
     json_integer,
+    length_keywords_by_type,
     literal_check,
     literal_enforces_every_keyword,
+    other_kind_keywords,
     split_declared_keywords,
     undeclared_keywords_taken,
     untaken_values,
@@ -116,6 +118,7 @@ __all__ = [
     "partition_enum_values",
     "positions_with_tail",
     "resolve_array_field_required_nullable",
+    "schema_kinds",
     "should_parse_empty_object_as_dict",
     "should_parse_enum_as_literal",
     "split_constraint_values",
@@ -727,21 +730,42 @@ def declared_kinds(parser: ValueKeywordsHost, type_: str | list[str] | None, for
         return DeclaredKinds()
     types = declared_types(type_)
     return DeclaredKinds(
-        numbers=accepts_number_constraints(parser, types, format_), string="string" in types, array="array" in types
+        numbers=accepts_number_constraints(parser, types, format_),
+        string="string" in types,
+        array="array" in types,
+        typed=True,
     )
 
 
-def declared_constraint_keywords(parser: ValueKeywordsHost, obj: JsonSchemaObject) -> frozenset[str]:
-    """Return the type-dependent keywords whose kind a declared type of the schema holds.
+def _reads_by_type(parser: ValueKeywordsHost) -> bool:
+    """Return whether ``--read-length-keywords-by-type`` reads the string and array keywords for their own kind."""
+    return length_keywords_by_type(parser.data_type_manager.constraint_options)
 
-    A declared string also holds minItems and maxItems and a declared array also holds minLength and maxLength,
-    which are written as their length bounds.
+
+def schema_kinds(parser: ValueKeywordsHost, obj: JsonSchemaObject, *, by_type: bool) -> DeclaredKinds:
+    """Return the JSON kinds whose keywords a schema holds: those of its declared types.
+
+    Under ``by_type`` a schema that declares no type but items, which the parser reads as an array, holds the array
+    kind, so its field, a sequence, takes no string keyword.
     """
-    return declared_keywords(declared_kinds(parser, obj.type, obj.format))
+    if by_type and obj.type is None and obj.is_array:
+        return DeclaredKinds(array=True, typed=True)
+    return declared_kinds(parser, obj.type, obj.format)
+
+
+def declared_constraint_keywords(parser: ValueKeywordsHost, obj: JsonSchemaObject) -> frozenset[str]:
+    """Return the type-dependent keywords the schema decides rather than the emitted type.
+
+    Those whose kind a declared type of the schema holds: a declared string also holds minItems and maxItems and a
+    declared array also holds minLength and maxLength, which are written as their length bounds, unless
+    ``--read-length-keywords-by-type`` reads each kind's own keywords and leaves out those of the other.
+    """
+    kinds = schema_kinds(parser, obj, by_type=(by_type := _reads_by_type(parser)))
+    return declared_keywords(kinds, by_type=by_type) | other_kind_keywords(kinds, by_type=by_type)
 
 
 def keywords_taken(
-    parser: ValueKeywordsHost, kinds: DeclaredKinds, data_type: DataType
+    parser: ValueKeywordsHost, kinds: DeclaredKinds, data_type: DataType, *, by_type: bool = False
 ) -> tuple[frozenset[str], frozenset[str]]:
     """Return the keywords of the declared kinds that a field of the emitted type writes, and those it leaves out.
 
@@ -749,13 +773,14 @@ def keywords_taken(
     only when a number value of the type meets it, and a keyword of a declared string only when the type takes
     it (``declared_string_keywords_taken``), which a ``date`` or a ``UUID`` does not; another output model writes
     them all. The kinds of a schema type and format (``_declared_kinds``) ask it of the type they map to before a
-    field is built.
+    field is built. ``by_type`` reads each kind's own keywords (``--read-length-keywords-by-type``).
     """
     if not parser.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS:
-        return declared_keywords(kinds), NO_KEYWORDS
+        return declared_keywords(kinds, by_type=by_type), NO_KEYWORDS
     target = parser.target_python_version.version_key
     return split_declared_keywords(
         kinds,
+        by_type=by_type,
         number_taken=parser.data_type_manager.constraint_keywords(
             data_type, target, number_values=True, target_model_version=parser.target_pydantic_version
         )
@@ -784,17 +809,19 @@ def split_constraint_values(
     The keywords of a kind a declared schema type holds (number, string or array) follow ``_keywords_taken``;
     the emitted Python type decides the others. The left-out ones are the declared keywords the type does not
     take, to warn about, ``minItems`` and ``maxItems`` of a declared string as the lengths they are written as.
+    Under ``--read-length-keywords-by-type`` each kind holds its own keywords, and the string and array keywords of
+    another kind are left out silently (``other_kind_keywords``).
     """
     values = _constraint_values(obj, obj.__constraint_field_order__)
     if data_type is not None and (carried := type_enforced_keywords(parser, obj, data_type)):
         values = {key: value for key, value in values.items() if key not in carried}
     if not values:
         return values, {}
-    kinds = declared_kinds(parser, obj.type, obj.format)
+    kinds = schema_kinds(parser, obj, by_type=(by_type := _reads_by_type(parser)))
     if data_type is None:
-        declared = declared_keywords(kinds)
+        declared = declared_keywords(kinds, by_type=by_type)
         return {key: value for key, value in values.items() if key in declared}, {}
-    written, untaken = keywords_taken(parser, kinds, data_type)
+    written, untaken = keywords_taken(parser, kinds, data_type, by_type=by_type)
     if values.keys() <= written:
         return values, {}
     written |= (
@@ -803,6 +830,7 @@ def split_constraint_values(
             value_literal=_is_value_literal(data_type),
         )
         - untaken
+        - other_kind_keywords(kinds, by_type=by_type)
     )
     return {key: value for key, value in values.items() if key in written}, untaken_values(values, untaken)
 

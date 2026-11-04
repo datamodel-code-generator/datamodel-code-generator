@@ -10,7 +10,7 @@ This documentation is auto-generated from test cases.
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 46 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 33 | Field naming and docstring behavior |
+| 🏷️ [Field Customization](field-customization.md) | 34 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 53 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 29 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 10 | OpenAPI-specific features |
@@ -299,6 +299,7 @@ These links are generated from CLI option metadata and summarize options that im
 ### R {#r}
 
 - [`--read-const-beside-enum`](typing-customization.md#read-const-beside-enum)
+- [`--read-length-keywords-by-type`](field-customization.md#read-length-keywords-by-type)
 - [`--read-nullable-beside-type-list`](model-customization.md#read-nullable-beside-type-list)
 - [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type)
 - [`--read-unevaluated-properties`](typing-customization.md#read-unevaluated-properties)

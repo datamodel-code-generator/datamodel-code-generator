@@ -8455,6 +8455,90 @@ def test_main_encoded_str_for_constrained_base64(output_file: Path, extra_args: 
 
 
 @pytest.mark.cli_doc(
+    options=["--read-length-keywords-by-type"],
+    option_description="""Read the string and the array keywords for their own kind only, as JSON Schema does.
+
+`minLength`, `maxLength` and `pattern` apply to strings and `minItems`, `maxItems` and `uniqueItems` to arrays. Without
+this option a declared array writes `minLength` and `maxLength` as its item counts (`Field(max_length=2)` on a list,
+which rejects `["a", "b", "c"]`, valid for the schema) and a declared string `minItems` and `maxItems` as its length
+(`constr(max_length=2)`, which rejects `"abc"`). With it such a keyword is left out silently, as `minimum` beside a
+string is: at a property, an item, a map value, a root, the branches of a union and a schema with `items` but no
+`type`, also where an override writes the field as another type.""",
+    input_schema="jsonschema/length_keywords_by_type.json",
+    cli_args=["--use-annotated", "--read-length-keywords-by-type"],
+    golden_output="main/jsonschema/read_length_keywords_by_type~main_read_length_keywords_by_type[use_annotated].py",
+    comparison_output=(
+        "main/jsonschema/read_length_keywords_by_type~main_read_length_keywords_by_type[use_annotated_released].py"
+    ),
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="released"),
+        pytest.param(["--use-annotated"], id="use_annotated_released"),
+        pytest.param(["--output-model-type", "msgspec.Struct"], id="msgspec_released"),
+        *(
+            pytest.param([*args, "--read-length-keywords-by-type"], id=id_)
+            for args, id_ in (
+                ([], "default"),
+                (["--use-annotated"], "use_annotated"),
+                (["--field-constraints"], "field_constraints"),
+                (["--output-model-type", "msgspec.Struct"], "msgspec"),
+                (["--output-model-type", "pydantic_v2.dataclass", "--use-annotated"], "dataclass_annotated"),
+                (["--use-annotated", "--collapse-root-models"], "collapse_root_models"),
+                (
+                    ["--use-annotated", "--omit-redundant-constraints", "--enum-field-as-literal", "all"],
+                    "literals",
+                ),
+            )
+        ),
+    ],
+)
+def test_main_read_length_keywords_by_type(output_file: Path, extra_args: list[str]) -> None:
+    """Test ``--read-length-keywords-by-type`` reads the length keywords for their own kind only.
+
+    Without it ``maxLength`` beside an array bounds the list's items and ``maxItems`` beside a string the string's
+    length, so the models reject payloads the schema accepts. With it those keywords are left out at a property, an
+    item, a map value, a root, a union branch, a type list, an array without ``type``, a ``list`` or ``Sequence`` of
+    ``Literal`` values and a type override, while ``maxItems`` beside an array and ``maxLength`` beside a string stay.
+    Each verdict line gives the schema's own verdict after the model's.
+    """
+    name = "length_keywords_by_type"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel"),
+            *extra_args,
+            *("--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.11"),
+        ],
+        force_exec_validation=True,
+    )
+    schema = Draft202012Validator(json.loads((JSON_SCHEMA_DATA_PATH / f"{name}.json").read_text()))
+    payloads = json.loads((DATA_PATH / f"payloads/{name}.json").read_text())
+    verdicts = []
+    with _generated_model(output_file, name, "LengthKeywordsByType") as model:
+        validate = partial(msgspec.json.decode, type=model)
+        error_type: type[Exception] = msgspec.ValidationError
+        if "msgspec.Struct" not in extra_args:
+            validate = _model_json_validator(model)
+            error_type = ValidationError
+        validate(json.dumps(payloads["base"]))
+        for field_name, values in payloads["cases"].items():
+            for kind, value in values.items():
+                payload = payloads["base"] | {field_name: value}
+                verdict = "rejected"
+                with suppress(error_type):
+                    validate(json.dumps(payload))
+                    verdict = "accepted"
+                expected = "accepted" if schema.is_valid(payload) else "rejected"
+                verdicts.append(f"{field_name} {kind}: {verdict} (schema: {expected})")
+    assert_output("\n".join(verdicts) + "\n", name="verdicts")
+
+
+@pytest.mark.cli_doc(
     options=["--use-site-models-for-constrained-refs"],
     option_description="""Give an allOf of `$ref` members whose other parts add assertions its own model.
 

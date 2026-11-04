@@ -140,6 +140,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--pin-aliases-with-alias-generator": "Decide a field's alias by the alias generator its model applies.",
     "--preset": "Apply an immutable built-in option preset.",
     "--read-const-beside-enum": "Read a `const` beside an `enum` as JSON Schema does.",
+    "--read-length-keywords-by-type": "Read the string and the array keywords for their own kind only, as JSON Sche...",
     "--read-nullable-beside-type-list": "Write the null that `nullable: true` declares beside a `type` list into th...",
     "--read-only-write-only-model-type": "Generate separate request and response models for readOnly/writeOnly fields.",
     "--read-unevaluated-properties": "Read a schema-valued `unevaluatedProperties` as `additionalProperties`.",

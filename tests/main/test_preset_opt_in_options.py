@@ -47,7 +47,11 @@ OPT_IN_OPTIONS: tuple[str, ...] = (
 )
 """The options the 20261027 presets set beyond the 20261017 presets."""
 
-OPT_IN_OPTIONS_20261104: tuple[str, ...] = ("--merge-shared-variant-tags", "--use-encoded-str-for-constrained-base64")
+OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
+    "--merge-shared-variant-tags",
+    "--use-encoded-str-for-constrained-base64",
+    "--read-length-keywords-by-type",
+)
 """The options the 20261104 presets set beyond the 20261027 presets."""
 
 PRESET_RELEASES: dict[str, tuple[str, tuple[str, ...]]] = {
@@ -71,6 +75,12 @@ CASES_20261104: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="use-encoded-str-for-constrained-base64",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "length_keywords_by_type.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="read-length-keywords-by-type",
     ),
 )
 """The inputs each opt-in option of the 20261104 presets changes."""

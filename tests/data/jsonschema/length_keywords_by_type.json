@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LengthKeywordsByType",
+  "type": "object",
+  "properties": {
+    "tags": {"type": "array", "items": {"type": "string"}, "minLength": 1, "maxLength": 2},
+    "counted": {"type": "array", "items": {"type": "string"}, "maxItems": 3, "maxLength": 2},
+    "code": {"type": "string", "minItems": 1, "maxItems": 2},
+    "either": {"type": ["string", "array"], "items": {"type": "integer"}, "maxLength": 2},
+    "branch": {"maxLength": 3, "anyOf": [{"type": "array", "items": {"type": "integer"}}, {"type": "string"}]},
+    "untyped": {"items": {"type": "integer"}, "maxLength": 2},
+    "nested": {"type": "array", "items": {"type": "array", "items": {"type": "integer"}, "maxLength": 1}},
+    "by_key": {
+      "type": "object",
+      "additionalProperties": {"type": "array", "items": {"type": "integer"}, "maxLength": 1}
+    },
+    "letters": {"type": "array", "items": {"enum": ["xx", "yy"]}, "maxLength": 2},
+    "letter_seq": {
+      "type": "array",
+      "items": {"enum": ["xx", "yy"]},
+      "maxLength": 2,
+      "x-python-type": "Sequence[str]"
+    },
+    "as_text": {"type": "array", "items": {"type": "integer"}, "maxLength": 2, "x-python-type": "str"},
+    "short": {"$ref": "#/$defs/Short"}
+  },
+  "$defs": {
+    "Short": {"type": "array", "items": {"type": "integer"}, "maxLength": 2}
+  }
+}

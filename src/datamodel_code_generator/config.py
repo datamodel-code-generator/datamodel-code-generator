@@ -280,6 +280,7 @@ class ParserConfig(BaseModel):
     use_decimal_in_field_forms: bool = False
     use_encoded_str_for_constrained_base64: bool = False
     omit_redundant_constraints: bool = False
+    read_length_keywords_by_type: bool = False
     use_site_models_for_constrained_refs: bool = False
     original_field_name_delimiter: str | None = None
     use_double_quotes: bool = False

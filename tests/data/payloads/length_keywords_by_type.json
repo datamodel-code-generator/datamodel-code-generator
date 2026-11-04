@@ -1,0 +1,16 @@
+{
+  "base": {},
+  "cases": {
+    "tags": {"three-items": ["a", "b", "c"], "no-items": [], "number-item": [1]},
+    "counted": {"three-items": ["a", "b", "c"], "four-items": ["a", "b", "c", "d"]},
+    "code": {"three-chars": "abc", "empty": "", "number": 1},
+    "either": {"two-chars": "ab", "three-chars": "abc", "three-items": [1, 2, 3]},
+    "branch": {"four-items": [1, 2, 3, 4], "three-chars": "abc", "four-chars": "abcd"},
+    "untyped": {"three-items": [1, 2, 3], "string-item": ["x"]},
+    "nested": {"two-inner-items": [[1, 2]], "string-inner-item": [["x"]]},
+    "by_key": {"two-items": {"k": [1, 2]}, "string-item": {"k": ["x"]}},
+    "letters": {"three-items": ["xx", "yy", "xx"], "other-value": ["zz"]},
+    "letter_seq": {"three-items": ["xx", "yy", "xx"], "other-value": ["zz"]},
+    "short": {"three-items": [1, 2, 3], "string-item": ["x"]}
+  }
+}

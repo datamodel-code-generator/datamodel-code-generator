@@ -1764,6 +1764,7 @@ class DataTypeManager(ABC):
         r"([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]{0,61}[A-Za-z0-9])$"
     )
     omit_redundant_constraints: bool = False
+    read_length_keywords_by_type: bool = False
     use_decimal_in_field_forms: bool = False
     use_encoded_str_for_constrained_base64: bool = False
     WRITES_ENCODED_STR: ClassVar[bool] = False
@@ -1886,6 +1887,7 @@ class DataTypeManager(ABC):
             omit_redundant_constraints=self.omit_redundant_constraints,
             use_decimal_in_field_forms=self.use_decimal_in_field_forms,
             use_encoded_str_for_constrained_base64=self.use_encoded_str_for_constrained_base64,
+            read_length_keywords_by_type=self.read_length_keywords_by_type,
         )
 
     @property
