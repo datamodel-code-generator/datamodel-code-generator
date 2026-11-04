@@ -16,7 +16,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, Literal, NamedTuple
 
-from datamodel_code_generator._paths import lexical
+from datamodel_code_generator._paths import lexical, resolved
 
 if TYPE_CHECKING:
     from datamodel_code_generator.base_config import BaseGenerateConfig
@@ -65,11 +65,11 @@ def remote_lock_plan(config: BaseGenerateConfig, default_parent: Path, spelling:
     literal = path if path.is_absolute() else default_parent / path
     if spelling == "lexical":
         literal = lexical(spelled)
-        canonical = literal.resolve(strict=False)
+        canonical = resolved(literal)
     elif spelling == "resolved":
-        canonical = literal.resolve(strict=False)
+        canonical = resolved(literal)
     else:
-        canonical = literal = path if path.is_absolute() else literal.resolve()
+        canonical = literal = path if path.is_absolute() else resolved(literal)
     policy: LockPolicy
     if config.update_lock:
         policy = "update"
