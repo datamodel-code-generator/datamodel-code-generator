@@ -241,7 +241,15 @@ class GenerationStoreHost(GraphBuilderHost, Protocol):
         """The generation store of the parse."""
 
 
-class CollapsedReuseHost(GenerationStoreHost, Protocol):
+class MergedDuplicatesHost(Protocol):
+    """The duplicates deduplication and reuse merged into each model."""
+
+    @property
+    def _merged_duplicates(self) -> dict[int, list[DataModel]]:
+        """The duplicates merged into a model, removed or made empty subclasses of it, by the id of that model."""
+
+
+class CollapsedReuseHost(GenerationStoreHost, MergedDuplicatesHost, Protocol):
     """The duplicates collapsed reuse removed and the users it redirected, with the builder that redirects them."""
 
     @property
@@ -480,9 +488,10 @@ def merge_duplicate(
     union that named the duplicate keeps mapping it to the tags of its own schema, which are compared with the tags of
     the canonical model. The children of the duplicate take their bases once each, told apart as the user of ``row``
     tells them (``ShapeRow.base_dedup``; None keeps them as redirected). The caller drops the duplicate from its
-    module's models. Return the redirected users.
+    module's models. The canonical model records the duplicate (``merged_models``). Return the redirected users.
     """
     builder = host._graph_builder  # noqa: SLF001
+    host._merged_duplicates.setdefault(id(canonical), []).append(duplicate)  # noqa: SLF001
     users = builder.redirect_reference_users(duplicate.reference, canonical.reference, merged=True)
     if keeps_duplicate_tags:
         collapsed_users = host._collapsed_reuse_users  # noqa: SLF001
@@ -494,6 +503,16 @@ def merge_duplicate(
     settle_python_bases(host, canonical.reference)
     builder.retire_model(duplicate)
     return users
+
+
+def merged_models(host: MergedDuplicatesHost, model: DataModel) -> list[DataModel]:
+    """Return the duplicates merged into ``model``, with those merged into each of them before."""
+    merged: list[DataModel] = []
+    pending = [model]
+    while pending:
+        merged.extend(found := host._merged_duplicates.get(id(pending.pop()), []))  # noqa: SLF001
+        pending.extend(found)
+    return merged
 
 
 def normalize_default_value_constraints(
@@ -1027,7 +1046,7 @@ def require_update_action(
     )
 
 
-class ReuseSubclassHost(GenerationStoreHost, RecursionFactsHost, Protocol):
+class ReuseSubclassHost(GenerationStoreHost, MergedDuplicatesHost, RecursionFactsHost, Protocol):
     """The builder that replaces a reuse duplicate by a subclass, and the recursion facts the subclass may join."""
 
 
@@ -1045,10 +1064,12 @@ def subclass_duplicate(
 ) -> DataModel | None:
     """Replace a duplicate in ``models`` and in the store by an empty subclass of the equal canonical model.
 
-    The subclass keeps the duplicate's name; the users that ``users`` own name it. Return the subclass when the
-    canonical model needs a reference update action, which the caller adds once with ``require_update_action``.
+    The subclass keeps the duplicate's name; the users that ``users`` own name it, and the canonical model records the
+    duplicate (``merged_models``). Return the subclass when the canonical model needs a reference update action, which
+    the caller adds once with ``require_update_action``.
     """
     builder = host._graph_builder  # noqa: SLF001
+    host._merged_duplicates.setdefault(id(canonical), []).append(duplicate)  # noqa: SLF001
     inherited = duplicate.create_reuse_model(canonical.reference)
     builder.redirect_model_reference_users(duplicate, users, inherited.reference)
     replace_model_in_list(models, duplicate, inherited)
