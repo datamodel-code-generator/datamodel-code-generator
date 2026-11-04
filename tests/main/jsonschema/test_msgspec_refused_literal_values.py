@@ -35,6 +35,12 @@ OPTION_SETS = {
         ("--type-overrides", json.dumps({"Ratio": "typing.Literal[0.5, 1.5]"})),
         {"valid": {"ratio": 0.5, "status": 200}, "invalid": {"ratio": "x", "status": 200}},
     ),
+    "annotated_metadata": (
+        "Model",
+        "msgspec_refused_literal_values",
+        ("--type-overrides", json.dumps({"Model.text": "typing.Annotated[str, typing.Literal[b'ab', 'a']]"})),
+        {"valid": {"text": "c"}, "invalid": {"text": 1}},
+    ),
 }
 
 
@@ -46,6 +52,8 @@ def test_msgspec_refused_literal_values(output_file: Path, recwarn: pytest.Warni
     ``TypeError`` when a decoder was built. A ``Literal`` of other values keeps them beside the type
     (``Literal[1, 'a'] | float``), also inside ``Optional``, a nested ``Literal`` and a list. The value is not checked:
     a float outside the ``Literal`` is accepted, as the warning says. A document of the wrong JSON type is rejected.
+    A ``Literal`` of bytes and str values in the metadata of ``Annotated``, from which msgspec reads no value, is
+    written in the same way.
     """
     title, fixture, options, documents = OPTION_SETS[option_set]
     run_main_and_assert(
@@ -112,6 +120,21 @@ _REFUSED_MIXED_LITERALS = {
         "`Union[Literal[b'ab', 1], Optional[Literal['a']], int]` in the msgspec field `Model.data`",
         "`Union[Literal['ab', 1], Optional[Literal['a']], int]`",
     ),
+    "annotated_union": (
+        {
+            "properties": {
+                "data": {
+                    "x-python-type": (
+                        "typing.Union[typing.Annotated[typing.Literal[b'ab'], typing.Literal[b'x']], "
+                        "typing.Literal['a']]"
+                    )
+                }
+            }
+        },
+        (),
+        "`Union[Annotated[Literal[b'ab'], Literal[b'x']], Literal['a']]` in the msgspec field `Model.data`",
+        "`Union[Annotated[Literal['ab'], Literal[b'x']], Literal['a']]`",
+    ),
     "type_overrides": (
         {"properties": {"data": {"type": "string"}}},
         ("--type-overrides", json.dumps({"Model.data": "typing.Literal[b'ab', 'a', b'a']"})),
@@ -131,7 +154,8 @@ def test_msgspec_refused_mixed_bytes_and_str_literal(
     No msgspec type holds them: a msgspec ``Literal`` holds no bytes value, and ``bytes`` beside the str values, as the
     ``Literal['a'] | bytes`` that was written with a warning, is a union of two str-like members, so neither built a
     decoder. The error names the smallest ``Literal`` or union that holds both and the field or type alias, and gives
-    the values as text, the bytes decoded as UTF-8, as an example. Another output model type writes it as it did.
+    the values as text, the bytes decoded as UTF-8, as an example; an ``Annotated`` member holds the values of the type
+    it annotates, not of its metadata. Another output model type writes it as it did.
     """
     schema, options, where, example = _REFUSED_MIXED_LITERALS[case]
     input_path = tmp_path / "mixed_literal.json"

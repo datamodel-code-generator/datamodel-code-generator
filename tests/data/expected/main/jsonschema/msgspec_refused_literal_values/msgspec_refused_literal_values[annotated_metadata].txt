@@ -1,0 +1,15 @@
+msgspec cannot decode typing.Literal[5.0]: a msgspec Literal holds only None, bool, int and str values, not 5.0. It is written as float, so msgspec does not check it.
+msgspec cannot decode typing.Literal[b'ab']: a msgspec Literal holds only None, bool, int and str values, not b'ab'. It is written as bytes, so msgspec does not check it.
+msgspec cannot decode typing.Literal[1, 2.5, 'a']: a msgspec Literal holds only None, bool, int and str values, not 2.5. It is written as typing.Literal[1, 'a'] | float, so msgspec does not check it.
+msgspec cannot decode typing.Optional[typing.Literal[typing.Literal[5.0], 'a']]: a msgspec Literal holds only None, bool, int and str values, not 5.0. It is written as typing.Optional[typing.Literal['a'] | float], so msgspec does not check it.
+msgspec cannot decode typing.Literal[5.0, 6.0]: a msgspec Literal holds only None, bool, int and str values, not 5.0, 6.0. It is written as float, so msgspec does not check them.
+msgspec cannot decode typing.Annotated[str, typing.Literal[b'ab', 'a']]: a msgspec Literal holds only None, bool, int and str values, not b'ab'. It is written as typing.Annotated[str, typing.Literal['a'] | bytes], so msgspec does not check it.
+lone: decoded
+data: decoded
+mixed: decoded
+nested: decoded
+listed: decoded
+beside: decoded
+text: decoded
+valid: accepted
+invalid: rejected: Expected `str`, got `int` - at `$.text`
