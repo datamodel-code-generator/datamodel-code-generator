@@ -125,8 +125,8 @@ UNSET = _UNSET()
 
 _ANNOTATED_CONSTRAINTS_CONTEXT: object = Sentinel("_ANNOTATED_CONSTRAINTS_CONTEXT")
 _UNCONSTRAINED_UNION_MEMBERS_KEY = "_unconstrained_union_members"
-_BOUND_KEYWORDS: frozenset[str] = frozenset({"ge", "gt", "le", "lt"})
-"""The ``Meta`` bounds the integer check of a union reads at the value the schema writes, when it reads them exactly."""
+_BOUND_SIDES: Mapping[str, str] = MappingProxyType({"ge": "ge", "gt": "ge", "le": "le", "lt": "le"})
+"""The side of each ``Meta`` bound, which the integer check of a union reads at the bounds the schema writes."""
 
 
 def _integer_bounds(
@@ -142,13 +142,6 @@ def _integer_bounds(
         if (bound := _applicability.integer_bound(name, value, arithmetic=arithmetic)) is not None:
             (lowers if bound[0] == "ge" else uppers).append(bound[1])
     return max(lowers, default=None), min(uppers, default=None)
-
-
-def _schema_bound(constraints: _Constraints | None, keyword: str, value: Any) -> Any:
-    """Return the value the schema writes for a ``Meta`` bound, or the ``Meta`` value of any other keyword."""
-    if keyword not in _BOUND_KEYWORDS or constraints is None or (written := getattr(constraints, keyword)) is None:
-        return value
-    return cast("UnionIntFloat", written).value
 
 
 def _admits_integers_of(
@@ -296,7 +289,8 @@ _META_KEY_KEYWORDS: Mapping[str, str] = MappingProxyType({
 class _UnionLeaf(NamedTuple):
     """A union member msgspec decodes as one type: the alias members spread to reach it, its type and constraints.
 
-    ``schema_constraints`` are its ``Meta`` constraints with each bound at the value the schema writes.
+    ``schema_constraints`` are its ``Meta`` constraints with each bound read as the schema bounds it comes from
+    (``DataModelField._union_meta_constraints``).
     """
 
     spread: tuple[tuple[DataType, DataModelField], ...]
@@ -1270,10 +1264,30 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             return self._meta_type(data_type.data_types[0], seen)
         return data_type
 
-    def _get_meta_data(self) -> tuple[dict[str, Any], frozenset[str]]:
-        """Return the Meta(...) keyword data that msgspec takes on the type, and the constraints it leaves out."""
-        args, dropped = self._meta_call_arguments([])
-        return args.data(), dropped
+    def _union_meta_constraints(self) -> tuple[tuple[tuple[str, Any], ...], tuple[tuple[str, Any], ...]]:
+        """Return the ``Meta`` constraints of the type, and them as the integer check of a union reads them exactly.
+
+        Read exactly, each side that ``Meta`` bounds is every schema bound of that side it takes, written or
+        superseded, at the value the schema writes: the ``ge`` that ``minimum`` and ``exclusiveMinimum`` come to reads
+        as both, so the check reads the integers they admit together.
+        """
+        omitted: list[Omitted] = []
+        args, _ = self._meta_call_arguments(omitted)
+        written = tuple(
+            (k, v) for k, v in args.data().items() if v is not None and k in _applicability.META_SCHEMA_KEYWORDS
+        )
+        sides = {_BOUND_SIDES[k] for k, _ in written if k in _BOUND_SIDES}
+        taken = (
+            *((item, entry.value) for entry in args.kwargs() for item in entry.items),
+            *((entry.item, entry.value) for entry in omitted if entry.reason == "superseded"),
+        )
+        exact = [(k, v) for k, v in written if k not in _BOUND_SIDES]
+        for item, value in taken:
+            source, _, keyword = item.partition(":")
+            if _BOUND_SIDES.get(keyword) in sides:
+                written_value = getattr(self.constraints, keyword) if source == "constraint" else None
+                exact.append((keyword, value if written_value is None else cast("UnionIntFloat", written_value).value))
+        return written, tuple(exact)
 
     def _meta_call_arguments(self, omitted: list[Omitted]) -> tuple[CallArguments, frozenset[str]]:
         """Return the ``Meta(...)`` arguments msgspec takes on the type, and the constraints it leaves out.
@@ -1443,12 +1457,9 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
                 return
             seen |= {id(source)}
             if alias_field.use_annotated:
-                meta = alias_field._get_meta_data()[0]  # noqa: SLF001
-                written = tuple(
-                    (k, v) for k, v in meta.items() if v is not None and k in _applicability.META_SCHEMA_KEYWORDS
-                )
+                written, exact = alias_field._union_meta_constraints()  # noqa: SLF001
                 constraints += written
-                schema_constraints += tuple((k, _schema_bound(alias_field.constraints, k, v)) for k, v in written)
+                schema_constraints += exact
             if alias_field._field_has_top_level_none() or self._data_type_is_plain_union(alias_field.data_type):  # noqa: SLF001
                 members = self._non_none_members(alias_field.data_type)
                 for inner in members:

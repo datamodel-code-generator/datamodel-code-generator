@@ -47,7 +47,14 @@ the schema writes, exactly (msgspec.Struct output only).""",
     ),
 )
 @pytest.mark.parametrize(
-    "name", ["int64_constraints", "float_range_bounds", "exact_int_divisors", "union_integer_bounds"]
+    "name",
+    [
+        "int64_constraints",
+        "float_range_bounds",
+        "exact_int_divisors",
+        "union_integer_bounds",
+        "union_integer_bound_keywords",
+    ],
 )
 @pytest.mark.parametrize("option_set", OPTION_SETS)
 def test_msgspec_number_limits(output_file: Path, recwarn: pytest.WarningsRecorder, name: str, option_set: str) -> None:
@@ -61,7 +68,8 @@ def test_msgspec_number_limits(output_file: Path, recwarn: pytest.WarningsRecord
 
     The int member of a union with a number member loses its bounds when they reject an integer the number member
     accepts, as msgspec decodes every integer as the int member; ``--read-msgspec-union-bounds-exactly`` decides it on
-    the bounds the schema writes, so a number bound past ``2**53`` no longer reads as the float it is written as.
+    the bounds the schema writes, so a number bound past ``2**53`` no longer reads as the float it is written as, and
+    all the bounds of a member together, so ``minimum`` beside ``exclusiveMinimum`` reads as the integers both admit.
     """
     input_path = NUMBER_LIMITS / f"{name}.json"
     run_main_and_assert(
