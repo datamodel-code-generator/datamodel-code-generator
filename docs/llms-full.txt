@@ -70375,16 +70375,16 @@ Without the option (same as 0.88.0):
 
 ```python
 class E(Enum):
-    A = 'a'
-    a_1 = 'A'
+    A = "a"
+    a_1 = "A"
 ```
 
 With the option:
 
 ```python
 class E(Enum):
-    A = 'a'
-    A_1 = 'A'
+    A = "a"
+    A_1 = "A"
 ```
 
 ### `--keep-first-character-of-path-keys`
@@ -70433,7 +70433,7 @@ Without the option (same as 0.88.0):
 
 ```python
 class PingPublishPayload(RootModel[str]):
-    root: str = Field(..., title='Model')
+    root: str = Field(..., title="Model")
 ```
 
 With the option:
