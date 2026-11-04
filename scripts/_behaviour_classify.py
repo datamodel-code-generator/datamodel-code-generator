@@ -321,14 +321,14 @@ class Allowlist:
         """Return the index of the first `[[base_skip]]` entry that skips the release `version` on this input."""
         for index, entry in enumerate(self.base_skips):
             if fnmatch.fnmatch(input_path, entry.get("input", "")) and any(
-                _base_matches(spec, version) for spec in entry.get("bases", [])
+                _base_matches(spec, version) for spec in _skip_bases(entry)
             ):
                 return index
         return None
 
     def skip_applies(self, index: int, version: str) -> bool:
         """Return whether `[[base_skip]]` entry `index` names the release `version`."""
-        return any(_base_matches(spec, version) for spec in self.base_skips[index].get("bases", []))
+        return any(_base_matches(spec, version) for spec in _skip_bases(self.base_skips[index]))
 
     def covers(self, index: int, input_path: str, backend: str) -> bool:
         """Return whether entry `index` applies to a cell of this input and backend."""
@@ -380,9 +380,14 @@ class Allowlist:
         return found
 
 
+def _skip_bases(entry: dict[str, Any]) -> list[Any]:
+    """Return the `bases` of a `[[base_skip]]` entry, none where they are no list (`problems` reports that)."""
+    return bases if isinstance(bases := entry.get("bases"), list) else []
+
+
 def _base_matches(spec: str, version: str) -> bool:
     """Return whether a `bases` item, a version (`0.88.0`) or a maximum (`<=0.88.0`), names the release `version`."""
-    if not (found := BASE_SPEC.fullmatch(spec)):
+    if not isinstance(spec, str) or not (found := BASE_SPEC.fullmatch(spec)):
         return False
     try:
         wanted, actual = tuple(map(int, found[2].split("."))), tuple(map(int, version.split(".")))

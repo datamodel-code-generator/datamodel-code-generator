@@ -346,7 +346,7 @@ class Runner:
     def _error(self, rc: int, log: Path) -> str:
         if rc == -signal.SIGALRM:
             return f"timed out after {self.timeout}s"
-        if rc == OUT_OF_MEMORY:
+        if rc == OUT_OF_MEMORY and self.memory_mb:
             return f"ran out of its {self.memory_mb} MB"
         return _last_line(log)
 

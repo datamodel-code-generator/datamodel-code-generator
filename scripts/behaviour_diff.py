@@ -728,12 +728,20 @@ def _selected(label: str, patterns: list[str]) -> bool:
     return not patterns or any(fnmatch.fnmatch(label, pattern) for pattern in patterns)
 
 
+def _memory_mb(text: str) -> int:
+    """Read `--memory-mb`: a number of MB, 0 for no cap; a negative cap is refused, as no limit could hold it."""
+    if (value := int(text)) < 0:
+        msg = f"{value}: the cap is 0 (no cap) or more MB"
+        raise argparse.ArgumentTypeError(msg)
+    return value
+
+
 def _environment_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("-j", type=int, default=os.cpu_count() or 1, help="parallel cells (default: CPU count)")
     parser.add_argument("--timeout", type=int, default=300, help="seconds before one generation or signature fails")
     parser.add_argument(
         "--memory-mb",
-        type=int,
+        type=_memory_mb,
         default=8192,
         help="data memory of one generation process before it fails, a safety net far above any real cell (0: no cap)",
     )
