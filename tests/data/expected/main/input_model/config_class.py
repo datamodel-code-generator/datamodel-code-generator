@@ -244,6 +244,7 @@ class BaseGenerateConfig(TypedDict):
     read_const_beside_enum: NotRequired[bool]
     filter_literal_values: NotRequired[bool]
     intersect_allof_keywords: NotRequired[bool]
+    intersect_combined_schema_keywords: NotRequired[bool]
     read_nullable_beside_type_list: NotRequired[bool]
     keep_field_defaults_off_branch_roots: NotRequired[bool]
     keep_enum_member_values: NotRequired[bool]
