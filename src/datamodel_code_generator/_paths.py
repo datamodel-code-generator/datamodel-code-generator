@@ -23,6 +23,11 @@ and hands only its path to ``url2pathname``, whose reading of a host and a query
 An output path names a directory, a package of modules, when it has no suffix. The files a generation stages or
 copies are the files below that directory, listed in path order. The files of a directory input are listed by file
 name, files of one name in the order the directory walk meets them.
+
+What a generation wrote at an output path is its layout: a file is one module, any other existing path a package of
+modules, a path that holds nothing has none. One module pairs with the destination itself, each file of a package with
+its path below the destination. One module cannot replace an existing directory, and a package cannot replace an
+existing file (``layout_refusal``).
 """
 
 from __future__ import annotations
@@ -30,7 +35,7 @@ from __future__ import annotations
 import os
 from operator import attrgetter
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Final, Literal
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -39,6 +44,11 @@ AncestorTest = Literal["directory", "exists", "legacy-staging-parent-may-be-a-fi
 AtRoot = Literal["root", "legacy-unbounded-ancestor-walk"]
 Missing = Literal["none", "legacy-missing-input-raises"]
 FileOrder = Literal["path", "name"]
+OutputLayout = Literal["module", "package"]
+Unchecked = Literal["none", "legacy-cli-package-onto-file-unchecked"]
+
+SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR: Final = "Single-module output requires a file path, not a directory"
+MODULAR_OUTPUT_FILE_ERROR: Final = "Modular references require an output directory, not a file"
 
 
 def lexical(path: Path, base: Path | None = None) -> Path:
@@ -133,3 +143,35 @@ def files_under(directory: Path, pattern: str = "*", *, order: FileOrder = "path
     """
     files = (path for path in directory.rglob(pattern) if path.is_file())
     return sorted(files, key=attrgetter("name")) if order == "name" else sorted(files)
+
+
+def output_layout(path: Path) -> OutputLayout | None:
+    """Return what a generation wrote at a path: one module (a file), a package (any other existing path) or None."""
+    if path.is_file():
+        return "module"
+    return "package" if path.exists() else None
+
+
+def output_files(path: Path, pattern: str = "*") -> list[tuple[tuple[str, ...], Path]]:
+    """Return the files a generation wrote at a path, each with its parts below the path, in path order.
+
+    One module is the path itself without parts, a package its files below it whose names match ``pattern``, and
+    nothing written has none.
+    """
+    if output_layout(path) == "module":
+        return [((), path)]
+    return [(file.relative_to(path).parts, file) for file in files_under(path, pattern)]
+
+
+def layout_refusal(layout: OutputLayout | None, destination: Path, *, unchecked: Unchecked = "none") -> str | None:
+    """Return why an output of ``layout`` cannot replace what ``destination`` holds, or None.
+
+    One module cannot replace an existing directory, a package an existing file. Rows of ``unchecked``: ``none``
+    refuses both; ``legacy-cli-package-onto-file-unchecked`` (the command line after a generation into a temporary
+    output, #4497) refuses one module only.
+    """
+    if layout == "module" and destination.is_dir():
+        return SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR
+    if layout == "package" and unchecked == "none" and destination.is_file():
+        return MODULAR_OUTPUT_FILE_ERROR
+    return None
