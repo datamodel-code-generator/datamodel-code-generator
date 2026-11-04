@@ -29,7 +29,7 @@
 | [`--model-extra-keys`](#model-extra-keys) | Add model-level schema extensions to ConfigDict json_schema_... |
 | [`--model-extra-keys-without-x-prefix`](#model-extra-keys-without-x-prefix) | Strip x- prefix from model-level schema extensions and add t... |
 | [`--model-name-map`](#model-name-map) | Rename generated model classes from a JSON mapping. |
-| [`--naming-strategy`](#naming-strategy) | Use parent-prefixed naming strategy for duplicate model name... |
+| [`--naming-strategy`](#naming-strategy) | Choose how models are named and how duplicate model names ar... |
 | [`--omit-redundant-reference-null`](#omit-redundant-reference-null) | Do not write None again at a reference to a model that holds... |
 | [`--order-constructor-fields-by`](#order-constructor-fields-by) | Order constructor fields by final names or by written defaul... |
 | [`--output-model-type`](#output-model-type) | Select the output model type (Pydantic v2, Pydantic v2 datac... |
@@ -4081,15 +4081,18 @@ warning. GraphQL input does not apply `--model-name-map`, so every key is report
 
 ## `--naming-strategy` {#naming-strategy}
 
-Use parent-prefixed naming strategy for duplicate model names.
+Choose how models are named and how duplicate model names are told apart.
 
-The `--naming-strategy parent-prefixed` flag prefixes model names with their
-parent model name when duplicates occur. For example, if both `Order` and
-`Cart` have an inline `Item` definition, they become `OrderItem` and `CartItem`.
+`numbered` (the default) keeps a model's own name and numbers a duplicate (`Item`, `Item1`). `parent-prefixed` and
+`full-path` prefix every nested model with the name of the model that holds it, joined in CamelCase and with nested
+parents included, also where the name is unique: both give the same model names. For example, `Order` and `Cart`
+with an inline `item` give `OrderItem` and `CartItem` (here `ModelOrderItem` and `ModelCartItem`, as the definitions
+sit below the root model `Model`), and `Company` > `employee` > `home_address` gives `CompanyEmployeeHomeAddress`.
 
 Generated clients and servers (experimental) follow the same rules for their method, argument, module, and class
-names, with the resource or router group as the parent of a method and the method as the parent of an argument;
-under `primary-first`, a primary name is one the root document declares.
+names, with the resource or router group as the parent of a method and the method as the parent of an argument, but
+prefix only a name their scope already holds: `parent-prefixed` with its innermost enclosing scope, `full-path` with
+every enclosing scope; under `primary-first`, a primary name is one the root document declares.
 
 **Related:** [`--duplicate-name-suffix`](#duplicate-name-suffix), [`--parent-scoped-naming`](#parent-scoped-naming)
 

@@ -24929,15 +24929,18 @@ def test_main_root_model_config_frozen(output_file: Path) -> None:
 
 @pytest.mark.cli_doc(
     options=["--naming-strategy"],
-    option_description="""Use parent-prefixed naming strategy for duplicate model names.
+    option_description="""Choose how models are named and how duplicate model names are told apart.
 
-The `--naming-strategy parent-prefixed` flag prefixes model names with their
-parent model name when duplicates occur. For example, if both `Order` and
-`Cart` have an inline `Item` definition, they become `OrderItem` and `CartItem`.
+`numbered` (the default) keeps a model's own name and numbers a duplicate (`Item`, `Item1`). `parent-prefixed` and
+`full-path` prefix every nested model with the name of the model that holds it, joined in CamelCase and with nested
+parents included, also where the name is unique: both give the same model names. For example, `Order` and `Cart`
+with an inline `item` give `OrderItem` and `CartItem` (here `ModelOrderItem` and `ModelCartItem`, as the definitions
+sit below the root model `Model`), and `Company` > `employee` > `home_address` gives `CompanyEmployeeHomeAddress`.
 
 Generated clients and servers (experimental) follow the same rules for their method, argument, module, and class
-names, with the resource or router group as the parent of a method and the method as the parent of an argument;
-under `primary-first`, a primary name is one the root document declares.""",
+names, with the resource or router group as the parent of a method and the method as the parent of an argument, but
+prefix only a name their scope already holds: `parent-prefixed` with its innermost enclosing scope, `full-path` with
+every enclosing scope; under `primary-first`, a primary name is one the root document declares.""",
     input_schema="jsonschema/naming_strategy/input.json",
     cli_args=["--naming-strategy", "parent-prefixed"],
     golden_output="main/jsonschema/naming_strategy/parent_prefixed/output.py",
@@ -24945,11 +24948,10 @@ under `primary-first`, a primary name is one the root document declares.""",
 )
 @freeze_time("2019-07-26")
 def test_main_naming_strategy_parent_prefixed(output_file: Path) -> None:
-    """Use parent-prefixed naming strategy for duplicate model names.
+    """Prefix every nested model with the name of the model that holds it under ``--naming-strategy parent-prefixed``.
 
-    The `--naming-strategy parent-prefixed` flag prefixes model names with their
-    parent model name when duplicates occur. For example, if both `Order` and
-    `Cart` have an inline `Item` definition, they become `OrderItem` and `CartItem`.
+    ``Order`` and ``Cart`` hold an inline ``item``: they give ``ModelOrderItem`` and ``ModelCartItem``, the names
+    ``full-path`` gives (#4840).
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "naming_strategy" / "input.json",

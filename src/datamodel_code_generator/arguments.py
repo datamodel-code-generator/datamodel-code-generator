@@ -679,13 +679,14 @@ model_options.add_argument(
 _deprecated_flag(model_options, "--parent-scoped-naming")
 model_options.add_argument(
     "--naming-strategy",
-    help="Strategy for generating unique model names when duplicates occur. "
+    help="Strategy for naming models and telling duplicate model names apart. "
     "'numbered' (default): Append numeric suffix (Address, Address1, Address2). "
     "Simple but names don't indicate context. "
-    "'parent-prefixed': Prefix with parent model name using underscore "
-    "(Company_Address, Company_Employee_Address for nested). Names show hierarchy. "
-    "'full-path': Similar to parent-prefixed but joins with CamelCase "
-    "(CompanyAddress, CompanyEmployeeAddress). More readable for deep nesting. "
+    "'parent-prefixed': Prefix every nested model with the name of the model that holds it, joined in "
+    "CamelCase, nested parents included (CompanyAddress, CompanyEmployeeHomeAddress), also where the name is "
+    "unique; the model names are the same as with 'full-path'. "
+    "'full-path': Prefix every nested model with the names of the models that hold it, joined in CamelCase "
+    "(CompanyAddress, CompanyEmployeeHomeAddress). "
     "'primary-first': Keep clean names for primary definitions (in /definitions/ or "
     "/components/schemas/), only add suffix to inline/nested duplicates.",
     choices=_values(NamingStrategy),

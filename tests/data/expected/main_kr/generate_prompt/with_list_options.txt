@@ -139,7 +139,7 @@
 - `--model-extra-keys`: Add model-level schema extensions to ConfigDict json_schema_extra.
 - `--model-extra-keys-without-x-prefix`: Strip x- prefix from model-level schema extensions and add to ConfigDic...
 - `--model-name-map`: Rename generated model classes from a JSON mapping.
-- `--naming-strategy`: Use parent-prefixed naming strategy for duplicate model names.
+- `--naming-strategy`: Choose how models are named and how duplicate model names are told apart.
 - `--no-allow-population-by-field-name`
 - `--no-collapse-root-models`
 - `--no-use-frozen-field`
@@ -895,18 +895,20 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Split generated models into separate files. 'single':
                         generate one file per model class.
   --naming-strategy {numbered,parent-prefixed,full-path,primary-first}
-                        Strategy for generating unique model names when
-                        duplicates occur. 'numbered' (default): Append numeric
+                        Strategy for naming models and telling duplicate model
+                        names apart. 'numbered' (default): Append numeric
                         suffix (Address, Address1, Address2). Simple but names
-                        don't indicate context. 'parent-prefixed': Prefix with
-                        parent model name using underscore (Company_Address,
-                        Company_Employee_Address for nested). Names show
-                        hierarchy. 'full-path': Similar to parent-prefixed but
-                        joins with CamelCase (CompanyAddress,
-                        CompanyEmployeeAddress). More readable for deep
-                        nesting. 'primary-first': Keep clean names for primary
-                        definitions (in /definitions/ or
-                        /components/schemas/), only add suffix to
+                        don't indicate context. 'parent-prefixed': Prefix
+                        every nested model with the name of the model that
+                        holds it, joined in CamelCase, nested parents included
+                        (CompanyAddress, CompanyEmployeeHomeAddress), also
+                        where the name is unique; the model names are the same
+                        as with 'full-path'. 'full-path': Prefix every nested
+                        model with the names of the models that hold it,
+                        joined in CamelCase (CompanyAddress,
+                        CompanyEmployeeHomeAddress). 'primary-first': Keep
+                        clean names for primary definitions (in /definitions/
+                        or /components/schemas/), only add suffix to
                         inline/nested duplicates.
   --order-constructor-fields-by {final-names,written-defaults} [{final-names,written-defaults} ...]
                         Decide the order of constructor fields by each given

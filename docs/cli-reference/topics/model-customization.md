@@ -26,7 +26,7 @@ Class names, suffixes, prefixes, and duplicate-name behavior.
 | [`--class-name-suffix`](../model-customization.md#class-name-suffix) | Add a suffix to all generated class names. |
 | [`--duplicate-name-suffix`](../model-customization.md#duplicate-name-suffix) | Customize suffix for duplicate model names. |
 | [`--model-name-map`](../model-customization.md#model-name-map) | Rename generated model classes from a JSON mapping. |
-| [`--naming-strategy`](../model-customization.md#naming-strategy) | Use parent-prefixed naming strategy for duplicate model names. |
+| [`--naming-strategy`](../model-customization.md#naming-strategy) | Choose how models are named and how duplicate model names are told apart. |
 | [`--parent-scoped-naming`](../model-customization.md#parent-scoped-naming) | Namespace models by their parent scope to avoid naming conflicts. |
 
 ## Model Reuse {#model-reuse}
