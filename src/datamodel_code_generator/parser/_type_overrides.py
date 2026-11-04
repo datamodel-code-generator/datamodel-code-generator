@@ -25,6 +25,7 @@ from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._requirements import REQUIREMENTS, python_target_meets
 from datamodel_code_generator._target_unicode import is_dotted_python_name
+from datamodel_code_generator._user_keys import model_type_override
 from datamodel_code_generator.enums import _pydantic_version_key
 from datamodel_code_generator.imports import Import, _import_key, _import_path
 from datamodel_code_generator.model.base import BaseClassDataType, ConstraintsBase
@@ -610,7 +611,7 @@ def apply_override_to_data_type(parser: TypeOverridesHost, data_type: DataType) 
     overridden = False
     if (reference := data_type.reference) and (
         override_import := parser._base_stand_in_imports.get(model_key_of(reference))  # noqa: SLF001
-        or parser._model_type_override_imports.get(reference.name)  # noqa: SLF001
+        or model_type_override(parser._model_type_override_imports, reference, row="reference-name")  # noqa: SLF001
         or enum_site_override_import(parser, reference)
     ):
         annotation = parser._override_annotation(override_import)  # noqa: SLF001

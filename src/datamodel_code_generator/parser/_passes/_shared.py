@@ -31,7 +31,7 @@ from datamodel_code_generator._module_paths import (
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._target_unicode import target_pattern
-from datamodel_code_generator._user_keys import class_field_key, type_override_classes
+from datamodel_code_generator._user_keys import class_field_key, model_type_override, type_override_classes
 from datamodel_code_generator.imports import Import, _override_module
 from datamodel_code_generator.model._decisions.assignment import requires_value
 from datamodel_code_generator.model._decisions.tag_value import (
@@ -1290,7 +1290,7 @@ def enum_site_override_import(host: TypeOverrideHost, reference: Reference) -> I
     """
     if (target := reference.__dict__.get(_DERIVED_FROM_KEY)) is None or not isinstance(reference.source, Enum):
         return None
-    return host._model_type_override_imports.get(target.name)  # noqa: SLF001
+    return model_type_override(host._model_type_override_imports, target, row="reference-name")  # noqa: SLF001
 
 
 _ConstructorFieldAdjustment: TypeAlias = Literal["assignment", "keyword_only"]

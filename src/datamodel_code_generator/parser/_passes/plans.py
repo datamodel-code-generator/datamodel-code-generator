@@ -16,6 +16,7 @@ from datamodel_code_generator import ReuseScope
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._module_paths import dotted_module
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot
+from datamodel_code_generator._user_keys import model_type_override
 from datamodel_code_generator.model.base import BaseLayoutView, _find_base_classes, linearize_data_models
 from datamodel_code_generator.parser._field_rows import uses_default_with_required
 from datamodel_code_generator.parser._graph_ids import keyed_models
@@ -168,7 +169,7 @@ def flatten_conflicting_base_layouts(parser: PlansHost, module_models: ModuleMod
     view = BaseLayoutView(
         is_slot,
         lambda model: duplicates.get(id(model), model),
-        lambda model: model.reference.name in overrides,
+        lambda model: model_type_override(overrides, model.reference, row="reference-name") is not None,
     )
     visits = [(model, False) for model in reversed(joins)]
     visited: set[int] = set()
