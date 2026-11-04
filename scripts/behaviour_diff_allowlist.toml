@@ -226,6 +226,14 @@ decision = "#6139"
 release_note = "with --use-unique-items-as-set, the array member of a uniqueItems property whose type list joins array with another type (type: [array, string]) is written as a set, like a plain uniqueItems array"
 
 [[accepted]]
+input = "*unique_items_type_list_merged*"
+aspects = [ "type" ]
+match = "^\\[type\\] (?:[\\w.]+:)?Tags:names: Union\\[(?:None, )?bool, list\\[int\\](?:, msgspec\\.UnsetType)?\\] -> Union\\[(?:None, )?bool, (?:msgspec\\.UnsetType, )?set\\[int\\]\\]$"
+reason = "with --use-unique-items-as-set, the array member of a uniqueItems property typed [array, boolean] stayed a list; Tags and Marks, which reuse merges, both declare uniqueItems there, so it is a set now, while Labels, into which reuse merges History without uniqueItems, keeps the list of 0.88.0 (owner decision to keep it under the option; a merge never turns the array of a model without uniqueItems into a set)"
+decision = "#6139"
+release_note = "with --use-unique-items-as-set, the array member of a uniqueItems property whose type list joins array with another type (type: [array, string]) is written as a set, like a plain uniqueItems array"
+
+[[accepted]]
 input = "*prefix_items_closed_*"
 aspects = [ "type" ]
 match = "^\\[type\\] (?:[\\w.]+:)?\\w+:\\w+: .* -> (?:Union\\[None, )?(?:list|dict)\\[(?:str, )?Union\\[None, .*$"

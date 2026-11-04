@@ -886,8 +886,9 @@ def group_models_by_module(parser: StructureHost, state: _StructureState) -> Non
 
 
 def reset_collapsed_reuse_state(parser: StructureHost, _state: _StructureState) -> None:
-    """Forget the models collapsed reuse removed, and the root models deduplication dropped, in an earlier parse."""
+    """Forget the models reuse merged or collapsed reuse removed, and the root models deduplication dropped, before."""
     parser._collapsed_reuse_models.clear()  # noqa: SLF001
+    parser._merged_duplicates.clear()  # noqa: SLF001
     parser._collapsed_reuse_users.clear()  # noqa: SLF001
     parser._self_named_root_models.clear()  # noqa: SLF001
 
