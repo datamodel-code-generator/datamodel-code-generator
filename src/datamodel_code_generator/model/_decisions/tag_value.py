@@ -6,7 +6,7 @@ rows need, in their order, as an Enum lookup or a variant's mapped tags cost mor
 that read the facts from the live objects are listed in ``docs/architecture.md``.
 
 The rows named ``legacy-*`` keep today's output where passes or backends disagree on a tag; the fix of each deletes
-its row (G05): ``legacy-literal-only`` (``FieldTagSite``),
+its row (G05): ``legacy-literal-only`` and ``legacy-nested-root-model-tag`` (``FieldTagSite``),
 ``legacy-python-equality`` (``TagIdentity``), ``legacy-any-key`` (``MappingPathRule``) and the rows in the docstrings
 of ``redeclared_tag_field``, ``tagged_union_discriminator`` and ``struct_tag_field``.
 """
@@ -137,14 +137,18 @@ TagFieldMatch: TypeAlias = Literal[
   the Python name the property resolves to by default; it finds the Python name the variants of a union share.
 """
 
-FieldTagSite: TypeAlias = Literal["schema", "variant-field", "legacy-literal-only"]
+FieldTagSite: TypeAlias = Literal["schema", "variant-field", "legacy-nested-root-model-tag", "legacy-literal-only"]
 """Where ``field_tag`` asks for the tag of a field.
 
 * ``schema``: L1, the property schema of a union branch (``JsonSchemaParser._get_single_literal_value``): its
   ``const``, else the one value of its ``enum``, else the schema its ``$ref`` names; a value no ``Literal`` holds is no
   tag, and such a ``const`` ends the search.
-* ``variant-field``: L5, the tag field of a variant (``_get_discriminator_field_value``): its ``const``, its one
-  ``Literal`` or the one member of its Enum, of any kind (``value-of-another-kind``).
+* ``variant-field``: L5, the tag field of a variant a union lists (``_get_discriminator_field_value``): its ``const``,
+  its one ``Literal`` or the one member of its Enum, of any kind (``value-of-another-kind``), else the tag of the root
+  model or type alias its type names, as ``--enum-field-as-literal`` writes a one-value enum the field references.
+* ``legacy-nested-root-model-tag``: L5, the tag field of a variant a nested choice gives a union, and of an inline
+  variant, read as ``variant-field`` but without the root model its type names: such a variant gives no tag there,
+  so its union stays a plain union, which accepts a payload of a variant whose tag is optional (#6044).
 * ``legacy-literal-only``: L6, a field of a msgspec Struct that redeclares the tag field of a tagged base
   (``iter_struct_tag_decisions``): only its one ``Literal``, so a ``const``, a one-member Enum or a ``Literal``
   msgspec refuses as a tag (``struct_tag_refused``) there opts the Struct out of the inherited tag instead of
@@ -159,9 +163,10 @@ FieldTagRule: TypeAlias = Literal[
 * ``const``: the ``const``, a value a ``Literal`` holds (str, int or bool).
 * ``one-literal``: the type is a ``Literal`` of one value.
 * ``one-member-enum``: the type is an Enum of one member, or the ``enum`` holds one value, a value a ``Literal`` holds.
-* ``referenced-schema``: the tag of the schema the ``$ref`` names (``schema`` only).
+* ``referenced-schema``: the tag of the schema the ``$ref`` names (``schema``), or of the root model or type alias the
+  type names (``variant-field``).
 * ``value-of-another-kind``: a ``const`` or one-member Enum value of another kind (a float, an array or an object)
-  is the variant's tag too (``variant-field`` only), so no other row tags it; no ``Literal`` holds it
+  is the variant's tag too (not at ``schema``), so no other row tags it; no ``Literal`` holds it
   (``is_tag_value``), so its union is not discriminated.
 """
 
@@ -356,7 +361,7 @@ def field_tag(site: FieldTagSite, facts: FieldTagFacts, /) -> FieldTag | None:
     """Return the one tag a field or a schema holds, or None (``FieldTagSite``, ``FieldTagRule``).
 
     It holds its ``const``, else the value of its one ``Literal``, else that of its one Enum member, else the tag of
-    the schema its ``$ref`` names.
+    the schema its ``$ref`` names (not at ``legacy-nested-root-model-tag``).
     """
     if site != "legacy-literal-only" and facts.has_const():
         return _value_tag(site, facts.const(), "const")
@@ -369,7 +374,7 @@ def field_tag(site: FieldTagSite, facts: FieldTagFacts, /) -> FieldTag | None:
     members, value = facts.enum_member()
     if members == 1 and (tag := _value_tag(site, value, "one-member-enum")) is not None:
         return tag
-    return facts.referenced_tag()
+    return None if site == "legacy-nested-root-model-tag" else facts.referenced_tag()
 
 
 def _value_tag(site: FieldTagSite, value: Any, rule: Literal["const", "one-member-enum"]) -> FieldTag | None:
@@ -379,7 +384,7 @@ def _value_tag(site: FieldTagSite, value: Any, rule: Literal["const", "one-membe
     """
     if is_literal_kind(literal_value_kind(value)):
         return FieldTag(value, rule)
-    return FieldTag(value, "value-of-another-kind") if site == "variant-field" else None
+    return None if site == "schema" else FieldTag(value, "value-of-another-kind")
 
 
 def variant_tags(source: VariantTagSource, facts: VariantTagFacts, /) -> VariantTags:  # noqa: PLR0911

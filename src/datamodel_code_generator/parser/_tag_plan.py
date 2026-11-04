@@ -96,7 +96,12 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._internal_utils import HashableComparable
     from datamodel_code_generator._model_keys import ModelKey
-    from datamodel_code_generator.model._decisions.tag_value import FieldTag, TagFieldMatch, VariantTagSource
+    from datamodel_code_generator.model._decisions.tag_value import (
+        FieldTag,
+        FieldTagSite,
+        TagFieldMatch,
+        VariantTagSource,
+    )
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.parser._passes._shared import DiscriminatorValue
     from datamodel_code_generator.reference import ModelResolver, ModelType, Reference
@@ -367,27 +372,39 @@ def shared_site_names(names: SiteNames, data_types: Iterable[DataType], namer: F
 
 
 def _iter_discriminator_fields(
-    fields: Iterable[DataModelFieldBase], field_name: str, *, field_name_mode: TagFieldMatch
+    fields: Iterable[DataModelFieldBase],
+    field_name: str,
+    *,
+    field_name_mode: TagFieldMatch,
+    site: FieldTagSite = "variant-field",
 ) -> Iterator[tuple[DataModelFieldBase, DiscriminatorValue]]:
-    """Yield the fields of the discriminator's name that carry one discriminator value, with that value."""
+    """Yield the fields of the discriminator's name that carry one discriminator value at ``site``, with that value."""
     for field_ in fields:
         if (
             _tag_field_matches(field_, field_name_mode, field_name)
-            and (value := _get_discriminator_field_value(field_)) is not None
+            and (value := _get_discriminator_field_value(field_, site)) is not None
         ):
             yield field_, value
 
 
 def _find_discriminator_value(
-    fields: Iterable[DataModelFieldBase], field_name: str, *, field_name_mode: TagFieldMatch
+    fields: Iterable[DataModelFieldBase],
+    field_name: str,
+    *,
+    field_name_mode: TagFieldMatch,
+    site: FieldTagSite = "variant-field",
 ) -> DiscriminatorValue | None:
     return next(
-        (value for _, value in _iter_discriminator_fields(fields, field_name, field_name_mode=field_name_mode)), None
+        (
+            value
+            for _, value in _iter_discriminator_fields(fields, field_name, field_name_mode=field_name_mode, site=site)
+        ),
+        None,
     )
 
 
 def _find_reused_discriminator_value(
-    variant: DataModel, field_name: str, *, field_name_mode: TagFieldMatch
+    variant: DataModel, field_name: str, *, field_name_mode: TagFieldMatch, site: FieldTagSite
 ) -> DiscriminatorValue | None:
     """Return the tag that the schema of a model gives it when reuse replaced it with an empty subclass.
 
@@ -396,7 +413,7 @@ def _find_reused_discriminator_value(
     reused = variant.reused_reference
     if reused is None or not isinstance(source := reused.source, DataModel):
         return None
-    return _find_discriminator_value(source.fields, field_name, field_name_mode=field_name_mode)
+    return _find_discriminator_value(source.fields, field_name, field_name_mode=field_name_mode, site=site)
 
 
 def _schema_path_segment(model: DataModel) -> str:
@@ -422,7 +439,15 @@ def tags_of_variant(  # noqa: PLR0913
     ``enum_member_tags`` tells that Enum members are written as tags (``--use-enum-values-in-discriminator``).
     """
     facts = _VariantTagFacts(
-        variant, field_name, mapping, mode, inline_variants, property_name, union_written, enum_member_tags
+        variant,
+        field_name,
+        mapping,
+        mode,
+        inline_variants,
+        property_name,
+        union_written,
+        enum_member_tags,
+        "legacy-nested-root-model-tag" if source == "nested" else "variant-field",
     )
     return [*variant_tags(source, facts).values]
 
@@ -440,19 +465,25 @@ class _VariantTagFacts:
     property_name: str
     union_written: UnionWrittenTags
     enum_member_tags: bool
+    site: FieldTagSite
+    """Where the tag fields are read (``variant-field``, or ``legacy-nested-root-model-tag`` for a nested variant)."""
 
     def own_tag(self) -> DiscriminatorValue | None:
         """Return the tag of the variant's own tag field."""
-        return _find_discriminator_value(self.model.fields, self.field_name, field_name_mode=self.field_name_mode)
+        return _find_discriminator_value(
+            self.model.fields, self.field_name, field_name_mode=self.field_name_mode, site=self.site
+        )
 
     def reused_tag(self) -> DiscriminatorValue | None:
         """Return the tag of the model reuse replaced with the variant."""
-        return _find_reused_discriminator_value(self.model, self.field_name, field_name_mode=self.field_name_mode)
+        return _find_reused_discriminator_value(
+            self.model, self.field_name, field_name_mode=self.field_name_mode, site=self.site
+        )
 
     def inherited_tag(self) -> DiscriminatorValue | None:
         """Return the tag of a tag field the variant inherits."""
         return _find_discriminator_value(
-            self.model.iter_all_fields(), self.field_name, field_name_mode=self.field_name_mode
+            self.model.iter_all_fields(), self.field_name, field_name_mode=self.field_name_mode, site=self.site
         )
 
     def inherited_schema_tag(self) -> DiscriminatorValue | None:
@@ -468,7 +499,7 @@ class _VariantTagFacts:
             (
                 value
                 for field_ in self._ancestor_tag_fields(start=1 if self.model.reused_reference is None else 2)
-                if (value := _get_discriminator_field_value(field_)) is not None
+                if (value := _get_discriminator_field_value(field_, self.site)) is not None
             ),
             None,
         )
@@ -720,7 +751,10 @@ def _iter_nested_discriminator_variants(
             continue
         for tag_field, value in islice(
             _iter_discriminator_fields(
-                chain(source.fields, source.iter_all_fields()), field_name, field_name_mode=field_name_mode
+                chain(source.fields, source.iter_all_fields()),
+                field_name,
+                field_name_mode=field_name_mode,
+                site="legacy-nested-root-model-tag",
             ),
             1,
         ):
@@ -831,7 +865,10 @@ def appended_takes_struct_tag(
         tagged_unions
         or (
             union_size > 1
-            and _find_reused_discriminator_value(variant, view.names.field_name, field_name_mode=view.mode) is not None
+            and _find_reused_discriminator_value(
+                variant, view.names.field_name, field_name_mode=view.mode, site="variant-field"
+            )
+            is not None
         )
     )
 
@@ -1256,7 +1293,7 @@ class TagPlan:
                 id(source): tuple(
                     (tag_field, value)
                     for tag_field in source.iter_all_fields()
-                    if (value := _get_discriminator_field_value(tag_field)) is not None
+                    if (value := _get_discriminator_field_value(tag_field, "legacy-nested-root-model-tag")) is not None
                 )
                 for data_type, _, _ in _iter_discriminator_data_types(field_.data_type.data_types)
                 if data_type.reference

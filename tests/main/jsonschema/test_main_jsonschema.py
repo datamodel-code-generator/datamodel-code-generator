@@ -38440,6 +38440,40 @@ def test_main_jsonschema_discriminator_inherited_schema_tag(output_file: Path, e
     )
 
 
+def test_main_jsonschema_discriminator_inherited_schema_tag_enum_field_as_literal(output_file: Path) -> None:
+    """Tag a variant with the value the root model of a one-value enum fixes in the schema of its allOf parent.
+
+    Under ``--enum-field-as-literal all`` the ``type`` that ``FunctionCall`` and ``NamedCall`` inherit is
+    ``FunctionType``, a ``RootModel[Literal['function']]``; up to 0.88.0 their tag was not read through it, so they
+    were tagged by their schema names and ``Call`` rejected ``{"type": "function"}`` (#6044).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "discriminator_inherited_schema_tag.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--enum-field-as-literal",
+            "all",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+    for model_name, union in (("FunctionCall", "Call"), ("NamedCall", "NamedOrCustom")):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"discriminator_inherited_schema_tag_enum_field_as_literal_{union}",
+            model_name=union,
+            valid_json=json.dumps({"type": "function"}),
+            invalid_json=json.dumps({"type": model_name}),
+            expected_error_type="union_tag_invalid",
+            expected_attribute_path=("root", "type"),
+            expected_attribute_value="function",
+        )
+
+
 def test_main_jsonschema_discriminator_inherited_schema_tag_msgspec(output_file: Path) -> None:
     """Write the value an allOf parent's schema fixes as the tag literal of a msgspec Struct variant (#5338).
 

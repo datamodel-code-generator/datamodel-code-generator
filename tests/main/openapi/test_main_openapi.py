@@ -694,6 +694,56 @@ def test_main_openapi_discriminator_enum_single_value_anyof_use_enum(output_file
 
 
 @pytest.mark.parametrize(
+    ("output_model_type", "attribute_path", "expected_repr"),
+    [
+        (
+            "pydantic_v2.BaseModel",
+            ("root", "type"),
+            "ToolCallUnion(root=FunctionToolCall(id='1', type='function'))",
+        ),
+        ("pydantic_v2.dataclass", ("type",), "FunctionToolCall(id='1', type='function')"),
+    ],
+    ids=["pydantic_v2.BaseModel", "pydantic_v2.dataclass"],
+)
+def test_main_openapi_discriminator_enum_single_value_anyof_enum_field_as_literal(
+    output_model_type: str, attribute_path: tuple[str, ...], expected_repr: str, output_file: Path
+) -> None:
+    """Tag a variant by the one value of the enum its tag property references, written as a root model of a Literal.
+
+    Under ``--enum-field-as-literal all`` ``ToolType`` is a ``RootModel[Literal['function']]``, or a type alias of the
+    ``Literal`` for a Pydantic dataclass. Up to 0.88.0 the tag of
+    ``FunctionToolCall`` was not read through it, so the variant was tagged by its schema name,
+    ``Literal['FunctionToolCall']``: the union rejected ``{"type": "function"}`` and accepted ``"FunctionToolCall"``,
+    which the schema rejects (#6044).
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_enum_single_value_anyof.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--enum-field-as-literal",
+            "all",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="discriminator_enum_single_value_anyof_enum_field_as_literal",
+        model_name="ToolCallUnion",
+        valid_json=json.dumps({"id": "1", "type": "function"}),
+        invalid_json=json.dumps({"id": "1", "type": "FunctionToolCall"}),
+        expected_error_type="union_tag_invalid",
+        expected_attribute_path=attribute_path,
+        expected_attribute_value="function",
+        expected_repr=expected_repr,
+    )
+
+
+@pytest.mark.parametrize(
     ("input_file", "expected_file"),
     [
         (
