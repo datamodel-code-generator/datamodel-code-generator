@@ -43,6 +43,9 @@ Not recommended
       measured: Stripe API description: 17% of component titles changed in four months; class names
       from keys renamed 0.0% of locations
 
+Your configuration
+  --preset standard-py314-20261027: a newer preset is available, standard-py314-20261104
+
 Notes
   - The rules were calibrated on the 20261017 presets.
 
