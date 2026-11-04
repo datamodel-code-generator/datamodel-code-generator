@@ -203,10 +203,27 @@ release_note = "a discriminator mapping declared in another document than the un
 [[accepted]]
 input = "*prefix_items_closed_tail_unevaluated*"
 aspects = [ "type" ]
-match = "^\\[type\\] (?:[\\w.]+:)?ClosedTail:closed: Union\\[(?:None, )?list\\[Union\\[int, str\\]\\](?:, msgspec\\.UnsetType)?\\] -> Union\\[(?:None, )?list\\[int\\](?:, msgspec\\.UnsetType)?\\]$"
+match = "^\\[type\\] (?:[\\w.]+:)?(?:ClosedTail|Payload):closed: (?:Union\\[(?:None, )?list\\[Union\\[int, str\\]\\](?:, msgspec\\.UnsetType)?\\]|list\\[Union\\[int, str\\]\\]) -> (?:Union\\[(?:None, )?list\\[int\\](?:, msgspec\\.UnsetType)?\\]|list\\[int\\])$"
 reason = "an array with prefixItems, items: false and an unevaluatedItems schema took the unevaluatedItems type into its item union (list[int | str]), so it accepted [\"x\"], which the schema rejects: items evaluates every position after the prefix, so unevaluatedItems applies to none; the item union holds the prefix only now (schema-mismatch fix)"
 decision = "#5933"
 release_note = "an array whose prefixItems are closed by items: false no longer adds the type of a sibling unevaluatedItems schema to its item type (list[int] instead of list[int | str]), so it rejects the items the schema rejects"
+
+[[accepted]]
+input = "*unique_items_as_set_other_containers*"
+aspects = [ "type", "default" ]
+match = "^\\[(?:type|default)\\] (?:[\\w.]+:)?UniqueItemsAsSetOtherContainers:(?:sequence: '\\{1, 2\\}' -> '\\[1, 2\\]'|nested: (?:Union\\[)?collections\\.Sequence\\[set\\[int\\]\\](?:, msgspec\\.UnsetType\\])? -> (?:Union\\[)?collections\\.Sequence\\[list\\[int\\]\\](?:, msgspec\\.UnsetType\\])?|nested: '(?:set\\(\\)|factory:set|FieldInfo\\(annotation=NoneType, required=False, default_factory=set\\))' -> '(?:\\[\\]|factory:list|FieldInfo\\(annotation=NoneType, required=False, default_factory=list\\))')$"
+reason = "with --use-unique-items-as-set, a uniqueItems array that x-python-type writes as a Sequence kept its type but took a set default (sequence: Sequence[int] = {1, 2}, nested = set()), which its own type rejects, and the lists such a Sequence holds became sets (Sequence[set[int]] for x-python-type Sequence[list[int]], whose inner arrays declare no uniqueItems), so the valid [[1, 1]] decoded as [{1}] and lost the duplicates the schema admits; only a list the option made a set takes a set default now, and the field keeps the type x-python-type gives it (schema-mismatch fix)"
+decision = "#6108"
+release_note = "with --use-unique-items-as-set, a uniqueItems array written as a Sequence by x-python-type, or as a fixed-length tuple, keeps a list default and the lists it holds, instead of a set default its type rejects and inner sets that drop the duplicates the schema admits"
+
+[[accepted]]
+input = "*pattern_properties_array_type_union*"
+backends = [ "dataclasses.dataclass", "typing.TypedDict" ]
+aspects = [ "type" ]
+match = "^\\[type\\] (?:[\\w.]+:)?PatternPropertiesArrayTypeUnion:direct: Union\\[list\\[str\\], str\\] -> Union\\[set\\[str\\], str\\]$"
+reason = "with --use-unique-items-as-set, the array member of a uniqueItems property typed [array, string] stayed list[str] for dataclasses and TypedDict, while a plain uniqueItems array, and the Pydantic and msgspec backends through the alias of the constrained member, wrote set[str]; the member follows the option like a plain array now (owner decision to keep it under the option; the set accepts and rejects the payloads the list did)"
+decision = "#6139"
+release_note = "with --use-unique-items-as-set, the array member of a uniqueItems property whose type list joins array with another type (type: [array, string]) is written as a set, like a plain uniqueItems array"
 
 [[accepted]]
 input = "*prefix_items_closed_*"
