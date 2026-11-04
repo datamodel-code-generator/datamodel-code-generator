@@ -104,7 +104,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple, TypeAlias, cast
 
 from datamodel_code_generator import (
-    _SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR,
     DataModelType,  # noqa: F401  # Preserve the established __main__ export.
     Error,
     InputFileType,
@@ -145,7 +144,15 @@ from datamodel_code_generator._option_names import (
     values_arguments,
 )
 from datamodel_code_generator._option_names import json_ready as _json_ready
-from datamodel_code_generator._paths import files_under, names_directory, overlaps, resolved, same_file
+from datamodel_code_generator._paths import (
+    layout_refusal,
+    names_directory,
+    output_files,
+    output_layout,
+    overlaps,
+    resolved,
+    same_file,
+)
 from datamodel_code_generator._project_config import (
     _find_datamodel_codegen_project_config_with_path,
     _get_pyproject_toml_config_with_path,
@@ -1150,7 +1157,7 @@ def _compare_directories(
 
     if comparison.input_diff:
         for files, output in ((generated_files, generated_dir), (actual_files, actual_dir)):
-            if not files and output.is_file():
+            if output_layout(output) == "module":
                 files.add(Path())
 
     missing_files = [comparison.directory_file_path(rel_path) for rel_path in sorted(generated_files - actual_files)]
@@ -1313,16 +1320,12 @@ def _generated_files_from_output(
 ) -> list[GeneratedFilePayload]:
     from datamodel_code_generator._structured_output import GeneratedFilePayload  # noqa: PLC0415
 
-    if output.is_file():
-        return [
-            GeneratedFilePayload(
-                path=(display_output or output).name,
-                content=output.read_text(encoding=encoding),
-            )
-        ]
     return [
-        GeneratedFilePayload(path=path.relative_to(output).as_posix(), content=path.read_text(encoding=encoding))
-        for path in files_under(output, "*.py")
+        GeneratedFilePayload(
+            path=Path(*parts).as_posix() if parts else (display_output or output).name,
+            content=path.read_text(encoding=encoding),
+        )
+        for parts, path in output_files(output, "*.py")
     ]
 
 
@@ -1559,14 +1562,11 @@ def _run_recommend_options(  # noqa: PLR0913
 def _copy_generated_output(generated_output: Path, actual_output: Path, *, is_directory_output: bool) -> None:
     from datamodel_code_generator._shadowed_modules import warn_shadowed_modules  # noqa: PLC0415
 
-    targets: dict[Path, Path] = {}
-    if is_directory_output:
-        targets = {
-            generated_file: actual_output / generated_file.relative_to(generated_output)
-            for generated_file in files_under(generated_output)
-        }
-    if not targets and generated_output.is_file():
-        targets = {generated_output: actual_output}
+    targets = {
+        generated_file: actual_output.joinpath(*parts)
+        for parts, generated_file in output_files(generated_output)
+        if is_directory_output or not parts
+    }
     warn_shadowed_modules(targets.values())
     for generated_file, target in targets.items():
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -2894,15 +2894,11 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         return cleanup_and_return(_error_with_traceback())
 
     if config.output is not None and generate_output is not None:
-        if config.output.is_dir():
-            if generate_output.is_file():
-                print(_SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR, file=sys.stderr)  # noqa: T201
-                return cleanup_and_return(Exit.ERROR)
-        elif (
-            config.check
-            and is_directory_output
-            and (generate_output.is_file() or (config.output.is_file() and not generate_output.exists()))
-        ):
+        layout = output_layout(generate_output)
+        if refusal := layout_refusal(layout, config.output, unchecked="legacy-cli-package-onto-file-unchecked"):
+            print(refusal, file=sys.stderr)  # noqa: T201
+            return cleanup_and_return(Exit.ERROR)
+        if config.check and is_directory_output and (layout or output_layout(config.output)) == "module":
             is_directory_output = False
 
     if writes_json_output_file and generate_output is not None and config.output is not None:
