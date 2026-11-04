@@ -8441,14 +8441,14 @@
         "title": "Shared parent wrappers collapsed"
       },
       {
-        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by.",
+        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. msgspec Structs take one tag, so they are unchanged.",
         "options": [
           "--merge-shared-variant-tags"
         ],
         "title": "Shared variant tags merged"
       },
       {
-        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text.",
+        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic 2.10 or later checks them on the base64 text.",
         "options": [
           "--use-encoded-str-for-constrained-base64"
         ],
@@ -8770,14 +8770,14 @@
         "title": "Shared parent wrappers collapsed"
       },
       {
-        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by.",
+        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. msgspec Structs take one tag, so they are unchanged.",
         "options": [
           "--merge-shared-variant-tags"
         ],
         "title": "Shared variant tags merged"
       },
       {
-        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text.",
+        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic 2.10 or later checks them on the base64 text.",
         "options": [
           "--use-encoded-str-for-constrained-base64"
         ],
@@ -9099,14 +9099,14 @@
         "title": "Shared parent wrappers collapsed"
       },
       {
-        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by.",
+        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. msgspec Structs take one tag, so they are unchanged.",
         "options": [
           "--merge-shared-variant-tags"
         ],
         "title": "Shared variant tags merged"
       },
       {
-        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text.",
+        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic 2.10 or later checks them on the base64 text.",
         "options": [
           "--use-encoded-str-for-constrained-base64"
         ],
@@ -9428,14 +9428,14 @@
         "title": "Shared parent wrappers collapsed"
       },
       {
-        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by.",
+        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. msgspec Structs take one tag, so they are unchanged.",
         "options": [
           "--merge-shared-variant-tags"
         ],
         "title": "Shared variant tags merged"
       },
       {
-        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text.",
+        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic 2.10 or later checks them on the base64 text.",
         "options": [
           "--use-encoded-str-for-constrained-base64"
         ],
@@ -9757,14 +9757,14 @@
         "title": "Shared parent wrappers collapsed"
       },
       {
-        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by.",
+        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. msgspec Structs take one tag, so they are unchanged.",
         "options": [
           "--merge-shared-variant-tags"
         ],
         "title": "Shared variant tags merged"
       },
       {
-        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text.",
+        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic 2.10 or later checks them on the base64 text.",
         "options": [
           "--use-encoded-str-for-constrained-base64"
         ],
@@ -10086,14 +10086,14 @@
         "title": "Shared parent wrappers collapsed"
       },
       {
-        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by.",
+        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. msgspec Structs take one tag, so they are unchanged.",
         "options": [
           "--merge-shared-variant-tags"
         ],
         "title": "Shared variant tags merged"
       },
       {
-        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text.",
+        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic 2.10 or later checks them on the base64 text.",
         "options": [
           "--use-encoded-str-for-constrained-base64"
         ],
@@ -10408,14 +10408,14 @@
         "title": "Shared parent wrappers collapsed"
       },
       {
-        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by.",
+        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. msgspec Structs take one tag, so they are unchanged.",
         "options": [
           "--merge-shared-variant-tags"
         ],
         "title": "Shared variant tags merged"
       },
       {
-        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text.",
+        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic 2.10 or later checks them on the base64 text.",
         "options": [
           "--use-encoded-str-for-constrained-base64"
         ],
@@ -10767,14 +10767,14 @@
         "title": "Shared parent wrappers collapsed"
       },
       {
-        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by.",
+        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. msgspec Structs take one tag, so they are unchanged.",
         "options": [
           "--merge-shared-variant-tags"
         ],
         "title": "Shared variant tags merged"
       },
       {
-        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text.",
+        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic 2.10 or later checks them on the base64 text.",
         "options": [
           "--use-encoded-str-for-constrained-base64"
         ],
@@ -11126,14 +11126,14 @@
         "title": "Shared parent wrappers collapsed"
       },
       {
-        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by.",
+        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. msgspec Structs take one tag, so they are unchanged.",
         "options": [
           "--merge-shared-variant-tags"
         ],
         "title": "Shared variant tags merged"
       },
       {
-        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text.",
+        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic 2.10 or later checks them on the base64 text.",
         "options": [
           "--use-encoded-str-for-constrained-base64"
         ],
@@ -11485,14 +11485,14 @@
         "title": "Shared parent wrappers collapsed"
       },
       {
-        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by.",
+        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. msgspec Structs take one tag, so they are unchanged.",
         "options": [
           "--merge-shared-variant-tags"
         ],
         "title": "Shared variant tags merged"
       },
       {
-        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text.",
+        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic 2.10 or later checks them on the base64 text.",
         "options": [
           "--use-encoded-str-for-constrained-base64"
         ],
@@ -11844,14 +11844,14 @@
         "title": "Shared parent wrappers collapsed"
       },
       {
-        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by.",
+        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. msgspec Structs take one tag, so they are unchanged.",
         "options": [
           "--merge-shared-variant-tags"
         ],
         "title": "Shared variant tags merged"
       },
       {
-        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text.",
+        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic 2.10 or later checks them on the base64 text.",
         "options": [
           "--use-encoded-str-for-constrained-base64"
         ],
@@ -12203,14 +12203,14 @@
         "title": "Shared parent wrappers collapsed"
       },
       {
-        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by.",
+        "description": "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, every tag they give it, so each union decodes the documents it selects the variant by. msgspec Structs take one tag, so they are unchanged.",
         "options": [
           "--merge-shared-variant-tags"
         ],
         "title": "Shared variant tags merged"
       },
       {
-        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text.",
+        "description": "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic 2.10 or later checks them on the base64 text.",
         "options": [
           "--use-encoded-str-for-constrained-base64"
         ],

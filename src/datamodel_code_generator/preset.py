@@ -777,7 +777,8 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         config=PresetConfig(merge_shared_variant_tags=True),
         description=(
             "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the "
-            "schema name, every tag they give it, so each union decodes the documents it selects the variant by."
+            "schema name, every tag they give it, so each union decodes the documents it selects the variant by. "
+            "msgspec Structs take one tag, so they are unchanged."
         ),
     ),
     PresetOptionGroup(
@@ -785,7 +786,7 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         config=PresetConfig(use_encoded_str_for_constrained_base64=True),
         description=(
             "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the "
-            "constraints in front of the decoding, so Pydantic checks them on the base64 text."
+            "constraints in front of the decoding, so Pydantic 2.10 or later checks them on the base64 text."
         ),
     ),
     PresetOptionGroup(
@@ -1142,9 +1143,9 @@ def render_presets_markdown() -> str:
             "discriminated unions tag differently, such as one by a mapping key and one by the schema name, takes "
             "every tag they give it, so each union decodes the documents it selects the variant by, "
             "`--use-encoded-str-for-constrained-base64`: a format: byte string with a pattern or lengths is written "
-            "as `Annotated[str, Field(...), EncodedStr(encoder=Base64Encoder)]`, so Pydantic checks them on the "
-            "base64 text instead of the decoded text, and `--read-length-keywords-by-type`: `minLength` and "
-            "`maxLength` beside an array, and `minItems` and `maxItems` beside a string, are left out instead of "
+            "as `Annotated[str, Field(...), EncodedStr(encoder=Base64Encoder)]`, so Pydantic 2.10 or later checks "
+            "them on the base64 text instead of the decoded text, and `--read-length-keywords-by-type`: `minLength` "
+            "and `maxLength` beside an array, and `minItems` and `maxItems` beside a string, are left out instead of "
             "bounding the length of the other kind, as JSON Schema reads them, and "
             "`--read-msgspec-union-bounds-exactly`: the int member of a msgspec union with a number member keeps its "
             "bounds only when they admit every integer the number member's bounds, read as the schema writes them, "
