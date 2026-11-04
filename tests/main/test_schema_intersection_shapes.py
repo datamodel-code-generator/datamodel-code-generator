@@ -135,6 +135,8 @@ VALIDATING_BACKENDS = {
     DataModelType.PydanticV2Dataclass,
     DataModelType.MsgspecStruct,
 }
+TYPED_DICT_PAYLOAD_DOCUMENTS = frozenset({"allof_member_parts"})
+"""The documents whose payloads the TypedDict models are checked with too: the null an allOf union admits (#5181)."""
 
 
 def _runs(stem: str) -> tuple[tuple[DataModelType, tuple[str, ...]], ...]:
@@ -166,6 +168,8 @@ COMBINED_DOCUMENTS: tuple[str, ...] = (
     "inherited_override_maps",
     "inherited_type_narrowing",
     "inherited_tuple_shape_oas31",
+    "allof_member_parts",
+    "allof_member_parts_draft07",
 )
 """The documents whose output --intersect-combined-schema-keywords changes, pinned with ``COMBINED_OPTION_ARGS`` too."""
 
@@ -230,7 +234,9 @@ def test_schema_intersection_shape_output_with_combined_option(
     alike), the ``nullable`` copied into it kept, and an ``enum`` loses the values the merged ``type`` rejects. An
     inherited override merges a map of named schemas name by name, an override that narrows the inherited type (to
     ``null``, to one of its types, or in a nested schema) is the intersection instead of a copy of the inherited field,
-    and the type shape of ``--allof-merge-mode none`` keeps the length of a closed tuple.
+    and the type shape of ``--allof-merge-mode none`` keeps the length of a closed tuple. An allOf member reads the
+    siblings of its ``$ref`` as a part where the dialect does (2020-12, not draft 7), names the target of a ``$ref``
+    alias as its base, and an allOf union admits null where every part does.
     """
     _assert_shape_output(output_file, stem, backend, options, COMBINED_OPTION_ARGS)
 
@@ -336,7 +342,9 @@ def _shape_payload_lines(tmp_path: Path, stem: str, option_args: tuple[str, ...]
                 validator.validate({**base, name: value})
     lines = []
     for index, (backend, options) in enumerate(_runs(stem)):
-        if backend not in VALIDATING_BACKENDS:
+        if backend not in VALIDATING_BACKENDS and not (
+            backend is DataModelType.TypingTypedDict and stem in TYPED_DICT_PAYLOAD_DOCUMENTS
+        ):
             continue
         output_path = tmp_path / f"run_{index}.py"
         with warnings.catch_warnings():

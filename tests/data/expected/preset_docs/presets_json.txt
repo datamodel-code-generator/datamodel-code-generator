@@ -8494,7 +8494,7 @@
         "title": "Ignored $ref siblings left out"
       },
       {
-        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
+        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, read the $ref siblings, $ref aliases and null branches of allOf members, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
         "options": [
           "--intersect-combined-schema-keywords"
         ],
@@ -8795,7 +8795,7 @@
         "title": "Ignored $ref siblings left out"
       },
       {
-        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
+        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, read the $ref siblings, $ref aliases and null branches of allOf members, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
         "options": [
           "--intersect-combined-schema-keywords"
         ],
@@ -9096,7 +9096,7 @@
         "title": "Ignored $ref siblings left out"
       },
       {
-        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
+        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, read the $ref siblings, $ref aliases and null branches of allOf members, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
         "options": [
           "--intersect-combined-schema-keywords"
         ],
@@ -9397,7 +9397,7 @@
         "title": "Ignored $ref siblings left out"
       },
       {
-        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
+        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, read the $ref siblings, $ref aliases and null branches of allOf members, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
         "options": [
           "--intersect-combined-schema-keywords"
         ],
@@ -9698,7 +9698,7 @@
         "title": "Ignored $ref siblings left out"
       },
       {
-        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
+        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, read the $ref siblings, $ref aliases and null branches of allOf members, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
         "options": [
           "--intersect-combined-schema-keywords"
         ],
@@ -9999,7 +9999,7 @@
         "title": "Ignored $ref siblings left out"
       },
       {
-        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
+        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, read the $ref siblings, $ref aliases and null branches of allOf members, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
         "options": [
           "--intersect-combined-schema-keywords"
         ],
@@ -10293,7 +10293,7 @@
         "title": "Ignored $ref siblings left out"
       },
       {
-        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
+        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, read the $ref siblings, $ref aliases and null branches of allOf members, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
         "options": [
           "--intersect-combined-schema-keywords"
         ],
@@ -10624,7 +10624,7 @@
         "title": "Ignored $ref siblings left out"
       },
       {
-        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
+        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, read the $ref siblings, $ref aliases and null branches of allOf members, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
         "options": [
           "--intersect-combined-schema-keywords"
         ],
@@ -10955,7 +10955,7 @@
         "title": "Ignored $ref siblings left out"
       },
       {
-        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
+        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, read the $ref siblings, $ref aliases and null branches of allOf members, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
         "options": [
           "--intersect-combined-schema-keywords"
         ],
@@ -11286,7 +11286,7 @@
         "title": "Ignored $ref siblings left out"
       },
       {
-        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
+        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, read the $ref siblings, $ref aliases and null branches of allOf members, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
         "options": [
           "--intersect-combined-schema-keywords"
         ],
@@ -11617,7 +11617,7 @@
         "title": "Ignored $ref siblings left out"
       },
       {
-        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
+        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, read the $ref siblings, $ref aliases and null branches of allOf members, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
         "options": [
           "--intersect-combined-schema-keywords"
         ],
@@ -11948,7 +11948,7 @@
         "title": "Ignored $ref siblings left out"
       },
       {
-        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
+        "description": "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested properties name by name and by its narrowed type, read the $ref siblings, $ref aliases and null branches of allOf members, and keep no enum value that the merged type rejects, as JSON Schema validates them.",
         "options": [
           "--intersect-combined-schema-keywords"
         ],

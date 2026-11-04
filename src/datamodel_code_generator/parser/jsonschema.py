@@ -1770,7 +1770,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             yield from (TypedChild("key", reference=key) for key in keys)
         else:
             yield from (
-                TypedChild("member", item, into=into) for item in schema.allOf if isinstance(item, JsonSchemaObject)
+                TypedChild("member", item, into=into)
+                for item in _inherited_schemas.all_of_members(self, schema)
+                if isinstance(item, JsonSchemaObject)
             )
         if self.generate_schema_validators:
             yield from (TypedChild("model", item) for item in self._iter_conditional_branches(schema))
@@ -4513,7 +4515,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         parent_properties = self._get_inherited_property_map(parent_refs) if parent_refs else {}
 
-        for all_of_item in obj.allOf:
+        for all_of_item in _inherited_schemas.all_of_members(self, obj):
             if self._is_false_schema_item(all_of_item):
                 _all_of_values.raise_unsatisfiable_schema(self, obj, path, "allOf")
             if not isinstance(all_of_item, JsonSchemaObject):  # pragma: no cover
@@ -4980,7 +4982,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if current_schema.properties:
                 declared_property_names.update(current_schema.properties)
             pending_schemas.extend(
-                item for item in current_schema.allOf if isinstance(item, JsonSchemaObject) and not item.ref
+                item
+                for item in _inherited_schemas.all_of_members(self, current_schema)
+                if isinstance(item, JsonSchemaObject) and not item.ref
             )
         self._parse_all_of_item(
             name,
@@ -5028,14 +5032,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         data_type = build_union(
             self.data_type,
             [
-                self._parse_all_of_union_model(
-                    name,
-                    obj,
-                    get_special_path(f"union_model-{index}", path),
-                    (union_model, all_of_data_type.reference),
-                    ignore_duplicate_model=ignore_duplicate_model,
-                )
-                for index, union_model in enumerate(union_models)
+                *(
+                    self._parse_all_of_union_model(
+                        name,
+                        obj,
+                        get_special_path(f"union_model-{index}", path),
+                        (union_model, all_of_data_type.reference),
+                        ignore_duplicate_model=ignore_duplicate_model,
+                    )
+                    for index, union_model in enumerate(union_models)
+                ),
+                *self._all_of_union_null(obj),
             ],
         )
         field = self.get_object_field(
@@ -5054,6 +5061,39 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             description=obj.description if self.use_schema_description else None,
         )
         return self.data_type(reference=reference)
+
+    def _all_of_union_null(self, obj: JsonSchemaObject) -> list[DataType]:
+        """Return the None the union of an allOf member's variants takes: where every part of ``obj`` admits null.
+
+        None under ``legacy-all-of-union-null-dropped``.
+        """
+        if "legacy-all-of-union-null-dropped" in self._legacy_intersection or not self._all_of_part_admits_null(obj):
+            return []
+        return [self.data_type_manager.get_data_type(Types.null)]
+
+    def _all_of_part_admits_null(self, part: JsonSchemaObject | bool, seen: frozenset[str] = frozenset()) -> bool:  # noqa: FBT001
+        """Return whether a part of an allOf admits null, the site itself included (site ``all-of-union``).
+
+        Its own keywords decide (``parser/_null_facts.py``), and so do the target of its ``$ref``, one branch each of
+        its ``anyOf`` and ``oneOf``, and each of its own ``allOf`` members, read the same way; a reference the walk has
+        passed admits none.
+        """
+        if not isinstance(part, JsonSchemaObject):
+            return part
+        if part.ref and (
+            (path := self._ref_path(part.ref)) in seen
+            or not self._all_of_part_admits_null(self._load_ref_schema_object(part.ref), seen | {path})
+        ):
+            return False
+        return (
+            bool(self._null_facts(part, "all-of-union").admits_null)
+            and all(
+                any(self._all_of_part_admits_null(branch, seen) for branch in branches)
+                for branches in (part.anyOf, part.oneOf)
+                if branches
+            )
+            and all(self._all_of_part_admits_null(member, seen) for member in part.allOf)
+        )
 
     def _parse_all_of_union_model(
         self,

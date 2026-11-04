@@ -174,6 +174,16 @@ LEGACY_ROWS: Final[Mapping[str, Mapping[str, str]]] = {
         "legacy-type-shape-length-from-max-items": (
             "the type shape of `--allof-merge-mode none` keeps the length of a tuple only from an explicit `maxItems`"
         ),
+        "legacy-all-of-ref-siblings-ignored": (
+            "an allOf member that is a `$ref` with sibling keywords is the `$ref` alone"
+        ),
+        "legacy-all-of-alias-member-base": (
+            "an allOf member naming a schema that is only a `$ref` takes that alias as its base"
+        ),
+        "legacy-all-of-union-null-dropped": (
+            "the union of the variants an allOf member's anyOf or oneOf gives admits no null, even where every part "
+            "does"
+        ),
     },
 }
 """The rows of the output of an earlier release where parts meet, by the option whose off state they are."""

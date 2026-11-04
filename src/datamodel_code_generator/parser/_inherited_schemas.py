@@ -94,6 +94,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "InheritedSchemasHost",
+    "all_of_members",
     "build_missing_required_field",
     "drop_incompatible_inherited_constraints",
     "get_allof_parent_references",
@@ -374,6 +375,9 @@ class InheritedSchemasHost(Protocol):
     @classmethod
     def _get_array_items_constraints(cls, obj: JsonSchemaObject) -> dict[str, int]:
         """Return array length constraints derived from boolean items."""
+
+    def _load_ref_schema_object(self, ref: str) -> JsonSchemaObject:
+        """Load a JsonSchemaObject from a $ref using standard resolve/load pipeline."""
 
     def _get_flattenable_inherited_constraint_items(
         self,
@@ -1616,9 +1620,62 @@ def inherited_node(parser: InheritedSchemasHost, resolved_ref: str) -> _TargetNo
     return _schema_node(schema, resolved_ref)
 
 
-def iter_allof_refs(parser: InheritedSchemasHost, schema: JsonSchemaObject) -> Iterator[str]:
-    """Yield refs nested only through inline allOf branches in document order."""
+def all_of_members(parser: InheritedSchemasHost, schema: JsonSchemaObject) -> list[JsonSchemaObject | bool]:
+    """Return the members of an allOf as its readers read them, in order.
+
+    ``JsonSchemaParser.parse_all_of`` (the members it parses and the properties they declare), ``iter_allof_refs``
+    (the parents of the inherited property map) and the request/response walk (``_typed_model_children``) read the
+    members through it. A member is as written under ``legacy-all-of-ref-siblings-ignored`` and
+    ``legacy-all-of-alias-member-base``. Without the first, a ``$ref`` member whose sibling keywords are parts of it
+    (``_ref_siblings_are_parts_of``, keywords beyond annotations) is read as two members, the ``$ref`` and its
+    siblings at its location, as an inline member is read. Without the second, a ``$ref`` member names the schema that
+    a chain of aliases ends at (``alias_target``).
+    """
+    legacy = parser._legacy_intersection  # noqa: SLF001
+    splits = "legacy-all-of-ref-siblings-ignored" not in legacy
+    follows = "legacy-all-of-alias-member-base" not in legacy
+    if not (splits or follows):
+        return list(schema.allOf)
+    members: list[JsonSchemaObject | bool] = []
     for item in schema.allOf:
+        if not (isinstance(item, JsonSchemaObject) and item.ref):
+            members.append(item)
+            continue
+        target = alias_target(parser, item.ref) if follows else item.ref
+        siblings = splits and item.has_ref_with_schema_keywords and parser._ref_siblings_are_parts_of(item)  # noqa: SLF001
+        if target is item.ref and not siblings:
+            members.append(item)
+            continue
+        members.append(parser._schema_object({"$ref": target}).with_schema_location(item.schema_location))  # noqa: SLF001
+        if siblings:
+            members.append(
+                parser._schema_object(_dump_without_keywords(item, {"$ref"})).with_schema_location(  # noqa: SLF001
+                    item.schema_location
+                )
+            )
+    return members
+
+
+def alias_target(parser: InheritedSchemasHost, ref: str) -> str:
+    """Return the reference a chain of aliases from ``ref`` ends at, ``ref`` itself when it names no alias.
+
+    An alias is a schema that is a ``$ref`` beside annotations only (``has_ref_with_schema_keywords`` false): it is
+    the same schema as its target in every output form. A reference the chain has passed stops it.
+    """
+    seen = {parser._ref_path(ref)}  # noqa: SLF001
+    while (
+        (target := parser._load_ref_schema_object(ref)).ref  # noqa: SLF001
+        and not target.has_ref_with_schema_keywords
+        and (path := parser._ref_path(target.ref)) not in seen  # noqa: SLF001
+    ):
+        seen.add(path)
+        ref = target.ref
+    return ref
+
+
+def iter_allof_refs(parser: InheritedSchemasHost, schema: JsonSchemaObject) -> Iterator[str]:
+    """Yield refs nested only through inline allOf branches in document order (members by ``all_of_members``)."""
+    for item in all_of_members(parser, schema):
         match item:
             case JsonSchemaObject(ref=str() as ref) if ref:
                 yield ref

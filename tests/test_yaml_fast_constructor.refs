@@ -57,6 +57,7 @@ openapi/allof_enum_ref.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_inheritance_modular_mro_conflict.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_inherited_constraint_composition_isolation.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_materialize_defaults.yaml	yaml_fast_constructor/parity.txt
+openapi/allof_member_parts_request_response.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_merge_mode_none.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_multiple_parents_same_property.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_no_merge_backend_types.yaml	yaml_fast_constructor/parity.txt

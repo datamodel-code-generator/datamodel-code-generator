@@ -7104,5 +7104,111 @@
         ]
       }
     }
+  },
+  "allof_member_parts": {
+    "model": "Model",
+    "base": {
+      "nullable_union": {
+        "y": "s"
+      }
+    },
+    "fields": {
+      "siblings": {
+        "valid": [
+          {
+            "extra": true,
+            "id": "a",
+            "code": 5
+          }
+        ],
+        "invalid": [
+          {},
+          {
+            "extra": "x"
+          },
+          {
+            "extra": true,
+            "code": 0
+          },
+          {
+            "extra": true,
+            "code": 10
+          }
+        ]
+      },
+      "branch": {
+        "valid": [
+          {
+            "id": 1,
+            "name": "x"
+          }
+        ],
+        "invalid": [
+          {
+            "id": "not a number",
+            "name": "x"
+          },
+          {
+            "id": 10
+          }
+        ]
+      },
+      "override": {
+        "valid": [
+          {
+            "id": 5
+          }
+        ],
+        "invalid": [
+          {
+            "id": 0
+          },
+          {
+            "id": 10
+          },
+          {
+            "id": "s"
+          }
+        ]
+      },
+      "nullable_union": {
+        "valid": [
+          null,
+          {
+            "y": "s",
+            "x": 1
+          }
+        ],
+        "invalid": [
+          {
+            "y": 1
+          },
+          {
+            "x": "s"
+          }
+        ]
+      }
+    }
+  },
+  "allof_member_parts_draft07": {
+    "model": "Model",
+    "fields": {
+      "siblings": {
+        "valid": [
+          {},
+          {
+            "extra": "x"
+          },
+          {
+            "id": "a"
+          }
+        ],
+        "invalid": [
+          {
+            "id": 1
+          }
+        ]
+      }
+    }
   }
 }

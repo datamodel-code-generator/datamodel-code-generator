@@ -252,8 +252,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         override merges name by name, an override that narrows
                         the inherited `type` (such as to `null`), the length
                         of an inherited closed tuple under --allof-merge-mode
-                        none, and no `enum` value that the merged `type`
-                        rejects. Without it these keep the output of 0.88.0
+                        none, the `$ref` siblings of an `allOf` member where
+                        the dialect reads them, an `allOf` member that names a
+                        `$ref` alias, the null branch of an `allOf` member's
+                        `anyOf` or `oneOf`, and no `enum` value that the
+                        merged `type` rejects. Without it these keep the
+                        output of 0.88.0
   --keep-enum-member-values
                         Write an enum as a plain Enum where the value base of
                         --use-specialized-enum or --use-subclass-enum would

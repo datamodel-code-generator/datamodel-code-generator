@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "$defs": {
+    "A": {"type": "object", "properties": {"id": {"type": "string"}}},
+    "B": {"type": "object", "properties": {"id": {"type": "string"}, "code": {"type": "integer", "maximum": 9}}},
+    "WithSiblings": {
+      "allOf": [
+        {"$ref": "#/$defs/A", "properties": {"extra": {"type": "boolean"}}, "required": ["extra"]},
+        {"$ref": "#/$defs/B", "properties": {"code": {"minimum": 1}}}
+      ]
+    },
+    "Real": {"type": "object", "properties": {"id": {"type": "integer", "maximum": 9}}},
+    "Root": {"$ref": "#/$defs/Real", "description": "An alias of Real."},
+    "Branch": {"allOf": [{"$ref": "#/$defs/Root"}, {"type": "object", "properties": {"name": {"type": "string"}}}]},
+    "BranchOverride": {"allOf": [{"$ref": "#/$defs/Root"}, {"type": "object", "properties": {"id": {"minimum": 1}}}]},
+    "ExternalBranch": {
+      "allOf": [
+        {"$ref": "allof_member_parts/defs.json#/$defs/Alias"},
+        {"type": "object", "properties": {"name": {"type": "string"}}}
+      ]
+    },
+    "P": {"properties": {"x": {"type": "integer"}}},
+    "N": {"anyOf": [{"type": "object", "properties": {"y": {"type": "string"}}}, {"type": "null"}]},
+    "AnyBranch": {"anyOf": [{"type": "object", "properties": {"w": {"type": "string"}}}, true]},
+    "Recursive": {"anyOf": [{"$ref": "#/$defs/Recursive"}, {"type": "object", "properties": {"v": {"type": "integer"}}}]},
+    "WithAnyBranch": {"allOf": [{"$ref": "#/$defs/AnyBranch"}, {"$ref": "#/$defs/P"}]},
+    "WithRecursive": {"allOf": [{"$ref": "#/$defs/Recursive"}, {"$ref": "#/$defs/P"}]}
+  },
+  "properties": {
+    "siblings": {"$ref": "#/$defs/WithSiblings"},
+    "branch": {"$ref": "#/$defs/Branch"},
+    "override": {"$ref": "#/$defs/BranchOverride"},
+    "external": {"$ref": "#/$defs/ExternalBranch"},
+    "nullable_union": {"allOf": [{"$ref": "#/$defs/N"}, {"$ref": "#/$defs/P"}]}
+  },
+  "required": ["nullable_union"]
+}

@@ -826,7 +826,9 @@ _flag(
     "--intersect-allof-keywords does (this option turns it on), and also: the keywords beside an `anyOf` or `oneOf` "
     "in each branch, the `properties` an inherited property override merges name by name, an override that narrows "
     "the inherited `type` (such as to `null`), the length of an inherited closed tuple under --allof-merge-mode none, "
-    "and no `enum` value that the merged `type` rejects. Without it these keep the output of 0.88.0",
+    "the `$ref` siblings of an `allOf` member where the dialect reads them, an `allOf` member that names a `$ref` "
+    "alias, the null branch of an `allOf` member's `anyOf` or `oneOf`, and no `enum` value that the merged `type` "
+    "rejects. Without it these keep the output of 0.88.0",
 )
 _flag(typing_options, "--field-constraints", help="Use field constraints and not con* annotations")
 _flag(

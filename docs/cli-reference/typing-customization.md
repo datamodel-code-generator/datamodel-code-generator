@@ -2165,7 +2165,9 @@ the `pattern`s, the common `multipleOf`, the `type` and `enum` values both admit
 that overrides an inherited one merges its `properties` name by name, so a nested property named `default` or
 `nullable` stays; an override that narrows the inherited `type` (to `null`, to one of its types, or in a nested
 schema) is the intersection instead of the inherited type; and under `--allof-merge-mode none` the type shape keeps
-the length of a closed tuple.
+the length of a closed tuple. An `allOf` member reads the siblings of its `$ref` as a part where the dialect does
+(2019-09 and later, OpenAPI 3.1), a member naming a `$ref` alias takes the alias's target as its base, and the union
+an `allOf` member's `anyOf` or `oneOf` gives admits null where every part of the `allOf` does.
 
 **Option relationships:**
 

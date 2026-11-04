@@ -1,0 +1,224 @@
+pydantic_v2.BaseModel default siblings {"extra": true, "id": "a", "code": 5} accepted
+pydantic_v2.BaseModel default siblings {} accepted
+pydantic_v2.BaseModel default siblings {"extra": "x"} accepted
+pydantic_v2.BaseModel default siblings {"extra": true, "code": 0} accepted
+pydantic_v2.BaseModel default siblings {"extra": true, "code": 10} rejected
+pydantic_v2.BaseModel default branch {"id": 1, "name": "x"} accepted
+pydantic_v2.BaseModel default branch {"id": "not a number", "name": "x"} accepted
+pydantic_v2.BaseModel default branch {"id": 10} accepted
+pydantic_v2.BaseModel default override {"id": 5} accepted
+pydantic_v2.BaseModel default override {"id": 0} accepted
+pydantic_v2.BaseModel default override {"id": 10} accepted
+pydantic_v2.BaseModel default override {"id": "s"} accepted
+pydantic_v2.BaseModel default nullable_union null rejected
+pydantic_v2.BaseModel default nullable_union {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel default nullable_union {"y": 1} rejected
+pydantic_v2.BaseModel default nullable_union {"x": "s"} rejected
+pydantic_v2.dataclass default siblings {"extra": true, "id": "a", "code": 5} accepted
+pydantic_v2.dataclass default siblings {} accepted
+pydantic_v2.dataclass default siblings {"extra": "x"} accepted
+pydantic_v2.dataclass default siblings {"extra": true, "code": 0} accepted
+pydantic_v2.dataclass default siblings {"extra": true, "code": 10} rejected
+pydantic_v2.dataclass default branch {"id": 1, "name": "x"} accepted
+pydantic_v2.dataclass default branch {"id": "not a number", "name": "x"} accepted
+pydantic_v2.dataclass default branch {"id": 10} accepted
+pydantic_v2.dataclass default override {"id": 5} accepted
+pydantic_v2.dataclass default override {"id": 0} accepted
+pydantic_v2.dataclass default override {"id": 10} accepted
+pydantic_v2.dataclass default override {"id": "s"} accepted
+pydantic_v2.dataclass default nullable_union null rejected
+pydantic_v2.dataclass default nullable_union {"y": "s", "x": 1} accepted
+pydantic_v2.dataclass default nullable_union {"y": 1} rejected
+pydantic_v2.dataclass default nullable_union {"x": "s"} rejected
+typing.TypedDict default siblings {"extra": true, "id": "a", "code": 5} accepted
+typing.TypedDict default siblings {} accepted
+typing.TypedDict default siblings {"extra": "x"} accepted
+typing.TypedDict default siblings {"extra": true, "code": 0} accepted
+typing.TypedDict default siblings {"extra": true, "code": 10} accepted
+typing.TypedDict default branch {"id": 1, "name": "x"} accepted
+typing.TypedDict default branch {"id": "not a number", "name": "x"} accepted
+typing.TypedDict default branch {"id": 10} accepted
+typing.TypedDict default override {"id": 5} accepted
+typing.TypedDict default override {"id": 0} accepted
+typing.TypedDict default override {"id": 10} accepted
+typing.TypedDict default override {"id": "s"} accepted
+typing.TypedDict default nullable_union null rejected
+typing.TypedDict default nullable_union {"y": "s", "x": 1} accepted
+typing.TypedDict default nullable_union {"y": 1} rejected
+typing.TypedDict default nullable_union {"x": "s"} rejected
+msgspec.Struct default siblings {"extra": true, "id": "a", "code": 5} accepted
+msgspec.Struct default siblings {} accepted
+msgspec.Struct default siblings {"extra": "x"} accepted
+msgspec.Struct default siblings {"extra": true, "code": 0} accepted
+msgspec.Struct default siblings {"extra": true, "code": 10} rejected
+msgspec.Struct default branch {"id": 1, "name": "x"} accepted
+msgspec.Struct default branch {"id": "not a number", "name": "x"} accepted
+msgspec.Struct default branch {"id": 10} accepted
+msgspec.Struct default override {"id": 5} accepted
+msgspec.Struct default override {"id": 0} accepted
+msgspec.Struct default override {"id": 10} accepted
+msgspec.Struct default override {"id": "s"} accepted
+msgspec.Struct default nullable_union null rejected
+msgspec.Struct default nullable_union {"y": "s", "x": 1} accepted
+msgspec.Struct default nullable_union {"y": 1} rejected
+msgspec.Struct default nullable_union {"x": "s"} rejected
+pydantic_v2.BaseModel --field-constraints siblings {"extra": true, "id": "a", "code": 5} accepted
+pydantic_v2.BaseModel --field-constraints siblings {} accepted
+pydantic_v2.BaseModel --field-constraints siblings {"extra": "x"} accepted
+pydantic_v2.BaseModel --field-constraints siblings {"extra": true, "code": 0} accepted
+pydantic_v2.BaseModel --field-constraints siblings {"extra": true, "code": 10} rejected
+pydantic_v2.BaseModel --field-constraints branch {"id": 1, "name": "x"} accepted
+pydantic_v2.BaseModel --field-constraints branch {"id": "not a number", "name": "x"} accepted
+pydantic_v2.BaseModel --field-constraints branch {"id": 10} accepted
+pydantic_v2.BaseModel --field-constraints override {"id": 5} accepted
+pydantic_v2.BaseModel --field-constraints override {"id": 0} accepted
+pydantic_v2.BaseModel --field-constraints override {"id": 10} accepted
+pydantic_v2.BaseModel --field-constraints override {"id": "s"} accepted
+pydantic_v2.BaseModel --field-constraints nullable_union null rejected
+pydantic_v2.BaseModel --field-constraints nullable_union {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --field-constraints nullable_union {"y": 1} rejected
+pydantic_v2.BaseModel --field-constraints nullable_union {"x": "s"} rejected
+pydantic_v2.BaseModel --use-annotated siblings {"extra": true, "id": "a", "code": 5} accepted
+pydantic_v2.BaseModel --use-annotated siblings {} accepted
+pydantic_v2.BaseModel --use-annotated siblings {"extra": "x"} accepted
+pydantic_v2.BaseModel --use-annotated siblings {"extra": true, "code": 0} accepted
+pydantic_v2.BaseModel --use-annotated siblings {"extra": true, "code": 10} rejected
+pydantic_v2.BaseModel --use-annotated branch {"id": 1, "name": "x"} accepted
+pydantic_v2.BaseModel --use-annotated branch {"id": "not a number", "name": "x"} accepted
+pydantic_v2.BaseModel --use-annotated branch {"id": 10} accepted
+pydantic_v2.BaseModel --use-annotated override {"id": 5} accepted
+pydantic_v2.BaseModel --use-annotated override {"id": 0} accepted
+pydantic_v2.BaseModel --use-annotated override {"id": 10} accepted
+pydantic_v2.BaseModel --use-annotated override {"id": "s"} accepted
+pydantic_v2.BaseModel --use-annotated nullable_union null rejected
+pydantic_v2.BaseModel --use-annotated nullable_union {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --use-annotated nullable_union {"y": 1} rejected
+pydantic_v2.BaseModel --use-annotated nullable_union {"x": "s"} rejected
+pydantic_v2.BaseModel --collapse-root-models siblings {"extra": true, "id": "a", "code": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models siblings {} accepted
+pydantic_v2.BaseModel --collapse-root-models siblings {"extra": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models siblings {"extra": true, "code": 0} accepted
+pydantic_v2.BaseModel --collapse-root-models siblings {"extra": true, "code": 10} rejected
+pydantic_v2.BaseModel --collapse-root-models branch {"id": 1, "name": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models branch {"id": "not a number", "name": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models branch {"id": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models override {"id": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models override {"id": 0} accepted
+pydantic_v2.BaseModel --collapse-root-models override {"id": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models override {"id": "s"} accepted
+pydantic_v2.BaseModel --collapse-root-models nullable_union null rejected
+pydantic_v2.BaseModel --collapse-root-models nullable_union {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models nullable_union {"y": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models nullable_union {"x": "s"} rejected
+msgspec.Struct --collapse-root-models siblings {"extra": true, "id": "a", "code": 5} accepted
+msgspec.Struct --collapse-root-models siblings {} accepted
+msgspec.Struct --collapse-root-models siblings {"extra": "x"} accepted
+msgspec.Struct --collapse-root-models siblings {"extra": true, "code": 0} accepted
+msgspec.Struct --collapse-root-models siblings {"extra": true, "code": 10} rejected
+msgspec.Struct --collapse-root-models branch {"id": 1, "name": "x"} accepted
+msgspec.Struct --collapse-root-models branch {"id": "not a number", "name": "x"} accepted
+msgspec.Struct --collapse-root-models branch {"id": 10} accepted
+msgspec.Struct --collapse-root-models override {"id": 5} accepted
+msgspec.Struct --collapse-root-models override {"id": 0} accepted
+msgspec.Struct --collapse-root-models override {"id": 10} accepted
+msgspec.Struct --collapse-root-models override {"id": "s"} accepted
+msgspec.Struct --collapse-root-models nullable_union null rejected
+msgspec.Struct --collapse-root-models nullable_union {"y": "s", "x": 1} accepted
+msgspec.Struct --collapse-root-models nullable_union {"y": 1} rejected
+msgspec.Struct --collapse-root-models nullable_union {"x": "s"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs siblings {"extra": true, "id": "a", "code": 5} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs siblings {} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs siblings {"extra": "x"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs siblings {"extra": true, "code": 0} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs siblings {"extra": true, "code": 10} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs branch {"id": 1, "name": "x"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs branch {"id": "not a number", "name": "x"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs branch {"id": 10} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs override {"id": 5} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs override {"id": 0} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs override {"id": 10} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs override {"id": "s"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable_union null rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable_union {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable_union {"y": 1} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable_union {"x": "s"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs siblings {"extra": true, "id": "a", "code": 5} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs siblings {} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs siblings {"extra": "x"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs siblings {"extra": true, "code": 0} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs siblings {"extra": true, "code": 10} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs branch {"id": 1, "name": "x"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs branch {"id": "not a number", "name": "x"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs branch {"id": 10} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs override {"id": 5} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs override {"id": 0} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs override {"id": 10} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs override {"id": "s"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable_union null rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable_union {"y": "s", "x": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable_union {"y": 1} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable_union {"x": "s"} rejected
+typing.TypedDict --use-site-models-for-constrained-refs siblings {"extra": true, "id": "a", "code": 5} accepted
+typing.TypedDict --use-site-models-for-constrained-refs siblings {} accepted
+typing.TypedDict --use-site-models-for-constrained-refs siblings {"extra": "x"} accepted
+typing.TypedDict --use-site-models-for-constrained-refs siblings {"extra": true, "code": 0} accepted
+typing.TypedDict --use-site-models-for-constrained-refs siblings {"extra": true, "code": 10} accepted
+typing.TypedDict --use-site-models-for-constrained-refs branch {"id": 1, "name": "x"} accepted
+typing.TypedDict --use-site-models-for-constrained-refs branch {"id": "not a number", "name": "x"} accepted
+typing.TypedDict --use-site-models-for-constrained-refs branch {"id": 10} accepted
+typing.TypedDict --use-site-models-for-constrained-refs override {"id": 5} accepted
+typing.TypedDict --use-site-models-for-constrained-refs override {"id": 0} accepted
+typing.TypedDict --use-site-models-for-constrained-refs override {"id": 10} accepted
+typing.TypedDict --use-site-models-for-constrained-refs override {"id": "s"} accepted
+typing.TypedDict --use-site-models-for-constrained-refs nullable_union null rejected
+typing.TypedDict --use-site-models-for-constrained-refs nullable_union {"y": "s", "x": 1} accepted
+typing.TypedDict --use-site-models-for-constrained-refs nullable_union {"y": 1} rejected
+typing.TypedDict --use-site-models-for-constrained-refs nullable_union {"x": "s"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs siblings {"extra": true, "id": "a", "code": 5} accepted
+msgspec.Struct --use-site-models-for-constrained-refs siblings {} accepted
+msgspec.Struct --use-site-models-for-constrained-refs siblings {"extra": "x"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs siblings {"extra": true, "code": 0} accepted
+msgspec.Struct --use-site-models-for-constrained-refs siblings {"extra": true, "code": 10} rejected
+msgspec.Struct --use-site-models-for-constrained-refs branch {"id": 1, "name": "x"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs branch {"id": "not a number", "name": "x"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs branch {"id": 10} accepted
+msgspec.Struct --use-site-models-for-constrained-refs override {"id": 5} accepted
+msgspec.Struct --use-site-models-for-constrained-refs override {"id": 0} accepted
+msgspec.Struct --use-site-models-for-constrained-refs override {"id": 10} accepted
+msgspec.Struct --use-site-models-for-constrained-refs override {"id": "s"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs nullable_union null rejected
+msgspec.Struct --use-site-models-for-constrained-refs nullable_union {"y": "s", "x": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs nullable_union {"y": 1} rejected
+msgspec.Struct --use-site-models-for-constrained-refs nullable_union {"x": "s"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs siblings {"extra": true, "id": "a", "code": 5} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs siblings {} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs siblings {"extra": "x"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs siblings {"extra": true, "code": 0} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs siblings {"extra": true, "code": 10} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs branch {"id": 1, "name": "x"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs branch {"id": "not a number", "name": "x"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs branch {"id": 10} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs override {"id": 5} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs override {"id": 0} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs override {"id": 10} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs override {"id": "s"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable_union null rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable_union {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable_union {"y": 1} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable_union {"x": "s"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs siblings {"extra": true, "id": "a", "code": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs siblings {} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs siblings {"extra": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs siblings {"extra": true, "code": 0} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs siblings {"extra": true, "code": 10} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs branch {"id": 1, "name": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs branch {"id": "not a number", "name": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs branch {"id": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs override {"id": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs override {"id": 0} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs override {"id": 10} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs override {"id": "s"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable_union null rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable_union {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable_union {"y": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable_union {"x": "s"} rejected

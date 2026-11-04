@@ -17225,3 +17225,37 @@ def test_main_openapi_ignore_ref_siblings_by_schema_version_applies_them_in_31(t
         extra_args=[*common, "--ignore-ref-siblings-by-schema-version"],
         expected_output=output_file.read_text(encoding="utf-8"),
     )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--intersect-allof-keywords"], id="released"),
+        pytest.param(["--intersect-combined-schema-keywords"], id="combined"),
+        pytest.param(
+            ["--intersect-combined-schema-keywords", "--dedupe-request-response-variants"], id="combined-deduped"
+        ),
+    ],
+)
+def test_main_openapi_allof_member_parts_request_response(output_file: Path, extra_args: list[str]) -> None:
+    """Split the request and response models by the allOf members as the parse reads them.
+
+    With --intersect-combined-schema-keywords the siblings of an allOf member's ``$ref`` are a part of it in OpenAPI
+    3.1 and a member naming a ``$ref`` alias names its target, so ``MResponse`` gets the read-only ``extra`` and
+    ``MRequest`` the write-only ``secret`` of the aliased ``Real``, with and without the deduplicated walk.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "allof_member_parts_request_response.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--read-only-write-only-model-type",
+            "request-response",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
