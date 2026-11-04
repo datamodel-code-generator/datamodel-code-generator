@@ -30,7 +30,7 @@ extract_inherited_enum
 mark_unused_models_start
 set_reference_default_value_to_field
 reuse_model
-replace_type_list_unique_list_to_set
+replace_merged_unique_list_to_set
 collapse_root_models
 set_default_enum_member
 sort_models

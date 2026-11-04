@@ -8488,7 +8488,10 @@ Generate set types for arrays with uniqueItems constraint.
 
 The `--use-unique-items-as-set` flag generates Python set types instead of
 list types for JSON Schema arrays that have the uniqueItems constraint set
-to true, enforcing uniqueness at the type level.
+to true, enforcing uniqueness at the type level: a property, a root model,
+the member of an anyOf or oneOf, the items of an array and the values of a
+map. An array whose items no set can hold, such as objects or arrays, stays
+a list.
 
 !!! tip "Usage"
 

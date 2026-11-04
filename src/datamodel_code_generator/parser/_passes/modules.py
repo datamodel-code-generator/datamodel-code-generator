@@ -82,7 +82,7 @@ from datamodel_code_generator.parser._passes._import_binding import (
     reimport_references,
     set_reference_expressions,
 )
-from datamodel_code_generator.parser._passes._keys import _DERIVED_FROM_KEY, declares_type_list_unique_items
+from datamodel_code_generator.parser._passes._keys import _DERIVED_FROM_KEY
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
 from datamodel_code_generator.parser._passes._shared import (
     _TYPE_DEPENDENT_CONSTRAINTS_KEY,
@@ -108,7 +108,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _annotated_references,
     _assign_module_name,
     _context_models,
-    _declares_unique_items,
     _derived_models,
     _get_enum_from_base,
     _get_model_module_name,
@@ -228,7 +227,7 @@ __all__ = [
     "record_decimal_alias_models",
     "remove_overridden_models",
     "rename_fields_hiding_types",
-    "replace_type_list_unique_list_to_set",
+    "replace_merged_unique_list_to_set",
     "replace_unique_list_to_set",
     "restore_inherited_field_names_for_unique_aliases",
     "reuse_model",
@@ -976,50 +975,52 @@ def record_decimal_alias_models(parser: ModulesHost, state: ModuleStateView) -> 
 
 
 def replace_unique_list_to_set(parser: ModulesHost, models: list[DataModel]) -> None:
-    """Write the uniqueItems arrays that ``unique_items_plan`` decides as sets, and the list default as its set.
+    """Write the uniqueItems arrays of each field's own schema that ``unique_items_plan`` decides as sets.
 
     A field typed as another container, such as a ``Sequence``, keeps its type and its default. The array of a type
-    list waits for reuse (``replace_type_list_unique_list_to_set``).
+    list and the arrays a nested schema declares unique wait for reuse (``replace_merged_unique_list_to_set``).
     """
-    for model_field, plan in _unique_list_fields(parser, models, type_list=False):
-        _write_unique_sets(parser, model_field, plan)
-
-
-def replace_type_list_unique_list_to_set(parser: ModulesHost, models: list[DataModel]) -> None:
-    """Write the uniqueItems array of a type list as a set where every model merged into its model declares it too.
-
-    The array of ``type: [array, string]`` reads ``uniqueItems`` since 0.89.0; deduplication and reuse compared it as
-    the list 0.88.0 wrote, so a model merged into its model may declare no ``uniqueItems`` there, or declare it
-    through a base: the field then keeps the list, which takes the values of both.
-    """
-    for model in models:
-        for model_field, plan in _unique_list_fields(parser, [model], type_list=True):
-            if all(_declares_unique_items_at(merged, model_field.name) for merged in merged_models(parser, model)):
-                _write_unique_sets(parser, model_field, plan)
-
-
-def _unique_list_fields(
-    parser: ModulesHost, models: list[DataModel], *, type_list: bool
-) -> Iterator[tuple[DataModelFieldBase, UniqueItemsPlan]]:
-    """Yield the fields of a type list or not, as ``type_list`` says, with the uniqueItems lists that become sets."""
     if not parser.use_unique_items_as_set:
         return
     for model in models:
         for model_field in model.fields:
             if (
-                declares_type_list_unique_items(model_field) is type_list
-                and (plan := unique_items_plan(model_field, keeps_tuples=parser.use_tuple_for_closed_arrays)).sets
-            ):
-                yield model_field, plan
+                plan := unique_items_plan(model_field, keeps_tuples=parser.use_tuple_for_closed_arrays, sources="field")
+            ).sets:
+                _write_unique_sets(parser, model_field, plan)
 
 
-def _declares_unique_items_at(model: DataModel, name: str | None) -> bool:
-    """Return whether the field ``name`` of a model, its own or else the one it inherits, declares uniqueItems."""
+def replace_merged_unique_list_to_set(parser: ModulesHost, models: list[DataModel]) -> None:
+    """Write the other uniqueItems arrays as sets where every model merged into its model declares them too.
+
+    They are the array of ``type: [array, string]``, which reads ``uniqueItems`` since 0.89.0, and the arrays that a
+    member of an anyOf or oneOf, the items of an array or the values of a map declare unique. Deduplication and reuse
+    compared them as lists, so a model merged into the field's model may declare no ``uniqueItems`` at the same place,
+    or declare it through a base: the array then keeps the list, which takes the values of both.
+    """
+    if not parser.use_unique_items_as_set:
+        return
+    for model in models:
+        merged = merged_models(parser, model)
+        for model_field in model.fields:
+            if (
+                plan := unique_items_plan(
+                    model_field,
+                    keeps_tuples=parser.use_tuple_for_closed_arrays,
+                    sources="merged",
+                    merged=[_field_named(other, model_field.name) for other in merged],
+                )
+            ).sets:
+                _write_unique_sets(parser, model_field, plan)
+
+
+def _field_named(model: DataModel, name: str | None) -> DataModelFieldBase | None:
+    """Return the field ``name`` of a model, its own or else the one it inherits."""
     found = None
     for model_field in model.iter_all_fields():
         if model_field.name == name:
             found = model_field
-    return found is not None and _declares_unique_items(found)
+    return found
 
 
 def _write_unique_sets(parser: ModulesHost, model_field: DataModelFieldBase, plan: UniqueItemsPlan) -> None:

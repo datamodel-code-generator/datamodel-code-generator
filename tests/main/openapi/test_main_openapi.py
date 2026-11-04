@@ -3532,7 +3532,10 @@ def test_validation_failed(mocker: MockerFixture, output_file: Path) -> None:
 
 The `--use-unique-items-as-set` flag generates Python set types instead of
 list types for JSON Schema arrays that have the uniqueItems constraint set
-to true, enforcing uniqueness at the type level.""",
+to true, enforcing uniqueness at the type level: a property, a root model,
+the member of an anyOf or oneOf, the items of an array and the values of a
+map. An array whose items no set can hold, such as objects or arrays, stays
+a list.""",
     input_schema="openapi/api_constrained.yaml",
     cli_args=["--use-unique-items-as-set", "--field-constraints"],
     golden_output="openapi/with_field_constraints_pydantic_v2_use_standard_collections_set.py",
@@ -3544,7 +3547,10 @@ def test_main_with_field_constraints(
 
     The `--use-unique-items-as-set` flag generates Python set types instead of
     list types for JSON Schema arrays that have the uniqueItems constraint set
-    to true, enforcing uniqueness at the type level.
+    to true, enforcing uniqueness at the type level: a property, a root model,
+    the member of an anyOf or oneOf, the items of an array and the values of a
+    map. An array whose items no set can hold, such as objects or arrays, stays
+    a list.
     """
     with pytest.warns(UserWarning, match=r"fields holding AnyUrl are written without min_length; Api\.apiUrl "):
         run_main_and_assert(

@@ -296,7 +296,7 @@ from datamodel_code_generator.parser._null_facts import (
     resolve_null_facts,
 )
 from datamodel_code_generator.parser._object_maps import _schema_assertions, _with_null
-from datamodel_code_generator.parser._origins import with_field_origin, with_type_origin
+from datamodel_code_generator.parser._origins import with_field_origin, with_type_origin, with_unique_items
 from datamodel_code_generator.parser._passes._keys import (
     _DERIVED_FROM_KEY,
     _RAW_SCHEMA_DEFAULT_UNDEFINED,
@@ -6138,7 +6138,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 self, SchemaSite(name, self._site_schema(item), path, singular_name=singular_name, parent=parent)
             )
             with nullcontext() if (merged_scope := choice.site.scope) is None else merged_scope:
-                return with_type_origin(choice.build(self, choice.site), location)
+                return with_unique_items(with_type_origin(choice.build(self, choice.site), location), choice.site.obj)
 
     def _has_materialized_container_constraints(self, item: JsonSchemaObject) -> bool:
         """Return whether an inherited container shape materialized on the item keeps constraints of its own."""
@@ -6744,11 +6744,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         non_array_types = self._get_array_union_non_array_types(obj)
         localize_constraints = self._should_localize_array_union_constraints(obj, non_array_types)
-        array_data_type = self.data_type(
-            data_types=item_data_types,
-            is_tuple=is_tuple,
-            tuple_item_count=tuple_item_count,
-            **container_flags,
+        array_data_type = with_unique_items(
+            self.data_type(
+                data_types=item_data_types,
+                is_tuple=is_tuple,
+                tuple_item_count=tuple_item_count,
+                **container_flags,
+            ),
+            obj,
         )
         if localize_constraints:
             array_data_type = self._parse_array_union_constrained_branch(
