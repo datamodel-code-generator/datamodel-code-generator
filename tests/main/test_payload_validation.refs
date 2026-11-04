@@ -1784,6 +1784,7 @@ openapi/ref_merge_parameters.yaml::components.schemas.StatusString	payloads/nati
 openapi/ref_nullable.yaml::components.schemas.NonNullableChild	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/ref_nullable.yaml::components.schemas.NullableMerged	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/ref_sibling_unique_items_oas31.yaml::components.schemas.Tags	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/ref_siblings_ignored_oas30.yaml::components.schemas.Text	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/reference_object_siblings/api.yaml::paths./tags.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/reference_object_siblings/api.yaml::paths./tags.post.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/reference_to_object_properties.yaml::components.schemas.Id	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3701,6 +3702,7 @@ openapi/ref_merge_parameters.yaml::components.schemas.StatusString	payloads/nati
 openapi/ref_nullable.yaml::components.schemas.NonNullableChild	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/ref_nullable.yaml::components.schemas.NullableMerged	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/ref_sibling_unique_items_oas31.yaml::components.schemas.Tags	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/ref_siblings_ignored_oas30.yaml::components.schemas.Text	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/reference_object_siblings/api.yaml::paths./tags.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/reference_object_siblings/api.yaml::paths./tags.post.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/reference_to_object_properties.yaml::components.schemas.Id	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

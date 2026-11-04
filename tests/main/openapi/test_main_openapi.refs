@@ -1356,6 +1356,11 @@ field_property_name_collision.yaml-pydantic_v2.dataclass-extra_args4-property_da
 	main/openapi/main_openapi/generic_base_class_other_packages/
 [test_main_openapi_generic_base_class_package_cycle]
 	main/openapi/main_openapi/generic_base_class_package_cycle/
+[test_main_openapi_ignore_ref_siblings_by_schema_version]
+ignored	main/openapi/main_openapi/ignore_ref_siblings_by_schema_version[ignored].py
+overlaid	main/openapi/main_openapi/ignore_ref_siblings_by_schema_version[overlaid].py
+[test_main_openapi_ignore_ref_siblings_by_schema_version_applies_them_in_31]
+	main/openapi/main_openapi/ignore_ref_siblings_by_schema_version_applies_them_in_31.py	= main/openapi/main_openapi/read_schema_version_per_document[first-read].py
 [test_main_openapi_ignored_content_type_header_refs]
 	main/openapi/main_openapi/ignored_content_type_header_refs.py
 [test_main_openapi_include_info_version]

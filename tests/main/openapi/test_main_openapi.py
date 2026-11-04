@@ -17162,3 +17162,66 @@ def test_main_openapi_read_schema_version_per_document(output_file: Path, extra_
             invalid_json=json.dumps({"tags": ["a", "a"]}),
             expected_error_type="value_error",
         )
+
+
+@pytest.mark.cli_doc(
+    options=["--ignore-ref-siblings-by-schema-version"],
+    option_description="""Read a `$ref` as its target alone where the schema version ignores the keywords beside it.
+
+JSON Schema draft 4, 6 and 7, OpenAPI 3.0 and AsyncAPI 2 ignore every keyword beside a `$ref`. Without the option
+those keywords overlay the referenced schema: a sibling `format: binary` types the field `bytes`, a sibling
+`maxLength` constrains it, and a sibling `uniqueItems` makes it a set under `--use-unique-items-as-set`. With
+`--ignore-ref-siblings-by-schema-version` the field is typed by the referenced schema alone, and annotations beside
+the `$ref`, such as `description` or `default`, are left out too. Versions that apply the keywords beside a `$ref`
+(2019-09 and later, OpenAPI 3.1 and later, AsyncAPI 3) read them as before. The version is the one
+`--read-schema-version-per-document` reads, else that of the document being parsed.""",
+    input_schema="openapi/ref_siblings_ignored_oas30.yaml",
+    cli_args=["--ignore-ref-siblings-by-schema-version"],
+    golden_output="main/openapi/main_openapi/ignore_ref_siblings_by_schema_version[ignored].py",
+    comparison_output="main/openapi/main_openapi/ignore_ref_siblings_by_schema_version[overlaid].py",
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="overlaid"), pytest.param(["--ignore-ref-siblings-by-schema-version"], id="ignored")],
+)
+def test_main_openapi_ignore_ref_siblings_by_schema_version(output_file: Path, extra_args: list[str]) -> None:
+    """Type a ``$ref`` of an OpenAPI 3.0 document by its target alone with the option (#5845).
+
+    The siblings of a Reference Object are ignored in OpenAPI 3.0; without the option ``format: binary`` types
+    ``data`` as ``bytes`` and ``maxLength`` constrains ``note``.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "ref_siblings_ignored_oas30.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    if extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="ignore_ref_siblings_by_schema_version_oas30",
+            model_name="Holder",
+            valid_json=json.dumps({"data": "text", "note": "longer than three"}),
+            invalid_json=json.dumps({"data": 1}),
+            expected_error_type="string_type",
+        )
+
+
+def test_main_openapi_ignore_ref_siblings_by_schema_version_applies_them_in_31(tmp_path: Path) -> None:
+    """Keep the keywords beside a ``$ref`` of an OpenAPI 3.1 document, which applies them, under the option."""
+    common = ["--generate-schema-validators", "--disable-timestamp", "--formatters", "builtin"]
+    output_file = tmp_path / "output.py"
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "ref_sibling_unique_items_oas31.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=common,
+    )
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "ref_sibling_unique_items_oas31.yaml",
+        output_path=tmp_path / "ignored.py",
+        input_file_type="openapi",
+        extra_args=[*common, "--ignore-ref-siblings-by-schema-version"],
+        expected_output=output_file.read_text(encoding="utf-8"),
+    )

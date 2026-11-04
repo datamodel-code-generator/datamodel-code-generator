@@ -45,6 +45,7 @@ __all__ = [
     "DEFAULT_FIELD_KEYS",
     "EXCLUDE_FIELD_KEYS",
     "EXCLUDE_FIELD_KEYS_IN_JSON_SCHEMA",
+    "IGNORED_REF_SIBLINGS_CONTEXT",
     "READ_UNEVALUATED_PROPERTIES_CONTEXT",
     "Discriminator",
     "JSONReference",
@@ -256,6 +257,9 @@ _IN_PLACE_APPLICATOR_KEYWORDS: Final = frozenset({
 })
 """The keywords that apply a schema to the instance itself; ``then`` and ``else`` apply only through ``if``."""
 READ_UNEVALUATED_PROPERTIES_CONTEXT: Final = "read_unevaluated_properties"
+IGNORED_REF_SIBLINGS_CONTEXT: Final = "ignored_ref_siblings"
+"""The context key of ``--ignore-ref-siblings-by-schema-version``: whether a location's version ignores ``$ref``
+siblings."""
 
 
 _PROPERTY_EVALUATING_KEYWORDS: Final = frozenset({
@@ -420,6 +424,27 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
         if not values.get("properties") and _is_false_all_of(unevaluated_properties):
             return {**values, "unevaluatedProperties": False}
         return {**values, "additionalProperties": unevaluated_properties}
+
+    @model_validator(mode="before")
+    @classmethod
+    def read_ref_alone_where_its_siblings_are_ignored(cls, values: Any, info: ValidationInfo) -> Any:
+        """Read a ``$ref`` as its target alone where the schema version of its document ignores the keywords beside it.
+
+        Only under ``--ignore-ref-siblings-by-schema-version``, whose test of a location (draft 4, 6 and 7, OpenAPI
+        3.0, AsyncAPI 2) the parser passes in the validation context; nested schema objects are validated with the same
+        context. The schema object of the document decides, as written, so the keywords beside the ``$ref`` are left
+        out of it, annotations and extensions included, and the document keeps them for the JSON pointers that name
+        them. Defined last, it runs before the other validators and sees the document object.
+        """
+        if (
+            (ignores := (info.context or {}).get(IGNORED_REF_SIBLINGS_CONTEXT)) is None
+            or not _is_document_object(values)
+            or not isinstance(ref := values.get("$ref"), str)
+            or len(values) == 1
+            or not ignores(location := _source_location(values))
+        ):
+            return values
+        return _located({"$ref": ref}, location)
 
     @property
     def python_field_overrides(self) -> Mapping[str, str]:

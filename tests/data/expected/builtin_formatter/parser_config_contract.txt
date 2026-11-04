@@ -69,6 +69,7 @@ reviewed-safe http_local_ref_path
 reviewed-safe http_query_parameters
 reviewed-safe http_timeout
 reviewed-safe ignore_enum_constraints
+reviewed-safe ignore_ref_siblings_by_schema_version
 guarded import_overrides
 reviewed-safe infer_union_variant_names
 reviewed-safe intersect_allof_keywords

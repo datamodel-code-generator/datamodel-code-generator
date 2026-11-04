@@ -327,6 +327,7 @@ from datamodel_code_generator.parser._schema_object import (
     DEFAULT_FIELD_KEYS,
     EXCLUDE_FIELD_KEYS,  # noqa: F401  # Preserve the established parser.jsonschema export.
     EXCLUDE_FIELD_KEYS_IN_JSON_SCHEMA,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    IGNORED_REF_SIBLINGS_CONTEXT,
     READ_UNEVALUATED_PROPERTIES_CONTEXT,
     Discriminator,  # noqa: F401  # Preserve the established parser.jsonschema export.
     JSONReference,
@@ -1294,9 +1295,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return self.schema_features
 
     def _ref_siblings_apply_to(
-        self, schema: JsonSchemaObject, *, legacy: Literal["first-read", "parsed-document", "as-written"]
+        self,
+        schema: JsonSchemaObject | SchemaLocation | None,
+        *,
+        legacy: Literal["first-read", "parsed-document", "as-written"],
     ) -> bool:
         """Return whether the keywords beside the ``$ref`` of ``schema`` apply with it, as its version reads them.
+
+        ``schema`` is a schema object or the location of one.
 
         Under --read-schema-version-per-document the version is that of its document. Without it, row
         ``legacy-first-read-dialect`` keeps the reading each site had: ``first-read``, the JSON Schema draft of the
@@ -7567,9 +7573,26 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self.root_id = previous_root_id
 
     @cached_property
-    def _schema_validation_context(self) -> dict[str, bool] | None:
-        """Return the validation context of the schema objects: whether they read ``unevaluatedProperties``."""
-        return {READ_UNEVALUATED_PROPERTIES_CONTEXT: True} if self.read_unevaluated_properties else None
+    def _schema_validation_context(self) -> dict[str, object] | None:
+        """Return the validation context of the schema objects.
+
+        It says whether they read ``unevaluatedProperties``, and under --ignore-ref-siblings-by-schema-version whether
+        the version of a location ignores the keywords beside a ``$ref`` (``_ref_siblings_apply_to``).
+        """
+        context: dict[str, object] = {}
+        if self.read_unevaluated_properties:
+            context[READ_UNEVALUATED_PROPERTIES_CONTEXT] = True
+        if self.config.ignore_ref_siblings_by_schema_version:
+            context[IGNORED_REF_SIBLINGS_CONTEXT] = self._ignores_ref_siblings_at
+        return context or None
+
+    def _ignores_ref_siblings_at(self, location: SchemaLocation | None) -> bool:
+        """Return whether the schema version of a location ignores the keywords beside a ``$ref``.
+
+        It is the version of its document under --read-schema-version-per-document, else that of the input document
+        being parsed (row ``legacy-first-read-dialect``).
+        """
+        return not self._ref_siblings_apply_to(location, legacy="parsed-document")
 
     def _schema_object(self, raw: object) -> JsonSchemaObject:
         """Validate a raw or dumped schema as ``SCHEMA_OBJECT_TYPE`` in the parser's validation context."""

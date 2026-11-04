@@ -14,6 +14,8 @@ dedupe-request-response-variants-practical	main/preset_opt_in_options/preset_set
 dedupe-request-response-variants-standard	main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-request-response-variants-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-request-response-variants-practical].py
 filter-literal-values-practical	main/preset_opt_in_options/preset_sets_opt_in_option[filter-literal-values-practical].py
 filter-literal-values-standard	main/preset_opt_in_options/preset_sets_opt_in_option[filter-literal-values-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[filter-literal-values-practical].py
+ignore-ref-siblings-by-schema-version-practical	main/preset_opt_in_options/preset_sets_opt_in_option[ignore-ref-siblings-by-schema-version-practical].py
+ignore-ref-siblings-by-schema-version-standard	main/preset_opt_in_options/preset_sets_opt_in_option[ignore-ref-siblings-by-schema-version-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[ignore-ref-siblings-by-schema-version-practical].py
 intersect-allof-keywords-practical	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-allof-keywords-practical].py
 intersect-allof-keywords-standard	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-allof-keywords-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[intersect-allof-keywords-practical].py
 keep-enum-member-values-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-enum-member-values-practical].py

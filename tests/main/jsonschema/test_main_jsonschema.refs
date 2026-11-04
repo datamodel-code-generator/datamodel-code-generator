@@ -6975,6 +6975,9 @@ default	main/jsonschema/main_jsonschema/hyphenated_directory_reference[default]/
 	main/jsonschema/id_stdin.py
 [test_main_jsonschema_ids]
 	main/jsonschema/ids//*.py
+[test_main_jsonschema_ignore_ref_siblings_by_schema_version]
+ignored	main/jsonschema/main_jsonschema/ignore_ref_siblings_by_schema_version[ignored].py
+overlaid	main/jsonschema/main_jsonschema/ignore_ref_siblings_by_schema_version[overlaid].py
 [test_main_jsonschema_import_cycle_map_key_alias]
 dataclasses.dataclass	main/jsonschema/main_jsonschema/import_cycle_map_key_alias[dataclasses.dataclass]/
 msgspec.Struct	main/jsonschema/main_jsonschema/import_cycle_map_key_alias[msgspec.Struct]/

@@ -39099,3 +39099,33 @@ def test_main_jsonschema_read_schema_version_per_document_property_count(
             invalid_json=json.dumps({"a": 1}),
             expected_error_type="string_type",
         )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="overlaid"), pytest.param(["--ignore-ref-siblings-by-schema-version"], id="ignored")],
+)
+def test_main_jsonschema_ignore_ref_siblings_by_schema_version(output_file: Path, extra_args: list[str]) -> None:
+    """Keep a ``$ref`` of a draft-07 document a list with a sibling ``uniqueItems`` under the option (#5958).
+
+    Draft 7 ignores every keyword beside a ``$ref``; without the option ``--use-unique-items-as-set`` makes ``tags`` a
+    set, so ``["a", "a"]`` parses to ``{"a"}``.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "ref_siblings_ignored_draft07.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--use-unique-items-as-set", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    if extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="ignore_ref_siblings_by_schema_version_draft07",
+            model_name="Holder",
+            valid_json=json.dumps({"tags": ["a", "a"]}),
+            invalid_json=json.dumps({"tags": [1]}),
+            expected_error_type="string_type",
+            expected_attribute_path=("tags", "root"),
+            expected_attribute_value=["a", "a"],
+        )

@@ -58,6 +58,7 @@ OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
     "--name-converted-payloads-by-message",
     "--singularize-last-word-of-item-names",
     "--read-schema-version-per-document",
+    "--ignore-ref-siblings-by-schema-version",
 )
 """The options the 20261104 presets set beyond the 20261027 presets."""
 
@@ -131,6 +132,12 @@ CASES_20261104: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="read-schema-version-per-document",
+    ),
+    pytest.param(
+        OPEN_API_DATA_PATH / "ref_siblings_ignored_oas30.yaml",
+        "openapi",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="ignore-ref-siblings-by-schema-version",
     ),
 )
 """The inputs each opt-in option of the 20261104 presets changes."""

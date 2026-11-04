@@ -1496,6 +1496,16 @@ _flag(
     "property-count rule for a minProperties beside an allOf $ref. Without it the version of the document parsed "
     "first applies to every document, as in 0.88.0. No effect with an explicit --schema-version.",
 )
+_flag(
+    base_options,
+    "--ignore-ref-siblings-by-schema-version",
+    help="Read a $ref as its target alone where the schema version ignores the keywords beside it (JSON Schema "
+    "draft 4, 6 and 7, OpenAPI 3.0, AsyncAPI 2), as those versions specify: a $ref with a sibling format: binary "
+    "takes the referenced type instead of bytes, a sibling uniqueItems makes no set, and a sibling description or "
+    "default is left out too. Versions that apply the keywords beside a $ref (2019-09 and later, OpenAPI 3.1 and "
+    "later, AsyncAPI 3) read them as before. Without it the keywords beside such a $ref overlay its target, as in "
+    "0.88.0. The version is the one --read-schema-version-per-document reads, else that of the document parsed.",
+)
 
 # ======================================================================================
 # Options specific to GraphQL input schemas

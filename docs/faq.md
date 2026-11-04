@@ -643,6 +643,34 @@ class Root(BaseModel):
     score: Score | None = None
 ```
 
+### `--ignore-ref-siblings-by-schema-version`
+
+| | |
+|---|---|
+| Option | `--ignore-ref-siblings-by-schema-version` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.89.0 |
+| Issue | [#5845](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5845), [#5958](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5958) |
+
+**Affects:** a `$ref` with keywords beside it in a version that ignores them: JSON Schema draft 4, 6 and 7, OpenAPI 3.0 and AsyncAPI 2. Without the option those keywords overlay the referenced schema: a sibling `format: binary` types the field `bytes`, a sibling `maxLength` constrains it, and a sibling `uniqueItems` makes it a set under `--use-unique-items-as-set`. With the option the field is typed by the referenced schema alone; annotations beside the `$ref` (`description`, `default`, `title`) and extensions are left out too. Versions that apply the keywords beside a `$ref` read them as before; the version is the one `--read-schema-version-per-document` reads, else that of the document being parsed.
+
+Schema: an OpenAPI 3.0 `Holder` whose `data` is `{"$ref": "#/components/schemas/Text", "format": "binary"}`, with `Text` a string.
+
+Without the option (same as 0.88.0):
+
+```python
+class Holder(BaseModel):
+    data: bytes | None = None
+```
+
+With the option:
+
+```python
+class Holder(BaseModel):
+    data: Text | None = None
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.

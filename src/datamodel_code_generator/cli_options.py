@@ -243,7 +243,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         _C.BASE,
         "--input --output --emit-model-metadata --http-backend --url --input-model --input-model-ref-strategy",
         "--input-file-type --encoding --schema-version --schema-version-mode --read-schema-version-per-document",
-        "--external-ref-mapping --preset",
+        "--ignore-ref-siblings-by-schema-version --external-ref-mapping --preset",
     ),
     **_opts(
         _C.MODEL,
