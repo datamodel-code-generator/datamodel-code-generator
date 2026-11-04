@@ -5101,7 +5101,7 @@ def test_main_jsonschema_keep_reference_null_on_merged_models(
     an ``Item`` merged into the one of ``Bar`` (#5163), and ``home`` and the items of ``homes`` a ``Home`` that
     ``--reuse-model`` makes a subclass of ``Work`` (#5411). Without the option they lose the null where the field
     writes none of its own; with it they keep it, so the models accept the nulls their schemas admit, and ``Foo``
-    stays apart from ``Bar``. ``work`` still rejects null.
+    stays apart from ``Bar``. ``work`` still rejects null. Pydantic validates the TypedDict models from Python 3.12 on.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "keep_reference_null_on_merged_models.json",
@@ -5120,15 +5120,18 @@ def test_main_jsonschema_keep_reference_null_on_merged_models(
         ],
         force_exec_validation=True,
     )
-    if error_type is not None:
-        assert_generated_model_json_validation(
-            output_file,
-            module_name=f"keep_reference_null_{output_model_type.replace('.', '_')}_{len(extra_args)}",
-            model_name="Holder",
-            valid_json=json.dumps(KEPT_REFERENCE_NULL_PAYLOAD),
-            invalid_json=json.dumps({**KEPT_REFERENCE_NULL_PAYLOAD, "work": None}),
-            expected_error_type=error_type,
-        )
+    if error_type is None or (
+        output_model_type == DataModelType.TypingTypedDict.value and sys.version_info[:2] < (3, 12)
+    ):
+        return
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"keep_reference_null_{output_model_type.replace('.', '_')}_{len(extra_args)}",
+        model_name="Holder",
+        valid_json=json.dumps(KEPT_REFERENCE_NULL_PAYLOAD),
+        invalid_json=json.dumps({**KEPT_REFERENCE_NULL_PAYLOAD, "work": None}),
+        expected_error_type=error_type,
+    )
 
 
 @pytest.mark.parametrize(
