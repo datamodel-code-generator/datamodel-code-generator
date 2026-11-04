@@ -19429,6 +19429,69 @@ def test_main_jsonschema_type_mappings_byte_to_binary(
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--field-constraints"], id="field_constraints"),
+        pytest.param(["--use-annotated"], id="use_annotated"),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass", "--field-constraints"], id="pydantic_dataclass"),
+    ],
+)
+def test_main_jsonschema_type_mappings_byte_to_binary_pattern(
+    tmp_path: Path, output_file: Path, extra_args: list[str]
+) -> None:
+    """Leave out the ``pattern`` of bytes mapped from base64 text with a warning: Pydantic cannot check it on the text.
+
+    Up to 0.88.0 ``Base64Bytes = Field(..., pattern=...)`` failed at import, and a pattern beside ``Base64Bytes`` in
+    ``Annotated`` or beside the ``EncodedBytes`` form that checks the lengths was checked on the decoded value, which
+    rejects text the schema accepts. The lengths stay checked on the text.
+    """
+    byte = {"type": "string", "format": "byte", "pattern": "^Y"}
+    input_file = tmp_path / "byte_pattern.json"
+    input_file.write_text(
+        json.dumps({
+            "title": "Model",
+            "type": "object",
+            "properties": {"plain": byte, "sized": {**byte, "maxLength": 8}},
+            "required": ["plain"],
+        }),
+        encoding="utf-8",
+    )
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=input_file,
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            extra_args=[
+                *extra_args,
+                *("--type-mappings", "string+byte=binary", "--formatters", "builtin", "--disable-timestamp"),
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            dict.fromkeys(
+                f"{warning.message}\n" for warning in recorded_warnings if "does not take" in str(warning.message)
+            )
+        ),
+        name="warnings",
+    )
+    with _generated_model(output_file, "byte_pattern", "Model") as model:
+        validate = _model_json_validator(model)
+        verdicts = [
+            f"{field} {text}: {_validation_verdict(validate, json.dumps({'plain': 'YWFh', field: text}))}\n"
+            for field in ("plain", "sized")
+            for text in ("YWFh", "ZWFh", "YWFhYWFhYWFh")
+        ]
+        decoded = validate(json.dumps({"plain": "YWFh", "sized": "YWFh"}))
+    assert_output(
+        "".join(verdicts) + f"plain: {decoded.plain!r}\nsized: {decoded.sized!r}\n",
+        name="payloads",
+    )
+
+
 def test_main_jsonschema_type_mappings_invalid_format(output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test --type-mappings option with invalid format raises error."""
     run_main_and_assert(

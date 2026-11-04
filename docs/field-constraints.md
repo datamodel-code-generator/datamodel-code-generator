@@ -236,7 +236,8 @@ keywords, so `typing.List[int]`, `collections.abc.Sequence[int]` and `Annotated[
 | `str`, `constr`, `StrictStr` | `minLength`, `maxLength`, `pattern` | `minLength`, `maxLength`, `pattern` |
 | `bytes`, `StrictBytes` | `minLength`, `maxLength`, `pattern` | `minLength`, `maxLength` |
 | `EmailStr` | `minLength`, `maxLength`, `pattern` | none |
-| `Base64Str`, and the `Base64Bytes` of `--type-mappings byte=binary` | `minLength`, `maxLength`, `pattern`, which Pydantic checks on the decoded value | none |
+| `Base64Str` | `minLength`, `maxLength`, `pattern`, which Pydantic checks on the decoded value | none |
+| the `Base64Bytes` of `--type-mappings byte=binary` | `minLength`, `maxLength`; Pydantic cannot check a `pattern` on its base64 text | none |
 | `conbytes`, `SecretStr` | `minLength`, `maxLength` | none |
 | the `Literal` of a `const` | those of its value's type (a string: `minLength`, `maxLength`, `pattern`) | none |
 | `list`, `set`, `frozenset`, `tuple` and other sequences | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength` | `minItems`, `maxItems`, `minLength`, `maxLength`, except on a fixed-length tuple such as `tuple[int, int]` |

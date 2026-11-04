@@ -215,6 +215,10 @@ _STRING_KEYWORDS_KEPT_TYPE: Final = "pydantic.AnyUrl"
 _BASE64_DECODED_KEYWORDS: Final[frozenset[str]] = STRING_KEYWORDS
 """The keywords a type that decodes base64 text takes, as written beside it in every release: Pydantic checks them on
 the decoded value, not on the text the schema constrains."""
+_BASE64_BYTES_KEYWORDS: Final[frozenset[str]] = LENGTH_KEYWORDS
+"""The keywords bytes decoded from base64 text take: the lengths, but no ``pattern``, which Pydantic cannot check on
+the text: it refuses one in ``Field()`` beside ``Base64Bytes`` at import and checks one beside ``EncodedBytes`` on the
+decoded value."""
 _BASE64_BYTES_LENGTH_ARGUMENTS: Final[Mapping[str, str]] = MappingProxyType({
     "min_length": "minLength",
     "max_length": "maxLength",
@@ -288,9 +292,8 @@ _PYDANTIC_TYPE_KEYWORDS: Final[Mapping[str, frozenset[str]]] = MappingProxyType(
     **dict.fromkeys(
         (f"pydantic.{name}" for name in ("constr", "StrictStr", "StrictBytes", "EmailStr")), STRING_KEYWORDS
     ),
-    **dict.fromkeys(
-        (f"pydantic.{name}" for name in ("Base64Str", "Base64Bytes", "EncodedBytes")), _BASE64_DECODED_KEYWORDS
-    ),
+    "pydantic.Base64Str": _BASE64_DECODED_KEYWORDS,
+    **dict.fromkeys(("pydantic.Base64Bytes", "pydantic.EncodedBytes"), _BASE64_BYTES_KEYWORDS),
     **dict.fromkeys((f"pydantic.{name}" for name in ("conbytes", "SecretStr")), LENGTH_KEYWORDS),
 })
 _MSGSPEC_TYPE_KEYWORDS: Final[Mapping[str, frozenset[str]]] = MappingProxyType({
