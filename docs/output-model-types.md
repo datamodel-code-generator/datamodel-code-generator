@@ -253,6 +253,9 @@ class Pet:
 | `--keyword-only` | Require keyword arguments (`kw_only=True`, Python 3.10+) |
 | `--dataclass-arguments` | Custom decorator arguments as JSON |
 
+The `dataclass_arguments` of one model's `--extra-template-data`, such as
+`{"Pet": {"dataclass_arguments": {"frozen": true}}}`, are merged over the arguments these options give it.
+
 ```bash
 # Frozen, keyword-only dataclasses
 datamodel-codegen --input schema.json --output-model-type dataclasses.dataclass \

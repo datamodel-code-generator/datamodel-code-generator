@@ -361,9 +361,9 @@ class DataClass(_DataclassReuseMixin, DataModel):
             keyword_only=keyword_only,
             frozen=frozen,
             treat_dot_as_module=treat_dot_as_module,
-        )
-        self.dataclass_arguments = self.resolve_dataclass_arguments(
-            dataclass_arguments, frozen=frozen, keyword_only=keyword_only
+            dataclass_arguments=self.resolve_dataclass_arguments(
+                dataclass_arguments, frozen=frozen, keyword_only=keyword_only
+            ),
         )
         self._set_deprecated_decorator()
 

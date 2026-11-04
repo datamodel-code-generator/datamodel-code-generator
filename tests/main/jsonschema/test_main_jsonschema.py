@@ -27996,6 +27996,75 @@ def test_extra_template_data_field_validators_reject_unsafe_values(
     )
 
 
+_DATACLASS_ARGUMENTS_SCHEMA = {
+    "title": "Model",
+    "type": "object",
+    "properties": {"old": {"$ref": "#/$defs/Old"}, "new": {"$ref": "#/$defs/New"}},
+    "$defs": {
+        "Old": {"type": "object", "properties": {"a": {"type": "integer"}}, "required": ["a"]},
+        "New": {"type": "object", "properties": {"a": {"type": "integer"}}, "required": ["a"]},
+    },
+}
+
+
+@pytest.mark.parametrize("output_model", ["dataclasses.dataclass", "pydantic_v2.dataclass", "pydantic_v2.BaseModel"])
+def test_extra_template_data_dataclass_arguments(output_model: str, output_file: Path, tmp_path: Path) -> None:
+    """Merge the ``dataclass_arguments`` of one model's template data over the arguments the options give it.
+
+    ``Old`` is frozen and keeps the ``kw_only`` of ``--keyword-only``, ``New`` keeps the options' arguments, and an
+    output that writes no decorator ignores them. Up to 0.88.0 rendering passed the arguments twice and raised a
+    duplicate-keyword ``TypeError``.
+    """
+    input_file = tmp_path / "dataclass_arguments.json"
+    input_file.write_text(json.dumps(_DATACLASS_ARGUMENTS_SCHEMA), encoding="utf-8")
+    extra_template_data = tmp_path / "extra_template_data.json"
+    extra_template_data.write_text(json.dumps({"Old": {"dataclass_arguments": {"frozen": True}}}), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *("--output-model-type", output_model, "--keyword-only", "--extra-template-data", str(extra_template_data)),
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+        force_exec_validation=True,
+    )
+    verdicts = []
+    for name in ("Old", "New"):
+        with _generated_model(output_file, "dataclass_arguments", name) as model:
+            instance = model(a=1)
+            try:
+                instance.a = 2
+            except AttributeError:
+                verdicts.append(f"{name}: frozen\n")
+            else:
+                verdicts.append(f"{name}: mutable\n")
+    assert_output("".join(verdicts), name="payloads")
+
+
+def test_extra_template_data_dataclass_arguments_not_a_mapping(
+    output_file: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Refuse ``dataclass_arguments`` template data that is no mapping, as the ``--dataclass-arguments`` option does."""
+    input_file = tmp_path / "dataclass_arguments.json"
+    input_file.write_text(json.dumps(_DATACLASS_ARGUMENTS_SCHEMA), encoding="utf-8")
+    extra_template_data = tmp_path / "extra_template_data.json"
+    extra_template_data.write_text(json.dumps({"Old": {"dataclass_arguments": "frozen"}}), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        expected_exit=Exit.ERROR,
+        extra_args=[
+            *("--output-model-type", "dataclasses.dataclass", "--extra-template-data", str(extra_template_data)),
+        ],
+        capsys=capsys,
+        expected_stderr_contains="dataclass_arguments must be a dictionary",
+        output_should_not_exist=True,
+    )
+
+
 def test_validators_option_rejects_unsafe_values(
     output_file: Path,
     tmp_path: Path,
