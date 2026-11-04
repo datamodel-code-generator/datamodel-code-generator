@@ -11,7 +11,9 @@ from pydantic import BaseModel, RootModel
 class JsonValue(
     RootModel[Optional[Union[dict[str, "JsonValue"], list["JsonValue"], str, int, float, bool]]]
 ):
-    root: Optional[Union[dict[str, "JsonValue"], list["JsonValue"], str, int, float, bool]]
+    root: Optional[
+        Union[dict[str, "JsonValue"], list["JsonValue"], str, int, float, bool]
+    ]
 
 
 class Model(BaseModel):

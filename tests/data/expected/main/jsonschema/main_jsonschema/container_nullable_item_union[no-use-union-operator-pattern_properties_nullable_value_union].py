@@ -10,4 +10,6 @@ from pydantic import BaseModel, constr
 
 
 class NullableValues(BaseModel):
-    values: Union[dict[constr(pattern=r'^a'), Optional[str]], dict[constr(pattern=r'^b'), int]]
+    values: Union[
+        dict[constr(pattern=r'^a'), Optional[str]], dict[constr(pattern=r'^b'), int]
+    ]

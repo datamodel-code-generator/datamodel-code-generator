@@ -901,6 +901,11 @@ def _is_union(node: ast.AST) -> TypeGuard[ast.Subscript]:
     return isinstance(node, ast.Subscript) and _is_name_or_attr(node.value, "Union")
 
 
+def _is_splittable_type(node: ast.AST) -> TypeGuard[ast.Subscript]:
+    """Return whether ``node`` is a subscripted type black splits at its last bracket (an ``Annotated`` has its own)."""
+    return isinstance(node, ast.Subscript) and not _is_annotated(node)
+
+
 def _is_optional(node: ast.AST) -> TypeGuard[ast.Subscript]:
     return isinstance(node, ast.Subscript) and _is_name_or_attr(node.value, "Optional")
 
@@ -1336,14 +1341,18 @@ def _format_generated_annotation_assignment(  # noqa: PLR0911, PLR0912
             return f"{target_prefix}{formatted_annotation} = {_parenthesized(value, indent)}"
         return f"{target_prefix}{formatted_annotation}{closing_suffix}"
     value_opening_fits = len(f"{value_prefix}(") <= line_length
-    if _is_union(statement.annotation) and statement.value is not None and not value_opening_fits:
+    if (
+        (_is_union(statement.annotation) or _is_optional(statement.annotation))
+        and statement.value is not None
+        and not value_opening_fits
+    ):
         default = _format_closing_default(
             statement.value, indent, line_length, source, wrap_string_literal=wrap_string_literal
         )
-        return (
-            f"{target_prefix}"
-            f"{_format_union_subscript(statement.annotation, indent, source, f' = {default}', line_length)}"
+        formatted_annotation = _format_subscript_value(
+            statement.annotation, indent, line_length, source, f" = {default}"
         )
+        return f"{target_prefix}{formatted_annotation}"
     if (
         _is_call(statement.value, "Field")
         and len(value_prefix) > line_length - 16
@@ -1407,6 +1416,10 @@ def _format_generated_annotation_assignment(  # noqa: PLR0911, PLR0912
         return f"{target_prefix}{formatted_annotation}"
     if statement.value is not None:
         return f"{value_prefix}{_parenthesized(value, indent)}"
+    if _is_splittable_type(statement.annotation):
+        formatted_annotation = _format_subscript_value(statement.annotation, indent, line_length, source)
+        if len(f"{target_prefix}{formatted_annotation.partition(chr(10))[0]}") <= line_length:
+            return f"{target_prefix}{formatted_annotation}"
     return None
 
 
