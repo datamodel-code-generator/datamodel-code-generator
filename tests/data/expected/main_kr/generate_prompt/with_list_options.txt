@@ -81,7 +81,7 @@
 ### Field Customization
 - `--aliases`: Apply custom field and class name aliases via inline JSON or a JSON file path.
 - `--capitalize-enum-members`: Capitalize enum member names to UPPER_CASE format.
-- `--capitalize-numbered-enum-members`: Capitalize also the number an enum member takes when its capitalized nam...
+- `--capitalize-numbered-enum-members`: Capitalize the numbered name an enum member takes when its name is taken.
 - `--default-values`: Override field default values via inline JSON or a JSON file path.
 - `--deserialize-default-values`: Deserialize selected direct scalar field defaults into their generated Python ...
 - `--empty-enum-field-name`: Name for empty string enum field values.
