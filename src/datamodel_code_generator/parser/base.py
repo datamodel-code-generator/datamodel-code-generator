@@ -413,6 +413,7 @@ class ParserRunContext:
     document_roles: DocumentRoles = ()
     model_name_keys: ModelNameKeys | None = None
     records_model_names: bool = False
+    final_name_keys: tuple[tuple[str, tuple[str, ...]], ...] = ()
 
 
 _DEFAULT_PARSER_RUN_CONTEXT = ParserRunContext()
@@ -626,11 +627,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         document_roles: DocumentRoles = (),
         model_name_keys: ModelNameKeys | None = None,
         records_model_names: bool = False,
+        final_name_keys: tuple[tuple[str, tuple[str, ...]], ...] = (),
     ) -> None:
         """Configure parser run state without exposing implementation attributes.
 
         ``model_name_keys`` is the translated ``--model-name-map`` the run applies; ``records_model_names`` records
-        what the run names (``ModelResolver.model_name_record``) for that translation.
+        what the run names (``ModelResolver.model_name_record``) for that translation. ``final_name_keys`` are the
+        output names keys name of the models renamed after L2, by the path of the model (``translate_final_name_keys``):
+        the lookups of the model at a path read them after its own names, and the template data of each name joins
+        that of the path, before the entry of the model's name.
         """
         context = ParserRunContext(
             diagnostic_source_path=diagnostic_source_path,
@@ -643,15 +648,37 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             document_roles=document_roles,
             model_name_keys=model_name_keys,
             records_model_names=records_model_names,
+            final_name_keys=final_name_keys,
         )
         self._run_context = None if context == _DEFAULT_PARSER_RUN_CONTEXT else context
         self.model_resolver.assigned_yielding_names = dict(yielding_names)
+        if final_name_keys:
+            self.model_resolver.final_name_keys = dict(final_name_keys)
+            for path, names in final_name_keys:
+                for name in names:
+                    if (entry := self.extra_template_data.get(name)) is not None:
+                        self.extra_template_data[path].update(entry)
         if model_name_keys is not None:
             self.model_resolver.apply_model_name_keys(model_name_keys)
         if records_model_names:
             self.model_resolver.record_model_names()
         if document_roles:
             self._seed_document_roles(document_roles)
+
+    @property
+    def _translates_final_name_keys(self) -> bool:
+        """Whether the run records the output names keys name (``translate_final_name_keys``).
+
+        Only where a key of the options read at L1 exists and a model was renamed after L2, in a run that does not
+        apply such names already or record what it names for ``--model-name-map`` (``records_model_names``).
+        """
+        keys = self._construction_keys
+        return (
+            bool(keys.class_names or keys.field_scopes)
+            and bool(self.generation_store.renames)
+            and not self.model_resolver.final_name_keys
+            and not self.run_context.records_model_names
+        )
 
     @property
     def document_roles_to_seed(self) -> DocumentRoles:
@@ -1000,6 +1027,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._enum_admits_other_values: list[tuple[DataModelFieldBase, _ConstNarrowing]] = []
         self.typed_nullable_maps = False
         self.yielding_names_to_assign: tuple[tuple[str, tuple[str, str | None]], ...] = ()
+        self.final_name_keys_to_assign: tuple[tuple[str, tuple[str, ...]], ...] = ()
         self.typed_nullable_map_reference_ids: set[ModelKey] = set()
         self._literal_under_all_enum_reference_ids: set[ModelKey] = set()
         self._site_model_keys: set[ModelKey] = set()

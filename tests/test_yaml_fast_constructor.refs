@@ -337,6 +337,8 @@ openapi/false_values.yaml	yaml_fast_constructor/parity.txt
 openapi/field_model_name_collision.yaml	yaml_fast_constructor/parity.txt
 openapi/field_property_name_collision.yaml	yaml_fast_constructor/parity.txt
 openapi/field_render_plan.yaml	yaml_fast_constructor/parity.txt
+openapi/field_type_collision_dotted_module.yaml	yaml_fast_constructor/parity.txt
+openapi/field_type_collision_read_write_variant.yaml	yaml_fast_constructor/parity.txt
 openapi/fixed_length_array_tuples.yaml	yaml_fast_constructor/parity.txt
 openapi/generic_base_class_other_packages.yaml	yaml_fast_constructor/parity.txt
 openapi/http_openapi_with_custom_port.yaml	yaml_fast_constructor/parity.txt

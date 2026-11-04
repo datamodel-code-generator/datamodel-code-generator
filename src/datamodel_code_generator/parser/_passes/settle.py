@@ -400,8 +400,8 @@ def settle_yielding_names(parser: SettleHost[Any], _run: SettleRun[Any]) -> None
 
     The models whose names yield, and the site models of the parse, yield the canonical place of a group of
     duplicates to the others too. The parse again with the final names (row ``legacy-reparse-for-final-names``)
-    follows the renames of the yielding names alone (row ``legacy-reparse-yielding-only``), not those that the
-    generation store records after them (``GenerationStore.renames``).
+    follows the renames of the yielding names; the names the generation store renames after them
+    (``GenerationStore.renames``) are given by path to the parse again of ``imports.translate_final_name_keys``.
     """
     parser._reuse_groups = ReuseGroups(  # noqa: SLF001
         site_models=frozenset(parser._site_model_keys),  # noqa: SLF001

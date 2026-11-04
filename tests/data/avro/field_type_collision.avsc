@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "name": "Model",
+  "fields": [
+    {
+      "name": "Pet",
+      "type": {"type": "record", "name": "Pet", "fields": [{"name": "name", "type": "string", "default": "q"}]}
+    }
+  ]
+}
