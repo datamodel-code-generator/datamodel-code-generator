@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "wide": {
+      "anyOf": [
+        {"type": "integer", "minimum": 1234567890123456750},
+        {"type": "number", "minimum": 1234567890123456700}
+      ]
+    },
+    "narrow": {
+      "anyOf": [
+        {"type": "integer", "minimum": 1234567890123456769},
+        {"type": "number", "minimum": 1234567890123456770}
+      ]
+    },
+    "small": {
+      "anyOf": [
+        {"type": "integer", "minimum": 10},
+        {"type": "number", "minimum": 5.5}
+      ]
+    }
+  }
+}

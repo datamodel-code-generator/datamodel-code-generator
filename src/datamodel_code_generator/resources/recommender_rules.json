@@ -1009,6 +1009,10 @@
       "not_recommended": "preset",
       "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
     },
+    "read_msgspec_union_bounds_exactly": {
+      "not_recommended": "preset",
+      "reason": "msgspec.Struct output only: set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "read_nullable_beside_type_list": {
       "not_recommended": "preset",
       "reason": "Set by the 20261027 presets; the recommendation starts from a preset."

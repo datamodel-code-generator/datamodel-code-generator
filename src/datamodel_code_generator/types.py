@@ -1765,6 +1765,7 @@ class DataTypeManager(ABC):
     )
     omit_redundant_constraints: bool = False
     read_length_keywords_by_type: bool = False
+    read_msgspec_union_bounds_exactly: bool = False
     use_decimal_in_field_forms: bool = False
     use_encoded_str_for_constrained_base64: bool = False
     WRITES_ENCODED_STR: ClassVar[bool] = False
@@ -1888,6 +1889,7 @@ class DataTypeManager(ABC):
             use_decimal_in_field_forms=self.use_decimal_in_field_forms,
             use_encoded_str_for_constrained_base64=self.use_encoded_str_for_constrained_base64,
             read_length_keywords_by_type=self.read_length_keywords_by_type,
+            read_msgspec_union_bounds_exactly=self.read_msgspec_union_bounds_exactly,
         )
 
     @property

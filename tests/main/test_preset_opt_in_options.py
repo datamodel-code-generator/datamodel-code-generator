@@ -51,6 +51,7 @@ OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
     "--merge-shared-variant-tags",
     "--use-encoded-str-for-constrained-base64",
     "--read-length-keywords-by-type",
+    "--read-msgspec-union-bounds-exactly",
 )
 """The options the 20261104 presets set beyond the 20261027 presets."""
 
@@ -81,6 +82,13 @@ CASES_20261104: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="read-length-keywords-by-type",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "msgspec_number_limits" / "union_integer_bounds.json",
+        "jsonschema",
+        ["--output-model-type", "msgspec.Struct"],
+        id="read-msgspec-union-bounds-exactly",
+        marks=pytest.mark.filterwarnings(r"ignore:msgspec decodes every integer as the int member:UserWarning"),
     ),
 )
 """The inputs each opt-in option of the 20261104 presets changes."""

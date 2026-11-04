@@ -183,6 +183,7 @@ class BaseGenerateConfig(TypedDict):
     use_encoded_str_for_constrained_base64: NotRequired[bool]
     omit_redundant_constraints: NotRequired[bool]
     read_length_keywords_by_type: NotRequired[bool]
+    read_msgspec_union_bounds_exactly: NotRequired[bool]
     use_site_models_for_constrained_refs: NotRequired[bool]
     original_field_name_delimiter: NotRequired[str | None]
     use_double_quotes: NotRequired[bool]

@@ -9,7 +9,7 @@ from ast import literal_eval
 from fractions import Fraction
 from functools import partial, wraps
 from operator import itemgetter
-from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, TypeVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, NamedTuple, Optional, TypeVar, cast
 
 from typing_extensions import Sentinel, final, override
 
@@ -124,28 +124,43 @@ UNSET = _UNSET()
 
 _ANNOTATED_CONSTRAINTS_CONTEXT: object = Sentinel("_ANNOTATED_CONSTRAINTS_CONTEXT")
 _UNCONSTRAINED_UNION_MEMBERS_KEY = "_unconstrained_union_members"
+_BOUND_KEYWORDS: frozenset[str] = frozenset({"ge", "gt", "le", "lt"})
+"""The ``Meta`` bounds the integer check of a union reads at the value the schema writes, when it reads them exactly."""
 
 
-def _integer_bounds(constraints: tuple[tuple[str, Any], ...]) -> tuple[int | None, int | None]:
+def _integer_bounds(
+    constraints: tuple[tuple[str, Any], ...], arithmetic: Literal["exact", "float"]
+) -> tuple[int | None, int | None]:
     """Return the least and the greatest integer that numeric constraints admit, None where they set no bound.
 
-    Row ``legacy-msgspec-float-bounds``: it reads each bound as the number it is, a float as its binary value.
+    Each bound is read with ``arithmetic`` (``_applicability.union_bound_arithmetic``).
     """
     lowers: list[int] = []
     uppers: list[int] = []
     for name, value in constraints:
-        if (bound := _applicability.integer_bound(name, value, arithmetic="float")) is not None:
+        if (bound := _applicability.integer_bound(name, value, arithmetic=arithmetic)) is not None:
             (lowers if bound[0] == "ge" else uppers).append(bound[1])
     return max(lowers, default=None), min(uppers, default=None)
 
 
-def _admits_integers_of(constraints: tuple[tuple[str, Any], ...], other: tuple[tuple[str, Any], ...]) -> bool:
+def _schema_bound(constraints: _Constraints | None, keyword: str, value: Any) -> Any:
+    """Return the value the schema writes for a ``Meta`` bound, or the ``Meta`` value of any other keyword."""
+    if keyword not in _BOUND_KEYWORDS or constraints is None or (written := getattr(constraints, keyword)) is None:
+        return value
+    return cast("UnionIntFloat", written).value
+
+
+def _admits_integers_of(
+    constraints: tuple[tuple[str, Any], ...],
+    other: tuple[tuple[str, Any], ...],
+    arithmetic: Literal["exact", "float"],
+) -> bool:
     """Return whether numeric constraints admit every integer that the other numeric constraints admit.
 
     The integer multiples of a divisor p/q in lowest terms are the multiples of p.
     """
-    lower, upper = _integer_bounds(constraints)
-    other_lower, other_upper = _integer_bounds(other)
+    lower, upper = _integer_bounds(constraints, arithmetic)
+    other_lower, other_upper = _integer_bounds(other, arithmetic)
     if other_lower is not None and other_upper is not None and other_lower > other_upper:
         return True
     if lower is not None and (other_lower is None or other_lower < lower):
@@ -245,13 +260,21 @@ class _MetaAnnotatedType(DataType):
 
 
 class _UnionLeaf(NamedTuple):
-    """A union member msgspec decodes as one type: the alias members spread to reach it, its type and constraints."""
+    """A union member msgspec decodes as one type: the alias members spread to reach it, its type and constraints.
+
+    ``schema_constraints`` are its ``Meta`` constraints with each bound at the value the schema writes.
+    """
 
     spread: tuple[tuple[DataType, DataModelField], ...]
     member: DataType
     kind: str
     base: DataType
     constraints: tuple[tuple[str, Any], ...]
+    schema_constraints: tuple[tuple[str, Any], ...]
+
+    def read(self, arithmetic: Literal["exact", "float"]) -> tuple[tuple[str, Any], ...]:
+        """Return the constraints the integer check reads: the schema's bounds when it reads them ``exact``."""
+        return self.schema_constraints if arithmetic == "exact" else self.constraints
 
     @property
     def keywords(self) -> frozenset[str]:
@@ -264,10 +287,12 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
     from pathlib import Path
 
+    from datamodel_code_generator._constraint_applicability import ConstraintOptions
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.model._decisions.assignment import AssignmentRow
     from datamodel_code_generator.model._render_plan import OmitReason
     from datamodel_code_generator.reference import Reference
+    from datamodel_code_generator.types import UnionIntFloat
 
 
 def _takes_default_kind(data_type: DataType, default: object) -> bool:
@@ -1363,6 +1388,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         spread: tuple[tuple[DataType, DataModelField], ...] = (),
         constraints: tuple[tuple[str, Any], ...] = (),
         seen: frozenset[int] = frozenset(),
+        schema_constraints: tuple[tuple[str, Any], ...] = (),
     ) -> Iterator[_UnionLeaf]:
         """Yield the types msgspec decodes a union member as, with their types without aliases and Meta constraints.
 
@@ -1384,9 +1410,11 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             seen |= {id(source)}
             if alias_field.use_annotated:
                 meta = alias_field._get_meta_data()[0]  # noqa: SLF001
-                constraints += tuple(
+                written = tuple(
                     (k, v) for k, v in meta.items() if v is not None and k in _applicability.META_SCHEMA_KEYWORDS
                 )
+                constraints += written
+                schema_constraints += tuple((k, _schema_bound(alias_field.constraints, k, v)) for k, v in written)
             if alias_field._field_has_top_level_none() or self._data_type_is_plain_union(alias_field.data_type):  # noqa: SLF001
                 members = self._non_none_members(alias_field.data_type)
                 for inner in members:
@@ -1395,6 +1423,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
                         (*spread, (member, alias_field)),
                         constraints if len(members) == 1 else (),
                         seen,
+                        schema_constraints if len(members) == 1 else (),
                     )
                 return
             data_type = alias_field.data_type
@@ -1404,7 +1433,9 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             return
         kinds = {type(literal).__name__ for literal in data_type.literals} or {data_type.type}
         yield from (
-            _UnionLeaf(spread, member, kind, data_type, constraints) for kind in kinds if kind and len(kinds) == 1
+            _UnionLeaf(spread, member, kind, data_type, constraints, schema_constraints)
+            for kind in kinds
+            if kind and len(kinds) == 1
         )
 
     def _non_none_members(self, data_type: DataType) -> list[DataType]:
@@ -1449,13 +1480,16 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         return members
 
     @staticmethod
-    def _conflicting_leaves(leaves: Mapping[str, list[_UnionLeaf]]) -> tuple[dict[int, _UnionLeaf], set[int]]:
+    def _conflicting_leaves(
+        leaves: Mapping[str, list[_UnionLeaf]], arithmetic: Literal["exact", "float"]
+    ) -> tuple[dict[int, _UnionLeaf], set[int]]:
         """Return the constrained members of a union that would reject values another member accepts, by identity.
 
         Each such member comes with the constraints it loses. A member of one type whose constraints are the ones
         every member of that type shares keeps them, since msgspec checks them on every member; the other members
         lose all of theirs. Also return the int members that would reject an integer a float member accepts, since
-        msgspec decodes every integer as the int member; constraints that admit every such integer stay.
+        msgspec decodes every integer as the int member; constraints that admit every such integer stay. The bounds of
+        that check are read with ``arithmetic`` (``_applicability.union_bound_arithmetic``).
         """
         dropped: dict[int, _UnionLeaf] = {}
         for same_kind in leaves.values():
@@ -1470,7 +1504,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
                 if constraints != kept
             )
         floats = [
-            () if id(leaf.member) in dropped else leaf.constraints
+            () if id(leaf.member) in dropped else leaf.read(arithmetic)
             for leaf in leaves.get("float", ())
             if not leaf.base.literals
         ]
@@ -1479,19 +1513,21 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             for leaf in leaves.get("int", ())
             if leaf.constraints
             and id(leaf.member) not in dropped
-            and not all(_admits_integers_of(leaf.constraints, other) for other in floats)
+            and not all(_admits_integers_of(leaf.read(arithmetic), other, arithmetic) for other in floats)
         ]
         dropped.update((id(leaf.member), leaf) for leaf in integers)
         return dropped, {id(leaf.member) for leaf in integers}
 
     @override
-    def unconstrain_union_members(self) -> bool:
+    def unconstrain_union_members(self, options: ConstraintOptions | None = None) -> bool:
         """Write the members of a union that msgspec decodes as one type without their Meta constraints.
 
         msgspec checks every member of a type in a union against the constraints of all of them, and decodes every
         integer as the int member when the union has a float member too, so a constraint of such a member would reject
-        values another member accepts; the union accepts the values of every member. Return whether the field changed.
+        values another member accepts; the union accepts the values of every member. ``options`` say how the bounds of
+        that integer check are read. Return whether the field changed.
         """
+        arithmetic = _applicability.union_bound_arithmetic(options or _applicability.ConstraintOptions())
         changed = False
         kinds: set[str] = set()
         keywords: set[str] = set()
@@ -1504,7 +1540,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             for _, _, member in slots:
                 for leaf in self._union_leaves(member):
                     leaves.setdefault(leaf.kind, []).append(leaf)
-            dropped, integers = self._conflicting_leaves(leaves)
+            dropped, integers = self._conflicting_leaves(leaves, arithmetic)
             for member_id, leaf in dropped.items():
                 if member_id in integers:
                     integer_keywords.update(leaf.keywords)

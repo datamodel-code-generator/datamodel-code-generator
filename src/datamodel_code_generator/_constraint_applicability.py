@@ -26,9 +26,9 @@ Legacy rows, each named by the function that decides it:
 * ``legacy-anyurl-keeps-string-keywords`` (``declared_string_keywords_taken``; G03b removes it with the render-time
   drop): a type that names ``AnyUrl`` takes every keyword a declared string holds, and the Pydantic outputs leave out
   every constraint of a field whose type holds it outside a container when they write the field, with a warning.
-* ``legacy-msgspec-float-bounds`` (``integer_bound``): the check of a msgspec union reads the bound of a float member
-  as the float it is, so an integral bound past ``2**53`` is the integer of its binary value, where the schema models
-  read the decimal that is written.
+* ``legacy-msgspec-float-bounds`` (``union_bound_arithmetic``): without ``--read-msgspec-union-bounds-exactly`` the
+  check of a msgspec union reads the bound of a float member as the float it is, so an integral bound past ``2**53`` is
+  the integer of its binary value, where the schema models read the decimal that is written.
 * ``legacy-length-keywords-across-kinds`` (``declared_keywords``): without ``--read-length-keywords-by-type`` a
   declared string also holds ``minItems`` and ``maxItems`` and a declared array ``minLength`` and ``maxLength``, which
   are written as their length bounds.
@@ -130,6 +130,7 @@ __all__ = [
     "split_declared_keywords",
     "strict_decimal_multiple",
     "undeclared_keywords_taken",
+    "union_bound_arithmetic",
     "unlisted_type_keywords",
     "untaken_minimums",
     "untaken_values",
@@ -551,13 +552,15 @@ class ConstraintOptions:
     (``--use-encoded-str-for-constrained-base64``) writes the constraints of a string decoded from base64 text in
     front of its decoding in the field forms (``encoded_str_field_form``). ``read_length_keywords_by_type``
     (``--read-length-keywords-by-type``) reads the string and the array keywords for their own kind only
-    (``length_keywords_by_type``).
+    (``length_keywords_by_type``). ``read_msgspec_union_bounds_exactly`` (``--read-msgspec-union-bounds-exactly``)
+    reads the bounds the check of a msgspec union compares as the schema writes them (``union_bound_arithmetic``).
     """
 
     omit_redundant_constraints: bool = False
     use_decimal_in_field_forms: bool = False
     use_encoded_str_for_constrained_base64: bool = False
     read_length_keywords_by_type: bool = False
+    read_msgspec_union_bounds_exactly: bool = False
 
 
 def _class_keywords(zero_bound_classes: Mapping[str, tuple[str, ...]], type_name: str | None) -> tuple[str, ...]:
@@ -679,6 +682,16 @@ def length_keywords_by_type(options: ConstraintOptions) -> bool:
     reads the lengths and the item counts across the two, as in 0.88.0.
     """
     return options.read_length_keywords_by_type
+
+
+def union_bound_arithmetic(options: ConstraintOptions) -> Literal["exact", "float"]:
+    """Return how the check of a msgspec union reads the bounds of its members (``integer_bound``).
+
+    ``exact`` under ``read_msgspec_union_bounds_exactly``: each bound is the number the schema writes, as the schema
+    models read it. Row ``legacy-msgspec-float-bounds``: otherwise ``float``, the ``Meta`` value, so the bound of a
+    float member past ``2**53`` is the integer of its binary value, as in 0.88.0.
+    """
+    return "exact" if options.read_msgspec_union_bounds_exactly else "float"
 
 
 RenderDrop: TypeAlias = Literal["self-reference-container", "strict-kwargs", "anyurl"]
@@ -1028,8 +1041,8 @@ def integer_bound(
     bound, one more or less for an exclusive one. ``exact`` reads the bound as the decimal it is written (``1e300`` is
     ``10**300``); ``float`` reads the float it is (``int(1e300)``).
 
-    Row ``legacy-msgspec-float-bounds``: the check of a msgspec union reads a bound ``float``, so an integral bound
-    past ``2**53`` is the integer of its binary value, where the schema models read it ``exact``.
+    The check of a msgspec union reads a bound as ``union_bound_arithmetic`` says (row ``legacy-msgspec-float-bounds``),
+    the schema models read it ``exact``.
     """
     if (row := _INTEGER_BOUNDS.get(keyword)) is None:
         return None

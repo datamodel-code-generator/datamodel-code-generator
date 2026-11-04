@@ -23,10 +23,32 @@ OPTION_SETS = {
     "site_models": ("--use-site-models-for-constrained-refs",),
     "collapse_root_models": ("--collapse-root-models",),
     "no_annotated": ("--no-use-annotated",),
+    "union_bounds_exactly": ("--read-msgspec-union-bounds-exactly",),
 }
 
 
-@pytest.mark.parametrize("name", ["int64_constraints", "float_range_bounds", "exact_int_divisors"])
+@pytest.mark.cli_doc(
+    options=["--read-msgspec-union-bounds-exactly"],
+    option_description="""Decide the bounds of the int member of a msgspec union on the bounds the schema writes.
+
+msgspec decodes every JSON integer as the int member of a union that has a float member too, so the int member goes
+without its `Meta` bounds when they would reject an integer the float member accepts. Without this option the float
+member's bound is read as the float it is written as, which past `2**53` is another integer: `{"type": "number",
+"minimum": 1234567890123456700}` reads as `1234567890123456768`, so `Annotated[int, Meta(ge=1234567890123456750)]`
+keeps its bound and rejects `1234567890123456720`, which the number branch accepts. With it the check reads the bounds
+the schema writes, exactly (msgspec.Struct output only).""",
+    input_schema="jsonschema/msgspec_number_limits/union_integer_bounds.json",
+    cli_args=["--output-model-type", "msgspec.Struct", "--read-msgspec-union-bounds-exactly"],
+    golden_output=(
+        "main/jsonschema/msgspec_number_limits/msgspec_number_limits[union_bounds_exactly-union_integer_bounds].py"
+    ),
+    comparison_output=(
+        "main/jsonschema/msgspec_number_limits/msgspec_number_limits[collapse_root_models-union_integer_bounds].py"
+    ),
+)
+@pytest.mark.parametrize(
+    "name", ["int64_constraints", "float_range_bounds", "exact_int_divisors", "union_integer_bounds"]
+)
 @pytest.mark.parametrize("option_set", OPTION_SETS)
 def test_msgspec_number_limits(output_file: Path, recwarn: pytest.WarningsRecorder, name: str, option_set: str) -> None:
     """Write the number constraints of an int within the 64-bit range only, and finite numbers only.
@@ -36,6 +58,10 @@ def test_msgspec_number_limits(output_file: Path, recwarn: pytest.WarningsRecord
     ``x-python-type`` of ``Annotated`` qualifies and for a bound beyond the float range. Any other number beyond the
     float range is left out like the infinite bound it is as a float, without a warning. A divisor or an exclusive
     bound within the range that a float writes as another number (``2**62``) stays the integer the schema gives.
+
+    The int member of a union with a number member loses its bounds when they reject an integer the number member
+    accepts, as msgspec decodes every integer as the int member; ``--read-msgspec-union-bounds-exactly`` decides it on
+    the bounds the schema writes, so a number bound past ``2**53`` no longer reads as the float it is written as.
     """
     input_path = NUMBER_LIMITS / f"{name}.json"
     run_main_and_assert(

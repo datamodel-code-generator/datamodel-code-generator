@@ -813,6 +813,14 @@ _flag(
 )
 _flag(
     typing_options,
+    "--read-msgspec-union-bounds-exactly",
+    help="msgspec.Struct output only: decide whether the int member of a union with a number member drops its Meta "
+    "bounds on the bounds the schema writes, exactly; without it a number member's bound past 2**53 is read as the "
+    "float it is written as, so the int member can keep a bound that rejects an integer the number member accepts, "
+    "as in 0.88.0",
+)
+_flag(
+    typing_options,
     "--use-site-models-for-constrained-refs",
     help="Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the "
     "values all parts admit, instead of the referenced type, which leaves the added assertions out",

@@ -146,7 +146,7 @@ if TYPE_CHECKING:
     from jinja2 import Environment, Template
 
     from datamodel_code_generator import types as _types
-    from datamodel_code_generator._constraint_applicability import OutputKeywords, RenderDrop
+    from datamodel_code_generator._constraint_applicability import ConstraintOptions, OutputKeywords, RenderDrop
     from datamodel_code_generator._reference_graph import ReachedModels
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.enums import TargetPydanticVersion
@@ -698,11 +698,11 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """Remember that ``--type-overrides`` replaces the type hint ``replaced`` and ``count`` constraints with it."""
         self.__dict__[_OVERRIDDEN_CONSTRAINTS_KEY] = (replaced, count)
 
-    def unconstrain_union_members(self) -> bool | None:
+    def unconstrain_union_members(self, options: ConstraintOptions | None = None) -> bool | None:
         """Write union members without the constraints the output model cannot check on one member alone.
 
-        Return False when the field stayed as it was; None, which an override that returns nothing gives, counts as a
-        change.
+        ``options`` are the constraint options of the run (``DataTypeManager.constraint_options``). Return False when
+        the field stayed as it was; None, which an override that returns nothing gives, counts as a change.
         """
 
     def inherit_unconstrained_union_members(self, source: DataModelFieldBase) -> None:
