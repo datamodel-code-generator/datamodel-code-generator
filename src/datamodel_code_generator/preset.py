@@ -17,7 +17,7 @@ from datamodel_code_generator._format_types import (
     Formatter,
     PythonVersion,
 )
-from datamodel_code_generator._option_names import option_flag, toml_value
+from datamodel_code_generator._option_names import option_flag, option_flags, toml_value
 from datamodel_code_generator._option_rules import implied_options
 from datamodel_code_generator._registry_render import _render_registry_json
 from datamodel_code_generator._requirements import python_target_meets
@@ -390,9 +390,9 @@ def _ensure_preset_enum_config_value(
 
 
 def _config_item_to_cli_option(item: PresetConfigItem) -> str:
-    """Translate a typed config field name to its CLI option spelling."""
-    option = option_flag(item.field_name)
-    if option not in CLI_OPTION_META:  # pragma: no cover
+    """Translate a typed config field name to the spelling of its CLI options that the CLI reference documents."""
+    option = next((flag for flag in option_flags(item.field_name) if flag in CLI_OPTION_META), None)
+    if option is None:  # pragma: no cover
         msg = f"Preset field {stable_repr(item.field_name)} does not map to a documented CLI option"
         raise PresetError(msg)
     if item.value is True:
@@ -806,8 +806,14 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
     ),
     PresetOptionGroup(
         title="Model names taken from the schema",
-        config=PresetConfig(use_duplicate_name_suffix_for_every_collision=True),
-        description="Give the --duplicate-name-suffix suffix to every model renamed because its name is taken.",
+        config=PresetConfig(
+            use_duplicate_name_suffix_for_every_collision=True,
+            capitalise_numbered_enum_members=True,
+        ),
+        description=(
+            "Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, and capitalize "
+            "the number of a capitalized enum member."
+        ),
     ),
 )
 
@@ -1082,7 +1088,8 @@ def render_presets_markdown() -> str:
         "",
         (
             "The 20261104 presets also name models from the schema: `--use-duplicate-name-suffix-for-every-collision` "
-            "gives the `--duplicate-name-suffix` suffix to every model renamed because its name is taken."
+            "gives the `--duplicate-name-suffix` suffix to every model renamed because its name is taken, and "
+            "`--capitalise-numbered-enum-members` capitalizes the number a capitalized enum member takes (`A_1`)."
         ),
         "",
         "## Override Preset Options",

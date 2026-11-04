@@ -5626,6 +5626,12 @@ wrap-string-literal	main/jsonschema/long_description_wrap_string_literal.py
 	main/jsonschema/bundled_schema_with_id.py
 [test_main_bundled_schema_with_id_url]
 	main/jsonschema/bundled_schema_with_id.py
+[test_main_capitalise_numbered_enum_members]
+msgspec-numbered	main/jsonschema/main_jsonschema/main_capitalise_numbered_enum_members[msgspec-numbered].py
+pydantic_v2	main/jsonschema/main_jsonschema/main_capitalise_numbered_enum_members[pydantic_v2].py
+pydantic_v2-numbered	main/jsonschema/main_jsonschema/main_capitalise_numbered_enum_members[pydantic_v2-numbered].py
+[test_main_capitalise_numbered_enum_members_without_capitalise]
+	main/jsonschema/main_jsonschema/main_capitalise_numbered_enum_members_without_capitalise.py
 [test_main_capitalised_enum_members_follow_target]
 python-3.13	main/jsonschema/identifier_case_target_313.py
 python-3.14	main/jsonschema/identifier_case_target_314.py

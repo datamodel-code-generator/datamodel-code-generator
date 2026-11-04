@@ -407,6 +407,12 @@ Typing customization:
 Field customization:
   --capitalise-enum-members, --capitalize-enum-members
                         Capitalize field names on enum
+  --capitalise-numbered-enum-members, --capitalize-numbered-enum-members
+                        Under --capitalise-enum-members, capitalize also the
+                        number a member takes when its capitalized name is
+                        taken (A_1 instead of a_1 for the members 'a' and
+                        'A'); without it the numbered name stays as written,
+                        as in 0.88.0
   --empty-enum-field-name EMPTY_ENUM_FIELD_NAME
                         Set field name when enum value is empty (default: `_`)
   --field-extra-keys FIELD_EXTRA_KEYS [FIELD_EXTRA_KEYS ...]

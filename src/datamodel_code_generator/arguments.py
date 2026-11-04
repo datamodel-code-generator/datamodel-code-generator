@@ -1047,6 +1047,13 @@ typing_options.add_argument(
 # Customization options for generated model fields
 # ======================================================================================
 _flag(field_options, *option_flags("capitalise_enum_members"), help="Capitalize field names on enum")
+_flag(
+    field_options,
+    *option_flags("capitalise_numbered_enum_members"),
+    help="Under --capitalise-enum-members, capitalize also the number a member takes when its capitalized name is "
+    "taken (A_1 instead of a_1 for the members 'a' and 'A'); without it the numbered name stays as written, as in "
+    "0.88.0",
+)
 field_options.add_argument(
     "--empty-enum-field-name",
     help="Set field name when enum value is empty (default:  `_`)",

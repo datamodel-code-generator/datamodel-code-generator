@@ -10,7 +10,7 @@ This documentation is auto-generated from test cases.
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 46 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 35 | Field naming and docstring behavior |
+| 🏷️ [Field Customization](field-customization.md) | 36 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 54 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 29 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 10 | OpenAPI-specific features |
@@ -127,6 +127,7 @@ These links are generated from CLI option metadata and summarize options that im
 ### C {#c}
 
 - [`--capitalize-enum-members`](field-customization.md#capitalize-enum-members)
+- [`--capitalize-numbered-enum-members`](field-customization.md#capitalize-numbered-enum-members)
 - [`--check`](general-options.md#check)
 - [`--check-pattern-maps-strictly`](template-customization.md#check-pattern-maps-strictly)
 - [`--class-decorators`](template-customization.md#class-decorators)

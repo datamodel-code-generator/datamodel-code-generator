@@ -5046,6 +5046,81 @@ def test_main_json_capitalise_enum_members(output_file: Path) -> None:
     )
 
 
+@pytest.mark.cli_doc(
+    options=["--capitalize-numbered-enum-members"],
+    option_description="""Capitalize also the number an enum member takes when its capitalized name is taken.
+
+Under `--capitalize-enum-members` the members `a` and `A` both capitalize to `A`, so the second one is numbered, and
+the number goes on the name as written: `a_1`. With `--capitalize-numbered-enum-members` the numbered name is
+capitalized too: `A_1`. Without `--capitalize-enum-members` the option changes nothing.""",
+    input_schema="jsonschema/capitalise_numbered_enum_members.json",
+    cli_args=["--capitalize-enum-members", "--capitalize-numbered-enum-members"],
+    golden_output="main/jsonschema/main_jsonschema/main_capitalise_numbered_enum_members[pydantic_v2-numbered].py",
+    comparison_output="main/jsonschema/main_jsonschema/main_capitalise_numbered_enum_members[pydantic_v2].py",
+    related_options=["--capitalize-enum-members"],
+    aliases=["--capitalise-numbered-enum-members"],
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2"),
+        pytest.param("pydantic_v2.BaseModel", ["--capitalise-numbered-enum-members"], id="pydantic_v2-numbered"),
+        pytest.param("msgspec.Struct", ["--capitalize-numbered-enum-members"], id="msgspec-numbered"),
+    ],
+)
+def test_main_capitalise_numbered_enum_members(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Capitalize the numbered members of a case-colliding enum under ``--capitalise-numbered-enum-members`` (#5665).
+
+    ``a`` and ``A`` give ``A`` and ``a_1`` without the option and ``A`` and ``A_1`` with it; ``a_1`` then finds
+    ``A_1`` taken and becomes ``A_1_1``.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "capitalise_numbered_enum_members.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--capitalise-enum-members",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    if output_model_type == "pydantic_v2.BaseModel" and extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="capitalise_numbered_enum_members",
+            model_name="Holder",
+            valid_json=json.dumps({"kind": "A", "mode": "on"}),
+            invalid_json=json.dumps({"kind": "B"}),
+            expected_error_type="enum",
+        )
+
+
+def test_main_capitalise_numbered_enum_members_without_capitalise(tmp_path: Path) -> None:
+    """Change nothing under ``--capitalise-numbered-enum-members`` without ``--capitalise-enum-members``."""
+    common = ["--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp", "--formatters", "builtin"]
+    output_file = tmp_path / "output.py"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "capitalise_numbered_enum_members.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=common,
+    )
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "capitalise_numbered_enum_members.json",
+        output_path=tmp_path / "numbered.py",
+        input_file_type="jsonschema",
+        extra_args=[*common, "--capitalise-numbered-enum-members"],
+        expected_output=output_file.read_text(encoding="utf-8"),
+    )
+
+
 def test_main_json_capitalise_enum_members_without_enum(output_file: Path) -> None:
     """Test enum member capitalization without enum flag."""
     run_main_and_assert(

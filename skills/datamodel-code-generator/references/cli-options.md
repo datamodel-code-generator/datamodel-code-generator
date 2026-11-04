@@ -99,6 +99,8 @@ Field naming, aliases, defaults, and constraints.
 - `--merge-shared-variant-tags`: Give a variant that several discriminated unions tag differently (for example one by a mapping key, one by the schema name) every tag they give it, so each union decodes the documents its discriminator selects; such a union also accepts the tags the other unions give the variant. A variant keeps the tag of the first union, as without the option (as in 0.88.0), where a union listing it would then give two of its variants one tag, and msgspec Structs, which take one tag, keep it too.
 - `--capitalise-enum-members`: Capitalize field names on enum
 - `--capitalize-enum-members`: Capitalize field names on enum
+- `--capitalise-numbered-enum-members`: Under --capitalise-enum-members, capitalize also the number a member takes when its capitalized name is taken (A_1 instead of a_1 for the members 'a' and 'A'); without it the numbered name stays as written, as in 0.88.0
+- `--capitalize-numbered-enum-members`: Under --capitalise-enum-members, capitalize also the number a member takes when its capitalized name is taken (A_1 instead of a_1 for the members 'a' and 'A'); without it the numbered name stays as written, as in 0.88.0
 - `--empty-enum-field-name`: Set field name when enum value is empty (default: `_`)
 - `--field-extra-keys`: Add extra keys to field parameters
 - `--field-extra-keys-without-x-prefix`: Add extra keys with `x-` prefix to field parameters. The extra keys are stripped of the `x-` prefix.

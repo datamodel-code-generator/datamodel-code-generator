@@ -53,6 +53,7 @@ OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
     "--read-length-keywords-by-type",
     "--read-msgspec-union-bounds-exactly",
     "--use-duplicate-name-suffix-for-every-collision",
+    "--capitalise-numbered-enum-members",
 )
 """The options the 20261104 presets set beyond the 20261027 presets."""
 
@@ -96,6 +97,12 @@ CASES_20261104: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--output-model-type", "pydantic_v2.BaseModel", "--duplicate-name-suffix", '{"model": "Schema"}'],
         id="use-duplicate-name-suffix-for-every-collision",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "capitalise_numbered_enum_members.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel", "--capitalise-enum-members"],
+        id="capitalise-numbered-enum-members",
     ),
 )
 """The inputs each opt-in option of the 20261104 presets changes."""

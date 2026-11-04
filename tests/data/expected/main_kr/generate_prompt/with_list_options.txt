@@ -78,6 +78,7 @@
 ### Field Customization
 - `--aliases`: Apply custom field and class name aliases via inline JSON or a JSON file path.
 - `--capitalize-enum-members`: Capitalize enum member names to UPPER_CASE format.
+- `--capitalize-numbered-enum-members`: Capitalize also the number an enum member takes when its capitalized nam...
 - `--default-values`: Override field default values via inline JSON or a JSON file path.
 - `--deserialize-default-values`: Deserialize selected direct scalar field defaults into their generated Python ...
 - `--empty-enum-field-name`: Name for empty string enum field values.
@@ -687,6 +688,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
 [36;1mField customization[0m:
   --capitalise-enum-members, --capitalize-enum-members
                         Capitalize field names on enum
+  --capitalise-numbered-enum-members, --capitalize-numbered-enum-members
+                        Under --capitalise-enum-members, capitalize also the
+                        number a member takes when its capitalized name is
+                        taken (A_1 instead of a_1 for the members 'a' and
+                        'A'); without it the numbered name stays as written,
+                        as in 0.88.0
   --empty-enum-field-name EMPTY_ENUM_FIELD_NAME
                         Set field name when enum value is empty (default: `_`)
   --field-extra-keys FIELD_EXTRA_KEYS [FIELD_EXTRA_KEYS ...]

@@ -364,8 +364,8 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     ),
     **_opts(
         _C.FIELD,
-        "--capitalize-enum-members --special-field-name-prefix --remove-special-field-name-prefix",
-        "--empty-enum-field-name",
+        "--capitalize-enum-members --capitalize-numbered-enum-members --special-field-name-prefix",
+        "--remove-special-field-name-prefix --empty-enum-field-name",
     ),
     **_opts(_C.FIELD, "--set-default-enum-member"),
     **_opts(

@@ -19,7 +19,10 @@ TomlValue: TypeAlias = str | bool | int | float | list["TomlValue"] | tuple["Tom
 TomlKeyRow: TypeAlias = Literal["unicode", "legacy-ascii-table-keys"]
 _TOML_BARE_KEY = re.compile(r"[A-Za-z0-9_-]+")
 CONFIG_TABLE: Final = ("tool", "datamodel-codegen")
-FIELD_ALIASES: Final = {"capitalize_enum_members": "capitalise_enum_members"}
+FIELD_ALIASES: Final = {
+    "capitalize_enum_members": "capitalise_enum_members",
+    "capitalize_numbered_enum_members": "capitalise_numbered_enum_members",
+}
 GENERATE_FIELD_NAMES: Final = {
     "use_default": "apply_default_values_for_required_fields",
     "force_optional": "force_optional_for_required_fields",

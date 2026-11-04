@@ -516,6 +516,7 @@ class FieldNameResolver:
         no_alias: bool = False,  # noqa: FBT001, FBT002
         use_subclass_enum: bool = False,  # noqa: FBT001, FBT002
         target_python_version: PythonVersion | None = None,
+        capitalise_numbered_enum_members: bool = False,  # noqa: FBT001, FBT002
     ) -> None:
         """Initialize field name resolver with transformation options.
 
@@ -539,6 +540,7 @@ class FieldNameResolver:
             raise Error(msg)
         self.remove_special_field_name_prefix: bool = remove_special_field_name_prefix
         self.capitalise_enum_members: bool = capitalise_enum_members
+        self.capitalise_numbered_enum_members: bool = capitalise_numbered_enum_members
         self.no_alias = no_alias
         self.use_subclass_enum: bool = use_subclass_enum
 
@@ -643,7 +645,11 @@ class FieldNameResolver:
         ignore_snake_case_field: bool = False,  # noqa: FBT001, FBT002
         upper_camel: bool = False,  # noqa: FBT001, FBT002
     ) -> str:
-        """Convert a name to a valid Python identifier."""
+        """Convert a name to a valid Python identifier.
+
+        Under ``--capitalise-enum-members`` a taken name is numbered without its casing (``a_1`` beside ``A``, row
+        ``legacy-number-before-case``), or cased too under ``--capitalise-numbered-enum-members`` (``A_1``).
+        """
         if not name:
             name = self.empty_field_name
         if name[0] == "#":
@@ -695,6 +701,8 @@ class FieldNameResolver:
                     new_name = name
                 continue
             new_name = f"{name}{count}" if upper_camel else f"{name}_{count}"
+            if self.capitalise_numbered_enum_members and self.capitalise_enum_members and not upper_camel:
+                new_name = upper(new_name, target)
             count += 1
         return new_name
 
@@ -868,6 +876,7 @@ class _FieldNameResolverOptions(NamedTuple):
     no_alias: bool
     use_subclass_enum: bool
     target_python_version: PythonVersion | None
+    capitalise_numbered_enum_members: bool
 
 
 class _FieldNameResolvers:
@@ -911,6 +920,7 @@ class _FieldNameResolvers:
         resolver = resolver_class(
             **options._replace(
                 capitalise_enum_members=options.capitalise_enum_members if is_enum else False,
+                capitalise_numbered_enum_members=options.capitalise_numbered_enum_members if is_enum else False,
                 use_subclass_enum=options.use_subclass_enum if is_enum else False,
             )._asdict()
         )
@@ -1030,6 +1040,7 @@ class ModelResolver:  # noqa: PLR0904
         model_name_map: Mapping[str, str] | None = None,
         default_value_overrides: Mapping[str, Any] | None = None,
         http_backend: HTTPBackend = HTTPBackend.AUTO,
+        capitalise_numbered_enum_members: bool = False,  # noqa: FBT001, FBT002
     ) -> None:
         """Initialize model resolver with naming and resolution options."""
         self.references: dict[str, Reference] = {}
@@ -1058,6 +1069,7 @@ class ModelResolver:  # noqa: PLR0904
                 no_alias=no_alias,
                 use_subclass_enum=use_subclass_enum,
                 target_python_version=target_python_version,
+                capitalise_numbered_enum_members=capitalise_numbered_enum_members,
             ),
         )
         self.class_name_generator = custom_class_name_generator or self.default_class_name_generator

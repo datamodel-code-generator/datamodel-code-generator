@@ -436,6 +436,7 @@ class BaseGenerateConfig(BaseModel):
     special_field_name_prefix: str | None = None
     remove_special_field_name_prefix: bool = False
     capitalise_enum_members: bool = False
+    capitalise_numbered_enum_members: bool = False
     keep_model_order: bool = False
     order_constructor_fields_by: Sequence[ConstructorFieldOrder] = ()
     custom_file_header: str | None = None

@@ -499,6 +499,36 @@ class ItemSchema(BaseModel):
     v: str | None = None
 ```
 
+### `--capitalise-numbered-enum-members`
+
+| | |
+|---|---|
+| Option | `--capitalise-numbered-enum-members` (also `--capitalize-numbered-enum-members`) |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.89.0 |
+| Issue | [#5665](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5665) |
+
+**Affects:** under `--capitalise-enum-members`, an enum whose members differ only by case. The second member finds the capitalized name taken and is numbered, and the number goes on the name as written; with the option the numbered name is capitalized too. Without `--capitalise-enum-members` the option changes nothing.
+
+Schema: `{"type": "string", "enum": ["a", "A"]}`, with `--capitalise-enum-members`.
+
+Without the option (same as 0.88.0):
+
+```python
+class E(Enum):
+    A = 'a'
+    a_1 = 'A'
+```
+
+With the option:
+
+```python
+class E(Enum):
+    A = 'a'
+    A_1 = 'A'
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.

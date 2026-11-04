@@ -4,6 +4,8 @@
 empty-list-under-preset	main/preset_opt_in_options/option_list_in_pyproject[empty-list-under-preset].py
 toml-list	main/preset_opt_in_options/option_list_in_pyproject[toml-list].py	= main/openapi/main_openapi/strip_default_none_constructor_order[msgspec].py
 [test_preset_sets_opt_in_option]
+capitalise-numbered-enum-members-practical	main/preset_opt_in_options/preset_sets_opt_in_option[capitalise-numbered-enum-members-practical].py	= main/preset_opt_in_options/preset_sets_opt_in_option[capitalise-numbered-enum-members-standard].py
+capitalise-numbered-enum-members-standard	main/preset_opt_in_options/preset_sets_opt_in_option[capitalise-numbered-enum-members-standard].py
 check-pattern-maps-strictly-practical	main/preset_opt_in_options/preset_sets_opt_in_option[check-pattern-maps-strictly-practical].py
 check-pattern-maps-strictly-standard	main/preset_opt_in_options/preset_sets_opt_in_option[check-pattern-maps-strictly-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[check-pattern-maps-strictly-practical].py
 collapse-shared-parent-wrappers-practical	main/preset_opt_in_options/preset_sets_opt_in_option[collapse-shared-parent-wrappers-practical].py

@@ -200,6 +200,7 @@ class BaseGenerateConfig(TypedDict):
     special_field_name_prefix: NotRequired[str | None]
     remove_special_field_name_prefix: NotRequired[bool]
     capitalise_enum_members: NotRequired[bool]
+    capitalise_numbered_enum_members: NotRequired[bool]
     keep_model_order: NotRequired[bool]
     order_constructor_fields_by: NotRequired[Sequence[ConstructorFieldOrder]]
     custom_file_header: NotRequired[str | None]
