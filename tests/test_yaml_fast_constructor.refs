@@ -337,6 +337,8 @@ openapi/false_values.yaml	yaml_fast_constructor/parity.txt
 openapi/field_model_name_collision.yaml	yaml_fast_constructor/parity.txt
 openapi/field_property_name_collision.yaml	yaml_fast_constructor/parity.txt
 openapi/field_render_plan.yaml	yaml_fast_constructor/parity.txt
+openapi/field_type_collision_dotted_module.yaml	yaml_fast_constructor/parity.txt
+openapi/field_type_collision_read_write_variant.yaml	yaml_fast_constructor/parity.txt
 openapi/fixed_length_array_tuples.yaml	yaml_fast_constructor/parity.txt
 openapi/generic_base_class_other_packages.yaml	yaml_fast_constructor/parity.txt
 openapi/http_openapi_with_custom_port.yaml	yaml_fast_constructor/parity.txt
@@ -373,6 +375,7 @@ openapi/max_items_enum.yaml	yaml_fast_constructor/parity.txt
 openapi/max_min_number.yaml	yaml_fast_constructor/parity.txt
 openapi/missing_sentinel_nullable.yaml	yaml_fast_constructor/parity.txt
 openapi/model_name_map_numbered_variants.yaml	yaml_fast_constructor/parity.txt
+openapi/model_name_map_read_write_variant.yaml	yaml_fast_constructor/parity.txt
 openapi/model_name_map_same_name_documents/first.yaml	yaml_fast_constructor/parity.txt
 openapi/model_name_map_same_name_documents/openapi.yaml	yaml_fast_constructor/parity.txt
 openapi/model_name_map_same_name_documents/second.yaml	yaml_fast_constructor/parity.txt
@@ -404,6 +407,7 @@ openapi/nullable_map_value_class_keys.yaml	yaml_fast_constructor/parity.txt
 openapi/nullable_map_value_collapse_roots.yaml	yaml_fast_constructor/parity.txt
 openapi/nullable_map_value_cycle.yaml	yaml_fast_constructor/parity.txt
 openapi/nullable_map_value_cycle_reuse.yaml	yaml_fast_constructor/parity.txt
+openapi/nullable_map_value_dotted_field_keys.yaml	yaml_fast_constructor/parity.txt
 openapi/nullable_map_value_layout.yaml	yaml_fast_constructor/parity.txt
 openapi/nullable_map_value_model_name_map.yaml	yaml_fast_constructor/parity.txt
 openapi/nullable_map_value_module_names.yaml	yaml_fast_constructor/parity.txt
@@ -580,6 +584,7 @@ openapi/type_mappings_byte_to_binary.yaml	yaml_fast_constructor/parity.txt
 openapi/type_overrides_constructor_order.yaml	yaml_fast_constructor/parity.txt
 openapi/type_overrides_constructor_order_deep_base.yaml	yaml_fast_constructor/parity.txt
 openapi/type_overrides_constructor_order_modules.yaml	yaml_fast_constructor/parity.txt
+openapi/type_overrides_dotted_schema_name.yaml	yaml_fast_constructor/parity.txt
 openapi/type_statement_forward_references.yaml	yaml_fast_constructor/parity.txt
 openapi/typed_dict_extra_items_final_name/base_class.yaml	yaml_fast_constructor/parity.txt
 openapi/typed_dict_extra_items_final_name/dotted.yaml	yaml_fast_constructor/parity.txt

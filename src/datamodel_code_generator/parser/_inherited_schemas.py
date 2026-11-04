@@ -29,7 +29,6 @@ from datamodel_code_generator._json_schema import (
 )
 from datamodel_code_generator._mro import linearize, sort_descendants_first
 from datamodel_code_generator._url_redaction import named_location
-from datamodel_code_generator._user_keys import class_key
 from datamodel_code_generator.imports import IMPORT_ANY
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
 from datamodel_code_generator.model.base import _field_source_name, get_inherited_fields
@@ -79,6 +78,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._source import YamlValue
+    from datamodel_code_generator._user_keys import ClassScope
     from datamodel_code_generator.parser._field_rows import (
         FieldAliasRow,
         FieldCopyFacts,
@@ -273,6 +273,8 @@ class InheritedSchemasHost(Protocol):
         path: list[str],
         module_name: str | None = None,
         class_name: str | None = None,
+        *,
+        output_names: tuple[str, ...] = (),
     ) -> list[DataModelFieldBase]:
         """Parse object properties into a list of data model fields."""
 
@@ -284,7 +286,7 @@ class InheritedSchemasHost(Protocol):
         field: DataModelFieldBase,
         inherited_field: DataModelFieldBase,
         *,
-        class_name: str,
+        scope: ClassScope,
     ) -> None:
         """Resolve an inherited schema default in the derived class scope."""
 
@@ -298,7 +300,7 @@ class InheritedSchemasHost(Protocol):
         data_type: DataType,
         *,
         source_name: str | None = None,
-        class_name: str | None = None,
+        scope: ClassScope | None = None,
         **facts: Unpack[FieldFacts],
     ) -> DataModelFieldBase:
         """Build a field of a model the parser writes, with the configured options its ``row`` takes."""
@@ -308,7 +310,7 @@ class InheritedSchemasHost(Protocol):
         required_field_name: str,
         excludes: set[str],
         base_classes: list[Reference],
-        class_name: str,
+        scope: ClassScope,
         inherited_fields: dict[str, DataModelFieldBase] | None = None,
     ) -> DataModelFieldBase:
         """Build a field for a required name that is not declared in properties."""
@@ -576,7 +578,7 @@ class InheritedSchemasHost(Protocol):
         alias: str | list[str] | None,
         *,
         source_name: str,
-        class_name: str,
+        scope: ClassScope,
         row: FieldAliasRow,
         inherits: bool | None = None,
     ) -> None:
@@ -1720,9 +1722,9 @@ def parse_fields_beside_parents(  # noqa: PLR0913, PLR0917
     parent_refs: list[Reference],
     parent_properties: dict[str, tuple[JsonSchemaObject | bool, str]],
     path: list[str],
-    class_name: str,
+    scope: ClassScope,
 ) -> list[DataModelFieldBase]:
-    """Parse the properties of ``source`` for ``class_name``, merged with the parent properties they override.
+    """Parse the properties of ``source`` for the class ``scope``, merged with the parent properties they override.
 
     A property that only narrows its parent's is parsed without the nested types the parent's type replaces
     and marked for that late resolution.
@@ -1732,8 +1734,9 @@ def parse_fields_beside_parents(  # noqa: PLR0913, PLR0917
     fields = parser.parse_object_fields(
         parser._get_deferred_inherited_parse_object(merged, deferred_names),  # noqa: SLF001
         path,
-        inferred_module_name(parser, class_name),
-        class_name=class_name,
+        inferred_module_name(parser, scope.name),
+        class_name=scope.name,
+        output_names=scope.output_names,
     )
     mark_partial_inherited_fields(parser, fields, deferred_names, merged)
     return fields
@@ -1752,7 +1755,7 @@ def parse_inherited_schema_fields(
     """
     inherited_properties = parser._get_inherited_property_map(parent_refs)  # noqa: SLF001
     reference = get_inherited_field_owner_reference(parser, reference, schema)
-    class_name = class_key("reference-name", reference)
+    scope = parser.model_resolver.class_scope("reference-name", reference, reference.path)
     fields: list[DataModelFieldBase] = []
     owner_path = [] if "legacy-rw-unowned-parent-fields" in parser._legacy_rw_variants else [reference.path]  # noqa: SLF001
 
@@ -1762,7 +1765,7 @@ def parse_inherited_schema_fields(
             if not source.properties:
                 continue
             parsed_fields = parse_fields_beside_parents(
-                parser, source, parent_refs, inherited_properties, owner_path, class_name
+                parser, source, parent_refs, inherited_properties, owner_path, scope
             )
             parser._unregister_temporary_field_references(parsed_fields)  # noqa: SLF001
             fields.extend(parsed_fields)
@@ -1778,7 +1781,7 @@ def parse_inherited_schema_fields(
                 required_name,
                 excludes={field.name for field in fields if field.name},
                 base_classes=parent_refs,
-                class_name=class_name,
+                scope=scope,
                 inherited_fields=inherited_fields,
             )
             fields.append(field)
@@ -1903,7 +1906,7 @@ def build_missing_required_field(  # noqa: PLR0913, PLR0917
     required_field_name: str,
     excludes: set[str],
     base_classes: list[Reference],
-    class_name: str,
+    scope: ClassScope,
     inherited_fields: dict[str, DataModelFieldBase] | None = None,
 ) -> DataModelFieldBase:
     """Build a field for a required name that is not declared in properties.
@@ -1914,7 +1917,8 @@ def build_missing_required_field(  # noqa: PLR0913, PLR0917
         required_field_name,
         excludes=excludes,
         model_type=parser.field_name_model_type,
-        class_name=class_name,
+        class_name=scope.name,
+        output_names=scope.output_names,
     )
     inherited_field = get_inherited_field(parser, required_field_name, base_classes, inherited_fields)
     if inherited_field is not None and inherited_field.name and inherited_field.name not in excludes:
@@ -1926,12 +1930,12 @@ def build_missing_required_field(  # noqa: PLR0913, PLR0917
             field_name,
             alias,
             source_name=required_field_name,
-            class_name=class_name,
+            scope=scope,
             row="required-copy",
             inherits=bool(base_classes),
         )
         parser._prepare_required_inherited_field(copied_field, inherited_field)  # noqa: SLF001
-        parser._apply_inherited_field_default(copied_field, inherited_field, class_name=class_name)  # noqa: SLF001
+        parser._apply_inherited_field_default(copied_field, inherited_field, scope=scope)  # noqa: SLF001
         return copied_field
 
     deferred = parser._get_inherited_field_schema(required_field_name, base_classes) is not None  # noqa: SLF001
@@ -1944,11 +1948,11 @@ def build_missing_required_field(  # noqa: PLR0913, PLR0917
         name=field_name,
         alias=alias,
         source_name=required_field_name,
-        class_name=class_name,
+        scope=scope,
         required=True,
         original_name=required_field_name,
     )
     with_field_origin(field, "required-only", None)
     if deferred:
-        field.__dict__[_DEFERRED_INHERITED_FIELD_KEY] = class_name
+        field.__dict__[_DEFERRED_INHERITED_FIELD_KEY] = scope
     return field

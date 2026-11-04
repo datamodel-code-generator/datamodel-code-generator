@@ -106,6 +106,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator._target_unicode import ModulePartRow
+    from datamodel_code_generator._user_keys import ConstructionKeys
     from datamodel_code_generator.imports import Imports, _ImportKey
     from datamodel_code_generator.model._render_plan import RenderReady
     from datamodel_code_generator.model.base import DataModelFieldBase
@@ -122,6 +123,7 @@ if TYPE_CHECKING:
         SortedDataModels,
         _FinalizeState,
     )
+    from datamodel_code_generator.parser.generation import GenerationStore
     from datamodel_code_generator.reference import ModelResolver, ModelType, Reference
     from datamodel_code_generator.types import DataType
 
@@ -152,6 +154,7 @@ __all__ = [
     "resolve_module_import_conflicts",
     "snapshot_model_imports",
     "submodules_hidden_by_packages",
+    "translate_final_name_keys",
     "validate_explicit_field_aliases",
     "warn_about_decimal_defaults",
     "warn_about_dropped_constraints",
@@ -206,9 +209,22 @@ class FinishHost(ReuseOptionsHost, RootModelHost, OutputOptionsHost, TagPlanHost
     _decimal_default_warning_count: int
     _decimal_default_warning_examples: list[str] | None
     _dropped_constraint_fields: frozenset[tuple[ModulePath, str]]
+    final_name_keys_to_assign: tuple[tuple[str, tuple[str, ...]], ...]
     generated_class_names: tuple[tuple[str, str], ...]
     model_placement: dict[ModulePath, frozenset[str]]
     typed_map_values_may_move_models: bool
+
+    @property
+    def _construction_keys(self) -> ConstructionKeys:
+        """The class names that the options read while models are built key (``_user_keys.py``)."""
+
+    @property
+    def generation_store(self) -> GenerationStore:
+        """The generation store of the parse, which records the renames after L2."""
+
+    @property
+    def model_resolver(self) -> ModelResolver:
+        """The resolver of model and field names, which records the final names when the run records its names."""
 
     @property
     def _literal_under_all_enum_reference_ids(self) -> set[ModelKey]:
@@ -1778,10 +1794,37 @@ def remap_import_overrides(parser: ImportsHost[Any], state: _FinalizeState[Any])
 
 
 def record_generated_class_names(parser: FinishHost, run: FinishRun[Any, ModuleContextView, Any]) -> None:
-    """Record the class name of every generated model."""
+    """Record the class name of every generated model, and its final name where the run records what it names."""
     parser.generated_class_names = tuple(
         (model.class_name, model.duplicate_class_name) for ctx in run.contexts for model in ctx.models
     )
+    if (record := parser.model_resolver.model_name_record) is not None:
+        record.final = {model.path: model.reference.name for ctx in run.contexts for model in ctx.models}
+
+
+def translate_final_name_keys(parser: FinishHost, run: FinishRun[Any, ModuleContextView, Any]) -> None:
+    """Record the output names of the models renamed after L2 that keys of the options read at L1 name, by path.
+
+    Such a name is none a lookup at L1 reads: the parse again (``__init__.py:_parse_generation_run``) gives it to the
+    model built at the path the model had at L2 (``ModelResolver.final_name_keys``), whose keys then also name it. A
+    name is recorded where a ``ConstructionKeys`` key names it or its class name, the part after its last dot, and it
+    is not the name the model had at L2.
+    """
+    origins: dict[str, tuple[str, str]] = {}
+    for rename in parser.generation_store.renames:
+        origin = (
+            origins.pop(rename.import_path, None) if rename.import_path != rename.path else origins.get(rename.path)
+        )
+        origins[rename.path] = origin or (rename.import_path, rename.reference_name)
+    keys = parser._construction_keys  # noqa: SLF001
+    names: dict[str, dict[str, None]] = {}
+    for model in _context_models(run.contexts):
+        if (origin := origins.get(model.path)) is None:
+            continue
+        path, settled_name = origin
+        if (name := model.reference.name) != settled_name and keys.name_any({name, name.rpartition(".")[2]}):
+            names.setdefault(path, {})[name] = None
+    parser.final_name_keys_to_assign = tuple((path, tuple(found)) for path, found in names.items())
 
 
 def add_root_init_result(run: FinishRun[Any, Any, Any]) -> None:

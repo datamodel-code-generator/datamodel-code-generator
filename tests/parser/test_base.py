@@ -543,7 +543,7 @@ def test_parser_resolves_effective_default_policy(parser_fixture: C) -> None:
         "default",
         has_default=True,
         required=True,
-        class_name="Model",
+        scope=parser_fixture.model_resolver.class_scope("predicted", "Model", "#"),
     ) == ("default", True, True)
 
 

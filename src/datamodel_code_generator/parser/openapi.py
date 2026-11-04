@@ -43,7 +43,7 @@ from datamodel_code_generator._openapi_paths import (
 from datamodel_code_generator._records import record
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._source import YamlValue
-from datamodel_code_generator._user_keys import class_key
+from datamodel_code_generator._user_keys import ClassScope, class_key
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import OpenAPIAsDefinitions, OpenAPIVersion, VersionMode
 from datamodel_code_generator.parser import _union_tags
@@ -772,9 +772,11 @@ class OpenAPIParser(JsonSchemaParser):
         path: list[str],
         module_name: Optional[str] = None,  # noqa: UP045
         class_name: Optional[str] = None,  # noqa: UP045
+        *,
+        output_names: tuple[str, ...] = (),
     ) -> list[DataModelFieldBase]:
         """Parse object fields, adding discriminator info for allOf polymorphism."""
-        fields = super().parse_object_fields(obj, path, module_name, class_name=class_name)
+        fields = super().parse_object_fields(obj, path, module_name, class_name=class_name, output_names=output_names)
         properties = obj.properties or {}
 
         result_fields: list[DataModelFieldBase] = []
@@ -1130,7 +1132,7 @@ class OpenAPIParser(JsonSchemaParser):
         camel_path_name = snake_to_upper_camel(normalized, target_python_version=target)
         return f"{camel_path_name}{method.capitalize()}{suffix}"
 
-    def parse_all_parameters(  # noqa: PLR0912, PLR0915
+    def parse_all_parameters(  # noqa: PLR0912, PLR0914, PLR0915
         self,
         name: str,
         parameters: list[ReferenceObject | ParameterObject],
@@ -1148,6 +1150,7 @@ class OpenAPIParser(JsonSchemaParser):
         exclude_field_names: set[str] = set()
         seen_parameter_names: set[str] = set()
         reference = self.model_resolver.add(path, name, class_name=True, unique=True)
+        output_names = self.model_resolver.output_names(reference.path)
         for parameter_ in parameters:
             parameter = self.resolve_object(parameter_, ParameterObject, "parameter")
             match parameter.in_:
@@ -1172,6 +1175,7 @@ class OpenAPIParser(JsonSchemaParser):
                 excludes=exclude_field_names,
                 model_type=self.field_name_model_type,
                 class_name=class_key("predicted", name),
+                output_names=output_names,
             )
             if parameter.schema_:
                 field_schema = self._site_schema(parameter.schema_, merge_ref_siblings=True)
@@ -1204,7 +1208,7 @@ class OpenAPIParser(JsonSchemaParser):
                 field_schema.default if field_schema else None,
                 has_default=field_schema.has_default if field_schema else False,
                 required=parameter.required,
-                class_name=class_key("reference-name", reference),
+                scope=ClassScope(class_key("reference-name", reference), output_names),
             )
             fields.append(
                 self.get_object_field(
@@ -1218,6 +1222,7 @@ class OpenAPIParser(JsonSchemaParser):
                     effective_has_default=effective_has_default,
                     use_default_with_required=use_default_with_required,
                     class_name=class_key("reference-name", reference),
+                    output_names=output_names,
                 )
             )
 
@@ -1230,7 +1235,7 @@ class OpenAPIParser(JsonSchemaParser):
             model = self._create_data_model(
                 fields=fields,
                 reference=reference,
-                custom_base_class=self._resolve_base_class(class_key("predicted", name)),
+                custom_base_class=self._resolve_base_class(ClassScope(class_key("predicted", name), output_names)),
                 custom_template_dir=self.custom_template_dir,
                 extra_template_data=self.extra_template_data,
                 keyword_only=self.keyword_only,

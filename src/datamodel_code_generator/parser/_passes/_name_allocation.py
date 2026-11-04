@@ -5,8 +5,9 @@ The parse resolver (``Parser.model_resolver``) names models at L1. A pass that r
 ``GenerationStore.rename_model`` or the field rename of the store:
 
 * ``module`` (L3 ``structure.py:replace_duplicate_name_in_module``): a name taken in the module gets the suffix
-  ``Model`` (row ``legacy-module-suffix-model``: the ``--duplicate-name-suffix`` map is not read), and a name is kept
-  as written only under a custom class name generator.
+  ``Model`` (row ``legacy-module-suffix-model``: the ``--duplicate-name-suffix`` map is not read), a name is kept
+  as written only under a custom class name generator, and a name the parse resolver reserves is taken for the other
+  models (``translate_class_keys``).
 * ``flattened-module`` (L3 repair ``Parser._flatten_invalid_modules``): a name taken gets the suffix of the
   ``--duplicate-name-suffix`` map or ``Model``, and a name is always kept as written.
 * ``field-type`` (L5 ``modules.py:change_field_name``, ``rename_named_type``, ``rename_fields_hiding_types``): a name
@@ -25,6 +26,8 @@ from typing import TYPE_CHECKING, Any, Final, Literal
 from datamodel_code_generator.reference import ModelResolver
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from datamodel_code_generator._format_types import PythonVersion
 
 __all__ = ["NameScheme", "scheme_resolver"]
@@ -46,11 +49,13 @@ def scheme_resolver(  # noqa: PLR0913
     keeps_names: bool = False,
     duplicate_name_suffix_map: dict[str, str] | None = None,
     snake_case_field: bool = False,
+    reserved_names: Mapping[str, frozenset[str]] | None = None,
 ) -> ModelResolver:
     """Return a resolver that allocates names under ``scheme`` around ``exclude_names``.
 
-    ``keeps_names`` is read by ``module``, ``duplicate_name_suffix_map`` by ``flattened-module`` and
-    ``snake_case_field`` by ``field-type``; ``imported-name`` and ``forwarder`` take the resolver defaults.
+    ``keeps_names`` and ``reserved_names`` (the names the parse resolver reserves in the module) are read by
+    ``module``, ``duplicate_name_suffix_map`` by ``flattened-module`` and ``snake_case_field`` by ``field-type``;
+    ``imported-name`` and ``forwarder`` take the resolver defaults.
     """
     options: dict[str, Any] = {}
     match scheme:
@@ -67,4 +72,7 @@ def scheme_resolver(  # noqa: PLR0913
             }
         case "field-type":
             options = {"snake_case_field": snake_case_field, "remove_suffix_number": True}
-    return ModelResolver(exclude_names=exclude_names, target_python_version=target_python_version, **options)
+    resolver = ModelResolver(exclude_names=exclude_names, target_python_version=target_python_version, **options)
+    if reserved_names:
+        resolver.reserve_names(reserved_names)
+    return resolver

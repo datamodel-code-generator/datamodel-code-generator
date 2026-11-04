@@ -101,7 +101,9 @@ from datamodel_code_generator._target_unicode import title
 from datamodel_code_generator._template_data import copy_extra_template_data
 from datamodel_code_generator._url_redaction import named_location, redact_reference
 from datamodel_code_generator._user_keys import (
+    ClassScope,
     ConstructionKeys,
+    ModelNameKeys,
     class_field_key,
     field_keys,
     first_given,
@@ -409,6 +411,9 @@ class ParserRunContext:
     untyped_nullable_maps: bool = False
     yielding_names: tuple[tuple[str, tuple[str, str | None]], ...] = ()
     document_roles: DocumentRoles = ()
+    model_name_keys: ModelNameKeys | None = None
+    records_model_names: bool = False
+    final_name_keys: tuple[tuple[str, tuple[str, ...]], ...] = ()
 
 
 _DEFAULT_PARSER_RUN_CONTEXT = ParserRunContext()
@@ -620,8 +625,18 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         untyped_nullable_maps: bool = False,
         yielding_names: tuple[tuple[str, tuple[str, str | None]], ...] = (),
         document_roles: DocumentRoles = (),
+        model_name_keys: ModelNameKeys | None = None,
+        records_model_names: bool = False,
+        final_name_keys: tuple[tuple[str, tuple[str, ...]], ...] = (),
     ) -> None:
-        """Configure parser run state without exposing implementation attributes."""
+        """Configure parser run state without exposing implementation attributes.
+
+        ``model_name_keys`` is the translated ``--model-name-map`` the run applies; ``records_model_names`` records
+        what the run names (``ModelResolver.model_name_record``) for that translation. ``final_name_keys`` are the
+        output names keys name of the models renamed after L2, by the path of the model (``translate_final_name_keys``):
+        the lookups of the model at a path read them after its own names, and the template data of each name joins
+        that of the path, before the entry of the model's name.
+        """
         context = ParserRunContext(
             diagnostic_source_path=diagnostic_source_path,
             prefetched_source=prefetched_source,
@@ -631,11 +646,39 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             untyped_nullable_maps=untyped_nullable_maps,
             yielding_names=yielding_names,
             document_roles=document_roles,
+            model_name_keys=model_name_keys,
+            records_model_names=records_model_names,
+            final_name_keys=final_name_keys,
         )
         self._run_context = None if context == _DEFAULT_PARSER_RUN_CONTEXT else context
         self.model_resolver.assigned_yielding_names = dict(yielding_names)
+        if final_name_keys:
+            self.model_resolver.final_name_keys = dict(final_name_keys)
+            for path, names in final_name_keys:
+                for name in names:
+                    if (entry := self.extra_template_data.get(name)) is not None:
+                        self.extra_template_data[path].update(entry)
+        if model_name_keys is not None:
+            self.model_resolver.apply_model_name_keys(model_name_keys)
+        if records_model_names:
+            self.model_resolver.record_model_names()
         if document_roles:
             self._seed_document_roles(document_roles)
+
+    @property
+    def _translates_final_name_keys(self) -> bool:
+        """Whether the run records the output names keys name (``translate_final_name_keys``).
+
+        Only where a key of the options read at L1 exists and a model was renamed after L2, in a run that does not
+        apply such names already or record what it names for ``--model-name-map`` (``records_model_names``).
+        """
+        keys = self._construction_keys
+        return (
+            bool(keys.class_names or keys.field_scopes)
+            and bool(self.generation_store.renames)
+            and not self.model_resolver.final_name_keys
+            and not self.run_context.records_model_names
+        )
 
     @property
     def document_roles_to_seed(self) -> DocumentRoles:
@@ -669,14 +712,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         data_type: DataType,
         *,
         source_name: str | None = None,
-        class_name: str | None = None,
+        scope: ClassScope | None = None,
         **facts: Unpack[FieldFacts],
     ) -> DataModelFieldBase:
         """Build a field of a model the parser writes, with the configured options its ``row`` takes.
 
         The field gets exactly the ``facts`` given, which also override the options they name. A given ``alias`` splits
-        into the alias and the validation aliases, beside the ``--serialization-aliases`` entry of ``class_name`` for a
-        field with a ``name`` and the ``source_name`` it is read from.
+        into the alias and the validation aliases, beside the ``--serialization-aliases`` entry of the class ``scope``
+        for a field with a ``name`` and the ``source_name`` it is read from.
         """
         options = self._field_option_kwargs
         if left_out := FIELD_OPTIONS_LEFT_OUT[row]:
@@ -684,7 +727,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         aliases: dict[str, Any] = {}
         if "alias" in facts:
             aliases["alias"], validation_aliases, aliases["serialization_alias"] = self._field_aliases(
-                facts.pop("alias"), name=facts.get("name"), source_name=source_name, class_name=class_name
+                facts.pop("alias"), name=facts.get("name"), source_name=source_name, scope=scope
             )
             if row not in FIELD_ROWS_WITHOUT_VALIDATION_ALIASES:
                 aliases["validation_aliases"] = validation_aliases
@@ -705,18 +748,23 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         *,
         name: str | None,
         source_name: str | None,
-        class_name: str | None,
+        scope: ClassScope | None,
     ) -> tuple[str | None, list[str] | None, str | None]:
         """Return the alias, validation aliases and serialization alias of a field ``name`` read from ``source_name``.
 
         ``alias`` (the output alias or the list of validation aliases) splits into the first two; the third is the
-        ``--serialization-aliases`` entry of ``class_name``, looked up only for a field with both names.
+        ``--serialization-aliases`` entry of the class ``scope``, looked up only for a field with both names.
         """
         single_alias, validation_aliases = self._split_field_alias(alias)
         return (
             single_alias,
             validation_aliases,
-            self.get_serialization_alias(source_name, name, class_name)
+            self.get_serialization_alias(
+                source_name,
+                name,
+                None if scope is None else scope.name,
+                output_names=() if scope is None else scope.output_names,
+            )
             if source_name is not None and name is not None
             else None,
         )
@@ -728,7 +776,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         alias: str | list[str] | None,
         *,
         source_name: str,
-        class_name: str,
+        scope: ClassScope,
         row: FieldAliasRow,
         inherits: bool | None = None,
     ) -> None:
@@ -738,7 +786,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         it is not given).
         """
         single_alias, validation_aliases, serialization_alias = self._field_aliases(
-            alias, name=name, source_name=source_name, class_name=class_name
+            alias, name=name, source_name=source_name, scope=scope
         )
         identity: FieldIdentity = {"name": name, "alias": single_alias}
         if row == "required-copy":
@@ -750,10 +798,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             self.serialization_aliases
             and (
                 field.serialization_alias is None
-                or not self.serialization_aliases.keys().isdisjoint((
-                    class_field_key(class_name, source_name),
-                    class_field_key(class_name, name),
-                ))
+                or not self.serialization_aliases.keys().isdisjoint(
+                    class_field_key(class_name, field_name)
+                    for class_name in scope.keys
+                    for field_name in (source_name, name)
+                )
             )
             and serialization_alias is not None
         ):
@@ -980,6 +1029,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._enum_admits_other_values: list[tuple[DataModelFieldBase, _ConstNarrowing]] = []
         self.typed_nullable_maps = False
         self.yielding_names_to_assign: tuple[tuple[str, tuple[str, str | None]], ...] = ()
+        self.final_name_keys_to_assign: tuple[tuple[str, tuple[str, ...]], ...] = ()
         self.typed_nullable_map_reference_ids: set[ModelKey] = set()
         self._literal_under_all_enum_reference_ids: set[ModelKey] = set()
         self._site_model_keys: set[ModelKey] = set()
@@ -1245,14 +1295,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         *,
         has_default: bool,
         required: bool,
-        class_name: str | None,
+        scope: ClassScope | None,
     ) -> tuple[Any, bool, bool]:
         """Resolve an overridden default and its required-field constructor policy."""
         effective_default, effective_has_default = self.model_resolver.resolve_default_value(
             field_name,
             default,
             has_default,
-            class_name=class_name,
+            class_name=None if scope is None else scope.name,
+            output_names=() if scope is None else scope.output_names,
         )
         return (
             effective_default,
@@ -1288,21 +1339,27 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         original_field_name: str,
         field_name: str,
         class_name: str | None = None,
+        *,
+        output_names: tuple[str, ...] = (),
     ) -> str | None:
-        """Get an explicit serialization alias for a field."""
+        """Get an explicit serialization alias for a field; ``output_names`` are the class's output names keyed."""
         if not self.serialization_aliases:
             return None
-        return first_present(self.serialization_aliases, field_keys(class_name, original_field_name, field_name))[0]
+        scope = None if class_name is None else ClassScope(class_name, output_names)
+        return first_present(self.serialization_aliases, field_keys(scope, original_field_name, field_name))[0]
 
     def _apply_final_class_field_aliases(
         self,
         fields: list[DataModelFieldBase],
-        class_name: str,
+        scope: ClassScope,
         original_class_name: str,
         base_classes: list[Reference],
     ) -> None:
-        """Apply final class scopes after name allocation, retaining already resolved fallback aliases."""
-        if class_name == original_class_name or not (aliases := self.config.aliases):
+        """Apply final class scopes after name allocation, retaining already resolved fallback aliases.
+
+        ``scope`` is the scope of the allocated name, which the keys of the field aliases it resolves read.
+        """
+        if (class_name := scope.name) == original_class_name or not (aliases := self.config.aliases):
             return
         if not any(part == class_name for key in aliases for part, _ in scoped_key(key, row="every-dot")):
             return
@@ -1325,17 +1382,18 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     excludes=reserved_names,
                     model_type=self.field_name_model_type,
                     class_name=class_name,
+                    output_names=scope.output_names,
                 )
                 reserved_names.add(resolved_aliases[original_name][0])
             self._take_field_aliases(
                 field,
                 *resolved_aliases[original_name],
                 source_name=original_name,
-                class_name=class_name,
+                scope=scope,
                 row="final-class",
                 inherits=bool(base_classes),
             )
-            field.__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY] = class_name
+            field.__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY] = scope
 
     @staticmethod
     def _parse_type_mappings(type_mappings: list[str] | None) -> dict[tuple[str, str], str]:
@@ -1452,9 +1510,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             self._import_ledger.append(self.imports, new_import, _ADDITIONAL_IMPORTS)
 
     def _resolve_base_class(
-        self, class_name: str, custom_base_path: str | list[str] | None = None
+        self, scope: ClassScope, custom_base_path: str | list[str] | None = None
     ) -> str | list[str] | None:
-        """Resolve base class(es) with priority: base_class_map > customBasePath > base_class."""
+        """Resolve base class(es) with priority: base_class_map (each name of a scope) > customBasePath > base_class."""
 
         def normalize(value: str | list[str] | None) -> str | list[str] | None:
             if value is None:  # pragma: no cover
@@ -1466,7 +1524,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 return result[0] if len(result) == 1 else result
             return value or None
 
-        mapped, found = mapped_base_class(self.base_class_map, class_name)
+        mapped, found = mapped_base_class(self.base_class_map, scope)
         if found:
             return normalize(mapped)
         if custom_base_path:
@@ -1596,13 +1654,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         field: DataModelFieldBase,
         inherited_field: DataModelFieldBase,
         *,
-        class_name: str,
+        scope: ClassScope,
     ) -> None:
         """Resolve an inherited schema default in the derived class scope."""
         apply_inherited_field_default(
             field,
             inherited_field,
-            class_name=class_name,
+            scope=scope,
             model_resolver=self.model_resolver,
             apply_default_values_for_required_fields=self.apply_default_values_for_required_fields,
         )

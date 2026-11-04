@@ -26,7 +26,6 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator import AllOfMergeMode, Error, ReadOnlyWriteOnlyModelType
 from datamodel_code_generator._graph_links import drop_tree
-from datamodel_code_generator._user_keys import class_key
 from datamodel_code_generator.model import DataModel
 from datamodel_code_generator.model.base import _field_source_name
 from datamodel_code_generator.model.runtime_validation import _is_internal_schema_runtime_validation
@@ -57,6 +56,7 @@ if TYPE_CHECKING:
     from contextlib import AbstractContextManager
     from pathlib import Path
 
+    from datamodel_code_generator._user_keys import ClassScope
     from datamodel_code_generator.enums import DataclassArguments
     from datamodel_code_generator.model import DataModelFieldBase
     from datamodel_code_generator.model.output import OutputModelContext
@@ -294,7 +294,7 @@ class RwSplitHost(Protocol):
         field: DataModelFieldBase,
         inherited_field: DataModelFieldBase,
         *,
-        class_name: str,
+        scope: ClassScope,
     ) -> None:
         """Resolve an inherited schema default in the derived class scope."""
 
@@ -494,9 +494,9 @@ class RwSplitHost(Protocol):
         """Resolve Request/Response variant reachability once per graph node."""
 
     def _resolve_base_class(
-        self, class_name: str, custom_base_path: str | list[str] | None = None
+        self, scope: ClassScope, custom_base_path: str | list[str] | None = None
     ) -> str | list[str] | None:
-        """Resolve base class(es) with priority: base_class_map > customBasePath > base_class."""
+        """Resolve base class(es) with priority: base_class_map (each name of a scope) > customBasePath > base_class."""
 
     def _resolve_external_ref_mapping(self, ref: str) -> tuple[str, str] | None:
         """Return the package and fragment ``--external-ref-mapping`` maps a reference to, if any."""
@@ -700,11 +700,11 @@ def merge_inherited_field_overrides(
         ):
             result.append(field)
             continue
-        if class_name := field.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY):
-            parser._apply_inherited_field_default(resolved_field, inherited_field, class_name=class_name)  # noqa: SLF001
-        elif class_name := field.__dict__.get(_DEFERRED_INHERITED_CLASS_KEY):
+        if scope := field.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY):
+            parser._apply_inherited_field_default(resolved_field, inherited_field, scope=scope)  # noqa: SLF001
+        elif scope := field.__dict__.get(_DEFERRED_INHERITED_CLASS_KEY):
             source = inherited_default_source(parser.allof_merge_mode, field, inherited_field)
-            parser._apply_inherited_field_default(resolved_field, source, class_name=class_name)  # noqa: SLF001
+            parser._apply_inherited_field_default(resolved_field, source, scope=scope)  # noqa: SLF001
         result.append(resolved_field)
     return result
 
@@ -1391,15 +1391,17 @@ def get_rw_model_variant_reference(
         else f"{base_reference.name}{suffix}"
     )
     yielding = parser.model_resolver.is_yielding(base_reference)
+    variant_path = _rw_variant_path(base_reference.path, _rw_direction(suffix))
     unique_name = parser.model_resolver.get_class_name(
         variant_name,
         unique=True,
         skip_affix=True,
         preserve_name=True,
         yields=yielding,
+        path=parser.model_resolver.join_path(tuple(variant_path)),
     ).name
     reference = parser.model_resolver.add(
-        _rw_variant_path(base_reference.path, _rw_direction(suffix)),
+        variant_path,
         unique_name,
         class_name=False,
         unique=False,
@@ -1532,7 +1534,7 @@ def create_object_model(  # noqa: PLR0913
         fields=fields,
         base_classes=base_classes,
         custom_base_class=parser._resolve_base_class(  # noqa: SLF001
-            class_key("reference-name", reference), obj.custom_base_path
+            parser.model_resolver.class_scope("reference-name", reference, reference.path), obj.custom_base_path
         ),
         custom_template_dir=parser.custom_template_dir,
         extra_template_data=parser.extra_template_data,

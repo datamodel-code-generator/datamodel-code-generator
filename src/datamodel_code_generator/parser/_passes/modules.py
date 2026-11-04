@@ -40,7 +40,7 @@ from datamodel_code_generator._reference_graph import (
 )
 from datamodel_code_generator._requirements import python_target_meets
 from datamodel_code_generator._shared_types import _CollapseRootModelsRecursionError
-from datamodel_code_generator._user_keys import class_field_key, class_key, model_type_override
+from datamodel_code_generator._user_keys import class_field_key, model_type_override
 from datamodel_code_generator.enums import DefaultValueType
 from datamodel_code_generator.imports import IMPORT_OPTIONAL, IMPORT_UNION, Import
 from datamodel_code_generator.model._decisions.collapse_eligibility import (
@@ -177,6 +177,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
     from pathlib import Path
 
+    from datamodel_code_generator._user_keys import ClassScope
     from datamodel_code_generator.config import ParserConfig
     from datamodel_code_generator.enums import DataclassArguments
     from datamodel_code_generator.imports import Imports
@@ -415,6 +416,10 @@ class CollapseHost(
     """The options, run state and hooks of the parser that collapsing root models reads and writes."""
 
     @property
+    def _model_type_override_imports(self) -> dict[str, Import]:
+        """The imports of the types that override models, by model name; collapse keeps the models they replace."""
+
+    @property
     def _collapses_list_item_root_models(self) -> bool:
         """Whether collapse inlines the root models that list items name."""
 
@@ -490,7 +495,7 @@ class DiscriminatorHost(InlineVariantHost, CollapsedReuseHost, RootModelHost, Pr
         data_type: DataType,
         *,
         source_name: str | None = None,
-        class_name: str | None = None,
+        scope: ClassScope | None = None,
         **facts: Unpack[FieldFacts],
     ) -> DataModelFieldBase:
         """Build a field of a model the parser writes, with the configured options its ``row`` takes."""
@@ -1238,6 +1243,12 @@ def collapse_site_facts(
     constrained_root = _has_root_field_constraints(root_field)
     return CollapseSiteFacts(
         has_root_field=True,
+        type_overridden=model_type_override(
+            parser._model_type_override_imports,  # noqa: SLF001
+            root_model.reference,
+            row="class-name",
+        )
+        is not None,
         circular=model_key_of(root_model.reference) in circular_root_models,
         runtime_object_validation=root_model.has_runtime_object_validation,
         needs_model_regex_engine=_site_needs_model_regex_engine(root_model),
@@ -1972,7 +1983,9 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                             alias=names.alias,
                             original_name=names.property_name,
                             source_name=names.property_name,
-                            class_name=class_key("reference-name", discriminator_model.reference),
+                            scope=parser.model_resolver.class_scope(
+                                "reference-name", discriminator_model.reference, discriminator_model.reference.path
+                            ),
                             required=True,
                         ),
                         "tag",
@@ -1980,8 +1993,8 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                     ),
                 )
                 if parser.config.aliases:
-                    discriminator_field.__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY] = class_key(
-                        "class-name", discriminator_model.reference
+                    discriminator_field.__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY] = parser.model_resolver.class_scope(
+                        "class-name", discriminator_model.reference, discriminator_model.reference.path
                     )
                     parser.model_resolver.prepare_explicit_field_aliases(
                         [discriminator_field], discriminator_model.reference, parser.field_name_model_type
@@ -2412,7 +2425,7 @@ def derived_override_import(parser: ModulesHost, model: DataModel) -> Import | N
         or (target := model.reference.__dict__.get(_DERIVED_FROM_KEY)) is None
     ):
         return None
-    return model_type_override(parser._model_type_override_imports, target, row="reference-name")  # noqa: SLF001
+    return model_type_override(parser._model_type_override_imports, target, row="class-name")  # noqa: SLF001
 
 
 def apply_field_type_overrides(parser: ModulesHost, models: list[DataModel]) -> None:

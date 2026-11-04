@@ -1391,11 +1391,18 @@ paths-and-request-bodies	main/openapi/openapi_item_schema_beside_null_schema.py	
 	main/openapi/max_min_number.py
 [test_main_openapi_model_name_map_key_of_numbered_name]
 both-variants	main/openapi/openapi_model_name_map_key_of_numbered_name.py
+duplicate-name-suffix-in-module	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[duplicate-name-suffix-in-module].py
 first-variant	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[first-variant].py
 map-value-takes-released-name	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[map-value-takes-released-name].py
 nested-models-of-one-title	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[nested-models-of-one-title].py
+path-key-needs-the-class-name-key	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[path-key-needs-the-class-name-key].py
+primary-first-late-rename	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[primary-first-late-rename].py
+primary-first-late-rename-beside-a-renamed-model	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[primary-first-late-rename-beside-a-renamed-model].py
+read-write-variant-beside-a-renamed-model	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[read-write-variant-beside-a-renamed-model].py
 same-name-documents	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[same-name-documents].py
-same-name-documents-with-class-name-prefix	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[same-name-documents-with-class-name-prefix].py
+same-name-documents-with-class-name-prefix	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[same-name-documents-with-class-name-prefix-of-all-names].py
+same-name-documents-with-class-name-prefix-of-all-names	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[same-name-documents-with-class-name-prefix-of-all-names].py
+value-is-another-key	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[value-is-another-key].py
 [test_main_openapi_module_class_name_collision_deep_exact_imports_pydantic_v2]
 	main/openapi/module_class_name_collision_deep_exact_imports//*.py
 [test_main_openapi_module_class_name_collision_deep_pydantic_v2]
@@ -1492,6 +1499,8 @@ default	main/openapi/msgspec_nullable_enum/openapi_31_pydantic_v2.py
 [test_main_openapi_nullable_map_value_class_keyed_options]
 Tags	main/openapi/nullable_map_value_class_keys/Tags.py
 Tags1	main/openapi/nullable_map_value_class_keys/Tags1.py
+[test_main_openapi_nullable_map_value_dotted_field_keys]
+	main/openapi/openapi_nullable_map_value_dotted_field_keys.py
 [test_main_openapi_nullable_map_value_import_cycle]
 	main/openapi/nullable_map_value_cycle/pydantic_v2//*.py
 [test_main_openapi_nullable_map_value_import_cycle_reuse_model]

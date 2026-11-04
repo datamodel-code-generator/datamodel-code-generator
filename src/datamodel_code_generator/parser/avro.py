@@ -853,6 +853,7 @@ class AvroParser(JsonSchemaParser):
                             None,
                             has_default=False,
                             class_name=class_key("class-name", model.reference),
+                            output_names=self.model_resolver.output_names(model.reference.path),
                         )
                         if has_default_override:
                             continue
@@ -884,8 +885,7 @@ class AvroParser(JsonSchemaParser):
             model_overrides = self._model_type_override_imports
             return (
                 {"": override}
-                if not self.collapse_root_models
-                and (override := model_type_override(model_overrides, class_name, row="predicted-class-name"))
+                if (override := model_type_override(model_overrides, class_name, row="predicted-class-name"))
                 else {}
             )
         if class_name not in self._reuse_optimization_context.type_override_model_names:

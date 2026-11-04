@@ -48,7 +48,6 @@ from datamodel_code_generator import Error
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
-from datamodel_code_generator._user_keys import class_key
 from datamodel_code_generator.model._decisions.tag_value import (
     SCALAR_TAG_TYPES,
     MappingPath,
@@ -100,7 +99,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model._decisions.tag_value import FieldTag, TagFieldMatch, VariantTagSource
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.parser._passes._shared import DiscriminatorValue
-    from datamodel_code_generator.reference import ModelResolver, ModelType
+    from datamodel_code_generator.reference import ModelResolver, ModelType, Reference
     from datamodel_code_generator.types import DataType
 
 __all__ = [
@@ -157,8 +156,8 @@ UnionWrittenTags: TypeAlias = "AbstractSet[tuple[int, str]]"
 DiscriminatorTag: TypeAlias = "tuple[DataModel, DataModelFieldBase, DiscriminatorValue | None]"
 """A msgspec struct a union tags, its tag field and the tag."""
 
-FieldNamer: TypeAlias = Callable[[str, str | None], tuple[str, str | list[str] | None]]
-"""The Python name and alias a property takes in the class named, or in any class for None."""
+FieldNamer: TypeAlias = Callable[[str, "Reference | None"], tuple[str, str | list[str] | None]]
+"""The Python name and alias a property takes in the class of the reference, or in any class for None."""
 
 ValidityMode: TypeAlias = Literal["source-name", "python-or-original-name"]
 """Which names a union's variants are checked by: those the schema gives their tag fields, or their Python names."""
@@ -302,11 +301,18 @@ def iter_union_sites(models: Iterable[DataModel]) -> Iterator[UnionSite]:
 
 
 def field_namer(resolver: ModelResolver, model_type: ModelType) -> FieldNamer:
-    """Return the Python name and alias of a property by the parse's resolver (``get_valid_field_name_and_alias``)."""
+    """Return the Python name and alias of a property by the parse's resolver (``get_valid_field_name_and_alias``).
 
-    def name(property_name: str, class_name: str | None) -> tuple[str, str | list[str] | None]:
+    A property of the class of ``reference`` is keyed by its class name (row ``class-name``), then its output names; one
+    of no class (``None``) by its name alone.
+    """
+
+    def name(property_name: str, reference: Reference | None) -> tuple[str, str | list[str] | None]:
+        if reference is None:
+            return resolver.get_valid_field_name_and_alias(field_name=property_name, model_type=model_type)
+        scope = resolver.class_scope("class-name", reference, reference.path)
         return resolver.get_valid_field_name_and_alias(
-            field_name=property_name, model_type=model_type, class_name=class_name
+            field_name=property_name, model_type=model_type, class_name=scope.name, output_names=scope.output_names
         )
 
     return name
@@ -347,7 +353,7 @@ def shared_site_names(names: SiteNames, data_types: Iterable[DataType], namer: F
                 variant_name = variant_field.name
                 break
         else:
-            variant_name, _ = namer(property_name, class_key("class-name", variant.reference))
+            variant_name, _ = namer(property_name, variant.reference)
         if common_name is not None and common_name != variant_name:
             msg = (
                 f"Discriminator {stable_repr(property_name)} resolves to different field names "
@@ -1418,8 +1424,8 @@ def possible_tag_names(
         variant_names[id(model)] = {
             name
             for property_name in property_names
-            for class_name in (None, class_key("class-name", model.reference))
-            for name in (property_name, namer(property_name, class_name)[0])
+            for reference in (None, model.reference)
+            for name in (property_name, namer(property_name, reference)[0])
         }
     return {
         id(model): frozenset(

@@ -1,0 +1,17 @@
+openapi: 3.0.0
+info:
+  title: Dotted schema names
+  version: "1"
+paths: {}
+components:
+  schemas:
+    a.Pet:
+      type: object
+      properties:
+        name:
+          type: string
+    a.Holder:
+      type: object
+      properties:
+        Pet:
+          $ref: '#/components/schemas/a.Pet'

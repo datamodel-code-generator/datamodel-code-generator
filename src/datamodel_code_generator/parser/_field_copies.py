@@ -14,6 +14,7 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
+from datamodel_code_generator._user_keys import ClassScope
 from datamodel_code_generator.enums import AllOfMergeMode
 from datamodel_code_generator.model.base import _overlay_constraints
 from datamodel_code_generator.parser._passes._keys import (
@@ -212,7 +213,7 @@ def _copy_resolved_inherited_field(  # noqa: PLR0913
             _apply_inherited_field_nullability(copied_field, current_type)
             if takes_default and _RAW_SCHEMA_DEFAULT_KEY in field.__dict__:
                 copied_field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = field.__dict__[_RAW_SCHEMA_DEFAULT_KEY]
-        case _, str():
+        case _, ClassScope():
             identity = placeholder_identity(field)
             if inherited_field.name and (
                 inherited_field.name == field.name

@@ -5578,6 +5578,83 @@ def test_main_openapi_nullable_map_value_model_name_map(
             "int_parsing",
             id="nested-models-of-one-title",
         ),
+        pytest.param(
+            OPEN_API_DATA_PATH / "model_name_map_same_name_documents" / "openapi.yaml",
+            "openapi",
+            '{"Pet": "Cat"}',
+            ["--class-name-prefix", "P"],
+            "PHolder",
+            '{"first":{"first":"a"},"second":{"second":"b"}}',
+            '{"first":{"first":1}}',
+            "string_type",
+            id="same-name-documents-with-class-name-prefix-of-all-names",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "model_name_map_value_is_a_key.json",
+            "jsonschema",
+            '{"Foo": "Bar", "Bar": "Baz"}',
+            [],
+            "Root",
+            '{"foo":{"x":"a"},"bar":{"y":"b"}}',
+            '{"bar":{"y":1}}',
+            "string_type",
+            id="value-is-another-key",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "naming_strategy" / "primary_first_multi_file" / "main.json",
+            "jsonschema",
+            '{"Target2": "Inline"}',
+            ["--naming-strategy", "primary-first"],
+            "Wrapper",
+            '{"target":{"source":"inline"}}',
+            '{"target":{"source":"main"}}',
+            "literal_error",
+            id="primary-first-late-rename-beside-a-renamed-model",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "naming_strategy" / "primary_first_multi_file" / "main.json",
+            "jsonschema",
+            '{"Target3": "Zz3"}',
+            ["--naming-strategy", "primary-first"],
+            "Zz3",
+            '{"source":"external1"}',
+            '{"source":"external2"}',
+            "literal_error",
+            id="primary-first-late-rename",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "model_name_map_duplicate_suffix" / "main.json",
+            "jsonschema",
+            '{"TagModel": "Second"}',
+            ["--duplicate-name-suffix", '{"model": "Model"}'],
+            "Model",
+            '{"tag":{"second":"a"},"external":{"external":"b"}}',
+            '{"external":{"external":1}}',
+            "string_type",
+            id="duplicate-name-suffix-in-module",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "model_name_map.json",
+            "jsonschema",
+            '{"#/definitions/Bar": "Foo", "Foo": "Qux"}',
+            [],
+            "Model",
+            '{"related":{"foo":{"value":"a"}}}',
+            '{"related":{"foo":{"value":1}}}',
+            "string_type",
+            id="path-key-needs-the-class-name-key",
+        ),
+        pytest.param(
+            OPEN_API_DATA_PATH / "model_name_map_read_write_variant.yaml",
+            "openapi",
+            '{"PetRequest": "Note"}',
+            ["--read-only-write-only-model-type", "request-response"],
+            "PetRequest1",
+            '{"name":"a","request":{"note":"b"}}',
+            '{"request":{"note":1}}',
+            "string_type",
+            id="read-write-variant-beside-a-renamed-model",
+        ),
     ],
 )
 def test_main_openapi_model_name_map_key_of_numbered_name(
@@ -5591,7 +5668,7 @@ def test_main_openapi_model_name_map_key_of_numbered_name(
     invalid_json: str,
     error_type: str,
 ) -> None:
-    """Name the next model of a family without the name a class name key renamed, instead of matching the key again."""
+    """Rename by a class name key the model that has the name without the map; the others keep their names there."""
     run_main_and_assert(
         input_path=input_path,
         output_path=output_file,
@@ -5646,6 +5723,31 @@ def test_main_openapi_nullable_map_value_class_keyed_options(output_file: Path, 
             "--formatters",
             "builtin",
         ],
+    )
+
+
+def test_main_openapi_nullable_map_value_dotted_field_keys(output_file: Path) -> None:
+    """Apply ``Class.field`` keys whose field name holds a dot to a map value model under its final name."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "nullable_map_value_dotted_field_keys.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            DataModelType.PydanticV2BaseModel.value,
+            "--aliases",
+            json.dumps({"Tags1.a.b": "ab"}),
+            "--serialization-aliases",
+            json.dumps({"Tags1.c.d": "cd"}),
+            "--default-values",
+            json.dumps({"Tags1.a.b": "x"}),
+            "--use-typed-nullable-map-values",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
     )
 
 

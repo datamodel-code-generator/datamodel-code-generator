@@ -625,7 +625,9 @@ def test_build_missing_required_field_uses_shared_alias_policy() -> None:
     """Required-only schema fields use the common alias normalization."""
     parser = JsonSchemaParser("")
 
-    field = parser._build_missing_required_field("missing", set(), [], "Model")
+    field = parser._build_missing_required_field(
+        "missing", set(), [], parser.model_resolver.class_scope("predicted", "Model", "#")
+    )
 
     assert field.name == "missing"
     assert field.required is True

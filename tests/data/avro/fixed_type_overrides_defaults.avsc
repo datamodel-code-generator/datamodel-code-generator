@@ -1,0 +1,4 @@
+{"type": "record", "name": "Holder", "fields": [
+  {"name": "d", "type": {"type": "fixed", "name": "Money", "size": 4, "logicalType": "decimal", "precision": 6, "scale": 2}, "default": "\u0000\u0000\u0001\u0000"},
+  {"name": "dur", "type": {"type": "fixed", "name": "Dur", "size": 12, "logicalType": "duration"}, "default": "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0003\u0000\u0000\u0000"}
+]}
