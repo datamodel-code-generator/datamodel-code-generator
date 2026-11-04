@@ -1269,7 +1269,7 @@ def enum_site_override_import(host: TypeOverrideHost, reference: Reference) -> I
     """
     if (target := reference.__dict__.get(_DERIVED_FROM_KEY)) is None or not isinstance(reference.source, Enum):
         return None
-    return model_type_override(host._model_type_override_imports, target, row="reference-name")  # noqa: SLF001
+    return model_type_override(host._model_type_override_imports, target, row="class-name")  # noqa: SLF001
 
 
 _ConstructorFieldAdjustment: TypeAlias = Literal["assignment", "keyword_only"]

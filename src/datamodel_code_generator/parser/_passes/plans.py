@@ -169,7 +169,7 @@ def flatten_conflicting_base_layouts(parser: PlansHost, module_models: ModuleMod
     view = BaseLayoutView(
         is_slot,
         lambda model: duplicates.get(id(model), model),
-        lambda model: model_type_override(overrides, model.reference, row="reference-name") is not None,
+        lambda model: model_type_override(overrides, model.reference, row="class-name") is not None,
     )
     visits = [(model, False) for model in reversed(joins)]
     visited: set[int] = set()

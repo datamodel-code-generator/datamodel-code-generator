@@ -3889,6 +3889,28 @@ def test_type_overrides_model_level(output_file: Path) -> None:
     )
 
 
+def test_type_overrides_model_level_dotted_schema_name(output_dir: Path) -> None:
+    """Replace a schema with a dotted name by its class name, in its module and in the modules that use it."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "type_overrides_dotted_schema_name.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--type-overrides",
+            '{"Pet": "decimal.Decimal"}',
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+        runtime_validation_module="b",
+        runtime_validation_model_name="Owner",
+        runtime_validation_data={"pet": "1.5"},
+    )
+
+
 @freeze_time(TIMESTAMP)
 def test_type_overrides_model_level_from_file(output_file: Path, tmp_path: Path) -> None:
     """Replace schema model types from a JSON file mapping."""

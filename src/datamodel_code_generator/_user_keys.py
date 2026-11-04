@@ -42,10 +42,6 @@ after names are final):
   yielding name settles at L2. When a yielding name changed and a key of an L1 row names the created or the final
   name, ``__init__.py:_parse_generation`` parses the whole input again with the final names assigned. Its key list
   leaves out ``--type-overrides`` and ``--enum-field-as-literal-map``.
-* ``legacy-model-override-by-two-names`` (``model_type_override``): L5 ``remove_overridden_models`` drops a model
-  whose class name a model-level ``--type-overrides`` key names, while the references the override replaces compare
-  the key with the name of their reference, which a module prefixes; a schema with a dotted name is dropped and its
-  references keep naming it (#5718).
 * ``legacy-reparse-yielding-only`` (``parser/_passes/settle.py:settle_yielding_names``): the renames that decide that
   parse are those of the yielding names at L2; the renames after L2, which ``GenerationStore.rename_model`` records,
   decide nothing, so a key that names a name one of them gave matches no model.
@@ -93,10 +89,9 @@ _SCOPE_SEPARATOR: Final = "."
 _PATH_KEY_MARKER: Final = "#"
 ScopedKeyRow: TypeAlias = Literal["first-dot", "every-dot"]
 ClassKeyRow: TypeAlias = Literal["predicted", "reference-name", "original-name", "class-name"]
-TypeOverrideRow: TypeAlias = Literal["class-name", "reference-name", "predicted-class-name"]
+TypeOverrideRow: TypeAlias = Literal["class-name", "predicted-class-name"]
 _TYPE_OVERRIDE_CLASS_KEYS: Final[dict[TypeOverrideRow, ClassKeyRow]] = {
     "class-name": "class-name",
-    "reference-name": "reference-name",
     "predicted-class-name": "predicted",
 }
 
@@ -200,11 +195,10 @@ def model_type_override(
 ) -> _ValueT | None:
     """Return the value of the model-level ``--type-overrides`` key that names a model, or None, by row.
 
-    Row ``class-name`` compares the keys with the model's class name (L5 ``remove_overridden_models``),
-    ``reference-name`` with the name of the reference that names it (the references and bases the override replaces,
-    the site models built from it, the base layouts), and ``predicted-class-name`` with the class name a parser gives
-    before the resolver allocates it, passed as ``model`` (the Avro fixed types). The first two differ where a module
-    prefixes the name (row ``legacy-model-override-by-two-names``).
+    Row ``class-name`` compares the keys with the class name of the model, without the module a dotted name gives
+    it: the model L5 ``remove_overridden_models`` drops, the references and bases the override replaces, the site
+    models built from it and the base layouts read one name. Row ``predicted-class-name`` compares them with the class
+    name a parser gives before the resolver allocates it, passed as ``model`` (the Avro fixed types).
     """
     return overrides.get(class_key(_TYPE_OVERRIDE_CLASS_KEYS[row], model))
 

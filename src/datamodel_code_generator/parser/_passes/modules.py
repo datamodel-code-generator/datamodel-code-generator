@@ -2371,7 +2371,7 @@ def derived_override_import(parser: ModulesHost, model: DataModel) -> Import | N
         or (target := model.reference.__dict__.get(_DERIVED_FROM_KEY)) is None
     ):
         return None
-    return model_type_override(parser._model_type_override_imports, target, row="reference-name")  # noqa: SLF001
+    return model_type_override(parser._model_type_override_imports, target, row="class-name")  # noqa: SLF001
 
 
 def apply_field_type_overrides(parser: ModulesHost, models: list[DataModel]) -> None:
