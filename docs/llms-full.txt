@@ -69557,14 +69557,14 @@ Without the option (same as 0.88.0), `ByKey` rejects `{"kind": "cat"}`:
 
 ```python
 class Cat(BaseModel):
-    kind: Literal['Cat']
+    kind: Literal["Cat"]
 ```
 
 With the option:
 
 ```python
 class Cat(BaseModel):
-    kind: Literal['Cat', 'cat']
+    kind: Literal["Cat", "cat"]
 ```
 
 ### `--use-encoded-str-for-constrained-base64`
@@ -69590,10 +69590,7 @@ lengths: Annotated[Base64Str | None, Field(max_length=8, min_length=4)] = None
 With the option:
 
 ```python
-lengths: (
-    Annotated[str, Field(min_length=4, max_length=8), EncodedStr(encoder=Base64Encoder)]
-    | None
-) = None
+lengths: Annotated[str, Field(min_length=4, max_length=8), EncodedStr(encoder=Base64Encoder)] | None = None
 ```
 
 ## Opt-in behaviour changes in 0.87.0
