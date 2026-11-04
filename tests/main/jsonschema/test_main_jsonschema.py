@@ -38039,6 +38039,47 @@ def test_main_jsonschema_discriminator_mapping_symlinked_directory(
         )
 
 
+@pytest.mark.parametrize(
+    ("extra_args", "decodes_structs"),
+    [
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel"], False, id="pydantic_v2"),
+        pytest.param(
+            ["--output-model-type", "msgspec.Struct", "--use-msgspec-tagged-unions"], True, id="msgspec-tagged-unions"
+        ),
+    ],
+)
+def test_main_jsonschema_discriminator_mapping_unlisted_schema(
+    output_file: Path, extra_args: list[str], decodes_structs: bool
+) -> None:
+    """Tag no variant by a mapping path that names a schema the union does not list, read with its dot segments.
+
+    The mapping names ``defs/bird.json`` as ``./sub/../defs/bird.json``, which the union does not list, so the path
+    keeps the keys it is written with, its dot segments removed as RFC 3986 removes them, and they select neither
+    ``Cat`` nor ``Dog``: a payload tagged ``b``, which the mapping sends to ``Bird``, is rejected.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "discriminator_mapping_unlisted_schema" / "main.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    module_name = f"discriminator_mapping_unlisted_schema_{'msgspec' if decodes_structs else 'pydantic'}"
+    with _generated_model(output_file, module_name, "Kennel") as model:
+        decode = partial(msgspec.json.decode, type=model) if decodes_structs else _model_json_validator(model)
+        assert_output(
+            "".join(
+                f"{document}: model {_reentered_directory_verdict(decode, document)}\n"
+                for document in (
+                    '{"pet": {"pet_type": "c", "naps": 1}}',
+                    '{"pet": {"pet_type": "d", "walks": 1}}',
+                    '{"pet": {"pet_type": "b", "sings": true}}',
+                    '{"pet": {"pet_type": "bird.json#"}}',
+                )
+            )
+        )
+
+
 INHERITED_SCHEMA_TAG_DOCUMENTS: tuple[tuple[str, dict[str, Any]], ...] = (
     ("Call", {"type": "function", "name": "n"}),
     ("Call", {"type": "custom", "input": "x"}),

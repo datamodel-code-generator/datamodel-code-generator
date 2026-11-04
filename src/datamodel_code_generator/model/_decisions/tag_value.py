@@ -96,7 +96,6 @@ __all__ = [
     "field_source_name",
     "field_tag",
     "is_tag_value",
-    "locate_mapping_path",
     "mapped_tags",
     "mapping_key_tag",
     "mapping_path_keys",
@@ -442,9 +441,9 @@ class MappingPath(str):  # noqa: FURB189 - it must be a str wherever a mapping p
     """A discriminator mapping path with the location it names, relative to the base of the parse (``located``).
 
     The parser sets it where it reads the mapping, to the key of the reference the path names from the document that
-    declares the mapping (``parser/_union_tags.py:located_mapping_paths``), as it resolves every reference: a path that
-    leaves its directory and comes back, or goes through a symlinked directory, names the file it leads to. It is None
-    for a path that names no local file.
+    declares the mapping (``parser/_union_tags.py:located_mapping_paths``), as it resolves every reference: a path
+    through a symlinked directory names the file the link leads to, and a mapping another document declares is read
+    against that document's directory wherever the union is held. It is None for a path that names no local file.
     """
 
     __slots__ = ("located",)
@@ -456,29 +455,6 @@ class MappingPath(str):  # noqa: FURB189 - it must be a str wherever a mapping p
         self = super().__new__(cls, path)
         self.located = located
         return self
-
-
-def locate_mapping_path(path: str, /, *, document: str, base: Sequence[str]) -> str:
-    """Return the path relative to ``base`` that a mapping path names when the ``document`` writes it.
-
-    ``base`` is the segments of the absolute directory of the base of the parse and ``document`` the path of the
-    document relative to it, as reference paths name it. The path is resolved against the directory of the document,
-    or against the base where it starts with ``/``, and its dot segments are removed (RFC 3986, section 5.2.4), so
-    ``../../r/defs/cat.json`` written in a document of ``/x/r/sub`` reads as ``../defs/cat.json``, the form of the
-    schema path of that file. A fragment stays as written.
-    """
-    file_part, marker, fragment = path.partition("#")
-    segments = [*base]
-    for segment in (*(() if file_part.startswith("/") else document.split("/")[:-1]), *file_part.split("/")):
-        if segment == "..":
-            del segments[max(len(segments) - 1, 1) :]
-        elif segment not in {"", "."}:
-            segments.append(segment)
-    shared = next(
-        (index for index, pair in enumerate(zip(base, segments, strict=False)) if pair[0] != pair[1]),
-        min(len(base), len(segments)),
-    )
-    return "/".join((*[".."] * (len(base) - shared), *segments[shared:])) + marker + fragment
 
 
 def _without_dot_segments(path: str) -> str:

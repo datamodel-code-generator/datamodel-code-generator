@@ -62,7 +62,7 @@ release_note = "a property typed as the Literal of an enum writes the length, bo
 input = "*field_constraint_sites*"
 backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct" ]
 aspects = [ "constraints", "type" ]
-match = "^\\[(?:constraints|type)\\] (?:array_item_roots:)?(?:Pair|ClosedItem|Model:pairs|Model:closed): .* -> .*(?:MinLen\\(min_length=[12]\\)|Meta\\(max_length=1,min_length=1\\))"
+match = "^\\[(?:constraints|type)\\] (?:array_item_roots:)?(?:Pair|ClosedItem|(?:Model|Payload):pairs|(?:Model|Payload):closed): .* -> .*(?:MinLen\\(min_length=[12]\\)|Meta\\(max_length=1,min_length=1\\))"
 reason = "the root model of an array item dropped the minItems of the item unless --field-constraints was given and, as a root model, the maxItems that items: false implies, so the model accepted arrays the schema rejects; it writes both as the property of the same array does (schema-mismatch fix)"
 decision = "#5975, #5978"
 release_note = "the root model of an array item keeps the minItems of the item without --field-constraints, and the maxItems that items: false implies, as the property of the same array does"
@@ -107,7 +107,7 @@ release_note = "a property map whose type list joins an array keeps its minPrope
 input = "*field_constraint_sites*"
 backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct" ]
 aspects = [ "constraints", "default", "required", "constructor-order" ]
-match = "^\\[constraints\\] (?:array_counts_beside_other_types:)?Model:tag: (?:Annotated\\[Union\\[None, str\\], MinLen\\(min_length=2\\)\\] -> Union\\[None, str\\]|Union\\[Annotated\\[str, Meta\\(min_length=2\\)\\], msgspec\\.UnsetType\\] -> Union\\[msgspec\\.UnsetType, str\\])$|^\\[default\\] (?:array_counts_beside_other_types:)?Model:tag: 'FieldInfo\\(annotation=NoneType, required=(?:True|False), (?:default=None, )?metadata=\\[MinLen\\(min_length=2\\)\\]\\)' -> '?None'?$|^\\[required\\] (?:array_counts_beside_other_types:)?Model:tag: False -> True$|^\\[constructor-order\\] (?:array_counts_beside_other_types:)?Model: \\['label', 'names', 'tag', 'tags'\\] -> \\['label', 'tag', 'names', 'tags'\\]$|^\\[constraints\\] (?:array_counts_beside_retyped:)?Model:tally: Union\\[Annotated\\[dict\\[str, list\\[str\\]\\], Meta\\(min_length=2\\)\\], msgspec\\.UnsetType\\] -> Union\\[dict\\[str, list\\[str\\]\\], msgspec\\.UnsetType\\]$"
+match = "^\\[constraints\\] (?:array_counts_beside_other_types:)?(?:Model|Payload):tag: (?:Annotated\\[Union\\[None, str\\], MinLen\\(min_length=2\\)\\] -> Union\\[None, str\\]|Union\\[Annotated\\[str, Meta\\(min_length=2\\)\\], msgspec\\.UnsetType\\] -> Union\\[msgspec\\.UnsetType, str\\])$|^\\[default\\] (?:array_counts_beside_other_types:)?(?:Model|Payload):tag: 'FieldInfo\\(annotation=NoneType, required=(?:True|False), (?:default=None, )?metadata=\\[MinLen\\(min_length=2\\)\\]\\)' -> '?None'?$|^\\[required\\] (?:array_counts_beside_other_types:)?(?:Model|Payload):tag: False -> True$|^\\[constructor-order\\] (?:array_counts_beside_other_types:)?Model: \\['label', 'names', 'tag', 'tags'\\] -> \\['label', 'tag', 'names', 'tags'\\]$|^\\[constraints\\] (?:array_counts_beside_retyped:)?Model:tally: Union\\[Annotated\\[dict\\[str, list\\[str\\]\\], Meta\\(min_length=2\\)\\], msgspec\\.UnsetType\\] -> Union\\[dict\\[str, list\\[str\\]\\], msgspec\\.UnsetType\\]$"
 reason = "a property beside contains and minContains, which JSON Schema ignores on a string and on an object, carried the minItems that they imply as min_length, so the model rejected the strings and the maps with fewer entries that the schema accepts (a string of one character beside minContains 2, a map of one key), and raised for a string that x-python-type typed as a date; a field whose type holds no array, or whose schema declares none, takes no item counts (schema-mismatch fix)"
 decision = "#6032"
 release_note = "a property that holds no array (a string, a mapping) no longer gets the minItems or maxItems that contains, minContains or items: false imply as its length, so it no longer rejects the values the schema accepts"
@@ -195,7 +195,7 @@ release_note = "a discriminator mapping value whose path leaves the directory of
 [[accepted]]
 input = "*discriminator_mapping_other_document*"
 aspects = [ "type" ]
-match = "^\\[type\\] (?:[\\w.]+:)?Cat:pet_type: Literal\\['cat\\.yaml#'\\] -> Literal\\['c'\\]$"
+match = "^\\[type\\] (?:[\\w.]+:)?Cat\\d*:pet_type: Literal\\['cat\\.yaml#'\\] -> Literal\\['c'\\]$"
 reason = "a discriminator whose mapping is declared in another document (./cat.yaml written in b/base.yaml, referenced from a/openapi.yaml) was compared with the variant's schema path without the directory of the declaring document, so the mapping matched no variant and the variant was tagged by its file name, Literal['cat.yaml#'], which rejected every payload the mapping selects it for; the path is resolved against the document that declares the mapping now (schema-mismatch fix)"
 decision = "#6068"
 release_note = "a discriminator mapping declared in another document than the union, such as ./cat.yaml in b/base.yaml used from a/openapi.yaml, now tags its variant with the mapping key instead of the file name"
@@ -223,3 +223,38 @@ match = "^\\[type\\] (?:[\\w.]+:)?\\w+:\\w+: .* -> (?:Union\\[None, )?(?:list|di
 reason = "a container whose items are the union of several schemas (a closed array written as one list, msgspec's one dict of an object map) wrote the None that one position or value allows on the container (list[str] | None), so it rejected [null, \"x\"], which the schema accepts, and a required field accepted null; the None stays inside the container now (list[str | None]) (schema-mismatch fix)"
 decision = "#5327"
 release_note = "a closed array written as a list, and msgspec's dict of an object map, keep the null that one position or value allows inside the container (list[str | None]) instead of on the field (list[str] | None), so they accept null items and reject a null array as the schema does"
+
+[[accepted]]
+input = "*discriminator_mapping_other_document*"
+aspects = [ "type" ]
+match = "^\\[type\\] (?:[\\w.]+:)?Cat\\d*:pet_type: Literal\\['c', 'e'\\] -> Literal\\['e'\\]$|^\\[type\\] (?:[\\w.]+:)?CatModel:pet_type: Literal\\['cat\\.yaml#'\\] -> Literal\\['c'\\]$"
+reason = "a discriminator mapping declared in b/base.yaml (c: ./cat.yaml) was located against the directory of the document holding the union, a/, so a/cat.yaml's Cat also took the tag c, which the schema gives to b/cat.yaml's CatModel; the mapping is read against the document that declares it now, so Cat keeps only its own tag e and b/cat.yaml's CatModel takes the tag c the mapping gives it instead of its file name (schema-mismatch fix)"
+decision = "#6159"
+release_note = "a discriminator mapping declared in another document than the union is read against that document, so a variant no longer takes a tag the mapping gives another variant"
+
+[[accepted]]
+input = "*single_value_enum_as_const*"
+backends = [ "pydantic_v2.BaseModel" ]
+aspects = [ "constraints" ]
+match = "^\\[constraints\\] (?:nullable:)?Alert:short_marker: Union\\[Literal\\['marker'\\], None\\] -> Annotated\\[Union\\[Literal\\['marker'\\], None\\], MaxLen\\(max_length=10\\)\\]$"
+reason = "an object property that names a one-value nullable enum (Marker: enum [marker]) beside maxLength 10 dropped the keyword under --field-constraints, where a root model writes it; it writes it as a root does (the one value 'marker' meets maxLength 10 and None takes no length, so only the keyword is new)"
+decision = "#5977"
+release_note = "a property typed as the Literal of an enum writes the length, bound and multipleOf keywords beside the enum under --field-constraints, as a root model does, so the model no longer accepts a value those keywords reject"
+
+[[accepted]]
+input = "*builtin_submodule*"
+backends = [ "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct" ]
+aspects = [ "import-path-removed" ]
+match = "^\\[import-path-removed\\] (?:pkg:)?list_1: from (?:pkg|__init__) import list_1$"
+reason = "a package whose __init__.py (the root of the output, or an input __init__.json) imports its submodule list wrote list[str] there, which named the submodule that the import binds in the package (from . import list as list_1), so the module failed to import or decode (TypeError: 'module' object is not subscriptable); every written __init__.py is treated as a package now, so the builtin is imported under another name (from builtins import list as list_aliased) and the submodule keeps its name (from . import list) (crash fix)"
+decision = "#6004"
+release_note = "a package __init__.py, including the root of the output and the module of an input __init__.json, imports a builtin that one of its submodules hides under another name (from builtins import list as list_aliased) instead of writing list[str], which named the submodule"
+
+[[accepted]]
+input = "*field_constraint_sites*"
+backends = [ "pydantic_v2.dataclass" ]
+aspects = [ "type" ]
+match = "^\\[type\\] (?:union_root_keywords:)?Item\\d*: Annotated\\[Union\\[Annotated\\[str, MaxLen\\(max_length=3\\)\\], int\\], MaxLen\\(max_length=3\\)\\] -> Union\\[Annotated\\[str, MaxLen\\(max_length=3\\)\\], int\\]$"
+reason = "the type alias of an array item that is anyOf string or integer beside maxLength 3 wrote the keyword on the union as well as on its string branch, so Pydantic raised TypeError (Unable to apply constraint 'max_length' to supplied value 5) for the integers the schema accepts; the union leaves out a keyword that each branch keeps or does not take (crash fix)"
+decision = "#6022"
+release_note = "under --field-constraints a length, pattern or bound keyword beside anyOf or oneOf is left out of the union when every member keeps it or cannot take it, so a model no longer raises TypeError for an integer or root-model value the schema accepts"

@@ -1,19 +1,19 @@
 """The tag plan: the union sites the tag passes read, what they decide there and what they recorded.
 
-A union site is a field whose extras carry a discriminator object naming a property; :func:`iter_union_sites` is the
-one match on ``extras["discriminator"]`` that the tag passes share, and each caller passes its own models, so it keeps
-its order; the paths of a site's mapping know the location their document gives them (:func:`located_mapping`). The
-decisions of the L5 tag passes are the functions here: whether a union can be tagged (:func:`site_validity`), the
-Python name of its tag field (:func:`site_names`, :func:`shared_site_names`), the tags of a variant
-(:func:`tags_of_variant`, :class:`UnionView`), the form each tag field takes (:func:`iter_tag_field_decisions`), which
-msgspec unions take struct tags (:func:`tag_msgspec_unions`) and which ``discriminator=`` Pydantic cannot build
+A union site is a field whose extras carry a discriminator object naming a property; :func:`iter_union_sites` is the one
+match on ``extras["discriminator"]`` that the tag passes share, and each caller passes its own models, so it keeps its
+order; the paths of a site's mapping keep the location the parser resolved them to where it is the schema of a variant
+(:func:`located_mapping`). The decisions of the L5 tag passes are the functions here: whether a union can be tagged
+(:func:`site_validity`), the Python name of its tag field (:func:`site_names`, :func:`shared_site_names`), the tags of a
+variant (:func:`tags_of_variant`, :class:`UnionView`), the form each tag field takes (:func:`iter_tag_field_decisions`),
+which msgspec unions take struct tags (:func:`tag_msgspec_unions`) and which ``discriminator=`` Pydantic cannot build
 (:func:`settle_site`, :func:`iter_root_default_unions`), and at L6 what becomes of the msgspec structs below tagged
-bases (:func:`iter_struct_tag_decisions`). The passes keep their slots:
-they call these where they read the facts before, write the result through the store, in the order they read it, as a
-variant may read a tag field that the write for an earlier variant changed, and record it in :class:`TagPlan`, which
-holds what the tag passes of one parse recorded; :meth:`TagPlan.reset` forgets it at the start of L4. The class
-constants of a backend these decisions read are the rows of :class:`TagCapabilities`. The L3 reuse keys
-(:func:`declared_union_tags`) and the L4 layout prediction (:func:`possible_tag_names`) are read here too.
+bases (:func:`iter_struct_tag_decisions`). The passes keep their slots: they call these where they read the facts
+before, write the result through the store, in the order they read it, as a variant may read a tag field that the write
+for an earlier variant changed, and record it in :class:`TagPlan`, which holds what the tag passes of one parse
+recorded; :meth:`TagPlan.reset` forgets it at the start of L4. The class constants of a backend these decisions read are
+the rows of :class:`TagCapabilities`. The L3 reuse keys (:func:`declared_union_tags`) and the L4 layout prediction
+(:func:`possible_tag_names`) are read here too.
 
 Each pass keeps its slot in the pipeline, so today's timing stays; these rows name it until a decision after the module
 loop replaces them:
@@ -48,13 +48,11 @@ from datamodel_code_generator import Error
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
-from datamodel_code_generator._url_redaction import is_url
 from datamodel_code_generator.model._decisions.tag_value import (
     SCALAR_TAG_TYPES,
     MappingPath,
     field_tag,
     is_tag_value,
-    locate_mapping_path,
     mapping_key_tag,
     mapping_path_keys,
     redeclared_tag_field,
@@ -249,22 +247,16 @@ class UnionSite:
     """The mapping of the discriminator, empty where it declares none, its paths located (``located_mapping``)."""
 
 
-def located_mapping(
-    model: DataModel, mapping: dict[str, str] | None, data_types: Iterable[DataType], resolver: ModelResolver
-) -> dict[str, str]:
+def located_mapping(mapping: dict[str, str] | None, data_types: Iterable[DataType]) -> dict[str, str]:
     """Return a discriminator mapping whose paths keep the location they name where it is the schema of a variant.
 
-    The parser located each path of a mapping it captured as the document that declares the mapping resolves it
-    (``MappingPath``, ``parser/_union_tags.py:located_mapping_paths``), through a symlinked directory too. A path it
-    did not locate, of a discriminator that OpenAPI copies from a schema the union is held through, is resolved against
-    the directory of the document of the holder (``locate_mapping_path``), where it is a path to a file of a local
-    document. A path keeps its location when that is the schema path of a variant of ``data_types`` or of a base of
-    one; any other path, a bare name, a fragment and a URL keep the keys they had.
+    The parser located each path where it read the mapping, as the document that declares the mapping resolves it
+    (``parser/_union_tags.py:located_mapping_paths``); ``mapping_path_keys`` matches a located path by that location
+    alone. A path keeps it when it is the schema path of a variant of ``data_types`` or of a base of one, which reuse
+    may have replaced; any other path keeps the keys it had.
     """
-    if not mapping:
-        return {}
-    document = model.reference.path.partition("#")[0]
-    base = None if resolver.base_url or is_url(document) else resolver.document_directory("").parts
+    if not mapping or not any(isinstance(path, MappingPath) and path.located is not None for path in mapping.values()):
+        return mapping or {}
     variants = [
         variant
         for data_type, _, _ in _iter_discriminator_data_types(data_types)
@@ -278,24 +270,15 @@ def located_mapping(
             *(_get_schema_path(base_class.reference) for base_class in variant.base_classes if base_class.reference),
         )
     }
-
-    def location(path: str) -> str | None:
-        if isinstance(path, MappingPath):
-            return path.located
-        if base is None or "/" not in path or path.startswith("#") or is_url(path):
-            return None
-        return locate_mapping_path(path, document=document, base=base)
-
     return {
-        tag: MappingPath(
-            path,
-            located if (located := location(path)) is not None and located.removesuffix("#") in schema_paths else None,
-        )
+        tag: MappingPath(path, path.located if path.located.removesuffix("#") in schema_paths else None)
+        if isinstance(path, MappingPath) and path.located is not None
+        else path
         for tag, path in mapping.items()
     }
 
 
-def union_site(model: DataModel, field: DataModelFieldBase, resolver: ModelResolver) -> UnionSite | None:
+def union_site(model: DataModel, field: DataModelFieldBase) -> UnionSite | None:
     """Return the site a field of a model is, or None where its extras carry no discriminator naming a property."""
     match field.extras.get("discriminator"):
         case {"propertyName": str() as property_name} as discriminator if property_name:
@@ -304,16 +287,16 @@ def union_site(model: DataModel, field: DataModelFieldBase, resolver: ModelResol
                 field,
                 property_name,
                 discriminator,
-                located_mapping(model, discriminator.get("mapping"), field.data_type.data_types, resolver),
+                located_mapping(discriminator.get("mapping"), field.data_type.data_types),
             )
     return None
 
 
-def iter_union_sites(models: Iterable[DataModel], resolver: ModelResolver) -> Iterator[UnionSite]:
+def iter_union_sites(models: Iterable[DataModel]) -> Iterator[UnionSite]:
     """Yield the union sites of the models, field by field in the order of ``models``."""
     for model in models:
         for field_ in model.fields:
-            if (site := union_site(model, field_, resolver)) is not None:
+            if (site := union_site(model, field_)) is not None:
                 yield site
 
 
@@ -1244,7 +1227,7 @@ class TagPlan:
         return [decision.model for decision in self.struct_tags if decision.kind == "opted-out"]
 
     def inline_variant_tags(
-        self, models: Iterable[DataModel], namer: FieldNamer, resolver: ModelResolver, *, enum_member_tags: bool
+        self, models: Iterable[DataModel], namer: FieldNamer, *, enum_member_tags: bool
     ) -> InlineVariantTags:
         """Return the tag fields of the inline variants that may take the tag they inherit, decided once for all unions.
 
@@ -1260,7 +1243,7 @@ class TagPlan:
             return decided
         inline: dict[int, tuple[tuple[DataModelFieldBase, DiscriminatorValue], ...]] = {}
         clashing: set[int] = set()
-        for site in iter_union_sites(models, resolver):
+        for site in iter_union_sites(models):
             field_ = site.field
             variants = {
                 id(source): tuple(
@@ -1368,7 +1351,7 @@ class TagPlanHost(Protocol):
         """What the tag passes of the parse recorded."""
 
 
-def declared_union_tags(model: DataModel, resolver: ModelResolver) -> tuple[HashableComparable, ...]:
+def declared_union_tags(model: DataModel) -> tuple[HashableComparable, ...]:
     """Return the field index, property and the tags of each variant of each discriminated union of a model.
 
     Unions that render alike decode other tags when their discriminators name another property or map their
@@ -1398,7 +1381,7 @@ def declared_union_tags(model: DataModel, resolver: ModelResolver) -> tuple[Hash
             ),
         )
         for index, discriminator, data_types in discriminators
-        for mapping in (located_mapping(model, discriminator.get("mapping"), data_types, resolver),)
+        for mapping in (located_mapping(discriminator.get("mapping"), data_types),)
     )
 
 

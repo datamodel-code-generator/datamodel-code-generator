@@ -45,6 +45,7 @@ from datamodel_code_generator._runtime.model_codecs.parameters import parameter_
 from datamodel_code_generator._source import YamlValue
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import OpenAPIAsDefinitions, OpenAPIVersion, VersionMode
+from datamodel_code_generator.parser import _union_tags
 from datamodel_code_generator.parser._origins import with_type_origin
 from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row, SchemaSite
 from datamodel_code_generator.parser._schema_graph import keep_resolved_ref
@@ -693,12 +694,17 @@ class OpenAPIParser(JsonSchemaParser):
             warn_deprecated("schema.openapi-nullable", stacklevel=2)
         return super()._get_data_type(obj, localize_constraints=localize_constraints)
 
-    def _normalize_discriminator(self, discriminator: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR6301
-        """Return a copy of the discriminator dict with normalized mapping refs."""
+    def _normalize_discriminator(self, discriminator: dict[str, Any]) -> dict[str, Any]:
+        """Return a copy of the discriminator dict with its mapping values as the references they name.
+
+        Each is the reference the union is read from (``_get_discriminator_union_type``), with the location the parser
+        resolves it to from the document that declares the mapping (``located_mapping_paths``).
+        """
         result = discriminator.copy()
         mapping = discriminator.get("mapping")
         if mapping:
-            result["mapping"] = {k: discriminator_mapping_ref(v) for k, v in mapping.items() if isinstance(v, str)}
+            refs = _union_tags.discriminator_mapping_refs(self, mapping)
+            result["mapping"] = _union_tags.located_mapping_paths(self, refs, refs)
         return result
 
     @override
@@ -725,11 +731,7 @@ class OpenAPIParser(JsonSchemaParser):
             discriminator = self._discriminator_schemas[ref]
             mapping = discriminator.get("mapping", {})
             if mapping:
-                subtypes = [
-                    self._discriminator_mapping_ref(name, value, self._raw_location(mapping))
-                    for name, value in mapping.items()
-                    if isinstance(value, str)
-                ]
+                subtypes = [*_union_tags.discriminator_mapping_refs(self, mapping).values()]
                 if subtypes and ref.partition("#")[0] == current_document:
                     return build_union(self.data_type, [self._get_discriminator_subtype_data_type(v) for v in subtypes])
                 subtypes = [keep_resolved_ref(v, self._ref_path(v)) for v in subtypes]

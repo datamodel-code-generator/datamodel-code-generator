@@ -10,3 +10,4 @@ components:
         mapping:
           c: './sub/../cat.yaml'
           d: './dog.yaml'
+          e: '../a/cat.yaml'

@@ -378,10 +378,10 @@ Every use of a reference gets a new `DataType` that points to the one shared `Re
 classes; inherited fields whose parent is not parsed yet stay as placeholders that L5 resolves. Discriminators are only
 captured here (`field.extras["discriminator"]`), each mapping path with the location the parser resolves it to from
 the document that declares the mapping (`parser/_union_tags.py:located_mapping_paths` over the references of
-`discriminator_mapping_refs`); the tag passes match a variant by that location where it is the schema of one
-(`parser/_tag_plan.py:located_mapping`). Field construction already decides const handling:
-`DataModelFieldBase.__init__` calls `process_const()`, which types the const and decides its default and nullability
-(`model/_decisions/literal_default.py`). Dataclass-like models (`dataclasses`, Pydantic dataclasses,
+`discriminator_mapping_refs`, which an OpenAPI union built from a mapping reads too); the tag passes match a variant by
+that location where it is the schema of one (`parser/_tag_plan.py:located_mapping`). Field construction already decides
+const handling: `DataModelFieldBase.__init__` calls `process_const()`, which types the const and decides its default
+and nullability (`model/_decisions/literal_default.py`). Dataclass-like models (`dataclasses`, Pydantic dataclasses,
 msgspec Structs) sort their fields when they are built, by `DataModel.FIELD_CONSTRUCTION_ORDER_KEY`. The key reads only
 facts known then: on a Pydantic dataclass, a `None` default that `--strip-default-none` may keep counts as no default,
 while a msgspec Struct counts every optional field as having one, as it never strips its defaults.
