@@ -89,6 +89,9 @@ type-mappings = [
 ]
 ```
 
+The `minLength` and `maxLength` of a `format: binary` string, written as `bytes`, count octets, as OpenAPI 3.1.1
+specifies for unencoded binary data, so `maxLength: 3` rejects `"ééé"`, three characters in six octets.
+
 ---
 
 ## `--strict-types`

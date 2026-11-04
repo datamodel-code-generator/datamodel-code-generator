@@ -12231,6 +12231,9 @@ type-mappings = [
 ]
 ```
 
+The `minLength` and `maxLength` of a `format: binary` string, written as `bytes`, count octets, as OpenAPI 3.1.1
+specifies for unencoded binary data, so `maxLength: 3` rejects `"ééé"`, three characters in six octets.
+
 ---
 
 ## `--strict-types`
@@ -13415,7 +13418,8 @@ As for number keywords, Pydantic models and dataclasses write a string keyword o
 lists, with `minItems` and `maxItems` read as the lengths they are written as. Pydantic cannot validate a field whose
 `Field()` holds any other, so a keyword they leave out, such as `maxLength` on the `AwareDatetime` of format
 `date-time`, `pattern` on the `date` of format `date` or on the `SecretStr` of format `password`, or `minLength` on a
-`UUID`, is named with its field in a warning. A field whose type holds the `AnyUrl` of format `uri` is written without
+`UUID`, is named with its field in a warning. On the `bytes` of format `binary`, `minLength` and `maxLength` count
+octets, as OpenAPI 3.1.1 specifies for unencoded binary data. A field whose type holds the `AnyUrl` of format `uri` is written without
 any of its constraints, also with a warning. The `Literal` of a `const` takes the keywords of its values' type, so
 `{"type": "string", "const": "box", "maxLength": 5}` keeps `max_length`, while a `const` without `type` keeps none of
 them. A `--type-overrides` type decides again the keywords the replaced type left out: an override to `str` takes back
