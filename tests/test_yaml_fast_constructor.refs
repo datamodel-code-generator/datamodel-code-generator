@@ -444,6 +444,7 @@ openapi/parameter_without_name.yaml	yaml_fast_constructor/parity.txt
 openapi/path_parameter_override.yaml	yaml_fast_constructor/parity.txt
 openapi/paths_external_ref/openapi.yaml	yaml_fast_constructor/parity.txt
 openapi/paths_external_ref/schemas/cat.yaml	yaml_fast_constructor/parity.txt
+openapi/paths_key_without_leading_slash.yaml	yaml_fast_constructor/parity.txt
 openapi/paths_non_path_keys.yaml	yaml_fast_constructor/parity.txt
 openapi/paths_parameters_local_ref.yaml	yaml_fast_constructor/parity.txt
 openapi/paths_parameters_path_item.yaml	yaml_fast_constructor/parity.txt

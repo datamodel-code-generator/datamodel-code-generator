@@ -238,6 +238,7 @@ class BaseGenerateConfig(TypedDict):
     read_only_write_only_model_type: NotRequired[ReadOnlyWriteOnlyModelType | None]
     dedupe_request_response_variants: NotRequired[bool]
     use_status_code_in_response_name: NotRequired[bool]
+    keep_first_character_of_path_keys: NotRequired[bool]
     all_exports_scope: NotRequired[AllExportsScope | None]
     all_exports_collision_strategy: NotRequired[AllExportsCollisionStrategy | None]
     field_type_collision_strategy: NotRequired[FieldTypeCollisionStrategy | None]

@@ -880,6 +880,12 @@ OpenAPI-only options:
   --include-path-parameters
                         Include path parameters in generated parameter models
                         in addition to query parameters (Only OpenAPI)
+  --keep-first-character-of-path-keys
+                        Strip only a leading slash from a paths key when
+                        naming its operation models, as webhook names are, so
+                        the key pets gives PetsGetResponse; without it the
+                        first character is dropped whatever it is
+                        (EtsGetResponse), as in 0.88.0
   --openapi-as-definitions {paths-bodies,ref-components} [{paths-bodies,ref-components} ...]
                         Give each given kind of OpenAPI schema the model a
                         definitions entry of the same schema gets. paths-

@@ -1177,6 +1177,7 @@ def _openapi_shared_options(config: GenerateConfig) -> OpenAPIParserConfigDict:
         "openapi_scopes": config.openapi_scopes,
         "include_path_parameters": config.include_path_parameters,
         "use_status_code_in_response_name": config.use_status_code_in_response_name,
+        "keep_first_character_of_path_keys": config.keep_first_character_of_path_keys,
         "openapi_include_paths": config.openapi_include_paths,
         "openapi_include_info_version": config.openapi_include_info_version,
         "openapi_as_definitions": config.openapi_as_definitions,

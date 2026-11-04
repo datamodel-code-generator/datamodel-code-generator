@@ -167,12 +167,12 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 208 | Shared generation options. |
-| `GenerateConfig` | 223 | Public `generate()` configuration. |
+| `BaseGenerateConfig` | 209 | Shared generation options. |
+| `GenerateConfig` | 224 | Public `generate()` configuration. |
 | `ParserConfig` | 173 | Base parser dependency injection and parser options. |
 | `JSONSchemaParserConfig` | 175 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 182 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 183 | AsyncAPI-specific parser options. |
+| `OpenAPIParserConfig` | 183 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 184 | AsyncAPI-specific parser options. |
 | `XMLSchemaParserConfig` | 176 | XML Schema-specific parser options. |
 | `ProtobufParserConfig` | 176 | Protocol Buffers-specific parser options. |
 | `AvroParserConfig` | 175 | Avro-specific parser options. |
@@ -1520,6 +1520,7 @@ is a new named row, never an anonymous `if`.
 | `legacy-run-alias-generator-import` | a BaseModel keeps importing the run's `--alias-generator` where it does not render it, so that class naming is unchanged | RP15b |
 | `legacy-reparse-for-final-names` | the L1 rows read the name a model is created under; when a yielding name changed and an L1 key names the created or the final name, the whole input is parsed again with the final names | keep |
 | `legacy-number-before-case` | under `--capitalise-enum-members` a member whose capitalized name is taken is numbered without its casing (`a_1` beside `A`, `FieldNameResolver.get_valid_name`), unless `--capitalise-numbered-enum-members` cases it too (`A_1`) | keep |
+| `legacy-first-character-of-path-key` | a paths key loses its first character when its operation models are named, a leading slash or not (`pets` names `EtsGetResponse`, `OpenAPIParser._process_path_items`), unless `--keep-first-character-of-path-keys` strips only a leading slash, as for webhook names | keep |
 | `legacy-module-suffix-model` | the `module` scheme of L3 `replace_duplicate_name_in_module` gives a taken name the suffix `Model` without reading the `--duplicate-name-suffix` map, unless `--use-duplicate-name-suffix-for-every-collision` reads it (row `map-or-model`) | keep |
 | `legacy-both-prefixes` | under `--parent-scoped-naming` with `--naming-strategy full-path` an inline model takes the parent's name twice, the `full-path` prefix before the `parent-prefixed` one (`ModelResolver._parent_prefixed`) | #5666 |
 | `legacy-predicted-rename` | the later holders of a root model that the `parent` strategy collapsed keep naming it where the run renames colliding types and both models are written in one module, until `settle_kept_parent_roots` reads the final class names | keep |

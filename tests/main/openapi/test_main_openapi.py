@@ -17015,3 +17015,62 @@ def test_main_openapi_merge_shared_variant_tags_msgspec(tmp_path: Path) -> None:
             extra_args=[*common, "--merge-shared-variant-tags"],
             expected_output=output_file.read_text(encoding="utf-8"),
         )
+
+
+@pytest.mark.cli_doc(
+    options=["--keep-first-character-of-path-keys"],
+    option_description="""Strip only a leading slash from a paths key when naming its operation models.
+
+The models of an operation are named after its path, without the leading `/`. A paths key that does not start with
+`/`, which OpenAPI does not allow but which is read, loses its first character instead: `pets` gives `EtsGetResponse`.
+With `--keep-first-character-of-path-keys` only a leading slash is stripped, as for webhook names and the `api` scope:
+`pets` gives `PetsGetResponse`. Keys that start with `/` are named as before.""",
+    input_schema="openapi/paths_key_without_leading_slash.yaml",
+    cli_args=["--openapi-scopes", "schemas", "paths", "parameters", "--keep-first-character-of-path-keys"],
+    golden_output="main/openapi/main_openapi/keep_first_character_of_path_keys[pydantic_v2-kept].py",
+    comparison_output="main/openapi/main_openapi/keep_first_character_of_path_keys[pydantic_v2].py",
+    related_options=["--openapi-scopes"],
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2"),
+        pytest.param("pydantic_v2.BaseModel", ["--keep-first-character-of-path-keys"], id="pydantic_v2-kept"),
+        pytest.param("typing.TypedDict", ["--keep-first-character-of-path-keys"], id="typed_dict-kept"),
+    ],
+)
+def test_main_openapi_keep_first_character_of_path_keys(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Name the operation models of a paths key without a leading slash after the whole key (#5539).
+
+    ``pets`` gives ``EtsGetParametersQuery`` and ``EtsGetResponse`` without the option and ``PetsGetParametersQuery``
+    and ``PetsGetResponse`` with it; ``/stores`` gives ``StoresGetResponse`` either way.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "paths_key_without_leading_slash.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "parameters",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    if output_model_type == "pydantic_v2.BaseModel" and extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="keep_first_character_of_path_keys",
+            model_name="PetsGetResponse",
+            valid_json=json.dumps({"a": "x"}),
+            invalid_json=json.dumps({"a": 1}),
+            expected_error_type="string_type",
+        )

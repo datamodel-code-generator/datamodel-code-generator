@@ -529,6 +529,34 @@ class E(Enum):
     A_1 = 'A'
 ```
 
+### `--keep-first-character-of-path-keys`
+
+| | |
+|---|---|
+| Option | `--keep-first-character-of-path-keys` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.89.0 |
+| Issue | [#5539](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5539) |
+
+**Affects:** an OpenAPI `paths` key that does not start with `/` (not valid OpenAPI, but read), under `--openapi-scopes paths`. Its operation models lose the first character of the key; with the option only a leading slash is stripped, as for webhook names and the `api` scope. Keys that start with `/` are named as before.
+
+Schema: `paths: {pets: {get: ...}}`, with `--openapi-scopes schemas paths parameters`.
+
+Without the option (same as 0.88.0):
+
+```python
+class EtsGetResponse(BaseModel):
+    a: str | None = None
+```
+
+With the option:
+
+```python
+class PetsGetResponse(BaseModel):
+    a: str | None = None
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.

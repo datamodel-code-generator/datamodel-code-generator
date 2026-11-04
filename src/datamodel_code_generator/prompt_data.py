@@ -106,6 +106,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--intersect-allof-keywords": "Combine the keywords of every part of an `allOf`, a `$ref` with siblings or an o...",
     "--keep-enum-member-values": "Give an enum class a value base only when it keeps every member value.",
     "--keep-field-defaults-off-branch-roots": "Leave a property's default off the root models extracted from its `a...",
+    "--keep-first-character-of-path-keys": "Strip only a leading slash from a paths key when naming its operation m...",
     "--keep-model-order": "Keep generated model order deterministic while respecting dependency constraints.",
     "--keyword-only": "Generate dataclasses with keyword-only fields (Python 3.10+).",
     "--locked": "Require an existing remote lock and validate each fetched resource against it (experimental).",

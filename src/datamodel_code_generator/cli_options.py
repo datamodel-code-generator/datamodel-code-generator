@@ -491,7 +491,11 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--read-only-write-only-model-type --dedupe-request-response-variants",
         group=_G.READ_ONLY_WRITE_ONLY,
     ),
-    **_opts(_C.OPENAPI, "--include-path-parameters --openapi-include-paths", group=_G.OPENAPI_PATHS),
+    **_opts(
+        _C.OPENAPI,
+        "--include-path-parameters --openapi-include-paths --keep-first-character-of-path-keys",
+        group=_G.OPENAPI_PATHS,
+    ),
     **_opts(_C.OPENAPI, "--openapi-include-info-version"),
     **_opts(_C.OPENAPI, "--openapi-as-definitions", group=_G.OPENAPI_SCOPES),
     **_opts(_C.OPENAPI, "--validation"),

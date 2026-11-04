@@ -469,6 +469,7 @@ class OpenAPIParser(JsonSchemaParser):
             raise Error(self._api_scope_error)
         self.include_path_parameters: bool = self.config.include_path_parameters
         self.use_status_code_in_response_name: bool = self.config.use_status_code_in_response_name
+        self.keep_first_character_of_path_keys: bool = self.config.keep_first_character_of_path_keys
         self.openapi_include_paths: list[str] | None = self.config.openapi_include_paths
         self.openapi_include_info_version: bool = self.config.openapi_include_info_version
         self.openapi_info_version: str | None = None
@@ -936,7 +937,12 @@ class OpenAPIParser(JsonSchemaParser):
         strip_leading_slash: bool = True,
         apply_path_filter: bool = True,
     ) -> None:
-        """Process path or webhook items with operations."""
+        """Process path or webhook items with operations.
+
+        A webhook name loses only a leading slash; a paths key loses its first character whatever it is (row
+        ``legacy-first-character-of-path-key``: ``pets`` names ``Ets...``), or only a leading slash under
+        ``--keep-first-character-of-path-keys``.
+        """
         scope_path = [*base_path, f"#/{scope_name}"]
         kind = "path" if scope_name == "paths" else "webhook name"
         for item_name, methods_ in items.items():
@@ -961,7 +967,11 @@ class OpenAPIParser(JsonSchemaParser):
             if "parameters" in methods:
                 item_parameters.extend(_parameter_array(methods["parameters"], [*item_path, "parameters"]))
 
-            relative_name = item_name[1:] if strip_leading_slash else item_name.removeprefix("/")
+            relative_name = (
+                item_name[1:]
+                if strip_leading_slash and not self.keep_first_character_of_path_keys
+                else item_name.removeprefix("/")
+            )
             path = [*scope_path, relative_name] if relative_name else get_special_path("root", scope_path)
 
             base_path_context = (

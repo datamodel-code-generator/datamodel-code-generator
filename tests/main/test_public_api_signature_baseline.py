@@ -486,6 +486,7 @@ def _baseline_generate(
     read_only_write_only_model_type: ReadOnlyWriteOnlyModelType | None = None,
     dedupe_request_response_variants: bool = False,
     use_status_code_in_response_name: bool = False,
+    keep_first_character_of_path_keys: bool = False,
     all_exports_scope: AllExportsScope | None = None,
     all_exports_collision_strategy: AllExportsCollisionStrategy | None = None,
     field_type_collision_strategy: FieldTypeCollisionStrategy | None = None,

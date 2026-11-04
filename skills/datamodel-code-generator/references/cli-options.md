@@ -235,6 +235,7 @@ OpenAPI-specific generation behavior.
 - `--read-only-write-only-model-type`: Model generation for readOnly/writeOnly fields: 'request-response' = Request/Response models only (no base model), 'all' = Base + Request + Response models. Choices: `request-response`, `all`.
 - `--dedupe-request-response-variants`: Decide Request/Response variants from the schema graph and build each inline model once, without the unreferenced duplicate classes and shifted class numbers of 0.86.0
 - `--use-status-code-in-response-name`: Include HTTP status code in response model names (e.g., ResourceGetResponse200, ResourceGetResponseDefault)
+- `--keep-first-character-of-path-keys`: Strip only a leading slash from a paths key when naming its operation models, as webhook names are, so the key pets gives PetsGetResponse; without it the first character is dropped whatever it is (EtsGetResponse), as in 0.88.0
 
 ## GraphQL-only Options
 

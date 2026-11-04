@@ -1440,6 +1440,13 @@ _flag(
     "--use-status-code-in-response-name",
     help="Include HTTP status code in response model names (e.g., ResourceGetResponse200, ResourceGetResponseDefault)",
 )
+_flag(
+    openapi_options,
+    "--keep-first-character-of-path-keys",
+    help="Strip only a leading slash from a paths key when naming its operation models, as webhook names are, so "
+    "the key pets gives PetsGetResponse; without it the first character is dropped whatever it is (EtsGetResponse), "
+    "as in 0.88.0",
+)
 # ======================================================================================
 # Schema version options (for both JSON Schema and OpenAPI)
 # ======================================================================================

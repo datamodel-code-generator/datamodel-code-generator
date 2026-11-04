@@ -54,6 +54,7 @@ OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
     "--read-msgspec-union-bounds-exactly",
     "--use-duplicate-name-suffix-for-every-collision",
     "--capitalise-numbered-enum-members",
+    "--keep-first-character-of-path-keys",
 )
 """The options the 20261104 presets set beyond the 20261027 presets."""
 
@@ -103,6 +104,12 @@ CASES_20261104: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--output-model-type", "pydantic_v2.BaseModel", "--capitalise-enum-members"],
         id="capitalise-numbered-enum-members",
+    ),
+    pytest.param(
+        OPEN_API_DATA_PATH / "paths_key_without_leading_slash.yaml",
+        "openapi",
+        ["--output-model-type", "pydantic_v2.BaseModel", "--openapi-scopes", "schemas", "paths", "parameters"],
+        id="keep-first-character-of-path-keys",
     ),
 )
 """The inputs each opt-in option of the 20261104 presets changes."""

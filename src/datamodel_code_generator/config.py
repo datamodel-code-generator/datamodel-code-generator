@@ -392,6 +392,7 @@ class OpenAPIParserConfig(JSONSchemaParserConfig):
     openapi_scopes: list[OpenAPIScope] | None = None
     include_path_parameters: bool = False
     use_status_code_in_response_name: bool = False
+    keep_first_character_of_path_keys: bool = False
     openapi_include_paths: list[str] | None = None
     openapi_include_info_version: bool = False
     openapi_as_definitions: Sequence[OpenAPIAsDefinitions] = ()
@@ -404,6 +405,7 @@ class AsyncAPIParserConfig(JSONSchemaParserConfig):
     openapi_scopes: list[OpenAPIScope] | None = None
     include_path_parameters: bool = False
     use_status_code_in_response_name: bool = False
+    keep_first_character_of_path_keys: bool = False
     openapi_include_paths: list[str] | None = None
     openapi_include_info_version: bool = False
     openapi_as_definitions: Sequence[OpenAPIAsDefinitions] = ()
