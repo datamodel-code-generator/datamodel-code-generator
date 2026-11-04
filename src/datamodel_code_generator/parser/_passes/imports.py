@@ -211,6 +211,10 @@ class FinishHost(ReuseOptionsHost, RootModelHost, OutputOptionsHost, TagPlanHost
     typed_map_values_may_move_models: bool
 
     @property
+    def model_resolver(self) -> ModelResolver:
+        """The resolver of model and field names, which records the final names when the run records its names."""
+
+    @property
     def _literal_under_all_enum_reference_ids(self) -> set[ModelKey]:
         """The model keys of the enums that ``--enum-field-as-literal all`` writes as Literal values.
 
@@ -1778,10 +1782,12 @@ def remap_import_overrides(parser: ImportsHost[Any], state: _FinalizeState[Any])
 
 
 def record_generated_class_names(parser: FinishHost, run: FinishRun[Any, ModuleContextView, Any]) -> None:
-    """Record the class name of every generated model."""
+    """Record the class name of every generated model, and its final name where the run records what it names."""
     parser.generated_class_names = tuple(
         (model.class_name, model.duplicate_class_name) for ctx in run.contexts for model in ctx.models
     )
+    if (record := parser.model_resolver.model_name_record) is not None:
+        record.final = {model.path: model.reference.name for ctx in run.contexts for model in ctx.models}
 
 
 def add_root_init_result(run: FinishRun[Any, Any, Any]) -> None:

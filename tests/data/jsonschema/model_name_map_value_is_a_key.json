@@ -1,0 +1,8 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "foo": {"type": "object", "properties": {"x": {"type": "string"}}},
+    "bar": {"type": "object", "properties": {"y": {"type": "string"}}}
+  }
+}

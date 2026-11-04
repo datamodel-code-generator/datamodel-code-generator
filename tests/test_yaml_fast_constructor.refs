@@ -373,6 +373,7 @@ openapi/max_items_enum.yaml	yaml_fast_constructor/parity.txt
 openapi/max_min_number.yaml	yaml_fast_constructor/parity.txt
 openapi/missing_sentinel_nullable.yaml	yaml_fast_constructor/parity.txt
 openapi/model_name_map_numbered_variants.yaml	yaml_fast_constructor/parity.txt
+openapi/model_name_map_read_write_variant.yaml	yaml_fast_constructor/parity.txt
 openapi/model_name_map_same_name_documents/first.yaml	yaml_fast_constructor/parity.txt
 openapi/model_name_map_same_name_documents/openapi.yaml	yaml_fast_constructor/parity.txt
 openapi/model_name_map_same_name_documents/second.yaml	yaml_fast_constructor/parity.txt

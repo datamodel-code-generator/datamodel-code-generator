@@ -1391,15 +1391,17 @@ def get_rw_model_variant_reference(
         else f"{base_reference.name}{suffix}"
     )
     yielding = parser.model_resolver.is_yielding(base_reference)
+    variant_path = _rw_variant_path(base_reference.path, _rw_direction(suffix))
     unique_name = parser.model_resolver.get_class_name(
         variant_name,
         unique=True,
         skip_affix=True,
         preserve_name=True,
         yields=yielding,
+        path=parser.model_resolver.join_path(tuple(variant_path)),
     ).name
     reference = parser.model_resolver.add(
-        _rw_variant_path(base_reference.path, _rw_direction(suffix)),
+        variant_path,
         unique_name,
         class_name=False,
         unique=False,

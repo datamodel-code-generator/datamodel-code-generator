@@ -670,7 +670,7 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
             PassSpec(
                 "record_generated_class_names",
                 late(imports.record_generated_class_names),
-                when=lambda _, __: collecting_class_names(),
+                when=lambda self, _: collecting_class_names() or self.model_resolver.model_name_record is not None,
             ),
             PassSpec(
                 "record_model_placement",

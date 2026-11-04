@@ -102,6 +102,7 @@ from datamodel_code_generator._template_data import copy_extra_template_data
 from datamodel_code_generator._url_redaction import named_location, redact_reference
 from datamodel_code_generator._user_keys import (
     ConstructionKeys,
+    ModelNameKeys,
     class_field_key,
     field_keys,
     first_given,
@@ -409,6 +410,8 @@ class ParserRunContext:
     untyped_nullable_maps: bool = False
     yielding_names: tuple[tuple[str, tuple[str, str | None]], ...] = ()
     document_roles: DocumentRoles = ()
+    model_name_keys: ModelNameKeys | None = None
+    records_model_names: bool = False
 
 
 _DEFAULT_PARSER_RUN_CONTEXT = ParserRunContext()
@@ -620,8 +623,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         untyped_nullable_maps: bool = False,
         yielding_names: tuple[tuple[str, tuple[str, str | None]], ...] = (),
         document_roles: DocumentRoles = (),
+        model_name_keys: ModelNameKeys | None = None,
+        records_model_names: bool = False,
     ) -> None:
-        """Configure parser run state without exposing implementation attributes."""
+        """Configure parser run state without exposing implementation attributes.
+
+        ``model_name_keys`` is the translated ``--model-name-map`` the run applies; ``records_model_names`` records
+        what the run names (``ModelResolver.model_name_record``) for that translation.
+        """
         context = ParserRunContext(
             diagnostic_source_path=diagnostic_source_path,
             prefetched_source=prefetched_source,
@@ -631,9 +640,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             untyped_nullable_maps=untyped_nullable_maps,
             yielding_names=yielding_names,
             document_roles=document_roles,
+            model_name_keys=model_name_keys,
+            records_model_names=records_model_names,
         )
         self._run_context = None if context == _DEFAULT_PARSER_RUN_CONTEXT else context
         self.model_resolver.assigned_yielding_names = dict(yielding_names)
+        if model_name_keys is not None:
+            self.model_resolver.apply_model_name_keys(model_name_keys)
+        if records_model_names:
+            self.model_resolver.record_model_names()
         if document_roles:
             self._seed_document_roles(document_roles)
 
