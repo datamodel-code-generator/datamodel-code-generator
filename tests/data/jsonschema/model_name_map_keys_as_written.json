@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "item": {"$ref": "#/definitions/Foo"},
+    "foo": {"type": "object", "properties": {"inline": {"type": "integer"}}},
+    "related": {"$ref": "#/definitions/Bar"},
+    "pet": {"$ref": "#/definitions/Pet"},
+    "other": {"$ref": "#/definitions/pet"}
+  },
+  "definitions": {
+    "Foo": {"type": "object", "properties": {"value": {"type": "string"}}},
+    "Bar": {"type": "object", "properties": {"bar": {"type": "boolean"}}},
+    "Pet": {"type": "object", "properties": {"name": {"type": "string"}}},
+    "pet": {"type": "object", "properties": {"age": {"type": "integer"}}}
+  }
+}

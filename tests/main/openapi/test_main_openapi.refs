@@ -1402,6 +1402,7 @@ paths-and-request-bodies	main/openapi/openapi_item_schema_beside_null_schema.py	
 both-variants	main/openapi/openapi_model_name_map_key_of_numbered_name.py
 duplicate-name-suffix-in-module	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[duplicate-name-suffix-in-module].py
 first-variant	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[first-variant].py
+keys-as-written-beside-later-models-of-their-names	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[keys-as-written-beside-later-models-of-their-names].py
 map-value-takes-released-name	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[map-value-takes-released-name].py
 name-of-a-deleted-common-part	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[name-of-a-deleted-common-part].py
 nested-models-of-one-title	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[nested-models-of-one-title].py

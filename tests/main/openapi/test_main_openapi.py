@@ -5723,6 +5723,17 @@ def test_main_openapi_nullable_map_value_model_name_map(
             id="path-key-needs-the-class-name-key",
         ),
         pytest.param(
+            JSON_SCHEMA_DATA_PATH / "model_name_map_keys_as_written.json",
+            "jsonschema",
+            '{"#/definitions/Bar": "Foo", "Foo": "Qux", "Pet": "Cat"}',
+            [],
+            "Model",
+            '{"foo":{"inline":1},"related":{"bar":true},"other":{"age":2}}',
+            '{"other":{"age":"a"}}',
+            "int_parsing",
+            id="keys-as-written-beside-later-models-of-their-names",
+        ),
+        pytest.param(
             OPEN_API_DATA_PATH / "model_name_map_read_write_variant.yaml",
             "openapi",
             '{"PetRequest": "Note"}',
@@ -5757,7 +5768,11 @@ def test_main_openapi_model_name_map_key_of_numbered_name(
     invalid_json: str,
     error_type: str,
 ) -> None:
-    """Rename by a class name key the model that has the name without the map; the others keep their names there."""
+    """Rename by a class name key the model that has the name without the map; the others keep their names there.
+
+    Where the run without the class name keys fails (a path key takes the name a class name key frees), the keys apply
+    as written: each renames the first model generated under its name, as up to 0.88.0.
+    """
     run_main_and_assert(
         input_path=input_path,
         output_path=output_file,
