@@ -28159,6 +28159,60 @@ def test_extra_template_data_model_values_invalid(
     )
 
 
+@pytest.mark.parametrize(
+    ("output_model", "template_data", "message"),
+    [
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            {"class_name": "Renamed"},
+            "extra template data cannot set class_name, which the generator decides for the model"
+            "; rename a model with --model-name-map or --class-name",
+            id="class_name",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            {"fields": [], "path": "x"},
+            "extra template data cannot set fields, path, which the generator decides for the model",
+            id="fields-path",
+        ),
+        pytest.param(
+            "typing.TypedDict",
+            {"all_fields": [], "is_functional_syntax": True},
+            "extra template data cannot set all_fields, is_functional_syntax, "
+            "which the generator decides for the model",
+            id="typed-dict",
+        ),
+    ],
+)
+def test_extra_template_data_refuses_what_the_generator_decides(
+    output_model: str,
+    template_data: dict[str, object],
+    message: str,
+    output_file: Path,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Refuse template data that renames a model or changes its fields, which other models and the parser read.
+
+    Up to 0.88.0 rendering raised a duplicate-keyword ``TypeError``; renaming the class alone would leave every
+    reference and import of the model on the old name.
+    """
+    input_file = tmp_path / "model_values.json"
+    input_file.write_text(json.dumps(_DATACLASS_ARGUMENTS_SCHEMA), encoding="utf-8")
+    extra_template_data = tmp_path / "extra_template_data.json"
+    extra_template_data.write_text(json.dumps({"Old": template_data}), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        expected_exit=Exit.ERROR,
+        extra_args=["--output-model-type", output_model, "--extra-template-data", str(extra_template_data)],
+        capsys=capsys,
+        expected_stderr_contains=message,
+        output_should_not_exist=True,
+    )
+
+
 def test_validators_option_rejects_unsafe_values(
     output_file: Path,
     tmp_path: Path,
