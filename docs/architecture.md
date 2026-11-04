@@ -1045,8 +1045,9 @@ The mutation APIs are the `GenerationStore` methods listed in `GENERATION_STORE_
 `redirect_reference_users`. `rename_model` is the writer of class and reference names after the L2 settle; its callers name one of six schemes
 (module, flattened module, field type, imported name, internal module and collapsed root), each with its own universe
 for uniqueness, and it records every rename with the names before and after it (`GenerationStore.renames`, forgotten
-when the next run enters the parse), which `import_renamed_types` reads for the field type and collapsed root renames. The resolvers of the module, flattened module and field type schemes come from
-`parser/_passes/_name_allocation.py:scheme_resolver`, one row per scheme.
+when the next run enters the parse), which `import_renamed_types` reads for the field type and collapsed root renames. The resolvers of the module, flattened module, field type and imported name schemes, and of the forwarder that
+replays the imported names of a released layout, come from `parser/_passes/_name_allocation.py:scheme_resolver`, one
+row per scheme.
 
 `scripts/fact_tables.py` says which attribute holds which fact. `ATTRIBUTE_FACTS` has one row per owner class and
 attribute, `__dict__` key, dict entry (`extras["kw_only"]`) or cached property, with its kind (`fact`, `presentation`,

@@ -183,9 +183,7 @@ from datamodel_code_generator.parser._passes._keys import (
     _DEFERRED_INHERITED_TYPE_KEY,  # noqa: F401  # Preserve the established parser.base export.
     _RAW_SCHEMA_DEFAULT_KEY,  # noqa: F401  # Preserve the established parser.base export.
 )
-from datamodel_code_generator.parser._passes._name_allocation import (
-    scheme_resolver,  # noqa: F401  # Preserve the established parser.base export.
-)
+from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
 from datamodel_code_generator.parser._passes._shared import (
     _TYPE_DEPENDENT_CONSTRAINTS_KEY,  # noqa: F401  # Preserve the established parser.base export.
     DiscriminatorValue,
@@ -2226,8 +2224,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         for model in models:
             _assign_module_name(model_path_to_module_name, model, module_name, keep=True)
         all_module_fields = {field.name for model in models for field in model.fields if field.name is not None}
-        scoped_model_resolver = ModelResolver(
-            exclude_names=all_module_fields, target_python_version=self.target_python_version
+        scoped_model_resolver = scheme_resolver(
+            "imported-name", target_python_version=self.target_python_version, exclude_names=all_module_fields
         )
         state = _ModuleState(
             is_init=is_init,

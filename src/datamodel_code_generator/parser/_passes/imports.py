@@ -67,6 +67,7 @@ from datamodel_code_generator.parser._passes._import_edges import (
     module_import_edges,
     relative_import_targets,
 )
+from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
 from datamodel_code_generator.parser._passes._shared import (
     BaseStandInHost,
     DataModelTypeHost,
@@ -96,7 +97,6 @@ from datamodel_code_generator.parser._passes._state import _PYDANTIC_FLOORS, Con
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser._tag_plan import TagPlanHost
 from datamodel_code_generator.python_literal import stable_repr
-from datamodel_code_generator.reference import ModelResolver
 from datamodel_code_generator.types import union_members, written_union_members
 
 if TYPE_CHECKING:
@@ -122,7 +122,7 @@ if TYPE_CHECKING:
         SortedDataModels,
         _FinalizeState,
     )
-    from datamodel_code_generator.reference import ModelType, Reference
+    from datamodel_code_generator.reference import ModelResolver, ModelType, Reference
     from datamodel_code_generator.types import DataType
 
 __all__ = [
@@ -436,9 +436,10 @@ def _released_name_imports(  # noqa: PLR0914
         defined = {model.class_name: model for model in contexts_by_module[forwarder.internal_module].models}
         models = [(released_name, model) for released_name, name in forwarder.released if (model := defined.get(name))]
         members = {model_key_of(model.reference) for _, model in models}
-        resolver = ModelResolver(
-            exclude_names={field.name for _, model in models for field in model.fields if field.name is not None},
+        resolver = scheme_resolver(
+            "forwarder",
             target_python_version=parser.target_python_version,
+            exclude_names={field.name for _, model in models for field in model.fields if field.name is not None},
         )
         for released_name, model in models:
             resolver.add([model.path], released_name)
