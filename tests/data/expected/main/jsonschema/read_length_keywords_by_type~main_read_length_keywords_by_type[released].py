@@ -14,7 +14,7 @@ EitherString = TypeAliasType("EitherString", Annotated[str, Field(max_length=2)]
 
 
 class Branch(RootModel[list[int]]):
-    root: list[int] = Field(..., max_length=3)
+    root: list[int]
 
 
 class Branch1(RootModel[constr(max_length=3)]):
