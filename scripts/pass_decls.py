@@ -283,7 +283,10 @@ RESOLVE_CIRCULAR_IMPORTS = PassDecl(
             "breaks the cycles of the modules tree-scope reuse leaves, its shared module included",
         ),
     ),
-    summary="Merges modules that import each other into _internal modules.",
+    summary=(
+        "Merges modules that import each other, or whose import an earlier attempt found to fail, into _internal "
+        "modules."
+    ),
 )
 CONFIGURE_CODE_FORMATTER = PassDecl(
     "configure_code_formatter",
@@ -1515,7 +1518,10 @@ RENDER_MODULES = PassDecl(
     PassKind.TRANSFORM,
     reads=_facts(*Fact, *RenderFact),
     writes=_facts(Fact.FIELD_TYPES),
-    summary="L7: renders every module; writes the import of the Any an empty union renders as.",
+    summary=(
+        "L7: renders every module; writes the import of the Any an empty union renders as; seeds a parse again where "
+        "a module of a modular output fails to import."
+    ),
 )
 
 PASS_DECLS: tuple[PassDecl, ...] = tuple(value for value in tuple(globals().values()) if isinstance(value, PassDecl))

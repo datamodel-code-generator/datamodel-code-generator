@@ -153,7 +153,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator.model import DataModelSet
     from datamodel_code_generator.model_metadata import ModelMetadata
-    from datamodel_code_generator.parser.base import DocumentRoles, Result
+    from datamodel_code_generator.parser.base import DocumentRoles, ImportCycleSeeds, Result
     from datamodel_code_generator.remote_lock import RemoteReferenceLock
 
 T = TypeVar("T")
@@ -1970,6 +1970,7 @@ def _build_generation_parser(  # noqa: PLR0913, PLR0917
     untyped_nullable_maps: bool = False,
     yielding_names: tuple[tuple[str, tuple[str, str | None]], ...] = (),
     document_roles: DocumentRoles = (),
+    import_cycle_seeds: ImportCycleSeeds | None = None,
     reference_cache: Any | None = None,
     python_type_expressions: _PythonTypeExpressions | None = None,
     openapi_parser_factory: OpenAPIParserFactory | None = None,
@@ -2012,6 +2013,7 @@ def _build_generation_parser(  # noqa: PLR0913, PLR0917
         model_name_keys=model_name_keys,
         records_model_names=records_model_names,
         final_name_keys=final_name_keys,
+        import_cycle_seeds=import_cycle_seeds,
     )
     return parser
 
@@ -2323,6 +2325,7 @@ def _parse_again(  # noqa: PLR0913, PLR0917
     untyped_nullable_maps: bool = True,
     yielding_names: tuple[tuple[str, tuple[str, str | None]], ...] = (),
     document_roles: DocumentRoles = (),
+    import_cycle_seeds: ImportCycleSeeds | None = None,
     ignored_warnings: type[Warning] | None = Warning,
     collapse_retry: bool = False,
     final_name_keys: tuple[tuple[str, tuple[str, ...]], ...] = (),
@@ -2342,6 +2345,7 @@ def _parse_again(  # noqa: PLR0913, PLR0917
     as both share loaded documents. A ``collapse_retry`` parses through the root-model collapse retry. The roles of
     documents that an earlier attempt recorded after preparing them start the parse (``document_roles``); an attempt
     with such roles that fails after recording more of them parses once more with every role, until none is new.
+    ``import_cycle_seeds`` lays out otherwise what an earlier attempt found to fail as its output is imported.
     """
     remote_text_cache, reference_cache, base_path = caches
     with contextlib.nullcontext() if ignored_warnings is None else quiet(ignored_warnings):
@@ -2376,6 +2380,7 @@ def _parse_again(  # noqa: PLR0913, PLR0917
                 untyped_nullable_maps=untyped_nullable_maps,
                 yielding_names=yielding_names,
                 document_roles=document_roles,
+                import_cycle_seeds=import_cycle_seeds,
                 reference_cache=reference_cache,
                 python_type_expressions=python_type_expressions,
                 openapi_parser_factory=openapi_parser_factory,
@@ -2439,6 +2444,42 @@ def _parse_with_document_roles(
 def _reparse_caches(parser: Any) -> tuple[DefaultPutDict[str, str], Any | None, Path]:
     """Return the remote text cache, reference cache and base path a parse again of a parser's input reuses."""
     return parser.remote_text_cache, getattr(parser, "remote_object_cache", None), parser.base_path
+
+
+def _parse_with_import_cycle_seeds(
+    parse_again: Callable[..., tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]],
+    config: GenerateConfig,
+    parsed: tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None],
+    capture: GenerationCaptureSession[object] | None,
+) -> tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]:
+    """Parse again, with the same run settings, while a parse's output has a module that fails to import.
+
+    The parse seeds what it found (``import_cycle_seeds_to_apply``), which only grows, so this ends. The last parse is
+    kept where every module of its output imports; otherwise, or where a parse again fails, the first one is, so a
+    layout only changes where that makes it import. The first parse reported the warnings, so the parses again report
+    none; the parses not kept are disposed once the kept one is bound, as they share loaded documents.
+    """
+    attempts = [parsed]
+    with contextlib.suppress(Exception):
+        while (seeds := (parser := attempts[-1][0]).import_cycle_seeds_to_apply) is not None:
+            context = parser.run_context
+            attempts.append(
+                parse_again(
+                    config,
+                    _prepare_generation_extra_template_data(config),
+                    _reparse_caches(parser),
+                    preserve_circular_root_models=context.preserve_circular_root_models,
+                    untyped_nullable_maps=context.untyped_nullable_maps,
+                    yielding_names=context.yielding_names,
+                    document_roles=context.document_roles,
+                    import_cycle_seeds=seeds,
+                )
+            )
+    kept = attempts[0] if attempts[-1][0].fails_to_import else attempts[-1]
+    for attempt in attempts:
+        if attempt is not kept:
+            _dispose_capture_parser(attempt[0], capture, discard=True)
+    return kept
 
 
 def _same_model_placement(
@@ -2711,6 +2752,9 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
                 yielding_names=yielding_names,
                 document_roles=document_roles,
             )
+        parser, results, data_model_types, defer_formatting, extra_template_data = _parse_with_import_cycle_seeds(
+            parse_again, config, (parser, results, data_model_types, defer_formatting, extra_template_data), capture
+        )
         discarded_parser = None
         if parser.typed_nullable_maps and parser.typed_map_values_may_move_models:
             try:
@@ -2720,6 +2764,7 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
                     _reparse_caches(parser),
                     preserve_circular_root_models=parser.run_context.preserve_circular_root_models,
                     document_roles=parser.run_context.document_roles,
+                    import_cycle_seeds=parser.run_context.import_cycle_seeds,
                 )
             except BaseException:
                 with contextlib.suppress(BaseException):
@@ -2729,7 +2774,9 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
                 discarded_parser = untyped_parse[0]
             else:
                 discarded_parser = parser
-                parser, results, data_model_types, defer_formatting, extra_template_data = untyped_parse
+                parser, results, data_model_types, defer_formatting, extra_template_data = (
+                    _parse_with_import_cycle_seeds(parse_again, config, untyped_parse, capture)
+                )
         model_metadata, model_identities = parser.model_metadata, parser.model_metadata_identities
         parser.record_dropped_constraints()
         pydantic_floor = floors.of(parser)

@@ -9,7 +9,7 @@ from __future__ import annotations
 import operator
 import os.path
 from collections import defaultdict
-from itertools import groupby
+from itertools import count, groupby
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -55,6 +55,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.config import ParserConfig
     from datamodel_code_generator.format import CodeFormatter, Formatter
     from datamodel_code_generator.parser._model_shapes import ModelShapes
+    from datamodel_code_generator.parser._passes._import_edges import ImportCycleSeeds
     from datamodel_code_generator.parser._passes._state import (
         ConfigT,
         ForwarderMap,
@@ -105,6 +106,10 @@ class StructureHost(
     @property
     def _declared_class_stand_ins(self) -> set[ModelKey]:
         """The stand-ins of schemas whose ``x-python-import`` declares the class, which no root-model rule drops."""
+
+    @property
+    def _import_cycle_seeds(self) -> ImportCycleSeeds:
+        """What an earlier attempt of the run found to fail as the output is imported."""
 
     @property
     def _merged_copies(self) -> set[DataModel]:
@@ -695,23 +700,26 @@ def rename_and_relocate_scc_models(
 
 
 def _joined_merges(
-    merges: list[set[tuple[str, ...]]], cycles: list[set[tuple[tuple[str, ...], int]]]
+    merges: list[set[tuple[str, ...]]], cycles: Iterable[set[tuple[tuple[str, ...], int]]]
 ) -> list[set[tuple[str, ...]]]:
     """Join each import cycle with its modules and the merges whose ``_internal`` module or modules it holds.
 
-    A joined merge takes the place of the first merge it holds; the other merges keep their order.
+    A joined merge takes the place of the first merge it holds; the other merges keep their order, and a cycle that
+    holds no merge becomes a merge of its own after them. The cycles are disjoint.
     """
     merge_of = {module: index for index, merge in enumerate(merges) for module in merge}
     group_of = list(range(len(merges)))
     joined = dict(enumerate(map(set, merges)))
+    fresh = count(len(merges))
     for cycle in cycles:
         first, *rest = sorted({
             group_of[index if index >= 0 else merge_of[path]] for path, index in cycle if index >= 0 or path in merge_of
-        })
+        }) or [next(fresh)]
+        held = joined.setdefault(first, set())
         for group in rest:
-            joined[first] |= joined.pop(group)
-            group_of = [first if held == group else held for held in group_of]
-        joined[first] |= {path for path, index in cycle if index < 0}
+            held |= joined.pop(group)
+            group_of = [first if held_group == group else held_group for held_group in group_of]
+        held |= {path for path, index in cycle if index < 0}
     return list(joined.values())
 
 
@@ -741,7 +749,9 @@ def _module_merges(
     With ``all_exports_scope``, the ``__init__`` module of a package that is no merged module imports the modules
     below it that have a name to export, so the import cycles through it fail too.
     The modules import each other as ``module_dependency_graph`` reads them. A stand-in is no member of its module: its
-    module imports nothing for it, and nothing imports it.
+    module imports nothing for it, and nothing imports it. The modules of an import cycle that an earlier attempt of
+    the run found to fail as the output is imported (``check_import_reads``), which those references do not show, join
+    the merges as a failing cycle does.
     """
     if parser._base_stand_in_imports:  # noqa: SLF001
         module_models_list = [(module, without_stand_ins(parser, models)) for module, models in module_models_list]
@@ -749,6 +759,12 @@ def _module_merges(
     merges = module_graph.circular_components()
     exporting = {module for module, models in module_models_list if next(exported_names(models), None) is not None}
     released = merges
+    if seeded := [
+        cycle
+        for seed in parser._import_cycle_seeds.merges  # noqa: SLF001
+        if len(cycle := {(module, -1) for module in seed if module in module_graph.edges}) > 1
+    ]:
+        merges = _joined_merges(merges, seeded)
     while merges and (
         failing := _failing_import_cycles(
             merges,

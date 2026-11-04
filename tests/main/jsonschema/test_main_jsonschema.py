@@ -15148,6 +15148,38 @@ def test_main_jsonschema_property_names_root_model_key_modules_type_override(out
     )
 
 
+@pytest.mark.parametrize(
+    "output_model_type",
+    ["pydantic_v2.dataclass", "typing.TypedDict", "dataclasses.dataclass", "msgspec.Struct"],
+)
+def test_main_jsonschema_property_names_root_model_key_modules_output_models(
+    output_dir: Path, output_model_type: str
+) -> None:
+    """Merge two modules whose classes read each other's names as the modules run; keep them where nothing reads."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "property_names_root_model_key_modules",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model_type],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "output_model_type",
+    ["typing.TypedDict", "dataclasses.dataclass", "msgspec.Struct", "pydantic_v2.BaseModel"],
+)
+def test_main_jsonschema_import_cycle_map_key_alias(output_dir: Path, output_model_type: str) -> None:
+    """Merge two modules where one evaluates a map alias keyed by the other's type, which imports it back."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "import_cycle_map_key_alias",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model_type, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+
+
 def test_main_jsonschema_property_names_anyof_ref(output_file: Path) -> None:
     """Test propertyNames with anyOf containing $refs uses union of enum types as dict key."""
     run_main_and_assert(

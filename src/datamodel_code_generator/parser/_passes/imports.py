@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import dataclasses
 import operator
+from collections import defaultdict
 from itertools import chain, repeat
 from keyword import iskeyword
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
@@ -25,6 +26,7 @@ from datamodel_code_generator._module_paths import (
     dotted_module,
     dotted_name,
     expanded_path,
+    is_package_init,
     is_within,
     is_within_name,
     module_parts,
@@ -64,8 +66,13 @@ from datamodel_code_generator.parser._passes._import_binding import (
 )
 from datamodel_code_generator.parser._passes._import_edges import (
     _written_package,
+    failing_import_reads,
+    import_cycle_seeds,
+    import_plan,
     module_import_edges,
     relative_import_targets,
+    runs_into_import_cycle,
+    written_import_blocks,
 )
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
 from datamodel_code_generator.parser._passes._shared import (
@@ -86,6 +93,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _is_discriminator_wrapper,
     _iter_discriminator_data_types,
     _named_data_types,
+    _parsed_rule_data_types,
     _string_or_identifier_pattern,
     _unique_items_tuple,
     definition_reads,
@@ -101,6 +109,7 @@ from datamodel_code_generator.types import union_members, written_union_members
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
+    from pathlib import Path
 
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._model_keys import ModelKey
@@ -113,6 +122,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model_metadata import ModelMetadata
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
     from datamodel_code_generator.parser._model_shapes import ReuseGroups
+    from datamodel_code_generator.parser._passes._import_edges import ImportCycleSeeds
     from datamodel_code_generator.parser._passes._shared import ModuleNamesView
     from datamodel_code_generator.parser._passes._state import (
         FinishRun,
@@ -138,6 +148,7 @@ __all__ = [
     "bind_module_field_names",
     "builtin_name_bindings",
     "change_imported_model_name",
+    "check_import_reads",
     "decide_config_items",
     "import_models_of_hidden_submodules",
     "name_final_classes_of_additional_properties",
@@ -277,10 +288,29 @@ class RenderHost(
 
     model_metadata: ModelMetadata | None
     model_metadata_identities: tuple[str, ...]
+    import_cycle_seeds_to_apply: ImportCycleSeeds | None
+    fails_to_import: bool
+    _written_imports: list[tuple[ModulePath, Imports]]
 
     @property
     def _self_named_root_models(self) -> list[DataModel]:
         """The root models that name themselves, which deduplication dropped from every module."""
+
+    @property
+    def _import_cycle_seeds(self) -> ImportCycleSeeds:
+        """What an earlier attempt of the run found to fail as the output is imported."""
+
+    @property
+    def custom_template_dir(self) -> Path | None:
+        """The directory of the custom templates, if configured."""
+
+    @property
+    def data_model_type(self) -> type[DataModel]:
+        """The model class the output writes."""
+
+    @property
+    def pydantic_v2_root_model_type(self) -> type[DataModel] | None:
+        """The root model type whose class body evaluates its root type, if the output has one."""
 
     @property
     def _generic_base_model(self) -> DataModel | None:
@@ -1940,11 +1970,17 @@ def render_modules(  # noqa: PLR0913
     forwarder_map: ForwarderMap,
     require_update: Collection[ModelKey],
 ) -> str | dict[tuple[str, ...], ResultT]:
-    """Render the shared result mapping and apply final output-only transformations."""
+    """Render the shared result mapping and apply final output-only transformations.
+
+    Every relative import block that a module writes is kept (``_record_written_imports``) for the import check of a
+    modular output (``check_import_reads``).
+    """
     future_imports = parser._import_ledger.extract_future(parser.imports, _FUTURE_IMPORTS)  # noqa: SLF001
     future_imports_str = str(future_imports)
+    merges = forwarder_map
     if forwarder_map:
         forwarder_map = _forward_defined_models(contexts, _released_name_imports(parser, contexts, forwarder_map))
+    parser._written_imports = written = []  # noqa: SLF001
 
     # Export depth and collision prefixes must follow the final package layout.
     if (
@@ -1985,4 +2021,139 @@ def render_modules(  # noqa: PLR0913
         results = parser._result_modules_postprocessor(results, empty_init=config.all_exports_scope is not None)  # noqa: SLF001
         if config.all_exports_scope is not None:
             parser._generate_empty_init_exports(results, contexts, config, future_imports_str)  # noqa: SLF001
+    check_import_reads(
+        parser, results, contexts, merges, written, use_deferred_annotations=config.use_deferred_annotations
+    )
     return results
+
+
+def _module_read(text: str | None, submodules: Mapping[str, str]) -> tuple[str, str] | None:
+    """Return the module and name that the expression ``text`` reads through a module it binds, as ``pets.Pet`` does."""
+    binding, dot, rest = (text or "").strip("\"'").partition(".")
+    return (submodules[binding], rest.partition(".")[0]) if dot and binding in submodules else None
+
+
+def _definition_reads(
+    models: Iterable[DataModel],
+    submodules: Mapping[str, str],
+    *,
+    root_model_type: type[DataModel] | None,
+    evaluates_annotations: bool,
+) -> frozenset[tuple[str, str]]:
+    """Return the names of other modules that the definitions of ``models`` read as their module runs.
+
+    A definition reads a name through a module its module imports (``submodules``, by the name it binds each to) in
+    the types of the fields it evaluates (``definition_reads``, where the class annotations count when
+    ``evaluates_annotations`` tells that something evaluates them as the class is defined), its bases, the types of
+    its schema validator rules, and the enum members its defaults name.
+    """
+    texts: list[str | None] = []
+    for model in models:
+        fields = (
+            definition_reads(model, root_model_type=root_model_type, evaluates_annotations=evaluates_annotations) or ()
+        )
+        for data_type in chain(
+            (data_type for field in fields for data_type in field.data_type.all_data_types),
+            model.base_classes,
+            _parsed_rule_data_types(model),
+        ):
+            texts.append(data_type.alias)
+            texts.extend(enum_class for enum_class, _ in data_type.enum_member_literals)
+        for field in model.fields:
+            values = field.default if isinstance(field.default, list) else [field.default]
+            texts.extend(value.alias for value in values if isinstance(value, Member))
+    return frozenset(read for text in texts if (read := _module_read(text, submodules)) is not None)
+
+
+def _structure_modules(
+    contexts: Iterable[ModuleContextView], forwarder_map: ForwarderMap, written_module: Callable[[ModulePath], str]
+) -> dict[str, frozenset[ModulePath]]:
+    """Return the modules of the module structure that each written module holds, by its dotted name.
+
+    An ``_internal`` module holds the modules of its merge, a module with models or a forwarder itself; the
+    ``_internal`` module of a merge that a grown merge holds, now a forwarder, and an empty package hold none.
+    """
+    released = {module for module, forwarder in forwarder_map.items() if module in forwarder.released_internal_modules}
+    internal_modules = {forwarder.internal_module for forwarder in forwarder_map.values()}
+    return {
+        written_module(ctx.module): frozenset(
+            {
+                module
+                for module, forwarder in forwarder_map.items()
+                if forwarder.internal_module == ctx.module_key and module not in released
+            }
+            if ctx.module_key in internal_modules
+            else {ctx.module_key}
+        )
+        for ctx in contexts
+        if (ctx.models or ctx.module_key in forwarder_map) and ctx.module_key not in released
+    }
+
+
+def check_import_reads(  # noqa: PLR0913
+    parser: RenderHost[Any, Any, Any],
+    results: Mapping[ModulePath, object],
+    contexts: Sequence[ModuleContextView],
+    forwarder_map: ForwarderMap,
+    written: Sequence[tuple[ModulePath, Imports]],
+    *,
+    use_deferred_annotations: bool,
+) -> None:
+    """Seed a parse again of a modular output where importing one of its modules reads a module that still runs.
+
+    The plan is read from the final facts: the relative import blocks each written module runs (``written``, in the
+    order the formatters write them) and the names its definitions read of the modules it imports as it runs
+    (``_definition_reads``; with custom templates, which decide what a class body evaluates, none). Pydantic builds a
+    class as it is defined, so its annotations count even where the module defers them. Where a module fails to
+    import (``failing_import_reads``, ``fails_to_import``), the parse again merges the modules of that import cycle
+    into an ``_internal`` module (``import_cycle_seeds``); an output whose every module imports is parsed once.
+    """
+    treat_dot_as_module = parser.treat_dot_as_module
+
+    def written_module(path: ModulePath) -> str:
+        return dotted_module(written_path(path, treat_dot_as_module=treat_dot_as_module))
+
+    imports_of: defaultdict[ModulePath, list[Imports]] = defaultdict(list)
+    for path, imports in written:
+        imports_of[path].append(imports)
+    plan = import_plan(
+        (written_module(path) for path in results if path[-1].endswith(".py")),
+        {
+            written_module(path): written_import_blocks(
+                written_module(path),
+                imports,
+                is_init=is_package_init(written_path(path, treat_dot_as_module=treat_dot_as_module)[-1]),
+            )
+            for path, imports in imports_of.items()
+        },
+    )
+    if not runs_into_import_cycle(plan):
+        return
+    evaluates_annotations = not use_deferred_annotations or parser.data_model_type._READ_BY_PYDANTIC  # noqa: SLF001
+    reads: dict[str, frozenset[tuple[str, str]]] = {}
+    for ctx in contexts if parser.custom_template_dir is None else ():
+        module = written_module(ctx.module)
+        submodules = {
+            binding: submodule
+            for target, lines in plan.blocks.get(module, ())
+            for name, binding in lines
+            if (submodule := dotted_name(target, name)) in plan.modules
+        }
+        if submodules and (
+            names := _definition_reads(
+                ctx.models,
+                submodules,
+                root_model_type=parser.pydantic_v2_root_model_type,
+                evaluates_annotations=evaluates_annotations,
+            )
+        ):
+            reads[module] = names
+    if not (failures := failing_import_reads(dataclasses.replace(plan, reads=reads))):
+        return
+    parser.fails_to_import = True
+    parser.import_cycle_seeds_to_apply = import_cycle_seeds(
+        failures,
+        plan,
+        parser._import_cycle_seeds,  # noqa: SLF001
+        _structure_modules(contexts, forwarder_map, written_module),
+    )

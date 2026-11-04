@@ -179,6 +179,7 @@ from datamodel_code_generator.parser._passes import modules as _modules
 from datamodel_code_generator.parser._passes import plans as _plans
 from datamodel_code_generator.parser._passes import render_prep as _render_prep
 from datamodel_code_generator.parser._passes._import_aliases import alias_shadowed_imports
+from datamodel_code_generator.parser._passes._import_edges import NO_IMPORT_CYCLE_SEEDS, ImportCycleSeeds
 from datamodel_code_generator.parser._passes._keys import (
     _DEFERRED_INHERITED_CLASS_KEY,  # noqa: F401  # Preserve the established parser.base export.
     _DEFERRED_INHERITED_FIELD_KEY,  # noqa: F401  # Preserve the established parser.base export.
@@ -414,6 +415,8 @@ class ParserRunContext:
     model_name_keys: ModelNameKeys | None = None
     records_model_names: bool = False
     final_name_keys: tuple[tuple[str, tuple[str, ...]], ...] = ()
+    import_cycle_seeds: ImportCycleSeeds = NO_IMPORT_CYCLE_SEEDS
+    """What an earlier attempt of the run found to fail as the output is imported, which this one lays out otherwise."""
 
 
 _DEFAULT_PARSER_RUN_CONTEXT = ParserRunContext()
@@ -650,6 +653,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         model_name_keys: ModelNameKeys | None = None,
         records_model_names: bool = False,
         final_name_keys: tuple[tuple[str, tuple[str, ...]], ...] = (),
+        import_cycle_seeds: ImportCycleSeeds | None = None,
     ) -> None:
         """Configure parser run state without exposing implementation attributes.
 
@@ -671,6 +675,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             model_name_keys=model_name_keys,
             records_model_names=records_model_names,
             final_name_keys=final_name_keys,
+            import_cycle_seeds=import_cycle_seeds or NO_IMPORT_CYCLE_SEEDS,
         )
         self._run_context = None if context == _DEFAULT_PARSER_RUN_CONTEXT else context
         self.model_resolver.assigned_yielding_names = dict(yielding_names)
@@ -1050,6 +1055,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.typed_nullable_maps = False
         self.yielding_names_to_assign: tuple[tuple[str, tuple[str, str | None]], ...] = ()
         self.final_name_keys_to_assign: tuple[tuple[str, tuple[str, ...]], ...] = ()
+        self.import_cycle_seeds_to_apply: ImportCycleSeeds | None = None
+        self.fails_to_import = False
+        self._written_imports: list[tuple[ModulePath, Imports]] = []
         self.typed_nullable_map_reference_ids: set[ModelKey] = set()
         self._literal_under_all_enum_reference_ids: set[ModelKey] = set()
         self._site_model_keys: set[ModelKey] = set()
@@ -1913,6 +1921,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         names: Sequence[tuple[tuple[str, ...], str, str]],
         *,
         is_init: bool = False,
+        written_module: ModulePath,
     ) -> str:
         """Generate forwarder module content that imports the names it binds from the modules that write them.
 
@@ -1920,6 +1929,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             original_module: The original module tuple (e.g., ("issuing",) or ())
             names: ``(module, name, bound name)`` of each model it binds (``Forwarder.names``)
             is_init: True if this is a package __init__.py, False for regular .py files
+            written_module: The path of the file the forwarder is written to
 
         Returns:
             The forwarder module content as a string
@@ -1938,6 +1948,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             imports.append(Import(from_=from_, import_=name, alias=None if bound_name == name else bound_name))
 
         self._reject_unimportable_imports(original_module, imports, is_init=is_init)
+        self._record_written_imports(written_module, imports)
         return f"{imports.dump()}\n\n{imports.dump_all()}\n"
 
     def __get_resolve_reference_action_parts(
@@ -2484,11 +2495,13 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if config.with_import:
                 module_imports = self._import_ledger.rendered(ctx.imports)
                 self._reject_unimportable_imports(ctx.module, module_imports, is_init=ctx.is_init)
+                self._record_written_imports(ctx.module, module_imports)
                 import_parts = [s for s in [module_future_imports_str, str(self.imports), str(module_imports)] if s]
                 result += [*import_parts, "\n"]
 
             if export_imports:
                 self._reject_unimportable_imports(ctx.module, export_imports, is_init=True)
+                self._record_written_imports(ctx.module, export_imports)
                 result += [str(export_imports), ""]
                 for name in _init_exports.exported_names(ctx.models):
                     export_imports.add_export(name)
@@ -2522,7 +2535,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if not result and ctx.module_key in forwarder_map:
             result = [
                 self.__generate_forwarder_content(
-                    ctx.module_key, forwarder_map[ctx.module_key].names, is_init=ctx.is_init
+                    ctx.module_key, forwarder_map[ctx.module_key].names, is_init=ctx.is_init, written_module=ctx.module
                 )
             ]
 
@@ -2545,6 +2558,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             treat_dot_as_module=self.treat_dot_as_module is True,
         )
 
+    def _record_written_imports(self, module: ModulePath, imports: Imports) -> None:
+        """Keep the imports that the file at ``module`` writes, for the import check of the rendered modules."""
+        self._written_imports.append((module, imports))
+
+    @property
+    def _import_cycle_seeds(self) -> ImportCycleSeeds:
+        """What an earlier attempt of the run found to fail as the output is imported (``check_import_reads``)."""
+        return self.run_context.import_cycle_seeds
+
     def _generate_empty_init_exports(
         self,
         results: dict[ModulePath, Result],
@@ -2562,6 +2584,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             if (export_imports := self._init_export_imports(init_module, contexts, scope, config, set())) is None:
                 continue
             self._reject_unimportable_imports(init_module, export_imports, is_init=True)
+            self._record_written_imports(init_module, export_imports)
             import_parts = [s for s in [future_imports_str, str(self.imports)] if s] if config.with_import else []
             parts = import_parts + (["\n"] if import_parts else [])
             parts += [str(export_imports), "", export_imports.dump_all(multiline=True)]

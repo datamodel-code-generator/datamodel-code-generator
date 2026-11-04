@@ -13355,6 +13355,17 @@ def test_main_openapi_dot_notation_inheritance(output_dir: Path) -> None:
     )
 
 
+def test_main_openapi_all_exports_scope_package_cycle(output_dir: Path) -> None:
+    """Merge a package whose exports run a submodule that imports a model of the package before it is defined."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "dot_notation_inheritance.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--all-exports-scope", "recursive", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize(
     ("expected_name", "extra_args"),
     [

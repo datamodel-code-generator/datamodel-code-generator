@@ -14,13 +14,21 @@ that it re-exports (``_exported_imports``).
 
 The modules whose models take the generic base class import it from the module that holds it
 (``generic_base_class_module``).
+
+Once every module is rendered, the written import blocks of each module in the order the formatters write them
+(``written_import_blocks``) and the names its definitions read of other modules as it runs make an ``ImportPlan``.
+``failing_import_reads`` runs the import of each module as Python does and finds a name read of a module that is still
+running, which fails; ``import_cycle_seeds`` turns such failures into what a parse again lays out otherwise: the
+modules of the import cycle merged into an ``_internal`` module.
 """
 
 from __future__ import annotations
 
+import dataclasses
 from collections import defaultdict
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final, TypeAlias
 
+from datamodel_code_generator._graph import reaching
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import (
     absolute,
@@ -31,14 +39,16 @@ from datamodel_code_generator._module_paths import (
     package_path,
     written_path,
 )
+from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, GroupGraph
+from datamodel_code_generator._scc import find_circular_sccs, strongly_connected_components
 from datamodel_code_generator.imports import _stored_import
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._init_exports import exports_reach
 from datamodel_code_generator.parser._passes._shared import _parsed_rule_data_types
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterable, Iterator, Sequence
+    from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.enums import AllExportsScope
@@ -48,12 +58,72 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser.generation import GenerationIndex
 
 __all__ = [
+    "NO_IMPORT_CYCLE_SEEDS",
+    "FailingRead",
+    "ImportBlock",
+    "ImportCycleSeeds",
+    "ImportLine",
+    "ImportPlan",
+    "failing_import_reads",
     "generic_base_class_module",
+    "import_cycle_seeds",
+    "import_plan",
     "inherits_one_of",
     "module_dependency_graph",
     "module_import_edges",
     "relative_import_targets",
+    "runs_into_import_cycle",
+    "written_import_blocks",
 ]
+
+ImportLine: TypeAlias = tuple[str, str]
+"""A name that a relative import block imports, and the name the module binds it to."""
+ImportBlock: TypeAlias = tuple[str, tuple[ImportLine, ...]]
+"""The dotted name of the module that a relative import block names, and its import lines in written order."""
+
+
+@record(eq=False)
+class ImportPlan:
+    """What each module of an output runs and reads as Python imports it, by dotted name.
+
+    ``modules`` names every written module and every package above one, the root package ``""`` included. ``blocks``
+    holds the relative import blocks of a module in written order (``written_import_blocks``), and ``reads`` the
+    names of other modules that its definitions read as it runs, through a module it imports (``pets.Pet``).
+    """
+
+    modules: frozenset[str]
+    blocks: Mapping[str, tuple[ImportBlock, ...]]
+    reads: Mapping[str, frozenset[tuple[str, str]]]
+
+
+@record
+class FailingRead:
+    """A name that ``reader`` reads of ``module`` while ``module`` still runs, when Python imports ``entry`` first.
+
+    ``lines`` holds the import block each running module runs, as ``(module, imported module, names)``, the
+    reader's own where it fails at an import line.
+    """
+
+    entry: str
+    reader: str
+    module: str
+    name: str
+    lines: tuple[tuple[str, str, tuple[str, ...]], ...]
+
+
+@record
+class ImportCycleSeeds:
+    """What a parse again of a run lays out otherwise, so that every module it writes imports.
+
+    ``merges`` are the modules, by module path, that merge into an ``_internal`` module beside the merges that the
+    references between models make.
+    """
+
+    merges: tuple[frozenset[ModulePath], ...] = ()
+
+
+NO_IMPORT_CYCLE_SEEDS: Final = ImportCycleSeeds()
+"""The seeds of a first attempt, which lays out nothing otherwise."""
 
 
 def _written_package(ctx: ModuleContextView, *, treat_dot_as_module: bool | None) -> ModulePath | None:
@@ -253,3 +323,176 @@ def _failing_import_cycles(  # noqa: PLR0913
         for cycle in _failing_cycles(set(edges), edges, packages)
         if any(index >= 0 for _, index in cycle)
     ]
+
+
+def _written_order(from_: str) -> tuple[int, str]:
+    """Return where the formatters write the relative import block of ``from_``: the furthest package first."""
+    module = from_.lstrip(".")
+    return len(module) - len(from_), module
+
+
+def written_import_blocks(importer: str, imports: Iterable[Imports], *, is_init: bool) -> tuple[ImportBlock, ...]:
+    """Return the relative import blocks that the module ``importer`` writes from ``imports``, in written order.
+
+    isort, Ruff and the builtin formatter sort the imports of a module together: the blocks of the furthest package
+    first (``from .. import`` before ``from . import``), then by module, and the names of a block sorted. Each block
+    comes with the module it names and each name with the name the module binds it to. ``is_init`` makes ``importer``
+    a package ``__init__``.
+    """
+    lines: defaultdict[str, set[ImportLine]] = defaultdict(set)
+    for held in imports:
+        for from_ in (name for name in held if name and name.startswith(".")):
+            lines[from_].update((_stored_import(name)[0], held.get_effective_name(from_, name)) for name in held[from_])
+    return tuple(
+        (absolute(importer, from_, current_is_init=is_init), tuple(sorted(lines[from_])))
+        for from_ in sorted(lines, key=_written_order)
+    )
+
+
+def _packages_above(module: str) -> Iterator[str]:
+    """Yield the dotted names of the packages above the module ``module``, the root package ``""`` first."""
+    if module:
+        parts = module.split(".")
+        for size in range(len(parts)):
+            yield ".".join(parts[:size])
+
+
+def import_plan(modules: Iterable[str], blocks: Mapping[str, tuple[ImportBlock, ...]]) -> ImportPlan:
+    """Return the plan of the written ``modules`` and their ``blocks``, the packages above them included, no reads."""
+    written = {*modules, *blocks}
+    return ImportPlan(frozenset(written.union(*map(_packages_above, written))), blocks, {})
+
+
+def _import_graph(plan: ImportPlan, without: frozenset[tuple[str, str]] = frozenset()) -> dict[str, set[str]]:
+    """Return the modules that each module of ``plan`` reads from or runs as it runs, leaving out the lines ``without``.
+
+    A block runs or reads the submodule of each name the module it names has, reads that module for any other name,
+    and runs it unless it lies above the importing module; it runs the packages above them that are not above the
+    importing module, which ran those before it.
+    """
+    graph: dict[str, set[str]] = {module: set() for module in plan.modules}
+    for module, blocks in plan.blocks.items():
+        above = set(_packages_above(module))
+        reached = graph.setdefault(module, set())
+        for target, lines in blocks:
+            if not (kept := [name for name, _ in lines if (target, name) not in without]):
+                continue
+            submodules = [submodule for name in kept if (submodule := dotted_name(target, name)) in plan.modules]
+            reads_target = len(submodules) < len(kept) or target not in above
+            for imported in (*([target] if reads_target else []), *submodules):
+                reached.update(part for part in _packages_above(imported) if part not in above)
+                reached.add(imported)
+        reached.discard(module)
+    return graph
+
+
+def _first_failing_read(plan: ImportPlan, entry: str) -> FailingRead | None:
+    """Return the first read of a name of a running module that Python makes when it imports ``entry`` first.
+
+    Importing a module runs the packages above it first, then the module: its import blocks in order, each importing
+    the module it names, then for each name the submodule of that name where the module has one, or else the name the
+    module binds; then the reads of its definitions. A module that still runs binds only what its import lines that
+    ran bound. The walk keeps its own stack, so a long chain of imports reaches no recursion limit, and ends at the
+    first failing read: no module resumes after it.
+    """
+    bound: dict[str, set[str]] = {}
+    done: set[str] = set()
+    running: list[str] = []
+    lines: dict[str, tuple[str, tuple[str, ...]]] = {}
+
+    def failure(reader: str, module: str, name: str) -> FailingRead:
+        held = tuple((running_module, *lines[running_module]) for running_module in running if running_module in lines)
+        return FailingRead(entry, reader, module, name, held)
+
+    def importing(module: str) -> Iterator[tuple[bool, str] | FailingRead]:
+        for part in (*_packages_above(module), module):
+            if part not in bound:
+                yield True, part
+
+    def run(module: str) -> Iterator[tuple[bool, str] | FailingRead]:
+        names = bound[module] = set()
+        running.append(module)
+        for target, block in plan.blocks.get(module, ()):
+            lines[module] = target, tuple(name for name, _ in block)
+            yield False, target
+            for name, binding in block:
+                if (submodule := dotted_name(target, name)) in plan.modules:
+                    yield False, submodule
+                elif target not in done and name not in bound[target]:
+                    yield failure(module, target, name)
+                names.add(binding)
+        lines.pop(module, None)
+        for target, name in sorted(plan.reads.get(module, ())):
+            if target not in done and name not in bound.get(target, ()):
+                yield failure(module, target, name)
+        running.pop()
+        done.add(module)
+
+    stack = [importing(entry)]
+    while stack:
+        if (step := next(stack[-1], None)) is None:
+            stack.pop()
+        elif isinstance(step, FailingRead):
+            return step
+        else:
+            starts, module = step
+            stack.append(run(module) if starts else importing(module))
+    return None
+
+
+def runs_into_import_cycle(plan: ImportPlan) -> bool:
+    """Return whether a module of ``plan`` runs a module that runs it back, the only way to read a running module."""
+    return bool(find_circular_sccs(_import_graph(plan)))
+
+
+def failing_import_reads(plan: ImportPlan) -> tuple[FailingRead, ...]:
+    """Return the first failing read of each module of ``plan`` that fails when Python imports it first.
+
+    Only a module that runs into an import cycle (``runs_into_import_cycle``) can read a module that still runs, so
+    only the modules that do are walked.
+    """
+    graph = _import_graph(plan)
+    reached = reaching({module for component in find_circular_sccs(graph) for module in component}, graph.items())
+    return tuple(
+        failure
+        for entry in sorted(plan.modules)
+        if any(part in reached for part in (*_packages_above(entry), entry))
+        and (failure := _first_failing_read(plan, entry)) is not None
+    )
+
+
+def _joined_sets(sets: Iterable[Collection[ModulePath]]) -> tuple[frozenset[ModulePath], ...]:
+    """Join the sets that share a member, each joined set in the place of its first, sorted by its smallest member."""
+    joined: list[set[ModulePath]] = []
+    for members in sets:
+        held = [index for index, merge in enumerate(joined) if not merge.isdisjoint(members)]
+        merge = set(members).union(*(joined[index] for index in held))
+        for index in reversed(held):
+            del joined[index]
+        joined.insert(held[0] if held else len(joined), merge)
+    return tuple(sorted(map(frozenset, joined), key=min))
+
+
+def import_cycle_seeds(
+    failures: Sequence[FailingRead],
+    plan: ImportPlan,
+    seeds: ImportCycleSeeds,
+    layout: Mapping[str, frozenset[ModulePath]],
+) -> ImportCycleSeeds | None:
+    """Return what a parse again lays out otherwise so that the ``failures`` of ``plan`` import, or None if nothing.
+
+    A failure merges the modules of the import cycle that holds the reader and the module it reads: each written
+    module stands for the modules of the module structure that ``layout`` gives it (an ``_internal`` module for the
+    modules of its merge, an empty package for none). The merges of ``seeds`` grow and never shrink, so a run is
+    parsed again at most once per module.
+    """
+    component_of = {
+        module: frozenset(component)
+        for component in strongly_connected_components(_import_graph(plan))
+        for module in component
+    }
+    cycles = (
+        frozenset().union(*(layout.get(module, ()) for module in component_of[failure.module])) for failure in failures
+    )
+    merges = _joined_sets((*seeds.merges, *(cycle for cycle in cycles if len(cycle) > 1)))
+    return None if merges == seeds.merges else dataclasses.replace(seeds, merges=merges)
