@@ -35,6 +35,21 @@ paths:
       responses:
         '204':
           description: An encoding of no member.
+  /unnamed-part-encoding:
+    post:
+      operationId: submitUnnamedPartEncoding
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                term: {type: string}
+            encoding:
+              other: {contentType: text/plain}
+      responses:
+        '204':
+          description: A part encoding of no member.
   /xml-member:
     post:
       operationId: submitXmlMember

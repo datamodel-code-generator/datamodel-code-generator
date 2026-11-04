@@ -1,0 +1,17 @@
+openapi: 3.1.0
+info: {title: Reference siblings, version: "1.0"}
+servers: [{url: "https://siblings.example.com"}]
+paths:
+  /items:
+    get:
+      operationId: listItems
+      parameters:
+        - {name: limit, in: query, schema: {$ref: "#/components/schemas/Limit", description: Page size.}}
+        - {name: offset, in: query, schema: {$ref: "#/components/schemas/Limit"}}
+        - {name: page, in: query, schema: {$ref: "#/components/schemas/Page", default: 7}}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Limit: {type: integer, title: Limit, maximum: 100, default: 20}
+    Page: {type: integer, minimum: 1}

@@ -81,11 +81,16 @@ paths:
                 count: {type: integer}
                 code: {type: string}
                 ids: {type: array, items: {type: integer}}
+                anything: {}
+                styled: {}
+                loose: {}
             encoding:
               note: {contentType: "text/plain; charset=utf-8"}
               count: {contentType: text/plain}
               code: {contentType: "text/plain; charset=US-ASCII"}
               ids: {style: form, contentType: application/json}
+              anything: {contentType: text/plain}
+              styled: {style: form}
       responses:
         "204": {description: Done.}
   /images:

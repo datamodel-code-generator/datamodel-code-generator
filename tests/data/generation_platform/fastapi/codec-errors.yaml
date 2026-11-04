@@ -29,6 +29,28 @@ paths:
               - {$ref: "#/components/schemas/Named"}
       responses:
         "204": {description: Done.}
+  /unnamed-encoding:
+    post:
+      operationId: submitUnnamedEncoding
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema: {type: object, properties: {term: {type: string}}}
+            encoding:
+              other: {style: form}
+      responses:
+        "204": {description: Done.}
+  /unnamed-part-encoding:
+    post:
+      operationId: submitUnnamedPartEncoding
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: {type: object, properties: {term: {type: string}}}
+            encoding:
+              other: {contentType: text/plain}
+      responses:
+        "204": {description: Done.}
 components:
   schemas:
     Counted:

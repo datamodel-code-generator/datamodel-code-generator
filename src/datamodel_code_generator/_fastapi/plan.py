@@ -32,7 +32,9 @@ from datamodel_code_generator._openapi_wire_plan import (
     form_extras,
     form_members,
     form_styled,
+    member_encodings,
     parameter_plans,
+    part_json,
     plan_wire,
 )
 from datamodel_code_generator._runtime.model_codecs.media import (
@@ -516,8 +518,8 @@ def _part_text(encoding: WireDeclaration) -> bool:
 
 
 def _encodings(media: MediaSpec) -> Iterator[WireDeclaration]:
-    """Return the encodings a media declares."""
-    return children_of(media.declaration, "encoding")
+    """Return the encodings a media declares for the members its model has in the request (`member_encodings`)."""
+    return member_encodings(media.use, children_of(media.declaration, "encoding"))
 
 
 def _files(media: MediaSpec) -> frozenset[str]:
@@ -1232,8 +1234,9 @@ class Planner:  # noqa: PLR0904
         """Return a form with how its members are read: each property of its model, then any other property.
 
         A member whose type, or whose items' type, has a lexical kind is text of that kind. Any other, such as an
-        object, is JSON in a multipart body, as is a member whose encoding names JSON and one that takes any value,
-        which keeps a part that is not JSON as it comes since it takes that too; a URL-encoded body carries
+        object, is JSON in a multipart body, as is a member whose encoding names JSON and one that takes any value
+        without a style or media type from its encoding (`part_json`), which keeps a part that is not JSON as it comes
+        since it takes that too; a URL-encoded body carries
         text alone, so generation stops for such a member, as it does for a parameter and for the client, unless its
         encoding gives it a style or content. A member whose encoding gives it a style or content that its own text
         does not read is read by its query parameter plan. The other properties a schema types are read by the same
@@ -1247,6 +1250,7 @@ class Planner:  # noqa: PLR0904
         members = tuple(form_members(self.wire.kinds, media.use))
         encoded = self.encoded(media, members)
         json_members = _json_members(media, self.wire.version)
+        encodings = {encoding.name or "": encoding for encoding in _encodings(media)}
         multipart = media.kind == "multipart"
         read = [
             (
@@ -1256,7 +1260,11 @@ class Planner:  # noqa: PLR0904
                 else self.form_plan(
                     media,
                     member,
-                    json=member.name in json_members,
+                    json=multipart
+                    and (
+                        member.name in json_members
+                        or part_json(self.wire.kinds, member.type, encodings.get(member.name), self.wire.version)
+                    ),
                     untyped=multipart and self.wire.kinds.untyped(member.leaf),
                 ),
             )
@@ -1276,8 +1284,12 @@ class Planner:  # noqa: PLR0904
         )
         additional: FieldPlan | JsonPartSpec | None = None
         if (extras := form_extras(self.wire.kinds, media.use)) is not None:
-            untyped = multipart and self.wire.kinds.untyped(extras.leaf)
-            additional = self.form_plan(media, extras, untyped=untyped)
+            additional = self.form_plan(
+                media,
+                extras,
+                json=multipart and part_json(self.wire.kinds, extras.type, None, self.wire.version),
+                untyped=multipart and self.wire.kinds.untyped(extras.leaf),
+            )
         elif multipart and (media.use.parts is None or media.use.parts.extra is None):
             additional = JsonPartSpec("", BuiltinType("object"), untyped=True)
         if media.kind == "form" and (encoding := media.use.encoding) is not None and encoding.form.problem is not None:
@@ -1328,8 +1340,12 @@ class Planner:  # noqa: PLR0904
     def form_plan(
         self, media: MediaSpec, member: FormMember, *, json: bool = False, untyped: bool = False
     ) -> FieldPlan | JsonPartSpec | None:
-        """Return how one member of a form is read, reporting one that the adapters do not read."""
-        if member.kind is not None and not json and not untyped:
+        """Return how one member of a form is read, reporting one that the adapters do not read.
+
+        A member of a lexical kind is text of that kind unless it is JSON (`part_json`), and a JSON member that takes
+        any value (`untyped`) keeps a part that is not JSON as it comes.
+        """
+        if member.kind is not None and not json:
             return FieldPlan(member.name, member.kind, repeated=member.repeated)
         if media.kind == "multipart":
             binding = member.field

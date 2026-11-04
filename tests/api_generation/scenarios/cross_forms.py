@@ -5,7 +5,9 @@ encoding, an exploded object as its own members' pairs; the server reads each th
 document a style applies to multipart members too, whose parts carry the style's text without percent-encoding, so a
 value holding its style's delimiter is refused before it is sent. A multipart member whose encoding names text in
 UTF-8 or US-ASCII, or a media type of files, is read as one without such an encoding, and a style leaves its media
-type unused. Requests the client never sends show where the server's records point.
+type unused. A member that takes any value is text when its encoding names a text media type or a style, so both
+targets keep `1`, `true` and `null` as strings there, and JSON without either. Requests the client never sends show
+where the server's records point.
 """
 
 from __future__ import annotations
@@ -116,6 +118,16 @@ def calls(kit: Kit) -> Calls:
             lambda: api.post_texts(body=models.TextsPostRequest(note="café", count=5, code="ab", ids=[1, 2])),
         ),
         ("post_texts non-ASCII code", lambda: api.post_texts(body=models.TextsPostRequest(code="ä"))),
+        (
+            "post_texts members of any value",
+            lambda: api.post_texts(body=models.TextsPostRequest(anything="1", styled="true", loose="null")),
+        ),
+        (
+            "/texts members of any value",
+            lambda: _raw_parts(
+                kit, "/texts", {"anything": (None, b"null"), "styled": (None, b"1"), "loose": (None, b"true")}
+            ),
+        ),
         ("post_images", lambda: api.post_images(body=images)),
         ("post_styled_parts", lambda: api.post_styled_parts(body=parts)),
         (

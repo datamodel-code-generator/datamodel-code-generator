@@ -20,7 +20,9 @@ from datamodel_code_generator._openapi_wire_plan import (
     content_types,
     form_extras,
     form_styled,
+    member_encodings,
     parameter_plans,
+    part_json,
     property_members,
 )
 from datamodel_code_generator._runtime.client.options import HTTP_SCHEMES
@@ -704,7 +706,9 @@ class Planner:
         additional_part: PartPlan | None = None
         if reason is None and bare == _FORM_DATA and use is not None and use.schema is not None:
             if request:
-                members, extra, parts, additional_part = self._sent(use, media_of=media_of, styles_of=styles_of)
+                members, extra, parts, additional_part = self._sent(
+                    use, declaration, media_of=media_of, styles_of=styles_of
+                )
             else:
                 members, extra = self._received(use, use.schema)
             if members is None:
@@ -748,23 +752,19 @@ class Planner:
 
         A member holding no files takes one JSON or text media type; a file member takes any media types and ranges.
         A style, explode, or allowReserved leaves the contentType ignored, and only a member holding no files takes it.
-        Only a declared header with a schema is returned; a body sent whole cannot carry a required one.
+        Only a declared header with a schema is returned; a body sent whole cannot carry a required one. The encoding
+        of a property the request leaves out applies to no part (`member_encodings`).
         """
-        declared = dict(_parts(use).members)
-        members = {} if use is None else {name: declared[name] for name, _, _ in _members(use)}
+        members = dict(_parts(use).members)
         media_of: dict[str, tuple[str, ...]] = {}
         headers_of: dict[str, tuple[HeaderSpec, ...]] = {}
-        for encoding in children_of(declaration, "encoding"):
+        for encoding in member_encodings(use, children_of(declaration, "encoding")):
             name = encoding.name or ""
             subject = f"The {name} encoding of the {media_type} media of {label(operation)}"
-            if name in members and (headers := self._headers(encoding)):
+            if headers := self._headers(encoding):
                 headers_of[name] = headers
             styled = form_styled(encoding, self.wire.version, multipart=True)
             match content_types(encoding):
-                case _ if name not in members:
-                    self.problems.append(
-                        _problem("E_METADATA_REQUIRED", f"{subject} names no member", encoding.use_site)
-                    )
                 case _ if styled and members[name].file:
                     message = f"{subject} gives a style to a member holding files"
                     self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, encoding.use_site))
@@ -798,6 +798,7 @@ class Planner:
     def _sent(
         self,
         use: TypeUseBinding,
+        declaration: WireDeclaration,
         *,
         media_of: Mapping[str, tuple[str, ...]],
         styles_of: Mapping[str, ParameterPlan],
@@ -805,8 +806,8 @@ class Planner:
         """Return the member plans of a form-data body with file parts, or None when its object is sent whole.
 
         A member holding no files takes values of its field's type, which the part's own type use validates. It
-        repeats as that type says, and one whose type has no one kind, or takes any value without an encoding's media
-        type, is written as JSON; a styled member writes the parts its style gives rather than one for each item. The
+        repeats as that type says, and is written as JSON or text as its type and encoding give (`part_json`); a
+        styled member writes the parts its style gives rather than one for each item. The
         other properties a schema types are written by the same rule, by the type of their values, and those it allows
         without a type as JSON too. A body sent whole
         comes with the plans of the members it writes as JSON, then that of its other properties when they are JSON,
@@ -822,17 +823,20 @@ class Planner:
                 plan=PartPlan("", repeated=declared_extra.repeated, text=declared_extra.text), file=True
             )
         elif (extras := form_extras(self.wire.kinds, use)) is not None:
-            text = extras.kind is not None and not self.wire.kinds.untyped(extras.leaf)
+            text = not part_json(self.wire.kinds, extras.type, None, self.wire.version)
             additional = PartSpec(
                 plan=PartPlan("", "string" if text else "json", repeated=extras.repeated),
                 use=_part_use(use, extras.source, None, TypeUseBinding(use.id, "bound", extras.type, None)),
             )
         declared = dict(parts.members)
+        encodings = {
+            encoding.name or "": encoding for encoding in member_encodings(use, children_of(declaration, "encoding"))
+        }
         specs: list[PartSpec] = []
         for name, member, facts in _members(use):
             part = declared[name]
-            kind, leaf, repeated = self.wire.kinds.member(facts.type)
-            text = kind is not None and (name in styles_of or name in media_of or not self.wire.kinds.untyped(leaf))
+            repeated = self.wire.kinds.member(facts.type)[2]
+            text = not part_json(self.wire.kinds, facts.type, encodings.get(name), self.wire.version)
             specs.append(
                 PartSpec(
                     plan=PartPlan(

@@ -97,7 +97,6 @@ from datamodel_code_generator._target_contract import (
     UnionDiscriminator,
     UnionType,
     WireDeclaration,
-    openapi_release,
     response_key,
     wrapped_type,
 )
@@ -416,7 +415,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self._visits: list[_WalkedHolder] = []
         self._callback_origin: SchemaLocation | None = None
         super().__init__(source, config=config)
-        self._reader = _Reader(self._site_facts, versions=[])
+        self._reader = _Reader(self._site_facts, siblings=lambda: self._ref_siblings_are_parts)
 
     def _resolve_local_ref_path(self, path: Path, ref: str) -> Path:
         """Refuse a local file that a served source document would publish, before reading it.
@@ -601,9 +600,8 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.left_out[key] = tuple(source_fields), tuple(field for field in source_fields if id(field) not in kept)
 
     def _parse_specification(self, specification: dict[str, YamlValue], path_parts: list[str]) -> None:
-        """Record the OpenAPI version, info, tags and servers of each walked document before walking it."""
+        """Record the info, tags and servers of each walked document before walking it."""
         self.document_facts["/".join(path_parts)] = _keywords(self._document_as_written(specification), _DOCUMENT_FACTS)
-        self._reader.versions.append(str(specification.get("openapi", "")))
         super()._parse_specification(specification, path_parts)
 
     def get_object_field(self, **options: Any) -> DataModelFieldBase:  # pyright: ignore[reportIncompatibleMethodOverride]
@@ -1982,37 +1980,35 @@ def _wire_name(field: DataModelFieldBase) -> str:
 class _Reader:
     """Read the loaded API documents by declaration while the walk reads them, recording what the models do not say.
 
-    It reads the site of each location (``ApiOpenAPIParser._site_facts``).
+    It reads the site of each location (``ApiOpenAPIParser._site_facts``), and the keywords beside a reference as parts
+    of the schema where the parser does (``siblings``, the parser's ``_ref_siblings_are_parts``).
     """
 
-    def __init__(self, site: Callable[[SchemaLocation], SiteFacts], *, versions: list[str]) -> None:
+    def __init__(self, site: Callable[[SchemaLocation], SiteFacts], *, siblings: Callable[[], bool]) -> None:
         self.site = site
-        self.versions = versions
+        self.siblings = siblings
 
-    @property
-    def legacy(self) -> bool:
-        """Return whether the entry document is OpenAPI 3.0, whose schemas ignore the siblings of a reference."""
-        return openapi_release(next(iter(self.versions), ""), row="legacy-target-version-text") == (3, 0)
+    def annotations(self, declaration: SchemaLocation) -> dict[str, YamlValue]:
+        """Return the documentation keywords and default a schema gives its values, through its reference chain.
 
-    def chain(self, declaration: SchemaLocation) -> SiteFacts:
-        """Follow a schema's reference chain to the schema it leads to, and return its site.
-
-        The chain follows a reference beside which identification keywords alone sit, or in OpenAPI 3.0 any keywords,
-        which say nothing of its values there. It does not read the keywords beside a reference with its target, as
-        the parser does (`legacy-target-ref-chain`).
+        The schema a chain leads to gives its own, and the keywords beside each reference, where they are parts of the
+        schema as in OpenAPI 3.1, add theirs, the nearer one's first; in OpenAPI 3.0 they say nothing.
         """
         site = self.site(declaration)
         seen = {declaration}
-        while (target := site.ref) is not None and target not in seen and (self.legacy or site.bare):
+        found: dict[str, YamlValue] = {}
+        while (target := site.ref) is not None and target not in seen:
+            if self.siblings():
+                found = {**site.annotations, **found}
             seen.add(target)
             site = self.site(target)
-        return site
+        return {**site.annotations, **found}
 
     def record(self, declaration: SchemaLocation, role: TypeUseRole) -> _SchemaRecord:
         """Record what an acquired parameter schema says that its model types do not: its default and keywords."""
         if role != "parameter":
             return _UNRECORDED
-        annotations = self.chain(declaration).annotations
+        annotations = self.annotations(declaration)
         return _SchemaRecord(_default(annotations.get("default")), _keywords(annotations))
 
 

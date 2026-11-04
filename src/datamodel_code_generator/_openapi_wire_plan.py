@@ -48,6 +48,7 @@ from datamodel_code_generator._target_contract import (
     operation_schemes,
     parameter_location,
     parameter_place,
+    request_media,
     scheme_catalogues,
     security_requirements,
     symbols_by_id,
@@ -65,7 +66,7 @@ from datamodel_code_generator._target_types import (
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterator, Mapping, Sequence
+    from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 
     from datamodel_code_generator._runtime.model_codecs.media import MediaKind
     from datamodel_code_generator._target_contract import (
@@ -212,6 +213,7 @@ def plan_wire(
         if use.id in styles and (style := _styles(planner, use, styles[use.id])) is not None
     )
     planner.diagnostics.extend(_binary_text(batch, planned, requested))
+    planner.diagnostics.extend(diagnostic for operation in planned for diagnostic in _unnamed(planner, operation))
     return WirePlan(
         parameters,
         tuple(planner.diagnostics),
@@ -239,6 +241,32 @@ def _binary_text(
     )
 
 
+def _unnamed(planner: _WirePlanner, operation: OperationContract) -> Iterator[CodecDiagnostic]:
+    """Yield a diagnostic for each encoding of an operation's form request body that names no property of its schema.
+
+    The Media Type Object requires every encoding key to name one, a property the request leaves out included.
+    """
+    for media in request_media(operation):
+        media_type = declared_media(media.name or "")[0]
+        if media_kind(media_type) not in {"form", "multipart"}:
+            continue
+        use = next((planner.uses[item] for item in media.schemas if item in planner.uses), None)
+        names = (
+            set() if use is None else {member.wire_name for member in use.members if member.member_kind == "property"}
+        )
+        yield from (
+            CodecDiagnostic(
+                "MC_PARAMETER_ENCODING",
+                encoding.use_site,
+                f"The {encoding.name} encoding of the {media_type} media of {label(operation)} names no property of "
+                "its schema",
+                operation.id,
+            )
+            for encoding in children_of(media, "encoding")
+            if (encoding.name or "") not in names
+        )
+
+
 def _carrier(use: TypeUseId, label: str) -> str:
     """Name the parameter, body, response, header or part header a use's value is, in its operation."""
     where = "request body" if use.role.startswith("request") else f"response {use.status}"
@@ -260,7 +288,11 @@ def _form(
     """Return the member plans of a URL-encoded use: each member's field, or the parameter plan its encoding gives."""
     try:
         bound = _schema_use(planner, (use.id,), use.id.use_site)
-        styled = {declaration.name or "": declaration for declaration in encodings if _styled(declaration)}
+        styled = {
+            declaration.name or "": declaration
+            for declaration in member_encodings(use, encodings)
+            if _styled(declaration)
+        }
         fields = tuple(_text(member) for member in form_members(planner.kinds, bound) if member.name not in styled)
         additional = _additional(planner, bound)
         members = {name: schema for name, schema, _ in property_members(use)}
@@ -279,7 +311,7 @@ def _styles(
     try:
         bound = _schema_use(planner, (use.id,), use.id.use_site)
         members = {name: schema for name, schema, _ in property_members(use)}
-        encoded = tuple(_encoding(bound, members, declaration) for declaration in encodings)
+        encoded = tuple(_encoding(bound, members, declaration) for declaration in member_encodings(use, encodings))
         styled = {plan.name for plan in encoded}
         encoded = _distinct(planner, bound, [name for name in members if name not in styled], encoded)
     except _PlanError as error:
@@ -365,6 +397,37 @@ def property_members(use: TypeUseBinding) -> Iterator[tuple[str, SourceLocation,
             yield member.wire_name, member.schema, member
 
 
+def member_encodings(use: TypeUseBinding | None, encodings: Iterable[WireDeclaration]) -> Iterator[WireDeclaration]:
+    """Yield the encodings of a form that name a member its model has in the form's direction.
+
+    The encoding of a property the direction leaves out, such as a readOnly one of a request, applies to no member,
+    and `plan_wire` refuses one that names no property of the form's schema.
+    """
+    names = (
+        set()
+        if use is None
+        else {
+            name
+            for name, _, member in property_members(use)
+            if member.exclusion is None and member.model_facts is not None
+        }
+    )
+    return (encoding for encoding in encodings if (encoding.name or "") in names)
+
+
+def part_json(kinds: LexicalKinds, value: TypeView, encoding: WireDeclaration | None, version: str) -> bool:
+    """Return whether a form-data member holding no files, of a type, is JSON by that type rather than text of its kind.
+
+    A type without one kind is JSON, and so is one that takes any value unless the member's encoding gives it a style
+    the document's version applies, which writes it as text, or a media type, which writes it in that media type.
+    """
+    kind, leaf, _ = kinds.member(value)
+    if kind is None:
+        return True
+    given = encoding is not None and (form_styled(encoding, version, multipart=True) or bool(content_types(encoding)))
+    return kinds.untyped(leaf) and not given
+
+
 def _refused(planner: _WirePlanner, error: _PlanError, owner: object, uses: tuple[TypeUseId, ...]) -> None:
     operation = owner if isinstance(owner, OperationId) else None
     planner.diagnostics.append(replace(error.diagnostic, operation=operation, uses=uses))
@@ -427,8 +490,7 @@ def _encoding(form: TypeUseBinding, members: Mapping[str, SourceLocation], encod
     A style, explode, or allowReserved takes precedence over contentType, as the Encoding Object prescribes.
     """
     name, source = encoding.name or "", encoding.use_site
-    if (member := members.get(name)) is None:
-        raise _PlanError(source, "An encoding names no member of its form")
+    member = members[name]
     style, explode, reserved, content = (
         fact(encoding, key) for key in ("style", "explode", "allowReserved", "contentType")
     )

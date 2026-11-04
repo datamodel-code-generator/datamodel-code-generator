@@ -9,6 +9,8 @@ paths:
         content:
           application/x-www-form-urlencoded:
             schema: {$ref: "#/components/schemas/Pet"}
+            encoding:
+              origin: {style: deepObject}
       responses:
         "200":
           description: The pet.
@@ -23,6 +25,9 @@ paths:
         content:
           multipart/form-data:
             schema: {$ref: "#/components/schemas/Pet"}
+            encoding:
+              id: {contentType: text/plain}
+              origin: {contentType: application/json}
       responses:
         "200":
           description: The pet.
