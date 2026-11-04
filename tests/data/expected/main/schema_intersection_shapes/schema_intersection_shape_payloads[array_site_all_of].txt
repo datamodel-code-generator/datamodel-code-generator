@@ -5,12 +5,12 @@ pydantic_v2.BaseModel default inline [1, 2] accepted
 pydantic_v2.BaseModel default inline [1, 2, 3] rejected
 pydantic_v2.BaseModel default inline ["a"] rejected
 pydantic_v2.BaseModel default nested [[1]] accepted
-pydantic_v2.BaseModel default nested [[1, 2, 3]] accepted
+pydantic_v2.BaseModel default nested [[1, 2, 3]] rejected
 pydantic_v2.BaseModel default map {"k": [1]} accepted
-pydantic_v2.BaseModel default map {"k": [1, 2, 3]} accepted
+pydantic_v2.BaseModel default map {"k": [1, 2, 3]} rejected
 pydantic_v2.BaseModel default any_of [1] accepted
 pydantic_v2.BaseModel default any_of "s" accepted
-pydantic_v2.BaseModel default any_of [1, 2, 3] accepted
+pydantic_v2.BaseModel default any_of [1, 2, 3] rejected
 pydantic_v2.BaseModel default null_or_array null accepted
 pydantic_v2.BaseModel default null_or_array [1] accepted
 pydantic_v2.BaseModel default null_or_array [] rejected
@@ -34,12 +34,12 @@ pydantic_v2.dataclass default inline [1, 2] accepted
 pydantic_v2.dataclass default inline [1, 2, 3] rejected
 pydantic_v2.dataclass default inline ["a"] rejected
 pydantic_v2.dataclass default nested [[1]] accepted
-pydantic_v2.dataclass default nested [[1, 2, 3]] accepted
+pydantic_v2.dataclass default nested [[1, 2, 3]] rejected
 pydantic_v2.dataclass default map {"k": [1]} accepted
-pydantic_v2.dataclass default map {"k": [1, 2, 3]} accepted
+pydantic_v2.dataclass default map {"k": [1, 2, 3]} rejected
 pydantic_v2.dataclass default any_of [1] accepted
 pydantic_v2.dataclass default any_of "s" accepted
-pydantic_v2.dataclass default any_of [1, 2, 3] accepted
+pydantic_v2.dataclass default any_of [1, 2, 3] rejected
 pydantic_v2.dataclass default null_or_array null accepted
 pydantic_v2.dataclass default null_or_array [1] accepted
 pydantic_v2.dataclass default null_or_array [] rejected
@@ -150,12 +150,12 @@ pydantic_v2.BaseModel --collapse-root-models inline [1, 2] accepted
 pydantic_v2.BaseModel --collapse-root-models inline [1, 2, 3] rejected
 pydantic_v2.BaseModel --collapse-root-models inline ["a"] rejected
 pydantic_v2.BaseModel --collapse-root-models nested [[1]] accepted
-pydantic_v2.BaseModel --collapse-root-models nested [[1, 2, 3]] accepted
+pydantic_v2.BaseModel --collapse-root-models nested [[1, 2, 3]] rejected
 pydantic_v2.BaseModel --collapse-root-models map {"k": [1]} accepted
-pydantic_v2.BaseModel --collapse-root-models map {"k": [1, 2, 3]} accepted
+pydantic_v2.BaseModel --collapse-root-models map {"k": [1, 2, 3]} rejected
 pydantic_v2.BaseModel --collapse-root-models any_of [1] accepted
 pydantic_v2.BaseModel --collapse-root-models any_of "s" accepted
-pydantic_v2.BaseModel --collapse-root-models any_of [1, 2, 3] accepted
+pydantic_v2.BaseModel --collapse-root-models any_of [1, 2, 3] rejected
 pydantic_v2.BaseModel --collapse-root-models null_or_array null accepted
 pydantic_v2.BaseModel --collapse-root-models null_or_array [1] accepted
 pydantic_v2.BaseModel --collapse-root-models null_or_array [] rejected
@@ -208,12 +208,12 @@ pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline [1, 2] accep
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline [1, 2, 3] rejected
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline ["a"] rejected
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs nested [[1]] accepted
-pydantic_v2.BaseModel --use-site-models-for-constrained-refs nested [[1, 2, 3]] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nested [[1, 2, 3]] rejected
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs map {"k": [1]} accepted
-pydantic_v2.BaseModel --use-site-models-for-constrained-refs map {"k": [1, 2, 3]} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs map {"k": [1, 2, 3]} rejected
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs any_of [1] accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs any_of "s" accepted
-pydantic_v2.BaseModel --use-site-models-for-constrained-refs any_of [1, 2, 3] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs any_of [1, 2, 3] rejected
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs null_or_array null accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs null_or_array [1] accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs null_or_array [] rejected
@@ -237,12 +237,12 @@ pydantic_v2.dataclass --use-site-models-for-constrained-refs inline [1, 2] accep
 pydantic_v2.dataclass --use-site-models-for-constrained-refs inline [1, 2, 3] rejected
 pydantic_v2.dataclass --use-site-models-for-constrained-refs inline ["a"] rejected
 pydantic_v2.dataclass --use-site-models-for-constrained-refs nested [[1]] accepted
-pydantic_v2.dataclass --use-site-models-for-constrained-refs nested [[1, 2, 3]] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nested [[1, 2, 3]] rejected
 pydantic_v2.dataclass --use-site-models-for-constrained-refs map {"k": [1]} accepted
-pydantic_v2.dataclass --use-site-models-for-constrained-refs map {"k": [1, 2, 3]} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs map {"k": [1, 2, 3]} rejected
 pydantic_v2.dataclass --use-site-models-for-constrained-refs any_of [1] accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs any_of "s" accepted
-pydantic_v2.dataclass --use-site-models-for-constrained-refs any_of [1, 2, 3] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs any_of [1, 2, 3] rejected
 pydantic_v2.dataclass --use-site-models-for-constrained-refs null_or_array null accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs null_or_array [1] accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs null_or_array [] rejected
@@ -324,12 +324,12 @@ pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-r
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline [1, 2, 3] rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline ["a"] rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nested [[1]] accepted
-pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nested [[1, 2, 3]] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nested [[1, 2, 3]] rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs map {"k": [1]} accepted
-pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs map {"k": [1, 2, 3]} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs map {"k": [1, 2, 3]} rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs any_of [1] accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs any_of "s" accepted
-pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs any_of [1, 2, 3] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs any_of [1, 2, 3] rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs null_or_array null accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs null_or_array [1] accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs null_or_array [] rejected

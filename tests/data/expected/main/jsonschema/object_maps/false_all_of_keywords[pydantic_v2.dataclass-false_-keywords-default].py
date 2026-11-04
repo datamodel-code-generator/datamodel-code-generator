@@ -8,6 +8,13 @@ from pydantic import ConfigDict, Field, constr
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
+AItem = TypeAliasType("AItem", Annotated[list[str], Field(max_length=1)])
+
+
+EAdditionalProperty = TypeAliasType(
+    "EAdditionalProperty", Annotated[list[str], Field(max_length=1)]
+)
+
 
 @dataclass(config=ConfigDict(extra='allow'))
 class Q:
@@ -24,8 +31,8 @@ class Model:
     n: list[Any] | None = Field(None, max_length=0)
     m: list[str] | None = Field(None, max_length=1)
     t: list[str] | None = Field(None, max_length=1, min_length=2)
-    a: list[list[str]] | None = None
-    e: dict[str, list[str]] | None = None
+    a: list[AItem] | None = None
+    e: dict[str, EAdditionalProperty] | None = None
     x: dict[constr(pattern=r'^x'), str] | None = None
     y: dict[str, Any] | None = Field(None, max_length=0)
     z: dict[str, Any] | None = None

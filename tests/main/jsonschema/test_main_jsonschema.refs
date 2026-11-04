@@ -8295,6 +8295,10 @@ full-path	main/jsonschema/main_jsonschema/main_naming_strategy_enclosing_model[f
 	main/jsonschema/naming_strategy/primary_first_multi_file/output.py
 [test_main_nested_all_of]
 	main/jsonschema/nested_all_of.py
+[test_main_nested_array_item_counts]
+dataclasses.dataclass	main/jsonschema/nested_array_item_counts.py
+pydantic_v2.BaseModel	main/jsonschema/nested_array_item_counts.py	= main/jsonschema/nested_array_item_counts~main_nested_array_item_counts[pydantic_v2.BaseModel].py
+pydantic_v2.dataclass	main/jsonschema/nested_array_item_counts.py	= main/jsonschema/nested_array_item_counts~main_nested_array_item_counts[pydantic_v2.dataclass].py
 [test_main_nested_directory]
 	main/jsonschema/nested_directory//*.py
 [test_main_nested_json_pointer]

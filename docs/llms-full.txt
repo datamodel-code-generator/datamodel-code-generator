@@ -13782,6 +13782,12 @@ them. A `--type-overrides` type decides again the keywords the replaced type lef
 such a length without a warning. `msgspec.Struct` leaves out, with a warning, a keyword that msgspec does not accept
 on the Python type, such as `pattern` on `bytes` or on the `Literal` of a `const`.
 
+An array that has no field of its own, the member of an `anyOf` or `oneOf`, the items of an array or the values of a
+map, writes its `minItems` and `maxItems` on a type alias of its own in Pydantic models and dataclasses, as the array
+member of a type list does: without `--field-constraints`, `{"anyOf": [{"type": "array", "minItems": 2}, {"type":
+"string"}]}` at a property `a` is `a: A | str` with `A = TypeAliasType("A", Annotated[list[Any], Field(min_length=2)])`;
+with it, `A` is a root model that holds them.
+
 A `typing` alias, an abstract collection, `Annotated[T, ...]`, `Final[T]` and `Literal` are read as for number
 keywords, so `typing.List[int]`, `collections.abc.Sequence[int]` and `Annotated[list[int], ...]` take the keywords of
 `list`, and `Literal["a", "bb", None]` and `Literal[b"a", b"bb"]` take those of `str` and `bytes` in Pydantic models.

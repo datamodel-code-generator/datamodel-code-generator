@@ -4,13 +4,18 @@
 
 from __future__ import annotations
 
-from pydantic import confloat, conint, constr
+from typing import Annotated
+
+from pydantic import Field, confloat, conint, constr
 from pydantic.dataclasses import dataclass
+from typing_extensions import TypeAliasType
+
+Tags = TypeAliasType("Tags", Annotated[list[str], Field(min_length=1)])
 
 
 @dataclass
 class Model:
     weight: confloat(ge=0.0) | None = None
     quantity: conint(ge=0) | constr(max_length=3) | None = 5
-    tags: list[str] | None = None
+    tags: Tags | None = None
     step: confloat(ge=0.0) | None = None
