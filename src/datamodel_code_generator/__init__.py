@@ -131,6 +131,7 @@ if TYPE_CHECKING:
         PythonVersionMin,
     )
     from datamodel_code_generator._generation_contract import GenerationCaptureSession, OpenAPIParserFactory
+    from datamodel_code_generator._paths import OutputLayout
     from datamodel_code_generator._project_config import load_pyproject_config
     from datamodel_code_generator._publication import PublicationAnchor
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
@@ -1548,6 +1549,14 @@ _INLINE_OBJECT_BODIES_HINT = (
 )
 
 
+def _refuse_output_layout(layout: OutputLayout | None, destination: Path) -> None:
+    """Raise the refusal of an output of ``layout`` that cannot replace what ``destination`` holds."""
+    from datamodel_code_generator._paths import layout_refusal  # noqa: PLC0415
+
+    if refusal := layout_refusal(layout, destination):
+        raise Error(refusal)
+
+
 def _ensure_file_output_path(path: Path, error_message: str) -> None:
     """Reject an existing directory where a generated file is required."""
     if not path.is_dir():
@@ -1580,11 +1589,10 @@ def _write_results_to_output(  # noqa: PLR0913
     has_custom_file_header: bool,
 ) -> list[Path]:
     """Write one file or a sorted collection of generated modules to disk, and return the files written."""
-    from datamodel_code_generator._paths import MODULAR_OUTPUT_FILE_ERROR, layout_refusal, names_directory  # noqa: PLC0415
+    from datamodel_code_generator._paths import MODULAR_OUTPUT_FILE_ERROR, names_directory  # noqa: PLC0415
 
     if isinstance(results, str):
-        if refusal := layout_refusal("module", output):
-            raise Error(refusal)
+        _refuse_output_layout("module", output)
     elif not names_directory(output):
         raise Error(MODULAR_OUTPUT_FILE_ERROR)
     if config._logical_output is None and (isinstance(results, str) or output.is_dir()):  # noqa: SLF001
@@ -1859,6 +1867,7 @@ def _generate_with_atomic_remote_update(
     use_output_cwd: bool,
 ) -> str | GeneratedModules | None:
     """Generate into private staging and publish output, metadata, and update lock together."""
+    from datamodel_code_generator._paths import output_layout  # noqa: PLC0415
     from datamodel_code_generator._publication import (  # noqa: PLC0415
         StagingDirectory,
         artifact_roots,
@@ -1875,15 +1884,15 @@ def _generate_with_atomic_remote_update(
     lock_staging: StagingDirectory | None = None
     try:
         output, metadata = config.output, config.emit_model_metadata
-        staging = stage_outputs(
-            output, metadata, artifact_roots(output, metadata), contexts, anchors, existing_directory="empty-directory"
-        )
+        staging = stage_outputs(output, metadata, artifact_roots(output, metadata), contexts, anchors)
         lock_anchor, lock_staging = _open_lock_staging(canonical_lockfile.parent)
         staged_config = config.model_copy(update=staging.updates)
         staged_config._logical_output = output  # noqa: SLF001
         staged_config._logical_model_metadata = metadata  # noqa: SLF001
         staged_config.resolve_remote_lock(remote_lock)
         generated = _run_generation(input_, staged_config, caller_cwd, use_output_cwd=use_output_cwd)
+        if (artifact := staging.output) is not None:
+            _refuse_output_layout(output_layout(artifact.staged), artifact.target)
         publish_staged_files([
             *staging.files("legacy-api-skips-missing-metadata"),
             _staged_lock(remote_lock, lock_staging, lock_anchor),

@@ -441,18 +441,28 @@ def test_diff_against_preserves_a_preexisting_virtual_file(
     )
 
 
+@pytest.mark.parametrize(
+    ("source", "input_file_type"),
+    [
+        pytest.param(OPENAPI_INPUT_DIFF_PATH / "new.yaml", "openapi", id="package"),
+        pytest.param(JSON_SCHEMA_INPUT_DIFF_PATH / "same_new.json", "jsonschema", id="single-module"),
+    ],
+)
 def test_diff_against_preserves_a_preexisting_virtual_directory(
-    output_dir: Path, capsys: pytest.CaptureFixture[str]
+    source: Path, input_file_type: InputFileTypeLiteral, output_dir: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """Diff generation leaves every pre-existing virtual directory file intact."""
+    """Diff generation leaves every pre-existing virtual directory file intact.
+
+    It writes nothing at the virtual output, so a single module is compared there too, not refused as a write (#4497).
+    """
     output_dir.mkdir()
     run_main_and_assert(
-        input_path=OPENAPI_INPUT_DIFF_PATH / "new.yaml",
+        input_path=source,
         output_path=output_dir,
-        input_file_type="openapi",
+        input_file_type=input_file_type,
         extra_args=[
             "--diff-against",
-            str(OPENAPI_INPUT_DIFF_PATH / "new.yaml"),
+            str(source),
             "--disable-timestamp",
         ],
         expected_exit=Exit.OK,

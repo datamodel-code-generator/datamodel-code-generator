@@ -82,6 +82,9 @@ dataclass-missing-sentinel-client	main/generation_platform/client/cli/dataclass-
 dataclass-missing-sentinel-models	main/generation_platform/client/cli/dataclass-missing-sentinel-models.py
 missing-sentinel-client	main/generation_platform/client/cli/missing-sentinel-models.py
 missing-sentinel-models	main/generation_platform/client/cli/missing-sentinel-models.py
+[test_client_cli_models_package_onto_a_file]
+check	api_generation/client_cli/models_package_onto_a_file[check].txt
+write	api_generation/client_cli/models_package_onto_a_file[write].txt	= api_generation/client_cli/models_package_onto_a_file[check].txt
 [test_client_cli_nested_models]
 job	main/generation_platform/client/cli/check-nested.txt
 job	main/generation_platform/client/cli/options/models.py
