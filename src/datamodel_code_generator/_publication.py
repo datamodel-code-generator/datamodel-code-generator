@@ -41,7 +41,6 @@ _replace = os.replace
 _rmdir = os.rmdir
 
 MissingMetadata = Literal["fail", "legacy-api-skips-missing-metadata"]
-ExistingDirectory = Literal["empty-directory", "legacy-cli-staged-directory-uncreated"]
 
 
 class PublicationAnchor(NamedTuple):
@@ -295,23 +294,19 @@ def artifact_roots(
     )
 
 
-def stage_outputs(  # noqa: PLR0913
+def stage_outputs(
     output: Path | None,
     metadata: Path | None,
     roots: tuple[Path | None, Path | None, Path | None, Path | None],
     contexts: list[tempfile.TemporaryDirectory[str]],
     anchors: list[PublicationAnchor],
-    *,
-    existing_directory: ExistingDirectory,
 ) -> StagedOutputs:
     """Redirect a generation's output and model metadata to private staging, anchored where each is published.
 
     ``roots`` are the concrete roots ``artifact_roots`` gave when the caller planned the run. An output that is an
-    existing directory is anchored at its root and staged by row: ``empty-directory`` (``generate()``) creates the
-    staged output as an empty directory; ``legacy-cli-staged-directory-uncreated`` (the command line, fix #5617) leaves
-    the staged path to the generation, so a single module is staged as a file that cannot replace the directory. Any
-    other output and the metadata are anchored at their parent. Every staging directory and anchor joins ``contexts``
-    and ``anchors`` as soon as it exists, for the caller to release.
+    existing directory is anchored at its root and staged as an empty directory, so a single module refuses it as a
+    direct write does. Any other output and the metadata are anchored at their parent. Every staging directory and
+    anchor joins ``contexts`` and ``anchors`` as soon as it exists, for the caller to release.
     """
     output_root, output_parent, _, metadata_parent = roots
     staged_output = staged_metadata = None
@@ -324,7 +319,7 @@ def stage_outputs(  # noqa: PLR0913
             root if is_directory else parent,
             contexts,
             anchors,
-            make_directory=existing_directory == "empty-directory" and is_directory,
+            make_directory=is_directory,
         )
         staged_output = StagedArtifact(staged, output, root, parent, anchor)
     if metadata is not None:

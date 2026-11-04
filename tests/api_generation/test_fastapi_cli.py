@@ -1437,6 +1437,31 @@ def test_fastapi_cli_job(tmp_path: Path, capsys: pytest.CaptureFixture[str], mon
     )
 
 
+@pytest.mark.parametrize("check", [False, True], ids=["write", "check"])
+def test_fastapi_cli_models_package_onto_a_file(
+    check: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a models package whose output is an existing file, as a model run does, and write nothing (#4497)."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "models").write_text("kept = 1\n", encoding="utf-8")
+    run_main_and_assert(
+        input_path=CLI / "layout-clash.yaml",
+        output_path=Path("models"),
+        input_file_type="openapi",
+        extra_args=_server(*(["--check"] if check else [])),
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr="Error: Modular references require an output directory, not a file\n",
+    )
+    assert_output(
+        "".join(
+            f"{path.relative_to(tmp_path).as_posix()}: {path.read_text(encoding='utf-8')}"
+            for path in sorted(tmp_path.rglob("*"))
+            if path.is_file()
+        )
+    )
+
+
 @pytest.mark.parametrize("name", LAYOUT_ERRORS)
 def test_fastapi_cli_layout_errors(
     name: str, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch

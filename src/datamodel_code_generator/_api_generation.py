@@ -426,6 +426,7 @@ def _generate_models(
         _default_input_filename,  # pyright: ignore[reportPrivateUsage]
         _output_context_path,  # pyright: ignore[reportPrivateUsage]
         _read_custom_file_header,  # pyright: ignore[reportPrivateUsage]
+        _refuse_output_layout,  # pyright: ignore[reportPrivateUsage]
         _run_generation,  # pyright: ignore[reportPrivateUsage]
         _settings_path_from,  # pyright: ignore[reportPrivateUsage]
     )
@@ -463,6 +464,7 @@ def _generate_models(
         )
         try:
             _run_generation(input_, staged, cwd, use_output_cwd=use_output_cwd, capture=session)
+            _refuse_output_layout(output_layout(staged_output), cwd / output)
             artifacts = _staged_models(staged_output, output, prepared.encoding)
             metadata_file = None if metadata is None else (metadata, updates["emit_model_metadata"].read_bytes())
             product = session.take_product(artifacts, allow_empty_api=True)

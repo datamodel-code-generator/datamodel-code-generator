@@ -84,6 +84,9 @@ True	main/malformed/directory_input//*.py
 	main/malformed/path_conflict_input.txt
 [test_generate_symlinked_output_path_does_not_overwrite_input]
 	main/malformed/path_conflict_input.txt
+[test_generate_with_a_lock_update_refuses_an_output_layout_mismatch]
+module-onto-directory	main/error_messages/generate_with_a_lock_update_refuses_an_output_layout_mismatch[module-onto-directory].txt
+package-onto-file	main/error_messages/generate_with_a_lock_update_refuses_an_output_layout_mismatch[package-onto-file].txt
 [test_model_metadata_path_does_not_overwrite_input]
 	main/malformed/path_conflict_input.txt
 [test_modular_output_file_is_a_clean_cli_error]
@@ -92,6 +95,21 @@ True	main/malformed/directory_input//*.py
 	main/malformed/dangling_component_ref.py
 [test_out_of_range_array_ref_warns_and_generates_importable_fallback]
 	main/malformed/out_of_range_array_ref.py
+[test_output_layout_mismatch_is_refused_by_every_run]
+module-onto-directory-check	main/error_messages/output_layout_mismatch_is_refused_by_every_run[module-onto-directory-check].txt	= main/error_messages/generate_with_a_lock_update_refuses_an_output_layout_mismatch[module-onto-directory].txt
+module-onto-directory-direct	main/error_messages/output_layout_mismatch_is_refused_by_every_run[module-onto-directory-direct].txt	= main/error_messages/generate_with_a_lock_update_refuses_an_output_layout_mismatch[module-onto-directory].txt
+module-onto-directory-jobs	main/error_messages/output_layout_mismatch_is_refused_by_every_run[module-onto-directory-jobs].txt	= main/error_messages/generate_with_a_lock_update_refuses_an_output_layout_mismatch[module-onto-directory].txt
+module-onto-directory-jobs-check	main/error_messages/output_layout_mismatch_is_refused_by_every_run[module-onto-directory-jobs-check].txt	= main/error_messages/generate_with_a_lock_update_refuses_an_output_layout_mismatch[module-onto-directory].txt
+module-onto-directory-jobs-json	main/error_messages/output_layout_mismatch_is_refused_by_every_run[module-onto-directory-jobs-json].txt	= main/error_messages/generate_with_a_lock_update_refuses_an_output_layout_mismatch[module-onto-directory].txt
+module-onto-directory-json	main/error_messages/output_layout_mismatch_is_refused_by_every_run[module-onto-directory-json].txt	= main/error_messages/generate_with_a_lock_update_refuses_an_output_layout_mismatch[module-onto-directory].txt
+module-onto-directory-update-lock	main/error_messages/output_layout_mismatch_is_refused_by_every_run[module-onto-directory-update-lock].txt	= main/error_messages/generate_with_a_lock_update_refuses_an_output_layout_mismatch[module-onto-directory].txt
+package-onto-file-check	main/error_messages/output_layout_mismatch_is_refused_by_every_run[package-onto-file-check].txt	= main/error_messages/generate_with_a_lock_update_refuses_an_output_layout_mismatch[package-onto-file].txt
+package-onto-file-direct	main/error_messages/output_layout_mismatch_is_refused_by_every_run[package-onto-file-direct].txt	= main/error_messages/generate_with_a_lock_update_refuses_an_output_layout_mismatch[package-onto-file].txt
+package-onto-file-jobs	main/error_messages/output_layout_mismatch_is_refused_by_every_run[package-onto-file-jobs].txt	= main/error_messages/generate_with_a_lock_update_refuses_an_output_layout_mismatch[package-onto-file].txt
+package-onto-file-jobs-check	main/error_messages/output_layout_mismatch_is_refused_by_every_run[package-onto-file-jobs-check].txt	= main/error_messages/generate_with_a_lock_update_refuses_an_output_layout_mismatch[package-onto-file].txt
+package-onto-file-jobs-json	main/error_messages/output_layout_mismatch_is_refused_by_every_run[package-onto-file-jobs-json].txt	= main/error_messages/generate_with_a_lock_update_refuses_an_output_layout_mismatch[package-onto-file].txt
+package-onto-file-json	main/error_messages/output_layout_mismatch_is_refused_by_every_run[package-onto-file-json].txt	= main/error_messages/generate_with_a_lock_update_refuses_an_output_layout_mismatch[package-onto-file].txt
+package-onto-file-update-lock	main/error_messages/output_layout_mismatch_is_refused_by_every_run[package-onto-file-update-lock].txt	= main/error_messages/generate_with_a_lock_update_refuses_an_output_layout_mismatch[package-onto-file].txt
 [test_output_path_can_write_inside_input_directory]
 InputFileType.Auto-None-child-api-False	main/malformed/directory_input//*.py
 InputFileType.Auto-None-child-api-False	main/malformed/path_conflict_input.txt
