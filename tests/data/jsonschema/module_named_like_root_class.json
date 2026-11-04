@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Report": {"type": "object", "properties": {"warn": {"$ref": "#/$defs/Warn"}}},
+    "Warn": {"type": "object", "properties": {"count": {"type": "integer"}}},
+    "Warn.Detail": {"type": "object", "properties": {"message": {"type": "string"}}}
+  }
+}

@@ -37,6 +37,7 @@ from datamodel_code_generator._module_paths import (
     dotted_name,
     is_below,
     is_package_init,
+    module_parts,
     package_path,
     written_path,
 )
@@ -168,21 +169,32 @@ def relative_import_targets(importer: str, imports: Imports, *, is_init: bool) -
 
 
 def module_import_edges(
-    contexts: Iterable[ModuleContextView], *, treat_dot_as_module: bool | None
+    contexts: Iterable[ModuleContextView],
+    *,
+    treat_dot_as_module: bool | None,
+    all_exports_scope: AllExportsScope | None = None,
 ) -> dict[str, set[str]]:
     """Return the dotted names of the modules that each written module imports or imports from, by its dotted name.
 
     Each relative import block reaches the module it names and the dotted name of each name it imports, which is the
-    submodule of that name where the module has one (``relative_import_targets``).
+    submodule of that name where the module has one (``relative_import_targets``). With ``all_exports_scope`` the
+    ``__init__`` module of a package imports the modules with models that its exports reach (``_exported_imports``) too.
     """
     edges: dict[str, set[str]] = {}
+    exporters: list[tuple[tuple[str, ...], int]] = []
     for ctx in contexts:
-        importer = dotted_module(written_path(ctx.module, treat_dot_as_module=treat_dot_as_module))
+        path = written_path(ctx.module, treat_dot_as_module=treat_dot_as_module)
+        importer = dotted_module(path)
         is_init = _written_package(ctx, treat_dot_as_module=treat_dot_as_module) is not None
         targets = edges.setdefault(importer, set())
         for _, target, names in relative_import_targets(importer, ctx.imports, is_init=is_init):
             targets.add(target)
             targets.update(dotted_name(target, name) for name in names)
+        if all_exports_scope is not None and ctx.models and (parts := module_parts(path)):
+            exporters.append((parts, -1))
+    if all_exports_scope is not None:
+        for package, nodes in _exported_imports(exporters, all_exports_scope).items():
+            edges.setdefault(".".join(package), set()).update(".".join(node[0]) for node in nodes)
     return edges
 
 

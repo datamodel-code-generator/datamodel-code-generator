@@ -21,6 +21,7 @@ from typing_extensions import Protocol
 from datamodel_code_generator import DefaultValueTypeWarning, Error, ReuseScope
 from datamodel_code_generator._constraint_applicability import MSGSPEC_OUTPUT, int_beyond_values
 from datamodel_code_generator._container_kinds import ARRAYS, MAPPINGS
+from datamodel_code_generator._graph import reach
 from datamodel_code_generator._message_text import counted, for_count, listed_with_more
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import (
@@ -118,6 +119,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator._target_unicode import ModulePartRow
     from datamodel_code_generator._user_keys import ConstructionKeys
+    from datamodel_code_generator.enums import AllExportsScope
     from datamodel_code_generator.imports import Imports, _ImportKey
     from datamodel_code_generator.model._render_plan import RenderReady
     from datamodel_code_generator.model.base import DataModelFieldBase
@@ -159,6 +161,7 @@ __all__ = [
     "record_model_placement",
     "record_pydantic_floor",
     "refresh_sequence_interface_after_renames",
+    "reject_class_named_like_submodule",
     "reject_unimportable_imports",
     "remap_import_overrides",
     "remove_unused_imports",
@@ -2042,6 +2045,57 @@ def record_model_placement(
     )
 
 
+def reject_class_named_like_submodule(
+    contexts: Sequence[ModuleContextView],
+    *,
+    treat_dot_as_module: bool | None,
+    all_exports_scope: AllExportsScope | None,
+) -> None:
+    """Refuse a package whose ``__init__.py`` defines a class named like a module or package below it.
+
+    Loading ``pkg.Warn`` binds ``Warn`` in ``pkg`` over the class ``Warn`` of ``pkg/__init__.py``, so the models that
+    name the class then fail to import or decode, and ``from . import Warn`` gives the class, so a model of the module
+    (``Warn.Detail``) fails too. It is judged on the final class names and import plans, where the modules are
+    written. It holds where the ``__init__.py`` loads the module while its imports run, before its classes are
+    defined (it imports from the module or below it, a module it imports does, or ``--all-exports-scope`` re-exports a
+    module of it): the class takes the name after, and no later import rebinds it
+    (``submodules_hidden_by_packages``). Renaming the class or the module changes names that the models and the files
+    go by, so the run fails and names both.
+    """
+    written = sorted(
+        ((written_path(ctx.module, treat_dot_as_module=treat_dot_as_module), ctx) for ctx in contexts if ctx.models),
+        key=operator.itemgetter(0),
+    )
+    submodules: dict[tuple[str, ...], tuple[str, ...]] = {}
+    for path, _ in written:
+        parts = module_parts(path)
+        for size in range(1, len(parts) + 1):
+            submodules.setdefault(parts[:size], path if size == len(parts) else (*parts[:size], "__init__.py"))
+    clashes = [
+        (path, model, module, file)
+        for path, ctx in written
+        if is_package_init(path[-1])
+        for model in ctx.models
+        if (file := submodules.get(module := (*path[:-1], model.class_name))) is not None
+    ]
+    if not clashes:
+        return
+    edges = module_import_edges(contexts, treat_dot_as_module=treat_dot_as_module, all_exports_scope=all_exports_scope)
+    for path, model, module, file in clashes:
+        loaded = reach([dotted_module(path)], lambda importer: edges.get(importer, ()))
+        if not any(is_within_name(name, ".".join(module)) for name in loaded):
+            package = ".".join(path[:-1])
+            where = f"the package {stable_repr(package)}" if package else "the root package"
+            msg = (
+                f"Cannot write the class {stable_repr(model.class_name)} in {where} beside the module "
+                f"{stable_repr('.'.join(module))} ({'/'.join(file)}): importing the module binds its name in the "
+                "package over the class, so the models that use the class fail to import or decode. Rename the class "
+                "or the module in the input; the coming option --rename-submodules-hidden-by-classes will rename the "
+                "module."
+            )
+            raise Error(msg)
+
+
 def reject_unimportable_imports(
     module: ModulePath,
     imports: Imports,
@@ -2120,6 +2174,9 @@ def render_modules(  # noqa: PLR0913
     ):
         contexts = [ctx._replace(module=expanded_path(ctx.module)) for ctx in contexts]
 
+    reject_class_named_like_submodule(
+        contexts, treat_dot_as_module=parser.treat_dot_as_module, all_exports_scope=config.all_exports_scope
+    )
     for ctx in contexts:
         result = parser._generate_module_output(  # noqa: SLF001
             ctx, config, contexts, forwarder_map, require_update, future_imports_str
