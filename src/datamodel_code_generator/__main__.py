@@ -423,7 +423,7 @@ def _remote_lock_plan(config: Config, pyproject_path: Path | None) -> _RemoteLoc
     """Resolve the project-relative default lock path without importing lock machinery."""
     from datamodel_code_generator._lock_plan import default_lock_parent, remote_lock_plan  # noqa: PLC0415
 
-    return remote_lock_plan(config, default_lock_parent(pyproject_path), "lexical")
+    return remote_lock_plan(config, default_lock_parent(pyproject_path))
 
 
 def _watch_remote_lock_setup(
@@ -1211,7 +1211,7 @@ def _compare_generated_single_file(
         message = f"{kind.upper()}: {path} ({message_suffix})"
         return OutputComparison(
             differences=[ComparisonDifference(kind=kind, path=path, message=message)],
-            content=f"{message}\n" if comparison.input_diff else message,
+            content=f"{message}\n",
         )
 
     diff_found, diff_lines = (
@@ -1973,7 +1973,7 @@ def _cleanup_job_transaction(
 
 def _staged_files(staged_plan: _StagedJobPlan) -> Iterator[_StagedFile]:
     """Return staged files paired with their final targets without removing directory extras."""
-    return iter(()) if staged_plan.staging is None else staged_plan.staging.files("fail")
+    return iter(()) if staged_plan.staging is None else staged_plan.staging.files()
 
 
 def _publish_staged_files(files: Iterable[tuple[Path, Path] | _StagedFile], targets: Sequence[Any] = ()) -> None:

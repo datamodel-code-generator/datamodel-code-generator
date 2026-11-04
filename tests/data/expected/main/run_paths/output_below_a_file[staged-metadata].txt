@@ -1,0 +1,2 @@
+Error: could not prepare command output staging: [Errno 20] Not a directory: '<root>/blocker'
+written: []

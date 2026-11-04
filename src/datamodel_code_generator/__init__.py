@@ -581,12 +581,28 @@ def _validate_generation_path_conflicts(  # noqa: PLR0912
                     msg = f"{label} path must not be inside an input directory: {target}"
                     raise Error(msg)
                 continue
-            target_exists = target.exists()
-            if (target == absolute_input and input_path.exists()) or (
-                target_exists and same_file(target, input_path, missing="legacy-missing-input-raises")
-            ):
+            if (target == absolute_input and input_path.exists()) or same_file(target, input_path):
                 msg = f"{label} path must not overwrite an input path: {target}"
                 raise Error(msg)
+
+
+def _refuse_uncreatable_paths(
+    output: Path | None, model_metadata: Path | None, lockfile: Path | None, caller_cwd: Path
+) -> None:
+    """Refuse a path a generation writes whose missing parents cannot be created, naming the path that stops them.
+
+    Their deepest existing ancestor is a regular file, or a root that does not exist (a missing drive).
+    """
+    from datamodel_code_generator._paths import creation_root, lexical  # noqa: PLC0415
+
+    for label, path in (("Output", output), ("Model metadata", model_metadata), ("Remote lock", lockfile)):
+        if path is None:
+            continue
+        try:
+            creation_root(lexical(path, caller_cwd).parent)
+        except OSError as exc:
+            msg = f"{label} path cannot be created: {exc.strerror}: {exc.filename}"
+            raise Error(msg) from exc
 
 
 class DanglingRefWarning(UserWarning):
@@ -1853,8 +1869,10 @@ def _prepare_atomic_generation_remote_lock(
     from datamodel_code_generator.remote_lock import RemoteReferenceLock  # noqa: PLC0415
 
     config = _absolute_config_paths(config, ("output", "emit_model_metadata"), caller_cwd)
-    canonical_lockfile = remote_lock_plan(config, default_lock_parent(None, caller_cwd), "resolved").canonical_path
+    default_parent = default_lock_parent(config._pyproject_path, caller_cwd)  # noqa: SLF001
+    canonical_lockfile = remote_lock_plan(config, default_parent, caller_cwd).canonical_path
     _validate_generation_path_conflicts(input_, config.output, config.emit_model_metadata, canonical_lockfile)
+    _refuse_uncreatable_paths(config.output, config.emit_model_metadata, canonical_lockfile, caller_cwd)
     remote_lock = RemoteReferenceLock.open(canonical_lockfile, update=True, locked=False)
     return config, canonical_lockfile, remote_lock
 
@@ -1894,7 +1912,7 @@ def _generate_with_atomic_remote_update(
         if (artifact := staging.output) is not None:
             _refuse_output_layout(output_layout(artifact.staged), artifact.target)
         publish_staged_files([
-            *staging.files("legacy-api-skips-missing-metadata"),
+            *staging.files(),
             _staged_lock(remote_lock, lock_staging, lock_anchor),
         ])
         remote_lock.mark_committed()
@@ -2052,22 +2070,17 @@ def _resolve_generation_remote_lock(
     """Resolve the ordinary remote-lock policy, retaining identity when inactive."""
     remote_lock = config.remote_lock
     if config.remote_lock_resolved:
-        _validate_generation_path_conflicts(
-            input_,
-            config.output,
-            config.emit_model_metadata,
-            getattr(remote_lock, "path", None),
-        )
+        lockfile = getattr(remote_lock, "path", None)
+        _validate_generation_path_conflicts(input_, config.output, config.emit_model_metadata, lockfile)
+        _refuse_uncreatable_paths(config.output, config.emit_model_metadata, lockfile, caller_cwd)
     else:
         from datamodel_code_generator._lock_plan import default_lock_parent, remote_lock_plan  # noqa: PLC0415
 
-        plan = remote_lock_plan(config, default_lock_parent(None, caller_cwd), "legacy-api-lockfile-as-written")
-        _validate_generation_path_conflicts(
-            input_,
-            config.output,
-            config.emit_model_metadata,
-            plan.canonical_path if plan.active else None,
-        )
+        default_parent = default_lock_parent(config._pyproject_path, caller_cwd)  # noqa: SLF001
+        plan = remote_lock_plan(config, default_parent, caller_cwd)
+        lockfile = plan.canonical_path if plan.active else None
+        _validate_generation_path_conflicts(input_, config.output, config.emit_model_metadata, lockfile)
+        _refuse_uncreatable_paths(config.output, config.emit_model_metadata, lockfile, caller_cwd)
         if plan.active:
             config = config.model_copy()
             from datamodel_code_generator.remote_lock import RemoteReferenceLock  # noqa: PLC0415

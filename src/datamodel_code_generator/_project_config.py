@@ -213,7 +213,7 @@ def load_pyproject_config(
         and (field != "parent_scoped_naming" or "naming_strategy" not in explicit)
     }
     if not options:
-        return GenerateConfig.model_validate(explicit)
+        return _loaded_from(GenerateConfig.model_validate(explicit), pyproject_path)
 
     from datamodel_code_generator._cli_config import (  # ruff: ignore[import-outside-top-level]
         _apply_implicit_cli_config_values,
@@ -251,4 +251,10 @@ def load_pyproject_config(
         if field in TARGET_JSON_FIELDS
     }:
         loaded._target_document_bases = bases  # noqa: SLF001
-    return loaded
+    return _loaded_from(loaded, pyproject_path)
+
+
+def _loaded_from(config: GenerateConfig, pyproject_path: Path | None) -> GenerateConfig:
+    """Record the pyproject.toml a config was loaded from, beside which ``generate()`` keeps its default lockfile."""
+    config._pyproject_path = pyproject_path  # noqa: SLF001
+    return config

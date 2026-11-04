@@ -1,0 +1,4 @@
+Remote lock file not found: <root>/loop1.lock
+loop1.lock -> loop2.lock
+loop2.lock -> loop1.lock
+out.py written: False

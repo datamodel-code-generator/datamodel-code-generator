@@ -1966,9 +1966,11 @@ def test_generate_atomic_remote_update_omits_absent_generated_artifacts(
     mocker: MockerFixture,
     tmp_path: Path,
 ) -> None:
-    """An interrupted generator can still publish its lock without creating empty public artifacts."""
+    """An interrupted generator can still publish its lock without creating an empty public output.
+
+    A staged model metadata file that is missing fails the publication instead (#5620).
+    """
     output_path = tmp_path / "output.py"
-    metadata_path = tmp_path / "metadata.json"
     lockfile = tmp_path / "remote.lock"
     mocker.patch("datamodel_code_generator._run_generation", return_value=None)
 
@@ -1976,7 +1978,6 @@ def test_generate_atomic_remote_update_omits_absent_generated_artifacts(
         JSON_SCHEMA_DATA_PATH / "person.json",
         config=GenerateConfig(
             disable_timestamp=True,
-            emit_model_metadata=metadata_path,
             input_file_type=InputFileType.JsonSchema,
             output=output_path,
             lockfile=lockfile,
@@ -1985,7 +1986,6 @@ def test_generate_atomic_remote_update_omits_absent_generated_artifacts(
     )
 
     _assert_file_does_not_exist(output_path)
-    _assert_file_does_not_exist(metadata_path)
     assert_http_e2e_file(lockfile, "remote_lock_empty.txt")
 
 

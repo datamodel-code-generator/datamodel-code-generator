@@ -33,6 +33,7 @@ before it copies, compares or publishes anything.
 
 from __future__ import annotations
 
+import errno
 import os
 from operator import attrgetter
 from pathlib import Path
@@ -41,9 +42,7 @@ from typing import TYPE_CHECKING, Final, Literal
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-AncestorTest = Literal["directory", "exists", "legacy-staging-parent-may-be-a-file"]
-AtRoot = Literal["root", "legacy-unbounded-ancestor-walk"]
-Missing = Literal["none", "legacy-missing-input-raises"]
+AncestorTest = Literal["directory", "exists"]
 FileOrder = Literal["path", "name"]
 OutputLayout = Literal["module", "package"]
 
@@ -58,30 +57,35 @@ def lexical(path: Path, base: Path | None = None) -> Path:
 
 
 def resolved(path: Path, base: Path | None = None) -> Path:
-    """Return the resolved form: ``~`` expanded, joined to ``base`` (or the working directory), symlinks resolved."""
+    """Return the resolved form: ``~`` expanded, joined to ``base`` (or the working directory), symlinks resolved.
+
+    A symlink loop stays as written from the link that starts it, on every Python version (``os.path.realpath``;
+    ``Path.resolve`` raises ``RuntimeError`` there before Python 3.13). An existing path whose links name nothing that
+    exists, such as ``/dev/stdin`` reading a pipe (``pipe:[...]``), keeps its lexical form, which opens it.
+    """
     expanded = path.expanduser()
-    return (expanded if base is None else base / expanded).resolve(strict=False)
+    joined = expanded if base is None else base / expanded
+    if (real := Path(os.path.realpath(joined))).exists() or not joined.exists():
+        return real
+    return Path(os.path.abspath(joined))  # noqa: PTH100
 
 
 def existing_ancestor(
     path: Path,
     *,
     test: AncestorTest = "directory",
-    at_root: AtRoot = "root",
     error: Callable[[Path], Exception] | None = None,
     missing: list[Path] | None = None,
 ) -> Path:
     """Return the deepest of ``path`` and its parents that exists by ``test``; ``missing`` receives those that do not.
 
     Rows of ``test``: ``directory`` holds for an existing directory (an anchor, a temporary file, a watch root);
-    ``exists`` for any existing path, so the parents below it are the ones a publication creates;
-    ``legacy-staging-parent-may-be-a-file`` (private staging, #5618) as ``exists``, so staging under a regular file
-    fails naming its random private directory. Rows of ``at_root``, for a root that fails the test (a missing drive):
-    ``root`` returns it, or raises ``error(root)`` when given; ``legacy-unbounded-ancestor-walk`` (the publication
-    walks) keeps testing it.
+    ``exists`` for any existing path, so the parents below it are the ones a publication creates (``creation_root``).
+    A root that fails the test (a missing drive) is returned, or raises ``error(root)`` when given (``missing_root``
+    for the publication walks).
     """
     while not (path.is_dir() if test == "directory" else path.exists()):
-        if (parent := path.parent) == path and at_root == "root":
+        if (parent := path.parent) == path:
             if error is not None:
                 raise error(path)
             return path
@@ -91,9 +95,25 @@ def existing_ancestor(
     return path
 
 
+def missing_root(root: Path) -> FileNotFoundError:
+    """Return the error of a walk that reaches a root that does not exist, such as a missing drive, naming the root."""
+    return FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), str(root))
+
+
+def creation_root(path: Path) -> Path:
+    """Return the deepest existing path of ``path`` and its parents, below which the missing ones are created.
+
+    It must be a directory: a regular file there raises ``NotADirectoryError`` and a root that does not exist (a
+    missing drive) ``FileNotFoundError``, each naming that path, so the error is the same on every run.
+    """
+    if not (root := existing_ancestor(path, test="exists", error=missing_root)).is_dir():
+        raise NotADirectoryError(errno.ENOTDIR, os.strerror(errno.ENOTDIR), str(root))
+    return root
+
+
 def concrete_parent(path: Path) -> Path:
     """Return the directory ``path`` is published into: its parent, with ``~`` expanded and symlinks resolved."""
-    return path.expanduser().parent.resolve(strict=False)
+    return resolved(path.expanduser().parent)
 
 
 def concrete(path: Path) -> Path:
@@ -106,16 +126,9 @@ def overlaps(first: Path, second: Path) -> bool:
     return first.is_relative_to(second) or second.is_relative_to(first)
 
 
-def same_file(first: Path, second: Path, *, missing: Missing = "none") -> bool:
-    """Return whether two paths name one existing file, symlinks followed.
-
-    Rows of ``missing``: ``none`` names no file for a path that does not exist; ``legacy-missing-input-raises`` (the
-    check that an output does not overwrite its input, fix C17-5) stats both paths as they are, so a missing input
-    raises ``FileNotFoundError``; its caller tests that the output exists first.
-    """
-    if missing == "none" and not (first.exists() and second.exists()):
-        return False
-    return first.samefile(second)
+def same_file(first: Path, second: Path) -> bool:
+    """Return whether two paths name one existing file, symlinks followed: a path that does not exist names none."""
+    return first.exists() and second.exists() and first.samefile(second)
 
 
 def file_uri_path(uri: str) -> Path:

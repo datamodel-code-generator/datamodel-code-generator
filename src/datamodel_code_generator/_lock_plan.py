@@ -1,14 +1,9 @@
 """Where a run's remote lock lives and which policy its options give it, resolved without importing lock machinery.
 
 The command line, ``generate()`` and the target runs read the lock options here only. The default lockfile lies in
-the directory ``default_lock_parent`` names. The runs differ in how a lockfile spelling becomes a path, and each
-difference is a named row of ``remote_lock_plan``:
-
-* ``lexical`` (the command line): the lexical form (``_paths.lexical``) from the working directory, then resolved;
-* ``resolved`` (an update that ``generate()`` publishes with its artifacts): joined to the caller's directory, then
-  resolved;
-* ``legacy-api-lockfile-as-written`` (the other ``generate()`` runs): an absolute spelling is opened, checked and
-  named as written, a relative one is joined to the caller's directory and resolved.
+the directory ``default_lock_parent`` names. Every run reads a lockfile spelling in the lexical form from the caller's
+directory (the working directory on the command line), so ``..`` after a symlink names one file in every run, and
+publishes to the resolved form of that, so a symlinked lockfile stays a symlink and its target is written.
 """
 
 from __future__ import annotations
@@ -16,7 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, Literal, NamedTuple
 
-from datamodel_code_generator._paths import lexical
+from datamodel_code_generator._paths import lexical, resolved
 
 if TYPE_CHECKING:
     from datamodel_code_generator.base_config import BaseGenerateConfig
@@ -24,7 +19,6 @@ if TYPE_CHECKING:
 LOCKFILE_NAME: Final = "datamodel-codegen.lock"
 
 LockPolicy = Literal["inactive", "verify", "locked", "update"]
-LockSpelling = Literal["lexical", "resolved", "legacy-api-lockfile-as-written"]
 
 
 class RemoteLockPlan(NamedTuple):
@@ -47,29 +41,24 @@ class RemoteLockPlan(NamedTuple):
 def default_lock_parent(pyproject_path: Path | None, cwd: Path | None = None) -> Path:
     """Return the directory of the default lockfile: the pyproject.toml directory, or ``cwd`` without one.
 
-    ``cwd`` is the working directory when omitted. The command line passes the pyproject.toml it read; ``generate()``
-    passes none, so its default lockfile lies in the caller's directory (#5585).
+    ``cwd`` is the working directory when omitted. The command line passes the pyproject.toml it read, ``generate()``
+    the one ``load_pyproject_config()`` read for its config, so the default lockfile of a project is one file however
+    the project is run; ``generate()`` with any other config keeps it in the caller's directory.
     """
     if pyproject_path is not None:
         return pyproject_path.parent
     return Path.cwd() if cwd is None else cwd
 
 
-def remote_lock_plan(config: BaseGenerateConfig, default_parent: Path, spelling: LockSpelling) -> RemoteLockPlan:
+def remote_lock_plan(config: BaseGenerateConfig, default_parent: Path, cwd: Path | None = None) -> RemoteLockPlan:
     """Return the lock a config uses: its lockfile, or ``datamodel-codegen.lock`` in ``default_parent``.
 
-    The policy is an update, a locked run, a verification of the file that exists, or inactive. ``resolved`` and the
-    legacy row join a relative spelling to ``default_parent``; ``lexical`` reads it from the working directory.
+    The literal path is the lexical form from ``cwd`` (the working directory when omitted), the canonical path the
+    resolved form of the literal one. The policy is an update, a locked run, a verification of the file that exists, or
+    inactive.
     """
-    path = (spelled := config.lockfile or default_parent / LOCKFILE_NAME).expanduser()
-    literal = path if path.is_absolute() else default_parent / path
-    if spelling == "lexical":
-        literal = lexical(spelled)
-        canonical = literal.resolve(strict=False)
-    elif spelling == "resolved":
-        canonical = literal.resolve(strict=False)
-    else:
-        canonical = literal = path if path.is_absolute() else literal.resolve()
+    literal = lexical(config.lockfile or default_parent / LOCKFILE_NAME, cwd)
+    canonical = resolved(literal)
     policy: LockPolicy
     if config.update_lock:
         policy = "update"
@@ -95,5 +84,5 @@ def models_lockfile(config: BaseGenerateConfig, default_parent: Path) -> Path | 
     """
     if config.lockfile is not None:
         return config.lockfile
-    plan = remote_lock_plan(config, default_parent, "lexical")
+    plan = remote_lock_plan(config, default_parent)
     return None if plan.policy == "inactive" else plan.literal_path

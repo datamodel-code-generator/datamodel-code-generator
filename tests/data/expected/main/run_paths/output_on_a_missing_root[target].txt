@@ -1,0 +1,1 @@
+Error: could not publish batch output: [Errno 2] No such file or directory: '<root>'
