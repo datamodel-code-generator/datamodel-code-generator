@@ -838,6 +838,42 @@ def _msgspec_literal_member_message(name: str, member: tuple[str, bool]) -> str:
     )
 
 
+def _refuse_msgspec_bytes_and_str_literal(parser: FinishHost, model: DataModel, field: DataModelFieldBase) -> None:
+    """Refuse a field of msgspec output whose ``Literal`` holds both bytes and str values, which no msgspec type holds.
+
+    A msgspec ``Literal`` holds no bytes value, and ``bytes`` beside the str values is a union of two str-like
+    members, which msgspec refuses too, so the bound annotation keeps such a ``Literal`` as written
+    (``write_refused_literal_values``). ``str`` would take every string and ``bytes`` no str value.
+    """
+    from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
+        iter_bytes_and_str_literals,
+        literal_values_as_text,
+        render_python_type_expr,
+    )
+
+    if (
+        literal := next(
+            (
+                literal
+                for nested in field.data_type.all_data_types
+                if nested.python_type is not None
+                for literal in iter_bytes_and_str_literals(nested.python_type.expression)
+            ),
+            None,
+        )
+    ) is None:
+        return
+    where = "type alias" if parser._is_root_model(model) else "field"  # noqa: SLF001
+    msg = (
+        f"Cannot write `{render_python_type_expr(literal)}` in the msgspec {where} "
+        f"`{site_display_name(parser, model, field)}`: a msgspec union holds one str-like member, so no msgspec type "
+        "holds both bytes and str values. Write values of one kind in the annotation (`x-python-type` or "
+        f"`--type-overrides`), for example `{render_python_type_expr(literal_values_as_text(literal))}` or `bytes`, "
+        "or generate another `--output-model-type`."
+    )
+    raise Error(msg)
+
+
 def _msgspec_null_enum_message(model: Enum) -> str | None:
     """Describe an enum whose null member msgspec refuses, if the other members it reads are all str or all int.
 
@@ -1128,7 +1164,11 @@ def warn_about_variant_discriminator_tags(parser: FinishHost) -> None:
 
 
 def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleContextView]) -> None:  # noqa: PLR0912
-    """Warn once per union and enum of msgspec output that msgspec refuses to decode."""
+    """Warn once per union and enum of msgspec output that msgspec refuses to decode.
+
+    A field whose ``Literal`` holds both bytes and str values, which no msgspec type holds, is refused instead
+    (``_refuse_msgspec_bytes_and_str_literal``).
+    """
     if not parser.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
         return
     from datamodel_code_generator.model.union import _DataTypeUnionBase  # noqa: PLC0415
@@ -1159,6 +1199,7 @@ def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleCon
         for field in model.fields:
             if field.is_class_var:
                 continue
+            _refuse_msgspec_bytes_and_str_literal(parser, model, field)
             member = _literal_member(field.data_type)
             discriminated = bool(field.extras.get("discriminator"))
             nested = [*field.data_type.all_data_types][::-1]

@@ -13,7 +13,7 @@ from datamodel_code_generator._target_unicode import NEWEST_TARGET, is_python_na
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Iterable, Iterator
 
 
 class PythonTypeExpr:
@@ -494,6 +494,44 @@ def _flat_literal_values(arguments: tuple[PythonTypeExpr, ...]) -> Iterator[Pyth
             yield argument
 
 
+def _holds_bytes_and_str(members: Iterable[PythonTypeExpr]) -> bool:
+    """Return whether the values of a ``Literal`` hold both a bytes and a str value."""
+    types = {type(member.value) for member in members if isinstance(member, PythonTypeLiteralValue)}
+    return bytes in types and str in types
+
+
+def iter_bytes_and_str_literals(expression: PythonTypeExpr) -> Iterator[PythonTypeSubscript]:
+    """Yield each ``Literal`` of a type that holds both bytes and str values, those of a ``Literal`` it nests included.
+
+    Such a ``Literal`` is yielded, not the ``Literal`` it nests.
+    """
+    if isinstance(expression, PythonTypeSubscript) and is_literal_python_type_expr(expression):
+        if _holds_bytes_and_str(_flat_literal_values(expression.arguments)):
+            yield expression
+    else:
+        for child in _children(expression, "all") or ():
+            yield from iter_bytes_and_str_literals(child)
+
+
+def literal_values_as_text(literal: PythonTypeSubscript) -> PythonTypeSubscript:
+    r"""Return a ``Literal`` with each bytes value written as the text it spells in UTF-8, the nested values flattened.
+
+    A byte that UTF-8 does not read is written as its escape (``b'\xff'`` as ``'\\xff'``), and a value equal to an
+    earlier one is dropped.
+    """
+    return PythonTypeSubscript(
+        literal.base,
+        tuple(
+            dict.fromkeys(
+                PythonTypeLiteralValue(member.value.decode("utf-8", "backslashreplace"))
+                if isinstance(member, PythonTypeLiteralValue) and isinstance(member.value, bytes)
+                else member
+                for member in _flat_literal_values(literal.arguments)
+            )
+        ),
+    )
+
+
 def write_refused_literal_values(
     expression: PythonTypeExpr, refused: tuple[type, ...]
 ) -> tuple[PythonTypeExpr, tuple[PythonTypeLiteralValue, ...]]:
@@ -501,7 +539,9 @@ def write_refused_literal_values(
 
     A ``Literal`` of such values alone becomes the union of their types (``Literal[5.0]`` the type ``float``); one that
     holds other values keeps them (``Literal[1, 5.0]`` becomes ``Literal[1] | float``), and a nested ``Literal`` is
-    flattened. An expression that holds no such value is returned as it is.
+    flattened. An expression that holds no such value is returned as it is. A ``Literal`` that holds str values beside
+    refused bytes values stays as written: ``bytes`` beside them is a union that the output refusing bytes (msgspec)
+    refuses too, so the output refuses that ``Literal`` where it writes it (``iter_bytes_and_str_literals``).
     """
     values: list[PythonTypeLiteralValue] = []
 
@@ -509,7 +549,7 @@ def write_refused_literal_values(
         if isinstance(node, PythonTypeSubscript) and is_literal_python_type_expr(node):
             members = tuple(_flat_literal_values(node.arguments))
             written = [m for m in members if isinstance(m, PythonTypeLiteralValue) and type(m.value) in refused]
-            if not written:
+            if not written or (bytes in refused and _holds_bytes_and_str(members)):
                 return node
             values.extend(written)
             kept = tuple(m for m in members if m not in written)
@@ -543,10 +583,12 @@ __all__ = [
     "PythonTypeUnion",
     "is_literal_python_type_expr",
     "is_union_python_type_expr",
+    "iter_bytes_and_str_literals",
     "iter_literal_members",
     "iter_python_type_expr_head_names",
     "iter_python_type_expr_names",
     "iter_python_type_expr_qualified_names",
+    "literal_values_as_text",
     "parse_python_type_annotation",
     "python_type_expr_arguments",
     "python_type_expr_base_name",
