@@ -13,7 +13,8 @@
     "textOrBytes": {"anyOf": [{"type": "string", "format": "binary"}, {"type": "string"}]},
     "textOrDuration": {"anyOf": [{"type": "string", "format": "duration"}, {"type": "string", "enum": ["none"]}]},
     "structOrList": {"anyOf": [{"$ref": "#/$defs/Spec"}, {"type": "array", "items": {"type": "string"}}]},
-    "textOrNumber": {"anyOf": [{"type": "string"}, {"type": "number"}]}
+    "textOrNumber": {"anyOf": [{"type": "string"}, {"type": "number"}]},
+    "textOrIntLiteral": {"anyOf": [{"type": "string"}, {"const": 1}]}
   },
   "$defs": {"Spec": {"type": "object", "properties": {"x": {"type": "string"}}}}
 }

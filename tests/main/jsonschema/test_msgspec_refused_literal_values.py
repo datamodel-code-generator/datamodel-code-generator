@@ -61,11 +61,8 @@ def test_msgspec_refused_literal_values(output_file: Path, recwarn: pytest.Warni
 
 
 def _type_verdict(type_: object) -> str:
-    """Return whether msgspec builds a JSON decoder for a type."""
-    try:
-        msgspec.json.Decoder(type_)
-    except TypeError:
-        return "refused by msgspec"
+    """Build the JSON decoder of a type, which msgspec refuses with TypeError, and say it decodes."""
+    msgspec.json.Decoder(type_)
     return "decoded"
 
 
