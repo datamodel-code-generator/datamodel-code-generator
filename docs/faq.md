@@ -679,9 +679,27 @@ class Holder(BaseModel):
 | Preset | `20261104` |
 | Class | opt-in |
 | Release | 0.89.0 |
-| Issue | [#5416](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5416) |
+| Issue | [#5416](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5416), [#5453](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5453), [#5535](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5535), [#4977](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4977) |
 
 **Affects:** keywords beside an `anyOf` or `oneOf` that a branch declares too. They apply to every value, whichever branch it meets, but each branch is parsed with them merged in and the branch's value wins, so `minimum: 5` beside a branch with `minimum: 1` accepts `3`. With the option each branch is the intersection of both, as `--intersect-allof-keywords` writes it for an `allOf`: the tightest bound, the conjunction of the `pattern`s, the common `multipleOf`, the `type` and `enum` values both admit, nested `properties` alike; a `nullable` beside the `anyOf` stays with each branch. Where parts meet (these branches, a `$ref` with siblings, an inherited override, the members of an `allOf`) an `enum` also loses the values the merged `type` rejects, so an Enum can become an `IntEnum` or `StrEnum`. A `$ref` branch without siblings of its own keeps its referenced type.
+
+A property that overrides an inherited one (an `allOf` child) also merges its `properties` and `patternProperties` name by name, so a nested property named `default`, `examples`, `example` or `nullable` is no longer dropped; an override that narrows the inherited `type` (to `null`, from `[string, integer]` to `string`, from `number` to `integer`, from `[object, string]` to `object`, or the type of a nested schema) is the intersection with the inherited property instead of the inherited type, which could only drop its null; and under `--allof-merge-mode none` the type shape of an override keeps the length of a closed tuple (`items: false`). An override that narrows a nested schema can get its own model, numbered (`Foo1`) where the inherited model has the name: it is the form an override with constraints already takes. 0.70.0 wrote `a: None` for `{"type": "null"}` over `{"type": ["string", "null"]}`; users upgrading from it get that output back with this option.
+
+Schema: `Base.a` is `{"type": ["string", "null"]}`, and the `allOf` child redeclares it as `{"type": "null"}`.
+
+Without the option (same as 0.78.0 to 0.88.0):
+
+```python
+class Child(Base):
+    a: str | None = None
+```
+
+With the option:
+
+```python
+class Child(Base):
+    a: None = Field(None)
+```
 
 Schema: `{"minimum": 5, "anyOf": [{"type": "integer", "minimum": 1}, {"type": "string"}]}`.
 

@@ -163,6 +163,17 @@ LEGACY_ROWS: Final[Mapping[str, Mapping[str, str]]] = {
             "bounds), the branch's value of a keyword winning"
         ),
         "legacy-enum-outside-type-kept": "an `enum` value that the merged `type` rejects stays where parts meet",
+        "legacy-schema-maps-merged-as-schemas": (
+            "an inherited property override merges a `properties` or `patternProperties` map as a schema: names "
+            "spelled like keywords the merge mode does not inherit, or `nullable`, are dropped"
+        ),
+        "legacy-type-narrowing-override-deferred": (
+            "a partial override without constraints is a copy of the inherited field, which keeps the inherited type "
+            "and drops at most its null, also where the override narrows the type further"
+        ),
+        "legacy-type-shape-length-from-max-items": (
+            "the type shape of `--allof-merge-mode none` keeps the length of a tuple only from an explicit `maxItems`"
+        ),
     },
 }
 """The rows of the output of an earlier release where parts meet, by the option whose off state they are."""
@@ -753,6 +764,7 @@ def inherited_override_row(
     *,
     merge_mode: str,
     drops_null: Callable[[Mapping[str, Any]], bool],
+    maps_by_name: bool = False,
 ) -> dict[str, Any]:
     """Return the presentation row of a property that overrides an inherited one, for :func:`intersect_keywords`.
 
@@ -760,19 +772,22 @@ def inherited_override_row(
     keywords merge by :func:`merge_inherited_keyword` (row ``override``), other schema values recursively, and an
     override that holds a ``$ref`` replaces the inherited schema; under ``--allof-merge-mode`` ``none`` (``merge_mode``)
     the override is the row. An override for which ``drops_null`` holds drops the inherited ``nullable``: the caller
-    asks the null rule (``parser/_null_facts.py``). The result is a dict of the kind of ``child``, so a located dump
-    keeps its location.
+    asks the null rule (``parser/_null_facts.py``). With ``maps_by_name`` a ``properties`` or ``patternProperties``
+    map merges name by name, so no name is read as a keyword; without it (``legacy-schema-maps-merged-as-schemas``)
+    the map merges as a schema. The result is a dict of the kind of ``child``, so a located dump keeps its location.
     """
     if merge_mode == "none" or "$ref" in child:
         return copy(child)
     result = {key: value for key, value in parent.items() if inherits_keyword(merge_mode, key)}
     if drops_null(child):
         result.pop("nullable", None)
-    merge_row = partial(inherited_override_row, merge_mode=merge_mode, drops_null=drops_null)
+    merge_row = partial(inherited_override_row, merge_mode=merge_mode, drops_null=drops_null, maps_by_name=maps_by_name)
     merge_value = partial(merge_inherited_value, merge_schemas=merge_row, row="override")
     for key, value in child.items():
         if key in result and key in INHERITED_SCHEMA_KEYWORDS:
-            result[key] = merge_inherited_keyword(key, result[key], value, result.get, merge_value, maps_by_name=False)
+            result[key] = merge_inherited_keyword(
+                key, result[key], value, result.get, merge_value, maps_by_name=maps_by_name
+            )
         elif key in result and isinstance(result[key], dict) and isinstance(value, dict):
             result[key] = value if "$ref" in value else merge_row(result[key], value)
         else:

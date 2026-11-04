@@ -38196,7 +38196,11 @@ branch is parsed with them merged in, and the branch's value of a keyword wins: 
 each branch is their intersection as `--intersect-allof-keywords` writes it: the tightest bound, the conjunction of
 the `pattern`s, the common `multipleOf`, the `type` and `enum` values both admit, and nested `properties` alike; the
 `nullable` beside the `anyOf` stays with the branch. Where parts meet, an `enum` also loses the values the merged
-`type` rejects. A branch whose keywords no value meets together keeps its earlier merge with a warning.""",
+`type` rejects. A branch whose keywords no value meets together keeps its earlier merge with a warning. A property
+that overrides an inherited one merges its `properties` name by name, so a nested property named `default` or
+`nullable` stays; an override that narrows the inherited `type` (to `null`, to one of its types, or in a nested
+schema) is the intersection instead of the inherited type; and under `--allof-merge-mode none` the type shape keeps
+the length of a closed tuple.""",
     input_schema="jsonschema/schema_intersection/combined_branch_keywords.json",
     cli_args=["--intersect-combined-schema-keywords"],
     golden_output=(

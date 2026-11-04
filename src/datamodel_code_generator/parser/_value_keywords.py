@@ -76,6 +76,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.types import DataType, DataTypeManager
 
 __all__ = [
+    "ArrayBoundsHost",
     "ValueKeywordsHost",
     "accepts_number_constraints",
     "check_literal_const",
@@ -261,6 +262,14 @@ def _imported_type_paths(data_type: DataType) -> Iterator[str]:
 
 _NULL_TYPE_SOURCES: Final[NullSources] = NullSources(type_null=True)
 """The null sources of a branch whose ``type`` is null as written, which ``_extract_const_enum_from_combined`` reads."""
+
+
+class ArrayBoundsHost(Protocol):
+    """The parser class whose derived array length constraints ``get_effective_array_length`` reads."""
+
+    @classmethod
+    def _get_array_items_constraints(cls, obj: JsonSchemaObject) -> dict[str, int]:
+        """Return array length constraints derived from boolean items."""
 
 
 class ValueKeywordsHost(Protocol):
@@ -1065,7 +1074,7 @@ def contains_false_requires_match(parser: ValueKeywordsHost | type[ValueKeywords
     return json_integer(min_contains) and min_contains > 0
 
 
-def get_effective_array_length(cls: type[ValueKeywordsHost], obj: JsonSchemaObject) -> int | None:
+def get_effective_array_length(cls: type[ArrayBoundsHost], obj: JsonSchemaObject) -> int | None:
     """Return the length that the effective length bounds fix, the bounds the length constraints come from."""
     derived = cls._get_array_items_constraints(obj)
     min_items = derived.get("minItems", obj.minItems)

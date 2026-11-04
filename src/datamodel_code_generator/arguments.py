@@ -824,7 +824,9 @@ _flag(
     "--intersect-combined-schema-keywords",
     help="Combine the keywords of every part of a combined schema as JSON Schema validates them, as "
     "--intersect-allof-keywords does (this option turns it on), and also: the keywords beside an `anyOf` or `oneOf` "
-    "in each branch, and no `enum` value that the merged `type` rejects. Without it these keep the output of 0.88.0",
+    "in each branch, the `properties` an inherited property override merges name by name, an override that narrows "
+    "the inherited `type` (such as to `null`), the length of an inherited closed tuple under --allof-merge-mode none, "
+    "and no `enum` value that the merged `type` rejects. Without it these keep the output of 0.88.0",
 )
 _flag(typing_options, "--field-constraints", help="Use field constraints and not con* annotations")
 _flag(

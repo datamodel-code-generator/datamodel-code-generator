@@ -117,6 +117,15 @@ EXTRA_RUNS: dict[str, tuple[tuple[DataModelType, tuple[str, ...]], ...]] = {
         ),
     ),
     "ref_sibling_nullable_oas30": ((DataModelType.PydanticV2BaseModel, ("--strict-nullable",)),),
+    "inherited_override_maps": ((DataModelType.PydanticV2BaseModel, ("--allof-merge-mode", "all")),),
+    "inherited_type_narrowing": (
+        (DataModelType.PydanticV2Dataclass, ("--allof-merge-mode", "all")),
+        (DataModelType.PydanticV2BaseModel, ("--allof-merge-mode", "none")),
+    ),
+    "inherited_tuple_shape_oas31": (
+        (DataModelType.PydanticV2BaseModel, ("--allof-merge-mode", "none")),
+        (DataModelType.MsgspecStruct, ("--allof-merge-mode", "none")),
+    ),
     "ref_siblings": ((DataModelType.PydanticV2BaseModel, ("--generate-schema-validators",)),),
     "root_members": ((DataModelType.PydanticV2BaseModel, ("--generate-schema-validators",)),),
     "unsat_root_literals": ((DataModelType.PydanticV2BaseModel, ("--generate-schema-validators",)),),
@@ -151,7 +160,13 @@ them it is the output of 0.86.0."""
 COMBINED_OPTION_ARGS: tuple[str, ...] = (*OPTION_ARGS, "--intersect-combined-schema-keywords")
 """``OPTION_ARGS`` and the option that also intersects where 0.88.0 keeps its merge: each branch of an ``anyOf`` or
 ``oneOf`` with the keywords beside it, and an ``enum`` with the merged ``type``."""
-COMBINED_DOCUMENTS: tuple[str, ...] = ("combined_branch_keywords", "combined_branch_nullable_oas30")
+COMBINED_DOCUMENTS: tuple[str, ...] = (
+    "combined_branch_keywords",
+    "combined_branch_nullable_oas30",
+    "inherited_override_maps",
+    "inherited_type_narrowing",
+    "inherited_tuple_shape_oas31",
+)
 """The documents whose output --intersect-combined-schema-keywords changes, pinned with ``COMBINED_OPTION_ARGS`` too."""
 
 
@@ -212,7 +227,10 @@ def test_schema_intersection_shape_output_with_combined_option(
 
     Each branch of an ``anyOf`` or ``oneOf`` is the intersection of its keywords and the keywords beside it (the
     tightest bound, the conjoined patterns, the common multiple, the types and values both admit, nested properties
-    alike), the ``nullable`` copied into it kept, and an ``enum`` loses the values the merged ``type`` rejects.
+    alike), the ``nullable`` copied into it kept, and an ``enum`` loses the values the merged ``type`` rejects. An
+    inherited override merges a map of named schemas name by name, an override that narrows the inherited type (to
+    ``null``, to one of its types, or in a nested schema) is the intersection instead of a copy of the inherited field,
+    and the type shape of ``--allof-merge-mode none`` keeps the length of a closed tuple.
     """
     _assert_shape_output(output_file, stem, backend, options, COMBINED_OPTION_ARGS)
 

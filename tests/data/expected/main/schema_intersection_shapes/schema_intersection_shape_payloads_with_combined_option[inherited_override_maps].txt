@@ -1,0 +1,117 @@
+pydantic_v2.BaseModel default settings {"default": "x", "name": "ab", "nullable": 1, "examples": 2, "example": true, "type": "t"} accepted
+pydantic_v2.BaseModel default settings {"default": 1} rejected
+pydantic_v2.BaseModel default settings {"nullable": "x"} rejected
+pydantic_v2.BaseModel default settings {"examples": "x"} rejected
+pydantic_v2.BaseModel default settings {"example": "x"} rejected
+pydantic_v2.BaseModel default settings {"name": "abcd"} rejected
+pydantic_v2.BaseModel default tagged {"default": "x"} accepted
+pydantic_v2.BaseModel default tagged {"n1": 1} accepted
+pydantic_v2.BaseModel default tagged {"default": 1} rejected
+pydantic_v2.dataclass default settings {"default": "x", "name": "ab", "nullable": 1, "examples": 2, "example": true, "type": "t"} accepted
+pydantic_v2.dataclass default settings {"default": 1} rejected
+pydantic_v2.dataclass default settings {"nullable": "x"} rejected
+pydantic_v2.dataclass default settings {"examples": "x"} rejected
+pydantic_v2.dataclass default settings {"example": "x"} rejected
+pydantic_v2.dataclass default settings {"name": "abcd"} rejected
+pydantic_v2.dataclass default tagged {"default": "x"} accepted
+pydantic_v2.dataclass default tagged {"n1": 1} accepted
+pydantic_v2.dataclass default tagged {"default": 1} rejected
+msgspec.Struct default settings {"default": "x", "name": "ab", "nullable": 1, "examples": 2, "example": true, "type": "t"} accepted
+msgspec.Struct default settings {"default": 1} rejected
+msgspec.Struct default settings {"nullable": "x"} rejected
+msgspec.Struct default settings {"examples": "x"} rejected
+msgspec.Struct default settings {"example": "x"} rejected
+msgspec.Struct default settings {"name": "abcd"} rejected
+msgspec.Struct default tagged {"default": "x"} accepted
+msgspec.Struct default tagged {"n1": 1} accepted
+msgspec.Struct default tagged {"default": 1} accepted
+pydantic_v2.BaseModel --field-constraints settings {"default": "x", "name": "ab", "nullable": 1, "examples": 2, "example": true, "type": "t"} accepted
+pydantic_v2.BaseModel --field-constraints settings {"default": 1} rejected
+pydantic_v2.BaseModel --field-constraints settings {"nullable": "x"} rejected
+pydantic_v2.BaseModel --field-constraints settings {"examples": "x"} rejected
+pydantic_v2.BaseModel --field-constraints settings {"example": "x"} rejected
+pydantic_v2.BaseModel --field-constraints settings {"name": "abcd"} rejected
+pydantic_v2.BaseModel --field-constraints tagged {"default": "x"} accepted
+pydantic_v2.BaseModel --field-constraints tagged {"n1": 1} accepted
+pydantic_v2.BaseModel --field-constraints tagged {"default": 1} rejected
+pydantic_v2.BaseModel --use-annotated settings {"default": "x", "name": "ab", "nullable": 1, "examples": 2, "example": true, "type": "t"} accepted
+pydantic_v2.BaseModel --use-annotated settings {"default": 1} rejected
+pydantic_v2.BaseModel --use-annotated settings {"nullable": "x"} rejected
+pydantic_v2.BaseModel --use-annotated settings {"examples": "x"} rejected
+pydantic_v2.BaseModel --use-annotated settings {"example": "x"} rejected
+pydantic_v2.BaseModel --use-annotated settings {"name": "abcd"} rejected
+pydantic_v2.BaseModel --use-annotated tagged {"default": "x"} accepted
+pydantic_v2.BaseModel --use-annotated tagged {"n1": 1} accepted
+pydantic_v2.BaseModel --use-annotated tagged {"default": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models settings {"default": "x", "name": "ab", "nullable": 1, "examples": 2, "example": true, "type": "t"} accepted
+pydantic_v2.BaseModel --collapse-root-models settings {"default": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models settings {"nullable": "x"} rejected
+pydantic_v2.BaseModel --collapse-root-models settings {"examples": "x"} rejected
+pydantic_v2.BaseModel --collapse-root-models settings {"example": "x"} rejected
+pydantic_v2.BaseModel --collapse-root-models settings {"name": "abcd"} rejected
+pydantic_v2.BaseModel --collapse-root-models tagged {"default": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models tagged {"n1": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models tagged {"default": 1} rejected
+msgspec.Struct --collapse-root-models settings {"default": "x", "name": "ab", "nullable": 1, "examples": 2, "example": true, "type": "t"} accepted
+msgspec.Struct --collapse-root-models settings {"default": 1} rejected
+msgspec.Struct --collapse-root-models settings {"nullable": "x"} rejected
+msgspec.Struct --collapse-root-models settings {"examples": "x"} rejected
+msgspec.Struct --collapse-root-models settings {"example": "x"} rejected
+msgspec.Struct --collapse-root-models settings {"name": "abcd"} rejected
+msgspec.Struct --collapse-root-models tagged {"default": "x"} accepted
+msgspec.Struct --collapse-root-models tagged {"n1": 1} accepted
+msgspec.Struct --collapse-root-models tagged {"default": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs settings {"default": "x", "name": "ab", "nullable": 1, "examples": 2, "example": true, "type": "t"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs settings {"default": 1} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs settings {"nullable": "x"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs settings {"examples": "x"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs settings {"example": "x"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs settings {"name": "abcd"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs tagged {"default": "x"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs tagged {"n1": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs tagged {"default": 1} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs settings {"default": "x", "name": "ab", "nullable": 1, "examples": 2, "example": true, "type": "t"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs settings {"default": 1} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs settings {"nullable": "x"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs settings {"examples": "x"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs settings {"example": "x"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs settings {"name": "abcd"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs tagged {"default": "x"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs tagged {"n1": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs tagged {"default": 1} rejected
+msgspec.Struct --use-site-models-for-constrained-refs settings {"default": "x", "name": "ab", "nullable": 1, "examples": 2, "example": true, "type": "t"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs settings {"default": 1} rejected
+msgspec.Struct --use-site-models-for-constrained-refs settings {"nullable": "x"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs settings {"examples": "x"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs settings {"example": "x"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs settings {"name": "abcd"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs tagged {"default": "x"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs tagged {"n1": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs tagged {"default": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs settings {"default": "x", "name": "ab", "nullable": 1, "examples": 2, "example": true, "type": "t"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs settings {"default": 1} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs settings {"nullable": "x"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs settings {"examples": "x"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs settings {"example": "x"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs settings {"name": "abcd"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs tagged {"default": "x"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs tagged {"n1": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs tagged {"default": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs settings {"default": "x", "name": "ab", "nullable": 1, "examples": 2, "example": true, "type": "t"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs settings {"default": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs settings {"nullable": "x"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs settings {"examples": "x"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs settings {"example": "x"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs settings {"name": "abcd"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs tagged {"default": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs tagged {"n1": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs tagged {"default": 1} rejected
+pydantic_v2.BaseModel --allof-merge-mode all settings {"default": "x", "name": "ab", "nullable": 1, "examples": 2, "example": true, "type": "t"} accepted
+pydantic_v2.BaseModel --allof-merge-mode all settings {"default": 1} rejected
+pydantic_v2.BaseModel --allof-merge-mode all settings {"nullable": "x"} rejected
+pydantic_v2.BaseModel --allof-merge-mode all settings {"examples": "x"} rejected
+pydantic_v2.BaseModel --allof-merge-mode all settings {"example": "x"} rejected
+pydantic_v2.BaseModel --allof-merge-mode all settings {"name": "abcd"} rejected
+pydantic_v2.BaseModel --allof-merge-mode all tagged {"default": "x"} accepted
+pydantic_v2.BaseModel --allof-merge-mode all tagged {"n1": 1} accepted
+pydantic_v2.BaseModel --allof-merge-mode all tagged {"default": 1} rejected

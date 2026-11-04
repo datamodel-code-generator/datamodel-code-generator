@@ -61,6 +61,7 @@ from datamodel_code_generator.parser._schema_reading import (
     _schema_dump,
     _without_contains_keywords,
 )
+from datamodel_code_generator.parser._value_keywords import get_effective_array_length
 from datamodel_code_generator.parser.base import (
     _DEFERRED_INHERITED_FIELD_KEY,
     _DEFERRED_INHERITED_TYPE_KEY,
@@ -370,6 +371,10 @@ class InheritedSchemasHost(Protocol):
     ) -> list[JsonSchemaObject | bool] | None:
         """Return the positions of a positional array written as a tuple, or None when it is written as a list."""
 
+    @classmethod
+    def _get_array_items_constraints(cls, obj: JsonSchemaObject) -> dict[str, int]:
+        """Return array length constraints derived from boolean items."""
+
     def _get_flattenable_inherited_constraint_items(
         self,
         keyword: str,
@@ -618,12 +623,21 @@ def get_inherited_type_shape(
 ) -> dict[str, Any]:
     """Return structural schema keywords without inherited value restrictions; a tuple keeps its length.
 
+    The length is that of explicit equal ``minItems`` and ``maxItems``, and unless
+    ``legacy-type-shape-length-from-max-items`` is kept also the one the effective length bounds fix
+    (``parser/_value_keywords.py:get_effective_array_length``: a closed tuple whose tail or a position is ``false``).
     ``canonical_ref`` reads the ``$ref`` values of ``schema`` in the document that defines it.
     """
     schema_dict = schema.model_dump(exclude_unset=True, by_alias=True)
     shape = {key: value for key, value in schema_dict.items() if key in _INHERITED_TYPE_SHAPE_FIELDS}
     positional_items = schema.prefixItems or (schema.items if isinstance(schema.items, list) else None)
-    if positional_items and schema.minItems == schema.maxItems == len(positional_items):
+    if positional_items and (
+        schema.minItems == schema.maxItems == len(positional_items)
+        or (
+            "legacy-type-shape-length-from-max-items" not in parser._legacy_intersection  # noqa: SLF001
+            and get_effective_array_length(type(parser), schema) == len(positional_items)
+        )
+    ):
         shape["minItems"] = schema.minItems
         shape["maxItems"] = schema.maxItems
     elif (
@@ -1278,10 +1292,15 @@ def override_row(parser: InheritedSchemasHost, parent: dict[str, Any], child: di
     """Return ``parser/_intersection.py:inherited_override_row`` under the merge mode of this parse.
 
     An override drops the inherited ``nullable`` by the null rule ``inherited-typed-without-null``, read from its
-    own ``type`` and ``nullable`` (``parser/_null_facts.py:dump_null_sources``).
+    own ``type`` and ``nullable`` (``parser/_null_facts.py:dump_null_sources``). A map of named schemas merges name by
+    name unless ``legacy-schema-maps-merged-as-schemas`` is kept.
     """
     return inherited_override_row(
-        parent, child, merge_mode=parser.allof_merge_mode.value, drops_null=_dump_drops_inherited_null
+        parent,
+        child,
+        merge_mode=parser.allof_merge_mode.value,
+        drops_null=_dump_drops_inherited_null,
+        maps_by_name="legacy-schema-maps-merged-as-schemas" not in parser._legacy_intersection,  # noqa: SLF001
     )
 
 
@@ -1326,12 +1345,74 @@ def inherited_override_schema(
     return merged_property
 
 
+def copy_carries_override(
+    parser: InheritedSchemasHost,
+    child: JsonSchemaObject,
+    parent: JsonSchemaObject,
+    context: tuple[str, frozenset[_TargetNode]],
+) -> bool:
+    """Return whether the copy of an inherited field carries a partial override without constraints.
+
+    The copy keeps the inherited type and drops at most its null, so it carries an override whose ``type`` admits
+    every non-null type the inherited property admits and whose nested schema keywords admit every value the
+    inherited ones do: the inherited value narrows the override's (``is_partial_inherited_nested_value`` read the
+    other way round), or the override writes the inherited value as it is.
+    """
+    parent_ref, active = context
+    shape = parser._remove_unconstrained_compositions(get_inherited_override_shape(parser, child))  # noqa: SLF001
+    if (child_type := shape.pop("type", None)) is not None and not set(
+        non_null_types(parser._get_inherited_schema_types(parent, parent_ref, active))  # noqa: SLF001
+    ) <= admitted_types(declared_types(child_type)):
+        return False
+    parent_dump = parent.model_dump(exclude_unset=True, by_alias=True)
+    return all(
+        _admits_inherited_value(parser, getattr(child, keyword), parent_dump.get(keyword), context) for keyword in shape
+    )
+
+
+def _admits_inherited_value(
+    parser: InheritedSchemasHost, child: object, parent: object, context: tuple[str, frozenset[_TargetNode]]
+) -> bool:
+    """Return whether the value an override gives a nested schema keyword admits every value of the inherited one.
+
+    ``child`` is the override's value (schema objects), ``parent`` the dump of the inherited value; a map of named
+    schemas and the positions of a tuple compare entry by entry of the override, and a value the inherited schema
+    does not set is admitted only where the override's constrains nothing.
+    """
+    match child, parent:
+        case JsonSchemaObject() as child_schema, _:
+            child_dump = child_schema.model_dump(exclude_unset=True, by_alias=True)
+            if parent is None:
+                return parser._is_unconstrained_inherited_schema(child_dump)  # noqa: SLF001
+            return child_dump == parent or parser._is_partial_inherited_nested_value(  # noqa: SLF001
+                parent, child_schema, context=context
+            )
+        case dict() as child_map, dict() as parent_map:
+            return all(
+                _admits_inherited_value(parser, value, parent_map.get(name), context)
+                for name, value in child_map.items()
+            )
+        case list() as child_items, list() as parent_items:
+            return all(
+                _admits_inherited_value(
+                    parser, value, parent_items[index] if index < len(parent_items) else None, context
+                )
+                for index, value in enumerate(child_items)
+            )
+    return child is True or child == parent
+
+
 def get_deferred_inherited_property_names(
     parser: InheritedSchemasHost,
     source_obj: JsonSchemaObject,
     parent_properties: dict[str, tuple[JsonSchemaObject | bool, str]],
 ) -> frozenset[str]:
-    """Find partial properties that need canonical generated-type resolution."""
+    """Find partial properties that need canonical generated-type resolution.
+
+    A partial override without constraints is resolved as a copy of the inherited field, unless
+    ``legacy-type-narrowing-override-deferred`` is dropped and the copy does not carry it (``copy_carries_override``):
+    such an override is the intersection with the inherited property, as a constrained one is.
+    """
     if not source_obj.properties:
         return frozenset()
     deferred_names: set[str] = set()
@@ -1357,6 +1438,10 @@ def get_deferred_inherited_property_names(
                 ):
                     continue
                 if parser._has_inherited_constraints(normalized_child):  # noqa: SLF001
+                    continue
+                if "legacy-type-narrowing-override-deferred" not in parser._legacy_intersection and not (  # noqa: SLF001
+                    copy_carries_override(parser, normalized_child, effective_parent, (effective_ref, active))
+                ):
                     continue
                 deferred_names.add(field_name)
             case _:

@@ -842,8 +842,9 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         title="Combined schema keywords intersected",
         config=PresetConfig(intersect_combined_schema_keywords=True),
         description=(
-            "Combine the keywords beside an anyOf or oneOf with each branch as JSON Schema validates them, and keep "
-            "no enum value that the merged type rejects."
+            "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested "
+            "properties name by name and by its narrowed type, and keep no enum value that the merged type rejects, "
+            "as JSON Schema validates them."
         ),
     ),
 )
@@ -1119,8 +1120,9 @@ def render_presets_markdown() -> str:
             "features apply as that version says in every document of a run, and "
             "`--ignore-ref-siblings-by-schema-version`: a `$ref` in a version that ignores the keywords beside it, "
             "such as draft 7 or OpenAPI 3.0, is read as its target alone, and `--intersect-combined-schema-keywords`: "
-            "the keywords beside an anyOf or oneOf are combined with each branch as JSON Schema validates them, and no "
-            "enum value that the merged type rejects is kept."
+            "the keywords beside an anyOf or oneOf are combined with each branch, an inherited override merges its "
+            "nested properties name by name and by the type it narrows, and no enum value that the merged type "
+            "rejects is kept, as JSON Schema validates them."
         ),
         "",
         (

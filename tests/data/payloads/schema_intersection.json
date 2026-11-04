@@ -6874,5 +6874,235 @@
         ]
       }
     }
+  },
+  "inherited_override_maps": {
+    "model": "Child",
+    "fields": {
+      "settings": {
+        "valid": [
+          {
+            "default": "x",
+            "name": "ab",
+            "nullable": 1,
+            "examples": 2,
+            "example": true,
+            "type": "t"
+          }
+        ],
+        "invalid": [
+          {
+            "default": 1
+          },
+          {
+            "nullable": "x"
+          },
+          {
+            "examples": "x"
+          },
+          {
+            "example": "x"
+          },
+          {
+            "name": "abcd"
+          }
+        ]
+      },
+      "tagged": {
+        "valid": [
+          {
+            "default": "x"
+          },
+          {
+            "n1": 1
+          }
+        ],
+        "invalid": [
+          {
+            "default": 1
+          }
+        ]
+      }
+    }
+  },
+  "inherited_type_narrowing": {
+    "model": "Child",
+    "fields": {
+      "to_null": {
+        "valid": [
+          null
+        ],
+        "invalid": [
+          "x"
+        ]
+      },
+      "to_string": {
+        "valid": [
+          "x"
+        ],
+        "invalid": [
+          1
+        ]
+      },
+      "to_int_or_null": {
+        "valid": [
+          1,
+          null
+        ],
+        "invalid": [
+          "s"
+        ]
+      },
+      "to_int": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          1.5
+        ]
+      },
+      "drop_null": {
+        "valid": [
+          "x"
+        ],
+        "invalid": [
+          1
+        ]
+      },
+      "bounded_to_null": {
+        "valid": [
+          null
+        ],
+        "invalid": [
+          "ab"
+        ]
+      },
+      "to_object": {
+        "valid": [
+          {
+            "x": 1
+          }
+        ],
+        "invalid": [
+          {
+            "x": "a"
+          },
+          "s"
+        ]
+      },
+      "ref_to_string": {
+        "valid": [
+          "s"
+        ],
+        "invalid": [
+          1
+        ]
+      },
+      "items_to_string": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          [
+            1
+          ]
+        ]
+      },
+      "nested_to_string": {
+        "valid": [
+          {
+            "x": "a",
+            "y": 1
+          }
+        ],
+        "invalid": [
+          {
+            "x": 1
+          },
+          {
+            "y": "s"
+          }
+        ]
+      },
+      "restated": {
+        "valid": [
+          {
+            "x": "a"
+          }
+        ],
+        "invalid": [
+          {
+            "x": 1
+          }
+        ]
+      },
+      "add_items": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          [
+            1
+          ]
+        ]
+      },
+      "open_map": {
+        "valid": [
+          {
+            "k": 1
+          }
+        ],
+        "invalid": [
+          {
+            "k": "s"
+          }
+        ]
+      }
+    }
+  },
+  "inherited_tuple_shape_oas31": {
+    "model": "Child",
+    "dialect": "https://json-schema.org/draft/2020-12/schema",
+    "fields": {
+      "closed": {
+        "valid": [
+          [
+            "ab",
+            1
+          ]
+        ],
+        "invalid": [
+          [],
+          [
+            "a"
+          ],
+          [
+            "abcd",
+            1
+          ]
+        ]
+      },
+      "open": {
+        "valid": [
+          [
+            "ab",
+            1
+          ],
+          [
+            "ab",
+            1,
+            "extra"
+          ]
+        ],
+        "invalid": [
+          [
+            "ab"
+          ]
+        ]
+      }
+    }
   }
 }
