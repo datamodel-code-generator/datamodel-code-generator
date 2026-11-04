@@ -87,7 +87,7 @@ datamodel-codegen [OPTIONS]
 |--------|-------------|
 | [`--aliases`](field-customization.md#aliases) | Apply custom field and class name aliases via inline JSON or a JSON file path. |
 | [`--capitalize-enum-members`](field-customization.md#capitalize-enum-members) | Capitalize enum member names to UPPER_CASE format. |
-| [`--capitalize-numbered-enum-members`](field-customization.md#capitalize-numbered-enum-members) | Capitalize also the number an enum member takes when its capitalized name is tak... |
+| [`--capitalize-numbered-enum-members`](field-customization.md#capitalize-numbered-enum-members) | Capitalize the numbered name an enum member takes when its name is taken. |
 | [`--default-values`](field-customization.md#default-values) | Override field default values via inline JSON or a JSON file path. |
 | [`--deserialize-default-values`](field-customization.md#deserialize-default-values) | Deserialize selected direct scalar field defaults into their generated Python ty... |
 | [`--empty-enum-field-name`](field-customization.md#empty-enum-field-name) | Name for empty string enum field values. |
@@ -341,7 +341,7 @@ All options sorted alphabetically:
 - [`--base-class`](model-customization.md#base-class) - Specify a custom base class for generated models.
 - [`--base-class-map`](model-customization.md#base-class-map) - Specify different base classes for specific models via JSON ...
 - [`--capitalize-enum-members`](field-customization.md#capitalize-enum-members) - Capitalize enum member names to UPPER_CASE format.
-- [`--capitalize-numbered-enum-members`](field-customization.md#capitalize-numbered-enum-members) - Capitalize also the number an enum member takes when its cap...
+- [`--capitalize-numbered-enum-members`](field-customization.md#capitalize-numbered-enum-members) - Capitalize the numbered name an enum member takes when its n...
 - [`--check`](general-options.md#check) - Verify generated code matches existing output without modify...
 - [`--check-pattern-maps-strictly`](template-customization.md#check-pattern-maps-strictly) - Check every key of the pattern maps that `--generate-schema-...
 - [`--class-decorators`](template-customization.md#class-decorators) - Add custom decorators to generated model classes.
