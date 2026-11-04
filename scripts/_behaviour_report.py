@@ -25,7 +25,7 @@ ABSOLUTE_FIXTURE = re.compile(r"(?:[A-Za-z]:)?[/\\][^\s'\"]*?[/\\](tests[/\\]dat
 ABSOLUTE_PATH = re.compile(r"(?<![\w.])(?:/(?:home|Users|tmp|var|private)|[A-Za-z]:\\)[^\s'\":]*")
 QUERY_CLASSES = ("same", "no-behaviour", "crash-fix", "behaviour-change", "now-fails", "both-fail", "unsupported")
 CHANGED = frozenset({"crash-fix", "behaviour-change", "now-fails"})
-GATE_ORDER = ("same", "no-behaviour", "crash-fix", "accepted", "violation", "both-fail", "opt-in")
+GATE_ORDER = ("same", "no-behaviour", "crash-fix", "accepted", "violation", "both-fail", "opt-in", "base-skipped")
 MAX_EXAMPLES = 3
 MAX_DETAIL = 160
 

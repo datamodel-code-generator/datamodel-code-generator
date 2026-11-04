@@ -6,6 +6,11 @@
 # its changes; replace the whole table when the next accepted change of the new cycle is added.
 # Entry keys: input (glob on the cell's input), backends, aspects, match (regex on the change line), reason,
 # decision, release_note.
+# `[[base_skip]]` names an input that releases are known to hang on, so they do not run for it (the cell is
+# `base-skipped` once the candidate generated and imported). Keys: input (glob), bases (releases, `["0.88.0"]`, or a
+# maximum, `["<=0.88.0"]`), reason, issue (public issue references, `#1234`). `--check` fails on a missing key and,
+# in a run of the whole tier, on an entry that covers no cell; an entry that names no release of the gate's base is
+# no error and does nothing. Remove the entry once the input stops mattering for the gate's base.
 base = "0.88.0"
 
 [[accepted]]
@@ -258,3 +263,9 @@ match = "^\\[type\\] (?:union_root_keywords:)?Item\\d*: Annotated\\[Union\\[Anno
 reason = "the type alias of an array item that is anyOf string or integer beside maxLength 3 wrote the keyword on the union as well as on its string branch, so Pydantic raised TypeError (Unable to apply constraint 'max_length' to supplied value 5) for the integers the schema accepts; the union leaves out a keyword that each branch keeps or does not take (crash fix)"
 decision = "#6022"
 release_note = "under --field-constraints a length, pattern or bound keyword beside anyOf or oneOf is left out of the union when every member keeps it or cannot take it, so a model no longer raises TypeError for an integer or root-model value the schema accepts"
+
+[[base_skip]]
+input = "tests/data/jsonschema/json_pointer_empty_token.json"
+bases = [ "<=0.88.0" ]
+reason = "0.88.0 loops on an empty JSON pointer segment and grows without bound"
+issue = "#5935"

@@ -13,6 +13,8 @@
 - `accepted`: every behaviour change matches an owner-approved allowlist entry
 - `violation`: any other behaviour change, or the candidate fails where the release's output imported
 - `both-fail`: both sides fail
+- `base-skipped`: the release is known to hang on the input (`[[base_skip]]`), so it did not run; the candidate
+  generated and imported (a candidate that fails there is a `violation`)
 
 Pure functions only: no file system access apart from `Allowlist.load`.
 """
@@ -39,6 +41,7 @@ NUMBERED = re.compile(r"^.*?[A-Za-z_]\d+$")
 INFO_ASPECTS = frozenset({"name-added", "module-added"})
 SENTINEL = "-datamodel-code-generator-#"
 DECISION = re.compile(r"#\d+(?:, #\d+)*")
+BASE_SPEC = re.compile(r"(<=)?(\d+(?:\.\d+)*)")
 ITEM_KEYS = (
     ("bases", "bases"),
     ("root", "type"),
@@ -49,7 +52,7 @@ ITEM_KEYS = (
     ("default", "default"),
 )
 FIELD_KEYS = ("required", "alias", "validation_alias", "serialization_alias", "default")
-CLASSES = ("same", "no-behaviour", "crash-fix", "accepted", "violation", "both-fail", "opt-in")
+CLASSES = ("same", "no-behaviour", "crash-fix", "accepted", "violation", "both-fail", "opt-in", "base-skipped")
 SIGNATURE_FAILED = "signature_failed"
 """The key of a signature that could not be taken: a timeout or unreadable output, not a module's import error."""
 
@@ -306,12 +309,26 @@ class Allowlist:
 
     base: str | None = None
     entries: list[dict[str, Any]] = field(default_factory=list)
+    base_skips: list[dict[str, Any]] = field(default_factory=list)
 
     @classmethod
     def load(cls, path: Path) -> Allowlist:
         """Read an allowlist file."""
         data = tomllib.loads(path.read_text(encoding="utf-8"))
-        return cls(data.get("base"), list(data.get("accepted", [])))
+        return cls(data.get("base"), list(data.get("accepted", [])), list(data.get("base_skip", [])))
+
+    def skip_for(self, input_path: str, version: str) -> int | None:
+        """Return the index of the first `[[base_skip]]` entry that skips the release `version` on this input."""
+        for index, entry in enumerate(self.base_skips):
+            if fnmatch.fnmatch(input_path, entry.get("input", "")) and any(
+                _base_matches(spec, version) for spec in entry.get("bases", [])
+            ):
+                return index
+        return None
+
+    def skip_applies(self, index: int, version: str) -> bool:
+        """Return whether `[[base_skip]]` entry `index` names the release `version`."""
+        return any(_base_matches(spec, version) for spec in self.base_skips[index].get("bases", []))
 
     def covers(self, index: int, input_path: str, backend: str) -> bool:
         """Return whether entry `index` applies to a cell of this input and backend."""
@@ -346,7 +363,32 @@ class Allowlist:
         ]
         if self.entries and self.base != version and not _released_before(self.base, version):
             found.append(f"allowlist base {self.base} is not {version}: replace the table when the base moves")
+        return found + self._skip_problems()
+
+    def _skip_problems(self) -> list[str]:
+        found = []
+        for index, entry in enumerate(self.base_skips):
+            where = f"base_skip entry {index + 1} ({entry.get('input')})"
+            found += [f"{where}: missing {key}" for key in ("input", "bases", "reason", "issue") if not entry.get(key)]
+            if (issue := entry.get("issue")) and not DECISION.fullmatch(issue):
+                found.append(f"{where}: issue {issue!r} is not a list of public issue references (#1234, #1235)")
+            bases = entry.get("bases")
+            if bases and not (
+                isinstance(bases, list) and all(isinstance(spec, str) and BASE_SPEC.fullmatch(spec) for spec in bases)
+            ):
+                found.append(f"{where}: bases {bases!r} is not a list of versions (0.88.0) or maximums (<=0.88.0)")
         return found
+
+
+def _base_matches(spec: str, version: str) -> bool:
+    """Return whether a `bases` item, a version (`0.88.0`) or a maximum (`<=0.88.0`), names the release `version`."""
+    if not (found := BASE_SPEC.fullmatch(spec)):
+        return False
+    try:
+        wanted, actual = tuple(map(int, found[2].split("."))), tuple(map(int, version.split(".")))
+    except ValueError:
+        return False
+    return actual <= wanted if found[1] else actual == wanted
 
 
 def _released_before(base: str, version: str) -> bool:
@@ -437,3 +479,12 @@ def classify_cell(  # ruff: ignore[too-many-arguments, too-many-return-statement
     ):
         return Verdict("crash-fix", tuple(notes), frozenset(accepted))
     return Verdict("accepted", tuple(accepted_notes), frozenset(accepted))
+
+
+def classify_base_skipped(candidate: Side, *, note: str) -> Verdict:
+    """Classify a cell whose release did not run (`[[base_skip]]`): only the candidate can fail it."""
+    if not candidate.generated:
+        return Verdict("violation", (f"generation fails: {candidate.message[:160]}", note))
+    if errors := import_errors(candidate.signature or {}):
+        return Verdict("violation", (f"import fails: {errors[min(errors)][:160]}", note))
+    return Verdict("base-skipped", (note,))

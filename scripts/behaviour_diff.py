@@ -25,9 +25,13 @@ that uses an option, value or input type BASE does not have is `opt-in` and is n
 
 Accepted changes are listed in scripts/behaviour_diff_allowlist.toml: `base` and `[[accepted]]` entries with
 `input` (glob), optional `backends`, `aspects` and `match` (regex on the change line), `reason`, `decision` (the
-public PR or issue references of the owner decision, `#1234, #1235`) and `release_note`. With `--check` the run fails
-on a violation, on an entry without such a decision and on a table whose base is neither BASE nor an older
-release (an older table accepts nothing: BASE contains its changes); in the nightly and
+public PR or issue references of the owner decision, `#1234, #1235`) and `release_note`.
+A `[[base_skip]]` entry (`input` glob, `bases`: releases such as `["0.88.0"]` or a maximum such as `["<=0.88.0"]`,
+`reason`, `issue`) names an input a release is known to hang on: the release does not run for those cells, which are
+`base-skipped` once the candidate generated and imported (a candidate failure is a violation). `--check` also fails
+on a `[[base_skip]]` entry without those keys, and, in a run of the whole tier, on one that covers no cell.
+With `--check` the run fails on a violation, on an entry without such a decision and on a table whose base is
+neither BASE nor an older release (an older table accepts nothing: BASE contains its changes); in the nightly and
 release tiers also on a stale entry: one that accepted no change in a run that has a cell it covers, or, in a run of
 the whole tier, one that covers no cell. The PR tier is a sample, so it never judges staleness.
 Cells the allowlist covers all run in shard 1, so that shard judges staleness exactly; `--select` narrows the
@@ -66,7 +70,16 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts import compare_release  # ruff: ignore[module-import-not-at-top-of-file]
-from scripts._behaviour_classify import CLASSES, SIGNATURE_FAILED, Allowlist, Side, Verdict, classify_cell, diff  # ruff: ignore[module-import-not-at-top-of-file]
+from scripts._behaviour_classify import (  # ruff: ignore[module-import-not-at-top-of-file]
+    CLASSES,
+    SIGNATURE_FAILED,
+    Allowlist,
+    Side,
+    Verdict,
+    classify_base_skipped,
+    classify_cell,
+    diff,
+)
 from scripts._behaviour_report import compare_records, redact, summarize_gate, version_key  # ruff: ignore[module-import-not-at-top-of-file]
 
 SIGNATURE_SCRIPT = Path(__file__).with_name("_behaviour_signature.py")
@@ -187,6 +200,7 @@ class Result:
 
     cell: Cell
     verdict: Verdict
+    base_skip: int | None = None
 
 
 @dataclass
@@ -273,6 +287,7 @@ class Gate:
     payload_dir: Path
     payload_root: Path
     candidate_info: Candidate
+    base_version: str = ""
     signature_python: Path | None = None
     projects: dict[str, Project] = field(default_factory=dict)
     draw_locks: dict[str, threading.Lock] = field(default_factory=dict)
@@ -604,11 +619,27 @@ def payloads_for(gate: Gate, cell: Cell) -> Path | None:
     return path if path.exists() else None
 
 
+def run_base_skipped(gate: Gate, cell: Cell, index: int) -> Result:
+    """Generate one cell on the candidate only: the release is known to hang on the input (`[[base_skip]]`)."""
+    entry = gate.allowlist.base_skips[index]
+    note = f"base skipped: {entry.get('reason', '')} ({entry.get('issue', '')})"
+    with tempfile.TemporaryDirectory() as name:
+        tmp = Path(name)
+        candidate = gate.candidate.generate(cell.args(), tmp)
+        sig = (
+            signature(gate, _write_tree(candidate.tree | dict(cell.stubs), tmp / "sig-cand"), cell.backend, None)
+            if candidate.ok
+            else None
+        )
+    return Result(cell, classify_base_skipped(Side(candidate.ok, candidate.error, sig), note=note), index)
+
+
 def run_cell(gate: Gate, cell: Cell) -> Result:
     """Generate one cell on both sides and classify it.
 
     The release's output is signed where the candidate refuses it too, so a refusal of an output that failed to
-    import is told from one of an output that worked.
+    import is told from one of an output that worked. A release that `[[base_skip]]` names for the input does not
+    run at all.
     """
     if (project := project_of(gate, cell)) is not None:
         try:
@@ -617,6 +648,8 @@ def run_cell(gate: Gate, cell: Cell) -> Result:
             return Result(cell, Verdict("violation", (f"project checkout failed: {exc}",)))
         if not cell.input.exists():
             return Result(cell, Verdict("violation", (f"project input missing in the checkout: {cell.input.name}",)))
+    if (skip := gate.allowlist.skip_for(cell.label, gate.base_version)) is not None:
+        return run_base_skipped(gate, cell, skip)
     args = cell.args()
     with tempfile.TemporaryDirectory() as name:
         tmp = Path(name)
@@ -699,7 +732,10 @@ def _environment_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("-j", type=int, default=os.cpu_count() or 1, help="parallel cells (default: CPU count)")
     parser.add_argument("--timeout", type=int, default=300, help="seconds before one generation or signature fails")
     parser.add_argument(
-        "--memory-mb", type=int, default=3072, help="data memory of one generation before it fails (0: no cap)"
+        "--memory-mb",
+        type=int,
+        default=8192,
+        help="data memory of one generation process before it fails, a safety net far above any real cell (0: no cap)",
     )
     parser.add_argument("--cache-dir", type=Path, default=compare_release._default_cache_dir())  # ruff: ignore[private-member-access]
 
@@ -800,6 +836,7 @@ def cell_row(result: Result) -> dict[str, Any]:
 def _report(results: list[Result], gate: Gate, ns: argparse.Namespace) -> int:
     counts = dict.fromkeys(CLASSES, 0)
     used: set[int] = set()
+    skipped = Counter(r.base_skip for r in results if r.base_skip is not None)
     for result in results:
         counts[result.verdict.cls] += 1
         used |= result.verdict.accepted_by
@@ -808,10 +845,18 @@ def _report(results: list[Result], gate: Gate, ns: argparse.Namespace) -> int:
             print(f"{result.verdict.cls}: {cell.label} | {cell.backend} | {cell.option_label}")
             for note in result.verdict.notes[:6]:
                 print(f"    {note[:240]}")
+    for index, cells in sorted(skipped.items()):
+        entry = gate.allowlist.base_skips[index]
+        print(f"base-skipped: {entry.get('input')} | {entry.get('reason')} ({entry.get('issue')}) | {cells} cells")
     problems = gate.loaded_allowlist.problems(ns.base)
     entries = range(len(gate.allowlist.entries))
     covered = {i for r in results for i in entries if gate.allowlist.covers(i, r.cell.label, r.cell.backend)}
     whole = ns.shard_total == 1 and not ns.select
+    problems += [
+        f"base_skip entry {index + 1} ({entry.get('input')}) is stale: it covers no cell"
+        for index, entry in enumerate(gate.allowlist.base_skips)
+        if ns.tier != "pr" and whole and index not in skipped and gate.allowlist.skip_applies(index, ns.base)
+    ]
     problems += [
         f"allowlist entry {index + 1} ({gate.allowlist.entries[index].get('input')}) is stale: "
         + ("it accepted no change" if index in covered else "it covers no cell")
@@ -860,12 +905,13 @@ def build_gate(ns: argparse.Namespace) -> tuple[Gate, Path]:
         ),
         cache=compare_release.OutputCache(cache_dir / "outputs" / cache_name),
         candidate_python=candidate.python,
-        allowlist=allowlist if allowlist.base == ns.base else Allowlist(allowlist.base),
+        allowlist=allowlist if allowlist.base == ns.base else Allowlist(allowlist.base, [], allowlist.base_skips),
         loaded_allowlist=allowlist,
         timeout=ns.timeout,
         payload_dir=cache_dir / "payloads",
         payload_root=cache_dir / "payload-inputs" / _stable(str(candidate.root))[:12],
         candidate_info=candidate,
+        base_version=ns.base,
     )
     return gate, base_python
 
@@ -1017,7 +1063,9 @@ def record_main(ns: argparse.Namespace) -> int:
         environment = release_environment(python)
         name = python.parent.parent.name if ns.python is None else f"python-{_stable(environment)[:12]}"
         cache = compare_release.OutputCache(cache_dir / "outputs" / f"record-{ns.version}-{name}")
-    runner = compare_release.Runner(compare_release.Side("rec", python), env, import_check=False, timeout=ns.timeout)
+    runner = compare_release.Runner(
+        compare_release.Side("rec", python), env, import_check=False, timeout=ns.timeout, memory_mb=ns.memory_mb
+    )
     gate = Gate(
         base=runner,
         candidate=runner,

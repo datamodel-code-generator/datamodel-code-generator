@@ -57,7 +57,8 @@ DEFAULT_TYPES = (
 COMMON_ARGS = ("--disable-timestamp", "--formatters", "black", "isort")
 WARM_IMPORTS = ("black", "isort", "pydantic", "msgspec", "graphql", "yaml")
 MODULAR_OUTPUT_ERRORS = ("--output <directory>", "require an output directory")
-# The exit code of a run that hit its memory cap: like a timeout it is not cached, since another cap may let it finish.
+# The exit code of a run that hit its memory cap, also reported for a run whose own handler printed the MemoryError:
+# like a timeout it is not cached, since another cap may let it finish.
 OUT_OF_MEMORY = 125
 CACHE_FORMAT = 2
 
@@ -103,18 +104,19 @@ def _import_modules(out: str) -> int:
 def _run_child(job: dict[str, Any], main: Callable[[list[str]], Any]) -> int:
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     signal.alarm(job["timeout"])
-    if limit := job.get("memory_mb"):
-        import resource  # ruff: ignore[import-outside-top-level] - POSIX only, like the fork that runs this child
-
-        # A run that grows without bound fails with MemoryError in its own child instead of taking the host down;
-        # where the platform refuses the cap (macOS), the run goes uncapped.
-        with contextlib.suppress(ValueError, OSError):
-            resource.setrlimit(resource.RLIMIT_DATA, (limit << 20, limit << 20))
     log = os.open(job["log"], os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     os.dup2(log, 1)
     os.dup2(log, 2)
     os.close(log)
     os.chdir(job["cwd"])
+    if limit := job.get("memory_mb"):
+        import resource  # ruff: ignore[import-outside-top-level] - POSIX only, like the fork that runs this child
+
+        # A run that grows without bound fails with MemoryError in its own child instead of taking the host down;
+        # where the platform refuses the cap (macOS), the run goes uncapped. The log is open first, so a failure
+        # caused by the cap always leaves one.
+        with contextlib.suppress(ValueError, OSError):
+            resource.setrlimit(resource.RLIMIT_DATA, (limit << 20, limit << 20))
     if job["kind"] == "import":
         return _import_modules(job["out"])
     return _exit_code(main, job["args"])
@@ -323,6 +325,8 @@ class Runner:
         if rc != 0 and any(text in log.read_text(encoding="utf-8", errors="replace") for text in MODULAR_OUTPUT_ERRORS):
             job["args"] = [*args, "--output", str(out / "pkg")]
             rc = worker.run(job)
+        if rc > 0 and self.memory_mb and _last_line(log).partition(":")[0] == "MemoryError":
+            rc = OUT_OF_MEMORY
         if rc != 0:
             return Outcome(
                 ok=False, error=self._error(rc, log), tree={}, import_error="", cacheable=rc > 0 and rc != OUT_OF_MEMORY
