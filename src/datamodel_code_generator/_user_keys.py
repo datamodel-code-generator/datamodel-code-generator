@@ -23,7 +23,8 @@ and against the names models have at that pass (keys most specific first):
 * ``--enum-field-as-literal-map``: field name only, no class part; at L1 enum parsing.
 * ``--type-overrides``: class name (``model_level_type_override``) or ``Class.field`` (``class_field_key``); at L3
   reuse (``type_override_classes``), and at L5 ``remove_overridden_models``, ``apply_field_type_overrides`` and
-  ``apply_base_class_type_overrides`` under the name a model has at L5.
+  ``apply_base_class_type_overrides`` under the name a model has at L5; a model-level key names a model by the row
+  of ``model_type_override``.
 
 Which of a model's names the class part of a key is compared with is the row of ``class_key`` that the place looking
 the model up names. The field-keyed options read row ``predicted`` while allOf, the OpenAPI parameters, GraphQL and
@@ -40,6 +41,10 @@ after names are final):
   yielding name settles at L2. When a yielding name changed and a key of an L1 row names the created or the final
   name, ``__init__.py:_parse_generation`` parses the whole input again with the final names assigned. Its key list
   leaves out ``--type-overrides`` and ``--enum-field-as-literal-map``.
+* ``legacy-model-override-by-two-names`` (``model_type_override``): L5 ``remove_overridden_models`` drops a model
+  whose class name a model-level ``--type-overrides`` key names, while the references the override replaces compare
+  the key with the name of their reference, which a module prefixes; a schema with a dotted name is dropped and its
+  references keep naming it (#5718).
 * ``legacy-reparse-yielding-only`` (``parser/_passes/settle.py:settle_yielding_names``): the renames that decide that
   parse are those of the yielding names at L2; the renames after L2, which ``GenerationStore.rename_model`` records,
   decide nothing, so a key that names a name one of them gave matches no model.
@@ -62,6 +67,7 @@ __all__ = [
     "ConstructionKeys",
     "ModelNames",
     "ScopedKeyRow",
+    "TypeOverrideRow",
     "class_field_key",
     "class_key",
     "field_keys",
@@ -69,6 +75,7 @@ __all__ = [
     "first_present",
     "mapped_base_class",
     "model_level_type_override",
+    "model_type_override",
     "scoped_key",
     "template_data_keys",
     "type_override_classes",
@@ -79,6 +86,12 @@ _ValueT = TypeVar("_ValueT")
 _SCOPE_SEPARATOR: Final = "."
 ScopedKeyRow: TypeAlias = Literal["first-dot", "legacy-last-dot", "every-dot"]
 ClassKeyRow: TypeAlias = Literal["predicted", "reference-name", "original-name", "class-name"]
+TypeOverrideRow: TypeAlias = Literal["class-name", "reference-name", "predicted-class-name"]
+_TYPE_OVERRIDE_CLASS_KEYS: Final[dict[TypeOverrideRow, ClassKeyRow]] = {
+    "class-name": "class-name",
+    "reference-name": "reference-name",
+    "predicted-class-name": "predicted",
+}
 
 
 class ModelNames(Protocol):
@@ -175,6 +188,20 @@ def template_data_keys(reference: ModelNames) -> tuple[str, str]:
 def model_level_type_override(key: str) -> bool:
     """Return whether a ``--type-overrides`` key names a model (no class part) rather than one field of a class."""
     return not scoped_key(key, row="every-dot")
+
+
+def model_type_override(
+    overrides: Mapping[str, _ValueT], model: ModelNames | str, *, row: TypeOverrideRow
+) -> _ValueT | None:
+    """Return the value of the model-level ``--type-overrides`` key that names a model, or None, by row.
+
+    Row ``class-name`` compares the keys with the model's class name (L5 ``remove_overridden_models``),
+    ``reference-name`` with the name of the reference that names it (the references and bases the override replaces,
+    the site models built from it, the base layouts), and ``predicted-class-name`` with the class name a parser gives
+    before the resolver allocates it, passed as ``model`` (the Avro fixed types). The first two differ where a module
+    prefixes the name (row ``legacy-model-override-by-two-names``).
+    """
+    return overrides.get(class_key(_TYPE_OVERRIDE_CLASS_KEYS[row], model))
 
 
 def type_override_classes(type_overrides: Iterable[str]) -> frozenset[str]:
