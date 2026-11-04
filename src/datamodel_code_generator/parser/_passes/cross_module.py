@@ -52,7 +52,8 @@ if TYPE_CHECKING:
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model.base import DataModelFieldBase
-    from datamodel_code_generator.parser._passes._state import ModuleContextView, _ConstNarrowing
+    from datamodel_code_generator.parser._passes._import_edges import ImportCycleSeeds
+    from datamodel_code_generator.parser._passes._state import ModuleContextView, ModulePath, _ConstNarrowing
     from datamodel_code_generator.parser.generation import ModelRename
     from datamodel_code_generator.types import DataType
 
@@ -73,6 +74,10 @@ class CrossModuleHost(ReimportHost, GenerationStoreHost, Protocol):
     """The options, run state and hooks of the parser that the cross-module passes read and write."""
 
     _generic_base_model: DataModel | None
+
+    @property
+    def _import_cycle_seeds(self) -> ImportCycleSeeds:
+        """What an earlier attempt of the run found to fail as the output is imported."""
 
     @property
     def _enum_admits_other_values(self) -> list[tuple[DataModelFieldBase, _ConstNarrowing]]:
@@ -350,22 +355,32 @@ def import_enum_member_literal_classes(parser: CrossModuleHost, run: CrossModule
 
 
 def apply_generic_base_class(parser: CrossModuleHost, run: CrossModuleRun) -> None:
-    """Add the configured generic base class to the first root module and make top-level target models inherit it."""
+    """Add the configured generic base class to the first root module and make top-level target models inherit it.
+
+    An earlier attempt of the run that found an import of the class to fail as the output is imported seeds the
+    module it goes to (``ImportCycleSeeds.base_class_module``).
+    """
     if not parser.use_generic_base_class or not parser.generic_base_class_config:
         return
 
     all_target_models: set[DataModel] = set()
     modules_with_targets: list[tuple[tuple[str, ...], list[DataModel], list[DataModel], Imports, bool]] = []
+    module_keys: list[ModulePath] = []
     for ctx in run.contexts:
         if target_models := [m for m in ctx.models if m.SUPPORTS_GENERIC_BASE_CLASS and not parser._is_root_model(m)]:  # noqa: SLF001
             modules_with_targets.append((ctx.module, ctx.models, target_models, ctx.imports, ctx.is_init))
+            module_keys.append(ctx.module_key)
             all_target_models.update(target_models)
 
     if not modules_with_targets:
         return
 
     first_root_module, first_root_models, first_root_target_models, _, _ = modules_with_targets[
-        generic_base_class_module([entry[2] for entry in modules_with_targets])
+        generic_base_class_module(
+            [entry[2] for entry in modules_with_targets],
+            module_keys,
+            parser._import_cycle_seeds.base_class_module,  # noqa: SLF001
+        )
     ]
     first_root_file_path = first_root_target_models[0].file_path
 

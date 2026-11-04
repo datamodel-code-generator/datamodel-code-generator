@@ -6935,6 +6935,11 @@ default	main/jsonschema/main_jsonschema/hyphenated_directory_reference[default]/
 	main/jsonschema/id_stdin.py
 [test_main_jsonschema_ids]
 	main/jsonschema/ids//*.py
+[test_main_jsonschema_import_cycle_map_key_alias]
+dataclasses.dataclass	main/jsonschema/main_jsonschema/import_cycle_map_key_alias[dataclasses.dataclass]/
+msgspec.Struct	main/jsonschema/main_jsonschema/import_cycle_map_key_alias[msgspec.Struct]/
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/import_cycle_map_key_alias[pydantic_v2.BaseModel]/
+typing.TypedDict	main/jsonschema/main_jsonschema/import_cycle_map_key_alias[typing.TypedDict]/
 [test_main_jsonschema_import_named_like_submodule]
 class-dataclasses.dataclass	main/jsonschema/main_jsonschema/import_named_like_submodule[class-dataclasses.dataclass].payloads.txt
 class-dataclasses.dataclass	main/jsonschema/main_jsonschema/import_named_like_submodule[class-dataclasses.dataclass]/
@@ -7328,6 +7333,11 @@ target-unset	main/jsonschema/property_names_ref_enum.py
 	main/jsonschema/property_names_ref_with_constraints.py
 [test_main_jsonschema_property_names_root_model_key_literal_validation]
 	main/jsonschema/main_jsonschema/property_names_root_model_key_literal_validation.py
+[test_main_jsonschema_property_names_root_model_key_modules_output_models]
+dataclasses.dataclass	main/jsonschema/main_jsonschema/property_names_root_model_key_modules_output_models[dataclasses.dataclass]/
+msgspec.Struct	main/jsonschema/main_jsonschema/property_names_root_model_key_modules_output_models[msgspec.Struct]/
+pydantic_v2.dataclass	main/jsonschema/main_jsonschema/property_names_root_model_key_modules_output_models[pydantic_v2.dataclass]/
+typing.TypedDict	main/jsonschema/main_jsonschema/property_names_root_model_key_modules_output_models[typing.TypedDict]/
 [test_main_jsonschema_property_names_root_model_key_modules_type_override]
 	main/jsonschema/main_jsonschema/property_names_root_model_key_modules_type_override/
 [test_main_jsonschema_property_names_root_model_key_type_override]

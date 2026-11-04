@@ -493,6 +493,8 @@ source_mismatch	main/openapi/invalid_dotted_schema_name_legacy_stdout.py
 	main/openapi/invalid_dotted_schema_name_default//*.py
 [test_main_no_strict_dotted_module_names_stdout]
 	main/openapi/invalid_dotted_schema_name_stdout_no_timestamp.py
+[test_main_openapi_all_exports_scope_package_cycle]
+	main/openapi/main_openapi/all_exports_scope_package_cycle/
 [test_main_openapi_all_of_request_body]
 	main/openapi/main_openapi/all_of_request_body.py
 [test_main_openapi_all_of_required]
@@ -1347,6 +1349,8 @@ field_property_name_collision.yaml-pydantic_v2.dataclass-extra_args4-property_da
 	main/openapi/fixed_length_array_tuples_disabled.py
 [test_main_openapi_generic_base_class_other_packages]
 	main/openapi/main_openapi/generic_base_class_other_packages/
+[test_main_openapi_generic_base_class_package_cycle]
+	main/openapi/main_openapi/generic_base_class_package_cycle/
 [test_main_openapi_ignored_content_type_header_refs]
 	main/openapi/main_openapi/ignored_content_type_header_refs.py
 [test_main_openapi_include_info_version]
@@ -1776,6 +1780,11 @@ modules-collapse-dataclasses	main/openapi/reuse_model_cross_module_users/modules
 modules-collapse-pydantic_v2	main/openapi/reuse_model_cross_module_users/modules_collapse_pydantic_v2//*.py
 modules-dataclasses	main/openapi/reuse_model_cross_module_users/modules_dataclasses//*.py
 modules-pydantic_v2	main/openapi/reuse_model_cross_module_users/modules_pydantic_v2//*.py
+[test_main_openapi_reuse_scope_tree_imports]
+cross-module-users-dataclasses	main/openapi/main_openapi/reuse_scope_tree_imports[cross-module-users-dataclasses]/
+cross-module-users-pydantic_v2	main/openapi/main_openapi/reuse_scope_tree_imports[cross-module-users-pydantic_v2]/
+modular-dataclasses	main/openapi/main_openapi/reuse_scope_tree_imports[modular-dataclasses]/
+modular-pydantic_v2	main/openapi/main_openapi/reuse_scope_tree_imports[modular-pydantic_v2]/
 [test_main_openapi_root_model_default_primitive]
 	main/openapi/root_model_default_primitive.py
 [test_main_openapi_same_name_objects]

@@ -13355,6 +13355,17 @@ def test_main_openapi_dot_notation_inheritance(output_dir: Path) -> None:
     )
 
 
+def test_main_openapi_all_exports_scope_package_cycle(output_dir: Path) -> None:
+    """Merge a package whose exports run a submodule that imports a model of the package before it is defined."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "dot_notation_inheritance.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--all-exports-scope", "recursive", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize(
     ("expected_name", "extra_args"),
     [
@@ -13963,6 +13974,61 @@ def test_main_openapi_reuse_model_cross_module_users(
             *reuse_args,
             "--target-python-version",
             "3.10",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_file", "output_model_type"),
+    [
+        pytest.param("modular.yaml", DataModelType.PydanticV2BaseModel.value, id="modular-pydantic_v2"),
+        pytest.param("modular.yaml", DataModelType.DataclassesDataclass.value, id="modular-dataclasses"),
+        pytest.param(
+            "reuse_model_cross_module_users.yaml",
+            DataModelType.PydanticV2BaseModel.value,
+            id="cross-module-users-pydantic_v2",
+        ),
+        pytest.param(
+            "reuse_model_cross_module_users.yaml",
+            DataModelType.DataclassesDataclass.value,
+            id="cross-module-users-dataclasses",
+        ),
+    ],
+)
+def test_main_openapi_reuse_scope_tree_imports(input_file: str, output_model_type: str, output_dir: Path) -> None:
+    """Merge the modules whose import of a tree-scope duplicate runs back into them, so every module imports."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / input_file,
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--reuse-model",
+            "--reuse-scope",
+            "tree",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
+def test_main_openapi_generic_base_class_package_cycle(output_dir: Path) -> None:
+    """Write the generic base class in the package whose models a submodule imports, so that importing it runs none."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "generic_base_class_package_cycle.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--use-generic-base-class",
+            "--extra-fields",
+            "forbid",
             "--disable-timestamp",
             "--formatters",
             "builtin",
