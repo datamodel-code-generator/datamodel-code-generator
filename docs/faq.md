@@ -442,6 +442,35 @@ class Cat(BaseModel):
     kind: Literal['Cat', 'cat']
 ```
 
+### `--use-encoded-str-for-constrained-base64`
+
+| | |
+|---|---|
+| Option | `--use-encoded-str-for-constrained-base64` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.89.0 |
+| Issue | [#6170](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6170) |
+
+**Affects:** a `format: byte` string with `pattern`, `minLength` or `maxLength` in the field forms (`--use-annotated`, `--field-constraints`) of Pydantic v2 output. JSON Schema checks them on the base64 text, while `Annotated[Base64Str, Field(...)]` and an optional `Base64Str` with `Field(...)` check them on the decoded text: `maxLength: 8` accepts `YWFhYWFhYQ==` (12 characters, 7 decoded) and `minLength: 4` rejects `YWFh` (4 characters, 3 decoded). With the option the constraints stand in front of the decoding `EncodedStr`, which Pydantic 2.10 or later checks on the text; a target Pydantic older than 2.10 warns that it does not check them. A string without these constraints stays `Base64Str`.
+
+Schema: `{"type": "string", "format": "byte", "minLength": 4, "maxLength": 8}`, with `--use-annotated`.
+
+Without the option (same as 0.88.0):
+
+```python
+lengths: Annotated[Base64Str | None, Field(max_length=8, min_length=4)] = None
+```
+
+With the option:
+
+```python
+lengths: (
+    Annotated[str, Field(min_length=4, max_length=8), EncodedStr(encoder=Base64Encoder)]
+    | None
+) = None
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.

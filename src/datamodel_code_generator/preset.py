@@ -780,6 +780,14 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "schema name, every tag they give it, so each union decodes the documents it selects the variant by."
         ),
     ),
+    PresetOptionGroup(
+        title="EncodedStr for constrained base64 strings",
+        config=PresetConfig(use_encoded_str_for_constrained_base64=True),
+        description=(
+            "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the "
+            "constraints in front of the decoding, so Pydantic checks them on the base64 text."
+        ),
+    ),
 )
 
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
@@ -1040,7 +1048,10 @@ def render_presets_markdown() -> str:
         (
             "The 20261104 presets keep the 20261027 options and add `--merge-shared-variant-tags`: a variant that "
             "discriminated unions tag differently, such as one by a mapping key and one by the schema name, takes "
-            "every tag they give it, so each union decodes the documents it selects the variant by."
+            "every tag they give it, so each union decodes the documents it selects the variant by, and "
+            "`--use-encoded-str-for-constrained-base64`: a format: byte string with a pattern or lengths is written "
+            "as `Annotated[str, Field(...), EncodedStr(encoder=Base64Encoder)]`, so Pydantic checks them on the "
+            "base64 text instead of the decoded text."
         ),
         "",
         "## Override Preset Options",

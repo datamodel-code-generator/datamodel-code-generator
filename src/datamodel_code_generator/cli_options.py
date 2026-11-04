@@ -417,7 +417,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(
         _C.TYPING,
         "--output-datetime-class --output-date-class --use-decimal-for-multiple-of",
-        "--use-decimal-in-field-forms",
+        "--use-decimal-in-field-forms --use-encoded-str-for-constrained-base64",
         group=_G.TYPE_MAPPING,
     ),
     **_opts(_C.TYPING, "--use-non-positive-negative-number-constrained-types"),

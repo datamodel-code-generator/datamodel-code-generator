@@ -2005,8 +2005,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         format_ = obj.format or "default"
         types = self._get_type_with_mappings(type_, format_)
+        keyword_order = constrained_type_keyword_order(
+            types.name, encoded_str=field_constraints and self.data_type_manager.encodes_constrained_base64
+        )
         kwargs: dict[str, JsonSchemaDataTypeKwargValue] = {
-            **_constraint_values(obj, constrained_type_keyword_order(types.name), as_numbers=True),
+            **_constraint_values(obj, keyword_order, as_numbers=True),
             **self._get_format_type_kwargs(type_, format_, types),
         }
         data_type = self._with_binary_content(

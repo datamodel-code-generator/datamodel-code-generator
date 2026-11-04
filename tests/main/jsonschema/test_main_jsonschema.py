@@ -8375,6 +8375,86 @@ def test_main_decimal_multiple_of_in_field_forms(output_file: Path, extra_args: 
 
 
 @pytest.mark.cli_doc(
+    options=["--use-encoded-str-for-constrained-base64"],
+    option_description="""Check the constraints of a `format: byte` string on its base64 text in the field forms.
+
+JSON Schema checks `pattern`, `minLength` and `maxLength` of a `format: byte` string on the base64 text. The field
+forms write `Annotated[Base64Str, Field(...)]` (`--use-annotated`) or, for an optional field, `Base64Str | None =
+Field(...)` (`--field-constraints`), and Pydantic checks such constraints on the decoded text: `maxLength: 8` accepts
+the 12 characters of `YWFhYWFhYQ==`, which decode to 7. With this option the string is written
+`Annotated[str, Field(...), EncodedStr(encoder=Base64Encoder)]`, which Pydantic 2.10 or later checks on the text before
+decoding it, at a property, an item, a map value, a root and a union member; Pydantic before 2.10 checks none of these
+forms on the text, and a target Pydantic older than 2.10 warns so.""",
+    input_schema="jsonschema/encoded_str_for_constrained_base64.json",
+    cli_args=["--use-annotated", "--use-encoded-str-for-constrained-base64"],
+    golden_output="main/jsonschema/encoded_str_for_constrained_base64~main_encoded_str_for_constrained_base64[target_pydantic_2].py",
+    comparison_output="main/jsonschema/encoded_str_for_constrained_base64~main_encoded_str_for_constrained_base64[use_annotated_released].py",
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--use-annotated"], id="use_annotated_released"),
+        pytest.param(["--field-constraints"], id="field_constraints_released"),
+        *(
+            pytest.param([*args, "--use-encoded-str-for-constrained-base64"], id=id_)
+            for args, id_ in (
+                ([], "default"),
+                (["--use-annotated"], "use_annotated"),
+                (["--field-constraints"], "field_constraints"),
+                (["--field-constraints", "--strict-types", "str"], "field_constraints_strict"),
+                (["--use-annotated", "--collapse-root-models"], "collapse_root_models"),
+                (["--output-model-type", "pydantic_v2.dataclass", "--use-annotated"], "dataclass_annotated"),
+                (["--use-annotated", "--target-pydantic-version", "2"], "target_pydantic_2"),
+            )
+        ),
+    ],
+)
+def test_main_encoded_str_for_constrained_base64(output_file: Path, extra_args: list[str]) -> None:
+    """Test ``--use-encoded-str-for-constrained-base64`` checks byte-string constraints on the base64 text.
+
+    Without it ``--use-annotated`` writes ``Annotated[Base64Str, Field(...)]``, and ``--field-constraints`` an optional
+    ``Base64Str | None = Field(...)``, which check the constraints on the decoded text, as does the annotated alias of a
+    string branch beside an array in every form. With it these are
+    ``Annotated[str, Field(...), EncodedStr(encoder=Base64Encoder)]`` at a property, a nullable property, an item, a map
+    value, a root, a union member and a collapsed root, so the payloads valid by their text are accepted and those
+    invalid by their text rejected; an unconstrained string stays ``Base64Str``. A target Pydantic older than 2.10 warns
+    that it does not check them.
+    """
+    name = "encoded_str_for_constrained_base64"
+    with warnings.catch_warnings(record=True) as records:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            extra_args=[
+                *("--output-model-type", "pydantic_v2.BaseModel"),
+                *extra_args,
+                *("--formatters", "builtin", "--disable-timestamp", "--target-python-version", "3.11"),
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(sorted({f"{record.message}\n" for record in records if record.category is UserWarning})),
+        name="warnings",
+    )
+    payloads = json.loads((DATA_PATH / f"payloads/{name}.json").read_text())
+    verdicts = []
+    with _generated_model(output_file, name, "EncodedStrForConstrainedBase64") as model:
+        validate = _model_json_validator(model)
+        validate(json.dumps(payloads["base"]))
+        for field_name, values in payloads["cases"].items():
+            for kind, value in values.items():
+                verdict = "rejected"
+                with suppress(ValidationError):
+                    validate(json.dumps(payloads["base"] | {field_name: value}))
+                    verdict = "accepted"
+                verdicts.append(f"{field_name} {kind}: {verdict}")
+    assert_output("\n".join(verdicts) + "\n", name="verdicts")
+
+
+@pytest.mark.cli_doc(
     options=["--use-site-models-for-constrained-refs"],
     option_description="""Give an allOf of `$ref` members whose other parts add assertions its own model.
 

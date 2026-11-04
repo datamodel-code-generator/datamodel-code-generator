@@ -125,7 +125,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_VALIDATION_INFO,
     IMPORT_VALIDATOR_FUNCTION_WRAP_HANDLER,
 )
-from datamodel_code_generator.model.pydantic_v2.types import EncodedBytesDataType
+from datamodel_code_generator.model.pydantic_v2.types import EncodedTextDataType
 from datamodel_code_generator.model.pydantic_v2.version import _includes_dict_key_reference_classes, model_target_meets
 from datamodel_code_generator.model.runtime_validation import (
     IndependentDeclaredPatternPropertiesRule,
@@ -759,23 +759,23 @@ class DataModelField(_PydanticBaseDataModelField):
     @property
     @override
     def dropped_constraints_warning(self) -> str | None:
-        """Return the warning of the base field, and one naming base64 lengths that the explicit target does not check.
+        """Return the warning of the base field, and one naming base64 constraints the explicit target does not check.
 
-        Pydantic checks the lengths of bytes written as base64 text on that text only from 2.10 on.
+        Pydantic checks the constraints of a value written as base64 text on that text only from 2.10 on.
         """
         messages = [super().dropped_constraints_warning]
-        if not model_target_meets(self.parent, "pydantic.encoded_bytes_length") and (
-            lengths := sorted({
+        if not model_target_meets(self.parent, "pydantic.encoded_text_constraints") and (
+            checked := sorted({
                 name
                 for data_type in self.data_type.all_data_types
-                if isinstance(data_type, EncodedBytesDataType)
+                if isinstance(data_type, EncodedTextDataType)
                 for name in data_type.kwargs or ()
             })
         ):
-            minimum = REQUIREMENTS["pydantic.encoded_bytes_length"].minimum
+            minimum = REQUIREMENTS["pydantic.encoded_text_constraints"].minimum
             messages.append(
-                f"Pydantic before {minimum} does not check {', '.join(lengths)} on "
-                f"base64 text, so {self._constraint_owner} checks {for_count(len(lengths), 'it', 'them')} only on "
+                f"Pydantic before {minimum} does not check {', '.join(checked)} on "
+                f"base64 text, so {self._constraint_owner} checks {for_count(len(checked), 'it', 'them')} only on "
                 f"Pydantic {minimum} or later."
             )
         return " ".join(message for message in messages if message) or None

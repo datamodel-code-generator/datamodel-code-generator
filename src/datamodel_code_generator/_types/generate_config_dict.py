@@ -180,6 +180,7 @@ class BaseGenerateConfig(TypedDict):
     use_non_positive_negative_number_constrained_types: NotRequired[bool]
     use_decimal_for_multiple_of: NotRequired[bool]
     use_decimal_in_field_forms: NotRequired[bool]
+    use_encoded_str_for_constrained_base64: NotRequired[bool]
     omit_redundant_constraints: NotRequired[bool]
     use_site_models_for_constrained_refs: NotRequired[bool]
     original_field_name_delimiter: NotRequired[str | None]

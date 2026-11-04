@@ -50,6 +50,7 @@ Type annotation, import, and primitive type behavior.
 - `--use-non-positive-negative-number-constrained-types`: Use the Non{Positive,Negative}{FloatInt} types instead of the corresponding con* constrained types.
 - `--use-decimal-for-multiple-of`: Use condecimal instead of confloat for float/number fields with multipleOf constraint (Pydantic only). Avoids floating-point precision issues in validation.
 - `--use-decimal-in-field-forms`: Under --use-decimal-for-multiple-of, also write Decimal for a number with multipleOf in the field forms (--field-constraints, --use-annotated), with the constraints in Field(), and make the Decimal strict under --strict-types float (Pydantic only)
+- `--use-encoded-str-for-constrained-base64`: Write a format: byte string with pattern, minLength or maxLength in the field forms (--field-constraints, --use-annotated) as Annotated[str, Field(...), EncodedStr(encoder=Base64Encoder)], so Pydantic 2.10 or later checks the constraints on the base64 text, as the schema does; without it Annotated[Base64Str, Field(...)] and an optional Base64Str with Field(...) check them on the decoded text, as in 0.88.0 (Pydantic v2 only)
 - `--use-standard-collections`: Use standard collections for type hinting (list, dict). Default: enabled
 - `--no-use-standard-collections`: Use standard collections for type hinting (list, dict). Default: enabled
 - `--use-object-type`: Use object instead of Any for unspecified JSON Schema object and array values

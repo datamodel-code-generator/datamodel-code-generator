@@ -47,7 +47,7 @@ OPT_IN_OPTIONS: tuple[str, ...] = (
 )
 """The options the 20261027 presets set beyond the 20261017 presets."""
 
-OPT_IN_OPTIONS_20261104: tuple[str, ...] = ("--merge-shared-variant-tags",)
+OPT_IN_OPTIONS_20261104: tuple[str, ...] = ("--merge-shared-variant-tags", "--use-encoded-str-for-constrained-base64")
 """The options the 20261104 presets set beyond the 20261027 presets."""
 
 PRESET_RELEASES: dict[str, tuple[str, tuple[str, ...]]] = {
@@ -65,6 +65,12 @@ CASES_20261104: tuple[pytest.ParameterSet, ...] = (
         marks=pytest.mark.filterwarnings(
             r"ignore:.* is a variant of discriminated unions that map 'kind' to different tags:UserWarning"
         ),
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "encoded_str_for_constrained_base64.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="use-encoded-str-for-constrained-base64",
     ),
 )
 """The inputs each opt-in option of the 20261104 presets changes."""

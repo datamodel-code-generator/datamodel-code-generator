@@ -1765,6 +1765,9 @@ class DataTypeManager(ABC):
     )
     omit_redundant_constraints: bool = False
     use_decimal_in_field_forms: bool = False
+    use_encoded_str_for_constrained_base64: bool = False
+    WRITES_ENCODED_STR: ClassVar[bool] = False
+    """Whether the output writes a string decoded from base64 text with its constraints in front of the decoding."""
     CONSTRAINED_TYPE_CONSUMED_KEYS: ClassVar[dict[str, tuple[str, ...]]] = dict(
         _applicability.BASE_OUTPUT.zero_bound_classes
     )
@@ -1882,7 +1885,13 @@ class DataTypeManager(ABC):
         return _applicability.ConstraintOptions(
             omit_redundant_constraints=self.omit_redundant_constraints,
             use_decimal_in_field_forms=self.use_decimal_in_field_forms,
+            use_encoded_str_for_constrained_base64=self.use_encoded_str_for_constrained_base64,
         )
+
+    @property
+    def encodes_constrained_base64(self) -> bool:
+        """Whether a field form writes a string decoded from base64 text with its constraints in front of decoding."""
+        return self.WRITES_ENCODED_STR and _applicability.encoded_str_field_form(self.constraint_options)
 
     @classmethod
     def constraint_keywords(

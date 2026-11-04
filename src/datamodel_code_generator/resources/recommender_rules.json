@@ -1224,6 +1224,10 @@
       "not_recommended": "formatting",
       "reason": "Quote style of the formatter."
     },
+    "use_encoded_str_for_constrained_base64": {
+      "not_recommended": "preset",
+      "reason": "Pydantic v2 output in the field forms only: set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "use_enum_values_in_discriminator": {
       "not_recommended": "style",
       "reason": "Discriminator literal spelling; a typing style choice."

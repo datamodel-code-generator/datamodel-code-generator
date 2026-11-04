@@ -193,6 +193,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--use-default-factory-for-optional-nested-models": "Generate default_factory for optional nested model fields.",
     "--use-default-kwarg": "Use default= keyword argument instead of positional argument for fields with defaults.",
     "--use-double-quotes": "Use double quotes for string literals in generated code.",
+    "--use-encoded-str-for-constrained-base64": "Check the constraints of a `format: byte` string on its base64 tex...",
     "--use-enum-values-in-discriminator": "Use enum values in discriminator mappings for union types.",
     "--use-exact-imports": "Import exact types instead of modules.",
     "--use-field-description": "Include schema descriptions as Field docstrings.",
