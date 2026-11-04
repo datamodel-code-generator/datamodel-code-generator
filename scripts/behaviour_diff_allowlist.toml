@@ -44,3 +44,27 @@ match = "^\\[name-removed\\] box:ItemModel: removed$|^\\[type\\] (?:box:Other|ho
 reason = "a $ref of another file into a property of a definition with an embedded $id read its target from a fresh load of the file, where the property's $ref '#/definitions/Item' (written against the embedded resource) names nothing, so the reference became an Any model with a dangling-reference warning and the model accepted every value where the schema requires a string; the target is read from the prepared document, where the embedded resource resolved the $ref (schema-mismatch fix)"
 decision = "#5126"
 release_note = "a $ref of another file into a property of a schema that declares an embedded $id resolves the property's own $ref against that $id, so the field takes the type the schema gives (str) instead of an Any model with a dangling-reference warning"
+
+[[accepted]]
+input = "*pattern_properties_array_type_union*"
+aspects = [ "type" ]
+match = "^\\[type\\] PatternPropertiesArrayTypeUnion:options: set\\[dict\\[str, Union\\[list\\[str\\], str\\]\\]\\] -> list\\[dict\\[str, Union\\[list\\[str\\], str\\]\\]\\]$"
+reason = "with --use-unique-items-as-set (the practical presets), a uniqueItems array of objects was set[dict[...]], which rejects every non-empty array (Pydantic set_item_not_hashable, msgspec TypeError on decode); an array whose items take no hashable value stays a list (crash-class fix)"
+decision = "#6190"
+release_note = "with --use-unique-items-as-set, a uniqueItems array whose items can never be set members (objects, arrays, a tuple holding an array) stays a list instead of a set that rejects every non-empty array, and a list default that cannot be a set keeps its list"
+
+[[accepted]]
+input = "*root_sequence_final"
+aspects = [ "type" ]
+match = "^\\[type\\] nested:Values: set\\[list\\[int\\]\\] -> list\\[list\\[int\\]\\]$"
+reason = "with --use-unique-items-as-set (the practical presets), a uniqueItems array of arrays was set[list[int]], which rejects every non-empty array; it stays a list (crash-class fix)"
+decision = "#6190"
+release_note = "with --use-unique-items-as-set, a uniqueItems array whose items can never be set members (objects, arrays, a tuple holding an array) stays a list instead of a set that rejects every non-empty array, and a list default that cannot be a set keeps its list"
+
+[[accepted]]
+input = "*unique_items_unhashable_default*"
+aspects = [ "type" ]
+match = "^\\[type\\] Item:values: Union\\[None, (?:msgspec\\.UnsetType, )?set\\[dict\\[str, object\\]\\]\\] -> Union\\[None, list\\[dict\\[str, object\\]\\](?:, msgspec\\.UnsetType)?\\]$"
+reason = "with --use-unique-items-as-set (the practical presets), a uniqueItems array of objects with a list default was set[dict[str, object]] = [{...}], whose type rejects its own default and every non-empty array; it stays a list (crash-class fix)"
+decision = "#6190"
+release_note = "with --use-unique-items-as-set, a uniqueItems array whose items can never be set members (objects, arrays, a tuple holding an array) stays a list instead of a set that rejects every non-empty array, and a list default that cannot be a set keeps its list"

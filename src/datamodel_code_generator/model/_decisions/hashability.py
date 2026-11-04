@@ -7,7 +7,8 @@ backend class, which hashes frozen instances by their values, or hashes by ident
 ``set_items_may_keep_builtin_hash`` decides whether a parse whose backend allows it lets any set item model keep it.
 ``dict_key_takes_root_type`` decides whether a dict key that names a root model takes the model's root type, as the
 model's instances cannot be dict keys. ``value_hashes`` and ``field_value_hashes`` decide whether the values Pydantic
-validates for a field hash as builtin values.
+validates for a field hash as builtin values. ``set_items_can_hash`` decides whether some value that the items of an
+array take hashes, so that a set can hold it.
 
 Every input is an immutable fact; the adapters read them from the live objects and are listed in
 ``docs/architecture.md``.
@@ -27,11 +28,13 @@ if TYPE_CHECKING:
 
 __all__ = [
     "HashClassFacts",
+    "SetItemFacts",
     "ValueHashFacts",
     "dict_key_takes_root_type",
     "field_value_hashes",
     "frozen_by_config",
     "keeps_builtin_hash",
+    "set_items_can_hash",
     "set_items_may_keep_builtin_hash",
     "value_hashes",
 ]
@@ -73,6 +76,40 @@ class ValueHashFacts:
     literals: tuple[object, ...]
     builtin_name: str | None
     """The type's name where it imports nothing."""
+
+
+@final
+@record
+class SetItemFacts:
+    """The facts of one type that the items of an array take that tell whether a value of it can be a set member."""
+
+    unhashable: bool = False
+    """The type is a container whose values do not hash, as it is written: a list, a sequence, a set, a dict or a
+    mapping."""
+    null: bool = False
+    """The type takes None too."""
+    members: tuple[SetItemFacts, ...] = ()
+    """The types of a union, which takes the values of each."""
+    positions: tuple[SetItemFacts, ...] | None = None
+    """The types of the positions of a tuple, which takes a value of each; None for a type that is no tuple."""
+
+
+def set_items_can_hash(items: Sequence[SetItemFacts]) -> bool:
+    """Return whether some value that the items of an array take hashes, so that a set can hold it.
+
+    A container whose values do not hash takes none, a tuple takes one where each of its positions does, a union where
+    one of its members does and any other type does; items of no type take any value.
+    """
+    return not items or any(map(_takes_hashable_value, items))
+
+
+def _takes_hashable_value(facts: SetItemFacts) -> bool:
+    """Return whether some value of the type of ``facts`` hashes."""
+    if facts.null:
+        return True
+    if facts.positions is not None:
+        return all(map(_takes_hashable_value, facts.positions))
+    return not facts.unhashable and (not facts.members or any(map(_takes_hashable_value, facts.members)))
 
 
 def frozen_by_config(chain: Iterable[HashClassFacts]) -> bool:

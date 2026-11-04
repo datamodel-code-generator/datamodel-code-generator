@@ -1750,26 +1750,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     def _get_enum_discriminator_literal(enum_source: Enum, value: DiscriminatorValue) -> DiscriminatorValue:
         return enum_discriminator_literal(enum_source, value)
 
-    def _create_set_from_list(self, data_type: DataType) -> DataType | None:
-        """Return a set copy of a list type, or ``data_type`` after the lists among its union members became sets.
-
-        The uniqueItems array is the type itself or a member of its union, so the items of any other container, such as
-        a ``Sequence`` or a tuple, keep their types. None when no list became a set. A list member is swapped for its
-        set copy at once; the facts see the swap at the next refresh.
-        """
-        if data_type.is_list:
-            new_data_type = data_type.model_copy(update={"is_list": False, "is_set": True})
-            for data_type_ in new_data_type.data_types:
-                data_type_.parent = new_data_type
-            return new_data_type
-        if data_type in CONTAINERS:
-            return None
-        converted = None
-        for nested_data_type in data_type.data_types[:]:
-            if (set_data_type := self._create_set_from_list(nested_data_type)) is not None:
-                self._graph_builder.swap_data_type(nested_data_type, set_data_type, refresh="deferred")
-                converted = data_type
-        return converted
+    def _create_set_from_list(self, data_type: DataType) -> DataType:  # noqa: PLR6301
+        """Return the set copy of a list type, which holds its items."""
+        new_data_type = data_type.model_copy(update={"is_list": False, "is_set": True})
+        for data_type_ in new_data_type.data_types:
+            data_type_.parent = new_data_type
+        return new_data_type
 
     def record_dropped_constraints(self) -> None:
         """Record this parse's dropped-constraint warnings as those of the generation that returns its models."""

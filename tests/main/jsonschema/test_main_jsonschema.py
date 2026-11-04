@@ -8335,6 +8335,81 @@ def test_main_unique_items_as_set_type_list_merged(
     )
 
 
+@pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct"])
+def test_main_unique_items_as_set_unhashable_items(output_model: str, tmp_path: Path, output_file: Path) -> None:
+    """Keep a uniqueItems array a list where no value of its items hashes, or where its list default cannot be a set.
+
+    Objects, arrays and a tuple that holds an array take no value a set can hold; a tuple of scalars, a union with a
+    scalar and items of any type do. Up to 0.89.0 every such array became a set, which Pydantic rejects for every
+    non-empty array and which msgspec cannot decode, and a list default of arrays was left on ``set[Any]``.
+    """
+
+    def unique(items: dict[str, Any], **keywords: Any) -> dict[str, Any]:
+        return {"type": "array", "uniqueItems": True, "items": items, **keywords}
+
+    def closed(*positions: dict[str, Any]) -> dict[str, Any]:
+        return {"type": "array", "prefixItems": list(positions), "items": False, "minItems": len(positions)}
+
+    integers = {"type": "array", "items": {"type": "integer"}}
+    input_file = tmp_path / "unhashable_items.json"
+    input_file.write_text(
+        json.dumps({
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "Model",
+            "type": "object",
+            "properties": {
+                "objects": unique({"type": "object"}),
+                "arrays": unique(integers),
+                "pairs": unique({"anyOf": [closed({"type": "integer"}, integers), {"type": "object"}]}),
+                "scalar_pairs": unique({
+                    "anyOf": [closed({"type": "integer"}, {"type": "string"}), {"type": "object"}]
+                }),
+                "mixed": unique({"anyOf": [{"type": "integer"}, integers]}),
+                "nullable_arrays": unique({"type": ["array", "null"], "items": {"type": "integer"}}),
+                "any_default": unique({}, default=[[1], [2]]),
+                "numbers": unique({"type": "integer"}, default=[1, 2]),
+            },
+        }),
+        encoding="utf-8",
+    )
+    with (
+        pytest.warns(UserWarning, match=r"msgspec\.Meta does not take min_length on tuple\[int, (list\[int\]|str)\]")
+        if output_model == "msgspec.Struct"
+        else nullcontext()
+    ):
+        run_main_and_assert(
+            input_path=input_file,
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            extra_args=[
+                "--output-model-type",
+                output_model,
+                "--use-unique-items-as-set",
+                "--use-tuple-for-closed-arrays",
+                "--formatters",
+                "builtin",
+            ],
+            force_exec_validation=True,
+        )
+    if output_model == "pydantic_v2.BaseModel":
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="unique_items_as_set_unhashable_items",
+            model_name="Model",
+            valid_json=(
+                '{"objects": [{"a": 1}], "arrays": [[1], [2]], "pairs": [[1, [2]]],'
+                ' "scalar_pairs": [[1, "a"], [1, "a"]], "numbers": [1, 1, 2]}'
+            ),
+            invalid_json='{"objects": [1]}',
+            expected_error_type="dict_type",
+            expected_repr=(
+                "Model(objects=[{'a': 1}], arrays=[[1], [2]], pairs=[(1, [2])], scalar_pairs={(1, 'a')}, mixed=None, "
+                "nullable_arrays=None, any_default=[[1], [2]], numbers={1, 2})"
+            ),
+        )
+
+
 def _validation_verdict(validate: ABCCallable[[Any], object], value: object) -> str:
     """Say whether ``validate`` accepts ``value``; the tests below record both verdicts."""
     try:

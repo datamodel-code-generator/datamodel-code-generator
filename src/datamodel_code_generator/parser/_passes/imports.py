@@ -89,7 +89,6 @@ from datamodel_code_generator.parser._passes._shared import (
     ReuseOptionsHost,
     RootModelHost,
     _context_models,
-    _declares_unique_items,
     _format_tags,
     _get_data_type_target_full_name,
     _get_model_module_name,
@@ -98,10 +97,10 @@ from datamodel_code_generator.parser._passes._shared import (
     _named_data_types,
     _parsed_rule_data_types,
     _string_or_identifier_pattern,
-    _unique_items_tuple,
     definition_reads,
     get_special_path,
     site_display_name,
+    unique_items_plan,
     unused_model_lists,
 )
 from datamodel_code_generator.parser._passes._state import _PYDANTIC_FLOORS, ConfigT, ContextT, ResultT
@@ -1019,14 +1018,13 @@ def tuple_unique_items_warning(parser: FinishHost, field: DataModelFieldBase) ->
         not parser.use_tuple_for_closed_arrays
         or not parser.use_unique_items_as_set
         or parser.generate_schema_validators
-        or not _declares_unique_items(field)
-        or (tuple_type := _unique_items_tuple(field.data_type)) is None
+        or not (tuples := unique_items_plan(field, keeps_tuples=True).tuples)
     ):
         return None
     return field._generated_without_constraints(  # ruff: ignore[private-member-access]
         f"--use-unique-items-as-set writes a uniqueItems array as a set, which would lose the positions of "
-        f"{tuple_type.type_hint}",
-        1,
+        f"{', '.join(tuple_type.type_hint for tuple_type in tuples)}",
+        len(tuples),
     )
 
 

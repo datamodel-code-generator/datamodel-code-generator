@@ -17,7 +17,13 @@ from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias
 from typing_extensions import Protocol, final, override
 
 from datamodel_code_generator._constraint_applicability import TYPE_DEPENDENT_CONSTRAINTS_KEY
-from datamodel_code_generator._container_kinds import ITEM_CONTAINERS
+from datamodel_code_generator._container_kinds import (
+    CONTAINER_FLAGS,
+    CONTAINERS,
+    UNHASHABLE_CONTAINERS,
+    WRITTEN_CONTAINERS,
+    written_slot,
+)
 from datamodel_code_generator._graph_links import clear_parents
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import (
@@ -34,6 +40,7 @@ from datamodel_code_generator._target_unicode import target_pattern
 from datamodel_code_generator._user_keys import class_field_key, model_type_override, type_override_classes
 from datamodel_code_generator.imports import Import, _override_module
 from datamodel_code_generator.model._decisions.assignment import requires_value
+from datamodel_code_generator.model._decisions.hashability import SetItemFacts, set_items_can_hash
 from datamodel_code_generator.model._decisions.tag_value import (
     FieldTag,
     enum_tag_literal,
@@ -86,6 +93,7 @@ if TYPE_CHECKING:
     from typing_extensions import Unpack
 
     from datamodel_code_generator import AllOfMergeMode, ReuseScope
+    from datamodel_code_generator._container_kinds import ContainerSlot
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator._user_keys import ClassScope
@@ -1276,17 +1284,112 @@ def _declares_unique_items(field: DataModelFieldBase) -> bool:
     return False
 
 
-def _unique_items_tuple(data_type: DataType) -> DataType | None:
-    """Return the tuple a unique array is written as, where --use-unique-items-as-set writes a list as a set.
+@final
+@record(eq=False)
+class UniqueItemsPlan:
+    """The arrays of a field's type that --use-unique-items-as-set writes as sets, and the default the field takes."""
 
-    The tuple is the type itself or a member of a union; the tuples an item container holds are its items, which a set
-    keeps whole.
+    sets: tuple[DataType, ...] = ()
+    """The lists that become sets."""
+    default: set[Any] | None = None
+    """The field's list default as a set, where a list of the field's own level becomes one; None keeps the default."""
+    tuples: tuple[DataType, ...] = ()
+    """The tuples that a uniqueItems array is written as under --use-tuple-for-closed-arrays, which would lose their
+    positions as a set: the lists beside them stay lists."""
+
+
+_NO_UNIQUE_ITEMS: Final = UniqueItemsPlan()
+
+
+def unique_items_plan(field: DataModelFieldBase, *, keeps_tuples: bool) -> UniqueItemsPlan:
+    """Return the arrays of a field's type that --use-unique-items-as-set writes as sets.
+
+    The field's own schema declares ``uniqueItems`` for its type, which is the array or a union with the array among
+    its members (``_unique_items_arrays``). A list among them becomes a set where some value its items take hashes
+    (``set_items_can_hash``) and the field's list default, if it has one, can be a set. Under
+    --use-tuple-for-closed-arrays (``keeps_tuples``), a tuple among them keeps every one of them as it is.
     """
+    return _unique_items_plan(field, keeps_tuples=keeps_tuples, aliases=frozenset())
+
+
+def _unique_items_plan(field: DataModelFieldBase, *, keeps_tuples: bool, aliases: frozenset[int]) -> UniqueItemsPlan:
+    """Return ``unique_items_plan`` of a field read inside the type aliases ``aliases``, by id."""
+    if not _declares_unique_items(field):
+        return _NO_UNIQUE_ITEMS
+    arrays = tuple(_unique_items_arrays(field.data_type))
+    if keeps_tuples and (tuples := tuple(array for array in arrays if array.is_tuple)):
+        return UniqueItemsPlan(tuples=tuples)
+    sets = tuple(
+        array
+        for array in arrays
+        if array.is_list
+        and set_items_can_hash(
+            tuple(
+                _set_item_facts(item, frozenset(), keeps_tuples=keeps_tuples, aliases=aliases)
+                for item in array.data_types
+            )
+        )
+    )
+    if not sets or not isinstance(default := field.default, list):
+        return UniqueItemsPlan(sets)
+    try:
+        return UniqueItemsPlan(sets, set(default))
+    except TypeError:
+        return _NO_UNIQUE_ITEMS
+
+
+def _unique_items_arrays(data_type: DataType) -> Iterator[DataType]:
+    """Yield the lists and tuples that the ``uniqueItems`` of the schema of ``data_type`` declares unique.
+
+    They are the type itself or the members of its union; the arrays a container holds are its items or its values,
+    which the keyword does not reach.
+    """
+    if data_type.is_list or data_type.is_tuple:
+        yield data_type
+    elif data_type not in CONTAINERS:
+        for nested in data_type.data_types:
+            yield from _unique_items_arrays(nested)
+
+
+def _set_item_facts(
+    data_type: DataType, sets: Collection[int], *, keeps_tuples: bool, aliases: frozenset[int]
+) -> SetItemFacts:
+    """Return the facts of an item type of an array that ``set_items_can_hash`` reads.
+
+    ``sets`` holds the lists of the type that become sets, by id. A container is read as it is written: a set under
+    --use-generic-container-types is a frozen set, whose values hash. The positions of a tuple of one repeated type are
+    that type. A type alias is read as its value, whose lists become sets as its own plan says; one that holds itself is
+    read as any other model the type names.
+    """
+    if data_type.is_optional:
+        return SetItemFacts(null=True)
+    if (
+        (reference := data_type.reference) is not None
+        and isinstance(alias := reference.source, TypeAliasBase)
+        and id(alias) not in aliases
+        and alias.fields
+    ):
+        aliases |= {id(alias)}
+        value = alias.fields[0]
+        alias_sets = {*map(id, _unique_items_plan(value, keeps_tuples=keeps_tuples, aliases=aliases).sets)}
+        return _set_item_facts(value.data_type, alias_sets, keeps_tuples=keeps_tuples, aliases=aliases)
+
+    def read(nested: DataType) -> SetItemFacts:
+        return _set_item_facts(nested, sets, keeps_tuples=keeps_tuples, aliases=aliases)
+
     if data_type.is_tuple:
-        return data_type
-    if data_type in ITEM_CONTAINERS:
-        return None
-    return next((found for nested in data_type.data_types if (found := _unique_items_tuple(nested)) is not None), None)
+        count = data_type.tuple_item_count
+        positions = data_type.data_types if count is None else data_type.data_types[: min(count, 1)]
+        return SetItemFacts(positions=tuple(map(read, positions)))
+    if id(data_type) in sets:
+        slot: ContainerSlot | None = "set"
+    else:
+        slot = next((slot for slot in WRITTEN_CONTAINERS if getattr(data_type, CONTAINER_FLAGS[slot])), None)
+    if slot is None:
+        return SetItemFacts(members=tuple(map(read, data_type.data_types)))
+    return SetItemFacts(
+        unhashable=written_slot(slot, generic=data_type.use_generic_container) in UNHASHABLE_CONTAINERS.slots
+    )
 
 
 def _annotated_reference(data_type: DataType) -> Reference | None:
