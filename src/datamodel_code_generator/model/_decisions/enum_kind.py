@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, final
 from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Collection, Mapping
+    from collections.abc import Callable, Collection, Iterable, Mapping
 
 __all__ = [
     "EnumBase",
@@ -32,6 +32,7 @@ __all__ = [
     "LiteralValueKind",
     "decide_enum_kind",
     "enum_as_literal",
+    "enum_member_kinds",
     "holds_inherited_member_value",
     "holds_member_value",
     "is_literal_kind",
@@ -289,6 +290,36 @@ def literal_value_kind(value: object, /) -> LiteralValueKind:
     if isinstance(value, str):
         return "str"
     return "other"
+
+
+_WRITTEN_MEMBER_VALUES: Final[Mapping[LiteralValueKind, Callable[[Any], object]]] = {
+    "bool": bool,
+    "int": int.__index__,
+    "float": float.__float__,
+    "str": str.__str__,
+}
+"""The value an enum module writes for a member value of each kind: a plain ``bool``, ``int``, ``float`` or ``str``."""
+
+
+def enum_member_kinds(values: Iterable[object], /, *, value_base: str | None) -> frozenset[str]:
+    """Return the kinds of the members an enum class holds for its values, as ``literal_value_kind`` names them.
+
+    A value base (``Enum.value_base``) makes every member one of its type, which names the kind, and holds no
+    ``None``. A plain ``Enum`` keeps the values as the module writes them, where one equal to an earlier value is an
+    alias of that member, as Python has it, so ``1`` and ``True`` make one int member and ``True`` and ``1`` one bool
+    member; ``None`` is the member of kind ``none`` and a list or an object value one of kind ``other``.
+    """
+    if value_base is not None:
+        return frozenset({value_base} if any(value is not None for value in values) else ())
+    kinds: set[str] = set()
+    members: dict[object, None] = {}
+    for value in values:
+        if (written := _WRITTEN_MEMBER_VALUES.get(kind := literal_value_kind(value))) is None:
+            kinds.add(kind)
+        elif (member := written(value)) not in members:
+            members[member] = None
+            kinds.add(kind)
+    return frozenset(kinds)
 
 
 _JSON_TYPES: Final[dict[LiteralValueKind, str]] = {
