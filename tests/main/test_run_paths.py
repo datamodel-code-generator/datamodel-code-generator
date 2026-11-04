@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from datamodel_code_generator import InputFileType, generate
 from datamodel_code_generator.__main__ import Exit
 from tests.conftest import assert_output
 from tests.main.conftest import DATA_PATH, run_main_with_args
@@ -96,3 +97,55 @@ def test_input_dev_stdin_reads_a_pipe(output_exists: bool, tmp_path: Path) -> No
             use_parsed_source_cache=False,
         )
     assert_output(output.read_text(encoding="utf-8"))
+
+
+@SYMLINKS
+@pytest.mark.parametrize("output", [None, "out.py"], ids=["stdout", "output"])
+def test_generate_lock_update_keeps_a_symlinked_lockfile(
+    output: str | None, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`generate()` updates the target of a symlinked lockfile, whether it publishes an output or not (#5583)."""
+    monkeypatch.chdir(tmp_path)
+    Path("remote.lock").symlink_to("real.lock")
+    generate(
+        PERSON,
+        input_file_type=InputFileType.JsonSchema,
+        output=None if output is None else Path(output),
+        lockfile=tmp_path / "remote.lock",
+        update_lock=True,
+    )
+    assert_output(_lock_files(tmp_path))
+
+
+_SPELLED_LOCK_RUNS = {
+    "model": [],
+    "target": [
+        *("--generate-client", "httpx2", "--client-output", "client"),
+        *("--client-package", "client", "--client-model-package", "models"),
+    ],
+}
+
+
+@SYMLINKS
+@pytest.mark.parametrize("run", [*_SPELLED_LOCK_RUNS, "generate"])
+def test_lockfile_through_a_directory_symlink_and_parent(
+    run: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A lockfile spelled through a directory symlink and `..` is one file in every run, `..` read as written (#5584).
+
+    The command line, its target runs and `generate()` all update `x.lock` in the working directory.
+    """
+    monkeypatch.chdir(tmp_path)
+    Path("real", "sub").mkdir(parents=True)
+    Path("link").symlink_to(Path("real", "sub"), target_is_directory=True)
+    source, lockfile = DATA_PATH / "openapi" / "api.yaml", Path("link", "..", "x.lock")
+    if run == "generate":
+        generate(
+            source, input_file_type=InputFileType.OpenAPI, output=Path("out.py"), lockfile=lockfile, update_lock=True
+        )
+    else:
+        run_main_with_args([
+            *("--input", str(source), "--input-file-type", "openapi", "--output", "out.py"),
+            *("--lockfile", str(lockfile), "--update-lock", *_SPELLED_LOCK_RUNS[run]),
+        ])
+    assert_output(_lock_files(tmp_path))
