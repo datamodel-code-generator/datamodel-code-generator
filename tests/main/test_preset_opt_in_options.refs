@@ -24,6 +24,8 @@ keep-first-character-of-path-keys-practical	main/preset_opt_in_options/preset_se
 keep-first-character-of-path-keys-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-first-character-of-path-keys-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-first-character-of-path-keys-practical].py
 merge-shared-variant-tags-practical	main/preset_opt_in_options/preset_sets_opt_in_option[merge-shared-variant-tags-practical].py
 merge-shared-variant-tags-standard	main/preset_opt_in_options/preset_sets_opt_in_option[merge-shared-variant-tags-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[merge-shared-variant-tags-practical].py
+name-converted-payloads-by-message-practical	main/preset_opt_in_options/preset_sets_opt_in_option[name-converted-payloads-by-message-practical].py
+name-converted-payloads-by-message-standard	main/preset_opt_in_options/preset_sets_opt_in_option[name-converted-payloads-by-message-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[name-converted-payloads-by-message-practical].py
 omit-redundant-reference-null-practical	main/preset_opt_in_options/preset_sets_opt_in_option[omit-redundant-reference-null-practical].py
 omit-redundant-reference-null-standard	main/preset_opt_in_options/preset_sets_opt_in_option[omit-redundant-reference-null-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[omit-redundant-reference-null-practical].py
 openapi-ref-components-as-definitions-practical	main/preset_opt_in_options/preset_sets_opt_in_option[openapi-ref-components-as-definitions-practical].py

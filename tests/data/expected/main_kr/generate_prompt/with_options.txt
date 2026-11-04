@@ -144,6 +144,7 @@ What other options should I use?
 - `--model-extra-keys`: Add model-level schema extensions to ConfigDict json_schema_extra.
 - `--model-extra-keys-without-x-prefix`: Strip x- prefix from model-level schema extensions and add to ConfigDic...
 - `--model-name-map`: Rename generated model classes from a JSON mapping.
+- `--name-converted-payloads-by-message`: Name a converted payload that names no type of its own after its message.
 - `--naming-strategy`: Choose how models are named and how duplicate model names are told apart.
 - `--no-allow-population-by-field-name`
 - `--no-collapse-root-models`
@@ -907,6 +908,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --module-split-mode {single}
                         Split generated models into separate files. 'single':
                         generate one file per model class.
+  --name-converted-payloads-by-message
+                        AsyncAPI only: name a payload that an Avro or XML
+                        Schema converter gives no name of its own, such as an
+                        Avro string or array, after its message, as a JSON
+                        Schema payload is, and drop the placeholder title
+                        Model the converter gives it (Field(...,
+                        title='Model'), and the class Model under --use-title-
+                        as-name); without it the placeholder stays, as in
+                        0.88.0
   --naming-strategy {numbered,parent-prefixed,full-path,primary-first}
                         Strategy for naming models and telling duplicate model
                         names apart. 'numbered' (default): Append numeric

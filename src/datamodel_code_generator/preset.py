@@ -810,10 +810,12 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             use_duplicate_name_suffix_for_every_collision=True,
             capitalise_numbered_enum_members=True,
             keep_first_character_of_path_keys=True,
+            name_converted_payloads_by_message=True,
         ),
         description=(
             "Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize "
-            "the number of a capitalized enum member, and strip only a leading slash from a paths key."
+            "the number of a capitalized enum member, strip only a leading slash from a paths key, and name a "
+            "converted AsyncAPI payload that names no type after its message."
         ),
     ),
 )
@@ -1091,8 +1093,9 @@ def render_presets_markdown() -> str:
             "The 20261104 presets also name models from the schema: `--use-duplicate-name-suffix-for-every-collision` "
             "gives the `--duplicate-name-suffix` suffix to every model renamed because its name is taken, "
             "`--capitalise-numbered-enum-members` capitalizes the number a capitalized enum member takes (`A_1`), "
-            "and `--keep-first-character-of-path-keys` strips only a leading slash from a paths key (`pets` names "
-            "`PetsGetResponse`)."
+            "`--keep-first-character-of-path-keys` strips only a leading slash from a paths key (`pets` names "
+            "`PetsGetResponse`), and `--name-converted-payloads-by-message` drops the placeholder title `Model` of an "
+            "AsyncAPI Avro or XML Schema payload that names no type, so it is named after its message."
         ),
         "",
         "## Override Preset Options",

@@ -708,6 +708,14 @@ _flag(
     "by another model or by a name the module imports (an inline Item beside a definition Item, a definition AnyUrl "
     "beside a uri field); without it such a model takes the suffix Model, as in 0.88.0",
 )
+_flag(
+    model_options,
+    "--name-converted-payloads-by-message",
+    help="AsyncAPI only: name a payload that an Avro or XML Schema converter gives no name of its own, such as an "
+    "Avro string or array, after its message, as a JSON Schema payload is, and drop the placeholder title Model the "
+    "converter gives it (Field(..., title='Model'), and the class Model under --use-title-as-name); without it the "
+    "placeholder stays, as in 0.88.0",
+)
 model_options.add_argument(
     "--all-exports-scope",
     help="Generate __all__ in __init__.py with re-exports. "

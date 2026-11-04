@@ -787,7 +787,7 @@ The 20261027 presets keep the 20261017 options and add `--use-single-value-enum-
 
 The 20261104 presets keep the 20261027 options and add `--merge-shared-variant-tags`: a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, takes every tag they give it, so each union decodes the documents it selects the variant by, and `--use-encoded-str-for-constrained-base64`: a format: byte string with a pattern or lengths is written as `Annotated[str, Field(...), EncodedStr(encoder=Base64Encoder)]`, so Pydantic checks them on the base64 text instead of the decoded text, and `--read-length-keywords-by-type`: `minLength` and `maxLength` beside an array, and `minItems` and `maxItems` beside a string, are left out instead of bounding the length of the other kind, as JSON Schema reads them, and `--read-msgspec-union-bounds-exactly`: the int member of a msgspec union with a number member keeps its bounds only when they admit every integer the number member's bounds, read as the schema writes them, admit.
 
-The 20261104 presets also name models from the schema: `--use-duplicate-name-suffix-for-every-collision` gives the `--duplicate-name-suffix` suffix to every model renamed because its name is taken, `--capitalise-numbered-enum-members` capitalizes the number a capitalized enum member takes (`A_1`), and `--keep-first-character-of-path-keys` strips only a leading slash from a paths key (`pets` names `PetsGetResponse`).
+The 20261104 presets also name models from the schema: `--use-duplicate-name-suffix-for-every-collision` gives the `--duplicate-name-suffix` suffix to every model renamed because its name is taken, `--capitalise-numbered-enum-members` capitalizes the number a capitalized enum member takes (`A_1`), `--keep-first-character-of-path-keys` strips only a leading slash from a paths key (`pets` names `PetsGetResponse`), and `--name-converted-payloads-by-message` drops the placeholder title `Model` of an AsyncAPI Avro or XML Schema payload that names no type, so it is named after its message.
 
 ## Override Preset Options
 
@@ -5498,6 +5498,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     keep-field-defaults-off-branch-roots = true
     keep-first-character-of-path-keys = true
     merge-shared-variant-tags = true
+    name-converted-payloads-by-message = true
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
     openapi-as-definitions = ["paths-bodies", "ref-components"]
@@ -5532,7 +5533,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --name-converted-payloads-by-message --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -5570,7 +5571,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | EncodedStr for constrained base64 strings | `--use-encoded-str-for-constrained-base64` | Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text. |
 | Length keywords read by type | `--read-length-keywords-by-type` | Read minLength, maxLength and pattern for strings only and minItems, maxItems and uniqueItems for arrays only, so a maxLength beside an array no longer limits how many items the list holds. |
 | msgspec union bounds read exactly | `--read-msgspec-union-bounds-exactly` | Decide whether the int member of a msgspec union with a number member drops its bounds on the bounds the schema writes, so a bound past 2**53 no longer rejects an integer the number member accepts. |
-| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, and strip only a leading slash from a paths key. |
+| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys`, `--name-converted-payloads-by-message` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, strip only a leading slash from a paths key, and name a converted AsyncAPI payload that names no type after its message. |
 
 ### `standard-py311-20261104`
 
@@ -5607,6 +5608,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     keep-field-defaults-off-branch-roots = true
     keep-first-character-of-path-keys = true
     merge-shared-variant-tags = true
+    name-converted-payloads-by-message = true
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
     openapi-as-definitions = ["paths-bodies", "ref-components"]
@@ -5642,7 +5644,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --name-converted-payloads-by-message --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -5681,7 +5683,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | EncodedStr for constrained base64 strings | `--use-encoded-str-for-constrained-base64` | Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text. |
 | Length keywords read by type | `--read-length-keywords-by-type` | Read minLength, maxLength and pattern for strings only and minItems, maxItems and uniqueItems for arrays only, so a maxLength beside an array no longer limits how many items the list holds. |
 | msgspec union bounds read exactly | `--read-msgspec-union-bounds-exactly` | Decide whether the int member of a msgspec union with a number member drops its bounds on the bounds the schema writes, so a bound past 2**53 no longer rejects an integer the number member accepts. |
-| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, and strip only a leading slash from a paths key. |
+| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys`, `--name-converted-payloads-by-message` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, strip only a leading slash from a paths key, and name a converted AsyncAPI payload that names no type after its message. |
 
 ### `standard-py312-20261104`
 
@@ -5718,6 +5720,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     keep-field-defaults-off-branch-roots = true
     keep-first-character-of-path-keys = true
     merge-shared-variant-tags = true
+    name-converted-payloads-by-message = true
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
     openapi-as-definitions = ["paths-bodies", "ref-components"]
@@ -5753,7 +5756,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --name-converted-payloads-by-message --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -5792,7 +5795,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | EncodedStr for constrained base64 strings | `--use-encoded-str-for-constrained-base64` | Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text. |
 | Length keywords read by type | `--read-length-keywords-by-type` | Read minLength, maxLength and pattern for strings only and minItems, maxItems and uniqueItems for arrays only, so a maxLength beside an array no longer limits how many items the list holds. |
 | msgspec union bounds read exactly | `--read-msgspec-union-bounds-exactly` | Decide whether the int member of a msgspec union with a number member drops its bounds on the bounds the schema writes, so a bound past 2**53 no longer rejects an integer the number member accepts. |
-| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, and strip only a leading slash from a paths key. |
+| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys`, `--name-converted-payloads-by-message` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, strip only a leading slash from a paths key, and name a converted AsyncAPI payload that names no type after its message. |
 
 ### `standard-py313-20261104`
 
@@ -5829,6 +5832,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     keep-field-defaults-off-branch-roots = true
     keep-first-character-of-path-keys = true
     merge-shared-variant-tags = true
+    name-converted-payloads-by-message = true
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
     openapi-as-definitions = ["paths-bodies", "ref-components"]
@@ -5864,7 +5868,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --name-converted-payloads-by-message --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -5903,7 +5907,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | EncodedStr for constrained base64 strings | `--use-encoded-str-for-constrained-base64` | Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text. |
 | Length keywords read by type | `--read-length-keywords-by-type` | Read minLength, maxLength and pattern for strings only and minItems, maxItems and uniqueItems for arrays only, so a maxLength beside an array no longer limits how many items the list holds. |
 | msgspec union bounds read exactly | `--read-msgspec-union-bounds-exactly` | Decide whether the int member of a msgspec union with a number member drops its bounds on the bounds the schema writes, so a bound past 2**53 no longer rejects an integer the number member accepts. |
-| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, and strip only a leading slash from a paths key. |
+| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys`, `--name-converted-payloads-by-message` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, strip only a leading slash from a paths key, and name a converted AsyncAPI payload that names no type after its message. |
 
 ### `standard-py314-20261104`
 
@@ -5940,6 +5944,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     keep-field-defaults-off-branch-roots = true
     keep-first-character-of-path-keys = true
     merge-shared-variant-tags = true
+    name-converted-payloads-by-message = true
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
     openapi-as-definitions = ["paths-bodies", "ref-components"]
@@ -5975,7 +5980,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --name-converted-payloads-by-message --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -6014,7 +6019,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | EncodedStr for constrained base64 strings | `--use-encoded-str-for-constrained-base64` | Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text. |
 | Length keywords read by type | `--read-length-keywords-by-type` | Read minLength, maxLength and pattern for strings only and minItems, maxItems and uniqueItems for arrays only, so a maxLength beside an array no longer limits how many items the list holds. |
 | msgspec union bounds read exactly | `--read-msgspec-union-bounds-exactly` | Decide whether the int member of a msgspec union with a number member drops its bounds on the bounds the schema writes, so a bound past 2**53 no longer rejects an integer the number member accepts. |
-| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, and strip only a leading slash from a paths key. |
+| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys`, `--name-converted-payloads-by-message` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, strip only a leading slash from a paths key, and name a converted AsyncAPI payload that names no type after its message. |
 
 ### `standard-py315-20261104`
 
@@ -6051,6 +6056,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     keep-field-defaults-off-branch-roots = true
     keep-first-character-of-path-keys = true
     merge-shared-variant-tags = true
+    name-converted-payloads-by-message = true
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
     openapi-as-definitions = ["paths-bodies", "ref-components"]
@@ -6086,7 +6092,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --name-converted-payloads-by-message --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -6125,7 +6131,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | EncodedStr for constrained base64 strings | `--use-encoded-str-for-constrained-base64` | Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text. |
 | Length keywords read by type | `--read-length-keywords-by-type` | Read minLength, maxLength and pattern for strings only and minItems, maxItems and uniqueItems for arrays only, so a maxLength beside an array no longer limits how many items the list holds. |
 | msgspec union bounds read exactly | `--read-msgspec-union-bounds-exactly` | Decide whether the int member of a msgspec union with a number member drops its bounds on the bounds the schema writes, so a bound past 2**53 no longer rejects an integer the number member accepts. |
-| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, and strip only a leading slash from a paths key. |
+| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys`, `--name-converted-payloads-by-message` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, strip only a leading slash from a paths key, and name a converted AsyncAPI payload that names no type after its message. |
 
 ### `practical-py310-20261104`
 
@@ -6163,6 +6169,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     keep-field-defaults-off-branch-roots = true
     keep-first-character-of-path-keys = true
     merge-shared-variant-tags = true
+    name-converted-payloads-by-message = true
     naming-strategy = "primary-first"
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
@@ -6208,7 +6215,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --name-converted-payloads-by-message --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -6246,7 +6253,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | EncodedStr for constrained base64 strings | `--use-encoded-str-for-constrained-base64` | Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text. |
 | Length keywords read by type | `--read-length-keywords-by-type` | Read minLength, maxLength and pattern for strings only and minItems, maxItems and uniqueItems for arrays only, so a maxLength beside an array no longer limits how many items the list holds. |
 | msgspec union bounds read exactly | `--read-msgspec-union-bounds-exactly` | Decide whether the int member of a msgspec union with a number member drops its bounds on the bounds the schema writes, so a bound past 2**53 no longer rejects an integer the number member accepts. |
-| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, and strip only a leading slash from a paths key. |
+| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys`, `--name-converted-payloads-by-message` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, strip only a leading slash from a paths key, and name a converted AsyncAPI payload that names no type after its message. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -6287,6 +6294,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     keep-field-defaults-off-branch-roots = true
     keep-first-character-of-path-keys = true
     merge-shared-variant-tags = true
+    name-converted-payloads-by-message = true
     naming-strategy = "primary-first"
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
@@ -6333,7 +6341,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --name-converted-payloads-by-message --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -6372,7 +6380,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | EncodedStr for constrained base64 strings | `--use-encoded-str-for-constrained-base64` | Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text. |
 | Length keywords read by type | `--read-length-keywords-by-type` | Read minLength, maxLength and pattern for strings only and minItems, maxItems and uniqueItems for arrays only, so a maxLength beside an array no longer limits how many items the list holds. |
 | msgspec union bounds read exactly | `--read-msgspec-union-bounds-exactly` | Decide whether the int member of a msgspec union with a number member drops its bounds on the bounds the schema writes, so a bound past 2**53 no longer rejects an integer the number member accepts. |
-| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, and strip only a leading slash from a paths key. |
+| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys`, `--name-converted-payloads-by-message` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, strip only a leading slash from a paths key, and name a converted AsyncAPI payload that names no type after its message. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -6413,6 +6421,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     keep-field-defaults-off-branch-roots = true
     keep-first-character-of-path-keys = true
     merge-shared-variant-tags = true
+    name-converted-payloads-by-message = true
     naming-strategy = "primary-first"
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
@@ -6459,7 +6468,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --name-converted-payloads-by-message --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -6498,7 +6507,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | EncodedStr for constrained base64 strings | `--use-encoded-str-for-constrained-base64` | Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text. |
 | Length keywords read by type | `--read-length-keywords-by-type` | Read minLength, maxLength and pattern for strings only and minItems, maxItems and uniqueItems for arrays only, so a maxLength beside an array no longer limits how many items the list holds. |
 | msgspec union bounds read exactly | `--read-msgspec-union-bounds-exactly` | Decide whether the int member of a msgspec union with a number member drops its bounds on the bounds the schema writes, so a bound past 2**53 no longer rejects an integer the number member accepts. |
-| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, and strip only a leading slash from a paths key. |
+| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys`, `--name-converted-payloads-by-message` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, strip only a leading slash from a paths key, and name a converted AsyncAPI payload that names no type after its message. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -6539,6 +6548,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     keep-field-defaults-off-branch-roots = true
     keep-first-character-of-path-keys = true
     merge-shared-variant-tags = true
+    name-converted-payloads-by-message = true
     naming-strategy = "primary-first"
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
@@ -6585,7 +6595,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --name-converted-payloads-by-message --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -6624,7 +6634,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | EncodedStr for constrained base64 strings | `--use-encoded-str-for-constrained-base64` | Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text. |
 | Length keywords read by type | `--read-length-keywords-by-type` | Read minLength, maxLength and pattern for strings only and minItems, maxItems and uniqueItems for arrays only, so a maxLength beside an array no longer limits how many items the list holds. |
 | msgspec union bounds read exactly | `--read-msgspec-union-bounds-exactly` | Decide whether the int member of a msgspec union with a number member drops its bounds on the bounds the schema writes, so a bound past 2**53 no longer rejects an integer the number member accepts. |
-| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, and strip only a leading slash from a paths key. |
+| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys`, `--name-converted-payloads-by-message` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, strip only a leading slash from a paths key, and name a converted AsyncAPI payload that names no type after its message. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -6665,6 +6675,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     keep-field-defaults-off-branch-roots = true
     keep-first-character-of-path-keys = true
     merge-shared-variant-tags = true
+    name-converted-payloads-by-message = true
     naming-strategy = "primary-first"
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
@@ -6711,7 +6722,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --name-converted-payloads-by-message --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -6750,7 +6761,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | EncodedStr for constrained base64 strings | `--use-encoded-str-for-constrained-base64` | Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text. |
 | Length keywords read by type | `--read-length-keywords-by-type` | Read minLength, maxLength and pattern for strings only and minItems, maxItems and uniqueItems for arrays only, so a maxLength beside an array no longer limits how many items the list holds. |
 | msgspec union bounds read exactly | `--read-msgspec-union-bounds-exactly` | Decide whether the int member of a msgspec union with a number member drops its bounds on the bounds the schema writes, so a bound past 2**53 no longer rejects an integer the number member accepts. |
-| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, and strip only a leading slash from a paths key. |
+| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys`, `--name-converted-payloads-by-message` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, strip only a leading slash from a paths key, and name a converted AsyncAPI payload that names no type after its message. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -6791,6 +6802,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     keep-field-defaults-off-branch-roots = true
     keep-first-character-of-path-keys = true
     merge-shared-variant-tags = true
+    name-converted-payloads-by-message = true
     naming-strategy = "primary-first"
     omit-redundant-constraints = true
     omit-redundant-reference-null = true
@@ -6837,7 +6849,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --enum-field-as-literal one --filter-literal-values --formatters builtin --input schema.json --input-file-type jsonschema --intersect-allof-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --merge-shared-variant-tags --name-converted-payloads-by-message --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-unevaluated-properties --reuse-model --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-object-type --use-schema-description --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -6876,7 +6888,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | EncodedStr for constrained base64 strings | `--use-encoded-str-for-constrained-base64` | Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the constraints in front of the decoding, so Pydantic checks them on the base64 text. |
 | Length keywords read by type | `--read-length-keywords-by-type` | Read minLength, maxLength and pattern for strings only and minItems, maxItems and uniqueItems for arrays only, so a maxLength beside an array no longer limits how many items the list holds. |
 | msgspec union bounds read exactly | `--read-msgspec-union-bounds-exactly` | Decide whether the int member of a msgspec union with a number member drops its bounds on the bounds the schema writes, so a bound past 2**53 no longer rejects an integer the number member accepts. |
-| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, and strip only a leading slash from a paths key. |
+| Model names taken from the schema | `--use-duplicate-name-suffix-for-every-collision`, `--capitalize-numbered-enum-members`, `--keep-first-character-of-path-keys`, `--name-converted-payloads-by-message` | Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize the number of a capitalized enum member, strip only a leading slash from a paths key, and name a converted AsyncAPI payload that names no type after its message. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
 | Schema documentation | `--use-schema-description`, `--use-field-description`, `--use-field-description-example` | Preserve schema and field descriptions, including examples, in generated model documentation. |
@@ -24036,7 +24048,7 @@ This documentation is auto-generated from test cases.
 | 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 46 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 36 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 54 | Model generation behavior |
+| 🏗️ [Model Customization](model-customization.md) | 55 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 29 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 11 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
@@ -24050,7 +24062,7 @@ Use these pages when you know the workflow area but not the exact option name.
 
 | Topic | Options | Groups |
 |-------|---------|--------|
-| [Model Customization](topics/model-customization.md) | 25 | Model Naming, Model Reuse, Model Shape, Root Model |
+| [Model Customization](topics/model-customization.md) | 26 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 22 | Custom Templates, Generated Output, Imports, Output Formatting |
 | [Typing Customization](topics/typing-customization.md) | 30 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 10 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
@@ -24286,6 +24298,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 ### N {#n}
 
+- [`--name-converted-payloads-by-message`](model-customization.md#name-converted-payloads-by-message)
 - [`--naming-strategy`](model-customization.md#naming-strategy)
 - [`--no-alias`](field-customization.md#no-alias)
 - [`--no-color`](utility-options.md#no-color)
@@ -25622,6 +25635,7 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/model-custom
 | [`--model-extra-keys`](#model-extra-keys) | Add model-level schema extensions to ConfigDict json_schema_... |
 | [`--model-extra-keys-without-x-prefix`](#model-extra-keys-without-x-prefix) | Strip x- prefix from model-level schema extensions and add t... |
 | [`--model-name-map`](#model-name-map) | Rename generated model classes from a JSON mapping. |
+| [`--name-converted-payloads-by-message`](#name-converted-payloads-by-message) | Name a converted payload that names no type of its own after... |
 | [`--naming-strategy`](#naming-strategy) | Choose how models are named and how duplicate model names ar... |
 | [`--omit-redundant-reference-null`](#omit-redundant-reference-null) | Do not write None again at a reference to a model that holds... |
 | [`--order-constructor-fields-by`](#order-constructor-fields-by) | Order constructor fields by final names or by written defaul... |
@@ -29670,6 +29684,163 @@ warning. GraphQL input does not apply `--model-name-map`, so every key is report
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--name-converted-payloads-by-message` {#name-converted-payloads-by-message}
+
+Name a converted payload that names no type of its own after its message.
+
+An AsyncAPI payload in Avro or XML Schema is converted to JSON Schema first. A payload that names no type of its own,
+such as an Avro `string`, array, map or union, or an XML Schema with several global elements, takes the converter's
+placeholder title `Model`: the field writes `Field(..., title='Model')`, and under `--use-title-as-name` the class is
+named `Model`. With `--name-converted-payloads-by-message` such a payload takes no title, as a JSON Schema payload,
+so its class is named after its message (`PingPublishPayload`) under `--use-title-as-name` too. A payload that names
+its type, such as an Avro record, keeps that name.
+
+**Related:** [`--use-title-as-name`](field-customization.md#use-title-as-name)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input converted_payload_names.yaml --name-converted-payloads-by-message # (1)!
+    ```
+
+    1. :material-arrow-left: `--name-converted-payloads-by-message` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    asyncapi: 2.6.0
+    info: {title: t, version: '1'}
+    channels:
+      text:
+        publish:
+          message:
+            name: Text
+            schemaFormat: application/vnd.apache.avro;version=1.9.0
+            payload: string
+      ping:
+        publish:
+          message:
+            name: Ping
+            schemaFormat: application/vnd.apache.avro;version=1.9.0
+            payload: {type: array, items: string}
+      pong:
+        publish:
+          message:
+            name: Pong
+            schemaFormat: application/vnd.apache.avro;version=1.9.0
+            payload: {type: map, values: int}
+      rec:
+        publish:
+          message:
+            name: Rec
+            schemaFormat: application/vnd.apache.avro;version=1.9.0
+            payload: {type: record, name: Model, fields: [{name: a, type: string}]}
+      uni:
+        publish:
+          message:
+            name: Uni
+            schemaFormat: application/vnd.apache.avro;version=1.9.0
+            payload: ["null", "string"]
+      xml:
+        publish:
+          message:
+            name: Xml
+            schemaFormat: application/xml;version=1.0
+            payload: |
+              <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+                <xs:element name="A" type="xs:string"/>
+                <xs:element name="B" type="xs:int"/>
+              </xs:schema>
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  converted_payload_names.yaml
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, Field, RootModel, conint
+
+
+        class TextPublishPayload(RootModel[str]):
+            root: str
+
+
+        class PingPublishPayload(RootModel[list[str]]):
+            root: list[str]
+
+
+        class PongPublishPayload(RootModel[dict[str, int]]):
+            root: dict[str, int]
+
+
+        class RecPublishPayload(BaseModel):
+            a: str
+
+
+        class UniPublishPayload(RootModel[str | None]):
+            root: str | None
+
+
+        class XmlPublishPayload(BaseModel):
+            A: str = Field(..., title='A')
+            B: conint(ge=-2147483648, le=2147483647) = Field(..., title='B')
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  converted_payload_names.yaml
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, Field, RootModel, conint
+
+
+        class TextPublishPayload(RootModel[str]):
+            root: str = Field(..., title='Model')
+
+
+        class PingPublishPayload(RootModel[list[str]]):
+            root: list[str] = Field(..., title='Model')
+
+
+        class PongPublishPayload(RootModel[dict[str, int]]):
+            root: dict[str, int]
+
+
+        class RecPublishPayload(BaseModel):
+            a: str
+
+
+        class UniPublishPayload(RootModel[str | None]):
+            root: str | None = Field(..., title='Model')
+
+
+        class XmlPublishPayload(BaseModel):
+            A: str = Field(..., title='A')
+            B: conint(ge=-2147483648, le=2147483647) = Field(..., title='B')
+        ```
+
+        <!-- fmt: on -->
 
 ---
 
@@ -65986,7 +66157,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 
 | Group | Options | Description |
 |-------|---------|-------------|
-| [Model Naming](#model-naming) | 10 | Class names, suffixes, prefixes, and duplicate-name behavior. |
+| [Model Naming](#model-naming) | 11 | Class names, suffixes, prefixes, and duplicate-name behavior. |
 | [Model Reuse](#model-reuse) | 4 | Schema deduplication and shared generated modules. |
 | [Model Shape](#model-shape) | 6 | Output model family and compatibility targets. |
 | [Root Model](#root-model) | 5 | Root model creation, collapse, and alias behavior. |
@@ -66004,6 +66175,7 @@ Class names, suffixes, prefixes, and duplicate-name behavior.
 | [`--class-name-suffix`](../model-customization.md#class-name-suffix) | Add a suffix to all generated class names. |
 | [`--duplicate-name-suffix`](../model-customization.md#duplicate-name-suffix) | Customize suffix for duplicate model names. |
 | [`--model-name-map`](../model-customization.md#model-name-map) | Rename generated model classes from a JSON mapping. |
+| [`--name-converted-payloads-by-message`](../model-customization.md#name-converted-payloads-by-message) | Name a converted payload that names no type of its own after its message. |
 | [`--naming-strategy`](../model-customization.md#naming-strategy) | Choose how models are named and how duplicate model names are told apart. |
 | [`--parent-scoped-naming`](../model-customization.md#parent-scoped-naming) | Namespace models by their parent scope to avoid naming conflicts. |
 | [`--use-duplicate-name-suffix-for-every-collision`](../model-customization.md#use-duplicate-name-suffix-for-every-collision) | Give the `--duplicate-name-suffix` suffix to every model renamed in its module. |
@@ -66412,6 +66584,7 @@ datamodel-codegen [OPTIONS]
 | [`--model-extra-keys`](model-customization.md#model-extra-keys) | Add model-level schema extensions to ConfigDict json_schema_extra. |
 | [`--model-extra-keys-without-x-prefix`](model-customization.md#model-extra-keys-without-x-prefix) | Strip x- prefix from model-level schema extensions and add to ConfigDict json_sc... |
 | [`--model-name-map`](model-customization.md#model-name-map) | Rename generated model classes from a JSON mapping. |
+| [`--name-converted-payloads-by-message`](model-customization.md#name-converted-payloads-by-message) | Name a converted payload that names no type of its own after its message. |
 | [`--naming-strategy`](model-customization.md#naming-strategy) | Choose how models are named and how duplicate model names are told apart. |
 | [`--omit-redundant-reference-null`](model-customization.md#omit-redundant-reference-null) | Do not write None again at a reference to a model that holds null itself. |
 | [`--order-constructor-fields-by`](model-customization.md#order-constructor-fields-by) | Order constructor fields by final names or by written defaults. |
@@ -66701,6 +66874,7 @@ All options sorted alphabetically:
 - [`--model-extra-keys-without-x-prefix`](model-customization.md#model-extra-keys-without-x-prefix) - Strip x- prefix from model-level schema extensions and add t...
 - [`--model-name-map`](model-customization.md#model-name-map) - Rename generated model classes from a JSON mapping.
 - [`--module-split-mode`](general-options.md#module-split-mode) - Split generated models into separate files, one per model cl...
+- [`--name-converted-payloads-by-message`](model-customization.md#name-converted-payloads-by-message) - Name a converted payload that names no type of its own after...
 - [`--naming-strategy`](model-customization.md#naming-strategy) - Choose how models are named and how duplicate model names ar...
 - [`--no-alias`](field-customization.md#no-alias) - Disable Field alias generation for non-Python-safe property ...
 - [`--no-color`](utility-options.md#no-color) - Disable colorized output
@@ -70105,6 +70279,34 @@ class PetsGetResponse(BaseModel):
     a: str | None = None
 ```
 
+### `--name-converted-payloads-by-message`
+
+| | |
+|---|---|
+| Option | `--name-converted-payloads-by-message` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.89.0 |
+| Issue | [#5677](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5677) |
+
+**Affects:** an AsyncAPI payload in Avro or XML Schema that names no type of its own: an Avro `string`, array, map or union, or an XML Schema with several global elements. The converter gives it the placeholder title `Model`, so the field writes `Field(..., title='Model')` (also in `model_json_schema()`) and `--use-title-as-name` names the class `Model`. With the option the payload takes no title, as a JSON Schema payload, and is named after its message. A payload that names its type, such as an Avro record, keeps that name.
+
+Schema: a message `Ping` with `schemaFormat: application/vnd.apache.avro;version=1.9.0` and `payload: string`.
+
+Without the option (same as 0.88.0):
+
+```python
+class PingPublishPayload(RootModel[str]):
+    root: str = Field(..., title='Model')
+```
+
+With the option:
+
+```python
+class PingPublishPayload(RootModel[str]):
+    root: str
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.
@@ -70969,12 +71171,12 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 209 | Shared generation options. |
-| `GenerateConfig` | 224 | Public `generate()` configuration. |
+| `BaseGenerateConfig` | 210 | Shared generation options. |
+| `GenerateConfig` | 225 | Public `generate()` configuration. |
 | `ParserConfig` | 173 | Base parser dependency injection and parser options. |
 | `JSONSchemaParserConfig` | 175 | JSON Schema parser options. |
 | `OpenAPIParserConfig` | 183 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 184 | AsyncAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 185 | AsyncAPI-specific parser options. |
 | `XMLSchemaParserConfig` | 176 | XML Schema-specific parser options. |
 | `ProtobufParserConfig` | 176 | Protocol Buffers-specific parser options. |
 | `AvroParserConfig` | 175 | Avro-specific parser options. |
@@ -72323,6 +72525,7 @@ is a new named row, never an anonymous `if`.
 | `legacy-reparse-for-final-names` | the L1 rows read the name a model is created under; when a yielding name changed and an L1 key names the created or the final name, the whole input is parsed again with the final names | keep |
 | `legacy-number-before-case` | under `--capitalise-enum-members` a member whose capitalized name is taken is numbered without its casing (`a_1` beside `A`, `FieldNameResolver.get_valid_name`), unless `--capitalise-numbered-enum-members` cases it too (`A_1`) | keep |
 | `legacy-first-character-of-path-key` | a paths key loses its first character when its operation models are named, a leading slash or not (`pets` names `EtsGetResponse`, `OpenAPIParser._process_path_items`), unless `--keep-first-character-of-path-keys` strips only a leading slash, as for webhook names | keep |
+| `legacy-converter-placeholder-title` | an AsyncAPI payload in Avro or XML Schema that names no type of its own takes the converter's title `Model` (`convert_avro_schema_data`, `_convert_xml_schema_data`), which its field writes and `--use-title-as-name` names its class by, unless `--name-converted-payloads-by-message` drops it, so the payload is named after its message as a JSON Schema payload is | keep |
 | `legacy-module-suffix-model` | the `module` scheme of L3 `replace_duplicate_name_in_module` gives a taken name the suffix `Model` without reading the `--duplicate-name-suffix` map, unless `--use-duplicate-name-suffix-for-every-collision` reads it (row `map-or-model`) | keep |
 | `legacy-both-prefixes` | under `--parent-scoped-naming` with `--naming-strategy full-path` an inline model takes the parent's name twice, the `full-path` prefix before the `parent-prefixed` one (`ModelResolver._parent_prefixed`) | #5666 |
 | `legacy-predicted-rename` | the later holders of a root model that the `parent` strategy collapsed keep naming it where the run renames colliding types and both models are written in one module, until `settle_kept_parent_roots` reads the final class names | keep |

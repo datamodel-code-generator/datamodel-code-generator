@@ -294,6 +294,15 @@ class AsyncAPIParser(OpenAPIParser):
         """Initialize the AsyncAPI parser."""
         super().__init__(source=source, config=config, **options)
 
+    @property
+    def _placeholder_titles(self) -> bool:
+        """Whether a converted payload that names no type of its own keeps the converter's title ``Model``.
+
+        Row ``legacy-converter-placeholder-title``; under ``--name-converted-payloads-by-message`` such a payload takes
+        no title, so it is named after its message as a JSON Schema payload is.
+        """
+        return not self.config.name_converted_payloads_by_message
+
     _version_source: ClassVar[_VersionSource] = _VersionSource(
         "asyncapi_version", AsyncAPIVersion.Auto, detect_asyncapi_version, OpenAPISchemaFeatures.from_asyncapi_version
     )
@@ -394,7 +403,8 @@ class AsyncAPIParser(OpenAPIParser):
         converted_schema_key = "_".join(_escape_context_path_part(part) for part in path) or name
         ref_prefix = f"#/{INTERNAL_SCHEMA_CONTAINER}/{converted_schema_key}/components/schemas"
         converted_schema = _move_json_schema_definitions_to_components(converted_schema, ref_prefix=ref_prefix)
-        converted_schema.setdefault("title", name)
+        if self._placeholder_titles:
+            converted_schema.setdefault("title", name)
         converted_schema = self._mount_converted_schema(
             converted_schema, location, f"/{INTERNAL_SCHEMA_CONTAINER}/{converted_schema_key}"
         )
@@ -450,8 +460,9 @@ class AsyncAPIParser(OpenAPIParser):
             case "avro":
                 from datamodel_code_generator.parser.avro import convert_avro_schema_data  # noqa: PLC0415
 
-                converted_schema = convert_avro_schema_data(raw_schema)
-                converted_schema.setdefault("title", name)
+                converted_schema = convert_avro_schema_data(raw_schema, placeholder_title=self._placeholder_titles)
+                if self._placeholder_titles:
+                    converted_schema.setdefault("title", name)
                 home = self.model_resolver.join_path(tuple(self._converted_schema_root_parts(path))).partition("#")[0]
                 converted_schema = self._mount_converted_schema(converted_schema, location, home=home)
                 context = replace(
@@ -487,6 +498,7 @@ class AsyncAPIParser(OpenAPIParser):
                         base_path=context.base_path,
                         encoding=self.encoding,
                         source_safe_non_finite=True,
+                        placeholder_title=self._placeholder_titles,
                     ),
                     path,
                     include_root_schema=True,

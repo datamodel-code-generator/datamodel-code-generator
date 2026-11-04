@@ -346,6 +346,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(
         _C.MODEL,
         "--naming-strategy --duplicate-name-suffix --use-duplicate-name-suffix-for-every-collision",
+        "--name-converted-payloads-by-message",
         group=_G.MODEL_NAMING,
     ),
     **_opts(_C.MODEL, "--use-one-literal-as-default --use-serialize-as-any"),

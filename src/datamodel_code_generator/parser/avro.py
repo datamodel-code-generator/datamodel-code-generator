@@ -141,11 +141,12 @@ class _AvroSchemaConverter:
             {} if default_converters is not None else None
         )
 
-    def convert_raw(self, raw_obj: YamlValue) -> dict[str, YamlValue]:
+    def convert_raw(self, raw_obj: YamlValue, *, placeholder_title: bool = True) -> dict[str, YamlValue]:
         self._collect_named_schemas(raw_obj)
         self._prepare_definition_names()
         schema = self._convert_schema(raw_obj, namespace=None, root=True)
-        schema.setdefault("title", "Model")
+        if placeholder_title:
+            schema.setdefault("title", "Model")
         if self.definitions:
             schema["definitions"] = self.definitions
         schema.setdefault("$schema", "http://json-schema.org/draft-07/schema#")
@@ -927,9 +928,12 @@ class AvroParser(JsonSchemaParser):
         return _logical_default_expression(kind, value)
 
 
-def convert_avro_schema_data(data: YamlValue) -> dict[str, YamlValue]:
-    """Convert in-memory Avro schema data to the JSON Schema shape used by the parser."""
-    return _AvroSchemaConverter().convert_raw(data)
+def convert_avro_schema_data(data: YamlValue, *, placeholder_title: bool = True) -> dict[str, YamlValue]:
+    """Convert in-memory Avro schema data to the JSON Schema shape used by the parser.
+
+    A schema that names no record, enum or fixed takes the title ``Model``, unless ``placeholder_title`` is False.
+    """
+    return _AvroSchemaConverter().convert_raw(data, placeholder_title=placeholder_title)
 
 
 __all__ = ["AvroParser", "convert_avro_schema_data", "is_avro_schema_data"]

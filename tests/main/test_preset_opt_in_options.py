@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from datamodel_code_generator import chdir
-from tests.main.conftest import JSON_SCHEMA_DATA_PATH, OPEN_API_DATA_PATH, run_main_and_assert
+from tests.main.conftest import ASYNC_API_DATA_PATH, JSON_SCHEMA_DATA_PATH, OPEN_API_DATA_PATH, run_main_and_assert
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -55,6 +55,7 @@ OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
     "--use-duplicate-name-suffix-for-every-collision",
     "--capitalise-numbered-enum-members",
     "--keep-first-character-of-path-keys",
+    "--name-converted-payloads-by-message",
 )
 """The options the 20261104 presets set beyond the 20261027 presets."""
 
@@ -110,6 +111,12 @@ CASES_20261104: tuple[pytest.ParameterSet, ...] = (
         "openapi",
         ["--output-model-type", "pydantic_v2.BaseModel", "--openapi-scopes", "schemas", "paths", "parameters"],
         id="keep-first-character-of-path-keys",
+    ),
+    pytest.param(
+        ASYNC_API_DATA_PATH / "converted_payload_names.yaml",
+        "asyncapi",
+        ["--output-model-type", "pydantic_v2.BaseModel", "--use-title-as-name"],
+        id="name-converted-payloads-by-message",
     ),
 )
 """The inputs each opt-in option of the 20261104 presets changes."""

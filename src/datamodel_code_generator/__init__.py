@@ -1470,6 +1470,7 @@ def _build_parser(  # noqa: PLR0911, PLR0913
             asyncapi_additional_options: AsyncAPIParserConfigDict = {
                 **_openapi_shared_options(config),
                 "asyncapi_version": asyncapi_version,
+                "name_converted_payloads_by_message": config.name_converted_payloads_by_message,
                 **additional_options,
             }
             parser_config = _create_parser_config(config, asyncapi_additional_options)

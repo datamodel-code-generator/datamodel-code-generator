@@ -263,6 +263,7 @@ class AsyncAPIParserConfigDict(JSONSchemaParserConfigDict, closed=True):
     openapi_as_definitions: NotRequired[Sequence[OpenAPIAsDefinitions]]
     openapi_version: NotRequired[OpenAPIVersion | None]
     asyncapi_version: NotRequired[AsyncAPIVersion | None]
+    name_converted_payloads_by_message: NotRequired[bool]
 
 
 class ProtobufParserConfigDict(JSONSchemaParserConfigDict, closed=True):

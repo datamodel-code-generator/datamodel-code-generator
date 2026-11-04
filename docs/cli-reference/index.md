@@ -11,7 +11,7 @@ This documentation is auto-generated from test cases.
 | 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 46 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 36 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 54 | Model generation behavior |
+| 🏗️ [Model Customization](model-customization.md) | 55 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 29 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 11 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
@@ -25,7 +25,7 @@ Use these pages when you know the workflow area but not the exact option name.
 
 | Topic | Options | Groups |
 |-------|---------|--------|
-| [Model Customization](topics/model-customization.md) | 25 | Model Naming, Model Reuse, Model Shape, Root Model |
+| [Model Customization](topics/model-customization.md) | 26 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 22 | Custom Templates, Generated Output, Imports, Output Formatting |
 | [Typing Customization](topics/typing-customization.md) | 30 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 10 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
@@ -261,6 +261,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 ### N {#n}
 
+- [`--name-converted-payloads-by-message`](model-customization.md#name-converted-payloads-by-message)
 - [`--naming-strategy`](model-customization.md#naming-strategy)
 - [`--no-alias`](field-customization.md#no-alias)
 - [`--no-color`](utility-options.md#no-color)

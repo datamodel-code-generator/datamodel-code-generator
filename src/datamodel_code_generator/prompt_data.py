@@ -116,6 +116,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--model-extra-keys-without-x-prefix": "Strip x- prefix from model-level schema extensions and add to ConfigDic...",
     "--model-name-map": "Rename generated model classes from a JSON mapping.",
     "--module-split-mode": "Split generated models into separate files, one per model class.",
+    "--name-converted-payloads-by-message": "Name a converted payload that names no type of its own after its message.",
     "--naming-strategy": "Choose how models are named and how duplicate model names are told apart.",
     "--no-alias": "Disable Field alias generation for non-Python-safe property names.",
     "--no-deserialize-default-values": "Keep serialized schema defaults instead of deserializing selected types.",

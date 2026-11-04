@@ -411,6 +411,7 @@ class AsyncAPIParserConfig(JSONSchemaParserConfig):
     openapi_as_definitions: Sequence[OpenAPIAsDefinitions] = ()
     openapi_version: OpenAPIVersion | None = None
     asyncapi_version: AsyncAPIVersion | None = None
+    name_converted_payloads_by_message: bool = False
 
 
 class XMLSchemaParserConfig(JSONSchemaParserConfig):

@@ -557,6 +557,34 @@ class PetsGetResponse(BaseModel):
     a: str | None = None
 ```
 
+### `--name-converted-payloads-by-message`
+
+| | |
+|---|---|
+| Option | `--name-converted-payloads-by-message` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.89.0 |
+| Issue | [#5677](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5677) |
+
+**Affects:** an AsyncAPI payload in Avro or XML Schema that names no type of its own: an Avro `string`, array, map or union, or an XML Schema with several global elements. The converter gives it the placeholder title `Model`, so the field writes `Field(..., title='Model')` (also in `model_json_schema()`) and `--use-title-as-name` names the class `Model`. With the option the payload takes no title, as a JSON Schema payload, and is named after its message. A payload that names its type, such as an Avro record, keeps that name.
+
+Schema: a message `Ping` with `schemaFormat: application/vnd.apache.avro;version=1.9.0` and `payload: string`.
+
+Without the option (same as 0.88.0):
+
+```python
+class PingPublishPayload(RootModel[str]):
+    root: str = Field(..., title='Model')
+```
+
+With the option:
+
+```python
+class PingPublishPayload(RootModel[str]):
+    root: str
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.
