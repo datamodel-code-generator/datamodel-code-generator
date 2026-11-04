@@ -526,7 +526,11 @@ def create_shared_module_from_duplicates(  # noqa: PLR0912
     """Create shared module with canonical models and replace duplicates with inherited models.
 
     A duplicate that is removed rather than replaced hands every user to the shared model, since
-    users in other modules would otherwise import it from a module that no longer defines it.
+    users in other modules would otherwise import it from a module that no longer defines it. The subclass that
+    replaces a duplicate is named by the users of its module; where an earlier attempt of the run found the import
+    cycle of that module to fail (``ImportCycleSeeds.merges``), by every user, the shared module's canonicals
+    included: the cycle merges into an ``_internal`` module, which the subclass moves to, so a user that kept naming
+    the duplicate would name a model no module defines.
     """
     shared_module = parser.shared_module_name
 
@@ -548,6 +552,14 @@ def create_shared_module_from_duplicates(  # noqa: PLR0912
         module: set(models) for module, models in module_models
     }
     models_to_remove: dict[tuple[str, ...], set[DataModel]] = defaultdict(set)
+    seeded = {module for merge in parser._import_cycle_seeds.merges for module in merge}  # noqa: SLF001
+
+    def users_of(module: tuple[str, ...], models: list[DataModel]) -> list[DataModel]:
+        if reference_models is not None:
+            return reference_models
+        if module not in seeded:
+            return models
+        return [*shared_models, *(model for _, listed in module_models for model in listed)]
 
     for duplicate_module, duplicate_model, _, canonical_model in duplicates:
         if duplicate_model not in module_models_sets.get(duplicate_module, ()):  # pragma: no cover
@@ -560,11 +572,7 @@ def create_shared_module_from_duplicates(  # noqa: PLR0912
             models_to_remove[duplicate_module].add(duplicate_model)
         elif (
             updated := subclass_duplicate(
-                parser,
-                duplicate_model,
-                canonical_model,
-                models,
-                reference_models if reference_models is not None else models,
+                parser, duplicate_model, canonical_model, models, users_of(duplicate_module, models)
             )
         ) is not None:
             updated_models.append(updated)

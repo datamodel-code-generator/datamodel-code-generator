@@ -267,7 +267,10 @@ REUSE_MODEL_TREE_SCOPE = PassDecl(
         Fact.MODELS_EXIST, Fact.BASES, Fact.FIELD_SET, Fact.FIELD_TYPES, Fact.NULLABLE, RenderFact.MODULE_MEMBERSHIP
     ),
     after=(After("apply_forced_invalid_dotted_stdout_repair", "shares the duplicates of the repaired module layout"),),
-    summary="Moves models duplicated across modules into a shared module.",
+    summary=(
+        "Moves models duplicated across modules into a shared module; every user names the subclass of a duplicate "
+        "in an import cycle that an earlier attempt found to fail."
+    ),
     condition="reuse_model with the tree scope",
 )
 RESOLVE_CIRCULAR_IMPORTS = PassDecl(

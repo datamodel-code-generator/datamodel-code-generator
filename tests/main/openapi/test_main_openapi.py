@@ -13982,6 +13982,43 @@ def test_main_openapi_reuse_model_cross_module_users(
     )
 
 
+@pytest.mark.parametrize(
+    ("input_file", "output_model_type"),
+    [
+        pytest.param("modular.yaml", DataModelType.PydanticV2BaseModel.value, id="modular-pydantic_v2"),
+        pytest.param("modular.yaml", DataModelType.DataclassesDataclass.value, id="modular-dataclasses"),
+        pytest.param(
+            "reuse_model_cross_module_users.yaml",
+            DataModelType.PydanticV2BaseModel.value,
+            id="cross-module-users-pydantic_v2",
+        ),
+        pytest.param(
+            "reuse_model_cross_module_users.yaml",
+            DataModelType.DataclassesDataclass.value,
+            id="cross-module-users-dataclasses",
+        ),
+    ],
+)
+def test_main_openapi_reuse_scope_tree_imports(input_file: str, output_model_type: str, output_dir: Path) -> None:
+    """Merge the modules whose import of a tree-scope duplicate runs back into them, so every module imports."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / input_file,
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--reuse-model",
+            "--reuse-scope",
+            "tree",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
 def test_main_openapi_dot_notation_deep_inheritance(output_dir: Path) -> None:
     """Test dot notation with deep inheritance from ancestor packages (issue #2039)."""
     run_main_and_assert(

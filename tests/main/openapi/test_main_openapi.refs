@@ -1778,6 +1778,11 @@ modules-collapse-dataclasses	main/openapi/reuse_model_cross_module_users/modules
 modules-collapse-pydantic_v2	main/openapi/reuse_model_cross_module_users/modules_collapse_pydantic_v2//*.py
 modules-dataclasses	main/openapi/reuse_model_cross_module_users/modules_dataclasses//*.py
 modules-pydantic_v2	main/openapi/reuse_model_cross_module_users/modules_pydantic_v2//*.py
+[test_main_openapi_reuse_scope_tree_imports]
+cross-module-users-dataclasses	main/openapi/main_openapi/reuse_scope_tree_imports[cross-module-users-dataclasses]/
+cross-module-users-pydantic_v2	main/openapi/main_openapi/reuse_scope_tree_imports[cross-module-users-pydantic_v2]/
+modular-dataclasses	main/openapi/main_openapi/reuse_scope_tree_imports[modular-dataclasses]/
+modular-pydantic_v2	main/openapi/main_openapi/reuse_scope_tree_imports[modular-pydantic_v2]/
 [test_main_openapi_root_model_default_primitive]
 	main/openapi/root_model_default_primitive.py
 [test_main_openapi_same_name_objects]
