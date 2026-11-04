@@ -426,6 +426,14 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FreezePoint.B1,
     ),
     AttributeFact(
+        "_MetaStrKeyType",
+        "meta_keywords",
+        FactKind.FACT,
+        (Fact.CONSTRAINTS,),
+        Phase.PARSE,
+        FreezePoint.B1,
+    ),
+    AttributeFact(
         "DataModelFieldBase",
         "name",
         FactKind.FACT,

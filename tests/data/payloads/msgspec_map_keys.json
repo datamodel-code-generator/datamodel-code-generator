@@ -1,0 +1,22 @@
+{
+  "valid": [
+    {
+      "named": {"abc": "x"},
+      "sized": {"ab": 1, "abcd": 2},
+      "patterned": {"x-a": "x"},
+      "named_and_patterned": {"abcde": "x"},
+      "nested": [{"12": true}],
+      "either": {"a1": "x", "b2": "y"}
+    }
+  ],
+  "invalid": [
+    {"named": {"Abc": "x"}},
+    {"sized": {"a": 1}},
+    {"sized": {"abcde": 1}},
+    {"patterned": {"y-a": "x"}},
+    {"named_and_patterned": {"abcdef": "x"}},
+    {"named_and_patterned": {"ABC": "x"}},
+    {"nested": [{"a": true}]},
+    {"either": {"c": "x"}}
+  ]
+}

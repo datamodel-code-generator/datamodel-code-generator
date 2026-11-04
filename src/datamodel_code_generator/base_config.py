@@ -428,6 +428,7 @@ class BaseGenerateConfig(BaseModel):
     use_decimal_for_multiple_of: bool = False
     use_decimal_in_field_forms: bool = False
     use_encoded_str_for_constrained_base64: bool = False
+    use_msgspec_meta_for_map_keys: bool = False
     omit_redundant_constraints: bool = False
     read_length_keywords_by_type: bool = False
     read_msgspec_union_bounds_exactly: bool = False

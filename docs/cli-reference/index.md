@@ -11,7 +11,7 @@ This documentation is auto-generated from test cases.
 | 📁 [Base Options](base-options.md) | 15 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 47 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 36 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 57 | Model generation behavior |
+| 🏗️ [Model Customization](model-customization.md) | 58 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 29 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 11 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
@@ -384,6 +384,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-generic-container-types`](typing-customization.md#use-generic-container-types)
 - [`--use-inline-field-description`](field-customization.md#use-inline-field-description)
 - [`--use-missing-sentinel`](model-customization.md#use-missing-sentinel)
+- [`--use-msgspec-meta-for-map-keys`](model-customization.md#use-msgspec-meta-for-map-keys)
 - [`--use-msgspec-nullable-enum-alias`](model-customization.md#use-msgspec-nullable-enum-alias)
 - [`--use-msgspec-tagged-unions`](model-customization.md#use-msgspec-tagged-unions)
 - [`--use-non-positive-negative-number-constrained-types`](typing-customization.md#use-non-positive-negative-number-constrained-types)

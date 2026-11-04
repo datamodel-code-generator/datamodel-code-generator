@@ -1360,6 +1360,10 @@
       "not_recommended": "runtime-behaviour",
       "reason": "MISSING instead of None for absent fields; changes field values."
     },
+    "use_msgspec_meta_for_map_keys": {
+      "not_recommended": "preset",
+      "reason": "msgspec.Struct output only: set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "use_msgspec_nullable_enum_alias": {
       "not_recommended": "runtime-behaviour",
       "reason": "msgspec.Struct output only: changes how enums that list null decode."

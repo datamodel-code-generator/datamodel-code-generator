@@ -64,6 +64,8 @@ use-duplicate-name-suffix-for-every-collision-practical	main/preset_opt_in_optio
 use-duplicate-name-suffix-for-every-collision-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-duplicate-name-suffix-for-every-collision-standard].py
 use-encoded-str-for-constrained-base64-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-encoded-str-for-constrained-base64-practical].py
 use-encoded-str-for-constrained-base64-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-encoded-str-for-constrained-base64-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-encoded-str-for-constrained-base64-practical].py
+use-msgspec-meta-for-map-keys-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-msgspec-meta-for-map-keys-practical].py	= main/jsonschema/msgspec_map_keys/msgspec_map_keys[meta].py
+use-msgspec-meta-for-map-keys-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-msgspec-meta-for-map-keys-standard].py	= main/jsonschema/msgspec_map_keys/msgspec_map_keys[meta].py
 use-single-dict-for-object-maps-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-single-dict-for-object-maps-practical].py
 use-single-dict-for-object-maps-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-single-dict-for-object-maps-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-single-dict-for-object-maps-practical].py
 use-tuple-for-closed-arrays-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-tuple-for-closed-arrays-practical].py

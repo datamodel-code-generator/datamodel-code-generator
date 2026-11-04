@@ -855,6 +855,14 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "rejects null, so a `type: [object, null]` property keeps `| None` after duplicate removal or reuse."
         ),
     ),
+    PresetOptionGroup(
+        title="Meta for msgspec map keys",
+        config=PresetConfig(use_msgspec_meta_for_map_keys=True),
+        description=(
+            "Write the keys of a msgspec map whose keys propertyNames or patternProperties constrain as "
+            "Annotated[str, Meta(...)], so msgspec checks them."
+        ),
+    ),
 )
 
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
@@ -1132,7 +1140,9 @@ def render_presets_markdown() -> str:
             "nested properties name by name and by the type it narrows, an allOf member reads its $ref siblings, "
             "$ref aliases and null branches, and no enum value that the merged type rejects is kept, as JSON Schema "
             "validates them, and `--keep-reference-null-on-merged-models`: a reference whose schema admits null keeps "
-            "its `| None` when its model is merged into an equal model that rejects null."
+            "its `| None` when its model is merged into an equal model that rejects null. They also add "
+            "`--use-msgspec-meta-for-map-keys`: the keys of a msgspec map whose keys propertyNames or "
+            "patternProperties constrain are written as `Annotated[str, Meta(...)]`, so msgspec checks them."
         ),
         "",
         (

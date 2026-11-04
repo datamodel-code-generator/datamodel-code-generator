@@ -753,6 +753,32 @@ class Person(BaseModel):
     work: Work
 ```
 
+### `--use-msgspec-meta-for-map-keys`
+
+| | |
+|---|---|
+| Option | `--use-msgspec-meta-for-map-keys` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.89.0 |
+| Issue | [#6074](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6074) |
+
+**Affects:** msgspec.Struct output of a map whose keys a `propertyNames` schema or the patterns of `patternProperties` constrain by `pattern`, `minLength` or `maxLength`. The keys are written `str`, so msgspec decodes every key, while Pydantic output checks them. With the option they are `Annotated[str, Meta(...)]`, which msgspec checks at decode. The keys of a `propertyNames` union (`anyOf` of patterns) stay `str`: msgspec decodes a union of strings by one of them.
+
+Schema: `{"type": "object", "propertyNames": {"pattern": "^[a-z]+$"}, "additionalProperties": {"type": "string"}}`.
+
+Without the option (same as 0.88.0):
+
+```python
+named: dict[str, str] | UnsetType = UNSET
+```
+
+With the option:
+
+```python
+named: dict[Annotated[str, Meta(pattern='^[a-z]+$')], str] | UnsetType = UNSET
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.

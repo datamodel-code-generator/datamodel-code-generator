@@ -61,6 +61,7 @@ OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
     "--ignore-ref-siblings-by-schema-version",
     "--intersect-combined-schema-keywords",
     "--keep-reference-null-on-merged-models",
+    "--use-msgspec-meta-for-map-keys",
 )
 """The options the 20261104 presets set beyond the 20261027 presets."""
 
@@ -152,6 +153,12 @@ CASES_20261104: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--output-model-type", "typing.TypedDict"],
         id="keep-reference-null-on-merged-models",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "msgspec_map_keys.json",
+        "jsonschema",
+        ["--output-model-type", "msgspec.Struct"],
+        id="use-msgspec-meta-for-map-keys",
     ),
 )
 """The inputs each opt-in option of the 20261104 presets changes."""

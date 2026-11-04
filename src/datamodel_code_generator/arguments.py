@@ -562,6 +562,13 @@ _flag(
 )
 _flag(
     model_options,
+    "--use-msgspec-meta-for-map-keys",
+    help="msgspec.Struct output only: write the keys of a map whose keys propertyNames or patternProperties "
+    "constrain by pattern, minLength or maxLength as Annotated[str, Meta(...)], so msgspec checks them as Pydantic "
+    "output does; without it the keys are str and every key is accepted, as in 0.88.0",
+)
+_flag(
+    model_options,
     "--use-msgspec-nullable-enum-alias",
     help="msgspec.Struct output only: write an enum that lists null as an Enum without the None member plus an "
     "Enum | None type alias, so that msgspec can decode it. Without it a plain Enum keeps the 0.83.0 None member, "

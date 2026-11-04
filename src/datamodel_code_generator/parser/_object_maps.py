@@ -598,8 +598,14 @@ def object_map_admits_null(parser: ObjectMapsHost, obj: JsonSchemaObject) -> boo
 def parse_property_name_key_schema(  # noqa: PLR0911
     parser: ObjectMapsHost,
     property_names: JsonSchemaObject | bool,  # noqa: FBT001
+    *,
+    member: bool = False,
 ) -> DataType:
-    """Return the key type a propertyNames schema gives the keys of a dict."""
+    """Return the key type a propertyNames schema gives the keys of a dict.
+
+    Constrained string keys take the type manager's map key type, except a ``member`` of a union of keys, which takes
+    its string type (msgspec decodes a union of strings by one of them).
+    """
     if isinstance(property_names, bool):
         return parser.data_type_manager.get_data_type(Types.string)
     if (python_type := parser._get_x_python_type(property_names)) is not None:  # noqa: SLF001
@@ -632,19 +638,19 @@ def parse_property_name_key_schema(  # noqa: PLR0911
         kwargs.update(
             (key, value) for key in ("minLength", "maxLength") if (value := getattr(property_names, key)) is not None
         )
-        return parser.data_type_manager.get_data_type(
-            Types.string,
-            use_annotated=parser.use_annotated,
-            target_pydantic_version=parser.target_pydantic_version,
-            **kwargs,
-        )
+        kwargs.update(use_annotated=parser.use_annotated, target_pydantic_version=parser.target_pydantic_version)
+        manager = parser.data_type_manager
+        return manager.get_data_type(Types.string, **kwargs) if member else manager.get_map_key_str_type(**kwargs)
     return parser.data_type_manager.get_data_type(Types.string)
 
 
 def parse_string_property_name_union(
-    parser: ObjectMapsHost, schema: JsonSchemaObject, *, discard_nonstring: bool = False
+    parser: ObjectMapsHost, schema: JsonSchemaObject, *, discard_nonstring: bool = False, member: bool = False
 ) -> tuple[DataType | None, bool]:
-    """Build constrained string keys, retaining unions already dominated by a plain string branch."""
+    """Build constrained string keys, retaining unions already dominated by a plain string branch.
+
+    ``member`` reads a branch of a union of keys.
+    """
     if (
         schema.model_fields_set - parser.STRING_PROPERTY_NAME_FIELDS
         or type(parser)._property_names_forbids_all_keys(schema)  # noqa: SLF001
@@ -656,7 +662,7 @@ def parse_string_property_name_union(
     ):
         return None, False
     if not schema.anyOf:
-        return parse_property_name_key_schema(parser, schema), not schema.has_constraint
+        return parse_property_name_key_schema(parser, schema, member=member), not schema.has_constraint
     if schema.has_constraint:
         return None, False
     data_types: list[DataType] = []
@@ -672,7 +678,7 @@ def parse_string_property_name_union(
         data_type, unrestricted = (
             (parser.data_type_manager.get_data_type(Types.string), True)
             if branch is True
-            else parse_string_property_name_union(parser, branch, discard_nonstring=discard_nonstring)
+            else parse_string_property_name_union(parser, branch, discard_nonstring=discard_nonstring, member=True)
         )
         if unrestricted and (not parser.field_constraints or branch_count == 0 or len(data_types) != branch_count):
             return None, True
@@ -838,8 +844,7 @@ def object_map_key_type(  # noqa: PLR0913
         return (
             None
             if pattern is None
-            else parser.data_type_manager.get_data_type(
-                Types.string,
+            else parser.data_type_manager.get_map_key_str_type(
                 pattern=pattern,
                 use_annotated=parser.use_annotated,
                 target_pydantic_version=parser.target_pydantic_version,

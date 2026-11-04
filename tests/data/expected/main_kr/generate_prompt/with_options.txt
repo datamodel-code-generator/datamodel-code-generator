@@ -176,6 +176,7 @@ What other options should I use?
 - `--use-frozen-field`: Generate frozen (immutable) field definitions for readOnly properties.
 - `--use-generic-base-class`: Generate a shared base class with model configuration to avoid repetition (DRY).
 - `--use-missing-sentinel`: Use Pydantic's MISSING sentinel for unset optional BaseModel or dataclass fields.
+- `--use-msgspec-meta-for-map-keys`: Check the keys of a msgspec map whose keys propertyNames or patternProperti...
 - `--use-msgspec-nullable-enum-alias`: Write a msgspec.Struct enum that lists null as an Enum and a nullable alias.
 - `--use-msgspec-tagged-unions`: Write a msgspec.Struct discriminated union as tagged structs as a whole.
 - `--use-one-literal-as-default`: Use single literal value as default when enum has only one option.
@@ -1109,6 +1110,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Generate a shared base class with model configuration
                         (e.g., extra='forbid') instead of repeating the
                         configuration in each model. Keeps code DRY.
+  --use-msgspec-meta-for-map-keys
+                        msgspec.Struct output only: write the keys of a map
+                        whose keys propertyNames or patternProperties
+                        constrain by pattern, minLength or maxLength as
+                        Annotated[str, Meta(...)], so msgspec checks them as
+                        Pydantic output does; without it the keys are str and
+                        every key is accepted, as in 0.88.0
   --use-msgspec-nullable-enum-alias
                         msgspec.Struct output only: write an enum that lists
                         null as an Enum without the None member plus an Enum |

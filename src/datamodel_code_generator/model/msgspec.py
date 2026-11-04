@@ -9,6 +9,7 @@ from ast import literal_eval
 from fractions import Fraction
 from functools import partial, wraps
 from operator import itemgetter
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, NamedTuple, Optional, TypeVar, cast
 
 from typing_extensions import Sentinel, final, override
@@ -257,6 +258,39 @@ class _MetaAnnotatedType(DataType):
     @override
     def _annotation_texts(self) -> tuple[str | None, ...]:
         return (self.type_hint,)
+
+
+class _MetaStrKeyType(DataType):
+    """A string dict key that msgspec checks by the keywords of its ``Meta()`` call: ``Annotated[str, Meta(...)]``."""
+
+    meta_keywords: Any = None
+
+    @property
+    @override
+    def type_hint(self) -> str:
+        """Write ``Annotated`` over ``str`` and the ``Meta()`` call, its arguments sorted by their text."""
+        keywords = sorted(keyword_argument(k, represent_python_value(v)) for k, v in self.meta_keywords.items())
+        return subscript_text("Annotated", ("str", call_text("Meta", keywords)))
+
+    @property
+    @override
+    def _annotation_texts(self) -> tuple[str | None, ...]:
+        return (self.type_hint,)
+
+    @property
+    @override
+    def imports(self) -> Iterator[Import]:
+        """Yield ``Meta`` too; the typing name ``Annotated`` is read from the hint."""
+        yield from super().imports
+        yield IMPORT_MSGSPEC_META
+
+
+_META_KEY_KEYWORDS: Mapping[str, str] = MappingProxyType({
+    "pattern": "pattern",
+    "minLength": "min_length",
+    "maxLength": "max_length",
+})
+"""The ``Meta`` keyword of each key constraint of a propertyNames or patternProperties map."""
 
 
 class _UnionLeaf(NamedTuple):
@@ -1792,6 +1826,27 @@ class DataTypeManager(_DataTypeManager):
     FIXED_TUPLES_TAKE_LENGTH: ClassVar[bool] = _applicability.MSGSPEC_OUTPUT.fixed_tuples_take_length
     LITERALS_TAKE_CONSTRAINTS: ClassVar[bool] = _applicability.MSGSPEC_OUTPUT.literals_take
     REFUSED_LITERAL_TYPES: ClassVar[tuple[type, ...]] = _applicability.MSGSPEC_OUTPUT.refused_literal_types
+
+    @override
+    def get_map_key_str_type(self, **kwargs: Any) -> DataType:
+        """Return ``Annotated[str, Meta(...)]`` under --use-msgspec-meta-for-map-keys, so msgspec checks the keys.
+
+        Without it the key is ``str``, which accepts every key, as in 0.88.0.
+        """
+        if not self.use_msgspec_meta_for_map_keys or not (
+            keywords := {meta: kwargs[key] for key, meta in _META_KEY_KEYWORDS.items() if kwargs.get(key) is not None}
+        ):
+            return super().get_map_key_str_type(**kwargs)
+        return _create_context_data_type(
+            "MsgspecMetaStrKeyType",
+            _MetaStrKeyType,
+            self.python_version,
+            self.use_standard_collections,
+            self.use_generic_container_types,
+            self.use_union_operator,
+            self.treat_dot_as_module,
+            self.use_serialize_as_any,
+        )(type="str", meta_keywords=keywords)
 
 
 _rebuild_model_with_datamodel_namespace(Constraints)
