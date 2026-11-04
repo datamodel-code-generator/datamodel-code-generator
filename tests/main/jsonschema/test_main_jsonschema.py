@@ -4162,9 +4162,30 @@ _CATALOG_PAYLOADS = ['{"featured": {"sku": "s"}, "parent": {"featured": {"sku": 
 _DETAIL_PAYLOADS = ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']
 _NEEDS_STR_ENUM = pytest.mark.skipif(sys.version_info < (3, 11), reason="the output imports enum.StrEnum")
 _ANNOTATIONS_DECODED = [("api", "Order", _ITEM_PAYLOADS), ("", "Catalog", _CATALOG_PAYLOADS)]
+_RENAMED_SUBMODULE_DECODED = [
+    (
+        "pkg.api",
+        "Order",
+        ['{"detail": {"message": "m", "note": {"text": "t"}}, "other": {"flag": true}}', '{"detail": {"message": 1}}'],
+    ),
+    ("pkg", "Report", ['{"warn": {"count": 1}}', '{"warn": {"count": "x"}}']),
+]
 _LITERAL_PAYLOADS = ['{"item": {"sku": "s"}}', '{"kind": "book"}', '{"kind": "disc"}', '{"item": {"sku": 1}}']
 
 
+@pytest.mark.cli_doc(
+    options=["--rename-submodules-hidden-by-classes"],
+    option_description="""Rename a submodule named like a class of its package.
+
+A dotted schema name such as `pkg.Warn.Detail` beside `pkg.Warn` writes the class `Warn` in `pkg/__init__.py` and the
+module `pkg/Warn.py`. Importing the module binds the name `Warn` of the package to the module in place of the class, so
+the models that name either fail to decode. With this option the module, and the modules below it, take the first
+free name with trailing underscores (`pkg/Warn_.py`, or `pkg/Warn__.py` beside a module `pkg/Warn_.py`), also where
+the directories of a directory input name it; the class keeps its name.""",
+    input_schema="jsonschema/submodule_named_like_package_class.json",
+    cli_args=["--output-model-type", "pydantic_v2.BaseModel", "--rename-submodules-hidden-by-classes"],
+    golden_output="main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-pydantic_v2.BaseModel]/",
+)
 @pytest.mark.parametrize(
     ("input_name", "output_model_type", "target_python_version", "extra_args", "decoded"),
     [
@@ -4387,6 +4408,41 @@ _LITERAL_PAYLOADS = ['{"item": {"sku": "s"}}', '{"kind": "book"}', '{"kind": "di
             )
             for output_model_type in ("pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct")
         ),
+        *(
+            pytest.param(
+                "submodule_named_like_package_class.json",
+                output_model_type,
+                "3.10",
+                ["--rename-submodules-hidden-by-classes", *extra_args],
+                _RENAMED_SUBMODULE_DECODED,
+                id=f"renamed-{output_model_type}{suffix}",
+            )
+            for output_model_type, extra_args, suffix in (
+                ("pydantic_v2.BaseModel", [], ""),
+                ("dataclasses.dataclass", [], ""),
+                ("msgspec.Struct", [], ""),
+                ("pydantic_v2.BaseModel", ["--use-exact-imports"], "-exact-imports"),
+            )
+        ),
+        pytest.param(
+            "submodule_named_like_package_class_files",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--rename-submodules-hidden-by-classes"],
+            [
+                ("api", "Order", ['{"detail": {"message": "m", "note": {"text": "t"}}, "warn": {"count": 1}}']),
+                ("pkg", "Warn", ['{"count": 1}', '{"count": "x"}']),
+            ],
+            id="renamed-files",
+        ),
+        pytest.param(
+            "module_named_annotations.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--rename-submodules-hidden-by-classes"],
+            _ANNOTATIONS_DECODED,
+            id="renamed-nothing",
+        ),
     ],
 )
 def test_main_jsonschema_submodule_hidden_by_package(
@@ -4419,8 +4475,11 @@ def test_main_jsonschema_submodule_hidden_by_package(
     ``--generate-schema-validators`` follows it (``BaseModel_aliased``). Where ``pkg/api.py`` imports
     ``pydantic.BaseModel`` or ``typing.Literal`` beside ``from . import BaseModel`` or ``from . import Literal``
     (#6105), the later import named both: the models of ``pkg/BaseModel.py`` and ``pkg/Literal.py`` are imported from
-    their modules, the default enum member included. The models are decoded after the first module named is imported,
-    in one import of the package.
+    their modules, the default enum member included. Where the ``__init__.py`` imports nothing from the submodule
+    (#6067), importing ``pkg.Warn`` replaced the class: --rename-submodules-hidden-by-classes renames the submodule and
+    the modules below it (``pkg/Warn__/``, as ``pkg/Warn_.py`` holds another submodule), also where the file layout of
+    a directory input names it (``pkg/Warn.json``, ``pkg/Warn/deep.json``), and renames nothing where no class hides a
+    submodule. The models are decoded after the first module named is imported, in one import of the package.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / input_name,

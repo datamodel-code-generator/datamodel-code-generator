@@ -257,6 +257,22 @@ APPLY_FORCED_INVALID_DOTTED_STDOUT_REPAIR = PassDecl(
     after=(After("replace_duplicate_name_in_module", "flattens invalid roots under the names deduplication gave"),),
     summary="Flattens the modules of dotted stdout output that a retry found invalid, then regroups.",
 )
+RENAME_SUBMODULES_HIDDEN_BY_CLASSES = PassDecl(
+    "rename_submodules_hidden_by_classes",
+    Phase.STRUCTURE,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(RenderFact.MODULE_MEMBERSHIP, RenderFact.CLASS_NAMES),
+    writes=_facts(RenderFact.MODULE_MEMBERSHIP),
+    after=(
+        After(
+            "apply_forced_invalid_dotted_stdout_repair",
+            "reads the class names and module paths of the repaired layout",
+        ),
+    ),
+    summary="Renames each submodule named like a class of its package, then regroups.",
+    condition="rename_submodules_hidden_by_classes",
+)
 REUSE_MODEL_TREE_SCOPE = PassDecl(
     "reuse_model_tree_scope",
     Phase.STRUCTURE,
@@ -266,7 +282,10 @@ REUSE_MODEL_TREE_SCOPE = PassDecl(
     writes=_facts(
         Fact.MODELS_EXIST, Fact.BASES, Fact.FIELD_SET, Fact.FIELD_TYPES, Fact.NULLABLE, RenderFact.MODULE_MEMBERSHIP
     ),
-    after=(After("apply_forced_invalid_dotted_stdout_repair", "shares the duplicates of the repaired module layout"),),
+    after=(
+        After("apply_forced_invalid_dotted_stdout_repair", "shares the duplicates of the repaired module layout"),
+        After("rename_submodules_hidden_by_classes", "shares the duplicates of the renamed submodules"),
+    ),
     summary=(
         "Moves models duplicated across modules into a shared module; every user names the subclass of a duplicate "
         "in an import cycle that an earlier attempt found to fail."
@@ -285,6 +304,7 @@ RESOLVE_CIRCULAR_IMPORTS = PassDecl(
             "reuse_model_tree_scope",
             "breaks the cycles of the modules tree-scope reuse leaves, its shared module included",
         ),
+        After("rename_submodules_hidden_by_classes", "merges the renamed submodules under the names the merge gives"),
     ),
     summary=(
         "Merges modules that import each other, or whose import an earlier attempt found to fail, into _internal "

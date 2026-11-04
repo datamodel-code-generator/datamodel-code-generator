@@ -10,16 +10,20 @@ import operator
 import os.path
 from collections import defaultdict
 from itertools import count, groupby
+from keyword import iskeyword
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from typing_extensions import Protocol
 
 from datamodel_code_generator import AllExportsScope, Error, ModuleSplitMode, ReuseScope
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._model_keys import model_key_of
+from datamodel_code_generator._parse_memo import MemoTable
 from datamodel_code_generator.model.base import (
     DataModel,
+    forget_model_memos,
+    get_module_path,
     get_resolve_reference_action_capabilities,
     remember_nested_factory_order_before_nullability,
 )
@@ -79,6 +83,7 @@ __all__ = [
     "detect_standard_generation_templates",
     "get_module_directory",
     "group_models_by_module",
+    "rename_submodules_hidden_by_classes",
     "replace_duplicate_name_in_module",
     "reset_collapsed_reuse_state",
     "resolve_module_circular_imports",
@@ -127,6 +132,10 @@ class StructureHost(
     @property
     def custom_class_name_generator(self) -> Callable[[str], str] | None:
         """The function that generates class names, if configured."""
+
+    @property
+    def model_resolver(self) -> ModelResolver:
+        """The resolver of the model names."""
 
     @property
     def custom_formatter(self) -> list[str] | None:
@@ -949,6 +958,92 @@ def apply_forced_invalid_dotted_stdout_repair(parser: StructureHost, state: _Str
     if not parser._apply_forced_invalid_dotted_stdout_repair(state.module_models, state.module_split_mode):  # noqa: SLF001
         return
     live_model_ids = {id(model) for _, models in state.module_models for model in models}
+    _group_models_by_module(
+        parser, state, (model for model in state.sorted_data_models.values() if id(model) in live_model_ids)
+    )
+
+
+def _module_segment_renamed(model: DataModel, index: int, segment: str) -> tuple[str | None, Path | None]:
+    """Return the reference name and the file path that put ``segment`` at ``index`` of the model's module path.
+
+    The leading segments of a module path come from the model's file path, the others from the dots of its name
+    (``get_module_path``).
+    """
+    name_segments = len(get_module_path(model.name, None, treat_dot_as_module=model._treat_dot_as_module))  # noqa: SLF001
+    if index >= (file_segments := len(model.module_path) - name_segments):
+        parts = model.name.split(".")
+        parts[index - file_segments] = segment
+        return ".".join(parts), None
+    file_path = cast("Path", model.file_path)
+    if index == file_segments - 1:
+        return None, file_path.with_name(f"{segment}{file_path.suffix}")
+    return None, Path(*file_path.parts[:index], segment, *file_path.parts[index + 1 :])
+
+
+def _hidden_submodule_renames(classes: set[str], submodules: set[str]) -> dict[str, str]:
+    """Return the new name of each submodule a class of its package is named like: the first free ``padded`` name.
+
+    A name is free when no class, no submodule, no name given before and no keyword holds it.
+    """
+    taken = classes | submodules
+    renames: dict[str, str] = {}
+    for hidden in sorted(classes & submodules):
+        renames[hidden], _ = first_free(hidden, lambda name: name in taken or iskeyword(name), "padded", start=1)
+        taken.add(renames[hidden])
+    return renames
+
+
+def rename_submodules_hidden_by_classes(parser: StructureHost, state: _StructureState) -> None:
+    """Rename each submodule named like a class of its package, so that importing it leaves the class in place.
+
+    Importing ``pkg.Warn`` binds the name ``Warn`` of the package ``pkg`` to the submodule, in place of the class
+    ``Warn`` that ``pkg/__init__.py`` defines. Under --rename-submodules-hidden-by-classes such a submodule, with the
+    modules below it, takes the first name of the ``padded`` sequence (``Warn_``) that no class of the package, no
+    other submodule of it and no keyword holds; the class keeps its name. Packages are read from the shortest path on,
+    so a renamed package's own submodules are found under its new name. A submodule is a segment of a module path
+    (``DataModel.module_path``), which ``--module-split-mode single`` extends by the class's own module. Class names are
+    final within each module here (``replace_duplicate_name_in_module``); the modules regroup as
+    ``_group_models_by_module`` groups them.
+    """
+    live_models = [model for _, models in state.module_models for model in models]
+    module_split_mode, target_python_version = state.module_split_mode, parser.target_python_version
+    modules = {id(model): _module_key(model, module_split_mode, target_python_version) for model in live_models}
+    paths = {id(model): tuple(model.module_path) for model in live_models}
+    class_models = without_stand_ins(parser, live_models)
+    renamed: list[DataModel] = []
+    for depth in range(max(map(len, paths.values()), default=0)):
+        for package in sorted({path[:depth] for path in paths.values() if len(path) > depth}):
+            below = [
+                model for model in live_models if len(path := paths[id(model)]) > depth and path[:depth] == package
+            ]
+            renames = _hidden_submodule_renames(
+                {model.class_name for model in class_models if modules[id(model)] == package},
+                {paths[id(model)][depth] for model in below},
+            )
+            for model in below:
+                if (segment := renames.get(paths[id(model)][depth])) is None:
+                    continue
+                reference_name, file_path = _module_segment_renamed(model, depth, segment)
+                parser._graph_builder.rename_model(model, reference_name=reference_name, new_file_path=file_path)  # noqa: SLF001
+                paths[id(model)], modules[id(model)] = (
+                    (*key[:depth], segment, *key[depth + 1 :]) for key in (paths[id(model)], modules[id(model)])
+                )
+                renamed.append(model)
+    if not renamed:
+        return
+    parser.model_resolver.refresh_reference_names()
+    generation_index = parser.generation_store.index
+    for stale in {
+        *renamed,
+        *(
+            owner
+            for model in renamed
+            for fact in generation_index.data_type_facts_for_reference(model.reference)
+            if (owner := generation_index.owner_model_for_data_type(fact.data_type)) is not None
+        ),
+    }:
+        forget_model_memos(stale, MemoTable.DEDUP_KEYS)
+    live_model_ids = set(map(id, live_models))
     _group_models_by_module(
         parser, state, (model for model in state.sorted_data_models.values() if id(model) in live_model_ids)
     )

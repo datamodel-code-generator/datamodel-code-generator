@@ -7754,6 +7754,18 @@ module-import-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by
 module-import-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[module-import-msgspec.Struct]/
 module-import-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[module-import-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[module-import-dataclasses.dataclass].payloads.txt
 module-import-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[module-import-pydantic_v2.BaseModel]/
+renamed-dataclasses.dataclass	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-dataclasses.dataclass].payloads.txt
+renamed-dataclasses.dataclass	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-dataclasses.dataclass]/
+renamed-files	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-files].payloads.txt
+renamed-files	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-files]/
+renamed-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-msgspec.Struct].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-dataclasses.dataclass].payloads.txt
+renamed-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-msgspec.Struct]/
+renamed-nothing	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-nothing].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-dataclasses.dataclass].payloads.txt
+renamed-nothing	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-nothing]/	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-pydantic_v2.BaseModel]/
+renamed-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-dataclasses.dataclass].payloads.txt
+renamed-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-pydantic_v2.BaseModel]/
+renamed-pydantic_v2.BaseModel-exact-imports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-pydantic_v2.BaseModel-exact-imports].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-dataclasses.dataclass].payloads.txt
+renamed-pydantic_v2.BaseModel-exact-imports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-pydantic_v2.BaseModel-exact-imports]/
 [test_main_jsonschema_tagged_union_non_literal_const]
 	main/jsonschema/main_jsonschema/tagged_union_non_literal_const.py
 [test_main_jsonschema_time_delta]

@@ -643,6 +643,14 @@ _toggle(
 )
 _flag(
     model_options,
+    "--rename-submodules-hidden-by-classes",
+    help="Rename a submodule named like a class of its package, such as pkg/Warn.py beside the class Warn of "
+    "pkg/__init__.py, to the first free name with trailing underscores (pkg/Warn_.py), with the modules below it; the "
+    "class keeps its name. Without it importing the submodule replaces the class in its package, so the models that "
+    "use either fail to decode",
+)
+_flag(
+    model_options,
     "--use-generic-base-class",
     help="Generate a shared base class with model configuration (e.g., extra='forbid') "
     "instead of repeating the configuration in each model. Keeps code DRY.",

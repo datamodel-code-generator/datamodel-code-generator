@@ -478,7 +478,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(_C.TEMPLATE, "--additional-imports", group=_G.IMPORTS),
     **_opts(_C.TEMPLATE, "--class-decorators", group=_G.GENERATED_OUTPUT),
     **_opts(_C.TEMPLATE, "--use-double-quotes", group=_G.OUTPUT_FORMATTING),
-    **_opts(_C.TEMPLATE, "--use-exact-imports", group=_G.IMPORTS),
+    **_opts(_C.TEMPLATE, "--use-exact-imports --rename-submodules-hidden-by-classes", group=_G.IMPORTS),
     **_opts(_C.TEMPLATE, "--disable-appending-item-suffix --no-treat-dot-as-module"),
     **_opts(
         _C.TEMPLATE,

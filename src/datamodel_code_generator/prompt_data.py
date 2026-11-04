@@ -154,6 +154,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--read-unevaluated-properties": "Read a schema-valued `unevaluatedProperties` as `additionalProperties`.",
     "--recommend-options": "Recommend options for the input schema on top of the latest dated preset (experimental).",
     "--remove-special-field-name-prefix": "Remove the special prefix from field names.",
+    "--rename-submodules-hidden-by-classes": "Rename a submodule named like a class of its package.",
     "--reuse-model": "Reuse identical model definitions instead of generating duplicates.",
     "--reuse-scope": "Scope for model reuse detection (root or tree).",
     "--schema-validator-base-class-name": "Set the generated shared Pydantic v2 schema runtime validator base class...",

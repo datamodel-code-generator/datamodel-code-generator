@@ -779,6 +779,40 @@ With the option:
 named: dict[Annotated[str, Meta(pattern='^[a-z]+$')], str] | UnsetType = UNSET
 ```
 
+### `--rename-submodules-hidden-by-classes`
+
+| | |
+|---|---|
+| Option | `--rename-submodules-hidden-by-classes` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.89.0 |
+| Issue | [#6067](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6067) |
+
+**Affects:** modular output where a package's `__init__.py` defines a class named like one of its submodules, such as the class `Warn` of `pkg.Warn` beside the module `pkg/Warn.py` of `pkg.Warn.Detail`. Importing the module binds the name `Warn` of the package to the module in place of the class, so the models that name either fail to decode. With the option the module, with the modules below it, takes the first free name with trailing underscores (`pkg/Warn_.py`, `pkg/Warn__.py` beside a module `pkg/Warn_.py`), also where the directories of a directory input name it; the class keeps its name.
+
+Schema: `$defs` with `pkg.Warn`, `pkg.Warn.Detail`, `pkg.Report` (a `$ref` to `pkg.Warn`) and `pkg.api.Order` (a `$ref` to `pkg.Warn.Detail`), with `--output`.
+
+Without the option (same as 0.88.0), `pkg/api.py` beside `pkg/Warn.py`:
+
+```python
+from . import Warn
+
+
+class Order(BaseModel):
+    detail: Warn.Detail | None = None
+```
+
+With the option, `pkg/api.py` beside `pkg/Warn_.py`:
+
+```python
+from . import Warn_
+
+
+class Order(BaseModel):
+    detail: Warn_.Detail | None = None
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.

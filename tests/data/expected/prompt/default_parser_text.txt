@@ -200,6 +200,7 @@
 - `--no-strict-dotted-module-names`
 - `--no-treat-dot-as-module`: Keep dots in schema names as underscores for flat output.
 - `--no-use-type-checking-imports`: Keep generated model imports available at runtime when using Ruff fixes.
+- `--rename-submodules-hidden-by-classes`: Rename a submodule named like a class of its package.
 - `--schema-validator-base-class-name`: Set the generated shared Pydantic v2 schema runtime validator base class...
 - `--schema-validator-type`: Select the schema-derived runtime validator backend.
 - `--strict-dotted-module-names`: Require canonical Python identifiers when inferring dotted module paths.

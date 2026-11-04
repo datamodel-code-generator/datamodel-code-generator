@@ -206,6 +206,7 @@ Formatting, custom templates, and generated file headers.
 - `--no-treat-dot-as-module`: Treat dotted schema names as module paths, creating nested directory structures (e.g., 'foo.bar.Model' becomes 'foo/bar.py'). Use --no-treat-dot-as-module to keep dots in names as underscores for single-file output.
 - `--strict-dotted-module-names`: Only infer dotted schema names as module paths when every segment is a canonical Python identifier. This applies only to automatic inference and does not override --treat-dot-as-module or --no-treat-dot-as-module.
 - `--no-strict-dotted-module-names`: Only infer dotted schema names as module paths when every segment is a canonical Python identifier. This applies only to automatic inference and does not override --treat-dot-as-module or --no-treat-dot-as-module.
+- `--rename-submodules-hidden-by-classes`: Rename a submodule named like a class of its package, such as pkg/Warn.py beside the class Warn of pkg/__init__.py, to the first free name with trailing underscores (pkg/Warn_.py), with the modules below it; the class keeps its name. Without it importing the submodule replaces the class in its package, so the models that use either fail to decode
 - `--use-exact-imports`: import exact types instead of modules, for example: "from .foo import Bar" instead of "from . import foo" with "foo.Bar"
 - `--custom-file-header`: Custom file header
 - `--custom-file-header-path`: Custom file header file path

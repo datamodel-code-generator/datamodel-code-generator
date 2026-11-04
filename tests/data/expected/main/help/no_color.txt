@@ -747,6 +747,14 @@ Model customization:
                         dataclass whose config names an alias generator.
                         Without it a field keeps the alias it has without the
                         generator, which the config then replaces.
+  --rename-submodules-hidden-by-classes
+                        Rename a submodule named like a class of its package,
+                        such as pkg/Warn.py beside the class Warn of
+                        pkg/__init__.py, to the first free name with trailing
+                        underscores (pkg/Warn_.py), with the modules below it;
+                        the class keeps its name. Without it importing the
+                        submodule replaces the class in its package, so the
+                        models that use either fail to decode
   --reuse-model         Reuse models on the field when a module has the model
                         with the same content
   --reuse-scope {module,tree}

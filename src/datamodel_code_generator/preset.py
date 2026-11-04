@@ -863,6 +863,15 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "Annotated[str, Meta(...)], so msgspec checks them."
         ),
     ),
+    PresetOptionGroup(
+        title="Submodules hidden by classes renamed",
+        config=PresetConfig(rename_submodules_hidden_by_classes=True),
+        description=(
+            "Rename a submodule named like a class of its package, such as pkg/Warn.py beside the class Warn of "
+            "pkg/__init__.py, to the first free name with trailing underscores, so importing it leaves the class in "
+            "place."
+        ),
+    ),
 )
 
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
@@ -1142,7 +1151,9 @@ def render_presets_markdown() -> str:
             "validates them, and `--keep-reference-null-on-merged-models`: a reference whose schema admits null keeps "
             "its `| None` when its model is merged into an equal model that rejects null. They also add "
             "`--use-msgspec-meta-for-map-keys`: the keys of a msgspec map whose keys propertyNames or "
-            "patternProperties constrain are written as `Annotated[str, Meta(...)]`, so msgspec checks them."
+            "patternProperties constrain are written as `Annotated[str, Meta(...)]`, so msgspec checks them, and "
+            "`--rename-submodules-hidden-by-classes`: a submodule named like a class of its package is renamed "
+            "(`pkg/Warn_.py`), so importing it leaves the class in place."
         ),
         "",
         (

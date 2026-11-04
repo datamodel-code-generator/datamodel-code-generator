@@ -218,6 +218,11 @@ STRUCTURE_BODY: tuple[StepLike[PipelineHost, _StructureState], ...] = (
         ),
     ),
     PassSpec("apply_forced_invalid_dotted_stdout_repair", late(structure.apply_forced_invalid_dotted_stdout_repair)),
+    PassSpec(
+        "rename_submodules_hidden_by_classes",
+        late(structure.rename_submodules_hidden_by_classes),
+        when=lambda self, _: self.config.rename_submodules_hidden_by_classes,
+    ),
     PassSpec("reuse_model_tree_scope", late(structure.apply_reuse_model_tree_scope)),
     PassSpec("resolve_circular_imports", late(structure.resolve_module_circular_imports)),
 )

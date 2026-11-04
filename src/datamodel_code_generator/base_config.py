@@ -461,6 +461,7 @@ class BaseGenerateConfig(BaseModel):
     http_query_parameters: Sequence[tuple[str, str]] | None = None
     treat_dot_as_module: bool | None = None
     strict_dotted_module_names: bool = False
+    rename_submodules_hidden_by_classes: bool = False
     use_exact_imports: bool = False
     use_type_checking_imports: bool | None = None
     union_mode: UnionMode | None = None
