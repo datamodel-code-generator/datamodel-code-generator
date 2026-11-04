@@ -1,0 +1,19 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "structOrMap": {"anyOf": [{"$ref": "#/$defs/Spec"}, {"type": "object", "additionalProperties": {"type": "string"}}]},
+    "maps": {
+      "anyOf": [
+        {"type": "object", "additionalProperties": {"type": "string"}},
+        {"type": "object", "additionalProperties": {"type": "integer"}}
+      ]
+    },
+    "lists": {"anyOf": [{"type": "array", "items": {"type": "string"}}, {"type": "array", "items": {"type": "integer"}}]},
+    "textOrBytes": {"anyOf": [{"type": "string", "format": "binary"}, {"type": "string"}]},
+    "textOrDuration": {"anyOf": [{"type": "string", "format": "duration"}, {"type": "string", "enum": ["none"]}]},
+    "structOrList": {"anyOf": [{"$ref": "#/$defs/Spec"}, {"type": "array", "items": {"type": "string"}}]},
+    "textOrNumber": {"anyOf": [{"type": "string"}, {"type": "number"}]}
+  },
+  "$defs": {"Spec": {"type": "object", "properties": {"x": {"type": "string"}}}}
+}

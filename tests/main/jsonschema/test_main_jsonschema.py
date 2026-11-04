@@ -18457,12 +18457,20 @@ def test_main_jsonschema_type_alias_recursive_container(
 ) -> None:
     """Quote the containers of a TypeAliasType value that recurse into its own alias cycle.
 
-    msgspec.Meta takes no length on the fixed-length tuple of Pair, so msgspec output leaves it out with a warning.
+    msgspec.Meta takes no length on the fixed-length tuple of Pair, so msgspec output leaves it out with a warning, and
+    msgspec decodes no union of two lists, which it warns about for each union holding them.
     """
+    msgspec_container = output_model_type == "msgspec.Struct" and input_file == "container"
     with (
         pytest.warns(UserWarning, match=r"msgspec\.Meta does not take max_length, min_length on tuple")
-        if output_model_type == "msgspec.Struct" and input_file == "container"
-        else nullcontext()
+        if msgspec_container
+        else nullcontext(),
+        pytest.warns(
+            UserWarning,
+            match=r"msgspec cannot decode the union (Hub|Term|Factor|Link): it holds the array-like members",
+        )
+        if msgspec_container
+        else nullcontext(),
     ):
         run_main_and_assert(
             input_path=JSON_SCHEMA_DATA_PATH / f"type_alias_recursive_{input_file}.json",
@@ -22777,19 +22785,27 @@ def test_main_nested_model_cycle_factories_strip_default_none(output_model: str,
 def test_main_use_default_factory_for_optional_nested_models_with_dict(
     output_model: str, expected_file: str, output_file: Path
 ) -> None:
-    """Test --use-default-factory-for-optional-nested-models with dict union skips dict types."""
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "default_factory_nested_model_with_dict.json",
-        output_path=output_file,
-        input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file=expected_file,
-        extra_args=[
-            "--output-model-type",
-            output_model,
-            "--use-default-factory-for-optional-nested-models",
-        ],
-    )
+    """Test --use-default-factory-for-optional-nested-models with dict union skips dict types.
+
+    msgspec decodes no union of a dict and a Struct, so msgspec output warns about it.
+    """
+    with (
+        pytest.warns(UserWarning, match=r"it holds the dict-like members dict\[str, str\], Contact")
+        if output_model == "msgspec.Struct"
+        else nullcontext()
+    ):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "default_factory_nested_model_with_dict.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file=expected_file,
+            extra_args=[
+                "--output-model-type",
+                output_model,
+                "--use-default-factory-for-optional-nested-models",
+            ],
+        )
 
 
 @pytest.mark.benchmark

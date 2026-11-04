@@ -1,0 +1,39 @@
+{
+  "defaults": {
+    "listBesideStruct": [
+      "x"
+    ],
+    "objectBesideList": {
+      "a": "y"
+    },
+    "listBesideAlias": [
+      "z"
+    ],
+    "listOfStructs": [
+      {
+        "a": "w"
+      }
+    ]
+  },
+  "default_types": {
+    "listBesideStruct": "list",
+    "objectBesideList": "PodSpec",
+    "listBesideAlias": "list",
+    "listOfStructs": "list"
+  },
+  "valid": {
+    "listBesideStruct": {
+      "a": "s"
+    },
+    "objectBesideList": [
+      "t"
+    ],
+    "listBesideAlias": 3,
+    "listOfStructs": [
+      {
+        "a": "w"
+      }
+    ]
+  },
+  "invalid": "rejected: Expected `str`, got `int` - at `$.listBesideStruct[0]`"
+}

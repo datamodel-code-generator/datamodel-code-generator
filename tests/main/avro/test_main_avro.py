@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import operator
+from contextlib import nullcontext
 from decimal import Inexact, Rounded, localcontext
 from pathlib import Path
 from typing import cast
@@ -141,41 +142,49 @@ def test_main_avro_fixed_reference_default(output_file: Path) -> None:
 def test_avro_container_bytes_defaults(
     output_file: Path, output_model_type: DataModelType, backend: str, entrypoint: str
 ) -> None:
-    """Preserve bytes, fixed leaves, strings, order, scope, and isolated defaults through generation."""
+    """Preserve bytes, fixed leaves, strings, order, scope, and isolated defaults through generation.
+
+    msgspec decodes no union of bytes and str, so msgspec output warns about it.
+    """
     input_path = AVRO_DATA_PATH / "container_bytes_defaults.avsc"
     expected_file = f"container_bytes_defaults_{backend}.py"
-    if entrypoint == "cli":
-        run_main_and_assert(
-            input_path=input_path,
-            output_path=output_file,
-            input_file_type="avro",
-            assert_func=assert_file_content,
-            expected_file=expected_file,
-            extra_args=[
-                "--target-python-version",
-                "3.10",
-                "--output-model-type",
-                output_model_type.value,
-                "--disable-timestamp",
-                "--formatters",
-                "builtin",
-            ],
-            force_exec_validation=True,
-        )
-    else:
-        run_generate_file_and_assert(
-            input_path=input_path,
-            output_path=output_file,
-            input_file_type=InputFileType.Avro,
-            assert_func=assert_file_content,
-            expected_file=expected_file,
-            output_model_type=output_model_type,
-            target_python_version=PythonVersion.PY_310,
-            disable_timestamp=True,
-            formatters=[Formatter.BUILTIN],
-            use_annotated=output_model_type == DataModelType.MsgspecStruct,
-            field_constraints=output_model_type == DataModelType.MsgspecStruct,
-        )
+    with (
+        pytest.warns(UserWarning, match=r"it holds the str-like members (bytes, str|str, bytes),")
+        if output_model_type == DataModelType.MsgspecStruct
+        else nullcontext()
+    ):
+        if entrypoint == "cli":
+            run_main_and_assert(
+                input_path=input_path,
+                output_path=output_file,
+                input_file_type="avro",
+                assert_func=assert_file_content,
+                expected_file=expected_file,
+                extra_args=[
+                    "--target-python-version",
+                    "3.10",
+                    "--output-model-type",
+                    output_model_type.value,
+                    "--disable-timestamp",
+                    "--formatters",
+                    "builtin",
+                ],
+                force_exec_validation=True,
+            )
+        else:
+            run_generate_file_and_assert(
+                input_path=input_path,
+                output_path=output_file,
+                input_file_type=InputFileType.Avro,
+                assert_func=assert_file_content,
+                expected_file=expected_file,
+                output_model_type=output_model_type,
+                target_python_version=PythonVersion.PY_310,
+                disable_timestamp=True,
+                formatters=[Formatter.BUILTIN],
+                use_annotated=output_model_type == DataModelType.MsgspecStruct,
+                field_constraints=output_model_type == DataModelType.MsgspecStruct,
+            )
     with _generated_model(
         output_file, f"generated_container_defaults_{backend}_{entrypoint}", "ContainerDefaults"
     ) as model:

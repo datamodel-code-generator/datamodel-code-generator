@@ -15,7 +15,7 @@ from typing_extensions import Sentinel, final, override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator import _constraint_applicability as _applicability
-from datamodel_code_generator._container_kinds import MAPPINGS
+from datamodel_code_generator._container_kinds import ARRAYS, MAPPINGS
 from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._graph_links import clear_parents, link_members
 from datamodel_code_generator._mro import resolve_members
@@ -185,6 +185,11 @@ _NONE_VALUE = Why(RuleId("D11.msgspec.none-unset"))
 _NEEDS_ANNOTATED = Why(RuleId("D11.msgspec.meta-needs-annotated"), option="--use-annotated")
 
 
+def _renamed_field_name_refused(name: str) -> bool:
+    """Return whether msgspec refuses a renamed field name: a backslash, a double quote or a control character."""
+    return any(char in '\\"' or char < " " for char in name)
+
+
 @final
 @record(eq=False)
 class _StructConversion:
@@ -263,6 +268,28 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model._decisions.assignment import AssignmentRow
     from datamodel_code_generator.model._render_plan import OmitReason
     from datamodel_code_generator.reference import Reference
+
+
+def _takes_default_kind(data_type: DataType, default: object) -> bool:
+    """Return whether a union member that names a Struct or a type alias takes a default of the default's JSON kind.
+
+    A Struct takes an object; a type alias, what the type it names takes, so one of a list of Structs an array.
+    """
+    pending, seen = [data_type], set[int]()
+    while pending:
+        if (reference := (member := pending.pop()).reference) is not None:
+            if not isinstance(source := reference.source, TypeAliasBase):
+                if isinstance(default, dict):
+                    return True
+            elif source.fields and id(source) not in seen:
+                seen.add(id(source))
+                pending.append(source.fields[0].data_type)
+        elif member in MAPPINGS or member in ARRAYS:
+            if isinstance(default, dict if member in MAPPINGS else list):
+                return True
+        else:
+            pending.extend(member.data_types)
+    return False
 
 
 def _is_instance_field(field: DataModelFieldBase) -> bool:
@@ -428,8 +455,10 @@ class Struct(DataModel):
     def render_module_code(cls, models: list[DataModel]) -> str:
         """Reject incompatible generated Struct layouts before rendering a module."""
         for model in models:
-            if isinstance(model, cls) and len(model.base_classes) > 1:
-                cls._validate_base_layouts(model)
+            if isinstance(model, cls):
+                cls._validate_renamed_field_names(model)
+                if len(model.base_classes) > 1:
+                    cls._validate_base_layouts(model)
         return ""
 
     @staticmethod
@@ -566,6 +595,21 @@ class Struct(DataModel):
                 f"{stable_repr(other.class_name)} and {stable_repr(base.class_name)}."
             )
             raise Error(msg)
+
+    def _validate_renamed_field_names(self) -> None:
+        """Refuse a field that renames to a name msgspec refuses (``_renamed_field_name_refused``).
+
+        The generated module could not be imported: ``field(name=...)`` raises ``ValueError``.
+        """
+        for field in self.fields:
+            if field.alias is not None and not field.is_class_var and _renamed_field_name_refused(field.alias):
+                msg = (
+                    f"msgspec.Struct model {stable_repr(self.class_name)} cannot express its field "
+                    f"{stable_repr(field.name)} named {stable_repr(field.alias)}: msgspec refuses a renamed field name "
+                    "that contains a backslash, a double quote or a control character. Rename the property or use "
+                    "another --output-model-type."
+                )
+                raise Error(msg)
 
     def add_base_class_kwarg(self, name: str, value: str) -> None:
         """Add keyword argument to base class constructor."""
@@ -1634,7 +1678,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
                 )
             ):
                 if self.data_type.is_union:
-                    if not isinstance(self.default, (dict, list)):
+                    if not _takes_default_kind(data_type, self.default):
                         continue
                     if isinstance(self.default, dict) and any(dt.is_dict for dt in self.data_type.data_types):
                         continue
@@ -1711,6 +1755,7 @@ class DataTypeManager(_DataTypeManager):
     ANNOTATION_UNIONS_TAKE_CONSTRAINTS: ClassVar[bool] = _applicability.MSGSPEC_OUTPUT.annotation_unions_take
     FIXED_TUPLES_TAKE_LENGTH: ClassVar[bool] = _applicability.MSGSPEC_OUTPUT.fixed_tuples_take_length
     LITERALS_TAKE_CONSTRAINTS: ClassVar[bool] = _applicability.MSGSPEC_OUTPUT.literals_take
+    REFUSED_LITERAL_TYPES: ClassVar[tuple[type, ...]] = _applicability.MSGSPEC_OUTPUT.refused_literal_types
 
 
 _rebuild_model_with_datamodel_namespace(Constraints)

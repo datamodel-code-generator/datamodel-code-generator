@@ -1,0 +1,6 @@
+msgspec cannot decode typing.Literal[0.5, 1.5]: a msgspec Literal holds only None, bool, int and str values, not 0.5, 1.5. It is written as float, so msgspec does not check them.
+ratio: decoded
+status: decoded
+statuses: decoded
+valid: accepted
+invalid: rejected: Expected `float`, got `str` - at `$.ratio`

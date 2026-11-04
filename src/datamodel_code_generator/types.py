@@ -1782,6 +1782,7 @@ class DataTypeManager(ABC):
     ANNOTATION_UNIONS_TAKE_CONSTRAINTS: ClassVar[bool] = _applicability.BASE_OUTPUT.annotation_unions_take
     FIXED_TUPLES_TAKE_LENGTH: ClassVar[bool] = _applicability.BASE_OUTPUT.fixed_tuples_take_length
     LITERALS_TAKE_CONSTRAINTS: ClassVar[bool] = _applicability.BASE_OUTPUT.literals_take
+    REFUSED_LITERAL_TYPES: ClassVar[tuple[type, ...]] = _applicability.BASE_OUTPUT.refused_literal_types
     _WRITES_CONSTRAINED_TYPES: ClassVar[bool] = _applicability.BASE_OUTPUT.writes_constrained_types
     """Whether the type manager writes scalar constraints into ``con*`` types (``OutputKeywords``)."""
 

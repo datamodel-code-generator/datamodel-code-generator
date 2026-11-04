@@ -9887,21 +9887,29 @@ def test_main_openapi_default_object(output_model: str, expected_output: str, tm
     reason="Installed black doesn't support the old style",
 )
 def test_main_openapi_union_default_object(output_model: str, expected_output: str, output_file: Path) -> None:
-    """Test OpenAPI generation with Union type default object values."""
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "union_default_object.yaml",
-        output_path=output_file,
-        expected_file=EXPECTED_OPENAPI_PATH / expected_output,
-        input_file_type="openapi",
-        extra_args=[
-            "--output-model-type",
-            output_model,
-            "--target-python-version",
-            "3.10",
-            "--openapi-scopes",
-            "schemas",
-        ],
-    )
+    """Test OpenAPI generation with Union type default object values.
+
+    msgspec decodes no union of a dict and a Struct, so msgspec output warns about it.
+    """
+    with (
+        pytest.warns(UserWarning, match=r"it holds the dict-like members dict\[str, str\], Interval")
+        if output_model == "msgspec.Struct"
+        else contextlib.nullcontext()
+    ):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "union_default_object.yaml",
+            output_path=output_file,
+            expected_file=EXPECTED_OPENAPI_PATH / expected_output,
+            input_file_type="openapi",
+            extra_args=[
+                "--output-model-type",
+                output_model,
+                "--target-python-version",
+                "3.10",
+                "--openapi-scopes",
+                "schemas",
+            ],
+        )
 
 
 @pytest.mark.parametrize(
