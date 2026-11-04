@@ -8724,9 +8724,11 @@ def test_main_encoded_str_for_constrained_base64(output_file: Path, extra_args: 
         validate(json.dumps(payloads["base"]))
         for field_name, values in payloads["cases"].items():
             for kind, value in values.items():
-                verdict = "rejected"
-                with suppress(ValidationError):
+                try:
                     validate(json.dumps(payloads["base"] | {field_name: value}))
+                except ValidationError:
+                    verdict = "rejected"
+                else:
                     verdict = "accepted"
                 verdicts.append(f"{field_name} {kind}: {verdict}")
     assert_output("\n".join(verdicts) + "\n", name="verdicts")
@@ -8807,9 +8809,11 @@ def test_main_read_length_keywords_by_type(output_file: Path, extra_args: list[s
         for field_name, values in payloads["cases"].items():
             for kind, value in values.items():
                 payload = payloads["base"] | {field_name: value}
-                verdict = "rejected"
-                with suppress(error_type):
+                try:
                     validate(json.dumps(payload))
+                except error_type:
+                    verdict = "rejected"
+                else:
                     verdict = "accepted"
                 expected = "accepted" if schema.is_valid(payload) else "rejected"
                 verdicts.append(f"{field_name} {kind}: {verdict} (schema: {expected})")

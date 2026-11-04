@@ -1285,8 +1285,10 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         for item, value in taken:
             source, _, keyword = item.partition(":")
             if _BOUND_SIDES.get(keyword) in sides:
-                written_value = getattr(self.constraints, keyword) if source == "constraint" else None
-                exact.append((keyword, value if written_value is None else cast("UnionIntFloat", written_value).value))
+                written_value: UnionIntFloat | None = (
+                    getattr(self.constraints, keyword) if source == "constraint" else None
+                )
+                exact.append((keyword, value if written_value is None else written_value.value))
         return written, tuple(exact)
 
     def _meta_call_arguments(self, omitted: list[Omitted]) -> tuple[CallArguments, frozenset[str]]:
