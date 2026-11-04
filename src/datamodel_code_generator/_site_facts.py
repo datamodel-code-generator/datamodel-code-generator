@@ -46,7 +46,6 @@ A header is a response's or that of the encoding of a request or a response body
 
 ANNOTATION_KEYWORDS: Final = ("title", "description", "deprecated", "examples", "default")
 """The documentation keywords of a schema, and its default."""
-_IDENTIFIERS: Final = frozenset({"$id", "$anchor", "$schema"})
 
 
 @final
@@ -64,11 +63,6 @@ class SiteFacts:
     """Where a string `$ref` leads, None without one or where it leads to no loaded document."""
     annotations: Mapping[str, YamlValue]
     """Each documentation keyword and the default it writes (``ANNOTATION_KEYWORDS``), as written."""
-
-    @property
-    def bare(self) -> bool:
-        """Return whether it writes nothing but a `$ref` and identification keywords."""
-        return self.keys - _IDENTIFIERS == {"$ref"}
 
 
 EMPTY_SITE: Final = SiteFacts(frozenset(), None, MappingProxyType({}))

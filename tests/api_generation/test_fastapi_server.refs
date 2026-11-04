@@ -183,6 +183,8 @@ parameters	main/generation_platform/cross/parameters.txt
 pets	main/generation_platform/cross/pets.txt
 raw	main/generation_platform/cross/raw.txt
 raw_strict	main/generation_platform/cross/raw_strict.txt
+ref_siblings	main/generation_platform/cross/ref_siblings.txt
+ref_siblings_30	main/generation_platform/cross/ref_siblings_30.txt
 required	main/generation_platform/cross/required.txt
 results	main/generation_platform/cross/results.txt
 reused_forms	main/generation_platform/cross/reused_forms.txt

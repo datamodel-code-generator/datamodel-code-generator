@@ -148,6 +148,8 @@ def test_fastapi_server(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPat
         "required",
         "upper_alike",
         "overridden_containers",
+        "ref_siblings",
+        "ref_siblings_30",
     ],
 )
 def test_generated_client(case: str, tmp_path: Path) -> None:

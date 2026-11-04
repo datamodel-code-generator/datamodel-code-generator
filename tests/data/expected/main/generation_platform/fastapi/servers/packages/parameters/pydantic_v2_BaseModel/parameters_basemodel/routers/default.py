@@ -116,7 +116,7 @@ def _add_get_sizes(
         size: Annotated[int, Field(ge=1), Query(alias='size', title='Size')] = 10,
         words: Annotated[list[str], Query(alias='words')] = ['a', 'b'],
         one: Annotated[Literal['x'], Query(alias='one')] = 'x',
-        least: Annotated[int, Field(ge=1), Query(alias='least')] = 7,
+        least: Annotated[int, Field(ge=1), Query(alias='least', title='Size')] = 7,
         cap: Annotated[int | None, Query(alias='cap')] = None,
     ) -> object:
         return dispatch(

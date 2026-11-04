@@ -1,0 +1,12 @@
+models shared True
+# ref_siblings_30 in-process sync, in-process async
+list_items defaults
+  > GET /items?limit=20&offset=20
+  list_items(limit=20, offset=20, page=None)
+  < 204 -
+  = None
+list_items values
+  > GET /items?limit=5&offset=6&page=8
+  list_items(limit=5, offset=6, page=8)
+  < 204 -
+  = None
