@@ -27,7 +27,8 @@ name, files of one name in the order the directory walk meets them.
 What a generation wrote at an output path is its layout: a file is one module, any other existing path a package of
 modules, a path that holds nothing has none. One module pairs with the destination itself, each file of a package with
 its path below the destination. One module cannot replace an existing directory, and a package cannot replace an
-existing file (``layout_refusal``).
+existing file (``layout_refusal``): every run that writes, stages or checks an output refuses such a generation
+before it copies, compares or publishes anything.
 """
 
 from __future__ import annotations
@@ -45,7 +46,6 @@ AtRoot = Literal["root", "legacy-unbounded-ancestor-walk"]
 Missing = Literal["none", "legacy-missing-input-raises"]
 FileOrder = Literal["path", "name"]
 OutputLayout = Literal["module", "package"]
-Unchecked = Literal["none", "legacy-cli-package-onto-file-unchecked"]
 
 SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR: Final = "Single-module output requires a file path, not a directory"
 MODULAR_OUTPUT_FILE_ERROR: Final = "Modular references require an output directory, not a file"
@@ -163,15 +163,13 @@ def output_files(path: Path, pattern: str = "*") -> list[tuple[tuple[str, ...], 
     return [(file.relative_to(path).parts, file) for file in files_under(path, pattern)]
 
 
-def layout_refusal(layout: OutputLayout | None, destination: Path, *, unchecked: Unchecked = "none") -> str | None:
+def layout_refusal(layout: OutputLayout | None, destination: Path) -> str | None:
     """Return why an output of ``layout`` cannot replace what ``destination`` holds, or None.
 
-    One module cannot replace an existing directory, a package an existing file. Rows of ``unchecked``: ``none``
-    refuses both; ``legacy-cli-package-onto-file-unchecked`` (the command line after a generation into a temporary
-    output, #4497) refuses one module only.
+    One module cannot replace an existing directory, a package an existing file.
     """
     if layout == "module" and destination.is_dir():
         return SINGLE_MODULE_OUTPUT_DIRECTORY_ERROR
-    if layout == "package" and unchecked == "none" and destination.is_file():
+    if layout == "package" and destination.is_file():
         return MODULAR_OUTPUT_FILE_ERROR
     return None

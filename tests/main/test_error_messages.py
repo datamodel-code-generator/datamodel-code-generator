@@ -590,6 +590,102 @@ def test_modular_output_below_a_file_keeps_the_filesystem_error(
     )
 
 
+_LAYOUT_MISMATCHES = {
+    "module-onto-directory": (
+        DATA_PATH / "jsonschema" / "person.json",
+        "jsonschema",
+        "Single-module output requires a file path, not a directory",
+    ),
+    "package-onto-file": (
+        DATA_PATH / "openapi" / "modular.yaml",
+        "openapi",
+        "Modular references require an output directory, not a file",
+    ),
+}
+_LAYOUT_RUNS = {
+    "direct": [],
+    "check": ["--check"],
+    "json": ["--output-format", "json"],
+    "update-lock": ["--update-lock", "--lockfile", "refs.lock"],
+    "jobs": ["--all-jobs"],
+    "jobs-json": ["--all-jobs", "--output-format", "json"],
+    "jobs-check": ["--all-jobs", "--check"],
+}
+
+
+def _occupy_output(output: Path, layout: str) -> None:
+    """Hold an existing directory at the output of a single module, an existing file at the output of a package."""
+    if layout == "module-onto-directory":
+        output.mkdir()
+        (output / "kept.py").write_text("kept = 1\n", encoding="utf-8")
+    else:
+        output.write_text("kept = 1\n", encoding="utf-8")
+
+
+def _written_files(root: Path) -> str:
+    """Name every file below a run's directory, other than its project config, with its text."""
+    return "".join(
+        f"{path.relative_to(root).as_posix()}: {path.read_text(encoding='utf-8')}"
+        for path in sorted(root.rglob("*"))
+        if path.is_file() and path.name != "pyproject.toml"
+    )
+
+
+@pytest.mark.parametrize("run", _LAYOUT_RUNS)
+@pytest.mark.parametrize("layout", _LAYOUT_MISMATCHES)
+def test_output_layout_mismatch_is_refused_by_every_run(
+    layout: str,
+    run: str,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A run that writes, stages or checks its output refuses a generation whose layout cannot replace it.
+
+    It gives the refusal of a direct write, and leaves the output as it was and writes nothing (#4497, #5617).
+    """
+    source, input_file_type, message = _LAYOUT_MISMATCHES[layout]
+    _occupy_output(tmp_path / "out", layout)
+    options = _LAYOUT_RUNS[run]
+    if options[:1] == ["--all-jobs"]:
+        (tmp_path / "pyproject.toml").write_text(
+            "[tool.datamodel-codegen.jobs.models]\n"
+            f"input = '{source.as_posix()}'\ninput-file-type = '{input_file_type}'\noutput = 'out'\n",
+            encoding="utf-8",
+        )
+    else:
+        options = ["--input", str(source), "--input-file-type", input_file_type, "--output", "out", *options]
+    monkeypatch.chdir(tmp_path)
+    run_main_with_args(
+        [*options, "--formatters", "builtin", "--disable-timestamp"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=f"{message}\n",
+    )
+    assert_output(_written_files(tmp_path))
+
+
+@pytest.mark.parametrize("layout", _LAYOUT_MISMATCHES)
+def test_generate_with_a_lock_update_refuses_an_output_layout_mismatch(
+    layout: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`generate()` publishing with a lock update refuses the layout mismatch a direct write refuses (#4497)."""
+    source, input_file_type, message = _LAYOUT_MISMATCHES[layout]
+    _occupy_output(output := tmp_path / "out", layout)
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(Error, match=f"^{re.escape(message)}$"):
+        generate(
+            source,
+            input_file_type=InputFileType(input_file_type),
+            output=output,
+            update_lock=True,
+            lockfile=tmp_path / "refs.lock",
+            formatters=[Formatter.BUILTIN],
+            disable_timestamp=True,
+        )
+    assert_output(_written_files(tmp_path))
+
+
 def test_model_metadata_directory_is_a_clean_cli_error(
     output_file: Path,
     tmp_path: Path,

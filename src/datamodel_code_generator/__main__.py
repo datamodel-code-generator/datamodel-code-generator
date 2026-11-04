@@ -1899,7 +1899,6 @@ def _stage_job_plan(plan: JobPlan) -> _StagedJobPlan:
             ),
             contexts,
             anchors,
-            existing_directory="legacy-cli-staged-directory-uncreated",
         )
         staged_config = plan.config.model_copy(update=staging.updates)
         staged_config._logical_model_metadata = plan.config.emit_model_metadata  # noqa: SLF001
@@ -2895,7 +2894,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
 
     if config.output is not None and generate_output is not None:
         layout = output_layout(generate_output)
-        if refusal := layout_refusal(layout, config.output, unchecked="legacy-cli-package-onto-file-unchecked"):
+        if config.diff_against is None and (refusal := layout_refusal(layout, _batch_original_output or config.output)):
             print(refusal, file=sys.stderr)  # noqa: T201
             return cleanup_and_return(Exit.ERROR)
         if config.check and is_directory_output and (layout or output_layout(config.output)) == "module":

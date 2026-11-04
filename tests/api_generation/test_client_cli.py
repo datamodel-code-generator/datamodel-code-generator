@@ -979,6 +979,31 @@ def test_client_cli_shadowed_module(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     assert_output("\n".join(lines) + "\n", EXPECTED / "cli" / "shadowed-module.txt")
 
 
+@pytest.mark.parametrize("check", [False, True], ids=["write", "check"])
+def test_client_cli_models_package_onto_a_file(
+    check: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a models package whose output is an existing file, as a model run does, and write nothing (#4497)."""
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "models").write_text("kept = 1\n", encoding="utf-8")
+    run_main_and_assert(
+        input_path=DATA / "openapi" / "modular.yaml",
+        output_path=Path("models"),
+        input_file_type="openapi",
+        extra_args=[*OPTIONS, *CLIENT, *(["--check"] if check else [])],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr="Error: Modular references require an output directory, not a file\n",
+    )
+    assert_output(
+        "".join(
+            f"{path.relative_to(tmp_path).as_posix()}: {path.read_text(encoding='utf-8')}"
+            for path in sorted(tmp_path.rglob("*"))
+            if path.is_file()
+        )
+    )
+
+
 def test_client_cli_leftover_files(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
