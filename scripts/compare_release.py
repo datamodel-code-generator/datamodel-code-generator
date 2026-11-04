@@ -29,6 +29,7 @@ import importlib
 import json
 import os
 import re
+import resource
 import shlex
 import shutil
 import signal
@@ -98,6 +99,9 @@ def _import_modules(out: str) -> int:
 def _run_child(job: dict[str, Any], main: Callable[[list[str]], Any]) -> int:
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     signal.alarm(job["timeout"])
+    if limit := job.get("memory_mb"):
+        # A run that grows without bound fails with MemoryError in its own child instead of taking the host down.
+        resource.setrlimit(resource.RLIMIT_DATA, (limit << 20, limit << 20))
     log = os.open(job["log"], os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     os.dup2(log, 1)
     os.dup2(log, 2)
@@ -271,12 +275,15 @@ def _last_line(path: Path) -> str:
 class Runner:
     """Runs one side of the matrix through per-thread warm workers."""
 
-    def __init__(self, side: Side, env: dict[str, str], *, import_check: bool, timeout: int) -> None:
-        """Prepare a runner; workers start lazily."""
+    def __init__(
+        self, side: Side, env: dict[str, str], *, import_check: bool, timeout: int, memory_mb: int = 0
+    ) -> None:
+        """Prepare a runner; workers start lazily. `memory_mb` caps the data memory of one run (0: no cap)."""
         self.side = side
         self.env = env
         self.import_check = import_check
         self.timeout = timeout
+        self.memory_mb = memory_mb
         self.local = threading.local()
         self.workers: list[Worker] = []
         self.lock = threading.Lock()
@@ -301,6 +308,7 @@ class Runner:
             "cwd": str(tmp),
             "log": str(log),
             "timeout": self.timeout,
+            "memory_mb": self.memory_mb,
             "args": [*args, "--output", str(out / "model.py")],
         }
         rc = worker.run(job)
