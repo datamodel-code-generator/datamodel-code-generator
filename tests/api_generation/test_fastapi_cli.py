@@ -1437,21 +1437,29 @@ def test_fastapi_cli_job(tmp_path: Path, capsys: pytest.CaptureFixture[str], mon
     )
 
 
-@pytest.mark.parametrize("check", [False, True], ids=["write", "check"])
+@pytest.mark.parametrize(
+    "option", [[], ["--check"], ["--diff-against", str(CLI / "layout-clash.yaml")]], ids=["write", "check", "diff"]
+)
 def test_fastapi_cli_models_package_onto_a_file(
-    check: bool, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    option: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Refuse a models package whose output is an existing file, as a model run does, and write nothing (#4497)."""
+    """Refuse a models package whose output is an existing file, as a model run does, and write nothing (#4497).
+
+    --diff-against reads no destination, so it compares the two inputs instead.
+    """
     monkeypatch.chdir(tmp_path)
     (tmp_path / "models").write_text("kept = 1\n", encoding="utf-8")
+    compares = bool(option) and option[0] == "--diff-against"
     run_main_and_assert(
         input_path=CLI / "layout-clash.yaml",
         output_path=Path("models"),
         input_file_type="openapi",
-        extra_args=_server(*(["--check"] if check else [])),
-        expected_exit=Exit.ERROR,
+        extra_args=_server(*option),
+        expected_exit=Exit.OK if compares else Exit.ERROR,
         capsys=capsys,
-        expected_stderr="Error: Modular references require an output directory, not a file\n",
+        expected_stderr=None if compares else "Error: Modular references require an output directory, not a file\n",
+        expected_output="kept = 1\n" if compares else None,
+        assert_no_stderr=compares,
     )
     assert_output(
         "".join(

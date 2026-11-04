@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import abc
 import ast
 import asyncio
 import importlib
@@ -28108,6 +28109,153 @@ def test_extra_template_data_dataclass_arguments_not_a_mapping(
         ],
         capsys=capsys,
         expected_stderr_contains="dataclass_arguments must be a dictionary",
+        output_should_not_exist=True,
+    )
+
+
+_TEMPLATE_DATA_MODEL_VALUES = {
+    "description": "Overridden description.",
+    "decorators": ["@final"],
+    "methods": ["def double(self) -> int:\n        return self.a * 2"],
+}
+
+
+@pytest.mark.parametrize(
+    ("output_model", "base_class"),
+    [
+        pytest.param("pydantic_v2.BaseModel", "BaseModel, abc.ABC", id="pydantic_v2.BaseModel"),
+        pytest.param("dataclasses.dataclass", "abc.ABC", id="dataclasses.dataclass"),
+    ],
+)
+def test_extra_template_data_model_values(
+    output_model: str, base_class: str, output_file: Path, tmp_path: Path
+) -> None:
+    """Let one model's template data override its ``description``, ``decorators``, ``methods`` and ``base_class``.
+
+    ``Old`` takes the values of its template data, ``New`` keeps the schema's description and the output's own values.
+    Only ``pydantic_v2.BaseModel`` writes methods.
+    Up to 0.88.0 rendering passed each of them twice and raised a duplicate-keyword ``TypeError``.
+    """
+    input_file = tmp_path / "model_values.json"
+    input_file.write_text(
+        json.dumps({
+            **_DATACLASS_ARGUMENTS_SCHEMA,
+            "$defs": {
+                name: {**definition, "description": f"{name} from the schema."}
+                for name, definition in _DATACLASS_ARGUMENTS_SCHEMA["$defs"].items()
+            },
+        }),
+        encoding="utf-8",
+    )
+    extra_template_data = tmp_path / "extra_template_data.json"
+    extra_template_data.write_text(
+        json.dumps({"Old": {**_TEMPLATE_DATA_MODEL_VALUES, "base_class": base_class}}), encoding="utf-8"
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *("--output-model-type", output_model, "--extra-template-data", str(extra_template_data)),
+            *("--additional-imports", "abc,typing_extensions.final", "--use-schema-description"),
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+        force_exec_validation=True,
+    )
+    verdicts = []
+    for name in ("Old", "New"):
+        with _generated_model(output_file, "model_values", name) as model:
+            instance = model(a=2)
+            verdicts.append(
+                f"{name}: {model.__doc__.strip()!r} final={getattr(model, '__final__', False)}"
+                f" abc={issubclass(model, abc.ABC)} double={getattr(instance, 'double', lambda: None)()}\n"
+            )
+    assert_output("".join(verdicts), name="payloads")
+
+
+@pytest.mark.parametrize(
+    ("template_data", "message"),
+    [
+        pytest.param({"description": ["x"]}, "description must be a string", id="description"),
+        pytest.param({"decorators": "@final"}, "decorators must be a list of strings", id="decorators"),
+        pytest.param({"methods": [1]}, "methods must be a list of strings", id="methods"),
+    ],
+)
+def test_extra_template_data_model_values_invalid(
+    template_data: dict[str, object],
+    message: str,
+    output_file: Path,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Refuse template data for ``description``, ``decorators`` or ``methods`` of the wrong type."""
+    input_file = tmp_path / "model_values.json"
+    input_file.write_text(json.dumps(_DATACLASS_ARGUMENTS_SCHEMA), encoding="utf-8")
+    extra_template_data = tmp_path / "extra_template_data.json"
+    extra_template_data.write_text(json.dumps({"Old": template_data}), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        expected_exit=Exit.ERROR,
+        extra_args=["--extra-template-data", str(extra_template_data)],
+        capsys=capsys,
+        expected_stderr_contains=message,
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("output_model", "template_data", "message"),
+    [
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            {"class_name": "Renamed"},
+            "extra template data cannot set class_name, which the generator decides for the model"
+            "; rename a model with --model-name-map or --class-name",
+            id="class_name",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            {"fields": [], "path": "x"},
+            "extra template data cannot set fields, path, which the generator decides for the model",
+            id="fields-path",
+        ),
+        pytest.param(
+            "typing.TypedDict",
+            {"all_fields": [], "is_functional_syntax": True},
+            "extra template data cannot set all_fields, is_functional_syntax, "
+            "which the generator decides for the model",
+            id="typed-dict",
+        ),
+    ],
+)
+def test_extra_template_data_refuses_what_the_generator_decides(
+    output_model: str,
+    template_data: dict[str, object],
+    message: str,
+    output_file: Path,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Refuse template data that renames a model or changes its fields, which other models and the parser read.
+
+    Up to 0.88.0 rendering raised a duplicate-keyword ``TypeError``; renaming the class alone would leave every
+    reference and import of the model on the old name.
+    """
+    input_file = tmp_path / "model_values.json"
+    input_file.write_text(json.dumps(_DATACLASS_ARGUMENTS_SCHEMA), encoding="utf-8")
+    extra_template_data = tmp_path / "extra_template_data.json"
+    extra_template_data.write_text(json.dumps({"Old": template_data}), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        expected_exit=Exit.ERROR,
+        extra_args=["--output-model-type", output_model, "--extra-template-data", str(extra_template_data)],
+        capsys=capsys,
+        expected_stderr_contains=message,
         output_should_not_exist=True,
     )
 

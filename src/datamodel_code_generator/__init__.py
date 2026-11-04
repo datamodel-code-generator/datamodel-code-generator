@@ -1549,11 +1549,11 @@ _INLINE_OBJECT_BODIES_HINT = (
 )
 
 
-def _refuse_output_layout(layout: OutputLayout | None, destination: Path) -> None:
-    """Raise the refusal of an output of ``layout`` that cannot replace what ``destination`` holds."""
+def _refuse_output_layout(layout: OutputLayout | None, destination: Path, *, compares: bool = False) -> None:
+    """Raise the refusal of an output of ``layout`` that cannot replace what ``destination`` holds, if not comparing."""
     from datamodel_code_generator._paths import layout_refusal  # noqa: PLC0415
 
-    if refusal := layout_refusal(layout, destination):
+    if refusal := layout_refusal(layout, destination, compares=compares):
         raise Error(refusal)
 
 

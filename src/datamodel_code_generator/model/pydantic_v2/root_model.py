@@ -312,8 +312,8 @@ class RootModel(BaseModel):
             _ = fields[0].type_hint
         if RENDER_READY.get() is None:
             self._decide_config_items_outside_a_parse()
-        extra_template_data = self._render_template_data(use_custom_template=use_custom_template)
-        rendered = self._render(
+        rendered = self._render_with_template_data(
+            use_custom_template=use_custom_template,
             class_name=class_name or self.class_name,
             fields=fields,
             decorators=self.decorators,
@@ -322,7 +322,6 @@ class RootModel(BaseModel):
             description=self._template_description(use_custom_template=use_custom_template),
             dataclass_arguments=self.dataclass_arguments,
             path=self.path,
-            **extra_template_data,
         )
         self._validate_custom_template_sequence_interface(rendered)
         if (

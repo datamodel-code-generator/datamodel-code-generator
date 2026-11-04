@@ -647,6 +647,7 @@ timestamp-models	main/generation_platform/fastapi/cli/timestamp-models.py
 timestamp-server	main/generation_platform/fastapi/cli/timestamp-models.py
 [test_fastapi_cli_models_package_onto_a_file]
 check	api_generation/fastapi_cli/models_package_onto_a_file[check].txt	= api_generation/client_cli/models_package_onto_a_file[check].txt
+diff	api_generation/fastapi_cli/models_package_onto_a_file[diff].txt	= api_generation/client_cli/models_package_onto_a_file[check].txt
 write	api_generation/fastapi_cli/models_package_onto_a_file[write].txt	= api_generation/client_cli/models_package_onto_a_file[check].txt
 [test_fastapi_cli_naming_hint]
 	api_generation/fastapi_cli/naming_hint.txt

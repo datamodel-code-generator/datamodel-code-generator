@@ -12742,6 +12742,13 @@ class Model(BaseModel):
 
 You can create more complex custom templates by copying [the default templates](https://github.com/datamodel-code-generator/datamodel-code-generator/tree/main/src/datamodel_code_generator/model/template). Use them as a reference for understanding the structure and available variables, and customize the code generation process according to your specific requirements.
 
+The template data of one model (`--extra-template-data '{"Pet": {...}}'`, or `#all#`) overrides the values the
+generator passes to its template under the same name: `description`, `decorators` and `methods` replace the model's own
+(`decorators` and `methods` are lists of strings, the lines of code the template writes), `dataclass_arguments` merge
+over the arguments the options give it, and `base_class` replaces the text of the base classes the model writes.
+The other values, such as `class_name`, `fields` and `path`, are what other models reference and the parser decided, so
+template data of the same name is refused; rename a model with `--model-name-map` or `--class-name`.
+
 ---
 
 ## 🔧 Schema Extensions
