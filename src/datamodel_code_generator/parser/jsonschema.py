@@ -92,6 +92,7 @@ from datamodel_code_generator import (
 )
 from datamodel_code_generator._alias_generators import generate_alias  # noqa: F401  # Preserve the established parser.jsonschema export.
 from datamodel_code_generator._constraint_applicability import (
+    LENGTH_KEYWORD_ORDER,
     LITERAL_DECIDABLE_KEYWORDS,  # noqa: F401  # Preserve the established parser.jsonschema export.
     NO_KEYWORDS,
     NUMBER_KEYWORD_ORDER,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -287,7 +288,12 @@ from datamodel_code_generator.parser._null_facts import (
 )
 from datamodel_code_generator.parser._object_maps import _schema_assertions, _with_null
 from datamodel_code_generator.parser._origins import with_field_origin, with_type_origin
-from datamodel_code_generator.parser._passes._keys import _DERIVED_FROM_KEY, _RAW_SCHEMA_DEFAULT_UNDEFINED
+from datamodel_code_generator.parser._passes._keys import (
+    _DERIVED_FROM_KEY,
+    _RAW_SCHEMA_DEFAULT_UNDEFINED,
+    declares_type_list_unique_items,
+    with_type_list_unique_items,
+)
 from datamodel_code_generator.parser._pipeline import stacklevel_at_parse_caller
 from datamodel_code_generator.parser._schema_dispatch import (
     Default,
@@ -568,6 +574,8 @@ class _AssembledConstraints:
     dropped_counts: dict[str, int]
     records: bool
     """Whether the field records the keywords its type decides (``mark_type_dependent_constraints``)."""
+    type_list_unique: bool = False
+    """Whether the field takes the ``uniqueItems`` of a type list (``type_list_keywords``)."""
 
 
 @record
@@ -6253,27 +6261,30 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             constraints = _value_keywords.type_list_keywords(obj)
         if suppress_item_constraints:
             _value_keywords.suppress_array_length_constraints(self, constraints, obj)
-        return self._build_field(
-            "array-root",
-            build_union(
-                self.data_type,
-                data_types,
-                "legacy-non-array-first",
-                nullable=bool(self._null_facts(obj, "type-union").admits_null),
-                roles=(
-                    "member",
-                    *("non-array",) * non_array_count,
-                    *("member",) * (len(data_types) - non_array_count - 1),
+        return with_type_list_unique_items(
+            self._build_field(
+                "array-root",
+                build_union(
+                    self.data_type,
+                    data_types,
+                    "legacy-non-array-first",
+                    nullable=bool(self._null_facts(obj, "type-union").admits_null),
+                    roles=(
+                        "member",
+                        *("non-array",) * non_array_count,
+                        *("member",) * (len(data_types) - non_array_count - 1),
+                    ),
                 ),
+                default=obj.default,
+                required=required,
+                constraints=constraints,
+                nullable=nullable,
+                extras=self.get_field_extras(obj),
+                use_annotated=use_annotated,
+                original_name=None,
+                has_default=obj.has_default,
             ),
-            default=obj.default,
-            required=required,
-            constraints=constraints,
-            nullable=nullable,
-            extras=self.get_field_extras(obj),
-            use_annotated=use_annotated,
-            original_name=None,
-            has_default=obj.has_default,
+            declares=bool(non_array_types and constraints),
         )
 
     def parse_array(
@@ -6303,6 +6314,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ):
             # self-reference
             recursive_tuple_item_count = direct_data_types[0].tuple_item_count
+            declares_type_list_unique = declares_type_list_unique_items(field)
             field = self._build_field(
                 "root",
                 build_union(
@@ -6325,6 +6337,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 original_name=None,
                 has_default=field.has_default,
             )
+            with_type_list_unique_items(field, declares=declares_type_list_unique)
 
         self._register_root_model(
             reference=reference,
@@ -6572,17 +6585,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ) or bool(self._get_array_union_non_array_types(obj))
         constraints: Any = None
         untaken: dict[str, Any] = {}
+        type_list_unique = False
         built = not skip and bool(assembled)
         if not skip:
             if built:
                 constraints = assembled
             elif self.is_constraints_field(obj, data_type) or (site.holds_schema and (field_constraints or preserve)):
                 constraints, untaken = self._split_constraint_values(obj, data_type)
-                if site.consumed_at_property:
-                    for key in property_consumed_keywords(
-                        self.data_type_manager.CONSTRAINED_TYPE_CONSUMED_KEYS, data_type.type
-                    ):
-                        constraints.pop(key, None)
+                for key in self._keywords_left_out(obj, data_type, site, reads_declared=field_constraints or preserve):
+                    constraints.pop(key, None)
             if constraints is not None and field_constraints and obj.format == "hostname":
                 constraints["pattern"] = self.data_type_manager.HOSTNAME_REGEX
             if (
@@ -6594,6 +6605,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 constraints.pop("pattern", None)
         elif kept := _value_keywords.type_list_keywords(obj):
             constraints = kept
+            type_list_unique = True
         if data_type in MAPPINGS and (
             property_counts := _value_keywords.get_property_count_constraints(type(self), obj)
         ):
@@ -6619,12 +6631,35 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             {**(untaken if records else {}), **dropped_counts},
             dropped_counts,
             records,
+            type_list_unique,
         )
+
+    def _keywords_left_out(
+        self, obj: JsonSchemaObject, data_type: DataType, site: _ConstraintSite, *, reads_declared: bool
+    ) -> tuple[str, ...]:
+        """Return the keywords a field of ``site`` leaves out of those it takes from ``obj`` itself.
+
+        An object property leaves out the keywords its own type's class enforces (row
+        ``legacy-consumed-at-object-property``). A root field that reads the keywords of an array without
+        ``--field-constraints`` (``reads_declared``), as the array branch of a union beside ``maxLength``, leaves out
+        the string lengths, which apply to strings only, as 0.88.0 did.
+        """
+        consumed = (
+            property_consumed_keywords(self.data_type_manager.CONSTRAINED_TYPE_CONSUMED_KEYS, data_type.type)
+            if site.consumed_at_property
+            else ()
+        )
+        lengths = LENGTH_KEYWORD_ORDER if site.holds_schema and not reads_declared and obj.is_array else ()
+        return (*consumed, *lengths)
 
     def _mark_assembled_constraints(
         self, field: DataModelFieldBase, assembled: _AssembledConstraints, obj: JsonSchemaObject, data_type: DataType
     ) -> None:
-        """Record on ``field`` the keywords its type decides, those beside a union and the constraints it leaves out."""
+        """Record on ``field`` the keywords its type decides, those beside a union and the constraints it leaves out.
+
+        Also whether its ``uniqueItems`` is the one of a type list (``with_type_list_unique_items``).
+        """
+        with_type_list_unique_items(field, declares=assembled.type_list_unique)
         if assembled.records:
             _value_keywords.mark_type_dependent_constraints(self, field, obj)
             if (siblings := _value_keywords.union_sibling_constraints(obj, field.constraints)) is not None:

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "code": {"maxLength": 3, "anyOf": [{"type": "array", "items": {"type": "integer"}}, {"type": "string"}]},
+    "label": {"minLength": 2, "oneOf": [{"type": "string"}, {"type": "array", "items": {"type": "string"}}]},
+    "codes": {
+      "type": "array",
+      "items": {"maxLength": 3, "anyOf": [{"type": "array", "items": {"type": "integer"}}, {"type": "string"}]}
+    }
+  }
+}

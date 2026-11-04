@@ -1,0 +1,11 @@
+{
+  "valid": [
+    {"code": [1, 2, 3, 4], "label": ["a"], "codes": [[1, 2, 3, 4], "abc"]},
+    {"code": "abc", "label": "ab", "codes": []}
+  ],
+  "invalid": [
+    {"code": "abcd"},
+    {"label": "a"},
+    {"codes": ["abcd"]}
+  ]
+}
