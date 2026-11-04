@@ -1,6 +1,7 @@
 """Write a ``Literal`` value that msgspec cannot decode as its type, with a warning that the value is not checked.
 
-A ``Literal`` of bytes and str values, which no msgspec type holds, is refused.
+A ``Literal`` of bytes and str values, or a union of ``Literal`` members holding both, which no msgspec type holds, is
+refused.
 """
 
 from __future__ import annotations
@@ -90,6 +91,27 @@ _REFUSED_MIXED_LITERALS = {
         "`Literal['a', b'ab']` in the msgspec type alias `Data`",
         "`Literal['a', 'ab']`",
     ),
+    "union": (
+        {"properties": {"data": {"type": "string", "x-python-type": "typing.Literal[b'ab'] | typing.Literal['a']"}}},
+        (),
+        "`Literal[b'ab'] | Literal['a']` in the msgspec field `Model.data`",
+        "`Literal['ab'] | Literal['a']`",
+    ),
+    "nested_union": (
+        {
+            "properties": {
+                "data": {
+                    "x-python-type": (
+                        "typing.Optional[typing.Union[typing.Literal[b'ab', 1], "
+                        "typing.Optional[typing.Literal['a']], int]]"
+                    )
+                }
+            }
+        },
+        (),
+        "`Union[Literal[b'ab', 1], Optional[Literal['a']], int]` in the msgspec field `Model.data`",
+        "`Union[Literal['ab', 1], Optional[Literal['a']], int]`",
+    ),
     "type_overrides": (
         {"properties": {"data": {"type": "string"}}},
         ("--type-overrides", json.dumps({"Model.data": "typing.Literal[b'ab', 'a', b'a']"})),
@@ -104,12 +126,12 @@ _REFUSED_MIXED_LITERALS = {
 def test_msgspec_refused_mixed_bytes_and_str_literal(
     tmp_path: Path, output_file: Path, capsys: pytest.CaptureFixture[str], case: str, output_model_type: str
 ) -> None:
-    """Fail for a ``Literal`` that holds both bytes and str values, which no msgspec type holds (#6219).
+    """Fail for a ``Literal``, or union of ``Literal`` members, that holds both bytes and str values (#6219).
 
-    A msgspec ``Literal`` holds no bytes value, and ``bytes`` beside the str values, as the ``Literal['a'] | bytes``
-    that was written with a warning, is a union of two str-like members, so neither built a decoder. The error names
-    the ``Literal`` and the field or type alias, and gives the values as text, the bytes decoded as UTF-8, as an
-    example. Another output model type writes the ``Literal`` as it did.
+    No msgspec type holds them: a msgspec ``Literal`` holds no bytes value, and ``bytes`` beside the str values, as the
+    ``Literal['a'] | bytes`` that was written with a warning, is a union of two str-like members, so neither built a
+    decoder. The error names the smallest ``Literal`` or union that holds both and the field or type alias, and gives
+    the values as text, the bytes decoded as UTF-8, as an example. Another output model type writes it as it did.
     """
     schema, options, where, example = _REFUSED_MIXED_LITERALS[case]
     input_path = tmp_path / "mixed_literal.json"

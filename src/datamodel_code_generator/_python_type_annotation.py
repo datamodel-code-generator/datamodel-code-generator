@@ -13,7 +13,7 @@ from datamodel_code_generator._target_unicode import NEWEST_TARGET, is_python_na
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator
+    from collections.abc import Callable, Iterator
 
 
 class PythonTypeExpr:
@@ -494,42 +494,56 @@ def _flat_literal_values(arguments: tuple[PythonTypeExpr, ...]) -> Iterator[Pyth
             yield argument
 
 
-def _holds_bytes_and_str(members: Iterable[PythonTypeExpr]) -> bool:
-    """Return whether the values of a ``Literal`` hold both a bytes and a str value."""
-    types = {type(member.value) for member in members if isinstance(member, PythonTypeLiteralValue)}
+def _literal_values_held(expression: PythonTypeExpr) -> Iterator[PythonTypeExpr]:
+    """Yield the values of a ``Literal``, or those the ``Literal`` members of a union hold, nested ones included."""
+    if isinstance(expression, PythonTypeSubscript) and is_literal_python_type_expr(expression):
+        yield from _flat_literal_values(expression.arguments)
+    elif is_union_python_type_expr(expression):
+        for member in python_type_expr_arguments(expression):
+            yield from _literal_values_held(member)
+
+
+def _holds_bytes_and_str(expression: PythonTypeExpr) -> bool:
+    """Return whether a ``Literal``, or the ``Literal`` members of a union, hold both a bytes and a str value."""
+    types = {
+        type(value.value) for value in _literal_values_held(expression) if isinstance(value, PythonTypeLiteralValue)
+    }
     return bytes in types and str in types
 
 
-def iter_bytes_and_str_literals(expression: PythonTypeExpr) -> Iterator[PythonTypeSubscript]:
-    """Yield each ``Literal`` of a type that holds both bytes and str values, those of a ``Literal`` it nests included.
+def bytes_and_str_literal(expression: PythonTypeExpr) -> PythonTypeExpr | None:
+    """Return the first ``Literal`` of a type, or union of ``Literal`` members, that holds both bytes and str values.
 
-    Such a ``Literal`` is yielded, not the ``Literal`` it nests.
+    The smallest one is returned: a ``Literal`` member that holds both, not its union, and a union, not the union it
+    is a member of. None means that no part of the type holds both.
+    """
+    for child in _children(expression, "all") or ():
+        if (found := bytes_and_str_literal(child)) is not None:
+            return found
+    return expression if _holds_bytes_and_str(expression) else None
+
+
+def literal_values_as_text(expression: PythonTypeExpr) -> PythonTypeExpr:
+    r"""Return a type with each bytes value of its ``Literal`` written as the text it spells in UTF-8.
+
+    A byte that UTF-8 does not read is written as its escape (``b'\xff'`` as ``'\\xff'``); the values of a nested
+    ``Literal`` are flattened, and a value equal to an earlier one of its ``Literal`` is dropped.
     """
     if isinstance(expression, PythonTypeSubscript) and is_literal_python_type_expr(expression):
-        if _holds_bytes_and_str(_flat_literal_values(expression.arguments)):
-            yield expression
-    else:
-        for child in _children(expression, "all") or ():
-            yield from iter_bytes_and_str_literals(child)
-
-
-def literal_values_as_text(literal: PythonTypeSubscript) -> PythonTypeSubscript:
-    r"""Return a ``Literal`` with each bytes value written as the text it spells in UTF-8, the nested values flattened.
-
-    A byte that UTF-8 does not read is written as its escape (``b'\xff'`` as ``'\\xff'``), and a value equal to an
-    earlier one is dropped.
-    """
-    return PythonTypeSubscript(
-        literal.base,
-        tuple(
-            dict.fromkeys(
-                PythonTypeLiteralValue(member.value.decode("utf-8", "backslashreplace"))
-                if isinstance(member, PythonTypeLiteralValue) and isinstance(member.value, bytes)
-                else member
-                for member in _flat_literal_values(literal.arguments)
-            )
-        ),
-    )
+        return PythonTypeSubscript(
+            expression.base,
+            tuple(
+                dict.fromkeys(
+                    PythonTypeLiteralValue(member.value.decode("utf-8", "backslashreplace"))
+                    if isinstance(member, PythonTypeLiteralValue) and isinstance(member.value, bytes)
+                    else member
+                    for member in _flat_literal_values(expression.arguments)
+                )
+            ),
+        )
+    if (children := _children(expression, "all")) is None:
+        return expression
+    return _with_children(expression, "all", children, tuple(map(literal_values_as_text, children)))
 
 
 def write_refused_literal_values(
@@ -539,17 +553,20 @@ def write_refused_literal_values(
 
     A ``Literal`` of such values alone becomes the union of their types (``Literal[5.0]`` the type ``float``); one that
     holds other values keeps them (``Literal[1, 5.0]`` becomes ``Literal[1] | float``), and a nested ``Literal`` is
-    flattened. An expression that holds no such value is returned as it is. A ``Literal`` that holds str values beside
-    refused bytes values stays as written: ``bytes`` beside them is a union that the output refusing bytes (msgspec)
-    refuses too, so the output refuses that ``Literal`` where it writes it (``iter_bytes_and_str_literals``).
+    flattened. An expression that holds no such value is returned as it is. A ``Literal``, or a union of ``Literal``
+    members, that holds str values beside refused bytes values stays as written: ``bytes`` beside them is a union that
+    the output refusing bytes (msgspec) refuses too, so the output refuses it where it writes it
+    (``bytes_and_str_literal``).
     """
     values: list[PythonTypeLiteralValue] = []
 
     def write(node: PythonTypeExpr) -> PythonTypeExpr:
+        if bytes in refused and _holds_bytes_and_str(node):
+            return node
         if isinstance(node, PythonTypeSubscript) and is_literal_python_type_expr(node):
             members = tuple(_flat_literal_values(node.arguments))
             written = [m for m in members if isinstance(m, PythonTypeLiteralValue) and type(m.value) in refused]
-            if not written or (bytes in refused and _holds_bytes_and_str(members)):
+            if not written:
                 return node
             values.extend(written)
             kept = tuple(m for m in members if m not in written)
@@ -581,9 +598,9 @@ __all__ = [
     "PythonTypeSubscript",
     "PythonTypeTuple",
     "PythonTypeUnion",
+    "bytes_and_str_literal",
     "is_literal_python_type_expr",
     "is_union_python_type_expr",
-    "iter_bytes_and_str_literals",
     "iter_literal_members",
     "iter_python_type_expr_head_names",
     "iter_python_type_expr_names",

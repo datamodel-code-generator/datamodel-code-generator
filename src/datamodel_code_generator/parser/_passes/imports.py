@@ -841,12 +841,13 @@ def _msgspec_literal_member_message(name: str, member: tuple[str, bool]) -> str:
 def _refuse_msgspec_bytes_and_str_literal(parser: FinishHost, model: DataModel, field: DataModelFieldBase) -> None:
     """Refuse a field of msgspec output whose ``Literal`` holds both bytes and str values, which no msgspec type holds.
 
-    A msgspec ``Literal`` holds no bytes value, and ``bytes`` beside the str values is a union of two str-like
-    members, which msgspec refuses too, so the bound annotation keeps such a ``Literal`` as written
+    The values may also be those of the ``Literal`` members of a union (``Literal[b'ab'] | Literal['a']``). A msgspec
+    ``Literal`` holds no bytes value, and ``bytes`` beside the str values is a union of two str-like members, which
+    msgspec refuses too, so the bound annotation keeps such a ``Literal`` or union as written
     (``write_refused_literal_values``). ``str`` would take every string and ``bytes`` no str value.
     """
     from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
-        iter_bytes_and_str_literals,
+        bytes_and_str_literal,
         literal_values_as_text,
         render_python_type_expr,
     )
@@ -857,7 +858,7 @@ def _refuse_msgspec_bytes_and_str_literal(parser: FinishHost, model: DataModel, 
                 literal
                 for nested in field.data_type.all_data_types
                 if nested.python_type is not None
-                for literal in iter_bytes_and_str_literals(nested.python_type.expression)
+                and (literal := bytes_and_str_literal(nested.python_type.expression)) is not None
             ),
             None,
         )
@@ -1166,8 +1167,8 @@ def warn_about_variant_discriminator_tags(parser: FinishHost) -> None:
 def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleContextView]) -> None:  # noqa: PLR0912
     """Warn once per union and enum of msgspec output that msgspec refuses to decode.
 
-    A field whose ``Literal`` holds both bytes and str values, which no msgspec type holds, is refused instead
-    (``_refuse_msgspec_bytes_and_str_literal``).
+    A field whose ``Literal``, or union of ``Literal`` members, holds both bytes and str values, which no msgspec type
+    holds, is refused instead (``_refuse_msgspec_bytes_and_str_literal``).
     """
     if not parser.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
         return
