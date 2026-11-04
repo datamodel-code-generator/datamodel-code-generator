@@ -252,18 +252,19 @@ class UnionSite:
 def located_mapping(
     model: DataModel, mapping: dict[str, str] | None, data_types: Iterable[DataType], resolver: ModelResolver
 ) -> dict[str, str]:
-    """Return a discriminator mapping with the location its paths name, as the document of the holder resolves them.
+    """Return a discriminator mapping whose paths keep the location they name where it is the schema of a variant.
 
-    A path is written in the document of the model that holds the union, so a path that leaves the directory of the
-    document and comes back names the file whose schema path ``mapping_path_keys`` compares it with only when it is
-    resolved against that directory (``MappingPath``, ``locate_mapping_path``). A path has a location when that is the
-    schema path of a variant of ``data_types`` or of a base of one; the union may carry a discriminator that another
-    document wrote, whose paths this document does not resolve, and such a path, a bare name, a fragment and a URL
-    keep the keys they had, as do the paths of a document that is no local file.
+    The parser located each path of a mapping it captured as the document that declares the mapping resolves it
+    (``MappingPath``, ``parser/_union_tags.py:located_mapping_paths``), through a symlinked directory too. A path it
+    did not locate, of a discriminator that OpenAPI copies from a schema the union is held through, is resolved against
+    the directory of the document of the holder (``locate_mapping_path``), where it is a path to a file of a local
+    document. A path keeps its location when that is the schema path of a variant of ``data_types`` or of a base of
+    one; any other path, a bare name, a fragment and a URL keep the keys they had.
     """
-    if not mapping or resolver.base_url or is_url(document := model.reference.path.partition("#")[0]):
-        return mapping or {}
-    base = resolver.document_directory("").parts
+    if not mapping:
+        return {}
+    document = model.reference.path.partition("#")[0]
+    base = None if resolver.base_url or is_url(document) else resolver.document_directory("").parts
     variants = [
         variant
         for data_type, _, _ in _iter_discriminator_data_types(data_types)
@@ -277,15 +278,18 @@ def located_mapping(
             *(_get_schema_path(base_class.reference) for base_class in variant.base_classes if base_class.reference),
         )
     }
+
+    def location(path: str) -> str | None:
+        if isinstance(path, MappingPath):
+            return path.located
+        if base is None or "/" not in path or path.startswith("#") or is_url(path):
+            return None
+        return locate_mapping_path(path, document=document, base=base)
+
     return {
         tag: MappingPath(
             path,
-            located
-            if "/" in path
-            and not path.startswith("#")
-            and not is_url(path)
-            and (located := locate_mapping_path(path, document=document, base=base)).removesuffix("#") in schema_paths
-            else None,
+            located if (located := location(path)) is not None and located.removesuffix("#") in schema_paths else None,
         )
         for tag, path in mapping.items()
     }

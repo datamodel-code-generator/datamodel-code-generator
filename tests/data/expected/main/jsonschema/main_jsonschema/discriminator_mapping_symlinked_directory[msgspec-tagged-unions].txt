@@ -1,0 +1,3 @@
+{"pet": {"pet_type": "c", "purrs": true}}: model accepts
+{"pet": {"pet_type": "d", "fetches": true}}: model accepts
+{"pet": {"pet_type": "cat.json#"}}: model rejects
