@@ -2962,6 +2962,8 @@ class _UseFacts(_SchemaUses):
                 if form
                 else TextShape("scalar", KindAt(holder, self.kind(value)))
             )
+        if isinstance(found := unwrapped(value, self.symbol_table, self.members), UnionType):
+            return self.union_shape(present(found), source, direction, form=form)
         others = self.others(value, members, holder, direction)
         if others.patterns:
             return TextShape("object", problem=(holder, _PATTERNS))
@@ -2979,6 +2981,33 @@ class _UseFacts(_SchemaUses):
             ),
             additional=additional,
         )
+
+    def union_shape(
+        self, alternatives: tuple[TypeView, ...], source: SourceLocation, direction: Direction, *, form: bool
+    ) -> TextShape:
+        """Return how the values of a union of objects are written as text: the members of its objects, merged by name.
+
+        A name several objects declare has the kind they agree on, and none (refused, ``_kind``) when they differ. Other
+        properties are those of the objects that allow them, in their kind when all agree on one, else any string; an
+        object with pattern properties has no members and allows any string.
+        """
+        shapes = [
+            self.shape(item, source, self.held_members(item, direction), direction, form=form) for item in alternatives
+        ]
+        merged: dict[str, MemberShape] = {}
+        for shape in shapes:
+            for member in shape.members:
+                merged[member.name] = _agreed(merged[member.name], member) if member.name in merged else member
+        others = [MemberShape("") if shape.problem else shape.additional for shape in shapes]
+        allowed = [other for other in others if other is not None]
+        additional = (
+            None
+            if not allowed
+            else allowed[0]
+            if all(_same_kind(allowed[0], other) for other in allowed)
+            else MemberShape("")
+        )
+        return TextShape("object", members=tuple(merged.values()), additional=additional)
 
     def encoding(self, use: TypeUseBinding, *, members: bool) -> EncodingFacts:
         """Return how a use's value is written as text: as one value, as form members, and member by member.
@@ -3351,6 +3380,18 @@ class _Octets(_UseFacts):
 def _child(location: SourceLocation, token: str) -> SourceLocation:
     """Return the location of a keyword's schema below a schema's location."""
     return replace(location, pointer=f"{location.pointer}/{token}")
+
+
+def _same_kind(first: MemberShape, other: MemberShape) -> bool:
+    """Return whether two members of objects are written alike: in one lexical kind, both repeated or both not."""
+    return first.repeated == other.repeated and (first.kind and first.kind.kind) == (other.kind and other.kind.kind)
+
+
+def _agreed(first: MemberShape, other: MemberShape) -> MemberShape:
+    """Return the member two objects declare by one name: the first when both write it alike, else with no kind."""
+    if _same_kind(first, other):
+        return first
+    return replace(first, kind=KindAt(cast("KindAt", first.kind).source, None))
 
 
 def _typed(members: tuple[FieldUseBinding, ...]) -> Iterator[tuple[str, SourceLocation, ModelFieldFacts]]:

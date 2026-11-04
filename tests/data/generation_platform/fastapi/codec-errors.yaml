@@ -15,3 +15,27 @@ paths:
         - {name: q, in: query, required: true, schema: {enum: [[1, 2], [3]]}}
       responses:
         "204": {description: Done.}
+  /either:
+    get:
+      operationId: getEither
+      parameters:
+        - name: q
+          in: query
+          style: form
+          explode: true
+          schema:
+            oneOf:
+              - {$ref: "#/components/schemas/Counted"}
+              - {$ref: "#/components/schemas/Named"}
+      responses:
+        "204": {description: Done.}
+components:
+  schemas:
+    Counted:
+      type: object
+      properties:
+        value: {type: integer}
+    Named:
+      type: object
+      properties:
+        value: {type: string}

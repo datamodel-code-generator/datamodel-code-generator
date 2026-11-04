@@ -214,10 +214,66 @@
      }
     }
    }
+  },
+  "/search": {
+   "get": {
+    "operationId": "search",
+    "parameters": [
+     {
+      "name": "q",
+      "in": "query",
+      "style": "form",
+      "explode": true,
+      "schema": {
+       "oneOf": [
+        {
+         "$ref": "#/components/schemas/BySize"
+        },
+        {
+         "$ref": "#/components/schemas/ByName"
+        }
+       ]
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Done."
+     }
+    }
+   }
   }
  },
  "components": {
   "schemas": {
+   "BySize": {
+    "type": "object",
+    "required": [
+     "size"
+    ],
+    "properties": {
+     "size": {
+      "type": "integer"
+     },
+     "note": {
+      "type": "string"
+     }
+    }
+   },
+   "ByName": {
+    "type": "object",
+    "required": [
+     "name"
+    ],
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "note": {
+      "type": "string"
+     }
+    }
+   },
    "Size": {
     "type": "integer",
     "minimum": 1,
