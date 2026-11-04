@@ -585,6 +585,34 @@ class PingPublishPayload(RootModel[str]):
     root: str
 ```
 
+### `--singularize-last-word-of-item-names`
+
+| | |
+|---|---|
+| Option | `--singularize-last-word-of-item-names` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.89.0 |
+| Issue | [#4824](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4824) |
+
+**Affects:** the item model of an array, named by singularizing the name of the array. The whole name is singularized as one word, which goes wrong for some endings: `actions_caches` gives `ActionsCach` and `payment_status` gives `PaymentStatu`. With the option only the last word is singularized, and a last word without a singular takes the `Item` suffix (or none under `--disable-appending-item-suffix`). Names whose whole-name singular is right, such as `shipping_addresses` (`ShippingAddress`), are unchanged.
+
+Schema: a property `actions_caches` of `type: array` with inline object items.
+
+Without the option (same as 0.88.0):
+
+```python
+class ActionsCach(BaseModel):
+    id: int | None = None
+```
+
+With the option:
+
+```python
+class ActionsCache(BaseModel):
+    id: int | None = None
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.

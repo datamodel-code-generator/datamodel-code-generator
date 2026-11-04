@@ -436,3 +436,9 @@ def camel_to_snake(string: str, target_python_version: PythonVersion | None = No
 
     subbed = _UNDER_SCORE_1.sub(r"\1_\2", string)
     return lower(_UNDER_SCORE_2.sub(r"\1_\2", subbed), target_python_version)
+
+
+def last_camel_word(string: str) -> str:
+    """Return the last word of a camelCase, PascalCase or snake_case name, split where ``camel_to_snake`` splits it."""
+    marked = _UNDER_SCORE_2.sub("\\1\x00\\2", _UNDER_SCORE_1.sub("\\1\x00\\2", string))
+    return re.split(r"[\x00_]", marked)[-1]

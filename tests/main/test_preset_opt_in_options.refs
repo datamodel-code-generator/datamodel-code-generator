@@ -46,6 +46,8 @@ read-nullable-beside-type-list-practical	main/preset_opt_in_options/preset_sets_
 read-nullable-beside-type-list-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-nullable-beside-type-list-standard].py
 read-unevaluated-properties-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-practical].py
 read-unevaluated-properties-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-practical].py
+singularize-last-word-of-item-names-practical	main/preset_opt_in_options/preset_sets_opt_in_option[singularize-last-word-of-item-names-practical].py
+singularize-last-word-of-item-names-standard	main/preset_opt_in_options/preset_sets_opt_in_option[singularize-last-word-of-item-names-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[singularize-last-word-of-item-names-practical].py
 tag-msgspec-by-payload-name-practical	main/preset_opt_in_options/preset_sets_opt_in_option[tag-msgspec-by-payload-name-practical].py	= main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[default].py
 tag-msgspec-by-payload-name-standard	main/preset_opt_in_options/preset_sets_opt_in_option[tag-msgspec-by-payload-name-standard].py	= main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[default].py
 use-decimal-in-field-forms-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-decimal-in-field-forms-practical].py

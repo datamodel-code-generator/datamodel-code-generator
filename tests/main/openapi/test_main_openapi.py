@@ -17074,3 +17074,63 @@ def test_main_openapi_keep_first_character_of_path_keys(
             invalid_json=json.dumps({"a": 1}),
             expected_error_type="string_type",
         )
+
+
+@pytest.mark.cli_doc(
+    options=["--singularize-last-word-of-item-names"],
+    option_description="""Name the item model of an array by singularizing only the last word of its name.
+
+The item model of an array property is named by singularizing the property name. Without the option the whole name
+is singularized as one word, which goes wrong for some endings: `actions_caches` gives `ActionsCach` and
+`payment_status` gives `PaymentStatu`. With `--singularize-last-word-of-item-names` only the last word is
+singularized, `ActionsCache`, and a last word without a singular takes the `Item` suffix, `PaymentStatusItem`.""",
+    input_schema="openapi/singularize_last_word_of_item_names.yaml",
+    cli_args=["--singularize-last-word-of-item-names"],
+    golden_output="main/openapi/main_openapi/singularize_last_word_of_item_names[pydantic_v2-last-word].py",
+    comparison_output="main/openapi/main_openapi/singularize_last_word_of_item_names[pydantic_v2].py",
+    related_options=["--disable-appending-item-suffix"],
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2"),
+        pytest.param("pydantic_v2.BaseModel", ["--singularize-last-word-of-item-names"], id="pydantic_v2-last-word"),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--singularize-last-word-of-item-names", "--naming-strategy", "full-path"],
+            id="pydantic_v2-last-word-full-path",
+        ),
+        pytest.param("msgspec.Struct", ["--singularize-last-word-of-item-names"], id="msgspec-last-word"),
+    ],
+)
+def test_main_openapi_singularize_last_word_of_item_names(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Singularize only the last word of an item model's name under ``--singularize-last-word-of-item-names`` (#4824).
+
+    ``actions_caches`` and ``payment_status`` give ``ActionsCach`` and ``PaymentStatu`` without the option and
+    ``ActionsCache`` and ``PaymentStatusItem`` with it; ``shipping_addresses`` gives ``ShippingAddress`` either way.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "singularize_last_word_of_item_names.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    if output_model_type == "pydantic_v2.BaseModel" and extra_args == ["--singularize-last-word-of-item-names"]:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="singularize_last_word_of_item_names",
+            model_name="ActionsCacheList",
+            valid_json=json.dumps({"actions_caches": [{"id": 1}], "payment_status": [{"s": "x"}]}),
+            invalid_json=json.dumps({"actions_caches": [{"id": "x"}]}),
+            expected_error_type="int_parsing",
+        )

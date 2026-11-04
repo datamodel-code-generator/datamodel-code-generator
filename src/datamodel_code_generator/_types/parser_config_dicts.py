@@ -115,6 +115,7 @@ class ParserConfigDict(TypedDict):
     enable_faux_immutability: NotRequired[bool]
     remote_text_cache: NotRequired[DefaultPutDict[str, str] | None]
     disable_appending_item_suffix: NotRequired[bool]
+    singularize_last_word_of_item_names: NotRequired[bool]
     strict_types: NotRequired[Sequence[StrictTypes] | None]
     empty_enum_field_name: NotRequired[str | None]
     custom_class_name_generator: NotRequired[Callable[[str], str] | None]

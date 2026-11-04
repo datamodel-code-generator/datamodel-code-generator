@@ -161,6 +161,7 @@ datamodel-codegen [OPTIONS]
 | [`--read-nullable-beside-type-list`](model-customization.md#read-nullable-beside-type-list) | Write the null that `nullable: true` declares beside a `type` list into the root... |
 | [`--reuse-model`](model-customization.md#reuse-model) | Reuse identical model definitions instead of generating duplicates. |
 | [`--reuse-scope`](model-customization.md#reuse-scope) | Scope for model reuse detection (root or tree). |
+| [`--singularize-last-word-of-item-names`](model-customization.md#singularize-last-word-of-item-names) | Name the item model of an array by singularizing only the last word of its name. |
 | [`--skip-root-model`](model-customization.md#skip-root-model) | Skip generation of root model when schema contains nested definitions. |
 | [`--strict-nullable`](model-customization.md#strict-nullable) | Treat default field as a non-nullable field. |
 | [`--strip-default-none`](model-customization.md#strip-default-none) | Remove fields with None as default value from generated models. |
@@ -502,6 +503,7 @@ All options sorted alphabetically:
 - [`--server-router-names`](target-generation-options.md#server-router-names) - Name router groups (experimental).
 - [`--set-default-enum-member`](field-customization.md#set-default-enum-member) - Use the legacy flag for deserializing enum defaults.
 - [`--shared-module-name`](general-options.md#shared-module-name) - Customize the name of the shared module for deduplicated mod...
+- [`--singularize-last-word-of-item-names`](model-customization.md#singularize-last-word-of-item-names) - Name the item model of an array by singularizing only the la...
 - [`--skill-scope`](utility-options.md#skill-scope) - Choose an Agent Skill installation scope
 - [`--skip-root-model`](model-customization.md#skip-root-model) - Skip generation of root model when schema contains nested de...
 - [`--snake-case-field`](field-customization.md#snake-case-field) - Convert field names to snake_case format.

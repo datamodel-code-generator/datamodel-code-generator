@@ -140,6 +140,7 @@ class BaseGenerateConfig(TypedDict):
     use_generic_container_types: NotRequired[bool]
     enable_faux_immutability: NotRequired[bool]
     disable_appending_item_suffix: NotRequired[bool]
+    singularize_last_word_of_item_names: NotRequired[bool]
     empty_enum_field_name: NotRequired[str | None]
     field_extra_keys: NotRequired[set[str] | None]
     field_include_all_keys: NotRequired[bool]

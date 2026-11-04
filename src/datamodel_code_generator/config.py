@@ -244,6 +244,7 @@ class ParserConfig(BaseModel):
     enable_faux_immutability: bool = False
     remote_text_cache: DefaultPutDictSchema | None = None
     disable_appending_item_suffix: bool = False
+    singularize_last_word_of_item_names: bool = False
     strict_types: Sequence[StrictTypes] | None = None
     empty_enum_field_name: str | None = None
     custom_class_name_generator: CallableSchema | None = None

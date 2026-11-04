@@ -153,6 +153,7 @@
 - `--read-nullable-beside-type-list`: Write the null that `nullable: true` declares beside a `type` list into th...
 - `--reuse-model`: Reuse identical model definitions instead of generating duplicates.
 - `--reuse-scope`: Scope for model reuse detection (root or tree).
+- `--singularize-last-word-of-item-names`: Name the item model of an array by singularizing only the last word o...
 - `--skip-root-model`: Skip generation of root model when schema contains nested definitions.
 - `--strict-nullable`: Treat default field as a non-nullable field.
 - `--strip-default-none`: Remove fields with None as default value from generated models.
@@ -986,6 +987,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Name of the shared module for --reuse-scope=tree
                         (default: "shared"). Use this option if your schema
                         has a file named "shared".
+  --singularize-last-word-of-item-names
+                        Name the item model of an array by singularizing only
+                        the last word of its name (actions_caches gives
+                        ActionsCache, payment_status gives PaymentStatusItem);
+                        without it the whole name is singularized as one word
+                        (ActionsCach, PaymentStatu), as in 0.88.0
   --skip-root-model     Skip generating the model for the root schema element
   --strict-dotted-module-names, --no-strict-dotted-module-names
                         Only infer dotted schema names as module paths when

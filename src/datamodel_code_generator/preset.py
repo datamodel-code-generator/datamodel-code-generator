@@ -811,11 +811,13 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             capitalise_numbered_enum_members=True,
             keep_first_character_of_path_keys=True,
             name_converted_payloads_by_message=True,
+            singularize_last_word_of_item_names=True,
         ),
         description=(
             "Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize "
-            "the number of a capitalized enum member, strip only a leading slash from a paths key, and name a "
-            "converted AsyncAPI payload that names no type after its message."
+            "the number of a capitalized enum member, strip only a leading slash from a paths key, name a "
+            "converted AsyncAPI payload that names no type after its message, and singularize only the last word "
+            "of an item model's name."
         ),
     ),
 )
@@ -1094,8 +1096,10 @@ def render_presets_markdown() -> str:
             "gives the `--duplicate-name-suffix` suffix to every model renamed because its name is taken, "
             "`--capitalise-numbered-enum-members` capitalizes the number a capitalized enum member takes (`A_1`), "
             "`--keep-first-character-of-path-keys` strips only a leading slash from a paths key (`pets` names "
-            "`PetsGetResponse`), and `--name-converted-payloads-by-message` drops the placeholder title `Model` of an "
-            "AsyncAPI Avro or XML Schema payload that names no type, so it is named after its message."
+            "`PetsGetResponse`), `--name-converted-payloads-by-message` drops the placeholder title `Model` of an "
+            "AsyncAPI Avro or XML Schema payload that names no type, so it is named after its message, and "
+            "`--singularize-last-word-of-item-names` singularizes only the last word of an item model's name "
+            "(`actions_caches` names `ActionsCache`)."
         ),
         "",
         "## Override Preset Options",

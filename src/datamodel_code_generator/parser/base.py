@@ -1169,6 +1169,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.model_resolver = self._model_resolver_factory(
             base_url=source.geturl() if isinstance(source, ParseResult) else None,
             singular_name_suffix="" if config.disable_appending_item_suffix else None,
+            singularize_last_word_of_item_names=config.singularize_last_word_of_item_names,
             aliases=config.aliases,
             model_name_map=config.model_name_map,
             empty_field_name=config.empty_enum_field_name,

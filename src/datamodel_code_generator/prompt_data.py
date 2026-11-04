@@ -172,6 +172,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--server-router-names": "Name router groups (experimental).",
     "--set-default-enum-member": "Use the legacy flag for deserializing enum defaults.",
     "--shared-module-name": "Customize the name of the shared module for deduplicated models.",
+    "--singularize-last-word-of-item-names": "Name the item model of an array by singularizing only the last word o...",
     "--skip-root-model": "Skip generation of root model when schema contains nested definitions.",
     "--snake-case-field": "Convert field names to snake_case format.",
     "--special-field-name-prefix": "Prefix to add to special field names (like reserved keywords).",

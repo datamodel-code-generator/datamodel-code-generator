@@ -56,6 +56,7 @@ OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
     "--capitalise-numbered-enum-members",
     "--keep-first-character-of-path-keys",
     "--name-converted-payloads-by-message",
+    "--singularize-last-word-of-item-names",
 )
 """The options the 20261104 presets set beyond the 20261027 presets."""
 
@@ -117,6 +118,12 @@ CASES_20261104: tuple[pytest.ParameterSet, ...] = (
         "asyncapi",
         ["--output-model-type", "pydantic_v2.BaseModel", "--use-title-as-name"],
         id="name-converted-payloads-by-message",
+    ),
+    pytest.param(
+        OPEN_API_DATA_PATH / "singularize_last_word_of_item_names.yaml",
+        "openapi",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="singularize-last-word-of-item-names",
     ),
 )
 """The inputs each opt-in option of the 20261104 presets changes."""

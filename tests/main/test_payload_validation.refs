@@ -1858,6 +1858,7 @@ openapi/single_value_enum_as_const/written_as_const/api.yaml::components.schemas
 openapi/single_value_enum_as_const/written_as_const/api.yaml::paths./runs.get.responses.default.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/single_value_enum_as_const/written_as_const/mixed_types.yaml::components.schemas.Kind	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/single_value_enum_as_const/written_as_const/null_branch.yaml::components.schemas.Marker	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/singularize_last_word_of_item_names.yaml::components.schemas.ActionsCacheList	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/special_yaml_keywords.yaml::components.schemas.None	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/special_yaml_keywords.yaml::components.schemas.True	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/special_yaml_keywords.yaml::components.schemas.false	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3770,6 +3771,7 @@ openapi/single_value_enum_as_const/written_as_const/api.yaml::components.schemas
 openapi/single_value_enum_as_const/written_as_const/api.yaml::paths./runs.get.responses.default.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/single_value_enum_as_const/written_as_const/mixed_types.yaml::components.schemas.Kind	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/single_value_enum_as_const/written_as_const/null_branch.yaml::components.schemas.Marker	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/singularize_last_word_of_item_names.yaml::components.schemas.ActionsCacheList	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/special_yaml_keywords.yaml::components.schemas.None	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/special_yaml_keywords.yaml::components.schemas.True	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/special_yaml_keywords.yaml::components.schemas.false	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

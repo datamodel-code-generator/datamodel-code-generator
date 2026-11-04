@@ -358,6 +358,7 @@ class BaseGenerateConfig(BaseModel):
     use_generic_container_types: bool = False
     enable_faux_immutability: bool = False
     disable_appending_item_suffix: bool = False
+    singularize_last_word_of_item_names: bool = False
     empty_enum_field_name: str | None = None
     field_extra_keys: set[str] | None = None
     field_include_all_keys: bool = False

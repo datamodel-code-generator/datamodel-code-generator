@@ -1158,6 +1158,10 @@
       "not_recommended": "style",
       "reason": "Module name for models shared across modules; a package layout choice."
     },
+    "singularize_last_word_of_item_names": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "skill_scope": {
       "not_recommended": "command",
       "reason": "Scope of --install-skill."

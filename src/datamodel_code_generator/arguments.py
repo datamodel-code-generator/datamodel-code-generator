@@ -491,6 +491,13 @@ _flag(
 _flag(
     model_options, "--disable-appending-item-suffix", help="Disable appending `Item` suffix to model name in an array"
 )
+_flag(
+    model_options,
+    "--singularize-last-word-of-item-names",
+    help="Name the item model of an array by singularizing only the last word of its name (actions_caches gives "
+    "ActionsCache, payment_status gives PaymentStatusItem); without it the whole name is singularized as one word "
+    "(ActionsCach, PaymentStatu), as in 0.88.0",
+)
 _flag(model_options, "--disable-timestamp", help="Disable timestamp on file headers")
 _flag(model_options, "--enable-faux-immutability", help="Enable faux immutability")
 _flag(model_options, "--enable-version-header", help="Enable package version on file headers")

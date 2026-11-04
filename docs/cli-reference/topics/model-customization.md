@@ -8,7 +8,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 
 | Group | Options | Description |
 |-------|---------|-------------|
-| [Model Naming](#model-naming) | 11 | Class names, suffixes, prefixes, and duplicate-name behavior. |
+| [Model Naming](#model-naming) | 12 | Class names, suffixes, prefixes, and duplicate-name behavior. |
 | [Model Reuse](#model-reuse) | 4 | Schema deduplication and shared generated modules. |
 | [Model Shape](#model-shape) | 6 | Output model family and compatibility targets. |
 | [Root Model](#root-model) | 5 | Root model creation, collapse, and alias behavior. |
@@ -29,6 +29,7 @@ Class names, suffixes, prefixes, and duplicate-name behavior.
 | [`--name-converted-payloads-by-message`](../model-customization.md#name-converted-payloads-by-message) | Name a converted payload that names no type of its own after its message. |
 | [`--naming-strategy`](../model-customization.md#naming-strategy) | Choose how models are named and how duplicate model names are told apart. |
 | [`--parent-scoped-naming`](../model-customization.md#parent-scoped-naming) | Namespace models by their parent scope to avoid naming conflicts. |
+| [`--singularize-last-word-of-item-names`](../model-customization.md#singularize-last-word-of-item-names) | Name the item model of an array by singularizing only the last word of its name. |
 | [`--use-duplicate-name-suffix-for-every-collision`](../model-customization.md#use-duplicate-name-suffix-for-every-collision) | Give the `--duplicate-name-suffix` suffix to every model renamed in its module. |
 
 ## Model Reuse {#model-reuse}
