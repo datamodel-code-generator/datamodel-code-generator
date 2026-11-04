@@ -50,6 +50,7 @@ from datamodel_code_generator.parser.base import (
     _DEFERRED_INHERITED_TYPE_KEY,
     _RAW_SCHEMA_DEFAULT_KEY,
     Child,
+    ClassScope,
     HashableComparable,
     ModuleContext,
     ParseConfig,
@@ -982,7 +983,7 @@ def test_copy_resolved_required_only_inherited_field_metadata() -> None:
         serialization_alias="serialized-name",
         use_serialization_alias=True,
     )
-    field.__dict__[_DEFERRED_INHERITED_FIELD_KEY] = "Derived"
+    field.__dict__[_DEFERRED_INHERITED_FIELD_KEY] = ClassScope("Derived")
 
     copied_field = _copy_resolved_inherited_field(field, inherited_field)
 
@@ -1096,7 +1097,7 @@ def test_override_required_field_resolves_scoped_mutable_default() -> None:
         original_has_default=True,
     )
     base_model.fields[0].__dict__[_RAW_SCHEMA_DEFAULT_KEY] = "schema"
-    child_field.__dict__[_DEFERRED_INHERITED_CLASS_KEY] = "ChildModel"
+    child_field.__dict__[_DEFERRED_INHERITED_CLASS_KEY] = ClassScope("ChildModel")
     parser.generation_store.register_model(base_model)
     parser.generation_store.register_model(child_model)
 

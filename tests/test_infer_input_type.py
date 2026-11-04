@@ -123,6 +123,8 @@ def test_infer_input_type() -> None:  # noqa: PLR0912
             continue
         if "ref_to_json_list" in file.parts and file.name == "list.json":
             continue
+        if "model_name_map_duplicate_suffix" in file.parts and file.name == "ext.json":
+            continue
         assert_infer_input_type(file, InputFileType.JsonSchema)
     for file in (DATA_PATH / "openapi").rglob("*"):
         if "allof_no_merge_external_relative" in file.parts and file.name != "openapi.yaml":

@@ -37,6 +37,7 @@ from datamodel_code_generator.parser.openapi import OpenAPIParser
 from tests.conftest import assert_output, assert_warnings_contain, create_assert_file_content, stored_expected
 from tests.main.conftest import (
     DATA_PATH,
+    OPEN_API_DATA_PATH,
     InputFileTypeLiteral,
     run_generate_file_and_assert,
     run_main_and_assert,
@@ -1707,32 +1708,32 @@ _DEDUPE_HINT = (
 
 
 @pytest.mark.parametrize(
-    ("fixture_name", "input_file_type", "expected_stderr_contains"),
+    ("input_path", "input_file_type", "expected_stderr_contains"),
     [
         pytest.param(
-            "request_response_allof_child_before_base.json",
+            MALFORMED_DATA_PATH / "request_response_allof_child_before_base.json",
             "jsonschema",
             f"p.{_DEDUPE_HINT}",
             id="allof-child-before-base",
         ),
         pytest.param(
-            "request_response_dynamic_ref_in_id_defs.json",
+            MALFORMED_DATA_PATH / "request_response_dynamic_ref_in_id_defs.json",
             "jsonschema",
             f"Known $id values: https://example.com/node.{_DEDUPE_HINT}",
             id="dynamic-ref-in-id-defs",
         ),
         pytest.param(
-            "request_response_recursive_discriminator.yaml",
+            OPEN_API_DATA_PATH / "recursive_ref_discriminator.yaml",
             "openapi",
-            "[class: request_response_recursive_discriminator.yaml#/components/schemas/CompoundFilter/properties/"
-            "filters/items references: frozenset({'request_response_recursive_discriminator.yaml#', "
-            "'request_response_recursive_discriminator.yaml#/components/schemas/ComparisonFilter'})]",
+            "[class: recursive_ref_discriminator.yaml#/components/schemas/CompoundFilter/properties/"
+            "filters/items references: frozenset({'recursive_ref_discriminator.yaml#', "
+            "'recursive_ref_discriminator.yaml#/components/schemas/ComparisonFilter'})]",
             id="recursive-discriminator-references-sorted",
         ),
     ],
 )
 def test_request_response_legacy_error_names_dedupe_option(
-    fixture_name: str,
+    input_path: Path,
     input_file_type: InputFileTypeLiteral,
     expected_stderr_contains: str,
     output_file: Path,
@@ -1746,7 +1747,7 @@ def test_request_response_legacy_error_names_dedupe_option(
     left classes that cannot be ordered (#5570, #5613), whose references the message lists in sorted order.
     """
     run_main_and_assert(
-        input_path=MALFORMED_DATA_PATH / fixture_name,
+        input_path=input_path,
         output_path=output_file,
         input_file_type=input_file_type,
         extra_args=["--read-only-write-only-model-type", "request-response", "--disable-timestamp"],
@@ -1758,19 +1759,27 @@ def test_request_response_legacy_error_names_dedupe_option(
 
 
 @pytest.mark.parametrize(
-    ("fixture_name", "input_file_type"),
+    ("input_path", "input_file_type"),
     [
-        pytest.param("request_response_allof_child_before_base.json", "jsonschema", id="allof-child-before-base"),
-        pytest.param("request_response_dynamic_ref_in_id_defs.json", "jsonschema", id="dynamic-ref-in-id-defs"),
-        pytest.param("request_response_recursive_discriminator.yaml", "openapi", id="recursive-discriminator"),
+        pytest.param(
+            MALFORMED_DATA_PATH / "request_response_allof_child_before_base.json",
+            "jsonschema",
+            id="allof-child-before-base",
+        ),
+        pytest.param(
+            MALFORMED_DATA_PATH / "request_response_dynamic_ref_in_id_defs.json",
+            "jsonschema",
+            id="dynamic-ref-in-id-defs",
+        ),
+        pytest.param(OPEN_API_DATA_PATH / "recursive_ref_discriminator.yaml", "openapi", id="recursive-discriminator"),
     ],
 )
 def test_request_response_dedupe_generates_legacy_stops(
-    fixture_name: str, input_file_type: InputFileTypeLiteral, output_file: Path
+    input_path: Path, input_file_type: InputFileTypeLiteral, output_file: Path
 ) -> None:
     """Generate with --dedupe-request-response-variants the inputs that stop without it."""
     run_main_and_assert(
-        input_path=MALFORMED_DATA_PATH / fixture_name,
+        input_path=input_path,
         output_path=output_file,
         input_file_type=input_file_type,
         assert_func=assert_file_content,

@@ -55,6 +55,7 @@ from datamodel_code_generator.parser.base import (
     _DEFERRED_INHERITED_TYPE_KEY,
     _RAW_SCHEMA_DEFAULT_KEY,
     SPECIAL_PATH_FORMAT,
+    ClassScope,
     Parser,
     Source,
     _get_inherited_type_modifiers,
@@ -4500,7 +4501,7 @@ def test_inherited_request_response_override_resolves_derived_default() -> None:
         data_type=DataType(),
     )
     child_field.__dict__[_DEFERRED_INHERITED_TYPE_KEY] = child_field.data_type
-    child_field.__dict__[_DEFERRED_INHERITED_CLASS_KEY] = "Derived"
+    child_field.__dict__[_DEFERRED_INHERITED_CLASS_KEY] = ClassScope("Derived")
 
     fields = parser._merge_inherited_field_overrides([inherited_field], [child_field])
     fields[0].default["source"].append("copy")
