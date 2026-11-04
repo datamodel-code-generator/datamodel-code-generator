@@ -79,10 +79,14 @@ def _exit_code(main: Callable[[list[str]], Any], argv: list[str]) -> int:
             return 0
         return exc.code if isinstance(exc.code, int) else 1
     except MemoryError:
-        traceback.print_exc()
+        with contextlib.suppress(MemoryError):
+            traceback.print_exc()
         return OUT_OF_MEMORY
     except Exception:  # ruff: ignore[blind-except] - report any generator crash as a failed run
-        traceback.print_exc()
+        try:
+            traceback.print_exc()
+        except MemoryError:
+            return OUT_OF_MEMORY
         return 1
     return int(result or 0)
 
