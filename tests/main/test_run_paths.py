@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import os
 from contextlib import contextmanager
+from itertools import count
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -295,3 +296,28 @@ def test_missing_staged_model_metadata_publishes_nothing(
             expected_stderr_contains="Error: could not publish batch output: ",
         )
     assert_output(f"written: {sorted(path.name for path in tmp_path.iterdir())}\n")
+
+
+@pytest.mark.abnormal_path("only the user interrupts a run while it replaces its outputs")
+def test_interrupted_publication_restores_every_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """An interrupt while a run replaces its outputs restores the ones already replaced and leaves no backup (#6179)."""
+    monkeypatch.chdir(tmp_path)
+    for name in ("out.py", "meta.json"):
+        Path(name).write_text("old\n", encoding="utf-8")
+    calls = count()
+
+    def interrupted(*args: Any, **kwargs: Any) -> None:
+        if next(calls) == 1:
+            raise KeyboardInterrupt
+        os.replace(*args, **kwargs)  # noqa: PTH105
+
+    monkeypatch.setattr("datamodel_code_generator._publication._replace", interrupted)
+    with pytest.raises(KeyboardInterrupt):
+        generate(
+            PERSON,
+            input_file_type=InputFileType.JsonSchema,
+            output=Path("out.py"),
+            emit_model_metadata=Path("meta.json"),
+            update_lock=True,
+        )
+    assert_output("".join(f"{path.name}: {path.read_text(encoding='utf-8')}" for path in sorted(tmp_path.iterdir())))

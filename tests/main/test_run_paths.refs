@@ -9,6 +9,8 @@ staged	main/run_paths/generate_output_below_a_file[staged].txt	= main/run_paths/
 [test_input_dev_stdin_reads_a_pipe]
 existing-output	main/run_paths/input_dev_stdin_reads_a_pipe[existing-output].txt
 new-output	main/run_paths/input_dev_stdin_reads_a_pipe[new-output].txt	= main/run_paths/input_dev_stdin_reads_a_pipe[existing-output].txt
+[test_interrupted_publication_restores_every_output]
+	main/run_paths/interrupted_publication_restores_every_output.txt
 [test_lockfile_symlink_loop]
 locked	main/run_paths/lockfile_symlink_loop[locked].txt
 update	main/run_paths/lockfile_symlink_loop[update].txt

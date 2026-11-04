@@ -824,7 +824,7 @@ def _publish_staged_files_at(files: Sequence[StagedFile]) -> None:  # noqa: PLR0
             finally:
                 if not journaled:
                     os.close(directory_fd)
-    except OSError as publish_error:
+    except BaseException as publish_error:
         failures: list[Path] = []
         for published_file in reversed(journal):
             failures.extend(_rollback_bound_file(published_file))
@@ -833,7 +833,7 @@ def _publish_staged_files_at(files: Sequence[StagedFile]) -> None:  # noqa: PLR0
                 _rmdir(directory.name, dir_fd=directory.parent_fd)
             except OSError:
                 failures.append(directory.path)
-        if failures:
+        if failures and isinstance(publish_error, OSError):
             paths = ", ".join(path.as_posix() for path in failures)
             raise OSError(f"{publish_error}; failed to roll back batch output: {paths}") from publish_error
         raise
@@ -870,13 +870,13 @@ def _publish_staged_files_by_path(files: Sequence[StagedFile]) -> None:  # pragm
             _replace_source(file, file.target, None)
             _validate_planned_target(file)
             _validate_publication_anchor(file)
-    except OSError as publish_error:
+    except BaseException as publish_error:
         failures: list[Path] = []
         for published_file in reversed(journal):
             failures.extend(_rollback_published_file(published_file))
         for directory in reversed(created_directories):
             failures.extend(_remove_created_directory(directory))
-        if failures:
+        if failures and isinstance(publish_error, OSError):
             paths = ", ".join(path.as_posix() for path in failures)
             raise OSError(f"{publish_error}; failed to roll back batch output: {paths}") from publish_error
         raise
@@ -889,7 +889,9 @@ def _publish_staged_files_by_path(files: Sequence[StagedFile]) -> None:  # pragm
 def publish_staged_files(files: Iterable[tuple[Path, Path] | StagedFile]) -> None:
     """Publish a validated journal through descriptor-bound destinations on POSIX.
 
-    A module that an existing package directory shadows is reported as a warning first.
+    A module that an existing package directory shadows is reported as a warning first. Any exception, an interrupt
+    included, rolls back every file already replaced and propagates; a rollback that fails is named in the error of a
+    failed I/O.
     """
     planned_files = tuple(_planned_staged_file(file) for file in files)
     seen_targets: set[Path] = set()
