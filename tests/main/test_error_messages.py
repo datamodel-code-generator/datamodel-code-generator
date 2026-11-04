@@ -1900,6 +1900,36 @@ def test_missing_input_error_messages(
     )
 
 
+@pytest.mark.parametrize(
+    ("input_file_type", "expected_stderr_contains"),
+    MISSING_INPUT_CASES,
+    ids=[input_file_type or "auto" for input_file_type, _ in MISSING_INPUT_CASES],
+)
+def test_missing_input_error_messages_over_an_existing_output(
+    input_file_type: InputFileTypeLiteral | None,
+    expected_stderr_contains: str,
+    output_file: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A missing input is reported as missing when the output exists too (#5803)."""
+    output_file.write_text("kept = 1\n", encoding="utf-8")
+    run_main_and_assert(
+        input_path=MALFORMED_DATA_PATH / "missing.json",
+        output_path=output_file,
+        input_file_type=input_file_type,
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=expected_stderr_contains,
+    )
+
+
+def test_generate_missing_input_over_an_existing_output(output_file: Path) -> None:
+    """`generate()` reports a missing input as missing when the output exists too (#5803)."""
+    output_file.write_text("kept = 1\n", encoding="utf-8")
+    with pytest.raises(Error, match=r"^File not found: "):
+        generate(MALFORMED_DATA_PATH / "missing.json", input_file_type=InputFileType.JsonSchema, output=output_file)
+
+
 def test_dangling_local_ref_warns_and_preserves_generated_output(
     output_file: Path,
     capsys: pytest.CaptureFixture[str],
