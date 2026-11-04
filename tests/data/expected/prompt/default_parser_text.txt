@@ -76,6 +76,7 @@
 ### Field Customization
 - `--aliases`: Apply custom field and class name aliases via inline JSON or a JSON file path.
 - `--capitalize-enum-members`: Capitalize enum member names to UPPER_CASE format.
+- `--capitalize-numbered-enum-members`: Capitalize also the number an enum member takes when its capitalized nam...
 - `--default-values`: Override field default values via inline JSON or a JSON file path.
 - `--deserialize-default-values`: Deserialize selected direct scalar field defaults into their generated Python ...
 - `--empty-enum-field-name`: Name for empty string enum field values.
@@ -137,7 +138,8 @@
 - `--model-extra-keys`: Add model-level schema extensions to ConfigDict json_schema_extra.
 - `--model-extra-keys-without-x-prefix`: Strip x- prefix from model-level schema extensions and add to ConfigDic...
 - `--model-name-map`: Rename generated model classes from a JSON mapping.
-- `--naming-strategy`: Use parent-prefixed naming strategy for duplicate model names.
+- `--name-converted-payloads-by-message`: Name a converted payload that names no type of its own after its message.
+- `--naming-strategy`: Choose how models are named and how duplicate model names are told apart.
 - `--no-allow-population-by-field-name`
 - `--no-collapse-root-models`
 - `--no-use-frozen-field`
@@ -149,6 +151,7 @@
 - `--read-nullable-beside-type-list`: Write the null that `nullable: true` declares beside a `type` list into th...
 - `--reuse-model`: Reuse identical model definitions instead of generating duplicates.
 - `--reuse-scope`: Scope for model reuse detection (root or tree).
+- `--singularize-last-word-of-item-names`: Name the item model of an array by singularizing only the last word o...
 - `--skip-root-model`: Skip generation of root model when schema contains nested definitions.
 - `--strict-nullable`: Treat default field as a non-nullable field.
 - `--strip-default-none`: Remove fields with None as default value from generated models.
@@ -159,6 +162,7 @@
 - `--use-default`: Use default values from schema in generated models.
 - `--use-default-factory-for-optional-nested-models`: Generate default_factory for optional nested model fields.
 - `--use-default-kwarg`: Use default= keyword argument instead of positional argument for fields with defaults.
+- `--use-duplicate-name-suffix-for-every-collision`: Give the `--duplicate-name-suffix` suffix to every model re...
 - `--use-frozen-field`: Generate frozen (immutable) field definitions for readOnly properties.
 - `--use-generic-base-class`: Generate a shared base class with model configuration to avoid repetition (DRY).
 - `--use-missing-sentinel`: Use Pydantic's MISSING sentinel for unset optional BaseModel or dataclass fields.
@@ -203,6 +207,7 @@
 ### OpenAPI-only Options
 - `--dedupe-request-response-variants`: Decide Request/Response variants from the schema graph and build each in...
 - `--include-path-parameters`: Include OpenAPI path parameters in generated parameter models.
+- `--keep-first-character-of-path-keys`: Strip only a leading slash from a paths key when naming its operation m...
 - `--openapi-as-definitions`: Give OpenAPI paths bodies or ref components the models their definitions get.
 - `--openapi-include-info-version`: Emit OpenAPI info.version as a generated constant.
 - `--openapi-include-paths`: Filter OpenAPI paths to include in model generation.
