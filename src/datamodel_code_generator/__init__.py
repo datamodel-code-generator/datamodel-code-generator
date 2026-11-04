@@ -1850,7 +1850,8 @@ def _prepare_atomic_generation_remote_lock(
     from datamodel_code_generator.remote_lock import RemoteReferenceLock  # noqa: PLC0415
 
     config = _absolute_config_paths(config, ("output", "emit_model_metadata"), caller_cwd)
-    canonical_lockfile = remote_lock_plan(config, default_lock_parent(None, caller_cwd), caller_cwd).canonical_path
+    default_parent = default_lock_parent(config._pyproject_path, caller_cwd)  # noqa: SLF001
+    canonical_lockfile = remote_lock_plan(config, default_parent, caller_cwd).canonical_path
     _validate_generation_path_conflicts(input_, config.output, config.emit_model_metadata, canonical_lockfile)
     remote_lock = RemoteReferenceLock.open(canonical_lockfile, update=True, locked=False)
     return config, canonical_lockfile, remote_lock
@@ -2058,7 +2059,8 @@ def _resolve_generation_remote_lock(
     else:
         from datamodel_code_generator._lock_plan import default_lock_parent, remote_lock_plan  # noqa: PLC0415
 
-        plan = remote_lock_plan(config, default_lock_parent(None, caller_cwd), caller_cwd)
+        default_parent = default_lock_parent(config._pyproject_path, caller_cwd)  # noqa: SLF001
+        plan = remote_lock_plan(config, default_parent, caller_cwd)
         _validate_generation_path_conflicts(
             input_,
             config.output,
