@@ -105,6 +105,19 @@ if TYPE_CHECKING:
     from datamodel_code_generator.types import DataTypeManager, DefaultValueDescriptor
 
 
+def with_dedupe_request_response_hint(message: str) -> str:
+    """End the message of an error that the 0.86.0 read/write facts raise with the option that avoids it.
+
+    Without ``--dedupe-request-response-variants`` the facts of a key come from a temporary parse and the walk reads
+    every reference of a key, as 0.86.0 did, so an input can stop where the option generates it.
+    """
+    stop = "" if message.endswith(".") else "."
+    return (
+        f"{message}{stop} --dedupe-request-response-variants decides the read/write variants from the schema graph"
+        " and can generate such schemas."
+    )
+
+
 @record
 class _InheritedTypeModifiers:
     """Compact deferred state for a partial inherited field."""

@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any
 
 from typing_extensions import Protocol, TypeVar
 
+from datamodel_code_generator import Error
 from datamodel_code_generator._document_reader import nesting_limit
 from datamodel_code_generator._message_text import counted
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
@@ -28,6 +29,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _runtime_validation_reference_keys,
     _sort_models_by_class_body_references,
     definition_reads,
+    with_dedupe_request_response_hint,
 )
 from datamodel_code_generator.parser._passes._state import ParseConfigView, RecursionFacts
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
@@ -36,7 +38,7 @@ from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import _UNMATCHED_MODEL_NAME_KEYS_REPORTED, location_of
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping
+    from collections.abc import Callable, Iterable, Mapping
 
     from datamodel_code_generator import (
         AllExportsCollisionStrategy,
@@ -167,6 +169,12 @@ def _named_model_path(path: str, models: Mapping[str, DataModel]) -> str:
     return named_location(location, path)
 
 
+def _reference_set(paths: Iterable[str]) -> str:
+    """Write the paths a message lists as the frozenset it always wrote, in sorted order so runs give one text."""
+    listed = ", ".join(map(repr, sorted(set(paths))))
+    return f"frozenset({{{listed}}})" if listed else "frozenset()"
+
+
 def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
     unsorted_data_models: list[DataModel],
     sorted_data_models: SortedDataModels | None = None,
@@ -177,13 +185,14 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
     pydantic_v2_root_model_type: type[DataModel] | None = None,
     runtime_validation_references: Mapping[ModelKey, frozenset[ModelKey]] | None = None,
     keyed: KeyedModels | None = None,
-    unresolved_hint: str = "",
+    legacy_request_response: bool = False,
 ) -> tuple[list[DataModel], SortedDataModels, list[ModelKey]]:
     """Sort data models by dependency order for correct forward references.
 
     Models, their references and the models needing a reference update action are keyed by model key; ``keyed``
     holds the models of the outermost call, which the paths that models list themselves resolve against.
-    ``unresolved_hint`` ends the message of the error for models that cannot be ordered.
+    ``legacy_request_response`` ends the message of the error for models that cannot be ordered with the option that
+    decides the read/write variants from the schema graph; the references it lists are sorted.
     """
     if sorted_data_models is None:
         sorted_data_models = OrderedDict()
@@ -242,7 +251,7 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
                     pydantic_v2_root_model_type=pydantic_v2_root_model_type,
                     runtime_validation_references=runtime_validation_references,
                     keyed=universe,
-                    unresolved_hint=unresolved_hint,
+                    legacy_request_response=legacy_request_response,
                 )
             except RecursionError:  # pragma: no cover
                 pass
@@ -324,10 +333,12 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
 
             unresolved_classes = ", ".join(
                 f"[class: {_named_model_path(item.path, models_by_path)} references: "
-                f"{frozenset(_named_model_path(path, models_by_path) for path in reference_paths(item))}]"
+                f"{_reference_set(_named_model_path(path, models_by_path) for path in reference_paths(item))}]"
                 for item in unresolved_references
             )
-            msg = f"A Parser can not resolve classes: {unresolved_classes}.{unresolved_hint}"
+            msg = f"A Parser can not resolve classes: {unresolved_classes}."
+            if legacy_request_response:
+                raise Error(with_dedupe_request_response_hint(msg))
             raise Exception(msg)  # noqa: TRY002
 
     return unresolved_references, sorted_data_models, require_update_action_models
@@ -442,11 +453,8 @@ def sort_parsed_models(parser: SettleHost[Any], run: SettleRun[Any]) -> None:
         runtime_validation_references=(
             None if parser.keep_model_order else _runtime_validation_reference_keys(parser.results, same_module=True)
         ),
-        unresolved_hint=(
-            " --dedupe-request-response-variants decides the read/write variants from the schema graph and can"
-            " generate such schemas."
-            if parser.read_only_write_only_model_type is not None and not parser.dedupe_request_response_variants
-            else ""
+        legacy_request_response=(
+            parser.read_only_write_only_model_type is not None and not parser.dedupe_request_response_variants
         ),
     )
     parser._recursion_facts = RecursionFacts(require_update=frozenset(require_update), circular_roots=frozenset())  # noqa: SLF001

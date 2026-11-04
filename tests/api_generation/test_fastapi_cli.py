@@ -255,6 +255,27 @@ def test_fastapi_cli_model_dependencies(
     )
 
 
+def test_fastapi_cli_request_response_discriminated_enum(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Generate a server beside request-response models of a discriminated union whose target has an enum tag.
+
+    The split read the marker path of the enum the tag property builds as a ``$ref`` into the document, and stopped
+    with ``NotImplementedError`` (#5706); the marker names no schema, so the split reads nothing there.
+    """
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server("--read-only-write-only-model-type", "request-response"),
+        copy_files=[(CLI / "request-response-discriminator.yaml", tmp_path / "pets.yaml")],
+        capsys=capsys,
+        assert_func=assert_file_content,
+        skip_code_validation=True,
+    )
+
+
 @pytest.mark.parametrize("case_name", ["unchanged", "models-in-package", "package-in-models"])
 @pytest.mark.parametrize("structured", [False, True], ids=["text", "json"])
 def test_fastapi_cli_check_read_only(

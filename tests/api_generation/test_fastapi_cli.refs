@@ -732,6 +732,8 @@ omitted	main/generation_platform/generate/nothing-written.txt
 [test_fastapi_cli_removed_options]
 dependency-format	main/generation_platform/fastapi/cli/removed-options/files.txt
 diagnostics-json	main/generation_platform/fastapi/cli/removed-options/files.txt
+[test_fastapi_cli_request_response_discriminated_enum]
+	main/generation_platform/fastapi/fastapi_cli_request_response_discriminated_enum.py
 [test_fastapi_cli_run_commands]
 flat	main/generation_platform/fastapi/cli/run-commands/server.txt	= main/generation_platform/fastapi/cli/dependencies.txt
 nested	main/generation_platform/fastapi/cli/run-commands/app-server.txt

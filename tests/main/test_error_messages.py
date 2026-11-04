@@ -1700,6 +1700,93 @@ def test_schema_location_error_messages(
     )
 
 
+_DEDUPE_HINT = (
+    " --dedupe-request-response-variants decides the read/write variants from the schema graph and can generate "
+    "such schemas."
+)
+
+
+@pytest.mark.parametrize(
+    ("fixture_name", "input_file_type", "expected_stderr_contains"),
+    [
+        pytest.param(
+            "request_response_allof_child_before_base.json",
+            "jsonschema",
+            f"p.{_DEDUPE_HINT}",
+            id="allof-child-before-base",
+        ),
+        pytest.param(
+            "request_response_dynamic_ref_in_id_defs.json",
+            "jsonschema",
+            f"Known $id values: https://example.com/node.{_DEDUPE_HINT}",
+            id="dynamic-ref-in-id-defs",
+        ),
+        pytest.param(
+            "request_response_recursive_discriminator.yaml",
+            "openapi",
+            "[class: request_response_recursive_discriminator.yaml#/components/schemas/CompoundFilter/properties/"
+            "filters/items references: frozenset({'request_response_recursive_discriminator.yaml#', "
+            "'request_response_recursive_discriminator.yaml#/components/schemas/ComparisonFilter'})]",
+            id="recursive-discriminator-references-sorted",
+        ),
+    ],
+)
+def test_request_response_legacy_error_names_dedupe_option(
+    fixture_name: str,
+    input_file_type: InputFileTypeLiteral,
+    expected_stderr_contains: str,
+    output_file: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Name --dedupe-request-response-variants in the error of an input that 0.86.0 facts stop on.
+
+    Without the option the facts of a key come from a temporary parse and the walk reads every reference of a key, as in
+    0.86.0: an allOf child defined before its base put the inline model of the base's property at no owner path (#5266),
+    a ``$dynamicRef`` whose scope the walk could not resolve stopped it (#5556), and a recursive discriminated union
+    left classes that cannot be ordered (#5570, #5613), whose references the message lists in sorted order.
+    """
+    run_main_and_assert(
+        input_path=MALFORMED_DATA_PATH / fixture_name,
+        output_path=output_file,
+        input_file_type=input_file_type,
+        extra_args=["--read-only-write-only-model-type", "request-response", "--disable-timestamp"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=expected_stderr_contains,
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("fixture_name", "input_file_type"),
+    [
+        pytest.param("request_response_allof_child_before_base.json", "jsonschema", id="allof-child-before-base"),
+        pytest.param("request_response_dynamic_ref_in_id_defs.json", "jsonschema", id="dynamic-ref-in-id-defs"),
+        pytest.param("request_response_recursive_discriminator.yaml", "openapi", id="recursive-discriminator"),
+    ],
+)
+def test_request_response_dedupe_generates_legacy_stops(
+    fixture_name: str, input_file_type: InputFileTypeLiteral, output_file: Path
+) -> None:
+    """Generate with --dedupe-request-response-variants the inputs that stop without it."""
+    run_main_and_assert(
+        input_path=MALFORMED_DATA_PATH / fixture_name,
+        output_path=output_file,
+        input_file_type=input_file_type,
+        assert_func=assert_file_content,
+        extra_args=[
+            "--read-only-write-only-model-type",
+            "request-response",
+            "--dedupe-request-response-variants",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
 def _object_with_ref(name: str) -> dict[str, YamlValue]:
     return {"type": "object", "properties": {"value": {"$ref": f"#/$defs/{name}"}}}
 
