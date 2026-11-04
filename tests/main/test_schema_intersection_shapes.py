@@ -136,7 +136,9 @@ VALIDATING_BACKENDS = {
     DataModelType.MsgspecStruct,
 }
 TYPED_DICT_PAYLOAD_DOCUMENTS = frozenset({"allof_member_parts"})
-"""The documents whose payloads the TypedDict models are checked with too: the null an allOf union admits (#5181)."""
+"""The documents whose payloads the TypedDict models are checked with too: the null an allOf union admits (#5181).
+
+Their payload tests run from Python 3.12 on, where Pydantic validates ``typing.TypedDict``."""
 
 
 def _runs(stem: str) -> tuple[tuple[DataModelType, tuple[str, ...]], ...]:
@@ -172,6 +174,21 @@ COMBINED_DOCUMENTS: tuple[str, ...] = (
     "allof_member_parts_draft07",
 )
 """The documents whose output --intersect-combined-schema-keywords changes, pinned with ``COMBINED_OPTION_ARGS`` too."""
+
+
+def _payload_params(stems: Iterable[str]) -> list[pytest.ParameterSet]:
+    """Return a parameter set per document of ``stems``, skipped where Pydantic cannot validate its TypedDict models."""
+    return [
+        pytest.param(
+            stem,
+            id=stem,
+            marks=pytest.mark.skipif(
+                stem in TYPED_DICT_PAYLOAD_DOCUMENTS and sys.version_info < (3, 12),
+                reason="Pydantic validates typing.TypedDict from Python 3.12 on",
+            ),
+        )
+        for stem in stems
+    ]
 
 
 def _run_params(stems: Iterable[str]) -> list[pytest.ParameterSet]:
@@ -282,14 +299,14 @@ def _outcome(decode: Callable[[str], Any], rejected: type[Exception], instance: 
 
 
 @EXPERIMENTAL_MISSING_IMPORT_WARNING
-@pytest.mark.parametrize("stem", DOCUMENTS)
+@pytest.mark.parametrize("stem", _payload_params(DOCUMENTS))
 def test_schema_intersection_shape_payloads(tmp_path: Path, stem: str) -> None:
     """Prove the payload lists with jsonschema, then record what each model generated with the option accepts."""
     assert_output(_shape_payload_lines(tmp_path, stem, OPTION_ARGS))
 
 
 @EXPERIMENTAL_MISSING_IMPORT_WARNING
-@pytest.mark.parametrize("stem", DOCUMENTS)
+@pytest.mark.parametrize("stem", _payload_params(DOCUMENTS))
 def test_schema_intersection_shape_payloads_without_option(tmp_path: Path, stem: str) -> None:
     """Record what each model generated without --intersect-allof-keywords accepts, as the models of 0.86.0 do.
 
@@ -300,7 +317,7 @@ def test_schema_intersection_shape_payloads_without_option(tmp_path: Path, stem:
 
 
 @EXPERIMENTAL_MISSING_IMPORT_WARNING
-@pytest.mark.parametrize("stem", COMBINED_DOCUMENTS)
+@pytest.mark.parametrize("stem", _payload_params(COMBINED_DOCUMENTS))
 def test_schema_intersection_shape_payloads_with_combined_option(tmp_path: Path, stem: str) -> None:
     """Record what each model generated with --intersect-combined-schema-keywords accepts.
 
