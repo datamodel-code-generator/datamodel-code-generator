@@ -7,14 +7,16 @@ and utility functions for detecting schema versions.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias, TypeVar
+from dataclasses import dataclass, field, fields, replace
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar
 
 from typing_extensions import TypedDict
 
 from datamodel_code_generator.enums import AsyncAPIVersion, JsonSchemaVersion, OpenAPIVersion
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from datamodel_code_generator.types import Types
 
 
@@ -59,7 +61,13 @@ _DRAFT_FLAG_CHANGES: tuple[tuple[JsonSchemaVersion, dict[str, Any]], ...] = (
     (JsonSchemaVersion.Draft7, {"read_only_write_only": True}),
     (
         JsonSchemaVersion.Draft201909,
-        {"defs_not_definitions": True, "definitions_key": "$defs", "anchor": True, "recursive_ref": True},
+        {
+            "defs_not_definitions": True,
+            "definitions_key": "$defs",
+            "anchor": True,
+            "recursive_ref": True,
+            "ref_sibling_keywords": True,
+        },
     ),
     (JsonSchemaVersion.Draft202012, {"prefix_items": True, "dynamic_ref": True}),
 )
@@ -298,6 +306,15 @@ class JsonSchemaFeatures:
             status="supported",
         ),
     )
+    ref_sibling_keywords: bool = field(
+        default=False,
+        metadata=FeatureMetadata(
+            introduced="2019-09",
+            doc_name="$ref with sibling keywords",
+            description="Keywords beside `$ref` apply with the referenced schema (ignored in Draft 4-7 and OAS 3.0)",
+            status="partial",
+        ),
+    )
 
     @classmethod
     def from_version(cls, version: JsonSchemaVersion) -> JsonSchemaFeatures:
@@ -343,15 +360,6 @@ class OpenAPISchemaFeatures(JsonSchemaFeatures):
         ),
     )
     # --- Partially supported features ---
-    ref_sibling_keywords: bool = field(
-        default=False,
-        metadata=FeatureMetadata(
-            introduced="OAS 3.1",
-            doc_name="$ref with sibling keywords",
-            description="$ref can coexist with description, summary (no allOf workaround)",
-            status="partial",
-        ),
-    )
     media_item_schema: bool = field(
         default=False,
         metadata=FeatureMetadata(
@@ -431,11 +439,7 @@ class OpenAPISchemaFeatures(JsonSchemaFeatures):
         """Create OpenAPISchemaFeatures from an OpenAPI version."""
         if version == OpenAPIVersion.V30:
             return cls(definitions_key="definitions", read_only_write_only=True, nullable_keyword=True)
-        flags: dict[str, Any] = {
-            **_draft_flags(JsonSchemaVersion.Draft202012),
-            "webhooks": True,
-            "ref_sibling_keywords": True,
-        }
+        flags: dict[str, Any] = {**_draft_flags(JsonSchemaVersion.Draft202012), "webhooks": True}
         if version == OpenAPIVersion.V32:
             flags |= {"media_item_schema": True, "openapi_self": True, "querystring_parameter": True}
         return cls(**flags)
@@ -517,6 +521,89 @@ def detect_asyncapi_version(data: dict[str, Any]) -> AsyncAPIVersion:
     if isinstance(version := data.get("asyncapi", ""), str) and version.startswith("2."):
         return AsyncAPIVersion.V2
     return AsyncAPIVersion.V3
+
+
+SchemaKind: TypeAlias = Literal["jsonschema", "openapi", "asyncapi"]
+SchemaVersion: TypeAlias = JsonSchemaVersion | OpenAPIVersion | AsyncAPIVersion
+
+
+@dataclass(frozen=True)
+class DocumentDialect:
+    """The schema version a document is read by, and the features of that version."""
+
+    version: SchemaVersion
+    features: JsonSchemaFeatures
+
+
+@dataclass(frozen=True)
+class _KindReading:
+    """How a kind of document declares its version: the config field, ``auto``, the declaration and the features."""
+
+    config_field: str
+    auto: SchemaVersion
+    declares: Callable[[dict[str, Any]], bool]
+    detect: Callable[[dict[str, Any]], Any]
+    features: Callable[[Any], JsonSchemaFeatures]
+
+
+_KIND_READINGS: Final[dict[SchemaKind, _KindReading]] = {
+    "jsonschema": _KindReading(
+        "jsonschema_version",
+        JsonSchemaVersion.Auto,
+        lambda raw: _detect_declared_jsonschema_version(raw) is not None,
+        detect_jsonschema_version,
+        JsonSchemaFeatures.from_version,
+    ),
+    "openapi": _KindReading(
+        "openapi_version",
+        OpenAPIVersion.Auto,
+        lambda raw: "openapi" in raw,
+        detect_openapi_version,
+        OpenAPISchemaFeatures.from_openapi_version,
+    ),
+    "asyncapi": _KindReading(
+        "asyncapi_version",
+        AsyncAPIVersion.Auto,
+        lambda raw: "asyncapi" in raw,
+        detect_asyncapi_version,
+        OpenAPISchemaFeatures.from_asyncapi_version,
+    ),
+}
+
+
+def _version_config_field(kind: SchemaKind) -> str:
+    """Return the config field that fixes the version of the documents of ``kind`` (``auto`` detects it)."""
+    return _KIND_READINGS[kind].config_field
+
+
+def document_dialect(
+    raw: dict[str, Any],
+    kind: SchemaKind,
+    *,
+    configured: SchemaVersion | None = None,
+    inherited: DocumentDialect | None = None,
+) -> DocumentDialect:
+    """Return the schema version a document of ``kind`` is read by, and its features.
+
+    The configured version unless it is ``auto``; else the version the document declares (`$schema`, or the
+    ``openapi`` or ``asyncapi`` field of a specification); else ``inherited``, the dialect of the document whose
+    reference loads it; without one, the document is read by itself (no `$schema`: `$defs` reads as 2020-12, else
+    draft 7; an empty document as ``auto``). A JSON Schema document that a specification loads reads its keywords by
+    its own `$schema` and the specification's own fields as the loading document does.
+    """
+    reading = _KIND_READINGS[kind]
+    if configured is not None and configured != reading.auto:
+        version: Any = configured
+    elif inherited is None or reading.declares(raw):
+        version = reading.detect(raw) if raw else reading.auto
+    elif (version := _detect_declared_jsonschema_version(raw)) is None:
+        return inherited
+    else:
+        own = JsonSchemaFeatures.from_version(version)
+        return DocumentDialect(
+            version, replace(inherited.features, **{item.name: getattr(own, item.name) for item in fields(own)})
+        )
+    return DocumentDialect(version, reading.features(version))
 
 
 DataFormatMapping: TypeAlias = "dict[str, dict[str, Types]]"
@@ -602,12 +689,15 @@ def get_data_formats(*, is_openapi: bool = False) -> DataFormatMapping:
 
 __all__ = [
     "DataFormatMapping",
+    "DocumentDialect",
     "FeatureMetadata",
     "JsonSchemaFeatures",
     "OpenAPISchemaFeatures",
     "SchemaFeaturesT",
+    "SchemaKind",
     "detect_asyncapi_version",
     "detect_jsonschema_version",
     "detect_openapi_version",
+    "document_dialect",
     "get_data_formats",
 ]

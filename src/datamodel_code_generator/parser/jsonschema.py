@@ -83,7 +83,6 @@ from datamodel_code_generator import (
     InputFileType,
     InvalidClassNameError,  # noqa: F401  # Preserve the established parser.jsonschema export.
     InvalidFileFormatError,
-    JsonSchemaVersion,
     ReadOnlyWriteOnlyModelType,
     SchemaParseError,
     SchemaResourceRefWarning,
@@ -174,7 +173,6 @@ from datamodel_code_generator._warning_control import first_report, quiet
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import (
     AliasGenerator,  # noqa: F401  # Preserve the established parser.jsonschema export.
-    _ref_siblings_apply,
 )
 from datamodel_code_generator.imports import IMPORT_ANY, Import, Imports
 from datamodel_code_generator.model import DataModel, DataModelFieldBase  # noqa: TC001  # Preserve the established parser.jsonschema export.
@@ -394,8 +392,11 @@ from datamodel_code_generator.parser.base import (
     title_to_class_name,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
 from datamodel_code_generator.parser.schema_version import (
+    DocumentDialect,
     JsonSchemaFeatures,
-    detect_jsonschema_version,
+    SchemaKind,
+    _version_config_field,
+    document_dialect,
     get_data_formats,
 )
 from datamodel_code_generator.python_literal import (
@@ -431,7 +432,6 @@ from datamodel_code_generator.util import BaseModel, get_yaml_parse_errors  # no
 from datamodel_code_generator.validators import _validate_schema_python_import_path
 
 if TYPE_CHECKING:
-    import enum as _enum
     from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Sequence
     from contextlib import AbstractContextManager
 
@@ -592,24 +592,6 @@ class _MapValue:
     parent: JsonSchemaObject | None = None
     constrained: bool = False
     preserve_root_model: bool = False
-
-
-@record
-class _VersionSource:
-    """Where a parser reads the version of its documents: a config field unless it is ``auto``, else ``detect``.
-
-    ``features`` builds the schema features of a version.
-    """
-
-    config_field: str
-    auto: _enum.Enum
-    detect: Callable[[dict[str, YamlValue]], _enum.Enum]
-    features: Callable[[Any], JsonSchemaFeatures]
-
-
-_JSON_SCHEMA_VERSION = _VersionSource(
-    "jsonschema_version", JsonSchemaVersion.Auto, detect_jsonschema_version, JsonSchemaFeatures.from_version
-)
 
 
 _ValidatedT = TypeVar("_ValidatedT")
@@ -915,7 +897,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     _non_dict_source_is_invalid: ClassVar[bool] = False
     _named_entry_maps: ClassVar[frozenset[str]] = _NAMED_ENTRY_MAP_KEYWORDS
     _component_schemas_are_resources: ClassVar[bool] = False
-    _version_source: ClassVar[_VersionSource] = _JSON_SCHEMA_VERSION
+    _schema_kind: ClassVar[SchemaKind] = "jsonschema"
 
     COMPATIBLE_PYTHON_TYPES: ClassVar[dict[str, frozenset[str]]] = {
         "string": frozenset({"str", "String"}),
@@ -1186,7 +1168,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def schema_paths(self) -> list[tuple[str, list[str]]]:
         """Get schema paths for definitions and defs.
 
-        For JsonSchema, uses schema_features.definitions_key to determine
+        For JsonSchema, uses the definitions_key of the schema features to determine
         the primary path, with fallback to the alternative in Lenient mode.
         OpenAPI subclass uses its own SCHEMA_PATHS (#/components/schemas).
         """
@@ -1194,8 +1176,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if list(_DEFAULT_SCHEMA_PATHS) != self.SCHEMA_PATHS:
             return [(s, s.lstrip("#/").split("/")) for s in self.SCHEMA_PATHS]
 
-        # JsonSchema: use definitions_key from schema_features
-        primary_key = self.schema_features.definitions_key
+        # JsonSchema: use definitions_key from the schema features
+        primary_key = self._features_at(None).definitions_key
         primary_path = f"#/{primary_key}"
         fallback_key = "$defs" if primary_key == "definitions" else "definitions"
         fallback_path = f"#/{fallback_key}"
@@ -1213,27 +1195,33 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     @cached_property
     @override
     def schema_features(self) -> JsonSchemaFeatures:
-        """Get schema features based on config or detected version."""
+        """Get schema features based on config or detected version, of the document parsed at the first read."""
         return self._schema_features_for(self.raw_obj)
 
     def _schema_features_for(self, root: dict[str, YamlValue]) -> JsonSchemaFeatures:
         """Get the schema features of a root document based on config or its detected version."""
-        return self._version_source.features(self._document_version(root, self._version_source))
+        return self._read_dialect(root).features
 
-    def _document_version(self, root: dict[str, YamlValue], source: _VersionSource) -> Any:
-        """Return the version ``source`` gives a root document: the configured one unless Auto, else as detected."""
-        if (configured := getattr(self.config, source.config_field, None)) is not None and configured != source.auto:
-            return configured
-        return source.detect(root) if root else source.auto
+    def _read_dialect(
+        self, raw: dict[str, Any], *, kind: SchemaKind | None = None, inherited: DocumentDialect | None = None
+    ) -> DocumentDialect:
+        """Return the dialect a document of ``kind`` (the parser's by default) is read by.
+
+        The configured version unless it is ``auto``, else the version the document declares, else that of
+        ``inherited``, the dialect of the document that loads it; without one the document is read by itself.
+        """
+        kind = kind or self._schema_kind
+        return document_dialect(
+            raw, kind, configured=getattr(self.config, _version_config_field(kind), None), inherited=inherited
+        )
 
     @cached_property
     def _ref_sibling_keywords_enabled(self) -> bool:
-        """Return whether this JSON Schema draft evaluates validation beside ``$ref``."""
-        return self._ref_sibling_keywords_enabled_in(self.raw_obj)
+        """Return whether the document parsed at the first read evaluates validation beside ``$ref``.
 
-    def _ref_sibling_keywords_enabled_in(self, root: dict[str, YamlValue]) -> bool:
-        """Return whether the draft of the root document ``root`` evaluates validation beside ``$ref``."""
-        return _ref_siblings_apply(self._document_version(root, _JSON_SCHEMA_VERSION))
+        Every parser class reads that document as JSON Schema (row ``legacy-first-read-dialect``).
+        """
+        return self._read_dialect(self.raw_obj, kind="jsonschema").features.ref_sibling_keywords
 
     @property
     def _ref_siblings_are_parts(self) -> bool:
@@ -1245,7 +1233,32 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         decide it for the 2020-12 documents after it; the per-document dialect for every read comes later as an
         opt-in.
         """
-        return self._ref_sibling_keywords_enabled_in(self.raw_obj)
+        return self._read_dialect(self.raw_obj, kind="jsonschema").features.ref_sibling_keywords
+
+    def _features_at(self, at: JsonSchemaObject | SchemaLocation | None) -> JsonSchemaFeatures:  # noqa: ARG002
+        """Return the schema features that read a schema object, or the schema value at a location.
+
+        None reads the document being parsed. Row ``legacy-first-read-dialect``: they are the features of the document
+        parsed at their first read (``schema_features``), for every document of the parse.
+        """
+        return self.schema_features
+
+    def _ref_siblings_apply_to(
+        self,
+        schema: JsonSchemaObject,  # noqa: ARG002
+        *,
+        legacy: Literal["first-read", "parsed-document"],
+    ) -> bool:
+        """Return whether the keywords beside the ``$ref`` of ``schema`` apply with it, as its version reads them.
+
+        Row ``legacy-first-read-dialect`` keeps the reading each site had: ``first-read``, the JSON Schema draft of the
+        document parsed at the first read, for every parser class (``_ref_sibling_keywords_enabled``);
+        ``parsed-document``, the version of the input document being parsed (``_ref_siblings_are_parts``), also for
+        the schemas of a document that a reference loads.
+        """
+        if legacy == "first-read":
+            return self._ref_sibling_keywords_enabled
+        return self._ref_siblings_are_parts
 
     def _ref_siblings_are_parts_of(self, schema: JsonSchemaObject) -> bool:
         """Return whether the keywords beside the ``$ref`` of ``schema`` are parts of it.
@@ -1253,7 +1266,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         They are in a dialect that reads them so, and in every dialect where an inherited property override wrote
         them beside the inherited ``$ref`` (marked ``_INHERITED_OVERRIDE_KEY``), since an override is an allOf part.
         """
-        return self._ref_siblings_are_parts or _INHERITED_OVERRIDE_KEY in schema.__dict__
+        return (
+            self._ref_siblings_apply_to(schema, legacy="parsed-document") or _INHERITED_OVERRIDE_KEY in schema.__dict__
+        )
 
     @property
     def root_id(self) -> str | None:
@@ -4721,7 +4736,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             and self._is_local_ref(single_obj.ref)
             and not (
                 hasattr(self.data_model_root_type, "add_literal_validation")
-                and self._ref_sibling_keywords_enabled
+                and self._ref_siblings_apply_to(single_obj, legacy="first-read")
                 and single_obj.has_ref_with_schema_keywords
             )
         ):
@@ -6815,7 +6830,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         written, and a warning says so once per schema location unless the intersection warning already reports it.
         Without --read-const-beside-enum a const beside an enum excludes no value.
         """
-        if not self.read_const_beside_enum or "const" not in obj.extras or not self.schema_features.const_support:
+        if not self.read_const_beside_enum or "const" not in obj.extras or not self._features_at(obj).const_support:
             return set()
         const = obj.extras["const"]
         excluded = {position for position, value in enumerate(obj.enum) if not _json_literal_values_equal(const, value)}
@@ -7387,6 +7402,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._schema_resource_document_aliases: dict[str, str] = {}
         self._schema_resource_root_bases: dict[str, str] = registry.root_bases
         self._schema_resource_cache: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {}
+        self._document_dialects: dict[str, DocumentDialect] = {}
         self._has_embedded_schema_resources = False
         self._lenient_documents: dict[str, dict[str, Any]] = {}
         self._implicit_documents: set[str] = set()
@@ -7489,12 +7505,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def root_id_context(self, root_raw: dict[str, Any]) -> Generator[None, None, None]:
         """Context manager to temporarily set the root $id during parsing.
 
-        Uses schema_features.id_field to support both "id" (Draft 4) and "$id" (Draft 6+).
+        Uses the id_field of the schema features to support both "id" (Draft 4) and "$id" (Draft 6+).
         Falls back to checking both fields for lenient compatibility.
         """
         previous_root_id = self.root_id
         # Try version-specific field first, then fallback to alternative for compatibility
-        id_field = self.schema_features.id_field
+        id_field = self._features_at(None).id_field
         self.root_id = root_raw.get(id_field) or root_raw.get("$id") or root_raw.get("id") or None
         yield
         self.root_id = previous_root_id
@@ -7635,12 +7651,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         if self.config.schema_version_mode != VersionMode.Strict:
             return
-        schema_path = redact_path(_named_path(self._schema_value_location(raw), path))
+        location = self._schema_value_location(raw)
+        schema_path = redact_path(_named_path(location, path))
 
         # Check boolean schemas (Draft 6+)
         if isinstance(raw, bool):
-            if not self.schema_features.boolean_schemas:
-                version_name = "Draft 4" if self.schema_features.id_field == "id" else "this version"
+            if not self._features_at(location).boolean_schemas:
+                version_name = "Draft 4" if self._features_at(location).id_field == "id" else "this version"
                 warn(
                     f"Boolean schemas are not supported in {version_name}. Schema path: {schema_path}",
                     stacklevel=3,
@@ -7650,7 +7667,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         raw = cast("dict[str, YamlValue]", raw)
         # Check null in type array (JSON Schema / OpenAPI 3.1+)
         type_value = raw.get("type")
-        if isinstance(type_value, list) and "null" in type_value and not self.schema_features.null_in_type_array:
+        if isinstance(type_value, list) and "null" in type_value and not self._features_at(location).null_in_type_array:
             warn(
                 'null in type array (e.g., type: ["string", "null"]) is not supported '
                 f"in this schema version. Use nullable: true instead. Schema path: {schema_path}",
@@ -7658,7 +7675,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
 
         # Check exclusive min/max format (Draft 4 uses boolean, Draft 6+ uses number)
-        as_number = self.schema_features.exclusive_as_number
+        as_number = self._features_at(location).exclusive_as_number
         for keyword in ("exclusiveMinimum", "exclusiveMaximum"):
             if (value := raw.get(keyword)) is None or isinstance(value, bool) != as_number:
                 continue
@@ -7670,7 +7687,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             warn(f"{keyword} {style}. Schema path: {schema_path}", stacklevel=3)
 
         for keyword in ("readOnly", "writeOnly"):
-            if not self.schema_features.read_only_write_only and raw.get(keyword) is True:
+            if not self._features_at(location).read_only_write_only and raw.get(keyword) is True:
                 warn(
                     f"{keyword} is not supported in this schema version (Draft 7+ only). Schema path: {schema_path}",
                     stacklevel=3,
@@ -7691,7 +7708,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         schema_path = redact_path(_named_path(obj.schema_location, path))
 
         # Check prefixItems usage (Draft 2020-12+ only)
-        if obj.prefixItems is not None and not self.schema_features.prefix_items:
+        if obj.prefixItems is not None and not self._features_at(obj).prefix_items:
             warn(
                 f"prefixItems is not supported in this schema version. "
                 f"Use items as array for tuple validation. Schema path: {schema_path}",
@@ -7699,7 +7716,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
 
         # Check items as array usage (deprecated in Draft 2020-12)
-        if isinstance(obj.items, list) and self.schema_features.prefix_items:
+        if isinstance(obj.items, list) and self._features_at(obj).prefix_items:
             warn_deprecated(
                 "schema.jsonschema-items-array",
                 details=f"Schema path: {schema_path}",

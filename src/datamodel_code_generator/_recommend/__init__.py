@@ -30,10 +30,11 @@ if TYPE_CHECKING:
     from collections.abc import Set as AbstractSet
 
     from datamodel_code_generator._recommend._metrics import NameChanges, NameMetrics
-    from datamodel_code_generator._recommend._signals import SchemaKind, Signals
+    from datamodel_code_generator._recommend._signals import Signals
     from datamodel_code_generator._recommend._trial import CandidateOutcome, TrialCandidate, TrialInput
     from datamodel_code_generator._recommend_vocabulary import DisagreementKind, InputSource, OptionValue, RecommendMode
     from datamodel_code_generator.enums import InputFileType
+    from datamodel_code_generator.parser.schema_version import SchemaKind
     from datamodel_code_generator.preset import ResolvedPresetConfig
 
 _ANALYSED_TYPES: dict[str, SchemaKind] = {"openapi": "openapi", "jsonschema": "jsonschema", "asyncapi": "asyncapi"}

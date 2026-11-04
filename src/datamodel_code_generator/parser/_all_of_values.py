@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 from functools import partial, reduce
 from itertools import chain
-from typing import TYPE_CHECKING, Any, ClassVar, Final, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, cast
 
 from typing_extensions import Protocol
 
@@ -74,6 +74,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._null_facts import NullFacts, NullMode, NullSite, NullSources
     from datamodel_code_generator.parser._schema_graph import SchemaGraphBuilder, _TargetNode
     from datamodel_code_generator.parser.schema_version import JsonSchemaFeatures
+    from datamodel_code_generator.reference import SchemaLocation
     from datamodel_code_generator.types import DataType, Types
 
 __all__ = [
@@ -259,10 +260,6 @@ class AllOfValuesHost(Protocol):
         """Whether an enum leaves its constraints out (``--ignore-enum-constraints``)."""
 
     @property
-    def schema_features(self) -> JsonSchemaFeatures:
-        """The features of the JSON Schema version being parsed."""
-
-    @property
     def target_pydantic_version(self) -> TargetPydanticVersion | None:
         """The Pydantic version the output targets, if configured."""
 
@@ -289,10 +286,6 @@ class AllOfValuesHost(Protocol):
     @property
     def _output_model_context(self) -> OutputModelContext:
         """The capabilities of the output model types."""
-
-    @property
-    def _ref_sibling_keywords_enabled(self) -> bool:
-        """Whether the sibling keywords of a ``$ref`` apply beside it in the document being parsed."""
 
     @property
     def _schema_graph(self) -> SchemaGraphBuilder | None:
@@ -334,6 +327,9 @@ class AllOfValuesHost(Protocol):
         self, schema: JsonSchemaObject
     ) -> tuple[frozenset[str], bool, dict[str, Any], dict[str, Any]]:
         """Return what a value schema enforces: its types, null, the constraints its type takes and other keywords."""
+
+    def _features_at(self, at: JsonSchemaObject | SchemaLocation | None) -> JsonSchemaFeatures:
+        """Return the schema features that read a schema object (``parser/jsonschema.py``)."""
 
     def _get_array_item_schemas(
         self,
@@ -451,6 +447,11 @@ class AllOfValuesHost(Protocol):
 
     def _ref_path(self, ref: str) -> str:
         """Return the reference key a reference names."""
+
+    def _ref_siblings_apply_to(
+        self, schema: JsonSchemaObject, *, legacy: Literal["first-read", "parsed-document"]
+    ) -> bool:
+        """Return whether the keywords beside the ``$ref`` of ``schema`` apply with it (``parser/jsonschema.py``)."""
 
     def _satisfiable_all_of_value_parts(self, obj: JsonSchemaObject) -> list[JsonSchemaObject] | None:
         """Return the parts of an allOf site whose members each describe one value, references resolved, else None."""
@@ -771,7 +772,7 @@ def reference_site_value(
     intersection = _enum_narrowed_by_part_consts(
         intersect_typed_value_parts(parser, parts, named_location(obj.schema_location, "allOf")),
         parts,
-        const_support=parser.schema_features.const_support,
+        const_support=parser._features_at(obj).const_support,  # noqa: SLF001
     )
     target_dump = target.model_dump(exclude_unset=True, by_alias=True)
     fails = bool(written) and not (parser.collapse_root_models or layers_on_reference(parser, target, written))
@@ -1170,7 +1171,7 @@ def merge_all_of_root_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> 
             case JsonSchemaObject() as schema:
                 if ref := schema.ref:
                     schema = parser._load_ref_schema_object(ref)  # noqa: SLF001
-                    if item.type and parser._ref_sibling_keywords_enabled:  # noqa: SLF001
+                    if item.type and parser._ref_siblings_apply_to(item, legacy="first-read"):  # noqa: SLF001
                         sibling_types.append(item.type)
             case _:
                 return None
@@ -1184,7 +1185,7 @@ def merge_all_of_root_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> 
         materialize_siblings = bool(
             ref
             and len(item.model_fields_set) > 1
-            and parser._ref_sibling_keywords_enabled  # noqa: SLF001
+            and parser._ref_siblings_apply_to(item, legacy="first-read")  # noqa: SLF001
             and (
                 item.has_ref_with_schema_keywords
                 if supports_literal_validation
@@ -1487,7 +1488,7 @@ def all_of_enum_site_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> J
     intersection = _enum_narrowed_by_part_consts(
         intersect_typed_value_parts(parser, parts, named_location(obj.schema_location, "allOf")),
         parts,
-        const_support=parser.schema_features.const_support,
+        const_support=parser._features_at(obj).const_support,  # noqa: SLF001
     )
     literals = intersection.enum
     if all(
@@ -1662,7 +1663,7 @@ def ref_member_narrows_literals(
     """
     if not (
         "legacy-all-of-site-form" not in parser._legacy_intersection  # noqa: SLF001
-        and parser._ref_sibling_keywords_enabled  # noqa: SLF001
+        and parser._ref_siblings_apply_to(member, legacy="first-read")  # noqa: SLF001
         and (member.enum or "const" in member.extras)
     ):
         return False

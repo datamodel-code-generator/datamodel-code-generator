@@ -381,21 +381,6 @@ class JsonSchemaVersion(Enum):
     Auto = "auto"
 
 
-_REF_SIBLING_KEYWORDS_DISABLED_VERSIONS: Final = frozenset({
-    JsonSchemaVersion.Draft4,
-    JsonSchemaVersion.Draft6,
-    JsonSchemaVersion.Draft7,
-})
-
-
-def _ref_siblings_apply(version: JsonSchemaVersion) -> bool:
-    """Return whether a JSON Schema document of ``version`` evaluates the keywords beside a ``$ref``.
-
-    Draft 4, 6 and 7 ignore them; every later draft evaluates them, and so does ``auto`` (no document to detect from).
-    """
-    return version not in _REF_SIBLING_KEYWORDS_DISABLED_VERSIONS
-
-
 class OpenAPIVersion(Enum):
     """OpenAPI specification versions.
 

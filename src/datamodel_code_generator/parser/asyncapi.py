@@ -31,16 +31,13 @@ from datamodel_code_generator._name_words import pascal_words
 from datamodel_code_generator._records import record
 from datamodel_code_generator._url_redaction import redact_path
 from datamodel_code_generator.deprecations import warn_deprecated
-from datamodel_code_generator.enums import AsyncAPIVersion
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaParser,
     _named_path,
-    _VersionSource,
     get_model_by_path,
     unescape_json_pointer_segment,
 )
 from datamodel_code_generator.parser.openapi import OpenAPIParser
-from datamodel_code_generator.parser.schema_version import OpenAPISchemaFeatures, detect_asyncapi_version
 from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import is_url
 from datamodel_code_generator.util import BaseModel, create_module_getattr
@@ -52,6 +49,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator._types import AsyncAPIParserConfigDict
     from datamodel_code_generator.config import AsyncAPIParserConfig
+    from datamodel_code_generator.parser.schema_version import OpenAPISchemaFeatures, SchemaKind
     from datamodel_code_generator.reference import SchemaLocation
 
 
@@ -303,9 +301,7 @@ class AsyncAPIParser(OpenAPIParser):
         """
         return not self.config.name_converted_payloads_by_message
 
-    _version_source: ClassVar[_VersionSource] = _VersionSource(
-        "asyncapi_version", AsyncAPIVersion.Auto, detect_asyncapi_version, OpenAPISchemaFeatures.from_asyncapi_version
-    )
+    _schema_kind: ClassVar[SchemaKind] = "asyncapi"
 
     @property
     def schema_features(self) -> OpenAPISchemaFeatures:

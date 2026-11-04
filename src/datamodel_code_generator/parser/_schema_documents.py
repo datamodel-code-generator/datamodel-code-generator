@@ -82,6 +82,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.format import PythonVersion
     from datamodel_code_generator.parser._schema_graph import RefReading, ResourceRegistry, SchemaGraphBuilder
     from datamodel_code_generator.parser.base import Source
+    from datamodel_code_generator.parser.schema_version import DocumentDialect
     from datamodel_code_generator.reference import ModelResolver
 
 __all__ = [
@@ -105,6 +106,7 @@ __all__ = [
     "load_ref_data_from_local_http_file",
     "load_ref_data_from_text",
     "load_source_dict",
+    "loaded_document_dialect",
     "loads_document",
     "mount_converted_schema",
     "normalize_external_ref",
@@ -213,6 +215,7 @@ class SchemaDocumentsHost(Protocol):
     reserved_refs: defaultdict[tuple[str, ...], set[str]]
     source: str | Path | list[Path] | ParseResult | dict[str, YamlValue]
     _cache_local_sources: bool
+    _document_dialects: dict[str, DocumentDialect]
     _document_roles: dict[str, dict[str, None]]
     _documents_as_written: dict[int, tuple[dict[str, YamlValue], dict[str, YamlValue]]]
     _has_embedded_schema_resources: bool
@@ -338,6 +341,9 @@ class SchemaDocumentsHost(Protocol):
 
     def _resolve_schema_resource_ref(self, reference: str, base: str, document: str, *, nested_scope: bool) -> str:
         """Resolve registered resources before considering a physical document fetch."""
+
+    def _read_dialect(self, raw: dict[str, Any], *, inherited: DocumentDialect | None = None) -> DocumentDialect:
+        """Return the dialect a document of the parser's kind is read by (``parser/jsonschema.py``)."""
 
     def _schema_features_for(self, root: dict[str, YamlValue]) -> JsonSchemaFeatures:
         """Get the schema features of a root document based on config or its detected version."""
@@ -664,16 +670,32 @@ def implicit_schema_resources(
     yield from {path: schema for role in roles for path, schema in held_schemas(raw, role)}.items()
 
 
+def loaded_document_dialect(parser: SchemaDocumentsHost, raw: dict[str, Any], document: str) -> DocumentDialect:
+    """Return the schema version a loaded document is read by (L0).
+
+    An input document is read by itself. Any other document that declares no version keeps the version an earlier
+    load gave it, else takes that of the document being parsed when a reference loads it.
+    """
+    inherited = None
+    if raw is not parser.raw_obj and document not in parser.model_resolver.after_load_files:
+        dialects = parser._document_dialects  # noqa: SLF001
+        loading = parser._schema_resource_document(list(parser.model_resolver.current_root))  # noqa: SLF001
+        inherited = dialects.get(document) or dialects.get(loading)
+    return parser._read_dialect(raw, inherited=inherited)  # noqa: SLF001
+
+
 def prepare_schema_resources(parser: SchemaDocumentsHost, raw: dict[str, Any], path_parts: list[str]) -> dict[str, Any]:
     """Add a loaded document to the schema graph once, instead of rescanning it on each reference (L0).
 
-    The graph walk finds the document's resources and fills the registry dicts from them; then `$ref`s that
-    resolve through an embedded `$id` are rewritten copy-on-write, and the prepared document is indexed.
+    The schema version the document is read by is recorded (``loaded_document_dialect``); the graph walk finds the
+    document's resources and fills the registry dicts from them; then `$ref`s that resolve through an embedded `$id`
+    are rewritten copy-on-write, and the prepared document is indexed.
     """
     document = parser._schema_resource_document(path_parts)  # noqa: SLF001
     parser._schema_resource_path_parts.setdefault(document, path_parts)  # noqa: SLF001
     if (cached := parser._schema_resource_cache.get(document)) is not None and (raw is cached[0] or raw is cached[1]):  # noqa: SLF001
         return cached[1]
+    parser._document_dialects[document] = loaded_document_dialect(parser, raw, document)  # noqa: SLF001
     registry = parser._schema_resource_registry  # noqa: SLF001
     registry.forget(document)
     parser._lenient_documents.pop(document, None)  # noqa: SLF001

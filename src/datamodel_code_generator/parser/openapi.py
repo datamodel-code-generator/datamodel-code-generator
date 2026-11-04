@@ -66,10 +66,8 @@ from datamodel_code_generator.parser.jsonschema import (
     _parse_all_of_site,
     _parse_combined_root,
     _ref_applies,
-    _VersionSource,
     get_model_by_path,
 )
-from datamodel_code_generator.parser.schema_version import OpenAPISchemaFeatures, detect_openapi_version
 from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import (
     FIELD_ORIGIN_KEY,
@@ -98,6 +96,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.config import OpenAPIParserConfig
     from datamodel_code_generator.model import DataModel, DataModelFieldBase
     from datamodel_code_generator.parser._null_facts import NullMode
+    from datamodel_code_generator.parser.schema_version import OpenAPISchemaFeatures, SchemaKind
     from datamodel_code_generator.reference import SchemaLocation
 
 
@@ -409,9 +408,7 @@ class OpenAPIParser(JsonSchemaParser):
     _component_schemas_are_resources: ClassVar[bool] = True
     config: OpenAPIParserConfig
 
-    _version_source: ClassVar[_VersionSource] = _VersionSource(
-        "openapi_version", OpenAPIVersion.Auto, detect_openapi_version, OpenAPISchemaFeatures.from_openapi_version
-    )
+    _schema_kind: ClassVar[SchemaKind] = "openapi"
 
     @cached_property
     def schema_features(self) -> OpenAPISchemaFeatures:
@@ -428,7 +425,12 @@ class OpenAPIParser(JsonSchemaParser):
         OpenAPI 3.1 and later write a binary string so in place of 3.0's ``format: binary``, and 3.0 is read so too
         (its multipart members stay files); an AsyncAPI document reads its strings as JSON Schema does.
         """
-        return self._document_version(self.raw_obj, self._version_source) in _CONTENT_MEDIA_TYPE_OCTETS_VERSIONS
+        return self._read_dialect(self.raw_obj).version in _CONTENT_MEDIA_TYPE_OCTETS_VERSIONS
+
+    @override
+    def _features_at(self, at: JsonSchemaObject | SchemaLocation | None) -> OpenAPISchemaFeatures:
+        """Return the OpenAPI schema features that read a schema object, or the document being parsed for None."""
+        return cast("OpenAPISchemaFeatures", super()._features_at(at))
 
     @property
     @override
@@ -501,7 +503,7 @@ class OpenAPIParser(JsonSchemaParser):
     @contextmanager
     def openapi_self_context(self, specification: dict[str, Any]) -> Generator[None, None, None]:
         """Temporarily use OpenAPI 3.2 $self as the document root identifier."""
-        if not isinstance(openapi_self := specification.get("$self"), str) or not self.schema_features.openapi_self:
+        if not isinstance(openapi_self := specification.get("$self"), str) or not self._features_at(None).openapi_self:
             yield
             return
 
@@ -521,7 +523,11 @@ class OpenAPIParser(JsonSchemaParser):
         """
         if document in self._specification_documents:
             return self.openapi_self_context(raw)
-        if "openapi" in raw and isinstance(openapi_self := raw.get("$self"), str) and self.schema_features.openapi_self:
+        if (
+            "openapi" in raw
+            and isinstance(openapi_self := raw.get("$self"), str)
+            and self._features_at(None).openapi_self
+        ):
             scope = "/".join(self.model_resolver.current_root)
             self.model_resolver.ids[scope].setdefault(openapi_self, f"{scope}#")
         return nullcontext()
@@ -686,11 +692,11 @@ class OpenAPIParser(JsonSchemaParser):
         """Get data type from JSON schema object, warning on ``nullable`` where the OpenAPI version deprecates it.
 
         OpenAPI 3.0 writes ``nullable: true``; 3.1 and later write ``type: [..., "null"]`` and still read ``nullable``,
-        with a warning in Strict mode (``schema_features.nullable_keyword``).
+        with a warning in Strict mode (``nullable_keyword`` of its schema features).
         """
         if (
             obj.nullable
-            and not self.schema_features.nullable_keyword
+            and not self._features_at(obj).nullable_keyword
             and (self.config.schema_version_mode == VersionMode.Strict)
         ):
             warn_deprecated("schema.openapi-nullable", stacklevel=2)
@@ -872,7 +878,7 @@ class OpenAPIParser(JsonSchemaParser):
         """
         if schema is not None:
             return schema, False
-        if item_schema is not None and self.schema_features.media_item_schema:
+        if item_schema is not None and self._features_at(None).media_item_schema:
             return item_schema, True
         return None
 
@@ -1164,7 +1170,7 @@ class OpenAPIParser(JsonSchemaParser):
         for parameter_ in parameters:
             parameter = self.resolve_object(parameter_, ParameterObject, "parameter")
             match parameter.in_:
-                case ParameterLocation.querystring if self.schema_features.querystring_parameter:
+                case ParameterLocation.querystring if self._features_at(None).querystring_parameter:
                     parameter_name = parameter.name or "querystring"
                 case ParameterLocation.query | ParameterLocation.path:
                     if not (parameter_name := parameter.name):

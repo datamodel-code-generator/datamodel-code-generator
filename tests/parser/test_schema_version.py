@@ -199,6 +199,7 @@ def test_jsonschema_features_2019_09() -> None:
             anchor=True,
             recursive_ref=True,
             dynamic_ref=False,
+            ref_sibling_keywords=True,
         )
     )
 
@@ -218,6 +219,7 @@ def test_jsonschema_features_2020_12() -> None:
             anchor=True,
             recursive_ref=True,
             dynamic_ref=True,
+            ref_sibling_keywords=True,
         )
     )
 
@@ -237,6 +239,7 @@ def test_jsonschema_features_auto() -> None:
             anchor=True,
             recursive_ref=True,
             dynamic_ref=True,
+            ref_sibling_keywords=True,
         )
     )
 

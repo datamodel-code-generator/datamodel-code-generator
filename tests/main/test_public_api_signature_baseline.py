@@ -225,13 +225,16 @@ _PUBLIC_MODULE_EXPORTS: dict[str, frozenset[str]] = {
     "datamodel_code_generator.parser.protobuf": frozenset({"ProtobufParser", "convert_protobuf_schema_data"}),
     "datamodel_code_generator.parser.schema_version": frozenset({
         "DataFormatMapping",
+        "DocumentDialect",
         "FeatureMetadata",
         "JsonSchemaFeatures",
         "OpenAPISchemaFeatures",
         "SchemaFeaturesT",
+        "SchemaKind",
         "detect_asyncapi_version",
         "detect_jsonschema_version",
         "detect_openapi_version",
+        "document_dialect",
         "get_data_formats",
     }),
     "datamodel_code_generator.parser.xmlschema": frozenset({
