@@ -11,7 +11,7 @@ This documentation is auto-generated from test cases.
 | 📁 [Base Options](base-options.md) | 15 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 47 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 36 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 56 | Model generation behavior |
+| 🏗️ [Model Customization](model-customization.md) | 57 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 29 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 11 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
@@ -245,6 +245,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--keep-field-defaults-off-branch-roots`](model-customization.md#keep-field-defaults-off-branch-roots)
 - [`--keep-first-character-of-path-keys`](openapi-only-options.md#keep-first-character-of-path-keys)
 - [`--keep-model-order`](model-customization.md#keep-model-order)
+- [`--keep-reference-null-on-merged-models`](model-customization.md#keep-reference-null-on-merged-models)
 - [`--keyword-only`](model-customization.md#keyword-only)
 
 ### L {#l}

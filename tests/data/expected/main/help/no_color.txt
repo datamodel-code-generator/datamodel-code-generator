@@ -479,6 +479,15 @@ Field customization:
                         extracted from the branches of its `anyOf` or `oneOf`,
                         which then require their value; without it each such
                         root takes the property's default
+  --keep-reference-null-on-merged-models
+                        Keep the null that the schema of a field, item or
+                        member admits where the model it references is merged
+                        into an equal model that rejects null (deduplication
+                        of equal models, --reuse-model, --collapse-reuse-
+                        models, --reuse-scope tree), so a `type: [object,
+                        null]` property keeps `| None`; without it the
+                        reference takes the null of the model it names after
+                        the merge, as in 0.88.0
   --model-extra-keys MODEL_EXTRA_KEYS [MODEL_EXTRA_KEYS ...]
                         Add extra keys from schema extensions (x-* fields) to
                         model_config json_schema_extra

@@ -1137,6 +1137,14 @@ _flag(
 )
 _flag(
     field_options,
+    "--keep-reference-null-on-merged-models",
+    help="Keep the null that the schema of a field, item or member admits where the model it references is merged "
+    "into an equal model that rejects null (deduplication of equal models, --reuse-model, --collapse-reuse-models, "
+    "--reuse-scope tree), so a `type: [object, null]` property keeps `| None`; without it the reference takes the null "
+    "of the model it names after the merge, as in 0.88.0",
+)
+_flag(
+    field_options,
     "--strip-default-none",
     help="Strip default None on fields (no effect on msgspec.Struct: it defaults an omitted field to UNSET, and to "
     "None only when the type admits None)",

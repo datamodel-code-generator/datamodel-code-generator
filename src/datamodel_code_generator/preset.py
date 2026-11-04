@@ -847,6 +847,14 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "of allOf members, and keep no enum value that the merged type rejects, as JSON Schema validates them."
         ),
     ),
+    PresetOptionGroup(
+        title="Reference null kept on merged models",
+        config=PresetConfig(keep_reference_null_on_merged_models=True),
+        description=(
+            "Keep the null that the schema of a reference admits when its model is merged into an equal model that "
+            "rejects null, so a `type: [object, null]` property keeps `| None` after duplicate removal or reuse."
+        ),
+    ),
 )
 
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
@@ -1107,7 +1115,7 @@ def render_presets_markdown() -> str:
         (
             "The 20261104 presets keep the 20261027 options and add `--merge-shared-variant-tags`: a variant that "
             "discriminated unions tag differently, such as one by a mapping key and one by the schema name, takes "
-            "every tag they give it, so each union decodes the documents it selects the variant by, and "
+            "every tag they give it, so each union decodes the documents it selects the variant by, "
             "`--use-encoded-str-for-constrained-base64`: a format: byte string with a pattern or lengths is written "
             "as `Annotated[str, Field(...), EncodedStr(encoder=Base64Encoder)]`, so Pydantic checks them on the "
             "base64 text instead of the decoded text, and `--read-length-keywords-by-type`: `minLength` and "
@@ -1123,7 +1131,8 @@ def render_presets_markdown() -> str:
             "the keywords beside an anyOf or oneOf are combined with each branch, an inherited override merges its "
             "nested properties name by name and by the type it narrows, an allOf member reads its $ref siblings, "
             "$ref aliases and null branches, and no enum value that the merged type rejects is kept, as JSON Schema "
-            "validates them."
+            "validates them, and `--keep-reference-null-on-merged-models`: a reference whose schema admits null keeps "
+            "its `| None` when its model is merged into an equal model that rejects null."
         ),
         "",
         (

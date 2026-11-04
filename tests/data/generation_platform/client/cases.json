@@ -1846,6 +1846,39 @@
       ]
     ]
   },
+  "merged-nullable-kept": {
+    "input": "merged-nullable-kept.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "model": {
+      "reuse_model": true,
+      "collapse_reuse_models": true,
+      "keep_reference_null_on_merged_models": true
+    },
+    "modules": [
+      [
+        "client",
+        "types",
+        "default",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "models.py"
+      ]
+    ]
+  },
   "type-spellings-reuse": {
     "input": "type-spellings-reuse.yaml",
     "backends": [

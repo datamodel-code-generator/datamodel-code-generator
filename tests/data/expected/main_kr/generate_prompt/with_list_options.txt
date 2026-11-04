@@ -139,6 +139,7 @@
 - `--frozen-dataclasses`: Generate frozen dataclasses with optional keyword-only fields.
 - `--keep-field-defaults-off-branch-roots`: Leave a property's default off the root models extracted from its `a...
 - `--keep-model-order`: Keep generated model order deterministic while respecting dependency constraints.
+- `--keep-reference-null-on-merged-models`: Keep the null a reference's schema admits when its model is merged.
 - `--keyword-only`: Generate dataclasses with keyword-only fields (Python 3.10+).
 - `--model-extra-keys`: Add model-level schema extensions to ConfigDict json_schema_extra.
 - `--model-extra-keys-without-x-prefix`: Strip x- prefix from model-level schema extensions and add to ConfigDic...
@@ -766,6 +767,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         extracted from the branches of its `anyOf` or `oneOf`,
                         which then require their value; without it each such
                         root takes the property's default
+  --keep-reference-null-on-merged-models
+                        Keep the null that the schema of a field, item or
+                        member admits where the model it references is merged
+                        into an equal model that rejects null (deduplication
+                        of equal models, --reuse-model, --collapse-reuse-
+                        models, --reuse-scope tree), so a `type: [object,
+                        null]` property keeps `| None`; without it the
+                        reference takes the null of the model it names after
+                        the merge, as in 0.88.0
   --model-extra-keys MODEL_EXTRA_KEYS [MODEL_EXTRA_KEYS ...]
                         Add extra keys from schema extensions (x-* fields) to
                         model_config json_schema_extra

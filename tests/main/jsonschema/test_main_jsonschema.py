@@ -4986,6 +4986,92 @@ def test_main_jsonschema_nullable_reuse_collapse(
     )
 
 
+KEPT_REFERENCE_NULL_PAYLOAD: dict[str, Any] = {
+    "first": {},
+    "second": {"tool": None},
+    "foo": {"item": None},
+    "home": None,
+    "homes": [None],
+    "work": {},
+}
+"""A document whose nullable references hold null where their schemas admit it."""
+
+
+@pytest.mark.cli_doc(
+    options=["--keep-reference-null-on-merged-models"],
+    option_description="""Keep the null a reference's schema admits when its model is merged.
+
+Deduplication of equal models, `--reuse-model`, `--collapse-reuse-models` and `--reuse-scope tree` merge a model into
+an equal one, and point the fields, items and members that named it at the model that stays. Without the option such a
+reference takes the null of the model it names after the merge, so a `type: [object, null]` property whose model is
+merged into an equal model that rejects null loses its `| None` and rejects the null its schema admits. With
+`--keep-reference-null-on-merged-models` it keeps the null of the schema it names, so a model that differs from another
+only by that null stays apart under `--reuse-model`. A reference whose schema rejects null keeps rejecting it in both
+cases.""",
+    input_schema="jsonschema/keep_reference_null_on_merged_models.json",
+    cli_args=["--strict-nullable", "--reuse-model", "--keep-reference-null-on-merged-models"],
+    golden_output="main/jsonschema/main_jsonschema/keep_reference_null_on_merged_models[pydantic_v2-kept].py",
+    comparison_output="main/jsonschema/main_jsonschema/keep_reference_null_on_merged_models[pydantic_v2].py",
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args", "error_type"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], None, id="pydantic_v2"),
+        pytest.param(
+            "pydantic_v2.BaseModel", ["--keep-reference-null-on-merged-models"], "model_type", id="pydantic_v2-kept"
+        ),
+        pytest.param(
+            "dataclasses.dataclass", ["--keep-reference-null-on-merged-models"], "dataclass_type", id="dataclass-kept"
+        ),
+        pytest.param("typing.TypedDict", ["--keep-reference-null-on-merged-models"], "dict_type", id="typed_dict-kept"),
+        pytest.param(
+            "typing.TypedDict",
+            ["--keep-reference-null-on-merged-models", "--collapse-reuse-models"],
+            "dict_type",
+            id="typed_dict-collapse-kept",
+        ),
+        pytest.param("msgspec.Struct", ["--keep-reference-null-on-merged-models"], None, id="msgspec-kept"),
+    ],
+)
+def test_main_jsonschema_keep_reference_null_on_merged_models(
+    output_file: Path, output_model_type: str, extra_args: list[str], error_type: str | None
+) -> None:
+    """Keep the null of the schema a reference names after its model is merged under ``--keep-reference-null-...``.
+
+    ``second.tool`` names a ``Tool`` that admits null, merged into the equal ``Tool`` of ``first`` (#4816), ``Foo.item``
+    an ``Item`` merged into the one of ``Bar`` (#5163), and ``home`` and the items of ``homes`` a ``Home`` that
+    ``--reuse-model`` makes a subclass of ``Work`` (#5411). Without the option they lose the null where the field
+    writes none of its own; with it they keep it, so the models accept the nulls their schemas admit, and ``Foo``
+    stays apart from ``Bar``. ``work`` still rejects null.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "keep_reference_null_on_merged_models.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--strict-nullable",
+            "--reuse-model",
+            *extra_args,
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    if error_type is not None:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"keep_reference_null_{output_model_type.replace('.', '_')}_{len(extra_args)}",
+            model_name="Holder",
+            valid_json=json.dumps(KEPT_REFERENCE_NULL_PAYLOAD),
+            invalid_json=json.dumps({**KEPT_REFERENCE_NULL_PAYLOAD, "work": None}),
+            expected_error_type=error_type,
+        )
+
+
 @pytest.mark.parametrize(
     "collapse_reuse_model_args",
     [[], ["--collapse-reuse-models"]],

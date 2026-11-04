@@ -180,6 +180,7 @@ Generated model class and package behavior.
 - `--force-optional`: Force optional for required fields
 - `--strict-nullable`: Treat default field as a non-nullable field
 - `--omit-redundant-reference-null`: Do not write None again where a field, item or member references a model that holds null itself (a root model or type alias whose type admits None, or an enum with a None member), so that a null parses to that model
+- `--keep-reference-null-on-merged-models`: Keep the null that the schema of a field, item or member admits where the model it references is merged into an equal model that rejects null (deduplication of equal models, --reuse-model, --collapse-reuse-models, --reuse-scope tree), so a `type: [object, null]` property keeps `| None`; without it the reference takes the null of the model it names after the merge, as in 0.88.0
 - `--strip-default-none`: Strip default None on fields (no effect on msgspec.Struct: it defaults an omitted field to UNSET, and to None only when the type admits None)
 - `--use-default`: Use default value even if a field is required
 - `--use-default-kwarg`: Use `default=` instead of a positional argument for Fields that have default values.

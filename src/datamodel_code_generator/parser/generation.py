@@ -2272,18 +2272,19 @@ class GenerationStore:  # noqa: PLR0904
 
     @deprecated("Use GenerationStore.builder().redirect_reference_users() instead.", category=None)
     def redirect_reference_users(
-        self, old_reference: Reference, new_reference: Reference, *, merged: bool = False
+        self, old_reference: Reference, new_reference: Reference, *, merged: bool = False, keeps_named: bool = False
     ) -> list[DataType]:
         """Redirect every user of ``old_reference`` to ``new_reference`` and return the redirected users.
 
         Their sites are redirected from ``old_reference``. When the model of ``old_reference`` is ``merged`` into the
-        equal model of ``new_reference``, each user records the null of the schema it names (``_record_named_null``).
+        equal model of ``new_reference``, each user records the null of the schema it names (``_record_named_null``),
+        which decides alone with ``keeps_named``.
         """
         children = data_type_children(old_reference)
         self._state_sites_at("redirect_reference_users", children, via=old_reference)
         cache_owners = [self._cache_owners_for_data_type(child) for child in children]
         if merged:
-            self._record_named_null(children)
+            self._record_named_null(children, keeps_named=keeps_named)
         old_reference.replace_children_references(new_reference)
         self._data_types_changed(children, cache_owners)
         return children
@@ -2302,11 +2303,13 @@ class GenerationStore:  # noqa: PLR0904
         model: DataModel,
         models: list[DataModel],
         new_reference: Reference,
+        *,
+        keeps_named: bool = False,
     ) -> None:
         """Redirect ``model`` reference users owned by ``models`` to ``new_reference``; their sites are redirected.
 
         ``model`` is merged into the model of ``new_reference``, so each user records the null of the schema it names
-        (``_record_named_null``).
+        (``_record_named_null``), which decides alone with ``keeps_named``.
         """
         model_ids = {id(candidate) for candidate in models}
         cache_owners = []
@@ -2321,7 +2324,7 @@ class GenerationStore:  # noqa: PLR0904
                 continue
             cache_owners.append(cache_owners_for_child)
             self._state_sites_at("redirect_model_reference_users", (child,), via=model.reference)
-            self._record_named_null((child,))
+            self._record_named_null((child,), keeps_named=keeps_named)
             child.replace_reference(new_reference)
             self._note_changed_data_types((child,))
         self._invalidate_owner_caches(cache_owners)
@@ -2374,15 +2377,16 @@ class GenerationStore:  # noqa: PLR0904
                 add_child(new_reference, data_type)
 
     @staticmethod
-    def _record_named_null(data_types: Iterable[DataType]) -> None:
+    def _record_named_null(data_types: Iterable[DataType], *, keeps_named: bool) -> None:
         """Record whether each type admits the null of the schema it names, before a merge points it at an equal model.
 
         A reference admits None from the schema it names, not from the model it names after the merge
-        (``model/_decisions/nullability.py:reference_null``), in both directions; each merge records what the type
-        admitted right before it.
+        (``model/_decisions/nullability.py:reference_null``); each merge records what the type admitted right before
+        it. A schema that rejects null keeps rejecting it, and with ``keeps_named``
+        (``--keep-reference-null-on-merged-models``) a schema that admits null keeps admitting it too.
         """
         for data_type in data_types:
-            data_type._update_type_null(named=data_type.names_nullable_model)  # noqa: SLF001
+            data_type._update_type_null(named=data_type.names_nullable_model, keeps_named=keeps_named)  # noqa: SLF001
 
     def _state_model_sites(self, operation: str, *models: object) -> None:
         """State that the new sites of ``models`` take the provenance of ``operation`` (`SITE_EFFECTS`)."""
@@ -2624,19 +2628,29 @@ class GraphBuilder:
         self._store.record_values_as_written(owner, values)  # ty: ignore[deprecated]
 
     def redirect_model_reference_users(
-        self, model: DataModel, models: list[DataModel], new_reference: Reference
+        self, model: DataModel, models: list[DataModel], new_reference: Reference, *, keeps_named: bool = False
     ) -> None:
-        """Redirect ``model`` reference users owned by ``models`` to ``new_reference``; their sites are redirected."""
-        self._store.redirect_model_reference_users(model, models, new_reference)  # ty: ignore[deprecated]
+        """Redirect ``model`` reference users owned by ``models`` to ``new_reference``; their sites are redirected.
+
+        ``keeps_named`` says each user keeps the null of the schema it names
+        (``--keep-reference-null-on-merged-models``).
+        """
+        self._store.redirect_model_reference_users(  # ty: ignore[deprecated]
+            model, models, new_reference, keeps_named=keeps_named
+        )
 
     def redirect_reference_users(
-        self, old_reference: Reference, new_reference: Reference, *, merged: bool = False
+        self, old_reference: Reference, new_reference: Reference, *, merged: bool = False, keeps_named: bool = False
     ) -> list[DataType]:
         """Redirect every user of ``old_reference`` to ``new_reference`` and return the redirected users.
 
-        ``merged`` says the model of ``old_reference`` is merged into the equal model of ``new_reference``.
+        ``merged`` says the model of ``old_reference`` is merged into the equal model of ``new_reference``, and
+        ``keeps_named`` that each user keeps the null of the schema it names
+        (``--keep-reference-null-on-merged-models``).
         """
-        return self._store.redirect_reference_users(old_reference, new_reference, merged=merged)  # ty: ignore[deprecated]
+        return self._store.redirect_reference_users(  # ty: ignore[deprecated]
+            old_reference, new_reference, merged=merged, keeps_named=keeps_named
+        )
 
     def register_model(self, model: DataModel) -> None:
         """Register a model the output writes."""

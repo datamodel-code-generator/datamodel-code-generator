@@ -111,6 +111,7 @@ class ParserConfigDict(TypedDict):
     use_specialized_enum: NotRequired[bool]
     strict_nullable: NotRequired[bool]
     omit_redundant_reference_null: NotRequired[bool]
+    keep_reference_null_on_merged_models: NotRequired[bool]
     use_generic_container_types: NotRequired[bool]
     enable_faux_immutability: NotRequired[bool]
     remote_text_cache: NotRequired[DefaultPutDict[str, str] | None]

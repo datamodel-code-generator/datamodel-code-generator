@@ -491,6 +491,9 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
     "jsonschema/nullable_reuse_collapse.json": dict.fromkeys(
         PayloadBackend, ("--strict-nullable", "--reuse-model", "--collapse-reuse-models")
     ),
+    "jsonschema/keep_reference_null_on_merged_models.json": dict.fromkeys(
+        PayloadBackend, ("--strict-nullable", "--reuse-model", "--keep-reference-null-on-merged-models")
+    ),
 }
 ROUND_TRIP_EXCLUDED_CASES: dict[str, str] = {
     **dict.fromkeys(

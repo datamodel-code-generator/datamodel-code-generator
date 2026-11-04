@@ -60,6 +60,7 @@ OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
     "--read-schema-version-per-document",
     "--ignore-ref-siblings-by-schema-version",
     "--intersect-combined-schema-keywords",
+    "--keep-reference-null-on-merged-models",
 )
 """The options the 20261104 presets set beyond the 20261027 presets."""
 
@@ -145,6 +146,12 @@ CASES_20261104: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="intersect-combined-schema-keywords",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "keep_reference_null_on_merged_models.json",
+        "jsonschema",
+        ["--output-model-type", "typing.TypedDict"],
+        id="keep-reference-null-on-merged-models",
     ),
 )
 """The inputs each opt-in option of the 20261104 presets changes."""
