@@ -190,3 +190,37 @@ def test_msgspec_graphql_scalar_alias_defaults(entrypoint: str, use_alias_type: 
     assert_output(
         f"{json.dumps(actual, indent=2)}\n", EXPECTED_GRAPHQL_PATH / "msgspec_scalar_alias_defaults_runtime.txt"
     )
+
+
+def test_msgspec_union_member_defaults(output_file: Path) -> None:
+    """Convert a union's default only to the member that takes its JSON kind, so ``Model()`` builds its defaults.
+
+    A Struct takes an object default, a type alias what its type takes; a list default beside a Struct member stays
+    the value. Valid documents decode and invalid ones are rejected.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "msgspec_union_member_defaults.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "msgspec.Struct", "--formatters", "builtin", "--disable-timestamp"],
+    )
+    documents = {
+        "valid": {"listBesideStruct": {"a": "s"}, "objectBesideList": ["t"], "listBesideAlias": 3},
+        "invalid": {"listBesideStruct": [1]},
+    }
+    with _generated_model(output_file, "msgspec_union_member_defaults_model", "Model") as model:
+        default = model()
+        actual: dict[str, object] = {
+            "defaults": msgspec.to_builtins(default),
+            "default_types": {field: type(getattr(default, field)).__name__ for field in default.__struct_fields__},
+        }
+        actual.update((label, _converted(model, document)) for label, document in documents.items())
+    assert_output(f"{json.dumps(actual, indent=2)}\n")
+
+
+def _converted(model: object, document: object) -> object:
+    """Return the builtins of a document converted to a generated Struct, or why msgspec rejects it."""
+    try:
+        return msgspec.to_builtins(msgspec.convert(document, type=model))
+    except msgspec.ValidationError as error:
+        return f"rejected: {error}"

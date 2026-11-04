@@ -15,7 +15,7 @@ from typing_extensions import Sentinel, final, override
 
 from datamodel_code_generator import Error
 from datamodel_code_generator import _constraint_applicability as _applicability
-from datamodel_code_generator._container_kinds import MAPPINGS
+from datamodel_code_generator._container_kinds import ARRAYS, MAPPINGS
 from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._graph_links import clear_parents, link_members
 from datamodel_code_generator._mro import resolve_members
@@ -263,6 +263,28 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model._decisions.assignment import AssignmentRow
     from datamodel_code_generator.model._render_plan import OmitReason
     from datamodel_code_generator.reference import Reference
+
+
+def _takes_default_kind(data_type: DataType, default: object) -> bool:
+    """Return whether a union member that names a Struct or a type alias takes a default of the default's JSON kind.
+
+    A Struct takes an object; a type alias, what the type it names takes, so one of a list of Structs an array.
+    """
+    pending, seen = [data_type], set[int]()
+    while pending:
+        if (reference := (member := pending.pop()).reference) is not None:
+            if not isinstance(source := reference.source, TypeAliasBase):
+                if isinstance(default, dict):
+                    return True
+            elif source.fields and id(source) not in seen:
+                seen.add(id(source))
+                pending.append(source.fields[0].data_type)
+        elif member in MAPPINGS or member in ARRAYS:
+            if isinstance(default, dict if member in MAPPINGS else list):
+                return True
+        else:
+            pending.extend(member.data_types)
+    return False
 
 
 def _is_instance_field(field: DataModelFieldBase) -> bool:
@@ -1634,7 +1656,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
                 )
             ):
                 if self.data_type.is_union:
-                    if not isinstance(self.default, (dict, list)):
+                    if not _takes_default_kind(data_type, self.default):
                         continue
                     if isinstance(self.default, dict) and any(dt.is_dict for dt in self.data_type.data_types):
                         continue
