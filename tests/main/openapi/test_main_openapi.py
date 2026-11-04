@@ -548,6 +548,34 @@ def test_main_openapi_discriminator_mapping_declared_in_other_document(output_fi
         )
 
 
+def test_main_openapi_discriminator_mapping_declared_in_other_document_directory(output_dir: Path) -> None:
+    """Tag the variants that an import cycle merges into ``_internal.py`` by the mapping another document declares.
+
+    The directory ``a`` is the input, so the documents of ``b`` that ``a`` reaches and that reach ``a`` back merge into
+    ``_internal.py``, which moves the paths of their models there. The tags are still read from the paths of their
+    schemas: up to 0.88.0 they were read from the moved paths, so no mapping path named a variant and each was tagged
+    by its moved path, ``Literal['_internal.Cat_1']``, and the union rejected every payload (#6178).
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_mapping_other_document" / "a",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--allow-remote-refs", "--disable-timestamp", "--formatters", "builtin"],
+    )
+    for tag, extra, model in (("c", "x", "Cat_1"), ("d", "y", "Dog"), ("e", "a_only", "Cat")):
+        assert_generated_model_json_validation(
+            output_dir / "_internal.py",
+            module_name="discriminator_mapping_other_document_directory_internal",
+            model_name="Owner",
+            valid_json=json.dumps({"pet": {"pet_type": tag, extra: "1"}}),
+            invalid_json=json.dumps({"pet": {"pet_type": f"_internal.{model}"}}),
+            expected_error_type="union_tag_invalid",
+            expected_attribute_path=("pet", "pet_type"),
+            expected_attribute_value=tag,
+            expected_repr=f"Owner(pet={model}(pet_type='{tag}', {extra}='1'))",
+        )
+
+
 @pytest.mark.skipif(
     black.__version__.split(".")[0] == "19",
     reason="Installed black doesn't support the old style",
@@ -662,6 +690,56 @@ def test_main_openapi_discriminator_enum_single_value_anyof_use_enum(output_file
             "pydantic_v2.BaseModel",
             "--use-enum-values-in-discriminator",
         ],
+    )
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "attribute_path", "expected_repr"),
+    [
+        (
+            "pydantic_v2.BaseModel",
+            ("root", "type"),
+            "ToolCallUnion(root=FunctionToolCall(id='1', type='function'))",
+        ),
+        ("pydantic_v2.dataclass", ("type",), "FunctionToolCall(id='1', type='function')"),
+    ],
+    ids=["pydantic_v2.BaseModel", "pydantic_v2.dataclass"],
+)
+def test_main_openapi_discriminator_enum_single_value_anyof_enum_field_as_literal(
+    output_model_type: str, attribute_path: tuple[str, ...], expected_repr: str, output_file: Path
+) -> None:
+    """Tag a variant by the one value of the enum its tag property references, written as a root model of a Literal.
+
+    Under ``--enum-field-as-literal all`` ``ToolType`` is a ``RootModel[Literal['function']]``, or a type alias of the
+    ``Literal`` for a Pydantic dataclass. Up to 0.88.0 the tag of
+    ``FunctionToolCall`` was not read through it, so the variant was tagged by its schema name,
+    ``Literal['FunctionToolCall']``: the union rejected ``{"type": "function"}`` and accepted ``"FunctionToolCall"``,
+    which the schema rejects (#6044).
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_enum_single_value_anyof.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--enum-field-as-literal",
+            "all",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="discriminator_enum_single_value_anyof_enum_field_as_literal",
+        model_name="ToolCallUnion",
+        valid_json=json.dumps({"id": "1", "type": "function"}),
+        invalid_json=json.dumps({"id": "1", "type": "FunctionToolCall"}),
+        expected_error_type="union_tag_invalid",
+        expected_attribute_path=attribute_path,
+        expected_attribute_value="function",
+        expected_repr=expected_repr,
     )
 
 

@@ -35,6 +35,7 @@ from datamodel_code_generator._user_keys import class_field_key, model_type_over
 from datamodel_code_generator.imports import Import, _override_module
 from datamodel_code_generator.model._decisions.assignment import requires_value
 from datamodel_code_generator.model._decisions.tag_value import (
+    FieldTag,
     enum_tag_literal,
     enum_tag_members,
     field_tag,
@@ -70,7 +71,13 @@ from datamodel_code_generator.parser._passes._keys import (
 )
 from datamodel_code_generator.parser._passes._state import RecursionFacts, _ModuleNames
 from datamodel_code_generator.python_literal import _text_constructor_expression, stable_repr
-from datamodel_code_generator.reference import _SPECIAL_PATH_FORMAT, ModelType, _source_path, _special_path
+from datamodel_code_generator.reference import (
+    _SPECIAL_PATH_FORMAT,
+    ModelType,
+    _source_path,
+    _special_path,
+    schema_path_of,
+)
 from datamodel_code_generator.types import DataType, DefaultValueRecipe, union_members
 
 if TYPE_CHECKING:
@@ -84,7 +91,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._user_keys import ClassScope
     from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
     from datamodel_code_generator.imports import Imports
-    from datamodel_code_generator.model._decisions.tag_value import EnumTagMembers, TagFieldMatch
+    from datamodel_code_generator.model._decisions.tag_value import EnumTagMembers, FieldTagSite, TagFieldMatch
     from datamodel_code_generator.model._render_plan import AssignmentFacts
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.parser._field_rows import FieldCopyFacts, FieldIdentity
@@ -988,10 +995,16 @@ def add_model_path_to_list(
 
 
 def _get_schema_path(model: DataModel | Reference) -> str:
-    """Return the path of the schema a model is generated from, through read and write variants and reuse."""
-    source = model if isinstance(model, DataModel) else model.source
+    """Return the path of the schema a model is generated from, through read and write variants and reuse.
+
+    It is the path the model had before the merge of an import cycle moved it (``schema_path_of``).
+    """
+    if isinstance(model, DataModel):
+        source, reference = model, model.reference
+    else:
+        source, reference = model.source, model
     reused = source.reused_reference if isinstance(source, DataModel) else None
-    return _source_path((reused or model).path)
+    return _source_path(schema_path_of(reused or reference))
 
 
 def _get_mapping_discriminator_values(discriminator_model: DataModel, mapping: dict[str, str]) -> list[str]:
@@ -1078,9 +1091,14 @@ def _module_name_of(model_path_to_module_name: Mapping[str, str], reference: Ref
 @final
 @record
 class _FieldTagFacts:
-    """The facts of a field that ``field_tag`` reads: its ``const``, its ``Literal`` and the Enum its type names."""
+    """The facts of a field that ``field_tag`` reads: its ``const``, its ``Literal`` and the models its type names.
+
+    The models are the Enum and the root model or type alias its type names.
+    """
 
     field: DataModelFieldBase
+    read: frozenset[int] = frozenset()
+    """The root models whose fields the facts are read through, so a cycle of root models gives no tag."""
 
     def has_const(self) -> bool:
         """Return whether the field has a ``const`` other than None."""
@@ -1103,8 +1121,24 @@ class _FieldTagFacts:
         fields = enum_source.fields if (enum_source := _annotated_enum(self.field.data_type)) else []
         return (len(fields), get_raw_enum_member_value(fields[0].default)) if fields else (0, None)
 
-    def referenced_tag(self) -> None:
-        """Return no tag: a field has no ``$ref`` of its own."""
+    def referenced_tag(self) -> FieldTag | None:
+        """Return the tag of the root model or type alias the field's type names, as ``variant-field`` reads its field.
+
+        A one-value enum the field references is such a model under ``--enum-field-as-literal``.
+        """
+        data_type = self.field.data_type
+        if data_type.data_types or (reference := data_type.reference) is None:
+            return None
+        source = reference.source
+        if (
+            not isinstance(source, DataModel)
+            or not _is_discriminator_wrapper(source)
+            or len(source.fields) != 1
+            or id(source) in self.read
+        ):
+            return None
+        tag = field_tag("variant-field", _FieldTagFacts(source.fields[0], self.read | {id(source)}))
+        return None if tag is None else FieldTag(tag.value, "referenced-schema")
 
 
 def _is_discriminator_wrapper(model: DataModel) -> bool:
@@ -1488,9 +1522,11 @@ def enum_discriminator_members(enum_source: Enum, values: Iterable[Discriminator
     )
 
 
-def _get_discriminator_field_value(discriminator_field: DataModelFieldBase) -> DiscriminatorValue | None:
-    """Return the one tag a variant's tag field holds (``field_tag``)."""
-    tag = field_tag("variant-field", _FieldTagFacts(discriminator_field))
+def _get_discriminator_field_value(
+    discriminator_field: DataModelFieldBase, site: FieldTagSite = "variant-field"
+) -> DiscriminatorValue | None:
+    """Return the one tag a variant's tag field holds (``field_tag``) at ``site``, a variant-field site."""
+    tag = field_tag(site, _FieldTagFacts(discriminator_field))
     return None if tag is None else tag.value
 
 

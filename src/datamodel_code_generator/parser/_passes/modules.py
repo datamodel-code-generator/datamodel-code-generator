@@ -171,7 +171,7 @@ from datamodel_code_generator.parser._tag_plan import (
     union_site,
 )
 from datamodel_code_generator.python_literal import runtime_expression_imports, stable_repr
-from datamodel_code_generator.reference import _ALIAS_RESOLUTION_CLASS_NAME_KEY, ModelResolver
+from datamodel_code_generator.reference import _ALIAS_RESOLUTION_CLASS_NAME_KEY, ModelResolver, schema_path_of
 from datamodel_code_generator.types import DataType, Types, _copy_data_type
 
 if TYPE_CHECKING:
@@ -1611,6 +1611,7 @@ def name_inner_after_root(
         class_name=root_model.class_name,
         new_path=root_model.reference.path,
         scheme="collapsed-root",
+        schema_path=schema_path_of(root_model.reference),
     )
     take_recursion_facts(parser, inner_model, root_model)
     _assign_module_name(model_path_to_module_name, inner_model, inner_module_name)

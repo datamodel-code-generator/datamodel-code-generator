@@ -354,6 +354,18 @@ def location_of(reference: Reference) -> SchemaLocation | None:
     return reference.__dict__.get(SCHEMA_LOCATION_KEY)
 
 
+SCHEMA_PATH_KEY: Final = "_schema_path"
+
+
+def schema_path_of(reference: Reference) -> str:
+    """Return the path of the schema the model of a reference is generated from.
+
+    It is the path of the reference, or, where a rename moved the model to a path of the output alone (the
+    ``_internal`` module of an import cycle), the path the rename recorded (``SCHEMA_PATH_KEY``).
+    """
+    return reference.__dict__.get(SCHEMA_PATH_KEY, reference.path)
+
+
 FIELD_ORIGIN_KEY: Final = "_field_origin"
 TYPE_ORIGIN_KEY: Final = "_type_origin"
 BINARY_CONTENT_KEY: Final = "_binary_content"

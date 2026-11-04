@@ -1766,6 +1766,7 @@ class GenerationStore:  # noqa: PLR0904
         new_path: str | None = None,
         new_file_path: Path | None = None,
         scheme: RenameScheme | None = None,
+        schema_path: str | None = None,
     ) -> None:
         """Change a model's class or reference name after parsing, the writer of names after the L2 settle.
 
@@ -1774,15 +1775,23 @@ class GenerationStore:  # noqa: PLR0904
         ``--duplicate-name-suffix`` map and ``Model``), ``field-type`` (a type hidden by a field of its user),
         ``imported-name`` (a local model shadowed by an import), ``internal-module`` (``<name>_<n>`` in a module
         cycle's ``_internal`` module) and ``collapsed-root`` (the inner model takes the root model's name and path).
-        A rename that also relocates the model passes the new path and output file. Every rename is recorded with
-        the names before and after it (``renames``), under the keys the model has then.
+        A rename that also relocates the model passes the new path and output file, and the path of the schema the
+        model stands for there (``schema_path_of``) where that is not the new path, which the reference keeps
+        (``SCHEMA_PATH_KEY``). Every rename is recorded with the names before and after it (``renames``), under the
+        keys the model has then.
         """
         from datamodel_code_generator.model.base import _path_identity_keys  # noqa: PLC0415
+        from datamodel_code_generator.reference import SCHEMA_PATH_KEY  # noqa: PLC0415
 
         class_name_before, path_before, name_before = model.class_name, model.reference.path, model.reference.name
         self._update_model_reference(
             model, class_name=class_name, reference_name=reference_name, new_path=new_path, new_file_path=new_file_path
         )
+        if new_path is not None:
+            if schema_path is None or schema_path == new_path:
+                model.reference.__dict__.pop(SCHEMA_PATH_KEY, None)
+            else:
+                model.reference.__dict__[SCHEMA_PATH_KEY] = schema_path
         if clear_duplicate_name:
             model.reference.duplicate_name = None
         self._renames.append(
@@ -2641,10 +2650,12 @@ class GraphBuilder:
         new_path: str | None = None,
         new_file_path: Path | None = None,
         scheme: RenameScheme | None = None,
+        schema_path: str | None = None,
     ) -> None:
         """Change a model's class or reference name after parsing, the writer of names after the L2 settle.
 
-        ``scheme`` names the scheme of the rename, which the store records with it (``GenerationStore.renames``).
+        ``scheme`` names the scheme of the rename, which the store records with it (``GenerationStore.renames``), and
+        ``schema_path`` the path of the schema the model stands for at ``new_path`` where that is not ``new_path``.
         """
         self._store.rename_model(  # ty: ignore[deprecated]
             model,
@@ -2654,6 +2665,7 @@ class GraphBuilder:
             new_path=new_path,
             new_file_path=new_file_path,
             scheme=scheme,
+            schema_path=schema_path,
         )
 
     def replace_data_type_ref(self, data_type: DataType, new_reference: Reference | None) -> None:
