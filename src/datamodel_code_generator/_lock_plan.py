@@ -41,8 +41,9 @@ class RemoteLockPlan(NamedTuple):
 def default_lock_parent(pyproject_path: Path | None, cwd: Path | None = None) -> Path:
     """Return the directory of the default lockfile: the pyproject.toml directory, or ``cwd`` without one.
 
-    ``cwd`` is the working directory when omitted. The command line passes the pyproject.toml it read; ``generate()``
-    passes none, so its default lockfile lies in the caller's directory (#5585).
+    ``cwd`` is the working directory when omitted. The command line passes the pyproject.toml it read, ``generate()``
+    the one ``load_pyproject_config()`` read for its config, so the default lockfile of a project is one file however
+    the project is run; ``generate()`` with any other config keeps it in the caller's directory.
     """
     if pyproject_path is not None:
         return pyproject_path.parent

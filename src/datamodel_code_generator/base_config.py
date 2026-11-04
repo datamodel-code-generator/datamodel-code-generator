@@ -277,6 +277,8 @@ class BaseGenerateConfig(BaseModel):
     _logical_model_metadata: Path | None = PrivateAttr(default=None)
     _directory_input_filter: DirectoryInputFilter | None = PrivateAttr(default=None)
     _target_document_bases: dict[str, Path] | None = PrivateAttr(default=None)
+    # The pyproject.toml ``load_pyproject_config()`` read: the default lockfile lies beside it, as on the command line.
+    _pyproject_path: Path | None = PrivateAttr(default=None)
 
     input_file_type: InputFileType = InputFileType.Auto
     output: Path | None = None

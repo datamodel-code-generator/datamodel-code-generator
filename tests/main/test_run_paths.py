@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from datamodel_code_generator import InputFileType, generate
+from datamodel_code_generator import InputFileType, generate, load_pyproject_config
 from datamodel_code_generator.__main__ import Exit
 from tests.conftest import assert_output
 from tests.main.conftest import DATA_PATH, run_main_with_args
@@ -148,4 +148,21 @@ def test_lockfile_through_a_directory_symlink_and_parent(
             *("--input", str(source), "--input-file-type", "openapi", "--output", "out.py"),
             *("--lockfile", str(lockfile), "--update-lock", *_SPELLED_LOCK_RUNS[run]),
         ])
+    assert_output(_lock_files(tmp_path))
+
+
+@pytest.mark.parametrize("run", ["command-line", "generate"])
+def test_project_lock_update_from_a_subdirectory(run: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The default lockfile of a project lies beside its pyproject.toml, run from a subdirectory either way (#5585)."""
+    (tmp_path / "pyproject.toml").write_text(
+        "[tool.datamodel-codegen]\n"
+        f"input = '{PERSON.as_posix()}'\ninput-file-type = 'jsonschema'\noutput = 'out.py'\nupdate-lock = true\n",
+        encoding="utf-8",
+    )
+    (sub := tmp_path / "sub").mkdir()
+    monkeypatch.chdir(sub)
+    if run == "generate":
+        generate(PERSON, config=load_pyproject_config())
+    else:
+        run_main_with_args([])
     assert_output(_lock_files(tmp_path))

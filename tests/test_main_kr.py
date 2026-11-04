@@ -4563,8 +4563,8 @@ REMOTE_LOCKFILE_OPTION_DESCRIPTION = (
 An existing selected lock is verified automatically; a missing selected lock is ignored unless `--locked` requires it.
 Without `--lockfile`, the CLI uses `datamodel-codegen.lock` beside the discovered `pyproject.toml`, or in the invocation
 working directory when no project is found. Explicit relative `--lockfile` paths resolve from the invocation working
-directory, not the project root or output directory. The public API uses the caller's working directory for both its
-default lock and relative `lockfile` paths.
+directory, not the project root or output directory. The public API reads relative `lockfile` paths from the caller's
+working directory and keeps its default lock there, or beside the `pyproject.toml` that `load_pyproject_config()` read.
 
 """
     + REMOTE_LOCK_EXPERIMENTAL_NOTE
