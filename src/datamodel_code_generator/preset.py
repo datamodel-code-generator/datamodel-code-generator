@@ -804,6 +804,11 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "the schema writes, so a bound past 2**53 no longer rejects an integer the number member accepts."
         ),
     ),
+    PresetOptionGroup(
+        title="Model names taken from the schema",
+        config=PresetConfig(use_duplicate_name_suffix_for_every_collision=True),
+        description="Give the --duplicate-name-suffix suffix to every model renamed because its name is taken.",
+    ),
 )
 
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
@@ -1073,6 +1078,11 @@ def render_presets_markdown() -> str:
             "`--read-msgspec-union-bounds-exactly`: the int member of a msgspec union with a number member keeps its "
             "bounds only when they admit every integer the number member's bounds, read as the schema writes them, "
             "admit."
+        ),
+        "",
+        (
+            "The 20261104 presets also name models from the schema: `--use-duplicate-name-suffix-for-every-collision` "
+            "gives the `--duplicate-name-suffix` suffix to every model renamed because its name is taken."
         ),
         "",
         "## Override Preset Options",

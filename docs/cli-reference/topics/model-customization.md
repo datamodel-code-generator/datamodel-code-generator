@@ -8,7 +8,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 
 | Group | Options | Description |
 |-------|---------|-------------|
-| [Model Naming](#model-naming) | 9 | Class names, suffixes, prefixes, and duplicate-name behavior. |
+| [Model Naming](#model-naming) | 10 | Class names, suffixes, prefixes, and duplicate-name behavior. |
 | [Model Reuse](#model-reuse) | 4 | Schema deduplication and shared generated modules. |
 | [Model Shape](#model-shape) | 6 | Output model family and compatibility targets. |
 | [Root Model](#root-model) | 5 | Root model creation, collapse, and alias behavior. |
@@ -28,6 +28,7 @@ Class names, suffixes, prefixes, and duplicate-name behavior.
 | [`--model-name-map`](../model-customization.md#model-name-map) | Rename generated model classes from a JSON mapping. |
 | [`--naming-strategy`](../model-customization.md#naming-strategy) | Choose how models are named and how duplicate model names are told apart. |
 | [`--parent-scoped-naming`](../model-customization.md#parent-scoped-naming) | Namespace models by their parent scope to avoid naming conflicts. |
+| [`--use-duplicate-name-suffix-for-every-collision`](../model-customization.md#use-duplicate-name-suffix-for-every-collision) | Give the `--duplicate-name-suffix` suffix to every model renamed in its module. |
 
 ## Model Reuse {#model-reuse}
 

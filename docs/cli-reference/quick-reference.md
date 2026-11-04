@@ -169,6 +169,7 @@ datamodel-codegen [OPTIONS]
 | [`--use-default`](model-customization.md#use-default) | Use default values from schema in generated models. |
 | [`--use-default-factory-for-optional-nested-models`](model-customization.md#use-default-factory-for-optional-nested-models) | Generate default_factory for optional nested model fields. |
 | [`--use-default-kwarg`](model-customization.md#use-default-kwarg) | Use default= keyword argument instead of positional argument for fields with def... |
+| [`--use-duplicate-name-suffix-for-every-collision`](model-customization.md#use-duplicate-name-suffix-for-every-collision) | Give the `--duplicate-name-suffix` suffix to every model renamed in its module. |
 | [`--use-frozen-field`](model-customization.md#use-frozen-field) | Generate frozen (immutable) field definitions for readOnly properties. |
 | [`--use-generic-base-class`](model-customization.md#use-generic-base-class) | Generate a shared base class with model configuration to avoid repetition (DRY). |
 | [`--use-missing-sentinel`](model-customization.md#use-missing-sentinel) | Use Pydantic's MISSING sentinel for unset optional BaseModel or dataclass fields... |
@@ -522,6 +523,7 @@ All options sorted alphabetically:
 - [`--use-default-factory-for-optional-nested-models`](model-customization.md#use-default-factory-for-optional-nested-models) - Generate default_factory for optional nested model fields.
 - [`--use-default-kwarg`](model-customization.md#use-default-kwarg) - Use default= keyword argument instead of positional argument...
 - [`--use-double-quotes`](template-customization.md#use-double-quotes) - Use double quotes for string literals in generated code.
+- [`--use-duplicate-name-suffix-for-every-collision`](model-customization.md#use-duplicate-name-suffix-for-every-collision) - Give the `--duplicate-name-suffix` suffix to every model ren...
 - [`--use-encoded-str-for-constrained-base64`](typing-customization.md#use-encoded-str-for-constrained-base64) - Check the constraints of a `format: byte` string on its base...
 - [`--use-enum-values-in-discriminator`](field-customization.md#use-enum-values-in-discriminator) - Use enum values in discriminator mappings for union types.
 - [`--use-exact-imports`](template-customization.md#use-exact-imports) - Import exact types instead of modules.

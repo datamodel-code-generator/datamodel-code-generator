@@ -471,6 +471,34 @@ lengths: (
 ) = None
 ```
 
+### `--use-duplicate-name-suffix-for-every-collision`
+
+| | |
+|---|---|
+| Option | `--use-duplicate-name-suffix-for-every-collision` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.89.0 |
+| Issue | [#5420](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5420) |
+
+**Affects:** with `--duplicate-name-suffix`, a model renamed because its name is taken in its module: a definition named like an inline model (`Item` beside an inline `item`), or like a name the module imports (`AnyUrl` beside a `format: uri` field). Such a model takes the suffix `Model` whatever the map says; with the option it takes the suffix the map gives its kind (`model`, `enum`, else `default`), and `Model` where the map gives none. Without `--duplicate-name-suffix` the option changes nothing.
+
+Schema: `$defs` `Item` beside an inline object property `item`, with `--duplicate-name-suffix '{"model": "Schema"}'`.
+
+Without the option (same as 0.88.0):
+
+```python
+class ItemModel(BaseModel):
+    v: str | None = None
+```
+
+With the option:
+
+```python
+class ItemSchema(BaseModel):
+    v: str | None = None
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.

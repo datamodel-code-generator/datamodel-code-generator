@@ -342,6 +342,7 @@ class ParserConfig(BaseModel):
     parent_scoped_naming: bool = False
     naming_strategy: NamingStrategy | None = None
     duplicate_name_suffix: dict[str, str] | None = None
+    use_duplicate_name_suffix_for_every_collision: bool = False
     dataclass_arguments: DataclassArguments | None = None
     import_overrides: dict[str, str] | None = None
     type_mappings: list[str] | None = None

@@ -464,6 +464,7 @@ class BaseGenerateConfig(BaseModel):
     parent_scoped_naming: bool = False
     naming_strategy: NamingStrategy | None = None
     duplicate_name_suffix: dict[str, str] | None = None
+    use_duplicate_name_suffix_for_every_collision: bool = False
     dataclass_arguments: DataclassArguments | None = None
     disable_future_imports: bool = False
     import_overrides: dict[str, str] | None = None

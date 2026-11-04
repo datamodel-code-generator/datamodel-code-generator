@@ -11,7 +11,7 @@ This documentation is auto-generated from test cases.
 | 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 46 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 35 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 53 | Model generation behavior |
+| 🏗️ [Model Customization](model-customization.md) | 54 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 29 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 10 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
@@ -25,7 +25,7 @@ Use these pages when you know the workflow area but not the exact option name.
 
 | Topic | Options | Groups |
 |-------|---------|--------|
-| [Model Customization](topics/model-customization.md) | 24 | Model Naming, Model Reuse, Model Shape, Root Model |
+| [Model Customization](topics/model-customization.md) | 25 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 22 | Custom Templates, Generated Output, Imports, Output Formatting |
 | [Typing Customization](topics/typing-customization.md) | 30 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 9 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
@@ -364,6 +364,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-default-factory-for-optional-nested-models`](model-customization.md#use-default-factory-for-optional-nested-models)
 - [`--use-default-kwarg`](model-customization.md#use-default-kwarg)
 - [`--use-double-quotes`](template-customization.md#use-double-quotes)
+- [`--use-duplicate-name-suffix-for-every-collision`](model-customization.md#use-duplicate-name-suffix-for-every-collision)
 - [`--use-encoded-str-for-constrained-base64`](typing-customization.md#use-encoded-str-for-constrained-base64)
 - [`--use-enum-values-in-discriminator`](field-customization.md#use-enum-values-in-discriminator)
 - [`--use-exact-imports`](template-customization.md#use-exact-imports)

@@ -1256,6 +1256,10 @@
       "not_recommended": "formatting",
       "reason": "Quote style of the formatter."
     },
+    "use_duplicate_name_suffix_for_every_collision": {
+      "not_recommended": "preset",
+      "reason": "Under --duplicate-name-suffix only: set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "use_encoded_str_for_constrained_base64": {
       "not_recommended": "preset",
       "reason": "Pydantic v2 output in the field forms only: set by the 20261104 presets; the recommendation starts from a preset."

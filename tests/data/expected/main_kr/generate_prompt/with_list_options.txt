@@ -161,6 +161,7 @@
 - `--use-default`: Use default values from schema in generated models.
 - `--use-default-factory-for-optional-nested-models`: Generate default_factory for optional nested model fields.
 - `--use-default-kwarg`: Use default= keyword argument instead of positional argument for fields with defaults.
+- `--use-duplicate-name-suffix-for-every-collision`: Give the `--duplicate-name-suffix` suffix to every model re...
 - `--use-frozen-field`: Generate frozen (immutable) field definitions for readOnly properties.
 - `--use-generic-base-class`: Generate a shared base class with model configuration to avoid repetition (DRY).
 - `--use-missing-sentinel`: Use Pydantic's MISSING sentinel for unset optional BaseModel or dataclass fields.
@@ -1007,6 +1008,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         becomes 'foo/bar.py'). Use --no-treat-dot-as-module to
                         keep dots in names as underscores for single-file
                         output.
+  --use-duplicate-name-suffix-for-every-collision
+                        Give the --duplicate-name-suffix suffix also to a
+                        model renamed because its name is taken in its module,
+                        by another model or by a name the module imports (an
+                        inline Item beside a definition Item, a definition
+                        AnyUrl beside a uri field); without it such a model
+                        takes the suffix Model, as in 0.88.0
   --use-exact-imports   import exact types instead of modules, for example:
                         "from .foo import Bar" instead of "from . import foo"
                         with "foo.Bar"

@@ -228,6 +228,7 @@ class BaseGenerateConfig(TypedDict):
     parent_scoped_naming: NotRequired[bool]
     naming_strategy: NotRequired[NamingStrategy | None]
     duplicate_name_suffix: NotRequired[dict[str, str] | None]
+    use_duplicate_name_suffix_for_every_collision: NotRequired[bool]
     dataclass_arguments: NotRequired[DataclassArguments | None]
     disable_future_imports: NotRequired[bool]
     import_overrides: NotRequired[dict[str, str] | None]

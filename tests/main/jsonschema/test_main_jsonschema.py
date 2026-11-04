@@ -25094,6 +25094,100 @@ def test_main_naming_strategy_complex_duplicate_suffix(output_file: Path) -> Non
     )
 
 
+EVERY_COLLISION = "--use-duplicate-name-suffix-for-every-collision"
+SCHEMA_KIND_SUFFIXES = '{"model": "Schema", "enum": "Kind"}'
+DUPLICATE_NAME_SUFFIX_EVERY_COLLISION_PAYLOAD: dict[str, Any] = {
+    "item": {"w": 1},
+    "other": {"v": "x"},
+    "site": "https://example.com",
+    "link": {"href": "h"},
+    "status": "new",
+    "state": "open",
+}
+"""A document that sets every field of ``Root``, each model and enum under the name the collision gave it."""
+
+
+@pytest.mark.cli_doc(
+    options=["--use-duplicate-name-suffix-for-every-collision"],
+    option_description="""Give the `--duplicate-name-suffix` suffix to every model renamed in its module.
+
+The parse names a model whose name another model already holds with the suffix of `--duplicate-name-suffix`. A model
+renamed later because its name is taken in its module, by an inline model of the same name or by a name the module
+imports (a definition `AnyUrl` beside a `format: uri` field), takes the suffix `Model` whatever the option says. With
+`--use-duplicate-name-suffix-for-every-collision` it takes the suffix the map gives its kind (`model` or `enum`, else
+`default`), and `Model` where the map gives none. Without `--duplicate-name-suffix` the option changes nothing.""",
+    input_schema="jsonschema/duplicate_name_suffix_every_collision.json",
+    cli_args=["--duplicate-name-suffix", SCHEMA_KIND_SUFFIXES, EVERY_COLLISION],
+    golden_output="main/jsonschema/main_jsonschema/main_use_duplicate_name_suffix_for_every_collision[pydantic_v2-every].py",
+    comparison_output="main/jsonschema/main_jsonschema/main_use_duplicate_name_suffix_for_every_collision[pydantic_v2].py",
+    related_options=["--duplicate-name-suffix"],
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "suffix_map", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", SCHEMA_KIND_SUFFIXES, [], id="pydantic_v2"),
+        pytest.param("pydantic_v2.BaseModel", SCHEMA_KIND_SUFFIXES, [EVERY_COLLISION], id="pydantic_v2-every"),
+        pytest.param("pydantic_v2.BaseModel", '{"enum": "Kind"}', [EVERY_COLLISION], id="pydantic_v2-every-enum-only"),
+        pytest.param("msgspec.Struct", SCHEMA_KIND_SUFFIXES, [EVERY_COLLISION], id="msgspec-every"),
+        pytest.param("typing.TypedDict", SCHEMA_KIND_SUFFIXES, [EVERY_COLLISION], id="typed_dict-every"),
+    ],
+)
+def test_main_use_duplicate_name_suffix_for_every_collision(
+    output_file: Path, output_model_type: str, suffix_map: str, extra_args: list[str]
+) -> None:
+    """Give the ``--duplicate-name-suffix`` suffix to the models the module renames (#5420).
+
+    The definitions ``Item`` and ``Status`` collide with the inline ``item`` and ``status``, and ``AnyUrl`` with the
+    name the ``format: uri`` field imports: without the option they become ``ItemModel``, ``StatusModel`` and
+    ``AnyUrlModel``; with it ``ItemSchema``, ``StatusKind`` and ``AnyUrlSchema``, and a model keeps ``Model`` where
+    the map gives models no suffix.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "duplicate_name_suffix_every_collision.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--duplicate-name-suffix",
+            suffix_map,
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    if output_model_type == "pydantic_v2.BaseModel" and extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="use_duplicate_name_suffix_for_every_collision",
+            model_name="Root",
+            valid_json=json.dumps(DUPLICATE_NAME_SUFFIX_EVERY_COLLISION_PAYLOAD),
+            invalid_json=json.dumps({"state": "new"}),
+            expected_error_type="enum",
+        )
+
+
+def test_main_use_duplicate_name_suffix_for_every_collision_without_suffix_map(tmp_path: Path) -> None:
+    """Change nothing under ``--use-duplicate-name-suffix-for-every-collision`` without ``--duplicate-name-suffix``."""
+    common = ["--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp", "--formatters", "builtin"]
+    output_file = tmp_path / "output.py"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "duplicate_name_suffix_every_collision.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=common,
+    )
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "duplicate_name_suffix_every_collision.json",
+        output_path=tmp_path / "every.py",
+        input_file_type="jsonschema",
+        extra_args=[*common, EVERY_COLLISION],
+        expected_output=output_file.read_text(encoding="utf-8"),
+    )
+
+
 @freeze_time("2019-07-26")
 @pytest.mark.cli_doc(
     options=["--naming-strategy"],

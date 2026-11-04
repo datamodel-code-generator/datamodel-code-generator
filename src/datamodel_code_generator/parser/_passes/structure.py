@@ -27,7 +27,7 @@ from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._init_exports import exported_names
 from datamodel_code_generator.parser._model_shapes import COLLAPSE_REUSE, SAME_NAME, TREE_SCOPE
 from datamodel_code_generator.parser._passes._import_edges import _failing_import_cycles, module_dependency_graph
-from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
+from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver, suffix_kind
 from datamodel_code_generator.parser._passes._shared import (
     BaseStandInHost,
     DataModelTypeHost,
@@ -416,10 +416,14 @@ def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataMod
             and (import_ := stand_ins.get(model_key_of(base_class.reference))) is not None
         )
     module, dot, _ = models[0].reference.name.rpartition(".") if models else ("", "", "")
+    config = parser.config
     scoped_model_resolver = scheme_resolver(
         "module",
         exclude_names=exclude_names,
         keeps_names=bool(parser.custom_class_name_generator),
+        duplicate_name_suffix_map=(
+            config.duplicate_name_suffix if config.use_duplicate_name_suffix_for_every_collision else None
+        ),
         target_python_version=parser.target_python_version,
         reserved_names=parser.model_resolver.reserved_names_in_module(f"{module}{dot}"),
     )
@@ -433,6 +437,7 @@ def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataMod
             class_name,
             unique=True,
             class_name=True,
+            model_type=suffix_kind(model),
             preserve_class_name=parser._should_preserve_explicit_root_class_name(class_name),  # noqa: SLF001
         ).name
         if class_name != generated_name:

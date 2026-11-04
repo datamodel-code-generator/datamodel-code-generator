@@ -343,7 +343,11 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         group=_G.MODEL_NAMING,
         implies=_relations("--naming-strategy", value=NamingStrategy.ParentPrefixed.value),
     ),
-    **_opts(_C.MODEL, "--naming-strategy --duplicate-name-suffix", group=_G.MODEL_NAMING),
+    **_opts(
+        _C.MODEL,
+        "--naming-strategy --duplicate-name-suffix --use-duplicate-name-suffix-for-every-collision",
+        group=_G.MODEL_NAMING,
+    ),
     **_opts(_C.MODEL, "--use-one-literal-as-default --use-serialize-as-any"),
     **_opts(_C.MODEL, "--skip-root-model --use-root-model-sequence-interface", group=_G.ROOT_MODEL),
     **_opts(_C.MODEL, "--use-generic-base-class", group=_G.MODEL_SHAPE),

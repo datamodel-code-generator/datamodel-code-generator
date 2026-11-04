@@ -701,6 +701,13 @@ model_options.add_argument(
     type=str,
     default=None,
 )
+_flag(
+    model_options,
+    "--use-duplicate-name-suffix-for-every-collision",
+    help="Give the --duplicate-name-suffix suffix also to a model renamed because its name is taken in its module, "
+    "by another model or by a name the module imports (an inline Item beside a definition Item, a definition AnyUrl "
+    "beside a uri field); without it such a model takes the suffix Model, as in 0.88.0",
+)
 model_options.add_argument(
     "--all-exports-scope",
     help="Generate __all__ in __init__.py with re-exports. "
