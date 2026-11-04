@@ -432,8 +432,9 @@ def _module_import_plan(
     no written model is written by its own name, without an import, as today. The generated base class is
     imported by its class name from the module that writes it, as ``cross_module.apply_generic_base_class``
     imports it; any other model of another module through the name ``allocate_bindings`` gives its import, from its
-    module where its package hides the module (``hidden_modules``). An import of a name that ``--import-overrides``
-    lists comes from the module it names.
+    module where its package hides the module (``hidden_modules``) or where an import of no model binds the name of
+    the module's import too (``modules_hidden_by_imports``), which plans the module again with those modules hidden.
+    An import of a name that ``--import-overrides`` lists comes from the module it names.
     """
     from datamodel_code_generator._model_keys import model_key_of
     from datamodel_code_generator.imports import Import
@@ -443,12 +444,13 @@ def _module_import_plan(
         reference_import_target,
     )
     from datamodel_code_generator.parser._passes._shared import _get_model_module_name
+    from datamodel_code_generator.parser._passes.imports import modules_hidden_by_imports
 
     members = keyed_models(ctx.models, "module import plan")
     overrides = parser._import_overrides or {}
     generic_base = None if parser._generic_base_model is None else model_key_of(parser._generic_base_model.reference)
     uses: list[ReferenceUse] = []
-    pending: list[tuple[ModelKey, str, str, str, Any, str]] = []
+    pending: list[tuple[ModelKey, str, str, str, Any, str, tuple[str, ...]]] = []
     references: dict[tuple[str | None, str], ReferenceImport] = {}
 
     def add_reference(target: ModelKey, import_: Import) -> None:
@@ -484,14 +486,42 @@ def _module_import_plan(
                     shared_imports=parser.imports,
                     hidden_modules=hidden_modules,
                 )
-                pending.append((target, model.class_name, name, written, import_target, reference.path))
+                pending.append((
+                    target,
+                    model.class_name,
+                    name,
+                    written,
+                    import_target,
+                    reference.path,
+                    tuple(final.module.split(".")) if final.module else (),
+                ))
     log = NameLog(frozenset(ctx.scoped_model_resolver.exclude_names), tuple(_name_events(imports_mode, ctx.imports)))
     bindings = allocate_bindings(
-        (BindingRequest(t.full_path, t.import_) for *_, t, _ in pending),
+        (BindingRequest(t.full_path, t.import_) for *_, t, _, _ in pending),
         log,
         target_python_version=parser.target_python_version,
     )
-    for target, holder, name, written, import_target, reference_path in pending:
+    if hidden := modules_hidden_by_imports(
+        ctx.imports,
+        (
+            (module, binding)
+            for *_, name, _, import_target, _, module in pending
+            if (binding := bindings.get(BindingRequest(import_target.full_path, import_target.import_))) is not None
+            and import_target.expression(name, binding) not in {None, binding}
+        ),
+    ).difference(hidden_modules):
+        return _module_import_plan(
+            imports_mode,
+            parser,
+            ctx,
+            names=names,
+            emitted=emitted,
+            reused=reused,
+            module_names=module_names,
+            internal_modules=internal_modules,
+            hidden_modules={*hidden_modules, *hidden},
+        )
+    for target, holder, name, written, import_target, reference_path, _ in pending:
         if (binding := bindings.get(BindingRequest(import_target.full_path, import_target.import_))) is None:
             uses.append(ReferenceUse(target, holder, None, written))
             continue
