@@ -175,6 +175,7 @@ _ENUMS: Final = frozenset({Enum, IntEnum, StrEnum})
 _ALIASES: Final = frozenset({TypeAliasModel, TypeAliasTypeBackport, TypeStatement, PydanticCompatibleTypeAlias})
 _ROOTS: Final = frozenset({pydantic_v2.RootModel, pydantic_v2.RootModelTypeAlias})
 _BUILTINS: Final[dict[str, BuiltinType]] = {name: BuiltinType(name) for name in get_args(BuiltinName)}
+_FILE_TYPES: Final = frozenset({"bytes", "str"})
 _FORMS: Final = frozenset({"form", "multipart"})
 _TEXT_MEDIA: Final = frozenset({"json", "form", "text"})
 _RAW_MEDIA: Final = frozenset({"text", "binary"})
@@ -740,6 +741,15 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self._visits.clear()
         self._callback_origin = None
         cast("RecordingGenerationStore", self.generation_store).redirects.clear()
+
+
+def _builtin_name(value: object) -> str | None:
+    """Return the name of the builtin a type is: the builtin itself, or an unaliased import of it from ``builtins``."""
+    if isinstance(value, BuiltinType):
+        return value.name
+    if isinstance(value, ImportedType) and value.import_.from_ == "builtins" and value.import_.alias is None:
+        return value.import_.import_
+    return None
 
 
 def _imported_names(imports: Imports) -> Iterator[str]:
@@ -2962,6 +2972,8 @@ class _UseFacts(_SchemaUses):
                 if form
                 else TextShape("scalar", KindAt(holder, self.kind(value)))
             )
+        if isinstance(found := unwrapped(value, self.symbol_table, self.members), UnionType):
+            return self.union_shape(present(found), source, direction, form=form)
         others = self.others(value, members, holder, direction)
         if others.patterns:
             return TextShape("object", problem=(holder, _PATTERNS))
@@ -2979,6 +2991,33 @@ class _UseFacts(_SchemaUses):
             ),
             additional=additional,
         )
+
+    def union_shape(
+        self, alternatives: tuple[TypeView, ...], source: SourceLocation, direction: Direction, *, form: bool
+    ) -> TextShape:
+        """Return how the values of a union of objects are written as text: the members of its objects, merged by name.
+
+        A name several objects declare has the kind they agree on, and none (refused, ``_kind``) when they differ. Other
+        properties are those of the objects that allow them, in their kind when all agree on one, else any string; an
+        object with pattern properties has no members and allows any string.
+        """
+        shapes = [
+            self.shape(item, source, self.held_members(item, direction), direction, form=form) for item in alternatives
+        ]
+        merged: dict[str, MemberShape] = {}
+        for shape in shapes:
+            for member in shape.members:
+                merged[member.name] = _agreed(merged[member.name], member) if member.name in merged else member
+        others = [MemberShape("") if shape.problem else shape.additional for shape in shapes]
+        allowed = [other for other in others if other is not None]
+        additional = (
+            None
+            if not allowed
+            else allowed[0]
+            if all(_same_kind(allowed[0], other) for other in allowed)
+            else MemberShape("")
+        )
+        return TextShape("object", members=tuple(merged.values()), additional=additional)
 
     def encoding(self, use: TypeUseBinding, *, members: bool) -> EncodingFacts:
         """Return how a use's value is written as text: as one value, as form members, and member by member.
@@ -3118,12 +3157,27 @@ class _Octets(_UseFacts):
             )
         )
 
+    def builtin_types(self, leaf: DataType, direction: Direction) -> frozenset[str]:
+        """Return the builtins a node's type is, constrained or not; empty when any member is another type.
+
+        ``builtins.str`` imported (a ``--type-overrides`` value) is the builtin ``str``.
+        """
+        value = self.view(leaf, direction)
+        names = [
+            _builtin_name(member.base if isinstance(member, ConstructorType) else member)
+            for member in (() if value is None else present(value))
+        ]
+        return frozenset() if None in names else frozenset(cast("list[str]", names))
+
     def part_of(self, node: Reference | DataType | None, value: TypeView | None, direction: Direction) -> PartSchema:
         """Return how the values of a type are sent as parts.
 
         They are files when every node they, or their items when they repeat, are one of holds raw octets as the
-        parser reads them (``reference.binary_content_of``); they repeat as an item container, one part for each item;
-        and they are structured when one of their alternatives is a model, a mapping or an item container.
+        parser reads them (``reference.binary_content_of``) and the models type it as bytes or as plain ``str``
+        (``octet``, ``text_files``), which is sent as UTF-8 text; a binary string the models give another type, such as
+        one a ``--type-overrides`` names, is sent as the part of that type. They repeat as an item container, one part
+        for each item; and they are structured when one of their alternatives is a model, a mapping or an item
+        container.
         """
         leaves = [] if node is None else [leaf for leaf, _ in self.alternatives(node, direction)]
         if (item := self.items(value)) is not None:
@@ -3134,11 +3188,22 @@ class _Octets(_UseFacts):
                 for inner, _ in self.alternatives(leaf.data_types[0], direction)
             ]
         found = unwrapped(value if item is None else item, self.symbol_table, self.members)
+        binary = [leaf for leaf in leaves if isinstance(leaf, DataType) and binary_content_of(leaf)]
+        types = [self.builtin_types(leaf, direction) for leaf in binary]
+        file = (
+            bool(leaves)
+            and len(binary) == len(leaves)
+            and all(
+                self.octet(leaf, direction) or (bool(names) and names <= _FILE_TYPES)
+                for leaf, names in zip(binary, types, strict=True)
+            )
+        )
         return PartSchema(
-            file=bool(leaves) and all(isinstance(leaf, DataType) and binary_content_of(leaf) for leaf in leaves),
+            file=file,
             repeated=item is not None,
             structured=found is not None and any(self.layout(member) != "scalar" for member in present(found)),
             value=value,
+            text=file and any("str" in names for names in types),
         )
 
     def part(self, member: FieldUseBinding) -> PartSchema:
@@ -3351,6 +3416,18 @@ class _Octets(_UseFacts):
 def _child(location: SourceLocation, token: str) -> SourceLocation:
     """Return the location of a keyword's schema below a schema's location."""
     return replace(location, pointer=f"{location.pointer}/{token}")
+
+
+def _same_kind(first: MemberShape, other: MemberShape) -> bool:
+    """Return whether two members of objects are written alike: in one lexical kind, both repeated or both not."""
+    return first.repeated == other.repeated and (first.kind and first.kind.kind) == (other.kind and other.kind.kind)
+
+
+def _agreed(first: MemberShape, other: MemberShape) -> MemberShape:
+    """Return the member two objects declare by one name: the first when both write it alike, else with no kind."""
+    if _same_kind(first, other):
+        return first
+    return replace(first, kind=KindAt(cast("KindAt", first.kind).source, None))
 
 
 def _typed(members: tuple[FieldUseBinding, ...]) -> Iterator[tuple[str, SourceLocation, ModelFieldFacts]]:

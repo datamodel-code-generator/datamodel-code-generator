@@ -145,9 +145,46 @@ def _add_upload(
     )
 
 
+def _add_search(
+    router: APIRouter,
+    wiring: Wiring,
+) -> None:
+    default: DefaultService = wiring.services['default']
+    search_handler = checked(
+        default.search,
+        'The default.search method of GET /search',
+        ('q',),
+    )
+
+    def search(
+        *,
+        parameters: Annotated[contract.Search.Parameters, Depends(contract.Search.PARAMETERS)],
+    ) -> object:
+        parameters = accepted(parameters)
+        return dispatch(
+            search_handler(
+                q=parameters.q,
+            ),
+            contract.Search.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/search',
+        search,
+        methods=['GET'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='search',
+        response_description='Done.',
+        dependencies=wiring.dependencies.get('search'),
+    )
+
+
 LITERAL_ROUTES: Final = (
     ('post_form', _add_post_form),
     ('upload', _add_upload),
+    ('search', _add_search),
 )
 TEMPLATED_ROUTES: Final = (
     ('get_values', _add_get_values),

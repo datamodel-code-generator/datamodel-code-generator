@@ -818,7 +818,9 @@ class Planner:
         if declared_extra == "closed":
             additional = None
         elif isinstance(declared_extra, PartSchema) and declared_extra.file:
-            additional = PartSpec(plan=PartPlan("", repeated=declared_extra.repeated), file=True)
+            additional = PartSpec(
+                plan=PartPlan("", repeated=declared_extra.repeated, text=declared_extra.text), file=True
+            )
         elif (extras := form_extras(self.wire.kinds, use)) is not None:
             text = extras.kind is not None and not self.wire.kinds.untyped(extras.leaf)
             additional = PartSpec(
@@ -839,6 +841,7 @@ class Planner:
                         repeated=name not in styles_of and (part.repeated if part.file else repeated),
                         content_types=media_of.get(name, ()),
                         style=styles_of.get(name),
+                        text=part.text,
                     ),
                     use=None
                     if part.file

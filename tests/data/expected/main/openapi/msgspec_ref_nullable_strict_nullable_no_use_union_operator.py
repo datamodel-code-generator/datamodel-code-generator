@@ -45,19 +45,36 @@ class NullableMerged(Struct):
 class Parent(Struct):
     nullableChild: Optional[NullableChild]
     nonNullableChild: NonNullableChild
-    requiredDescribedNullableChild: Union[Annotated[NullableChild, Meta(description='A required nullable child with a description.')], None]
-    requiredDescribedInline: Union[Annotated[RequiredDescribedInline, Meta(description='A required nullable inline object with a description.')], None]
+    requiredDescribedNullableChild: Union[
+        Annotated[
+            NullableChild,
+            Meta(description='A required nullable child with a description.'),
+        ],
+        None,
+    ]
+    requiredDescribedInline: Union[
+        Annotated[
+            RequiredDescribedInline,
+            Meta(description='A required nullable inline object with a description.'),
+        ],
+        None,
+    ]
     optionalNullableChild: Union[NullableChild, None, UnsetType] = UNSET
     optionalNullableWrapper: Union[NullableWrapper, None, UnsetType] = UNSET
     optionalNullableExtended: Union[NullableExtended, None, UnsetType] = UNSET
     optionalNullableMerged: Union[NullableMerged, None, UnsetType] = UNSET
     describedNullableChild: Union[
-        Annotated[NullableChild, Meta(description='A nullable child with a description.')],
+        Annotated[
+            NullableChild, Meta(description='A nullable child with a description.')
+        ],
         None,
         UnsetType,
     ] = UNSET
     optionalDescribedInline: Union[
-        Annotated[OptionalDescribedInline, Meta(description='An optional nullable inline object with a description.')],
+        Annotated[
+            OptionalDescribedInline,
+            Meta(description='An optional nullable inline object with a description.'),
+        ],
         None,
     ] = None
     optionalTitledInlineAllOf: Union[

@@ -179,6 +179,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "parts-bound-types-errors",
         "parts-bound-responses",
         "parts-bound-responses-reuse",
+        "multipart-text-files",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:

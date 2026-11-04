@@ -2632,7 +2632,7 @@ external-api-reuse-all-annotated_repeated-pydantic_v2.BaseModel	main/input_model
 external-api-reuse-all-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all.py	?
 external-api-reuse-all-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all_black23.py	?
 external-api-reuse-all-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_typed_reuse-all.txt
-external-api-reuse-all-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_typed_reuse-all.py
+external-api-reuse-all-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_typed_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_typed_reuse-all.py
 external-api-reuse-all-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_wrapper_reuse-all.txt
 external-api-reuse-all-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_wrapper_reuse-all.py
 external-api-reuse-all-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/arguments_reuse-all.py	?
@@ -2754,7 +2754,7 @@ external-api-reuse-foreign-annotated_repeated-pydantic_v2.BaseModel	main/input_m
 external-api-reuse-foreign-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all.py	?
 external-api-reuse-foreign-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all_black23.py	?
 external-api-reuse-foreign-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_typed_reuse-all.txt
-external-api-reuse-foreign-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_typed_reuse-all.py
+external-api-reuse-foreign-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_typed_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_typed_reuse-all.py
 external-api-reuse-foreign-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_wrapper_reuse-all.txt
 external-api-reuse-foreign-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_wrapper_reuse-all.py
 external-api-reuse-foreign-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/arguments_reuse-all.py	?
@@ -3007,7 +3007,7 @@ external-cli-reuse-all-annotated_repeated-pydantic_v2.BaseModel	main/input_model
 external-cli-reuse-all-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all.py	?
 external-cli-reuse-all-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all_black23.py	?
 external-cli-reuse-all-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_typed_reuse-all.txt
-external-cli-reuse-all-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_typed_reuse-all.py
+external-cli-reuse-all-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_typed_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_typed_reuse-all.py
 external-cli-reuse-all-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_wrapper_reuse-all.txt
 external-cli-reuse-all-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_wrapper_reuse-all.py
 external-cli-reuse-all-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/arguments_reuse-all.py	?
@@ -3129,7 +3129,7 @@ external-cli-reuse-foreign-annotated_repeated-pydantic_v2.BaseModel	main/input_m
 external-cli-reuse-foreign-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all.py	?
 external-cli-reuse-foreign-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all_black23.py	?
 external-cli-reuse-foreign-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_typed_reuse-all.txt
-external-cli-reuse-foreign-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_typed_reuse-all.py
+external-cli-reuse-foreign-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_typed_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_typed_reuse-all.py
 external-cli-reuse-foreign-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_wrapper_reuse-all.txt
 external-cli-reuse-foreign-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_wrapper_reuse-all.py
 external-cli-reuse-foreign-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/arguments_reuse-all.py	?

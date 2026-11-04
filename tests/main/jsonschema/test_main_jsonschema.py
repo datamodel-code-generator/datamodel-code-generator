@@ -38076,6 +38076,70 @@ def test_main_jsonschema_refuses_keyword_module(
 
 
 @pytest.mark.parametrize(
+    ("input_name", "extra_args", "message"),
+    [
+        pytest.param(
+            "module_named_like_package_class_unloaded",
+            [],
+            "the class 'Warn' in the package 'pkg' beside the module 'pkg.Warn' (pkg/Warn.py)",
+            id="module",
+        ),
+        pytest.param(
+            "module_named_like_package_class_directory",
+            [],
+            "the class 'Warn' in the package 'pkg' beside the module 'pkg.Warn' (pkg/Warn/__init__.py)",
+            id="package",
+        ),
+        pytest.param(
+            "module_named_like_package_class_directory",
+            ["--all-exports-scope", "children"],
+            "the class 'Warn' in the package 'pkg' beside the module 'pkg.Warn' (pkg/Warn/__init__.py)",
+            id="package-not-exported",
+        ),
+        pytest.param(
+            "module_named_like_root_class",
+            [],
+            "the class 'Warn' in the root package beside the module 'Warn' (Warn.py)",
+            id="root",
+        ),
+    ],
+)
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"])
+def test_main_jsonschema_refuses_class_named_like_submodule(
+    output_dir: Path,
+    capsys: pytest.CaptureFixture[str],
+    input_name: str,
+    extra_args: list[str],
+    message: str,
+    output_model_type: str,
+) -> None:
+    """Refuse a package whose ``__init__.py`` defines a class named like a module or package below it.
+
+    Importing ``pkg.Warn`` binds ``Warn`` in ``pkg`` over the class, so the models that use the class failed to import
+    or decode (#6067). The names are the models' and the files', so the run fails and names the class and the module;
+    where the ``__init__.py`` loads the module before its classes are defined (it imports from it, or
+    ``--all-exports-scope`` re-exports a module of it) the output works and is written.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{input_name}.json",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=f"Cannot write {message}: importing the module binds its name in the package",
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize(
     "extra_args",
     [
         pytest.param([], id="default"),

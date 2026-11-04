@@ -428,6 +428,26 @@
     "input": "multipart-kinds.yaml",
     "config": {}
   },
+  "multipart-text-files": {
+    "input": "multipart-text-files.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "type_overrides": {
+        "Files.file": "builtins.str",
+        "Stamp.taken": "datetime.datetime"
+      }
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ],
+    "config": {}
+  },
   "servers": {
     "input": "servers.yaml",
     "modules": [

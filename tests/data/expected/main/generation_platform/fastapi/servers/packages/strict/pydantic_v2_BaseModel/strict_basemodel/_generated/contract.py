@@ -31,6 +31,7 @@ OperationDependencies = TypedDict(
         'get_values': Sequence[params.Depends],
         'post_form': Sequence[params.Depends],
         'upload': Sequence[params.Depends],
+        'search': Sequence[params.Depends],
     },
     total=False,
 )
@@ -83,6 +84,25 @@ class Upload:
 
     BODY: Final = BodyAdapter(
         media=(BodyMedia(media_type='multipart/form-data', kind='multipart', adapter=TypeAdapter(strict_basemodel_models.UploadsPostRequest), fields=(FieldPlan('file', 'string'), FieldPlan('count', 'integer'), FieldPlan('score', 'number'), FieldPlan('flag', 'boolean'), FieldPlan('note', 'string'), FieldPlan('counts', 'integer', repeated=True)), additional=JsonPart('', TypeAdapter(object), untyped=True)),),
+    )
+    RESPONSES: Final = OperationResponses(
+        responses={'204': Declared()},
+        primary=204,
+    )
+
+
+class Search:
+    """Plans of the search operation."""
+
+    @dataclass(frozen=True, slots=True, kw_only=True)
+    class Parameters:
+        """The adapter parameters of search."""
+
+        q: strict_basemodel_models.BySize | strict_basemodel_models.ByName | None
+
+    PARAMETERS: Final = ParameterAdapter(
+        arguments=(ParameterArgument(name='q', plan=ParameterPlan(location='query', name='q', style='form', explode=True, shape='object', fields=(FieldPlan('size', 'integer'), FieldPlan('note', 'string'), FieldPlan('name', 'string')), additional=FieldPlan('', 'string')), adapter=TypeAdapter(strict_basemodel_models.BySize | strict_basemodel_models.ByName)),),
+        record=Parameters,
     )
     RESPONSES: Final = OperationResponses(
         responses={'204': Declared()},

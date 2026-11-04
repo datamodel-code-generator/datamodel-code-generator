@@ -4268,6 +4268,18 @@
           "count": "x",
           "flag": "maybe"
         }
+      },
+      {
+        "method": "GET",
+        "url": "/search?size=5&note=n"
+      },
+      {
+        "method": "GET",
+        "url": "/search?name=x"
+      },
+      {
+        "method": "GET",
+        "url": "/search?size=x"
       }
     ],
     "package_snapshots": [
@@ -4474,6 +4486,18 @@
           "count": "x",
           "flag": "maybe"
         }
+      },
+      {
+        "method": "GET",
+        "url": "/search?size=5&note=n"
+      },
+      {
+        "method": "GET",
+        "url": "/search?name=x"
+      },
+      {
+        "method": "GET",
+        "url": "/search?size=x"
       }
     ],
     "backends": [
@@ -4678,6 +4702,18 @@
           "count": "x",
           "flag": "maybe"
         }
+      },
+      {
+        "method": "GET",
+        "url": "/search?size=5&note=n"
+      },
+      {
+        "method": "GET",
+        "url": "/search?name=x"
+      },
+      {
+        "method": "GET",
+        "url": "/search?size=x"
       }
     ],
     "package_snapshots": []

@@ -15,6 +15,9 @@ def services(server: ModuleType, _models: ModuleType, calls: list[str]) -> dict[
         def get_values(self, **arguments: object) -> None:
             calls.append(f"get_values({', '.join(f'{key}={value!r}' for key, value in arguments.items())})")
 
+        def search(self, *, q: object) -> None:
+            calls.append(f"search({q!r})")
+
         def post_form(self, *, body: object) -> None:
             calls.append(f"post_form({body!r})")
 

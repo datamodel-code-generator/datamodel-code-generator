@@ -374,7 +374,8 @@ def _member(part: FieldPart[object], item: JSONValue, plan: PartPlan) -> Entry:
 
 
 def _file(part: FilePart[SyncBinaryBody | AsyncBinaryBody], plan: PartPlan) -> Entry:
-    if not is_binary_input(part.content):
+    content = part.content.encode() if plan.text and isinstance(part.content, str) else part.content
+    if not is_binary_input(content):
         raise request_failure(("body", part.name), cause=TypeError(_SYNC))
     try:
         media_type = plan.media(part.content_type) if plan.content_types else part.content_type
@@ -382,7 +383,7 @@ def _file(part: FilePart[SyncBinaryBody | AsyncBinaryBody], plan: PartPlan) -> E
             raise ParameterEncodingError(MEDIA_OUTSIDE_ENCODING)
     except (CodecError, TypeError, AttributeError) as error:
         raise request_failure(("body", part.name), cause=error) from None
-    return _entry(part.name, part.content, media_type or _OCTETS, part.headers, part.filename)
+    return _entry(part.name, content, media_type or _OCTETS, part.headers, part.filename)
 
 
 def _named(part: object) -> bool:

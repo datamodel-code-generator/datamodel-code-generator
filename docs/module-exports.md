@@ -177,6 +177,12 @@ refused: generation fails and names the module and the part. Use `--no-treat-dot
 keyword (`class/`, `class.json`) cannot be imported by its name either, with or without the option: a generated module
 that has to import it is refused the same way.
 
+A package whose `__init__.py` defines a class named like a module or package below it (the class `Warn` in
+`pkg/__init__.py` beside `pkg/Warn.py`) is refused too: importing `pkg.Warn` binds `Warn` in `pkg` over the class, so the
+models that use the class fail to import or decode. Generation fails and names the class and the module; rename either
+in the input. A package whose `__init__.py` imports from the module before it defines its classes (a model of the
+module that its models use, or `--all-exports-scope`) is written as before.
+
 When writing plain Python text to stdout with the standard renderer and without
 an explicit `--treat-dot-as-module` setting, historical automatic module
 inference is preserved whenever the final concatenated result remains usable. A

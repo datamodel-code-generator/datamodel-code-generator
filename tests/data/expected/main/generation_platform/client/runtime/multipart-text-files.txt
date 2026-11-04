@@ -1,0 +1,11 @@
+# multipart-text-files pydantic_v2.BaseModel, msgspec.Struct
+  > POST https://api.example.com/files
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 423] b'--<boundary>\r\nContent-Disposition: form-data; name="file"\r\nContent-Type: application/octet-stream\r\n\r\nh\xc3\xa9llo\r\n--<boundary>\r\nContent-Disposition: form-data; name="raw"\r\nContent-Type: application/octet-stream\r\n\r\n\x00\x01\r\n--<boundary>\r\nContent-Disposition: form-data; name="icon"\r\nContent-Type: application/octet-stream\r\n\r\nico\r\n--<boundary>--\r\n'
+  text files = None
+  > POST https://api.example.com/files
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 422] b'--<boundary>\r\nContent-Disposition: form-data; name="file"\r\nContent-Type: application/octet-stream\r\n\r\nhello\r\n--<boundary>\r\nContent-Disposition: form-data; name="raw"\r\nContent-Type: application/octet-stream\r\n\r\n\x00\r\n--<boundary>\r\nContent-Disposition: form-data; name="icon"\r\nContent-Type: application/octet-stream\r\n\r\n\x89PNG\r\n--<boundary>--\r\n'
+  byte files = None
+  text in a bytes file ! DecodeError: DecodeError(operation_id='sendFiles', reason='unencodable', location='body.raw') [operation_id='sendFiles', location=('body', 'raw'), body_bytes=b'', truncated=False, cause=TypeError('A multipart file part must be read synchronously: bytes, a binary file object, a path, or an iterable of bytes')] unencodable
+  > POST https://api.example.com/stamps
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: multipart/form-data; boundary=<boundary>, content-length: 144] b'--<boundary>\r\nContent-Disposition: form-data; name="taken"\r\n\r\n2026-11-04T01:02:03Z\r\n--<boundary>--\r\n'
+  stamp = None

@@ -417,16 +417,18 @@ class FieldUseBinding:
 class PartSchema:
     """How the members of a multipart body are sent as parts, by the types the models give them.
 
-    A member holds files when the models hold its values, or its items', as raw octets (BINARY_CONTENT); it repeats as
-    an item container, one part for each item; and its values, or its items', are structured when one of their types
-    is a model, a mapping or an item container. `value` is the type the body's direction gives its values, which a
-    part read on its own is read by.
+    A member holds files when the parser reads its values, or its items', as raw octets (BINARY_CONTENT) and the models
+    type them as bytes or as plain `str` (`text` says a type is `str`, whose text is sent as UTF-8). A binary string
+    the models give any other type is sent as the part of that type. A member repeats as an item container, one part
+    for each item; and its values, or its items', are structured when one of their types is a model, a mapping or an
+    item container. `value` is the type the body's direction gives its values, which a part read on its own is read by.
     """
 
     file: bool
     repeated: bool
     structured: bool
     value: TypeView | None = None
+    text: bool = False
 
 
 @dataclass(frozen=True, slots=True)

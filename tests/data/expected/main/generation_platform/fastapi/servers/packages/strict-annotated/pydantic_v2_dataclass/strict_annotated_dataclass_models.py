@@ -17,6 +17,19 @@ from pydantic import (
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
+
+@dataclass
+class BySize:
+    size: StrictInt
+    note: StrictStr | MISSING = MISSING
+
+
+@dataclass
+class ByName:
+    name: StrictStr
+    note: StrictStr | MISSING = MISSING
+
+
 Size = TypeAliasType("Size", Annotated[StrictInt, Field(ge=1)])
 
 
@@ -86,3 +99,6 @@ class UploadsPostRequest:
     flag: StrictBool | MISSING = MISSING
     note: StrictStr | MISSING = MISSING
     counts: list[StrictInt] | MISSING = MISSING
+
+
+SearchGetQueryQParameter = TypeAliasType("SearchGetQueryQParameter", BySize | ByName)

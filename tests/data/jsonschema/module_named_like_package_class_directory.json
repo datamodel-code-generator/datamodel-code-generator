@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "pkg.Report": {"type": "object", "properties": {"warn": {"$ref": "#/$defs/pkg.Warn"}}},
+    "pkg.Warn": {"type": "object", "properties": {"count": {"type": "integer"}}},
+    "pkg.Warn.deep.Detail": {"type": "object", "properties": {"message": {"type": "string"}}}
+  }
+}

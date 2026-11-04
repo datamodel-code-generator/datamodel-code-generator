@@ -2242,6 +2242,7 @@ class _Registry(_Typing):
                 ("", stable_repr(plan.name)),
                 *((("", stable_repr(plan.kind)),) if plan.kind == "json" else ()),
                 *((("repeated", "True"),) if plan.repeated else ()),
+                *((("text", "True"),) if plan.text else ()),
                 *((("codec", self.codec(module, part.use)),) if part.use is not None else ()),
                 *(
                     (("content_types", tuple_display(map(stable_repr, plan.content_types))),)

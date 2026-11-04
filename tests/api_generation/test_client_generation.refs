@@ -228,6 +228,9 @@ method-collisions-suffix	main/generation_platform/client/method-collisions-suffi
 method-collisions-suffix	main/generation_platform/client/packages/method-collisions-suffix/pydantic_v2_BaseModel//*.py
 multipart-referenced-items	main/generation_platform/client/multipart-referenced-items.txt
 multipart-referenced-items	main/generation_platform/client/packages/multipart-referenced-items/pydantic_v2_BaseModel//*.py
+multipart-text-files	main/generation_platform/client/multipart-text-files.txt
+multipart-text-files	main/generation_platform/client/packages/multipart-text-files/msgspec_Struct//*.py	= main/generation_platform/client/packages/multipart-text-files/pydantic_v2_BaseModel//*.py
+multipart-text-files	main/generation_platform/client/packages/multipart-text-files/pydantic_v2_BaseModel//*.py
 name-errors	main/generation_platform/client/name-errors.txt
 names	main/generation_platform/client/names.txt
 names	main/generation_platform/client/packages/names/pydantic_v2_BaseModel//*.py
