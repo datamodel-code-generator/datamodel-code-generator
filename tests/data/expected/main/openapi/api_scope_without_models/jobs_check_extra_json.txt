@@ -10,7 +10,7 @@
         "format": "json",
         "kind": "check",
         "success": false,
-        "content": "EXTRA: <ROOT>/models.py (no longer generated)",
+        "content": "EXTRA: <ROOT>/models.py (no longer generated)\n",
         "differences": [
           {
             "kind": "extra",
