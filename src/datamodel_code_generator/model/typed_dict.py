@@ -313,8 +313,8 @@ class TypedDict(DataModel):
         description = self._template_description(use_custom_template=use_custom_template)
         if not use_custom_template and self.is_functional_syntax:
             description = None
-        extra_template_data = self._custom_template_data() if use_custom_template else self._builtin_template_data()
-        return self._render(
+        return self._render_with_template_data(
+            use_custom_template=use_custom_template,
             class_name=class_name or self.class_name,
             fields=self._template_fields(use_custom_template=use_custom_template),
             decorators=self.decorators,
@@ -323,7 +323,6 @@ class TypedDict(DataModel):
             description=description,
             is_functional_syntax=self.is_functional_syntax,
             all_fields=self.all_fields,
-            **extra_template_data,
         )
 
 

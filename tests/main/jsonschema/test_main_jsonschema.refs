@@ -4637,6 +4637,11 @@ pydantic_v2.dataclass	main/jsonschema/extra_template_data_dataclass_arguments.py
 pydantic_v2.dataclass	main/jsonschema/main_jsonschema/extra_template_data_dataclass_arguments[pydantic_v2.dataclass].payloads.txt	= main/jsonschema/main_jsonschema/extra_template_data_dataclass_arguments[dataclasses.dataclass].payloads.txt
 [test_extra_template_data_field_validators]
 	main/jsonschema/field_validators.py
+[test_extra_template_data_model_values]
+dataclasses.dataclass	main/jsonschema/extra_template_data_model_values.py
+dataclasses.dataclass	main/jsonschema/main_jsonschema/extra_template_data_model_values[dataclasses.dataclass].payloads.txt
+pydantic_v2.BaseModel	main/jsonschema/extra_template_data_model_values.py	= main/jsonschema/extra_template_data_model_values~extra_template_data_model_values[pydantic_v2.BaseModel].py
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/extra_template_data_model_values[pydantic_v2.BaseModel].payloads.txt
 [test_extra_template_data_prepared_validators_ignored]
 #all#	main/jsonschema/field_validators_all_skipped.py
 User	main/jsonschema/field_validators_all_skipped.py
