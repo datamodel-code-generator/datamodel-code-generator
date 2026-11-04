@@ -3,7 +3,7 @@
   "format": "json",
   "kind": "check",
   "success": false,
-  "content": "MISSING: <OUTPUT_FILE> (file does not exist but should be generated)",
+  "content": "MISSING: <OUTPUT_FILE> (file does not exist but should be generated)\n",
   "differences": [
     {
       "kind": "missing",

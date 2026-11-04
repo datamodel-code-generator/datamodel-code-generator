@@ -1211,7 +1211,7 @@ def _compare_generated_single_file(
         message = f"{kind.upper()}: {path} ({message_suffix})"
         return OutputComparison(
             differences=[ComparisonDifference(kind=kind, path=path, message=message)],
-            content=f"{message}\n" if comparison.input_diff else message,
+            content=f"{message}\n",
         )
 
     diff_found, diff_lines = (
