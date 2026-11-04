@@ -139,6 +139,7 @@ class ObjectMapsHost(Protocol):
         effective_has_default: bool | None = None,
         use_default_with_required: bool = False,
         class_name: str | None = None,
+        output_names: tuple[str, ...] = (),
     ) -> DataModelFieldBase:
         """Build an output field using the shared JSON Schema field policy; without a schema, without its keywords."""
 

@@ -61,6 +61,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "ClassKeyRow",
+    "ClassScope",
     "ConstructionKeys",
     "ModelNameKeys",
     "ModelNameRecord",
@@ -70,6 +71,7 @@ __all__ = [
     "class_field_key",
     "class_key",
     "class_name_keys",
+    "class_scope",
     "field_keys",
     "first_given",
     "first_present",
@@ -129,16 +131,41 @@ def class_key(row: ClassKeyRow, model: ModelNames | str) -> str:
     return model.name
 
 
+@dataclass(frozen=True, slots=True)
+class ClassScope:
+    """The names of one model that the class part of a key is compared with, in order.
+
+    ``name`` is the name of the row the lookup reads (``class_key``); ``output_names`` are the names the model has in
+    the output that a key names where they are none of its L1 names, compared after it.
+    """
+
+    name: str
+    output_names: tuple[str, ...] = ()
+
+    @property
+    def keys(self) -> tuple[str, ...]:
+        """The names a class part is compared with: ``name``, then ``output_names``."""
+        return (self.name, *self.output_names)
+
+
+def class_scope(class_name: str | None, output_names: tuple[str, ...] = ()) -> ClassScope | None:
+    """Return the scope of the class ``class_name`` (none for no or an empty name) with its ``output_names``."""
+    return ClassScope(class_name, output_names) if class_name else None
+
+
 def class_field_key(class_name: str, field_name: str | None) -> str:
     """Return the key of the field ``field_name`` of the class ``class_name`` (``Class.field``)."""
     return f"{class_name}{_SCOPE_SEPARATOR}{field_name}"
 
 
-def field_keys(class_name: str | None, *field_names: str) -> tuple[str, ...]:
-    """Return the keys of a field option, most specific first: each name under the class, then each name alone."""
-    if class_name is None:
+def field_keys(scope: ClassScope | None, *field_names: str) -> tuple[str, ...]:
+    """Return the keys of a field option, most specific first: each name under each class name, then each name alone."""
+    if scope is None:
         return field_names
-    return (*(class_field_key(class_name, field_name) for field_name in field_names), *field_names)
+    return (
+        *(class_field_key(class_name, field_name) for class_name in scope.keys for field_name in field_names),
+        *field_names,
+    )
 
 
 def scoped_key(key: str, *, row: ScopedKeyRow) -> tuple[tuple[str, str], ...]:
@@ -172,9 +199,9 @@ def first_given(mapping: Mapping[str, _ValueT], keys: Iterable[str]) -> _ValueT 
     return next((value for key in keys if isinstance(value := mapping.get(key), str) or value), None)
 
 
-def mapped_base_class(base_class_map: Mapping[str, _ValueT] | None, class_name: str) -> tuple[_ValueT | None, bool]:
-    """Return the ``--base-class-map`` value of ``class_name`` and True, or None and False."""
-    return first_present(base_class_map or {}, (class_name,))
+def mapped_base_class(base_class_map: Mapping[str, _ValueT] | None, scope: ClassScope) -> tuple[_ValueT | None, bool]:
+    """Return the ``--base-class-map`` value of the first name of ``scope`` it maps and True, or None and False."""
+    return first_present(base_class_map or {}, scope.keys)
 
 
 def template_data_keys(reference: ModelNames) -> tuple[str, str]:
