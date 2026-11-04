@@ -21,7 +21,7 @@ from datamodel_code_generator._avro_detection import (
 from datamodel_code_generator._json_schema import definition_ref
 from datamodel_code_generator._name_words import first_upper
 from datamodel_code_generator._source import YamlValue, load_yaml
-from datamodel_code_generator._user_keys import class_field_key, class_key
+from datamodel_code_generator._user_keys import class_field_key, class_key, model_type_override
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.parser._convert_common import _copy_schema, _name_definitions
 from datamodel_code_generator.parser._null_facts import null_schema
@@ -881,9 +881,11 @@ class AvroParser(JsonSchemaParser):
             name, unique=False, is_root=as_root, preserve_name=preserve_name
         ).name
         if schema["type"] == "fixed":
+            model_overrides = self._model_type_override_imports
             return (
                 {"": override}
-                if not self.collapse_root_models and (override := self._model_type_override_imports.get(class_name))
+                if not self.collapse_root_models
+                and (override := model_type_override(model_overrides, class_name, row="predicted-class-name"))
                 else {}
             )
         if class_name not in self._reuse_optimization_context.type_override_model_names:

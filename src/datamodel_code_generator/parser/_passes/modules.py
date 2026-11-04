@@ -40,7 +40,7 @@ from datamodel_code_generator._reference_graph import (
 )
 from datamodel_code_generator._requirements import python_target_meets
 from datamodel_code_generator._shared_types import _CollapseRootModelsRecursionError
-from datamodel_code_generator._user_keys import class_field_key, class_key
+from datamodel_code_generator._user_keys import class_field_key, class_key, model_type_override
 from datamodel_code_generator.enums import DefaultValueType
 from datamodel_code_generator.imports import IMPORT_OPTIONAL, IMPORT_UNION, Import
 from datamodel_code_generator.model._decisions.collapse_eligibility import (
@@ -2349,7 +2349,7 @@ def remove_overridden_models(parser: ModulesHost, state: ModuleStateView) -> Non
     kept: list[DataModel] = []
     for model in models:
         if (
-            model.class_name in overrides
+            model_type_override(overrides, model.reference, row="class-name") is not None
             or enum_site_override_import(parser, model.reference) is not None
             or model_key_of(model.reference) in stand_ins
         ):
@@ -2371,7 +2371,7 @@ def derived_override_import(parser: ModulesHost, model: DataModel) -> Import | N
         or (target := model.reference.__dict__.get(_DERIVED_FROM_KEY)) is None
     ):
         return None
-    return parser._model_type_override_imports.get(target.name)  # noqa: SLF001
+    return model_type_override(parser._model_type_override_imports, target, row="reference-name")  # noqa: SLF001
 
 
 def apply_field_type_overrides(parser: ModulesHost, models: list[DataModel]) -> None:
