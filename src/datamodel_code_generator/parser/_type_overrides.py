@@ -241,6 +241,34 @@ def _registry_import(binding: object, version_key: tuple[int, int]) -> bool:
     return isinstance(binding, Import) and is_known_python_type_path(_import_path(binding), version_key)
 
 
+def _write_refused_literal_values(parser: TypeOverridesHost, written: PythonTypeExpr) -> PythonTypeExpr:
+    """Return the type with the values of its ``Literal`` that the output refuses written as their types, and warn.
+
+    A msgspec ``Literal`` holds no float and no bytes (``REFUSED_LITERAL_TYPES``), so ``Literal[5.0]`` becomes
+    ``float``, which msgspec does not check against the value.
+    """
+    if not (refused := parser.data_type_manager.REFUSED_LITERAL_TYPES):
+        return written
+    from datamodel_code_generator._message_text import for_count  # noqa: PLC0415
+    from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
+        render_python_type_expr,
+        write_refused_literal_values,
+    )
+    from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base  # noqa: PLC0415
+
+    read, values = write_refused_literal_values(written, refused)
+    if values:
+        listed = tuple(dict.fromkeys(map(render_python_type_expr, values)))
+        warn_as_parser_base(
+            f"msgspec cannot decode {render_python_type_expr(written)}: a msgspec Literal holds only None, bool, "
+            f"int and str values, not {', '.join(listed)}. It is written as {render_python_type_expr(read)}, so "
+            f"msgspec does not check {for_count(len(listed), 'it', 'them')}.",
+            UserWarning,
+            stacklevel=2,
+        )
+    return read
+
+
 def bind_python_type(parser: TypeOverridesHost, expression: PythonTypeExpr) -> BoundPythonType:
     """Bind names/imports without returning to runtime-dependent text parsing.
 
@@ -322,7 +350,10 @@ def bind_python_type(parser: TypeOverridesHost, expression: PythonTypeExpr) -> B
                         raise Error(msg)
                     resolving_names.add(name)
                     try:
-                        return rewrite_python_type_expr(read_literal_enum_members(resolved, names_class), bind_leaf)
+                        return rewrite_python_type_expr(
+                            read_literal_enum_members(_write_refused_literal_values(parser, resolved), names_class),
+                            bind_leaf,
+                        )
                     finally:
                         resolving_names.remove(name)
                 if resolved:
@@ -331,7 +362,10 @@ def bind_python_type(parser: TypeOverridesHost, expression: PythonTypeExpr) -> B
         return item
 
     return BoundPythonType(
-        rewrite_python_type_expr(read_literal_enum_members(expression, names_class), bind_leaf), tuple(imports)
+        rewrite_python_type_expr(
+            read_literal_enum_members(_write_refused_literal_values(parser, expression), names_class), bind_leaf
+        ),
+        tuple(imports),
     )
 
 

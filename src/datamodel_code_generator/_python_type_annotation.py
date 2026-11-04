@@ -485,6 +485,46 @@ def iter_literal_members(expression: PythonTypeExpr) -> Iterator[PythonTypeExpr]
             yield from iter_literal_members(child)
 
 
+def _flat_literal_values(arguments: tuple[PythonTypeExpr, ...]) -> Iterator[PythonTypeExpr]:
+    """Yield the values of a ``Literal``, those of a ``Literal`` it nests included."""
+    for argument in arguments:
+        if isinstance(argument, PythonTypeSubscript) and is_literal_python_type_expr(argument):
+            yield from _flat_literal_values(argument.arguments)
+        else:
+            yield argument
+
+
+def write_refused_literal_values(
+    expression: PythonTypeExpr, refused: tuple[type, ...]
+) -> tuple[PythonTypeExpr, tuple[PythonTypeLiteralValue, ...]]:
+    """Write each value of a ``Literal`` whose exact type is in ``refused`` as the type, and return the values.
+
+    A ``Literal`` of such values alone becomes the union of their types (``Literal[5.0]`` the type ``float``); one that
+    holds other values keeps them (``Literal[1, 5.0]`` becomes ``Literal[1] | float``), and a nested ``Literal`` is
+    flattened. An expression that holds no such value is returned as it is.
+    """
+    values: list[PythonTypeLiteralValue] = []
+
+    def write(node: PythonTypeExpr) -> PythonTypeExpr:
+        if isinstance(node, PythonTypeSubscript) and is_literal_python_type_expr(node):
+            members = tuple(_flat_literal_values(node.arguments))
+            written = [m for m in members if isinstance(m, PythonTypeLiteralValue) and type(m.value) in refused]
+            if not written:
+                return node
+            values.extend(written)
+            kept = tuple(m for m in members if m not in written)
+            items = (
+                *((PythonTypeSubscript(node.base, kept),) if kept else ()),
+                *dict.fromkeys(python_type_name(type(m.value).__name__) for m in written),
+            )
+            return items[0] if len(items) == 1 else PythonTypeUnion(items)
+        if (children := _children(node, "all")) is None:
+            return node
+        return _with_children(node, "all", children, tuple(map(write, children)))
+
+    return write(expression), tuple(values)
+
+
 __all__ = [
     "PythonTypeBoundName",
     "PythonTypeEllipsis",
@@ -514,4 +554,5 @@ __all__ = [
     "read_literal_enum_members",
     "render_python_type_expr",
     "rewrite_python_type_expr",
+    "write_refused_literal_values",
 ]

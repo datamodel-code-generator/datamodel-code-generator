@@ -341,7 +341,7 @@ class OutputKeywords:
     The number rows say which values the output writes: ``int_values`` is the range of the ints it takes as a number
     constraint, an ``Enum`` or ``Literal`` value or a tag (None when it takes every int), and
     ``drops_non_finite_bounds`` that a bound or divisor with no finite float is left out (else it is written as the
-    infinity or NaN).
+    infinity or NaN). ``refused_literal_types`` are the types of the values a ``Literal`` of the output cannot hold.
     """
 
     type_keywords: Mapping[str, frozenset[str]]
@@ -354,6 +354,7 @@ class OutputKeywords:
     writes_constrained_types: bool
     int_values: range | None
     drops_non_finite_bounds: bool
+    refused_literal_types: tuple[type, ...]
 
 
 BASE_OUTPUT: Final = OutputKeywords(
@@ -367,6 +368,7 @@ BASE_OUTPUT: Final = OutputKeywords(
     writes_constrained_types=False,
     int_values=None,
     drops_non_finite_bounds=False,
+    refused_literal_types=(),
 )
 """The rows of the type manager of the standard-library outputs (dataclasses, TypedDict)."""
 PYDANTIC_OUTPUT: Final = replace(
@@ -388,6 +390,7 @@ MSGSPEC_OUTPUT: Final = replace(
     literals_take=False,
     int_values=range(-(2**63), 2**63),
     drops_non_finite_bounds=True,
+    refused_literal_types=(float, bytes),
 )
 """The rows of the msgspec type manager, as the msgspec type table lists what ``msgspec.Meta`` checks."""
 
