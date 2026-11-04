@@ -734,7 +734,8 @@ def text_files(package: ModuleType, lines: list[str]) -> None:
     """Send binary form-data members whose models type them as `str`, as bytes, or as another type.
 
     A member typed `str`, with an override or by `contentMediaType`, is a file part that takes bytes and text, which is
-    sent as UTF-8; one typed `bytes` takes bytes alone; a member another type overrides is a part of that type.
+    sent in the charset of its media type, UTF-8 without one, and refused when that charset cannot represent it; one
+    typed `bytes` takes bytes alone; a member another type overrides is a part of that type.
     """
     bodies = importlib.import_module(f"{package.__name__}.bodies")
     file = bodies.FilePart
@@ -743,14 +744,15 @@ def text_files(package: ModuleType, lines: list[str]) -> None:
         for label, parts in (
             ("text files", (file("file", "h\u00e9llo"), file("raw", b"\x00\x01"), file("icon", "ico"))),
             ("byte files", (file("file", b"hello"), file("raw", b"\x00"), file("icon", b"\x89PNG"))),
+            ("latin-1 text file", (file("file", "a"), file("raw", b"\x00"), file("notes", "h\u00e9llo"))),
         ):
             exchange.respond(raw_response(204))
             record(lines, label, lambda parts=parts: api.default.send_files(body=bodies.MultipartBody(parts)))
-        record(
-            lines,
-            "text in a bytes file",
-            lambda: api.default.send_files(body=bodies.MultipartBody((file("file", "a"), file("raw", "text")))),
-        )
+        for label, parts in (
+            ("text in a bytes file", (file("file", "a"), file("raw", "text"))),
+            ("text outside the charset", (file("file", "a"), file("raw", b"\x00"), file("notes", "\u20ac"))),
+        ):
+            record(lines, label, lambda parts=parts: api.default.send_files(body=bodies.MultipartBody(parts)))
         exchange.respond(raw_response(204))
         stamp = request_body(package, "sendStamp", None, {"taken": "2026-11-04T01:02:03Z"})
         record(lines, "stamp", lambda: api.default.send_stamp(body=stamp))

@@ -30,7 +30,7 @@ class PartPlan:
     has no one scalar kind, and for any other by the value's shape. The media types of the member's encoding bound
     the media type a part names, and the first concrete one is its default. A member whose encoding gives a query
     style writes a part for each name and value that style gives its value. A file part of a member the models type as
-    `str` (`text`) may hold text, which is sent as its UTF-8 bytes.
+    `str` (`text`) may hold text, which is sent in the charset of the part's media type, UTF-8 when it names none.
     """
 
     __slots__ = ("codec", "content_types", "kind", "name", "repeated", "style", "text")

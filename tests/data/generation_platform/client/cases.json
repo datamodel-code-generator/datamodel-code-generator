@@ -437,6 +437,7 @@
     "model": {
       "type_overrides": {
         "Files.file": "builtins.str",
+        "Files.notes": "builtins.str",
         "Stamp.taken": "datetime.datetime"
       }
     },
