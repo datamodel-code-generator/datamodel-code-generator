@@ -5,10 +5,21 @@ from __future__ import annotations
 
 from typing import TypeAlias, Union
 
-from msgspec import Struct, UnsetType, field
+from msgspec import UNSET, Struct, UnsetType, field
 
 Values: TypeAlias = Union[list["Values"], int]
 
 
+class Pod(Struct):
+    a: str | UnsetType = UNSET
+
+
 class RecursiveDefaults(Struct):
     values: Values | UnsetType = field(default_factory=lambda: [1, [2]])
+    cycle: CycleA | list[str] | UnsetType = field(default_factory=lambda: ['c'])
+
+
+CycleA: TypeAlias = Union["CycleB", Pod]
+
+
+CycleB: TypeAlias = CycleA | int
