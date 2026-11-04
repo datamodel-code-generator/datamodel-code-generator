@@ -572,10 +572,8 @@ def test_modular_output_file_is_a_clean_cli_error(tmp_path: Path, capsys: pytest
     assert_output(output_path.read_text(encoding="utf-8"), existing_file)
 
 
-def test_modular_output_below_a_file_keeps_the_filesystem_error(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    """A file above the output path is a filesystem error, not the modular output refusal."""
+def test_modular_output_below_a_file_names_the_file(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A file above the output path is named as the path that is not a directory, not the modular output refusal."""
     occupied_path = tmp_path / "occupied"
 
     run_main_and_assert(
@@ -585,7 +583,7 @@ def test_modular_output_below_a_file_keeps_the_filesystem_error(
         extra_args=["--formatters", "builtin"],
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr_contains=TRACEBACK_HEADER,
+        expected_stderr=f"Output path cannot be created: Not a directory: {occupied_path}\n",
         copy_files=[(stored_expected(DATA_PATH / "expected" / "main" / "person.py"), occupied_path)],
     )
 
