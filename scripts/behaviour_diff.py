@@ -698,6 +698,9 @@ def _selected(label: str, patterns: list[str]) -> bool:
 def _environment_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("-j", type=int, default=os.cpu_count() or 1, help="parallel cells (default: CPU count)")
     parser.add_argument("--timeout", type=int, default=300, help="seconds before one generation or signature fails")
+    parser.add_argument(
+        "--memory-mb", type=int, default=3072, help="data memory of one generation before it fails (0: no cap)"
+    )
     parser.add_argument("--cache-dir", type=Path, default=compare_release._default_cache_dir())  # ruff: ignore[private-member-access]
 
 
@@ -842,10 +845,18 @@ def build_gate(ns: argparse.Namespace) -> tuple[Gate, Path]:
     allowlist = Allowlist.load(ns.allowlist) if ns.allowlist.exists() else Allowlist()
     gate = Gate(
         base=compare_release.Runner(
-            compare_release.Side("base", base_python), base_env, import_check=False, timeout=ns.timeout
+            compare_release.Side("base", base_python),
+            base_env,
+            import_check=False,
+            timeout=ns.timeout,
+            memory_mb=ns.memory_mb,
         ),
         candidate=compare_release.Runner(
-            compare_release.Side("cand", candidate.python), candidate.env, import_check=False, timeout=ns.timeout
+            compare_release.Side("cand", candidate.python),
+            candidate.env,
+            import_check=False,
+            timeout=ns.timeout,
+            memory_mb=ns.memory_mb,
         ),
         cache=compare_release.OutputCache(cache_dir / "outputs" / cache_name),
         candidate_python=candidate.python,
