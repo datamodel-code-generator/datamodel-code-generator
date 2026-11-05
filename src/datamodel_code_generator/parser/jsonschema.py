@@ -213,7 +213,9 @@ from datamodel_code_generator.model.enum import (
     StrEnum,  # noqa: F401  # Preserve the established parser.jsonschema export.
     _enum_class,
 )
-from datamodel_code_generator.model.output import OutputModelContext
+from datamodel_code_generator.model.output import (
+    OutputModelContext,  # noqa: F401  # Preserve the established parser.jsonschema export.
+)
 from datamodel_code_generator.model.runtime_validation import (
     UNIQUE_ITEMS_ARRAY_TAIL_PATH_STEP,  # noqa: F401  # Preserve the established parser.jsonschema export.
     UNIQUE_ITEMS_MAPPING_ADDITIONAL_VALUES_PATH_STEP,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -307,6 +309,10 @@ from datamodel_code_generator.parser._passes._keys import (
     _RAW_SCHEMA_DEFAULT_UNDEFINED,
     declares_type_list_unique_items,
     with_type_list_unique_items,
+)
+from datamodel_code_generator.parser._passes._reference_users import (
+    type_additional_properties_users,
+    type_reference_users,
 )
 from datamodel_code_generator.parser._pipeline import stacklevel_at_parse_caller
 from datamodel_code_generator.parser._schema_dispatch import (
@@ -420,7 +426,6 @@ from datamodel_code_generator.parser.schema_version import (
     get_data_formats,
 )
 from datamodel_code_generator.python_literal import (
-    _make_referencing_type_expression,
     _safe_non_finite_value,
     _semantic_value_text,
     stable_repr,
@@ -1004,14 +1009,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._pattern_validation_document_root: JsonSchemaObject | None = None
         self._root_id: Optional[str] = None  # noqa: UP045
         self._root_id_base_path: Optional[str] = None  # noqa: UP045
-        self._output_model_context = OutputModelContext.from_generation_types(
-            data_model_type=self.data_model_type,
-            data_model_root_type=self.data_model_root_type,
-            data_model_field_type=self.data_model_field_type,
-            data_type_manager_type=type(self.data_type_manager),
-            configured_types_are_builtin=self._configured_generation_types_are_builtin,
-            use_annotated=self.use_annotated,
-        )
 
         self._external_ref_mapping: dict[str, str] = {
             _external_ref_mapping_key(file_path, self.base_path): python_package
@@ -8437,42 +8434,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _type_users_by_import(self, reference: Reference, import_: Import) -> None:
         """Type each user of ``reference`` in a field, a type or a dict key by ``import_``, as a mapped ``$ref`` is."""
-        for fact in self.generation_store.index.data_type_facts_for_reference(reference):
-            if fact.role == "base":
-                continue
+
+        def imported_type() -> DataType:
             self._import_ledger.append(self.imports, import_, _EXTERNAL_REF_MAPPING_IMPORT)
-            self._graph_builder.detach_data_type_ref(fact.data_type)
-            if fact.role == "dict_key":
-                self._graph_builder.replace_nested_data_type(
-                    cast("DataType", fact.data_type.parent), fact.data_type, self.data_type.from_import(import_)
-                )
-            else:
-                self._graph_builder.swap_data_type(fact.data_type, self.data_type.from_import(import_))
+            return self.data_type.from_import(import_)
+
+        type_reference_users(self, reference, imported_type)
 
     def _type_additional_properties_by_import(
         self, model: DataModel, reference: Reference, import_: Import, reference_classes: set[str]
     ) -> None:
-        """Type the users of ``reference`` in the model's typed additional properties by ``import_``.
-
-        The other classes they reference stay ``reference_classes``; ``extra_items`` is written again.
-        """
-        source = cast(
-            "DataType", self._output_model_context.additional_properties_type_source(model.extra_template_data)
+        """Type the users of ``reference`` in the model's typed additional properties by ``import_``."""
+        type_additional_properties_users(
+            self, model, reference, partial(self.data_type.from_import, import_), reference_classes
         )
-        for data_type in [data_type for data_type in source.all_data_types if data_type.reference is reference]:
-            self._graph_builder.detach_data_type_ref(data_type)
-            if data_type is source:
-                source = self.data_type.from_import(import_)
-            else:
-                self._graph_builder.swap_data_type(data_type, self.data_type.from_import(import_))
-        self._output_model_context.store_additional_properties_type(
-            model.extra_template_data,
-            _make_referencing_type_expression(source),
-            reference_classes,
-            imports=tuple(source.all_imports),
-            target_python_version=self.target_python_version,
-        )
-        model._name_final_classes()  # noqa: SLF001
 
     def _type_references_to_definitions_without_model(self) -> None:
         """Redirect the users of a definition parsed as its ``$ref`` alone to the reference that ``$ref`` names.
@@ -8482,11 +8457,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         target (through such definitions in turn), as such a ``$ref`` is at a field, or by the import of a target
         that an external ref mapping names; a definition that got a model elsewhere keeps its users. A used one whose
         chain of such definitions loops back without reaching a model or an import has nothing to type it by, which
-        is an error.
+        is an error. A target model that names the definition then names itself: the chain it took in is recorded
+        (``_folded_ref_chains``) for the error that stops at such a model.
         """
         if not self._definitions_without_model:
             return
-        modelled = {model.reference.path for model in self.results}
+        modelled = {model.reference.path: model for model in self.results}
         references = self.model_resolver.references
         for key, named in self._definitions_without_model.items():
             if key in modelled or (reference := references.get(key)) is None:
@@ -8518,6 +8494,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     )
                 else:
                     self._type_additional_properties_by_import(model, reference, import_, other_classes)
+            if (target_model := modelled.get(target.path)) is not None and any(
+                data_type.reference is reference for data_type in target_model.all_data_types
+            ):
+                self._folded_ref_chains[target.path] = tuple((references[path].name, path) for path in seen)
             self._graph_builder.redirect_reference_users(reference, target)
 
     def _reject_mapped_references_without_schema(self) -> None:

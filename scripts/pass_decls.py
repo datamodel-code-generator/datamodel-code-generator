@@ -841,6 +841,28 @@ SETTLE_DISCRIMINATED_UNIONS = PassDecl(
     ),
     condition="the output fields write `discriminator=`",
 )
+TYPE_USERS_OF_DROPPED_ROOT_MODELS_BY_ANY = PassDecl(
+    "type_users_of_dropped_root_models_by_any",
+    Phase.MODULES,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(Fact.MODELS_EXIST, Fact.FIELD_TYPES, RenderFact.BACKEND_CONFIG),
+    writes=_facts(Fact.FIELD_TYPES, RenderFact.BACKEND_CONFIG),
+    summary=(
+        "After every module is processed: types every user of a root model whose root names itself, which "
+        "deduplication dropped, by `Any` (fields, types, dict keys and typed additional properties), as no module "
+        "writes it."
+    ),
+    condition="a root model that names itself was dropped, in output that nothing builds from its annotations",
+    after=(
+        After("apply_field_type_overrides", "a field type override replaces a type before it is read"),
+        After("type_dict_keys_by_root_types", "reads the dict keys that root types typed"),
+        After("fix_constructor_field_ordering_early", "the constructor order reads no type it writes"),
+        After("settle_kept_parent_roots", "reads the types the holders of kept roots settled on"),
+        After("name_inner_models_in_rules", "both retype once every module is processed"),
+        After("settle_discriminated_unions", "both retype once every module is processed"),
+    ),
+)
 TAG_FIELDS_OF_TAGGED_BASES = PassDecl(
     "tag_fields_of_tagged_bases",
     Phase.CROSS_MODULE,
@@ -1593,7 +1615,7 @@ REJECT_ALIAS_CYCLES_WITHOUT_SCHEMA = PassDecl(
         RenderFact.TYPE_ALIAS_BODY,
         RenderFact.MODULE_MEMBERSHIP,
     ),
-    condition="output that Pydantic builds or msgspec decodes, or a root model that names itself was dropped",
+    condition="output that Pydantic builds or msgspec decodes",
 )
 WARN_ABOUT_DROPPED_CONSTRAINTS = PassDecl(
     "warn_about_dropped_constraints",

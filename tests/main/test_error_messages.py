@@ -1564,8 +1564,6 @@ def test_malformed_input_error_messages(
                 ("pydantic_v2.BaseModel", "C", "Pydantic cannot build"),
                 ("pydantic_v2.dataclass", "Model", "Pydantic cannot build"),
                 ("msgspec.Struct", "Model", "msgspec cannot decode"),
-                ("dataclasses.dataclass", "C", "Python cannot evaluate as the module runs"),
-                ("typing.TypedDict", "C", "Python cannot evaluate as the module runs"),
             )
         ),
         *(
@@ -1581,23 +1579,6 @@ def test_malformed_input_error_messages(
             for case, fixture_name, output_model_type, extra_args, user in (
                 ("unused-alias", "ref_self_reference_unused.yaml", "pydantic_v2.dataclass", [], "C"),
                 ("unused-alias", "ref_self_reference_unused.yaml", "msgspec.Struct", [], "C"),
-                ("unused-alias", "ref_self_reference_unused.yaml", "dataclasses.dataclass", [], "C"),
-                ("unused-alias", "ref_self_reference_unused.yaml", "typing.TypedDict", [], "C"),
-                ("functional", "ref_self_reference_functional.yaml", "typing.TypedDict", [], "Holder"),
-                (
-                    "eager-annotations",
-                    "ref_self_reference.yaml",
-                    "dataclasses.dataclass",
-                    ["--disable-future-imports"],
-                    "Holder",
-                ),
-                (
-                    "eager-annotations",
-                    "ref_self_reference.yaml",
-                    "typing.TypedDict",
-                    ["--disable-future-imports"],
-                    "Holder",
-                ),
             )
         ),
         pytest.param(

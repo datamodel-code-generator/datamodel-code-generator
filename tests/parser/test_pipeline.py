@@ -93,6 +93,10 @@ COVERAGE_RUNS = (
         "--input tests/data/jsonschema/submodule_named_like_package_class.json --input-file-type jsonschema "
         "--rename-submodules-hidden-by-classes"
     ),
+    (
+        "--input tests/data/openapi/ref_sibling_cycle_maps.yaml --input-file-type openapi "
+        "--output-model-type typing.TypedDict"
+    ),
 )
 """Runs that reach the passes no golden run reaches, each under the condition it names."""
 

@@ -6,14 +6,16 @@ models of other modules, reuse, collapse and discriminator tags through the narr
 ``CollapseHost`` and ``DiscriminatorHost``) and the state through ``ModuleStateView``, which ``Parser`` and its module
 state satisfy structurally. ``process_each_module`` runs the passes of each module through the
 ``_process_single_module`` hook (``ModuleLoopHost``); ``settle_kept_parent_roots``, ``apply_base_stand_in_imports``,
-``write_rule_aliases_as_classes`` (``RuleAliasHost``), ``name_inner_models_in_rules`` and
-``settle_discriminated_unions`` run once every module is processed, on the run through ``ModulesRun``.
+``write_rule_aliases_as_classes`` (``RuleAliasHost``), ``name_inner_models_in_rules``, ``settle_discriminated_unions``
+and ``type_users_of_dropped_root_models_by_any`` (``DroppedRootModelUsersHost``) run once every module is processed, on
+the run through ``ModulesRun``.
 """
 
 from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import replace
+from functools import partial
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
 
@@ -86,6 +88,11 @@ from datamodel_code_generator.parser._passes._import_binding import (
 )
 from datamodel_code_generator.parser._passes._keys import _DERIVED_FROM_KEY, with_unique_items_set
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
+from datamodel_code_generator.parser._passes._reference_users import (
+    ReferenceUsersHost,
+    type_additional_properties_users,
+    type_reference_users,
+)
 from datamodel_code_generator.parser._passes._shared import (
     _TYPE_DEPENDENT_CONSTRAINTS_KEY,
     BaseStandInHost,
@@ -219,6 +226,7 @@ if TYPE_CHECKING:
 __all__ = [
     "CollapseHost",
     "DiscriminatorHost",
+    "DroppedRootModelUsersHost",
     "ImportFromHost",
     "ModuleLoopHost",
     "ModuleStateView",
@@ -255,6 +263,7 @@ __all__ = [
     "sort_models",
     "type_const_narrowed_values",
     "type_dict_keys_by_root_types",
+    "type_users_of_dropped_root_models_by_any",
     "write_rule_aliases_as_classes",
 ]
 
@@ -555,6 +564,18 @@ class ImportFromHost(ReferenceExpressionHost, ReplacedRootsHost, BaseStandInHost
     @property
     def _self_named_root_models(self) -> list[DataModel]:
         """The root models naming themselves that the deduplication of root models dropped, whose users name them."""
+
+
+class DroppedRootModelUsersHost(ReferenceUsersHost, Protocol):
+    """The dropped roots, the store and the data types that typing the users of a dropped root model reads."""
+
+    @property
+    def _self_named_root_models(self) -> list[DataModel]:
+        """The root models naming themselves that the deduplication of root models dropped, whose users name them."""
+
+    @property
+    def data_type_manager(self) -> DataTypeManager:
+        """The data type manager of the parser."""
 
 
 class ModuleLoopHost(RecursionFactsHost, TagPlanHost, Protocol[ConfigT, ContextT, ResultT]):
@@ -2705,6 +2726,27 @@ def settle_discriminated_unions(parser: ModulesHost, run: ModulesRun) -> None:
                 if parser.collapse_root_models:
                     for nested in iter_root_default_unions(field):
                         builder.set_type_discriminator(nested, None)
+
+
+def type_users_of_dropped_root_models_by_any(parser: DroppedRootModelUsersHost, run: ModulesRun) -> None:
+    """Type every user of a root model whose root names itself, which deduplication dropped, by ``Any``.
+
+    Such a root model is a ``$ref`` chain that loops back without reaching a schema (``_self_named_root_models``): no
+    module writes it, and the output names a class it never defines. Where nothing builds from the annotations
+    (``alias_loop_failure``), its users take ``Any``, what a schema without a type gives, in every place a type names
+    it (``type_reference_users``), the typed additional properties of the models included. Every module is processed:
+    collapse and the type overrides of each module have written the types that name it.
+    """
+    any_type = partial(parser.data_type_manager.get_data_type, Types.any)
+    models = [model for ctx in run.contexts for model in ctx.models]
+    for dropped in parser._self_named_root_models:  # noqa: SLF001
+        reference = dropped.reference
+        type_reference_users(parser, reference, any_type)
+        for model in models:
+            if reference.path in (classes := model.additional_properties_reference_classes):
+                type_additional_properties_users(
+                    parser, model, reference, any_type, {path for path in classes if path != reference.path}
+                )
 
 
 def apply_base_stand_in_imports(parser: ModulesHost, run: ModulesRun) -> None:
