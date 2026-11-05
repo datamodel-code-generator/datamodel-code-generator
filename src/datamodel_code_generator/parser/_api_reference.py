@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping, Sequence  # noqa: TC003 - Public annotations support get_type_hints().
 from functools import cached_property, lru_cache
 from types import MappingProxyType
-from typing import Literal, TypeAlias
+from typing import ClassVar, Literal, TypeAlias
 from urllib.parse import quote
 
 from typing_extensions import override
@@ -68,10 +68,16 @@ percent-encodes every character but the unreserved ones and ``~`` (``pointer_fra
 _KEY_POINTERS: dict[KeyForm, Callable[[Sequence[str]], str]] = {"api": pointer_fragment, "fragment": fragment_pointer}
 
 
-def canonical_ref(ref: str, *, form: KeyForm = "api") -> str:
-    """Normalize the source portion while preserving generated special paths verbatim (``pointer_tokens``)."""
+def canonical_ref(ref: str, *, form: KeyForm = "api", strict: bool | None = None) -> str:
+    """Normalize the source portion while preserving generated special paths verbatim (``pointer_tokens``).
+
+    The pointer is read strictly in row ``api`` and leniently in row ``fragment``, unless ``strict`` says otherwise.
+    """
     source, marker, generated = ref.partition(SPECIAL_PATH_MARKER)
-    if "#" not in source or (tokens := pointer_tokens(source, strict=form == "api")) is None:
+    if (
+        "#" not in source
+        or (tokens := pointer_tokens(source, strict=form == "api" if strict is None else strict)) is None
+    ):
         return ref
     canonical = source.partition("#")[0] + "#" + _KEY_POINTERS[form](tokens)
     return canonical + marker + generated
@@ -107,7 +113,32 @@ def canonical_path(path: tuple[str, ...], *, form: KeyForm = "api") -> str:
     return "/".join(path) + "#"
 
 
-class EscapedPointerModelResolver(ModelResolver):
+class _WrittenPathKeysResolver(ModelResolver):
+    """A model resolver of --read-escaped-ref-pointers, whose ``--model-name-map`` path keys match in any spelling.
+
+    A key that names a path names it by its canonical reference in the resolver's key form, read leniently, so every
+    key that spells one pointer names its model: each counts as found, and the first of them, in the order of the
+    map, renames it, as the first of the keys that name one model by its path and by its name does.
+    """
+
+    _written_key_form: ClassVar[KeyForm] = "fragment"
+    _written_keys_of: Mapping[str, str] | None = None
+    _written_keys: Mapping[str, tuple[str, ...]] = MappingProxyType({})
+
+    @override
+    def _written_path_keys(self, key: str) -> tuple[str, ...]:
+        """Return the ``--model-name-map`` keys that name a canonical path key, in the order of the map."""
+        if self._written_keys_of is not self.model_name_map:
+            self._written_keys_of = self.model_name_map
+            written: dict[str, tuple[str, ...]] = {}
+            for name in self.model_name_map:
+                canonical = canonical_ref(name, form=self._written_key_form, strict=False)
+                written[canonical] = (*written.get(canonical, ()), name)
+            self._written_keys = written
+        return self._written_keys.get(key, (key,))
+
+
+class EscapedPointerModelResolver(_WrittenPathKeysResolver):
     """The model resolver of --read-escaped-ref-pointers: a pointer is keyed by its tokens, as the api scope keys it.
 
     A ``$ref`` that writes ``~0``, ``~1`` or a percent-encoded octet and the declaration it names share one key
@@ -116,24 +147,11 @@ class EscapedPointerModelResolver(ModelResolver):
     decoded last token of its pointer, as the declaration that the pointer names is.
     """
 
-    _written_keys_of: Mapping[str, str] | None = None
-    _written_keys: Mapping[str, str] = MappingProxyType({})
-
     @override
     def resolve_ref(self, path: Sequence[str] | str) -> str:
         """Canonicalize pointers before and after the file, base and identifier resolution."""
         original = path if isinstance(path, str) else self.join_path(tuple(path))
         return canonical_ref(super().resolve_ref(canonical_ref(original, form="fragment")), form="fragment")
-
-    @override
-    def _written_path_key(self, key: str) -> str:
-        """Return the ``--model-name-map`` key that names a canonical path key in any spelling of its pointer."""
-        if self._written_keys_of is not self.model_name_map:
-            self._written_keys_of = self.model_name_map
-            self._written_keys = {
-                canonical_ref(name, form="fragment"): name for name in self.model_name_map if "#" in name
-            }
-        return self._written_keys.get(key, key)
 
     @override
     def add_ref(self, ref: str, resolved: bool = False) -> Reference:
@@ -207,3 +225,16 @@ class ApiModelResolver(ModelResolver):
     def join_path(path: tuple[str, ...]) -> str:
         """Encode raw tokens after the compiler's document/pointer boundary (``canonical_path``)."""
         return canonical_path(path)
+
+
+class EscapedPointerApiModelResolver(_WrittenPathKeysResolver, ApiModelResolver):
+    """The model resolver of the api scope under --read-escaped-ref-pointers, which keys pointers as the scope does."""
+
+    _written_key_form: ClassVar[KeyForm] = "api"
+
+
+ESCAPED_POINTER_RESOLVERS: Mapping[type[ModelResolver], type[ModelResolver]] = MappingProxyType({
+    ModelResolver: EscapedPointerModelResolver,
+    ApiModelResolver: EscapedPointerApiModelResolver,
+})
+"""The model resolver --read-escaped-ref-pointers takes in place of a parser's own (``_model_resolver_class``)."""

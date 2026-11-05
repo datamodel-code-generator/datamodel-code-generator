@@ -936,6 +936,37 @@ class Holder(BaseModel):
     item: First | None = None
 ```
 
+### `--use-one-model-per-ref-site`
+
+| | |
+|---|---|
+| Option | `--use-one-model-per-ref-site` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#5079](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5079), [#5076](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5076) |
+
+**Affects:** an object `$ref` with sibling keywords, such as `{"$ref": "#/$defs/Node", "required": ["v"]}`. The `$ref` is parsed as its target merged with the keywords beside it, at the path that reaches it; the target's own `$ref`s with sibling keywords are copied into the merged object and parsed again below it, so a chain of N definitions whose `next` is such a `$ref` to the next one gives N(N-1)/2 site models (`Next`, `Next1`, ..., where the copies of one place validate the same documents), one nested parse per hop, which stops with "Schema nesting is too deep" for a long chain. With the option each place such a `$ref` is written, with the `$dynamicAnchor` bindings of its dynamic scope, gets one model, which every unchanged copy of that place shares, parsed from a worklist without nesting: N-1 site models beside the N definitions. The field that holds the `$ref` keeps its own required, default and alias; a copy that a merge changed is parsed where it is, as without the option, and where request and response models are split the model is parsed where it is first met, so a chain still nests one parse per hop there.
+
+Schema: `Link0` to `Link4`, where `Link0` to `Link3` have `next: {"$ref": "#/$defs/Link<i+1>", "required": ["v"], "description": "link <i>"}`.
+
+Without the option (same as 0.89.0), `Link0.next` is `Next`, whose `next` is `Next1`, whose `next` is `Next2`, ..., and `Link1.next` is `Next4`, whose `next` is `Next5`, ...: 10 site models.
+
+With the option:
+
+```python
+class Next(BaseModel):
+    v: int
+    next: Next1 | None = Field(None, description="link 1")
+
+
+class Link0(BaseModel):
+    v: int | None = None
+    next: Next | None = Field(None, description="link 0")
+```
+
+and `Link1.next` is `Next1` too: 4 site models.
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.

@@ -167,6 +167,25 @@ class Many:
 
 
 @dataclass
+class SiteProperties1:
+    b: str
+
+
+@dataclass
+class SiteProperties2:
+    a: str | None = None
+
+
+@dataclass
+class SiteProperties3(SiteProperties1, SiteProperties2):
+    b: str = Field(..., kw_only=True)
+    a: str | None = None
+
+
+SiteProperties = TypeAliasType("SiteProperties", SiteProperties3)
+
+
+@dataclass
 class Model:
     pair: Pair | None = None
     bounded: Bounded | None = None

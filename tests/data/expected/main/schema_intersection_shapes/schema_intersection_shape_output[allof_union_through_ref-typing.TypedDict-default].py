@@ -84,7 +84,20 @@ class ThroughOwnUnion3(D, ThroughOwnUnion1):
 ThroughOwnUnion: TypeAlias = ThroughOwnUnion2 | ThroughOwnUnion3
 
 
+class Loosened(Narrowed):
+    mid: NotRequired[str]
+
+
+Code: TypeAlias = str
+
+
+class Coded(TypedDict):
+    mid: NotRequired[Code]
+
+
 class Model(TypedDict):
     leaf: NotRequired[Leaf]
     narrowed: NotRequired[Narrowed]
     through_own_union: NotRequired[ThroughOwnUnion]
+    loosened: NotRequired[Loosened]
+    coded: NotRequired[Coded]

@@ -224,6 +224,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--use-non-positive-negative-number-constrained-types": "Use NonPositive/NonNegative types for number constraints.",
     "--use-object-type": "Use object instead of Any for unspecified object and array values.",
     "--use-one-literal-as-default": "Use single literal value as default when enum has only one option.",
+    "--use-one-model-per-ref-site": "Give an object `$ref` with sibling keywords one model per place it is written.",
     "--use-operation-id-as-name": "Use OpenAPI operationId as the generated function/class name.",
     "--use-pendulum": "Use pendulum types for date, time, and duration fields.",
     "--use-root-model-sequence-interface": "Make non-null sequence-like Pydantic v2 RootModel classes implement col...",

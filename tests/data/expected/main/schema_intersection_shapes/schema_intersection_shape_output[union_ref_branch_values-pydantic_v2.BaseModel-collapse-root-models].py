@@ -12,3 +12,5 @@ class Model(BaseModel):
     non_empty: list[str] | int | None = None
     at_least_in_all_of: conint(ge=1) | str | None = None
     at_least_field: conint(ge=1) | str | None = None
+    at_least_ten: conint(ge=10) | str | None = None
+    short_letters: constr(max_length=3) | int | None = None

@@ -86,7 +86,21 @@ class ThroughOwnUnion(RootModel[ThroughOwnUnion2 | ThroughOwnUnion3]):
     root: ThroughOwnUnion2 | ThroughOwnUnion3
 
 
+class Loosened(Narrowed):
+    mid: str | None = Field(None, max_length=3)
+
+
+class Code(RootModel[str]):
+    root: str = Field(..., max_length=3)
+
+
+class Coded(BaseModel):
+    mid: Code | None = None
+
+
 class Model(BaseModel):
     leaf: Leaf | None = None
     narrowed: Narrowed | None = None
     through_own_union: ThroughOwnUnion | None = None
+    loosened: Loosened | None = None
+    coded: Coded | None = None

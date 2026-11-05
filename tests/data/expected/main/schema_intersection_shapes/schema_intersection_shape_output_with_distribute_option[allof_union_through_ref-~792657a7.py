@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, RootModel
+from pydantic import BaseModel, RootModel, constr
 
 
 class Parent1(BaseModel):
@@ -80,7 +80,7 @@ class Narrowed2(BaseModel):
 
 
 class Narrowed3(BaseModel):
-    mid: str | None = None
+    mid: constr(max_length=3) | None = None
 
 
 class Narrowed4(Narrowed1, Narrowed3):
@@ -135,7 +135,57 @@ class ThroughOwnUnion5(ThroughOwnUnion2, ThroughOwnUnion3):
     pass
 
 
+class Loosened1(BaseModel):
+    left: str
+    right: str | None = None
+
+
+class Loosened2(BaseModel):
+    left: str | None = None
+    right: str
+
+
+class Loosened3(BaseModel):
+    mid: constr(max_length=3) | None = None
+
+
+class Loosened4(Loosened1, Loosened3):
+    pass
+
+
+class Loosened5(Loosened2, Loosened3):
+    pass
+
+
+class Code(RootModel[constr(max_length=3)]):
+    root: constr(max_length=3)
+
+
+class Coded1(BaseModel):
+    left: str
+    right: str | None = None
+
+
+class Coded2(BaseModel):
+    left: str | None = None
+    right: str
+
+
+class Coded3(BaseModel):
+    mid: constr(max_length=3) | None = None
+
+
+class Coded4(Coded1, Coded3):
+    pass
+
+
+class Coded5(Coded2, Coded3):
+    pass
+
+
 class Model(BaseModel):
     leaf: Leaf4 | Leaf5 | None = None
     narrowed: Narrowed4 | Narrowed5 | None = None
     through_own_union: ThroughOwnUnion4 | ThroughOwnUnion5 | None = None
+    loosened: Loosened4 | Loosened5 | None = None
+    coded: Coded4 | Coded5 | None = None

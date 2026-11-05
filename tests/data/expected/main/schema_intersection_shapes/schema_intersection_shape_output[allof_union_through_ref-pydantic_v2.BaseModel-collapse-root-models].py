@@ -82,7 +82,17 @@ class ThroughOwnUnion3(D, ThroughOwnUnion1):
     pass
 
 
+class Loosened(Narrowed):
+    mid: constr(max_length=3) | None = None
+
+
+class Coded(BaseModel):
+    mid: constr(max_length=3) | None = None
+
+
 class Model(BaseModel):
     leaf: Leaf | None = None
     narrowed: Narrowed | None = None
     through_own_union: ThroughOwnUnion2 | ThroughOwnUnion3 | None = None
+    loosened: Loosened | None = None
+    coded: Coded | None = None

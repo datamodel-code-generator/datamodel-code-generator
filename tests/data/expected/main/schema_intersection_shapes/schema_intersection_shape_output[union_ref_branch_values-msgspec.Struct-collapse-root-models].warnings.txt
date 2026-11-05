@@ -1,3 +1,5 @@
 msgspec.Meta does not take ge on Quantity | str; Model.at_least is generated without this constraint.
 msgspec.Meta does not take pattern on Text | int; Model.letters is generated without this constraint.
 msgspec.Meta does not take min_length on list[str] | int; Model.non_empty is generated without this constraint.
+msgspec.Meta does not take ge on Large | str; Model.at_least_ten is generated without this constraint.
+msgspec.Meta does not take max_length on Text | int; Model.short_letters is generated without this constraint.

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "local": {"$ref": "#T"},
+    "external": {"$ref": "defs.json#T"},
+    "single": {"$ref": "defs.json#U"}
+  },
+  "$defs": {
+    "First": {"$anchor": "T", "type": "object", "properties": {"first": {"type": "integer"}}, "required": ["first"]},
+    "Second": {"$anchor": "T", "type": "object", "properties": {"second": {"type": "string"}}, "required": ["second"]}
+  }
+}

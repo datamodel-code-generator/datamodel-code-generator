@@ -142,7 +142,7 @@ class WithProperties5(WithProperties1):
     pass
 
 
-WithProperties: TypeAlias = WithProperties4 | WithProperties5
+WithProperties: TypeAlias = WithProperties4 | WithProperties5 | str | int
 
 
 class WithEnum1(Enum):
@@ -195,6 +195,32 @@ class Many18(Many17):
     pass
 
 
+class SiteProperties1(Struct):
+    b: str
+
+
+SiteProperties2: TypeAlias = Annotated[str, Meta(max_length=3)]
+
+
+class SiteProperties3(Struct):
+    a: str | UnsetType = UNSET
+
+
+class SiteProperties4(Struct):
+    b: str
+    a: str | UnsetType = UNSET
+
+
+class SiteProperties5(SiteProperties3):
+    a: str | UnsetType = UNSET
+
+
+SiteProperties6: TypeAlias = Annotated[str, Meta(max_length=3)]
+
+
+SiteProperties: TypeAlias = SiteProperties4 | SiteProperties5 | SiteProperties6
+
+
 class Model(Struct):
     pair: Pair1 | Pair2 | UnsetType = UNSET
     bounded: Bounded1 | Bounded2 | UnsetType = UNSET
@@ -215,7 +241,7 @@ class Model(Struct):
     any_branch: str | UnsetType = UNSET
     dead: Dead | UnsetType = UNSET
     with_object: WithObject3 | WithObject4 | UnsetType = UNSET
-    with_enum: WithEnum3 | UnsetType = UNSET
+    with_enum: WithEnum3 | int | UnsetType = UNSET
     untyped: int | Any | UnsetType = UNSET
     many: Many18 | UnsetType = UNSET
     inline: Inline1 | Inline2 | UnsetType = UNSET

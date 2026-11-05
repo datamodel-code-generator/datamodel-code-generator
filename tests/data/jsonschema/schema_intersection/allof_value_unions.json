@@ -539,6 +539,34 @@
           ]
         }
       ]
+    },
+    "SiteProperties": {
+      "properties": {
+        "a": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "b"
+              ],
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "string",
+              "maxLength": 3
+            }
+          ]
+        }
+      ]
     }
   }
 }

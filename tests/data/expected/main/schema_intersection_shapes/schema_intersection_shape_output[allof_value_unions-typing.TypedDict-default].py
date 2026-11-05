@@ -120,6 +120,21 @@ class Many(TypedDict):
     pass
 
 
+class SiteProperties1(TypedDict):
+    b: str
+
+
+class SiteProperties2(TypedDict):
+    a: NotRequired[str]
+
+
+class SiteProperties3(SiteProperties1, SiteProperties2):
+    a: NotRequired[str]
+
+
+SiteProperties: TypeAlias = SiteProperties3
+
+
 class Model(TypedDict):
     pair: NotRequired[Pair]
     bounded: NotRequired[Bounded]

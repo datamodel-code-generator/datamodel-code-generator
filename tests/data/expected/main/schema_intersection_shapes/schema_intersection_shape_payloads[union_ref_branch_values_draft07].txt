@@ -1,0 +1,96 @@
+pydantic_v2.BaseModel default picked "b" accepted
+pydantic_v2.BaseModel default picked "c" accepted
+pydantic_v2.BaseModel default picked "a" accepted
+pydantic_v2.BaseModel default picked "d" rejected
+pydantic_v2.BaseModel default bounded 3 accepted
+pydantic_v2.BaseModel default bounded "s" accepted
+pydantic_v2.BaseModel default bounded 4 rejected
+pydantic_v2.BaseModel default bounded 6 rejected
+pydantic_v2.dataclass default picked "b" accepted
+pydantic_v2.dataclass default picked "c" accepted
+pydantic_v2.dataclass default picked "a" accepted
+pydantic_v2.dataclass default picked "d" rejected
+pydantic_v2.dataclass default bounded 3 accepted
+pydantic_v2.dataclass default bounded "s" accepted
+pydantic_v2.dataclass default bounded 4 rejected
+pydantic_v2.dataclass default bounded 6 rejected
+msgspec.Struct default picked "b" accepted
+msgspec.Struct default picked "c" accepted
+msgspec.Struct default picked "a" accepted
+msgspec.Struct default picked "d" rejected
+msgspec.Struct default bounded 3 accepted
+msgspec.Struct default bounded "s" accepted
+msgspec.Struct default bounded 4 rejected
+msgspec.Struct default bounded 6 rejected
+pydantic_v2.BaseModel --field-constraints picked "b" accepted
+pydantic_v2.BaseModel --field-constraints picked "c" accepted
+pydantic_v2.BaseModel --field-constraints picked "a" accepted
+pydantic_v2.BaseModel --field-constraints picked "d" rejected
+pydantic_v2.BaseModel --field-constraints bounded 3 accepted
+pydantic_v2.BaseModel --field-constraints bounded "s" accepted
+pydantic_v2.BaseModel --field-constraints bounded 4 rejected
+pydantic_v2.BaseModel --field-constraints bounded 6 rejected
+pydantic_v2.BaseModel --use-annotated picked "b" accepted
+pydantic_v2.BaseModel --use-annotated picked "c" accepted
+pydantic_v2.BaseModel --use-annotated picked "a" accepted
+pydantic_v2.BaseModel --use-annotated picked "d" rejected
+pydantic_v2.BaseModel --use-annotated bounded 3 accepted
+pydantic_v2.BaseModel --use-annotated bounded "s" accepted
+pydantic_v2.BaseModel --use-annotated bounded 4 rejected
+pydantic_v2.BaseModel --use-annotated bounded 6 rejected
+pydantic_v2.BaseModel --collapse-root-models picked "b" accepted
+pydantic_v2.BaseModel --collapse-root-models picked "c" accepted
+pydantic_v2.BaseModel --collapse-root-models picked "a" accepted
+pydantic_v2.BaseModel --collapse-root-models picked "d" rejected
+pydantic_v2.BaseModel --collapse-root-models bounded 3 accepted
+pydantic_v2.BaseModel --collapse-root-models bounded "s" accepted
+pydantic_v2.BaseModel --collapse-root-models bounded 4 rejected
+pydantic_v2.BaseModel --collapse-root-models bounded 6 rejected
+msgspec.Struct --collapse-root-models picked "b" accepted
+msgspec.Struct --collapse-root-models picked "c" accepted
+msgspec.Struct --collapse-root-models picked "a" accepted
+msgspec.Struct --collapse-root-models picked "d" rejected
+msgspec.Struct --collapse-root-models bounded 3 accepted
+msgspec.Struct --collapse-root-models bounded "s" accepted
+msgspec.Struct --collapse-root-models bounded 4 rejected
+msgspec.Struct --collapse-root-models bounded 6 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs picked "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs picked "c" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs picked "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs picked "d" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs bounded 3 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs bounded "s" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs bounded 4 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs bounded 6 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs picked "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs picked "c" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs picked "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs picked "d" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs bounded 3 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs bounded "s" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs bounded 4 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs bounded 6 rejected
+msgspec.Struct --use-site-models-for-constrained-refs picked "b" accepted
+msgspec.Struct --use-site-models-for-constrained-refs picked "c" accepted
+msgspec.Struct --use-site-models-for-constrained-refs picked "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs picked "d" rejected
+msgspec.Struct --use-site-models-for-constrained-refs bounded 3 accepted
+msgspec.Struct --use-site-models-for-constrained-refs bounded "s" accepted
+msgspec.Struct --use-site-models-for-constrained-refs bounded 4 rejected
+msgspec.Struct --use-site-models-for-constrained-refs bounded 6 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs picked "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs picked "c" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs picked "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs picked "d" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs bounded 3 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs bounded "s" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs bounded 4 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs bounded 6 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs picked "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs picked "c" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs picked "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs picked "d" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs bounded 3 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs bounded "s" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs bounded 4 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs bounded 6 rejected

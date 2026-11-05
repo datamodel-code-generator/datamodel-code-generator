@@ -3,3 +3,4 @@ msgspec checks all int members of a union against the constraints of each of the
 msgspec checks all int members of a union against the constraints of each of them, so ge, le of one member would reject values another member accepts; Ranges is generated without these constraints.
 msgspec checks all int members of a union against the constraints of each of them, so ge, le of one member would reject values another member accepts; Twice is generated without these constraints.
 msgspec cannot decode the union WithProperties: its Struct types WithProperties4, WithProperties5 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union SiteProperties: its Struct types SiteProperties4, SiteProperties5 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.

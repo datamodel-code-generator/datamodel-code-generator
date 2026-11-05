@@ -26,9 +26,15 @@ class NonEmpty(RootModel[NonEmpty1 | int]):
     root: NonEmpty1 | int
 
 
+class Large(RootModel[conint(ge=10)]):
+    root: conint(ge=10)
+
+
 class Model(BaseModel):
     at_least: conint(ge=5) | str | None = None
     letters: constr(pattern=r'^a+$', max_length=3) | int | None = None
     non_empty: NonEmpty | None = None
     at_least_in_all_of: conint(ge=5) | str | None = None
     at_least_field: conint(ge=5) | str | None = None
+    at_least_ten: conint(ge=10) | str | None = None
+    short_letters: constr(max_length=3) | int | None = None

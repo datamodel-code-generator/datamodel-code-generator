@@ -996,8 +996,9 @@ A pointer writes `/` in a name as `~1`, `~` as `~0`, and, in a URI fragment, any
 it names, keyed by its name, gets a copy named after the escaped text (`Line20Item` beside `LineItem`, `Tax1rate`
 beside `TaxRate`), which the field takes. With it every spelling of a pointer names the one model of its target, keyed
 as the `api` scope keys it; a model a reference adds is named after the decoded name, and a `--model-name-map` key that
-names a path matches it in any spelling. A `/` written unescaped inside a name is a separator then, as JSON Pointer
-reads it, so such a pointer warns as a dangling reference, unless the name holds `://`, which is still read whole.
+names a path matches it in any spelling, in the `api` scope too, where the first of the keys that spell one path renames
+it. A `/` written unescaped inside a name is a separator then, as JSON Pointer reads it, also after a `~1`, so such a
+pointer warns as a dangling reference, unless the name holds `://`, which is still read whole.
 
 !!! tip "Usage"
 
@@ -1064,29 +1065,13 @@ reads it, so such a pointer warns as a dangling reference, unless the name holds
             share: int | None = None
 
 
-        class Field5025(BaseModel):
-            share: int | None = None
-
-
-        class Line20Item(BaseModel):
-            sku: str
-
-
-        class Note0text(BaseModel):
-            body: str | None = None
-
-
-        class Tax1rate(BaseModel):
-            rate: float | None = None
-
-
         class Order(BaseModel):
-            spaced: Line20Item | None = None
-            slashed: Tax1rate | None = None
-            tilded: Note0text | None = None
-            percent: Field5025 | None = None
+            spaced: LineItem | None = None
+            slashed: TaxRate | None = None
+            tilded: NoteText | None = None
+            percent: Field50 | None = None
             raw: LineItem | None = None
-            items: list[Line20Item] | None = None
+            items: list[LineItem] | None = None
         ```
 
         <!-- fmt: on -->

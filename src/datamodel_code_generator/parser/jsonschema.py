@@ -119,6 +119,7 @@ from datamodel_code_generator._constraint_applicability import (
 from datamodel_code_generator._container_kinds import ARRAYS, MAPPINGS, SEQUENCES
 from datamodel_code_generator._document_reader import (
     ArrayIndexOutOfRangeError,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    MergedRefSiteRecursionError,
     string_keyed,
 )
 from datamodel_code_generator._format_types import (
@@ -374,6 +375,7 @@ from datamodel_code_generator.parser._schema_reading import (
     unescaped_slash_pointer,
 )
 from datamodel_code_generator.parser._schema_refs import (
+    _CONJUNCTION_PARTS_KEY,
     _MERGED_REF_TARGET_KEY,
     _REPORTED_VALUE_CONFLICT_KEY,
     _DynamicEdges,
@@ -452,6 +454,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._types import JSONSchemaParserConfigDict
     from datamodel_code_generator.config import JSONSchemaParserConfig
     from datamodel_code_generator.parser._rw_split import _Site
+    from datamodel_code_generator.parser._schema_reading import SlashNames
     from datamodel_code_generator.parser.base import DocumentRoles
 
 JsonSchemaConstraintKey = Literal[
@@ -491,6 +494,9 @@ def _update_false_schema_refs(
 _EXTERNAL_REF_MAPPING_IMPORT = ImportProducer("external-ref-mapping")
 _X_PYTHON_IMPORT = ImportProducer("x-python-import")
 _DEFAULT_LEFT_OFF_KEY = "_default_left_off"
+_BRANCH_REFERENCE_KEY = "_branch_reference"
+"""Marks the ``$ref`` branch ``_parse_ref_branch_model`` reads as an allOf member with the class its site types it as,
+the specialization of its dynamic scope included, which ``_parse_all_of_item`` takes as the base class."""
 _RECORDED_TYPE_NULL_SITES: frozenset[NullSite] = frozenset({
     "object-model",
     "root-model",
@@ -603,6 +609,14 @@ class _MapValue:
     parent: JsonSchemaObject | None = None
     constrained: bool = False
     preserve_root_model: bool = False
+
+
+class _RefSiteRecursionError(RecursionError):
+    """A recursion limit exceeded in the parse in place of one `$ref` with sibling keywords, which no other one holds.
+
+    The `$ref` site that holds it turns it into ``MergedRefSiteRecursionError``: only a chain of such sites nests a
+    parse per hop, which --use-one-model-per-ref-site removes.
+    """
 
 
 _ValidatedT = TypeVar("_ValidatedT")
@@ -1282,6 +1296,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Whether --read-dynamic-anchors-in-document-order resolves a $dynamicRef from its document as loaded."""
         return self.config.read_dynamic_anchors_in_document_order
 
+    @property
+    def _pointer_slash_names(self) -> SlashNames:
+        """How a JSON pointer reads a ``/`` unescaped inside a name: as a separator under --read-escaped-ref-pointers.
+
+        Row ``uri`` joins the parts only into a name that holds ``://``; without the option, row ``joined``, into any
+        key the object holds (``SlashNames``).
+        """
+        return "uri" if self.config.read_escaped_ref_pointers else "joined"
+
     @cached_property
     def _reads_schema_version_per_document(self) -> bool:
         """Whether --read-schema-version-per-document reads each schema in the version of its own document.
@@ -1352,10 +1375,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return whether the keywords beside the ``$ref`` of ``schema`` are parts of it.
 
         They are in a dialect that reads them so, and in every dialect where an inherited property override wrote
-        them beside the inherited ``$ref`` (marked ``_INHERITED_OVERRIDE_KEY``), since an override is an allOf part.
+        them beside the inherited ``$ref`` (marked ``_INHERITED_OVERRIDE_KEY``), since an override is an allOf part, or
+        where they are parts of a conjunction the document writes around it (marked ``_CONJUNCTION_PARTS_KEY``).
         """
         return (
-            self._ref_siblings_apply_to(schema, legacy="parsed-document") or _INHERITED_OVERRIDE_KEY in schema.__dict__
+            self._ref_siblings_apply_to(schema, legacy="parsed-document")
+            or _INHERITED_OVERRIDE_KEY in schema.__dict__
+            or _CONJUNCTION_PARTS_KEY in schema.__dict__
         )
 
     @property
@@ -3984,8 +4010,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         They are where the site writes value keywords and the branch names no object model, in every dialect: they
         are parts of the conjunction, not keywords beside the ``$ref`` in the document. The branch is then the schema
-        it names merged with them, as a ``$ref`` merges its siblings, which ``_combined_schema_members`` reads as an
-        inline branch. None under ``legacy-ref-branch-without-site-parts``, and where the merge keeps the reference.
+        it names merged with them as their intersection (``_CONJUNCTION_PARTS_KEY``), so a keyword of both keeps the
+        tighter value, which ``_combined_schema_members`` reads as an inline branch. None under
+        ``legacy-ref-branch-without-site-parts``, and where the merge keeps the reference.
         """
         if (
             "legacy-ref-branch-without-site-parts" in self._legacy_intersection
@@ -3993,7 +4020,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             or self._schema_requires_model_type(branch, resolve_ref=True)
         ):
             return None
-        merged = self._merge_ref_with_schema(site.model_copy(update={"ref": branch.ref}))
+        conjunction = site.model_copy(update={"ref": branch.ref})
+        conjunction.__dict__[_CONJUNCTION_PARTS_KEY] = True
+        merged = self._merge_ref_with_schema(conjunction)
         return None if merged.ref else merged
 
     def _combined_branch_row(
@@ -4071,12 +4100,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         It is the class of the branch with the ``properties`` and ``required`` of the site, and, unless
         ``legacy-ref-branch-without-site-parts`` is kept, the ``allOf`` members beside the union as further bases, as
         an inline branch merged with the site takes them: the ``allOf`` of the branch and those members with the
-        site's other keywords (``parse_all_of``). A branch the site adds nothing to is the branch's own class.
+        site's other keywords (``parse_all_of``), the branch's class ``reference`` (``_BRANCH_REFERENCE_KEY``), a
+        dynamic scope's specialization included, its base. A branch the site adds nothing to is the branch's own class.
         """
         if obj.allOf and "legacy-ref-branch-without-site-parts" not in self._legacy_intersection:
+            member = branch.model_copy()
+            member.__dict__[_BRANCH_REFERENCE_KEY] = reference
             return self.parse_all_of(
                 name,
-                obj.model_copy(update={"allOf": [branch, *obj.allOf], "anyOf": [], "oneOf": []}),
+                obj.model_copy(update={"allOf": [member, *obj.allOf], "anyOf": [], "oneOf": []}),
                 path,
                 ignore_duplicate_model=True,
             )
@@ -4576,7 +4608,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         union_parts: list[list[Reference]],
         declared_property_names: frozenset[str],
         inherited_parent_refs: Iterable[Reference] = (),
+        *,
+        conjunctions: Mapping[str, JsonSchemaObject],
+        written: set[str],
     ) -> None:
+        """Parse the members of an allOf into its fields, base classes, required names and union parts.
+
+        A property of ``conjunctions`` is parsed once, as its conjunction, where a member first declares it
+        (``_inherited_schemas.with_conjoined_properties``); ``written`` holds those parsed so far.
+        """
         parent_refs = self._get_allof_parent_references(
             obj,
             inherited=inherited_parent_refs,
@@ -4597,7 +4637,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     self.model_resolver.add(path, name, class_name=True, loaded=True)
                     self._parse_all_of_union_parts(name, ref_schema, path, union_parts)
                 else:
-                    ref = self._add_ref(all_of_item.ref)
+                    ref = all_of_item.__dict__.get(_BRANCH_REFERENCE_KEY) or self._add_ref(all_of_item.ref)
                     if self._dynamic_target_bindings(ref.path):
                         warn(
                             f"allOf base class {stable_repr(redact_reference(all_of_item.ref))} cannot follow the "
@@ -4611,7 +4651,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             else:
                 scope = self.model_resolver.class_scope("predicted", name, self.model_resolver.join_path(tuple(path)))
                 object_fields = _inherited_schemas.parse_fields_beside_parents(
-                    self, all_of_item, parent_refs, parent_properties, path, scope
+                    self,
+                    _inherited_schemas.with_conjoined_properties(all_of_item, conjunctions, written),
+                    parent_refs,
+                    parent_properties,
+                    path,
+                    scope,
                 )
                 if object_fields:
                     fields.extend(object_fields)
@@ -4635,6 +4680,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     union_parts,
                     declared_property_names,
                     parent_refs,
+                    conjunctions=conjunctions,
+                    written=written,
                 )
                 if all_of_item.anyOf or all_of_item.oneOf:
                     self.model_resolver.add(path, name, class_name=True, loaded=True)
@@ -5069,6 +5116,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             required,
             union_parts,
             self._all_of_declared_property_names(obj),
+            conjunctions=_inherited_schemas.read_through_property_conjunctions(self, obj),
+            written=set(),
         )
         union_models = [model for part in union_parts for model in part]
         if not (fields or required or union_models) and (
@@ -6196,6 +6245,52 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _field_object_applies(self, site: _Site) -> bool:  # noqa: PLR6301
         return bool(site.obj.is_object or site.obj.patternProperties or site.obj.propertyNames is not None)
 
+    def _field_ref_site_applies(self, site: _Site) -> bool:
+        """Return whether a field site is an object with properties merged from a `$ref` and its sibling keywords."""
+        return bool(
+            _MERGED_REF_TARGET_KEY in site.obj.__dict__
+            and site.obj.properties
+            and site.obj.schema_location is not None
+            and self._field_object_applies(site)
+        )
+
+    def _build_field_ref_site(self, site: _Site) -> DataType:
+        """Build the type of an object `$ref` with sibling keywords.
+
+        Under --use-one-model-per-ref-site the site gets one model, which every copy of it shares
+        (``_schema_refs.ref_site_reference``). Without it, row ``legacy-merged-site-per-path``, and for a copy a merge
+        changed, each path that reaches the site parses a model of its own in place, one nested parse per hop of a
+        chain. A recursion limit exceeded in a site that another site holds names the option
+        (``MergedRefSiteRecursionError``), where the option would parse the chain without nesting: without it and
+        unless request and response models are split, as the option then parses a site where it is first met too.
+        """
+        if self.config.use_one_model_per_ref_site:
+            if reference := _schema_refs.ref_site_reference(self, site):
+                return self._join_object_type_array(site, self.data_type(reference=reference))
+            return self._parse_object_item(site)
+        if self.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
+            return self._parse_object_item(site)
+        try:
+            return self._parse_object_item(site)
+        except MergedRefSiteRecursionError:
+            raise
+        except _RefSiteRecursionError as error:
+            raise MergedRefSiteRecursionError(*error.args) from error
+        except RecursionError as error:
+            raise _RefSiteRecursionError(*error.args) from error
+
+    def _field_validated_ref_site_applies(self, site: _Site) -> bool:
+        """Return whether, under --use-one-model-per-ref-site, a `$ref` site's object carries schema validators.
+
+        Such a site is built as the object model of its validators (row ``schema-validator-object``) without the
+        option, which builds the same model; with it the site gets its one model as any other site does.
+        """
+        return bool(
+            self.config.use_one_model_per_ref_site
+            and _schema_validator_object_applies(self, site)
+            and self._field_ref_site_applies(site)
+        )
+
     def _field_enum_applies(self, site: _Site) -> bool:
         return bool(site.obj.enum and not self.ignore_enum_constraints)
 
@@ -6250,6 +6345,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 _field_discriminated_union_item_applies,
                 _parse_root_type_site,
             ),
+            Row("validated-ref-site", _field_validated_ref_site_applies, _build_field_ref_site),
             Row(
                 "schema-validator-object",
                 _schema_validator_object_applies,
@@ -6258,6 +6354,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             _field_union_row("any-of", "anyOf"),
             _field_union_row("one-of", "oneOf"),
             Row("all-of", _all_of_applies, _parse_all_of_field_item),
+            Row("ref-site", _field_ref_site_applies, _build_field_ref_site),
             Row("object", _field_object_applies, _parse_object_item),
             Row("enum", _field_enum_applies, _parse_enum_item),
             Row(
@@ -7521,8 +7618,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return the reference a plain-name fragment of the document parsed now names, written at ``pointer``."""
         return _schema_documents.plain_name_ref(self, ref, pointer)
 
-    def _note_plain_name(self, document: str, pointer: str, ref: str) -> None:
-        """Note a plain-name fragment written at ``pointer`` of a registered document, warning on a duplicate."""
+    def _note_plain_name(self, document: str, pointer: str, ref: str) -> str | None:
+        """Note a plain-name fragment written at ``pointer`` of a registered document, warning on a duplicate.
+
+        Return the first declaration of a name several schemas declare, under --read-dynamic-anchors-in-document-order.
+        """
         return _schema_documents.note_plain_name(self, document, pointer, ref)
 
     def _resolve_local_ref_path(self, path: Path, ref: str) -> Path:
@@ -7650,7 +7750,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             object_paths: list[str] | None = None
             reference_paths: list[str] | None = None
             if object_path:
-                object_paths, reference_paths = _split_json_pointer(ref_body, object_path)
+                object_paths, reference_paths = _split_json_pointer(
+                    ref_body, object_path, names=self._pointer_slash_names
+                )
             self._parse_file(
                 ref_body,
                 self.model_resolver.add_ref(ref, resolved=True).name,
@@ -7744,6 +7846,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._dynamic_specialization_paths: set[tuple[str, ...]] = set()
         self._pending_dynamic_specializations: deque[_DynamicSpecialization] = deque()
         self._draining_dynamic_specializations = False
+        self._ref_site_models: dict[
+            tuple[SchemaLocation, frozenset[tuple[str, str]]], tuple[Reference, dict[str, Any]]
+        ] = {}
+        self._pending_ref_sites: deque[_schema_refs._RefSite] = deque()
+        self._draining_ref_sites = False
+        self._parses_unowned_fields = False
         self._dynamic_anchor_usage: dict[_TargetNode, frozenset[str]] = {}
         self._dynamic_ref_graph: dict[_TargetNode, _DynamicEdges] = {}
         self._dynamic_ref_nodes: dict[str, _TargetNode] = {}
@@ -8113,9 +8221,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         obj: JsonSchemaObject,
         path: list[str],
     ) -> None:
-        """Dispatch a JsonSchemaObject to the parse method for its schema shape (``_DEFINITION_TABLE``)."""
+        """Dispatch a JsonSchemaObject to the parse method for its schema shape (``_DEFINITION_TABLE``).
+
+        The models of the `$ref` sites its parse met are parsed after it (``_schema_refs.parse_ref_sites``).
+        """
         choice = self._DEFINITION_TABLE.choose(self, SchemaSite(name, self._site_schema(obj), path))
         choice.build(self, choice.site)
+        _schema_refs.parse_ref_sites(self)
 
     def _merge_definition_ref(self, site: _Site) -> _Site:
         """Merge the `$ref` of a definition with its sibling keywords, in the dynamic scope the merged schema names."""
@@ -8471,7 +8583,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Parse in the block, then the targets it leaves (``resolve``), end the schema parsing and clear the caches."""
         try:
             yield
+            _schema_refs.parse_ref_sites(self)
             (resolve or self._resolve_unparsed_json_pointer)()
+            _schema_refs.parse_ref_sites(self)
             self._end_schema_parsing()
         finally:
             self._clear_inherited_field_caches()
@@ -8539,7 +8653,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def parse_json_pointer(self, raw: dict[str, YamlValue], ref: str, path_parts: list[str]) -> None:
         """Parse a JSON pointer reference into a model."""
         path = ref.split("#", 1)[-1]
-        object_paths, reference_paths = _split_json_pointer(raw, path)
+        object_paths, reference_paths = _split_json_pointer(raw, path, names=self._pointer_slash_names)
         if not object_paths:  # pragma: no cover
             reference = self.model_resolver.add_ref(ref)
             self.parse_obj(reference.name, self._validate_schema_object(raw, [ref]), [ref])
@@ -8767,7 +8881,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for target in self._reserved_targets(path_parts, raw, self._reserved_ref_settled):
                 reserved_path = target["key"]
                 reference = self.model_resolver.references[reserved_path]
-                object_paths, reference_paths = _split_json_pointer(raw, reserved_path.split("#", 1)[-1])
+                object_paths, reference_paths = _split_json_pointer(
+                    raw, reserved_path.split("#", 1)[-1], names=self._pointer_slash_names
+                )
                 if not object_paths:
                     self.parse_obj(reference.name, self._validate_schema_object(raw, [reserved_path]), [reserved_path])
                     continue

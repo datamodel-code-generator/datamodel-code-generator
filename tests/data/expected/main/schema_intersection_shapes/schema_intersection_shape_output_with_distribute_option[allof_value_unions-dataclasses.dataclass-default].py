@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, TypeAlias, Union
 
@@ -111,7 +111,7 @@ class WithProperties5(WithProperties1):
     pass
 
 
-WithProperties: TypeAlias = WithProperties4 | WithProperties5
+WithProperties: TypeAlias = WithProperties4 | WithProperties5 | str | int
 
 
 class WithEnum1(Enum):
@@ -129,7 +129,7 @@ class WithEnum3(Enum):
     bb = 'bb'
 
 
-WithEnum: TypeAlias = WithEnum3
+WithEnum: TypeAlias = WithEnum3 | int
 
 
 Untyped: TypeAlias = Any | int
@@ -143,6 +143,25 @@ class Loop1:
 @dataclass
 class Many:
     pass
+
+
+@dataclass
+class SiteProperties1:
+    b: str
+
+
+@dataclass
+class SiteProperties2:
+    a: str | None = None
+
+
+@dataclass
+class SiteProperties3(SiteProperties1, SiteProperties2):
+    b: str = field(kw_only=True)
+    a: str | None = None
+
+
+SiteProperties: TypeAlias = SiteProperties3 | str
 
 
 @dataclass

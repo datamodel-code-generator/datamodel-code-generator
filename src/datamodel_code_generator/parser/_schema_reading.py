@@ -301,22 +301,32 @@ def unescaped_slash_pointer(document: object, tokens: Sequence[str | int]) -> st
     raise AssertionError  # pragma: no cover - the tokens of a dangling reference name no node
 
 
-def _fragment_value(document: Any, fragment: str, *, or_missing: bool = False) -> Any:
+SlashNames = Literal["joined", "uri"]
+"""How a JSON pointer reads a ``/`` it writes unescaped inside a name: row ``joined`` joins the parts from a part that
+names no member, the most first, into a key the object holds; row ``uri``, that of --read-escaped-ref-pointers, joins
+them only into a name that holds ``://``, as JSON Pointer reads every other unescaped ``/`` as a separator."""
+
+
+def _fragment_value(document: Any, fragment: str, *, or_missing: bool = False, names: SlashNames = "joined") -> Any:
     """Return the value a JSON pointer fragment names in a loaded document, the document itself for no fragment."""
     return (
-        _get_model_by_decoded_path(document, split_json_pointer(document, fragment), or_missing=or_missing)
+        _get_model_by_decoded_path(document, split_json_pointer(document, fragment, names=names), or_missing=or_missing)
         if fragment
         else document
     )
 
 
-def split_json_pointer(schema: dict[str, YamlValue] | list[YamlValue], pointer: str) -> list[str]:
-    """Split a JSON pointer into path parts, preserving slash-containing dict keys."""
-    return _split_json_pointer(schema, pointer)[0]
+def split_json_pointer(
+    schema: dict[str, YamlValue] | list[YamlValue], pointer: str, *, names: SlashNames = "joined"
+) -> list[str]:
+    """Split a JSON pointer into path parts, preserving slash-containing dict keys (``SlashNames``)."""
+    return _split_json_pointer(schema, pointer, names=names)[0]
 
 
-def _split_json_pointer(schema: dict[str, YamlValue] | list[YamlValue], pointer: str) -> tuple[list[str], list[str]]:
-    """Split a JSON pointer into lookup and reference path parts."""
+def _split_json_pointer(
+    schema: dict[str, YamlValue] | list[YamlValue], pointer: str, *, names: SlashNames = "joined"
+) -> tuple[list[str], list[str]]:
+    """Split a JSON pointer into lookup and reference path parts, reading an unescaped ``/`` by ``names``."""
     raw_parts = pointer.removeprefix("/").split("/") if pointer else []
     if "://" not in pointer and "~1" not in pointer:
         return [unescape_json_pointer_segment(part) for part in raw_parts], raw_parts
@@ -339,7 +349,7 @@ def _split_json_pointer(schema: dict[str, YamlValue] | list[YamlValue], pointer:
             matched_end = index
             for end in range(len(raw_parts), index, -1):
                 key = unescape_json_pointer_segment("/".join(raw_parts[index:end]))
-                if key in current:
+                if key in current and (names == "joined" or "://" in key):
                     matched_key = key
                     matched_end = end
                     break

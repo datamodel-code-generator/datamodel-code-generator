@@ -130,6 +130,7 @@ What other options should I use?
 - `--no-snake-case-field`
 - `--no-use-field-description`
 - `--no-use-field-description-example`
+- `--no-use-one-model-per-ref-site`
 - `--no-use-schema-description`
 - `--no-use-single-line-docstring`
 - `--no-use-site-models-for-constrained-refs`
@@ -148,6 +149,7 @@ What other options should I use?
 - `--use-field-description`: Include schema descriptions as Field docstrings.
 - `--use-field-description-example`: Add field examples to docstrings.
 - `--use-inline-field-description`: Add field descriptions as inline comments.
+- `--use-one-model-per-ref-site`: Give an object `$ref` with sibling keywords one model per place it is written.
 - `--use-schema-description`: Use schema description as class docstring.
 - `--use-serialization-alias`: Use serialization_alias instead of alias for field aliasing (Pydantic v2 only).
 - `--use-single-line-docstring`: Emit short docstrings on a single line.
@@ -768,6 +770,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         object and array values
   --use-one-literal-as-default
                         Use one literal as default value for one literal field
+  --use-one-model-per-ref-site, --no-use-one-model-per-ref-site
+                        Give an object $ref with sibling keywords one model
+                        per place it is written, which every unchanged copy of
+                        that place shares, and parse such chains without
+                        nesting; without it each path that reaches the place
+                        gets a model of its own (N(N-1)/2 site models for a
+                        chain of N definitions), as in 0.89.0.
   --use-root-model-type-alias
                         Use type alias format for RootModel (e.g., Foo =
                         RootModel[Bar]) instead of class inheritance (Pydantic

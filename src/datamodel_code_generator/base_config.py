@@ -448,6 +448,7 @@ class BaseGenerateConfig(BaseModel):
     read_length_keywords_by_type: bool = False
     read_msgspec_union_bounds_exactly: bool = False
     use_site_models_for_constrained_refs: bool = False
+    use_one_model_per_ref_site: bool = False
     original_field_name_delimiter: str | None = None
     use_double_quotes: bool = False
     use_union_operator: bool = True

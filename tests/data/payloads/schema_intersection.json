@@ -7799,6 +7799,50 @@
         "invalid": [
           3
         ]
+      },
+      "at_least_ten": {
+        "valid": [
+          12,
+          "s"
+        ],
+        "invalid": [
+          7,
+          3
+        ]
+      },
+      "short_letters": {
+        "valid": [
+          "abc",
+          5
+        ],
+        "invalid": [
+          "abcd"
+        ]
+      }
+    }
+  },
+  "union_ref_branch_values_draft07": {
+    "model": "Model",
+    "fields": {
+      "picked": {
+        "valid": [
+          "b",
+          "c"
+        ],
+        "invalid": [
+          "a",
+          "d"
+        ]
+      },
+      "bounded": {
+        "valid": [
+          3,
+          "s"
+        ],
+        "invalid": [
+          4,
+          6
+        ]
       }
     }
   },
@@ -7982,6 +8026,34 @@
         "invalid": [
           {
             "c": "x"
+          }
+        ]
+      },
+      "loosened": {
+        "valid": [
+          {
+            "left": "l",
+            "mid": "abc"
+          }
+        ],
+        "invalid": [
+          {
+            "left": "l",
+            "mid": "abcd"
+          }
+        ]
+      },
+      "coded": {
+        "valid": [
+          {
+            "left": "l",
+            "mid": "abc"
+          }
+        ],
+        "invalid": [
+          {
+            "left": "l",
+            "mid": "abcd"
           }
         ]
       }

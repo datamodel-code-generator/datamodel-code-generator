@@ -104,7 +104,7 @@ class WithProperties5(WithProperties1):
     pass
 
 
-WithProperties: TypeAlias = WithProperties4 | WithProperties5
+WithProperties: TypeAlias = WithProperties4 | WithProperties5 | str | int
 
 
 class WithEnum(TypedDict):
@@ -120,6 +120,21 @@ class Loop1(TypedDict):
 
 class Many(TypedDict):
     pass
+
+
+class SiteProperties1(TypedDict):
+    b: str
+
+
+class SiteProperties2(TypedDict):
+    a: NotRequired[str]
+
+
+class SiteProperties3(SiteProperties1, SiteProperties2):
+    a: NotRequired[str]
+
+
+SiteProperties: TypeAlias = SiteProperties3 | str
 
 
 class Model(TypedDict):

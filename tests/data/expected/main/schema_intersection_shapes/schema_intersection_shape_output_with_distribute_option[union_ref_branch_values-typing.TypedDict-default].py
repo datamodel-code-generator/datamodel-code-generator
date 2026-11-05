@@ -55,9 +55,32 @@ AtLeastInAllOf1: TypeAlias = str
 AtLeastInAllOf: TypeAlias = Quantity | AtLeastInAllOf1
 
 
+Large: TypeAlias = int
+
+
+AtLeastTen1: TypeAlias = int
+
+
+AtLeastTen2: TypeAlias = str
+
+
+AtLeastTen: TypeAlias = AtLeastTen1 | AtLeastTen2
+
+
+ShortLetters1: TypeAlias = str
+
+
+ShortLetters2: TypeAlias = int
+
+
+ShortLetters: TypeAlias = ShortLetters1 | ShortLetters2
+
+
 class Model(TypedDict):
     at_least: NotRequired[AtLeast]
     letters: NotRequired[Letters]
     non_empty: NotRequired[NonEmpty]
     at_least_in_all_of: NotRequired[AtLeastInAllOf]
     at_least_field: NotRequired[AtLeastField | AtLeastField1]
+    at_least_ten: NotRequired[AtLeastTen]
+    short_letters: NotRequired[ShortLetters]

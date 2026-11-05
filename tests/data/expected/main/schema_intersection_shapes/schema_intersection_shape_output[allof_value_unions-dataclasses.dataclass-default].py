@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, TypeAlias
 
@@ -142,6 +142,25 @@ class Loop1:
 @dataclass
 class Many:
     pass
+
+
+@dataclass
+class SiteProperties1:
+    b: str
+
+
+@dataclass
+class SiteProperties2:
+    a: str | None = None
+
+
+@dataclass
+class SiteProperties3(SiteProperties1, SiteProperties2):
+    b: str = field(kw_only=True)
+    a: str | None = None
+
+
+SiteProperties: TypeAlias = SiteProperties3
 
 
 @dataclass

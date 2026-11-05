@@ -3,9 +3,9 @@
 
 from __future__ import annotations
 
-from typing import TypeAlias
+from typing import Annotated, TypeAlias
 
-from msgspec import UNSET, Struct, UnsetType
+from msgspec import UNSET, Meta, Struct, UnsetType
 
 
 class Parent1(Struct):
@@ -90,19 +90,19 @@ class Narrowed2(Struct):
 
 
 class Narrowed3(Struct):
-    mid: str | UnsetType = UNSET
+    mid: Annotated[str, Meta(max_length=3)] | UnsetType = UNSET
 
 
 class Narrowed4(Struct):
     left: str
     right: str | UnsetType = UNSET
-    mid: str | UnsetType = UNSET
+    mid: Annotated[str, Meta(max_length=3)] | UnsetType = UNSET
 
 
 class Narrowed5(Struct):
     right: str
     left: str | UnsetType = UNSET
-    mid: str | UnsetType = UNSET
+    mid: Annotated[str, Meta(max_length=3)] | UnsetType = UNSET
 
 
 class Base(Struct):
@@ -156,7 +156,64 @@ class ThroughOwnUnion5(Struct):
     extra: str | UnsetType = UNSET
 
 
+class Loosened1(Struct):
+    left: str
+    right: str | UnsetType = UNSET
+
+
+class Loosened2(Struct):
+    right: str
+    left: str | UnsetType = UNSET
+
+
+class Loosened3(Struct):
+    mid: Annotated[str, Meta(max_length=3)] | UnsetType = UNSET
+
+
+class Loosened4(Struct):
+    left: str
+    right: str | UnsetType = UNSET
+    mid: Annotated[str, Meta(max_length=3)] | UnsetType = UNSET
+
+
+class Loosened5(Struct):
+    right: str
+    left: str | UnsetType = UNSET
+    mid: Annotated[str, Meta(max_length=3)] | UnsetType = UNSET
+
+
+Code: TypeAlias = Annotated[str, Meta(max_length=3)]
+
+
+class Coded1(Struct):
+    left: str
+    right: str | UnsetType = UNSET
+
+
+class Coded2(Struct):
+    right: str
+    left: str | UnsetType = UNSET
+
+
+class Coded3(Struct):
+    mid: Annotated[str, Meta(max_length=3)] | UnsetType = UNSET
+
+
+class Coded4(Struct):
+    left: str
+    right: str | UnsetType = UNSET
+    mid: Annotated[str, Meta(max_length=3)] | UnsetType = UNSET
+
+
+class Coded5(Struct):
+    right: str
+    left: str | UnsetType = UNSET
+    mid: Annotated[str, Meta(max_length=3)] | UnsetType = UNSET
+
+
 class Model(Struct):
     leaf: Leaf4 | Leaf5 | UnsetType = UNSET
     narrowed: Narrowed4 | Narrowed5 | UnsetType = UNSET
     through_own_union: ThroughOwnUnion4 | ThroughOwnUnion5 | UnsetType = UNSET
+    loosened: Loosened4 | Loosened5 | UnsetType = UNSET
+    coded: Coded4 | Coded5 | UnsetType = UNSET

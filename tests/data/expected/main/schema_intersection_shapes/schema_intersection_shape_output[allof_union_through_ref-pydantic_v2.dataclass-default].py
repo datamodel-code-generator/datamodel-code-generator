@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from pydantic import Field, constr
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
@@ -100,7 +102,22 @@ ThroughOwnUnion = TypeAliasType("ThroughOwnUnion", ThroughOwnUnion2 | ThroughOwn
 
 
 @dataclass
+class Loosened(Narrowed):
+    mid: constr(max_length=3) | None = None
+
+
+Code = TypeAliasType("Code", Annotated[str, Field(max_length=3)])
+
+
+@dataclass
+class Coded:
+    mid: Code | None = None
+
+
+@dataclass
 class Model:
     leaf: Leaf | None = None
     narrowed: Narrowed | None = None
     through_own_union: ThroughOwnUnion | None = None
+    loosened: Loosened | None = None
+    coded: Coded | None = None

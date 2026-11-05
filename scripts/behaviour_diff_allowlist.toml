@@ -30,9 +30,17 @@ decision = "#4495"
 release_note = "an allOf whose anyOf or oneOf members hold only values, such as allOf: [{anyOf: [{type: string}, {type: integer}]}, {minLength: 2}], is written as the union of the intersections, RootModel[constr(min_length=2) | int], instead of a model without fields that rejected every value; the numbered classes such a site left are no longer written"
 
 [[accepted]]
+input = "tests/data/jsonschema/schema_intersection"
+aspects = [ "numbered-name-removed", "name-removed", "type", "kind", "constraints", "bases", "default", "required", "constructor-order" ]
+match = "^\\[[a-z-]+\\] allof_value_unions:"
+reason = "the module allof_value_unions of the directory input is the document allof_value_unions.json, whose allOf sites with anyOf or oneOf members of values were written as models without fields that reject every value (the entry above)"
+decision = "#4495"
+release_note = "an allOf whose anyOf or oneOf members hold only values is written as the union of the intersections instead of a model without fields that rejected every value (see above)"
+
+[[accepted]]
 input = "tests/data/jsonschema/reserved_target_rewritten_document"
 aspects = [ "name-removed", "type" ]
-match = "^\\[name-removed\\] box:ItemModel: removed$|^\\[type\\] (?:box:Other|holder:Model:(?:item|other)): .*\\b(?:Any|ItemModel)\\b.* -> .*$"
+match = "^\\[name-removed\\] box:ItemModel: removed$|^\\[type\\] (?:box:Other|holder:Model:(?:item|other)): .*\\b(?:Any|ItemModel)\\b.* -> (?:str|Item|Union\\[(?:None|msgspec\\.UnsetType), str\\]|Union\\[Item, None\\])$"
 reason = "a $ref of another file into a property of a definition with an embedded $id read its target from a fresh load of the file, where the property's $ref '#/definitions/Item' (written against the embedded resource) names nothing, so the reference became an Any model with a dangling-reference warning and the model accepted every value where the schema requires a string; the target is read from the prepared document, where the embedded resource resolved the $ref (schema-mismatch fix)"
 decision = "#5126"
 release_note = "a $ref of another file into a property of a schema that declares an embedded $id resolves the property's own $ref against that $id, so the field takes the type the schema gives (str) instead of an Any model with a dangling-reference warning"

@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
-from pydantic import Field
+from typing import Annotated
+
+from pydantic import Field, constr
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -98,7 +100,7 @@ class Narrowed2:
 
 @dataclass
 class Narrowed3:
-    mid: str | None = None
+    mid: constr(max_length=3) | None = None
 
 
 @dataclass
@@ -171,7 +173,72 @@ ThroughOwnUnion = TypeAliasType("ThroughOwnUnion", ThroughOwnUnion4 | ThroughOwn
 
 
 @dataclass
+class Loosened1:
+    left: str
+    right: str | None = None
+
+
+@dataclass
+class Loosened2:
+    right: str
+    left: str | None = None
+
+
+@dataclass
+class Loosened3:
+    mid: constr(max_length=3) | None = None
+
+
+@dataclass
+class Loosened4(Loosened1, Loosened3):
+    left: str = Field(..., kw_only=True)
+
+
+@dataclass
+class Loosened5(Loosened2, Loosened3):
+    right: str = Field(..., kw_only=True)
+
+
+Loosened = TypeAliasType("Loosened", Loosened4 | Loosened5)
+
+
+Code = TypeAliasType("Code", Annotated[str, Field(max_length=3)])
+
+
+@dataclass
+class Coded1:
+    left: str
+    right: str | None = None
+
+
+@dataclass
+class Coded2:
+    right: str
+    left: str | None = None
+
+
+@dataclass
+class Coded3:
+    mid: constr(max_length=3) | None = None
+
+
+@dataclass
+class Coded4(Coded1, Coded3):
+    left: str = Field(..., kw_only=True)
+
+
+@dataclass
+class Coded5(Coded2, Coded3):
+    right: str = Field(..., kw_only=True)
+
+
+Coded = TypeAliasType("Coded", Coded4 | Coded5)
+
+
+@dataclass
 class Model:
     leaf: Leaf | None = None
     narrowed: Narrowed | None = None
     through_own_union: ThroughOwnUnion | None = None
+    loosened: Loosened | None = None
+    coded: Coded | None = None

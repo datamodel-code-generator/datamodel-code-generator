@@ -90,7 +90,20 @@ class ThroughOwnUnion3(Struct):
 ThroughOwnUnion: TypeAlias = ThroughOwnUnion2 | ThroughOwnUnion3
 
 
+class Loosened(Narrowed):
+    mid: Annotated[str, Meta(max_length=3)] | UnsetType = UNSET
+
+
+Code: TypeAlias = Annotated[str, Meta(max_length=3)]
+
+
+class Coded(Struct):
+    mid: Code | UnsetType = UNSET
+
+
 class Model(Struct):
     leaf: Leaf | UnsetType = UNSET
     narrowed: Narrowed | UnsetType = UNSET
     through_own_union: ThroughOwnUnion | UnsetType = UNSET
+    loosened: Loosened | UnsetType = UNSET
+    coded: Coded | UnsetType = UNSET

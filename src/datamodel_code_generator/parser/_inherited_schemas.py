@@ -12,7 +12,8 @@ warning names, and the context manager ``_inherited_ref_context`` stay parser me
 
 from __future__ import annotations
 
-from functools import partial
+from functools import partial, reduce
+from itertools import islice
 from typing import TYPE_CHECKING, Any, cast
 
 from typing_extensions import Protocol, Sentinel
@@ -36,6 +37,7 @@ from datamodel_code_generator.parser._all_of_values import holds_union_member
 from datamodel_code_generator.parser._intersection import (
     INHERITED_SCHEMA_KEYWORDS,
     POSITIONAL_SCHEMA_KEYWORDS,
+    all_of_member_row,
     declared_types,
     inherited_override_row,
     inherited_positional_tail,
@@ -62,6 +64,7 @@ from datamodel_code_generator.parser._schema_reading import (
     _schema_dump,
     _without_contains_keywords,
 )
+from datamodel_code_generator.parser._schema_refs import mark_conjunction_parts
 from datamodel_code_generator.parser._value_keywords import get_effective_array_length
 from datamodel_code_generator.parser.base import (
     _DEFERRED_INHERITED_FIELD_KEY,
@@ -69,7 +72,12 @@ from datamodel_code_generator.parser.base import (
     _get_inherited_type_modifiers,
 )
 from datamodel_code_generator.python_literal import stable_repr
-from datamodel_code_generator.reference import Reference, _is_special_path, get_inferred_module_name
+from datamodel_code_generator.reference import (
+    Reference,
+    _is_special_path,
+    context_variable,
+    get_inferred_module_name,
+)
 from datamodel_code_generator.types import ANY, DataType
 
 if TYPE_CHECKING:
@@ -143,12 +151,14 @@ __all__ = [
     "parse_fields_beside_parents",
     "parse_inherited_schema_fields",
     "preserve_inherited_materialized_type_shape",
+    "read_through_property_conjunctions",
     "remove_inherited_distributed_shape",
     "remove_unconstrained_compositions",
     "resolve_inherited_parent_property",
     "sanitize_untyped_boolean_inherited_property",
     "select_inherited_distributed_shape",
     "sort_inherited_base_classes_for_mro",
+    "with_conjoined_properties",
 ]
 
 _INHERITED_TYPE_SHAPE_FIELDS = frozenset({
@@ -222,6 +232,7 @@ class InheritedSchemasHost(Protocol):
     _inherited_schema_ancestor_cache: dict[str, frozenset[str]]
     _inherited_schema_cache: dict[str, JsonSchemaObject]
     _inherited_schema_linearization_cache: dict[tuple[str, ...], tuple[str, ...]]
+    _parses_unowned_fields: bool
 
     @property
     def allof_merge_mode(self) -> AllOfMergeMode:
@@ -548,6 +559,9 @@ class InheritedSchemasHost(Protocol):
     def _ref_path(self, ref: str) -> str:
         """Return the reference key a reference names."""
 
+    def _ref_target_dump(self, ref: str, resolved_ref: str) -> tuple[dict[str, Any], str]:
+        """Return a fresh dump of a referenced schema for the current document, and the reference it ends at."""
+
     def _ref_siblings_are_parts_of(self, schema: JsonSchemaObject) -> bool:
         """Return whether the keywords beside the ``$ref`` of ``schema`` are parts of it."""
 
@@ -575,8 +589,14 @@ class InheritedSchemasHost(Protocol):
     ) -> JsonSchemaObject | None:
         """Drop type-specific constraints when a boolean parent supplies no usable type."""
 
+    def _schema_location(self, resolved_ref: str) -> str:
+        """Return the registry location of a resolved reference."""
+
     def _schema_object(self, raw: object) -> JsonSchemaObject:
         """Validate a raw schema into a schema object."""
+
+    def _schema_resource_document(self, path_parts: list[str]) -> str:
+        """Identify one physical schema document without changing its public reference names."""
 
     def _select_inherited_distributed_shape(
         self,
@@ -1681,7 +1701,9 @@ def _read_through_members(
     Such a member (an allOf beside its own ``anyOf`` or ``oneOf``, or one whose members hold one,
     ``holds_union_member``) is read as an inline member, the schema it names, so its union parts join those of the
     site. The member is marked with the locations read through so far (the site's first), and so are the inline
-    members within it; a member naming one of them adds nothing (A and A is A).
+    members within it; a member naming one of them adds nothing (A and A is A). A schema that an ``x-python-import``
+    types is the class it imports, as ``alias_target`` reads it, so a member naming it stays a base. A schema of another
+    document is read as the current document reads it (``_read_through_target``).
     """
     within = schema.__dict__.get(_READ_THROUGH_KEY)
     read: list[JsonSchemaObject | bool] = []
@@ -1690,13 +1712,28 @@ def _read_through_members(
             read.append(member)
         elif not member.ref:
             read.append(_read_within(member, within))
-        elif not (target := parser._load_ref_schema_object(member.ref)).allOf or not (  # noqa: SLF001
-            target.anyOf or target.oneOf or holds_union_member(parser, target)
+        elif (
+            not (target := parser._load_ref_schema_object(member.ref)).allOf  # noqa: SLF001
+            or "x-python-import" in target.extras
+            or not (target.anyOf or target.oneOf or holds_union_member(parser, target))
         ):
             read.append(member)
         elif (location := target.schema_location) not in (chain := within or frozenset({schema.schema_location})):
-            read.append(_read_within(target, chain | {location}))
+            read.append(_read_within(_read_through_target(parser, member.ref, target), chain | {location}))
     return read
+
+
+def _read_through_target(parser: InheritedSchemasHost, ref: str, target: JsonSchemaObject) -> JsonSchemaObject:
+    """Return the schema ``target`` that a member read in place names, as the document being parsed reads it.
+
+    A schema of another document is its dump for this document (``_ref_target_dump``), where each ``$recursiveRef``
+    that has a fixed target there names it, as a schema merged from there reads it.
+    """
+    resolved_ref = parser._ref_path(ref)  # noqa: SLF001
+    document = parser._schema_resource_document(list(parser.model_resolver.current_root))  # noqa: SLF001
+    if parser._schema_location(resolved_ref).partition("#")[0] == document:  # noqa: SLF001
+        return target
+    return parser._schema_object(parser._ref_target_dump(ref, resolved_ref)[0])  # noqa: SLF001
 
 
 def _read_within(schema: JsonSchemaObject, chain: frozenset[SchemaLocation | None]) -> JsonSchemaObject:
@@ -1704,6 +1741,79 @@ def _read_within(schema: JsonSchemaObject, chain: frozenset[SchemaLocation | Non
     copied = schema.model_copy()
     copied.__dict__[_READ_THROUGH_KEY] = chain
     return copied
+
+
+def read_through_property_conjunctions(
+    parser: InheritedSchemasHost, schema: JsonSchemaObject
+) -> dict[str, JsonSchemaObject]:
+    """Return, by name, the one schema of each property that allOf members read within different locations declare.
+
+    A ``$ref`` member read in place (``_read_through_members``) is no base class whose properties the other members
+    override, so a property it declares and a member outside it declares too would be two fields of the site, the
+    first of which wins. The property is one field instead, the conjunction of every declaration
+    (``_conjoined_declarations``). The members are read in the order ``parse_all_of`` parses them; a property declared
+    only within one location, or that one of them declares as a boolean schema, keeps its first declaration. Empty
+    under ``legacy-ref-member-union-dropped``, where no member is read in place.
+    """
+    if "legacy-ref-member-union-dropped" in parser._legacy_intersection:  # noqa: SLF001
+        return {}
+    declarations: dict[str, list[tuple[JsonSchemaObject | bool, object]]] = {}
+    for source in islice(_inline_all_of_closure(parser, schema), 1, None):
+        for name, declared in (source.properties or {}).items():
+            declarations.setdefault(name, []).append((declared, source.__dict__.get(_READ_THROUGH_KEY)))
+    return {
+        name: _conjoined_declarations(parser, name, schemas)
+        for name, declared_within in declarations.items()
+        if len({within for _, within in declared_within}) > 1
+        and len(schemas := [declared for declared, _ in declared_within if isinstance(declared, JsonSchemaObject)])
+        == len(declared_within)
+    }
+
+
+def _conjoined_declarations(
+    parser: InheritedSchemasHost, name: str, declarations: list[JsonSchemaObject]
+) -> JsonSchemaObject:
+    """Return the schema of a property several allOf members declare: the intersection of their declarations.
+
+    The row is their merge as allOf members (``all_of_member_row``), and every keyword the intersection reads keeps
+    the value all the declarations admit, also under ``legacy-merge-row``, with a warning for keywords without a
+    common value. Siblings of a ``$ref`` it keeps are parts of it in every dialect (``_CONJUNCTION_PARTS_KEY``). It
+    stands at the first declaration.
+    """
+    dumps = [declared.model_dump(exclude_unset=True, by_alias=True) for declared in declarations]
+    intersection = _intersect_dumps(
+        dumps,
+        reduce(all_of_member_row, dumps[1:], dumps[0]),
+        removes_enum_outside_type="legacy-enum-outside-type-kept" not in parser._legacy_intersection,  # noqa: SLF001
+        own_last=False,
+    )
+    location = declarations[0].schema_location
+    parser._warn_intersection(  # noqa: SLF001
+        named_location(location, f"property {stable_repr(name)}"), intersection, "the allOf members that declare it"
+    )
+    merged = parser._schema_object(intersection.keywords).with_schema_location(location)  # noqa: SLF001
+    parser._mark_reported_value_conflict(merged, intersection.unsatisfiable)  # noqa: SLF001
+    mark_conjunction_parts(merged)
+    return merged
+
+
+def with_conjoined_properties(
+    schema: JsonSchemaObject, conjunctions: Mapping[str, JsonSchemaObject], written: set[str]
+) -> JsonSchemaObject:
+    """Return an allOf member with the properties of ``conjunctions`` (``read_through_property_conjunctions``) once.
+
+    The first member that declares one of them declares its conjunction, and a later member leaves it out; ``written``
+    holds the names written so far, and takes those this member writes.
+    """
+    if not (names := conjunctions.keys() & (schema.properties or {}).keys()):
+        return schema
+    properties = {
+        name: conjunctions[name] if name in names else declared
+        for name, declared in (schema.properties or {}).items()
+        if name not in names or name not in written
+    }
+    written.update(names)
+    return schema.model_copy(update={"properties": properties})
 
 
 def alias_target(parser: InheritedSchemasHost, ref: str) -> str:
@@ -1955,7 +2065,14 @@ def parse_inherited_schema_fields(
     owner_path = [] if "legacy-rw-unowned-parent-fields" in parser._legacy_rw_variants else [reference.path]  # noqa: SLF001
 
     _, *members = _inline_all_of_closure(parser, schema)
-    with parser._inherited_ref_context(reference.path):  # noqa: SLF001
+    with (
+        parser._inherited_ref_context(reference.path),  # noqa: SLF001
+        context_variable(
+            partial(setattr, parser, "_parses_unowned_fields"),
+            parser._parses_unowned_fields,  # noqa: SLF001
+            parser._parses_unowned_fields or not owner_path,  # noqa: SLF001
+        ),
+    ):
         for source in (*members, schema):
             if not source.properties:
                 continue

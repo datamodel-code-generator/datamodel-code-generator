@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "picked": {
+      "enum": ["b", "c", "d"],
+      "anyOf": [{"$ref": "#/definitions/Letter"}]
+    },
+    "bounded": {
+      "maximum": 5,
+      "anyOf": [{"$ref": "#/definitions/Small"}, {"type": "string"}]
+    }
+  },
+  "definitions": {
+    "Letter": {"type": "string", "enum": ["a", "b", "c"]},
+    "Small": {"type": "integer", "maximum": 3}
+  }
+}

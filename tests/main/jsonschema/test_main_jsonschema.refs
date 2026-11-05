@@ -6110,6 +6110,9 @@ allof_mapping_ref_sibling_type	main/jsonschema/main_jsonschema/allof_mapping_wit
 	main/jsonschema/main_jsonschema/anchor_declared_twice.py
 [test_main_jsonschema_anchor_declared_twice_in_document_order]
 	main/jsonschema/main_jsonschema/anchor_declared_twice_in_document_order.py
+[test_main_jsonschema_anchor_declared_twice_in_document_with_id]
+read	main/jsonschema/main_jsonschema/anchor_declared_twice_in_document_with_id[read]/
+released	main/jsonschema/main_jsonschema/anchor_declared_twice_in_document_with_id[released]/
 [test_main_jsonschema_anchor_in_one_of]
 	main/jsonschema/main_jsonschema/anchor_in_one_of.py
 [test_main_jsonschema_anchor_of_a_document_loaded_by_reference]
@@ -6443,9 +6446,16 @@ pydantic-dataclass	main/jsonschema/main_jsonschema/discriminator_tag_of_earlier_
 [test_main_jsonschema_distribute_allof_over_unions]
 with-option	main/jsonschema/main_jsonschema/distribute_allof_over_unions[with-option].py	= main/schema_intersection_shapes/schema_intersection_shape_output_with_distribute_option[allof_beside_union-pydantic_v2.BaseModel-default].py
 without-option	main/jsonschema/main_jsonschema/distribute_allof_over_unions[without-option].py	= main/schema_intersection_shapes/schema_intersection_shape_output[allof_beside_union-pydantic_v2.BaseModel-default].py
+[test_main_jsonschema_distribute_allof_over_unions_dynamic_branch]
+with-option	main/jsonschema/main_jsonschema/distribute_allof_over_unions_dynamic_branch[with-option].py
+without-option	main/jsonschema/main_jsonschema/distribute_allof_over_unions_dynamic_branch[without-option].py
+[test_main_jsonschema_distribute_allof_over_unions_imported_member]
+with-option	main/jsonschema/main_jsonschema/distribute_allof_over_unions_imported_member[with-option].py
+without-option	main/jsonschema/main_jsonschema/distribute_allof_over_unions_imported_member[without-option].py	= main/jsonschema/main_jsonschema/distribute_allof_over_unions_imported_member[with-option].py
 [test_main_jsonschema_distribute_allof_over_unions_through_ref]
 with-option-leaf.json	main/jsonschema/main_jsonschema/distribute_allof_over_unions_through_ref[with-option-leaf.json].py
 with-option-loop.json	main/jsonschema/main_jsonschema/distribute_allof_over_unions_through_ref[with-option-loop.json].py
+with-option-recursive.json	main/jsonschema/main_jsonschema/distribute_allof_over_unions_through_ref[with-option-recursive.json].py
 without-option-leaf.json	main/jsonschema/main_jsonschema/distribute_allof_over_unions_through_ref[without-option-leaf.json].py
 [test_main_jsonschema_dotted_directory_reference]
 collapse-root-models	main/jsonschema/main_jsonschema/dotted_directory_reference[collapse-root-models]/
@@ -6751,6 +6761,8 @@ subclass-unspecialized-msgspec	main/jsonschema/main_jsonschema/enum_value_base_k
 subclass-unspecialized-msgspec	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[subclass-unspecialized-msgspec].warnings.txt	= main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[preset-msgspec].warnings.txt
 subclass-unspecialized-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[subclass-unspecialized-pydantic-v2].py
 subclass-unspecialized-pydantic-v2	main/jsonschema/main_jsonschema/enum_value_base_kinds_without_option[subclass-unspecialized-pydantic-v2].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+[test_main_jsonschema_external_anchor_declared_twice_in_document_order]
+	main/jsonschema/main_jsonschema/external_anchor_declared_twice_in_document_order.py
 [test_main_jsonschema_external_discriminator]
 msgspec.Struct-discriminator_with_external_reference_msgspec.py	main/jsonschema/discriminator_with_external_reference_msgspec.py
 pydantic_v2.BaseModel-discriminator_with_external_reference.py	main/jsonschema/discriminator_with_external_reference.py
@@ -8119,6 +8131,8 @@ literal_constraints_undecided-literal	main/jsonschema/main_jsonschema/main_liter
 	main/jsonschema/path_absolute_root_id_refs//*.py
 [test_main_long_ref_alias_chain]
 	main/jsonschema/long_ref_alias_chain.py
+[test_main_long_ref_sibling_chain_with_schema_validators_one_model_per_site]
+	main/jsonschema/main_jsonschema/main_long_ref_sibling_chain_with_schema_validators_one_model_per_site.py
 [test_main_lookaround_anyof_nullable_pydantic_v2]
 	main/jsonschema/lookaround_anyof_nullable_pydantic_v2.py
 [test_main_lookaround_anyof_nullable_pydantic_v2_dataclass]
@@ -8437,11 +8451,18 @@ unrelated-custom-explicit-target-unset	main/jsonschema/pydantic_v2_dataclass_ref
 read	main/jsonschema/read_escaped_ref_pointers.py
 read-name-map	main/jsonschema/read_escaped_ref_pointers.py	= main/jsonschema/read_escaped_ref_pointers~main_read_escaped_ref_pointers[read-name-map].py
 released	main/jsonschema/read_escaped_ref_pointers.py	= main/jsonschema/read_escaped_ref_pointers~main_read_escaped_ref_pointers[released].py
+[test_main_read_escaped_ref_pointers_hash]
+	main/jsonschema/read_escaped_ref_pointers_hash.py
+[test_main_read_escaped_ref_pointers_name_map_spellings]
+	main/jsonschema/read_escaped_ref_pointers_name_map_spellings.py
 [test_main_read_escaped_ref_pointers_spellings]
 false_reference_fast_path.json	main/jsonschema/main_jsonschema/main_read_escaped_ref_pointers_spellings[false_reference_fast_path.json].py
 json_pointer_decoding/control.json	main/jsonschema/main_jsonschema/main_read_escaped_ref_pointers_spellings[json_pointer_decoding_control.json].py
 json_pointer_decoding/root.json	main/jsonschema/main_jsonschema/main_read_escaped_ref_pointers_spellings[json_pointer_decoding_root.json].py
 schema_location.json	main/jsonschema/main_jsonschema/main_read_escaped_ref_pointers_spellings[schema_location.json].py
+[test_main_read_escaped_ref_pointers_split_name]
+read-escaped	main/jsonschema/read_escaped_ref_pointers_split_name.py
+released	main/jsonschema/read_escaped_ref_pointers_split_name.py	= main/jsonschema/read_escaped_ref_pointers_split_name~main_read_escaped_ref_pointers_split_name[released].py
 [test_main_read_escaped_ref_pointers_unescaped_slash]
 	main/jsonschema/main_jsonschema/main_read_escaped_ref_pointers_unescaped_slash/
 [test_main_read_length_keywords_by_type]
@@ -8705,6 +8726,10 @@ jsonschema	main/jsonschema/ref_fragment_opened_by_an_encoded_slash.py
 openapi	main/jsonschema/ref_fragment_opened_by_an_encoded_slash.py	= main/jsonschema/ref_fragment_opened_by_an_encoded_slash~main_ref_fragment_opened_by_an_encoded_slash[openapi].py
 [test_main_ref_nullable_import_fast_path]
 	main/jsonschema/ref_nullable_import_fast_path.py
+[test_main_ref_sibling_chain_with_one_model_per_site]
+	main/jsonschema/main_jsonschema/main_ref_sibling_chain_with_one_model_per_site.py
+[test_main_ref_sibling_chain_with_schema_validators_one_model_per_site]
+	main/jsonschema/ref_sibling_chain_with_schema_validators_one_model_per_site.py
 [test_main_refreshes_modified_custom_template_between_calls]
 	main/jsonschema/custom_template_refresh/first.py
 	main/jsonschema/custom_template_refresh/second.py
@@ -9314,6 +9339,14 @@ pydantic_v2.BaseModel-use_frozen_field_v2.py	main/jsonschema/use_frozen_field_v2
 2.12	main/jsonschema/use_generic_base_class_target_pydantic_v2_11.py
 [test_main_use_generic_base_class_with_inheritance]
 	main/jsonschema/use_generic_base_class_with_inheritance.py
+[test_main_use_one_model_per_ref_site]
+released	main/jsonschema/use_one_model_per_ref_site.py
+site	main/jsonschema/use_one_model_per_ref_site.py	= main/jsonschema/use_one_model_per_ref_site~main_use_one_model_per_ref_site[site].py
+[test_main_use_one_model_per_ref_site_changed_copy]
+	main/jsonschema/main_jsonschema/main_use_one_model_per_ref_site_changed_copy.py
+[test_main_use_one_model_per_ref_site_request_response]
+parsed-facts	main/jsonschema/main_jsonschema/main_use_one_model_per_ref_site_request_response[parsed-facts].py
+schema-graph	main/jsonschema/main_jsonschema/main_use_one_model_per_ref_site_request_response[schema-graph].py
 [test_main_use_root_model_type_alias]
 	main/jsonschema/root_model_type_alias.py
 [test_main_use_total_false_for_typed_dict]

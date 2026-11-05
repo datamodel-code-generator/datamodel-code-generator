@@ -902,13 +902,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Return the model resolver of the parser, which keys pointers canonically under --read-escaped-ref-pointers.
 
         Without the option, row ``legacy-ref-spelling-keys``, a reference is keyed by its spelling. A parser class whose
-        own resolver keys pointers already (the ``api`` scope) keeps it.
+        own resolver keys pointers already (the ``api`` scope) keeps its keys, and with the option matches a
+        ``--model-name-map`` path key in any spelling too (``_api_reference.ESCAPED_POINTER_RESOLVERS``).
         """
-        if not config.read_escaped_ref_pointers or self._model_resolver_factory is not ModelResolver:
+        if not config.read_escaped_ref_pointers:
             return self._model_resolver_factory
-        from datamodel_code_generator.parser._api_reference import EscapedPointerModelResolver  # noqa: PLC0415
+        from datamodel_code_generator.parser._api_reference import ESCAPED_POINTER_RESOLVERS  # noqa: PLC0415
 
-        return EscapedPointerModelResolver
+        return ESCAPED_POINTER_RESOLVERS.get(self._model_resolver_factory, self._model_resolver_factory)
 
     def __init__(  # noqa: PLR0915
         self,

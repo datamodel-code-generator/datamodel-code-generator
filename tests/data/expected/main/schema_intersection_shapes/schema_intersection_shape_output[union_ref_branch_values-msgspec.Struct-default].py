@@ -43,9 +43,26 @@ AtLeastInAllOf1: TypeAlias = str
 AtLeastInAllOf: TypeAlias = Quantity | AtLeastInAllOf1
 
 
+Large: TypeAlias = Annotated[int, Meta(ge=10)]
+
+
+AtLeastTen1: TypeAlias = str
+
+
+AtLeastTen: TypeAlias = Large | AtLeastTen1
+
+
+ShortLetters1: TypeAlias = int
+
+
+ShortLetters: TypeAlias = Text | ShortLetters1
+
+
 class Model(Struct):
     at_least: AtLeast | UnsetType = UNSET
     letters: Letters | UnsetType = UNSET
     non_empty: NonEmpty | UnsetType = UNSET
     at_least_in_all_of: AtLeastInAllOf | UnsetType = UNSET
     at_least_field: Quantity | AtLeastField | UnsetType = UNSET
+    at_least_ten: AtLeastTen | UnsetType = UNSET
+    short_letters: ShortLetters | UnsetType = UNSET

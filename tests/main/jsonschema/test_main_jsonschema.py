@@ -1765,6 +1765,71 @@ def test_main_jsonschema_anchor_declared_twice_in_document_order(output_file: Pa
     )
 
 
+def test_main_jsonschema_external_anchor_declared_twice_in_document_order(output_file: Path) -> None:
+    """Name the first declaration of a name two schemas of another file declare under the document-order option.
+
+    `defs.json#T` names `Primary`, the first `$anchor: T` of `defs.json`, as the local `#T` names `First`, and warns
+    as the local reference does; a name one schema declares (`defs.json#U`) names it as before.
+    """
+    with pytest.warns(SchemaResourceRefWarning) as warning_records:
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "external_anchor_declared_twice" / "root.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--read-dynamic-anchors-in-document-order",
+                "--disable-timestamp",
+            ],
+        )
+    assert_warnings_contain(
+        warning_records,
+        "The anchor 'T' is declared by more than one schema in defs.json ('#/$defs/Primary', '#/$defs/Secondary'), so "
+        "a reference to '#T' names the first of them, which JSON Schema leaves undefined.",
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="jsonschema_external_anchor_declared_twice_in_document_order",
+        model_name="Holder",
+        valid_json='{"local": {"first": 1}, "external": 2, "single": true}',
+        invalid_json='{"external": "two"}',
+        expected_error_type="int_parsing",
+    )
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "names"),
+    [
+        pytest.param([], "one", id="released"),
+        pytest.param(["--read-dynamic-anchors-in-document-order"], "the first", id="read"),
+    ],
+)
+def test_main_jsonschema_anchor_declared_twice_in_document_with_id(
+    tmp_path: Path, extra_args: list[str], names: str
+) -> None:
+    """Look up a name two schemas of another document declare in that document, from an embedded `$id` resource.
+
+    `https://example.com/defs.json#T` and `defs.json#T` are written in `Inner`, a resource of `root.json` that its
+    `$id` embeds, and name the `$anchor: T` that `First` and `Second` of `defs.json` both declare. Either way the
+    reference warns that the name is declared twice in `defs.json`; under the document-order option it names `First`,
+    the first declaration, where without it it names `Second`, as in 0.89.0.
+    """
+    with pytest.warns(SchemaResourceRefWarning) as warning_records:
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "external_anchor_declared_twice_by_id",
+            output_path=tmp_path / "model",
+            input_file_type="jsonschema",
+            extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+            force_exec_validation=True,
+        )
+    assert_warnings_contain(
+        warning_records,
+        "The anchor 'T' is declared by more than one schema in defs.json ('#/$defs/First', '#/$defs/Second'), so "
+        f"a reference to '#T' names {names} of them, which JSON Schema leaves undefined.",
+    )
+
+
 @pytest.mark.parametrize(
     ("input_name", "expected_file", "extra_args"),
     [
@@ -5688,27 +5753,31 @@ def test_json_pointer_decoding_api_and_cli(output_file: Path, strict_refs: bool,
         )
 
 
-@pytest.mark.cli_doc(
-    options=["--read-escaped-ref-pointers"],
-    option_description="""Read the escapes of a `$ref` JSON pointer as the characters they encode.
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="released"),
+        pytest.param(
+            ["--read-escaped-ref-pointers"],
+            id="read",
+            marks=pytest.mark.cli_doc(
+                options=["--read-escaped-ref-pointers"],
+                option_description="""Read the escapes of a `$ref` JSON pointer as the characters they encode.
 
 A pointer writes `/` in a name as `~1`, `~` as `~0`, and, in a URI fragment, any other character percent-encoded
 (`%20` for a space). Without this option a reference keeps the escaped text as the key of its target, so the definition
 it names, keyed by its name, gets a copy named after the escaped text (`Line20Item` beside `LineItem`, `Tax1rate`
 beside `TaxRate`), which the field takes. With it every spelling of a pointer names the one model of its target, keyed
 as the `api` scope keys it; a model a reference adds is named after the decoded name, and a `--model-name-map` key that
-names a path matches it in any spelling. A `/` written unescaped inside a name is a separator then, as JSON Pointer
-reads it, so such a pointer warns as a dangling reference, unless the name holds `://`, which is still read whole.""",
-    input_schema="jsonschema/escaped_ref_pointers.json",
-    cli_args=["--read-escaped-ref-pointers"],
-    golden_output="main/jsonschema/read_escaped_ref_pointers.py",
-    comparison_output="main/jsonschema/read_escaped_ref_pointers~main_read_escaped_ref_pointers[released].py",
-)
-@pytest.mark.parametrize(
-    "extra_args",
-    [
-        pytest.param([], id="released"),
-        pytest.param(["--read-escaped-ref-pointers"], id="read"),
+names a path matches it in any spelling, in the `api` scope too, where the first of the keys that spell one path renames
+it. A `/` written unescaped inside a name is a separator then, as JSON Pointer reads it, also after a `~1`, so such a
+pointer warns as a dangling reference, unless the name holds `://`, which is still read whole.""",
+                input_schema="jsonschema/escaped_ref_pointers.json",
+                cli_args=["--read-escaped-ref-pointers"],
+                golden_output="main/jsonschema/read_escaped_ref_pointers.py",
+                comparison_output="main/jsonschema/read_escaped_ref_pointers~main_read_escaped_ref_pointers[released].py",
+            ),
+        ),
         pytest.param(
             [
                 "--read-escaped-ref-pointers",
@@ -5792,6 +5861,107 @@ def test_main_read_escaped_ref_pointers_unescaped_slash(tmp_path: Path) -> None:
         )
 
 
+@pytest.mark.parametrize(
+    ("extra_args", "warned", "not_warned"),
+    [
+        pytest.param([], (), ("Unresolved local $ref",), id="released"),
+        pytest.param(
+            ["--read-escaped-ref-pointers"],
+            (
+                "Unresolved local $ref '#/$defs/a~1b/c' in escaped_ref_pointer_split_name.json",
+                "Unresolved local $ref '#/$defs/a/b/c' in escaped_ref_pointer_split_name.json",
+                "'#/$defs/a~1b~1c' names the key the pointer splits",
+            ),
+            ("Unresolved local $ref '#/$defs/a~1b~1c'",),
+            id="read-escaped",
+        ),
+    ],
+)
+def test_main_read_escaped_ref_pointers_split_name(
+    output_file: Path, extra_args: list[str], warned: tuple[str, ...], not_warned: tuple[str, ...]
+) -> None:
+    """Read a `/` written unescaped after a `~1` as a separator under --read-escaped-ref-pointers.
+
+    Without the option `#/$defs/a~1b/c` and `#/$defs/a/b/c` find the definition `a/b/c` by joining the parts. With it
+    each names a member of `$defs` the document lacks, so each warns as a dangling reference that says how to write the
+    key, and only `#/$defs/a~1b~1c` names the definition.
+    """
+    with warnings.catch_warnings(record=True) as warning_records:
+        warnings.simplefilter("always", DanglingRefWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "escaped_ref_pointer_split_name.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        )
+    assert_warnings_contain(warning_records, *warned)
+    assert_warnings_do_not_contain(warning_records, *not_warned)
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="escaped_ref_pointer_split_name",
+        model_name="Holder",
+        valid_json='{"escaped": {"v": 1}}',
+        invalid_json='{"escaped": {"v": "one"}}',
+        expected_error_type="int_parsing",
+    )
+
+
+def test_main_read_escaped_ref_pointers_name_map_spellings(output_file: Path) -> None:
+    """Match every `--model-name-map` key that spells one path under --read-escaped-ref-pointers.
+
+    `#/$defs/Line%20Item` and `#/$defs/Line Item` name the one model of `Line Item`: both count as found, so neither is
+    reported as matching no model, and the first in the map renames it. A key that names a class, `NoteText`, matches
+    by the name as without the option.
+    """
+    with warnings.catch_warnings(record=True) as warning_records:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "escaped_ref_pointers.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            extra_args=[
+                *("--output-model-type", "pydantic_v2.BaseModel", "--read-escaped-ref-pointers"),
+                "--model-name-map",
+                (
+                    '{"#/$defs/Line%20Item": "LineEntry", "#/$defs/Line Item": "LineRow", "#/$defs/tax~1rate": "Rate", '
+                    '"NoteText": "Note"}'
+                ),
+                *("--formatters", "builtin", "--disable-timestamp"),
+            ],
+        )
+    assert_warnings_do_not_contain(warning_records, "matched no generated model")
+
+
+def test_main_read_escaped_ref_pointers_hash(output_file: Path) -> None:
+    """Read `%23` in a `$ref` pointer as the `#` of a name under --read-escaped-ref-pointers, also into another file.
+
+    `defs.json#/$defs/Tag%23` and `defs.json#/%24defs/Tag%23` name the definition `Tag#` of `defs.json`, not `Tag`,
+    and `#/$defs/Count%23` names `Count#`: the key of a reference keeps such a `#` percent-encoded, so it ends no
+    fragment and the reference is not read as one to the root of `defs.json#/$defs/Tag`.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "escaped_ref_pointer_hash" / "root.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel"),
+            "--read-escaped-ref-pointers",
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="escaped_ref_pointer_hash",
+        model_name="Tagged",
+        valid_json='{"external": "ab", "external_again": "cd", "local": 1}',
+        invalid_json='{"external": "abc"}',
+        expected_error_type="string_too_long",
+    )
+
+
 def test_json_pointer_decoding_preserves_ordinary_references(output_file: Path) -> None:
     """Keep ordinary escaped tokens, array indices and external references byte-identical."""
     run_main_and_assert(
@@ -5817,8 +5987,7 @@ def test_main_json_pointer_through_scalar(output_file: Path, extra_args: list[st
             assert_func=assert_file_content,
             extra_args=extra_args,
         )
-    assert not [record for record in warning_records if "'~1'" in str(record.message)]
-
+    assert_warnings_do_not_contain(warning_records, "'~1'")
     assert_warnings_contain(warning_records, "#/x-ext/k/j", "#/x-ext/items/0/j", "#/x-ext/none/j", "#/x-ext/text/0")
 
 
@@ -22941,6 +23110,111 @@ def test_main_jsonschema_external_ref_mapping_whole_document_in_input_directory(
     )
 
 
+@pytest.mark.cli_doc(
+    options=["--use-one-model-per-ref-site"],
+    option_description="""Give an object `$ref` with sibling keywords one model per place it is written.
+
+A `$ref` beside other keywords is parsed as its target merged with them. Without this option the merged object is
+parsed at the path that reaches it, and the copy of each such `$ref` its target holds is parsed again below it, so a
+chain of N definitions whose `next` is a `$ref` to the next one beside `required` gives N(N-1)/2 site models (`Next`,
+`Next1`, ..., where the copies of one place, such as `Next1` and `Next4`, validate the same documents), one nested
+parse per hop, which stops with "Schema nesting is too deep" for a long chain. With it each place such a `$ref` is
+written, with the `$dynamicAnchor` bindings of its dynamic scope, gets one model, which every unchanged copy of the
+place shares, parsed from a worklist without nesting: N-1 site models beside the N definitions. The field that holds
+the `$ref` keeps its own required, default and alias. Where `--read-only-write-only-model-type request-response`
+splits the models, the model of a place is parsed where it is first met, so a chain still nests one parse per hop.""",
+    input_schema="jsonschema/ref_site_chain.json",
+    cli_args=["--use-one-model-per-ref-site"],
+    golden_output="main/jsonschema/use_one_model_per_ref_site~main_use_one_model_per_ref_site[site].py",
+    comparison_output="main/jsonschema/use_one_model_per_ref_site.py",
+)
+@pytest.mark.parametrize(
+    "extra_args", [pytest.param([], id="released"), pytest.param(["--use-one-model-per-ref-site"], id="site")]
+)
+def test_main_use_one_model_per_ref_site(output_file: Path, extra_args: list[str]) -> None:
+    """Give each `$ref` with sibling keywords of a chain one model (#5079).
+
+    `Link0` to `Link3` each have a `next` that references the next link beside `required: [v]`. Without the option the
+    models of the sites repeat below each other (`Next` to `Next9`); with it each site has one model, which the copies
+    of it share: `Next` to `Next3`.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "ref_site_chain.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel"),
+            *extra_args,
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="ref_site_chain",
+        model_name="Link0",
+        valid_json='{"next": {"v": 1, "next": {"v": 2, "next": {"v": 3}}}}',
+        invalid_json='{"next": {"v": 1, "next": {"next": {"v": 3}}}}',
+        expected_error_type="missing",
+    )
+
+
+def test_main_use_one_model_per_ref_site_changed_copy(output_file: Path) -> None:
+    """Parse a copy of a `$ref` site that a merge changed in place under --use-one-model-per-ref-site.
+
+    `changed` merges `A` with a `next` that requires `w` too, so its copy of the site `A.next` holds another value and
+    gets a model of its own, `Next`, parsed where it is; `A.next` itself, met later, is the site and gets `Next1`.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "ref_site_changed_copy.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--use-one-model-per-ref-site"),
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="ref_site_changed_copy",
+        model_name="Holder",
+        valid_json='{"changed": {"next": {"v": 1, "w": "a"}}, "plain": {"next": {"v": 2}}}',
+        invalid_json='{"changed": {"next": {"v": 1}}}',
+        expected_error_type="missing",
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_name", "extra_args"),
+    [
+        pytest.param("read_only_write_only_constrained_item.json", [], id="parsed-facts"),
+        pytest.param(
+            "read_only_write_only_ref_sibling_chain.json", ["--dedupe-request-response-variants"], id="schema-graph"
+        ),
+    ],
+)
+def test_main_use_one_model_per_ref_site_request_response(
+    output_file: Path, input_name: str, extra_args: list[str]
+) -> None:
+    """Share the models of `$ref` sites where request and response models are split.
+
+    The model of a site is parsed where it is first met, as the variants of the model that holds it are decided from
+    the site model's fields; the temporary parse of inherited fields that the facts of 0.86.0 read
+    (`parsed-facts`) parses its sites in place, as its models are no other parse's.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--use-one-model-per-ref-site"),
+            *("--read-only-write-only-model-type", "request-response", *extra_args),
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize(
     ("name", "model_name", "valid_json", "invalid_json"),
     [
@@ -30093,11 +30367,8 @@ def test_main_long_ref_alias_chain(tmp_path: Path, output_file: Path) -> None:
     )
 
 
-def test_main_ref_sibling_nesting_too_deep(
-    tmp_path: Path, output_file: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    """Stop with an error, not a partial result, when merged $ref siblings nest deeper than the parse can follow."""
-    length = 200
+def _ref_sibling_chain(tmp_path: Path, length: int) -> Path:
+    """Write a chain of `length` objects whose `next` references the next one beside `required` and a description."""
     links: dict[str, Any] = {
         f"D{index}": {
             "type": "object",
@@ -30117,15 +30388,133 @@ def test_main_ref_sibling_nesting_too_deep(
         }),
         encoding="utf-8",
     )
+    return input_path
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "hint"),
+    [
+        pytest.param(
+            [],
+            " A chain of $refs with sibling keywords is parsed one nested model per hop; --use-one-model-per-ref-site "
+            "parses it without nesting.",
+            id="released",
+        ),
+        pytest.param(["--read-only-write-only-model-type", "request-response"], "", id="request-response"),
+        pytest.param(
+            ["--read-only-write-only-model-type", "request-response", "--use-one-model-per-ref-site"],
+            "",
+            id="request-response-site",
+        ),
+    ],
+)
+def test_main_ref_sibling_nesting_too_deep(
+    tmp_path: Path, output_file: Path, capsys: pytest.CaptureFixture[str], extra_args: list[str], hint: str
+) -> None:
+    """Stop with an error, not a partial result, when merged $ref siblings nest deeper than the parse can follow.
+
+    The error names --use-one-model-per-ref-site, which parses such a chain without nesting, where it does: where
+    request and response models are split, the option parses each site where it is first met too, so it names nothing.
+    """
     run_main_and_assert(
-        input_path=input_path,
+        input_path=_ref_sibling_chain(tmp_path, 200),
         output_path=output_file,
         input_file_type="jsonschema",
-        extra_args=["--disable-timestamp", "--formatters", "builtin"],
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr_contains="Schema nesting is too deep to generate",
+        expected_stderr=(
+            "Schema nesting is too deep to generate: parsing the nested schemas exceeded the Python recursion limit "
+            f"({sys.getrecursionlimit()}).{hint}\n"
+        ),
         output_should_not_exist=True,
+    )
+
+
+def _validated_ref_sibling_chain(tmp_path: Path, length: int) -> Path:
+    """Write a chain of `length` objects whose `next` references the next one beside `required` and `minProperties`."""
+    links: dict[str, Any] = {
+        f"D{index}": {
+            "type": "object",
+            "properties": {
+                "v": {"type": "integer"},
+                "next": {"$ref": f"#/x-links/D{index + 1}", "required": ["v"], "minProperties": 2},
+            },
+        }
+        for index in range(length)
+    }
+    links[f"D{length}"] = {"type": "object", "properties": {"v": {"type": "integer"}}}
+    (input_path := tmp_path / "validated_chain.json").write_text(
+        json.dumps({
+            "title": "Chain",
+            "type": "object",
+            "properties": {"next": {"$ref": "#/x-links/D0", "required": ["v"], "minProperties": 2}},
+            "x-links": links,
+        }),
+        encoding="utf-8",
+    )
+    return input_path
+
+
+_VALIDATED_SITE_ARGS = (
+    *("--disable-timestamp", "--formatters", "builtin", "--output-model-type", "pydantic_v2.BaseModel"),
+    *("--use-one-model-per-ref-site", "--generate-schema-validators"),
+)
+
+
+def test_main_ref_sibling_chain_with_schema_validators_one_model_per_site(tmp_path: Path, output_file: Path) -> None:
+    """Give each `$ref` site whose object carries schema validators one model under --use-one-model-per-ref-site.
+
+    Each `next` of the chain adds `minProperties` beside its `$ref`, so `--generate-schema-validators` builds its object
+    as the model of its validators; with the option each site still gets one model, which keeps the rule, and the
+    copies of the site share it.
+    """
+    run_main_and_assert(
+        input_path=_validated_ref_sibling_chain(tmp_path, 2),
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=list(_VALIDATED_SITE_ARGS),
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="validated_ref_sibling_chain",
+        model_name="Chain",
+        valid_json='{"next": {"v": 1, "next": {"v": 2, "next": {"v": 3, "w": 4}}}}',
+        invalid_json='{"next": {"v": 1, "next": {"v": 2, "next": {"v": 3}}}}',
+        expected_error_type="value_error",
+    )
+
+
+def test_main_long_ref_sibling_chain_with_schema_validators_one_model_per_site(
+    tmp_path: Path, output_file: Path
+) -> None:
+    """Generate a chain of 200 `$ref` sites with schema validators at the default limit under the option.
+
+    The 201 links, the 201 sites and the root, besides the base of the validators: 404 classes, where the site models
+    grow as N(N-1)/2 without the option.
+    """
+    run_main_and_assert(
+        input_path=_validated_ref_sibling_chain(tmp_path, 200),
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=list(_VALIDATED_SITE_ARGS),
+        transform=lambda output: f"{output.count(chr(10) + 'class ')} classes\n",
+    )
+
+
+def test_main_ref_sibling_chain_with_one_model_per_site(tmp_path: Path, output_file: Path) -> None:
+    """Generate a chain of 200 `$ref`s with sibling keywords under --use-one-model-per-ref-site (#5076, #5079).
+
+    Each site gets one model, parsed from the worklist without nesting, so the chain generates at the default recursion
+    limit: the 201 links, the 201 sites and the root, 403 classes instead of an error.
+    """
+    run_main_and_assert(
+        input_path=_ref_sibling_chain(tmp_path, 200),
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--formatters", "builtin", "--use-one-model-per-ref-site"],
+        transform=lambda output: f"{output.count(chr(10) + 'class ')} classes\n",
     )
 
 
@@ -38894,6 +39283,7 @@ def test_main_jsonschema_distribute_allof_over_unions(output_file: Path, extra_a
         pytest.param("leaf.json", ["--distribute-allof-over-unions"], id="with-option-leaf.json"),
         pytest.param("leaf.json", [], id="without-option-leaf.json"),
         pytest.param("loop.json", ["--distribute-allof-over-unions"], id="with-option-loop.json"),
+        pytest.param("recursive.json", ["--distribute-allof-over-unions"], id="with-option-recursive.json"),
     ],
 )
 def test_main_jsonschema_distribute_allof_over_unions_through_ref(
@@ -38905,10 +39295,51 @@ def test_main_jsonschema_distribute_allof_over_unions_through_ref(
     ``Leaf`` keeps only its own property. With it ``Leaf`` is the union of ``Parent``'s variants with the properties
     of ``Mid`` and ``Leaf``, across the three documents; a member naming a schema already read in place adds
     nothing, so ``Loop`` and ``Back``, each an allOf over the other, end (without the option their models fail to
-    import).
+    import). A member of another document is read as that document reads it: the ``$recursiveRef: "#"`` of ``Mid``
+    names the root of its own document (``child: RecursiveMid``), not that of ``Recursive``.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "allof_union_through_ref_files" / input_name,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param(["--distribute-allof-over-unions"], id="with-option"), pytest.param([], id="without-option")],
+)
+def test_main_jsonschema_distribute_allof_over_unions_imported_member(output_file: Path, extra_args: list[str]) -> None:
+    """Keep a member that names an allOf over a union typed by ``x-python-import`` a base, with the option too.
+
+    The class the schema imports is the base of ``Imported`` (``class Imported(ImportedMid)``), as without
+    --distribute-allof-over-unions, instead of the member read in place; the output imports ``mypkg``, so it is
+    compiled, not run.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "allof_union_through_ref_files" / "imported.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp"],
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param(["--distribute-allof-over-unions"], id="with-option"), pytest.param([], id="without-option")],
+)
+def test_main_jsonschema_distribute_allof_over_unions_dynamic_branch(output_file: Path, extra_args: list[str]) -> None:
+    """Give a ``$ref`` branch whose dynamic scope specializes its target the allOf members beside its union.
+
+    ``box`` reads ``value`` by the ``$dynamicAnchor`` of ``site``, a string: the branch is ``Box1``. With
+    --distribute-allof-over-unions the class of the branch takes the allOf member's ``tag`` on that specialization
+    (``Site2(Box1)``), not on the unspecialized ``Box``, whose ``value`` accepts any value; without the option the
+    branch is ``Box1`` alone, without ``tag``.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "distribute_ref_branch_dynamic.json",
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp"],

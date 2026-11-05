@@ -124,6 +124,7 @@
 - `--no-snake-case-field`
 - `--no-use-field-description`
 - `--no-use-field-description-example`
+- `--no-use-one-model-per-ref-site`
 - `--no-use-schema-description`
 - `--no-use-single-line-docstring`
 - `--no-use-site-models-for-constrained-refs`
@@ -142,6 +143,7 @@
 - `--use-field-description`: Include schema descriptions as Field docstrings.
 - `--use-field-description-example`: Add field examples to docstrings.
 - `--use-inline-field-description`: Add field descriptions as inline comments.
+- `--use-one-model-per-ref-site`: Give an object `$ref` with sibling keywords one model per place it is written.
 - `--use-schema-description`: Use schema description as class docstring.
 - `--use-serialization-alias`: Use serialization_alias instead of alias for field aliasing (Pydantic v2 only).
 - `--use-single-line-docstring`: Emit short docstrings on a single line.

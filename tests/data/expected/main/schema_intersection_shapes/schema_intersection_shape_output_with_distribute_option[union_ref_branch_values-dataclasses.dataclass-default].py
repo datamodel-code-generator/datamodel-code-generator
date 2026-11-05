@@ -54,6 +54,27 @@ AtLeastInAllOf1: TypeAlias = str
 AtLeastInAllOf: TypeAlias = Quantity | AtLeastInAllOf1
 
 
+Large: TypeAlias = int
+
+
+AtLeastTen1: TypeAlias = int
+
+
+AtLeastTen2: TypeAlias = str
+
+
+AtLeastTen: TypeAlias = AtLeastTen1 | AtLeastTen2
+
+
+ShortLetters1: TypeAlias = str
+
+
+ShortLetters2: TypeAlias = int
+
+
+ShortLetters: TypeAlias = ShortLetters1 | ShortLetters2
+
+
 @dataclass
 class Model:
     at_least: AtLeast | None = None
@@ -61,3 +82,5 @@ class Model:
     non_empty: NonEmpty | None = None
     at_least_in_all_of: AtLeastInAllOf | None = None
     at_least_field: AtLeastField | AtLeastField1 | None = None
+    at_least_ten: AtLeastTen | None = None
+    short_letters: ShortLetters | None = None

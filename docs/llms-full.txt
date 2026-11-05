@@ -787,7 +787,7 @@ The 20261027 presets keep the 20261017 options and add `--use-single-value-enum-
 
 The 20261104 presets keep the 20261027 options and add `--merge-shared-variant-tags`: a variant that discriminated unions tag differently, such as one by a mapping key and one by the schema name, takes every tag they give it, so each union decodes the documents it selects the variant by, `--use-encoded-str-for-constrained-base64`: a format: byte string with a pattern or lengths is written as `Annotated[str, Field(...), EncodedStr(encoder=Base64Encoder)]`, so Pydantic 2.10 or later checks them on the base64 text instead of the decoded text, and `--read-length-keywords-by-type`: `minLength` and `maxLength` beside an array, and `minItems` and `maxItems` beside a string, are left out instead of bounding the length of the other kind, as JSON Schema reads them, and `--read-msgspec-union-bounds-exactly`: the int member of a msgspec union with a number member keeps its bounds only when they admit every integer the number member's bounds, read as the schema writes them, admit, and `--read-schema-version-per-document`: each document is read by the schema version it declares, or that of the document that references it, so the keywords beside a `$ref` and the version's features apply as that version says in every document of a run, and `--ignore-ref-siblings-by-schema-version`: a `$ref` in a version that ignores the keywords beside it, such as draft 7 or OpenAPI 3.0, is read as its target alone, and `--intersect-combined-schema-keywords`: the keywords beside an anyOf or oneOf are combined with each branch, an inherited override merges its nested properties name by name and by the type it narrows, an allOf member reads its $ref siblings, $ref aliases and null branches, and no enum value that the merged type rejects is kept, as JSON Schema validates them, and `--distribute-allof-over-unions`: an allOf of several anyOf and oneOf is one union variant per combination of their branches, also through a $ref member and for value branches at a field and beside object branches, a $ref branch of an anyOf or oneOf takes the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf is that union, and `--keep-reference-null-on-merged-models`: a reference whose schema admits null keeps its `| None` when its model is merged into an equal model that rejects null. They also add `--use-msgspec-meta-for-map-keys`: the keys of a msgspec map whose keys propertyNames or patternProperties constrain are written as `Annotated[str, Meta(...)]`, so msgspec checks them, and `--rename-submodules-hidden-by-classes`: a submodule named like a class of its package is renamed (`pkg/Warn_.py`), so importing it leaves the class in place, and `--use-serialize-as-any-for-every-subclass`: under `--use-serialize-as-any` a field is wrapped in `SerializeAsAny` when any subclass of its model in the output adds fields, and `--read-dynamic-anchors-in-document-order`: a plain-name `$dynamicRef` its dynamic scope does not bind, and a reference to a plain name several schemas declare, resolve to the first declaration in document order.
 
-The 20261104 presets also name models from the schema: `--use-duplicate-name-suffix-for-every-collision` gives the `--duplicate-name-suffix` suffix to every model renamed because its name is taken, `--capitalise-numbered-enum-members` capitalizes the number a capitalized enum member takes (`A_1`), `--keep-first-character-of-path-keys` strips only a leading slash from a paths key (`pets` names `PetsGetResponse`), `--name-converted-payloads-by-message` drops the placeholder title `Model` of an AsyncAPI Avro or XML Schema payload that names no type, so it is named after its message, and `--singularize-last-word-of-item-names` singularizes only the last word of an item model's name (`actions_caches` names `ActionsCache`), and `--read-escaped-ref-pointers` reads the escapes of a `$ref` pointer as the characters they encode, so `#/$defs/a~1b` names the model `AB` of `a/b` instead of a copy `A1b`.
+The 20261104 presets also name models from the schema: `--use-duplicate-name-suffix-for-every-collision` gives the `--duplicate-name-suffix` suffix to every model renamed because its name is taken, `--capitalise-numbered-enum-members` capitalizes the number a capitalized enum member takes (`A_1`), `--keep-first-character-of-path-keys` strips only a leading slash from a paths key (`pets` names `PetsGetResponse`), `--name-converted-payloads-by-message` drops the placeholder title `Model` of an AsyncAPI Avro or XML Schema payload that names no type, so it is named after its message, and `--singularize-last-word-of-item-names` singularizes only the last word of an item model's name (`actions_caches` names `ActionsCache`), `--read-escaped-ref-pointers` reads the escapes of a `$ref` pointer as the characters they encode, so `#/$defs/a~1b` names the model `AB` of `a/b` instead of a copy `A1b`, and `--use-one-model-per-ref-site` gives an object `$ref` with sibling keywords one model per place it is written instead of one per path that reaches it.
 
 ## Override Preset Options
 
@@ -5530,6 +5530,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-encoded-str-for-constrained-base64 = true
     use-frozen-field = true
     use-msgspec-meta-for-map-keys = true
+    use-one-model-per-ref-site = true
     use-serialize-as-any-for-every-subclass = true
     use-single-dict-for-object-maps = true
     use-single-value-enum-as-const = true
@@ -5544,7 +5545,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-msgspec-meta-for-map-keys --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-msgspec-meta-for-map-keys --use-one-model-per-ref-site --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -5592,6 +5593,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Submodules hidden by classes renamed | `--rename-submodules-hidden-by-classes` | Rename a submodule named like a class of its package, such as pkg/Warn.py beside the class Warn of pkg/__init__.py, to the first free name with trailing underscores, so importing it leaves the class in place. |
 | SerializeAsAny for every subclass | `--use-serialize-as-any-for-every-subclass` | Under --use-serialize-as-any, wrap a field in SerializeAsAny when any subclass of its model in the output adds fields, at any depth, after reuse merges the model and through its module. |
 | Dynamic anchors read in document order | `--read-dynamic-anchors-in-document-order` | Resolve a plain-name $dynamicRef that its dynamic scope does not bind, and a reference to a plain name several schemas declare, to the first declaration in document order, so the answer no longer depends on the order the schemas are parsed in. |
+| One model per reference site | `--use-one-model-per-ref-site` | Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting. |
 | Escaped reference pointers read | `--read-escaped-ref-pointers` | Read the ~0 and ~1 escapes and the percent-encoded octets of a $ref JSON pointer as the characters they encode, so every spelling of a pointer names the one model of its target instead of a copy named after the escaped text. |
 
 ### `standard-py311-20261104`
@@ -5661,6 +5663,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-encoded-str-for-constrained-base64 = true
     use-frozen-field = true
     use-msgspec-meta-for-map-keys = true
+    use-one-model-per-ref-site = true
     use-serialize-as-any-for-every-subclass = true
     use-single-dict-for-object-maps = true
     use-single-value-enum-as-const = true
@@ -5676,7 +5679,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-msgspec-meta-for-map-keys --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-msgspec-meta-for-map-keys --use-one-model-per-ref-site --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -5725,6 +5728,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Submodules hidden by classes renamed | `--rename-submodules-hidden-by-classes` | Rename a submodule named like a class of its package, such as pkg/Warn.py beside the class Warn of pkg/__init__.py, to the first free name with trailing underscores, so importing it leaves the class in place. |
 | SerializeAsAny for every subclass | `--use-serialize-as-any-for-every-subclass` | Under --use-serialize-as-any, wrap a field in SerializeAsAny when any subclass of its model in the output adds fields, at any depth, after reuse merges the model and through its module. |
 | Dynamic anchors read in document order | `--read-dynamic-anchors-in-document-order` | Resolve a plain-name $dynamicRef that its dynamic scope does not bind, and a reference to a plain name several schemas declare, to the first declaration in document order, so the answer no longer depends on the order the schemas are parsed in. |
+| One model per reference site | `--use-one-model-per-ref-site` | Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting. |
 | Escaped reference pointers read | `--read-escaped-ref-pointers` | Read the ~0 and ~1 escapes and the percent-encoded octets of a $ref JSON pointer as the characters they encode, so every spelling of a pointer names the one model of its target instead of a copy named after the escaped text. |
 
 ### `standard-py312-20261104`
@@ -5794,6 +5798,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-encoded-str-for-constrained-base64 = true
     use-frozen-field = true
     use-msgspec-meta-for-map-keys = true
+    use-one-model-per-ref-site = true
     use-serialize-as-any-for-every-subclass = true
     use-single-dict-for-object-maps = true
     use-single-value-enum-as-const = true
@@ -5809,7 +5814,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-msgspec-meta-for-map-keys --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-msgspec-meta-for-map-keys --use-one-model-per-ref-site --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -5858,6 +5863,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Submodules hidden by classes renamed | `--rename-submodules-hidden-by-classes` | Rename a submodule named like a class of its package, such as pkg/Warn.py beside the class Warn of pkg/__init__.py, to the first free name with trailing underscores, so importing it leaves the class in place. |
 | SerializeAsAny for every subclass | `--use-serialize-as-any-for-every-subclass` | Under --use-serialize-as-any, wrap a field in SerializeAsAny when any subclass of its model in the output adds fields, at any depth, after reuse merges the model and through its module. |
 | Dynamic anchors read in document order | `--read-dynamic-anchors-in-document-order` | Resolve a plain-name $dynamicRef that its dynamic scope does not bind, and a reference to a plain name several schemas declare, to the first declaration in document order, so the answer no longer depends on the order the schemas are parsed in. |
+| One model per reference site | `--use-one-model-per-ref-site` | Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting. |
 | Escaped reference pointers read | `--read-escaped-ref-pointers` | Read the ~0 and ~1 escapes and the percent-encoded octets of a $ref JSON pointer as the characters they encode, so every spelling of a pointer names the one model of its target instead of a copy named after the escaped text. |
 
 ### `standard-py313-20261104`
@@ -5927,6 +5933,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-encoded-str-for-constrained-base64 = true
     use-frozen-field = true
     use-msgspec-meta-for-map-keys = true
+    use-one-model-per-ref-site = true
     use-serialize-as-any-for-every-subclass = true
     use-single-dict-for-object-maps = true
     use-single-value-enum-as-const = true
@@ -5942,7 +5949,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-msgspec-meta-for-map-keys --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-msgspec-meta-for-map-keys --use-one-model-per-ref-site --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -5991,6 +5998,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Submodules hidden by classes renamed | `--rename-submodules-hidden-by-classes` | Rename a submodule named like a class of its package, such as pkg/Warn.py beside the class Warn of pkg/__init__.py, to the first free name with trailing underscores, so importing it leaves the class in place. |
 | SerializeAsAny for every subclass | `--use-serialize-as-any-for-every-subclass` | Under --use-serialize-as-any, wrap a field in SerializeAsAny when any subclass of its model in the output adds fields, at any depth, after reuse merges the model and through its module. |
 | Dynamic anchors read in document order | `--read-dynamic-anchors-in-document-order` | Resolve a plain-name $dynamicRef that its dynamic scope does not bind, and a reference to a plain name several schemas declare, to the first declaration in document order, so the answer no longer depends on the order the schemas are parsed in. |
+| One model per reference site | `--use-one-model-per-ref-site` | Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting. |
 | Escaped reference pointers read | `--read-escaped-ref-pointers` | Read the ~0 and ~1 escapes and the percent-encoded octets of a $ref JSON pointer as the characters they encode, so every spelling of a pointer names the one model of its target instead of a copy named after the escaped text. |
 
 ### `standard-py314-20261104`
@@ -6060,6 +6068,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-encoded-str-for-constrained-base64 = true
     use-frozen-field = true
     use-msgspec-meta-for-map-keys = true
+    use-one-model-per-ref-site = true
     use-serialize-as-any-for-every-subclass = true
     use-single-dict-for-object-maps = true
     use-single-value-enum-as-const = true
@@ -6075,7 +6084,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-msgspec-meta-for-map-keys --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-msgspec-meta-for-map-keys --use-one-model-per-ref-site --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -6124,6 +6133,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Submodules hidden by classes renamed | `--rename-submodules-hidden-by-classes` | Rename a submodule named like a class of its package, such as pkg/Warn.py beside the class Warn of pkg/__init__.py, to the first free name with trailing underscores, so importing it leaves the class in place. |
 | SerializeAsAny for every subclass | `--use-serialize-as-any-for-every-subclass` | Under --use-serialize-as-any, wrap a field in SerializeAsAny when any subclass of its model in the output adds fields, at any depth, after reuse merges the model and through its module. |
 | Dynamic anchors read in document order | `--read-dynamic-anchors-in-document-order` | Resolve a plain-name $dynamicRef that its dynamic scope does not bind, and a reference to a plain name several schemas declare, to the first declaration in document order, so the answer no longer depends on the order the schemas are parsed in. |
+| One model per reference site | `--use-one-model-per-ref-site` | Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting. |
 | Escaped reference pointers read | `--read-escaped-ref-pointers` | Read the ~0 and ~1 escapes and the percent-encoded octets of a $ref JSON pointer as the characters they encode, so every spelling of a pointer names the one model of its target instead of a copy named after the escaped text. |
 
 ### `standard-py315-20261104`
@@ -6193,6 +6203,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-encoded-str-for-constrained-base64 = true
     use-frozen-field = true
     use-msgspec-meta-for-map-keys = true
+    use-one-model-per-ref-site = true
     use-serialize-as-any-for-every-subclass = true
     use-single-dict-for-object-maps = true
     use-single-value-enum-as-const = true
@@ -6208,7 +6219,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-msgspec-meta-for-map-keys --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --use-annotated --use-decimal-in-field-forms --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-frozen-field --use-msgspec-meta-for-map-keys --use-one-model-per-ref-site --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-tuple-for-closed-arrays --use-typed-map-values-beside-other-types --use-union-operator
     ```
 
 | Scope | Options | Notes |
@@ -6257,6 +6268,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Submodules hidden by classes renamed | `--rename-submodules-hidden-by-classes` | Rename a submodule named like a class of its package, such as pkg/Warn.py beside the class Warn of pkg/__init__.py, to the first free name with trailing underscores, so importing it leaves the class in place. |
 | SerializeAsAny for every subclass | `--use-serialize-as-any-for-every-subclass` | Under --use-serialize-as-any, wrap a field in SerializeAsAny when any subclass of its model in the output adds fields, at any depth, after reuse merges the model and through its module. |
 | Dynamic anchors read in document order | `--read-dynamic-anchors-in-document-order` | Resolve a plain-name $dynamicRef that its dynamic scope does not bind, and a reference to a plain name several schemas declare, to the first declaration in document order, so the answer no longer depends on the order the schemas are parsed in. |
+| One model per reference site | `--use-one-model-per-ref-site` | Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting. |
 | Escaped reference pointers read | `--read-escaped-ref-pointers` | Read the ~0 and ~1 escapes and the percent-encoded octets of a $ref JSON pointer as the characters they encode, so every spelling of a pointer names the one model of its target instead of a copy named after the escaped text. |
 
 ### `practical-py310-20261104`
@@ -6333,6 +6345,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-frozen-field = true
     use-msgspec-meta-for-map-keys = true
     use-object-type = true
+    use-one-model-per-ref-site = true
     use-schema-description = true
     use-serialize-as-any-for-every-subclass = true
     use-single-dict-for-object-maps = true
@@ -6352,7 +6365,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --reuse-model --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-meta-for-map-keys --use-object-type --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --reuse-model --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.10 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-meta-for-map-keys --use-object-type --use-one-model-per-ref-site --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -6400,6 +6413,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Submodules hidden by classes renamed | `--rename-submodules-hidden-by-classes` | Rename a submodule named like a class of its package, such as pkg/Warn.py beside the class Warn of pkg/__init__.py, to the first free name with trailing underscores, so importing it leaves the class in place. |
 | SerializeAsAny for every subclass | `--use-serialize-as-any-for-every-subclass` | Under --use-serialize-as-any, wrap a field in SerializeAsAny when any subclass of its model in the output adds fields, at any depth, after reuse merges the model and through its module. |
 | Dynamic anchors read in document order | `--read-dynamic-anchors-in-document-order` | Resolve a plain-name $dynamicRef that its dynamic scope does not bind, and a reference to a plain name several schemas declare, to the first declaration in document order, so the answer no longer depends on the order the schemas are parsed in. |
+| One model per reference site | `--use-one-model-per-ref-site` | Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting. |
 | Escaped reference pointers read | `--read-escaped-ref-pointers` | Read the ~0 and ~1 escapes and the percent-encoded octets of a $ref JSON pointer as the characters they encode, so every spelling of a pointer names the one model of its target instead of a copy named after the escaped text. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
@@ -6479,6 +6493,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-frozen-field = true
     use-msgspec-meta-for-map-keys = true
     use-object-type = true
+    use-one-model-per-ref-site = true
     use-schema-description = true
     use-serialize-as-any-for-every-subclass = true
     use-single-dict-for-object-maps = true
@@ -6499,7 +6514,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --reuse-model --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-meta-for-map-keys --use-object-type --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --reuse-model --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.11 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-meta-for-map-keys --use-object-type --use-one-model-per-ref-site --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -6548,6 +6563,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Submodules hidden by classes renamed | `--rename-submodules-hidden-by-classes` | Rename a submodule named like a class of its package, such as pkg/Warn.py beside the class Warn of pkg/__init__.py, to the first free name with trailing underscores, so importing it leaves the class in place. |
 | SerializeAsAny for every subclass | `--use-serialize-as-any-for-every-subclass` | Under --use-serialize-as-any, wrap a field in SerializeAsAny when any subclass of its model in the output adds fields, at any depth, after reuse merges the model and through its module. |
 | Dynamic anchors read in document order | `--read-dynamic-anchors-in-document-order` | Resolve a plain-name $dynamicRef that its dynamic scope does not bind, and a reference to a plain name several schemas declare, to the first declaration in document order, so the answer no longer depends on the order the schemas are parsed in. |
+| One model per reference site | `--use-one-model-per-ref-site` | Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting. |
 | Escaped reference pointers read | `--read-escaped-ref-pointers` | Read the ~0 and ~1 escapes and the percent-encoded octets of a $ref JSON pointer as the characters they encode, so every spelling of a pointer names the one model of its target instead of a copy named after the escaped text. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
@@ -6627,6 +6643,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-frozen-field = true
     use-msgspec-meta-for-map-keys = true
     use-object-type = true
+    use-one-model-per-ref-site = true
     use-schema-description = true
     use-serialize-as-any-for-every-subclass = true
     use-single-dict-for-object-maps = true
@@ -6647,7 +6664,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --reuse-model --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-meta-for-map-keys --use-object-type --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --reuse-model --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.12 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-meta-for-map-keys --use-object-type --use-one-model-per-ref-site --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -6696,6 +6713,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Submodules hidden by classes renamed | `--rename-submodules-hidden-by-classes` | Rename a submodule named like a class of its package, such as pkg/Warn.py beside the class Warn of pkg/__init__.py, to the first free name with trailing underscores, so importing it leaves the class in place. |
 | SerializeAsAny for every subclass | `--use-serialize-as-any-for-every-subclass` | Under --use-serialize-as-any, wrap a field in SerializeAsAny when any subclass of its model in the output adds fields, at any depth, after reuse merges the model and through its module. |
 | Dynamic anchors read in document order | `--read-dynamic-anchors-in-document-order` | Resolve a plain-name $dynamicRef that its dynamic scope does not bind, and a reference to a plain name several schemas declare, to the first declaration in document order, so the answer no longer depends on the order the schemas are parsed in. |
+| One model per reference site | `--use-one-model-per-ref-site` | Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting. |
 | Escaped reference pointers read | `--read-escaped-ref-pointers` | Read the ~0 and ~1 escapes and the percent-encoded octets of a $ref JSON pointer as the characters they encode, so every spelling of a pointer names the one model of its target instead of a copy named after the escaped text. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
@@ -6775,6 +6793,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-frozen-field = true
     use-msgspec-meta-for-map-keys = true
     use-object-type = true
+    use-one-model-per-ref-site = true
     use-schema-description = true
     use-serialize-as-any-for-every-subclass = true
     use-single-dict-for-object-maps = true
@@ -6795,7 +6814,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --reuse-model --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-meta-for-map-keys --use-object-type --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --reuse-model --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.13 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-meta-for-map-keys --use-object-type --use-one-model-per-ref-site --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -6844,6 +6863,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Submodules hidden by classes renamed | `--rename-submodules-hidden-by-classes` | Rename a submodule named like a class of its package, such as pkg/Warn.py beside the class Warn of pkg/__init__.py, to the first free name with trailing underscores, so importing it leaves the class in place. |
 | SerializeAsAny for every subclass | `--use-serialize-as-any-for-every-subclass` | Under --use-serialize-as-any, wrap a field in SerializeAsAny when any subclass of its model in the output adds fields, at any depth, after reuse merges the model and through its module. |
 | Dynamic anchors read in document order | `--read-dynamic-anchors-in-document-order` | Resolve a plain-name $dynamicRef that its dynamic scope does not bind, and a reference to a plain name several schemas declare, to the first declaration in document order, so the answer no longer depends on the order the schemas are parsed in. |
+| One model per reference site | `--use-one-model-per-ref-site` | Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting. |
 | Escaped reference pointers read | `--read-escaped-ref-pointers` | Read the ~0 and ~1 escapes and the percent-encoded octets of a $ref JSON pointer as the characters they encode, so every spelling of a pointer names the one model of its target instead of a copy named after the escaped text. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
@@ -6923,6 +6943,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-frozen-field = true
     use-msgspec-meta-for-map-keys = true
     use-object-type = true
+    use-one-model-per-ref-site = true
     use-schema-description = true
     use-serialize-as-any-for-every-subclass = true
     use-single-dict-for-object-maps = true
@@ -6943,7 +6964,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --reuse-model --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-meta-for-map-keys --use-object-type --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --reuse-model --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.14 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-meta-for-map-keys --use-object-type --use-one-model-per-ref-site --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -6992,6 +7013,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Submodules hidden by classes renamed | `--rename-submodules-hidden-by-classes` | Rename a submodule named like a class of its package, such as pkg/Warn.py beside the class Warn of pkg/__init__.py, to the first free name with trailing underscores, so importing it leaves the class in place. |
 | SerializeAsAny for every subclass | `--use-serialize-as-any-for-every-subclass` | Under --use-serialize-as-any, wrap a field in SerializeAsAny when any subclass of its model in the output adds fields, at any depth, after reuse merges the model and through its module. |
 | Dynamic anchors read in document order | `--read-dynamic-anchors-in-document-order` | Resolve a plain-name $dynamicRef that its dynamic scope does not bind, and a reference to a plain name several schemas declare, to the first declaration in document order, so the answer no longer depends on the order the schemas are parsed in. |
+| One model per reference site | `--use-one-model-per-ref-site` | Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting. |
 | Escaped reference pointers read | `--read-escaped-ref-pointers` | Read the ~0 and ~1 escapes and the percent-encoded octets of a $ref JSON pointer as the characters they encode, so every spelling of a pointer names the one model of its target instead of a copy named after the escaped text. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
@@ -7071,6 +7093,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
     use-frozen-field = true
     use-msgspec-meta-for-map-keys = true
     use-object-type = true
+    use-one-model-per-ref-site = true
     use-schema-description = true
     use-serialize-as-any-for-every-subclass = true
     use-single-dict-for-object-maps = true
@@ -7091,7 +7114,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 === "CLI"
 
     ```bash
-    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --reuse-model --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-meta-for-map-keys --use-object-type --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
+    datamodel-codegen --allow-population-by-field-name --capitalise-numbered-enum-members --check-pattern-maps-strictly --collapse-reuse-models --collapse-root-models --collapse-shared-parent-wrappers --dedupe-request-response-variants --deserialize-default-values decimal enum --disable-timestamp --distribute-allof-over-unions --enum-field-as-literal one --filter-literal-values --formatters builtin --ignore-ref-siblings-by-schema-version --input schema.json --input-file-type jsonschema --intersect-allof-keywords --intersect-combined-schema-keywords --keep-enum-member-values --keep-field-defaults-off-branch-roots --keep-first-character-of-path-keys --keep-reference-null-on-merged-models --merge-shared-variant-tags --name-converted-payloads-by-message --naming-strategy primary-first --omit-redundant-constraints --omit-redundant-reference-null --openapi-as-definitions paths-bodies ref-components --order-constructor-fields-by final-names written-defaults --output model.py --output-model-type pydantic_v2.BaseModel --pin-aliases-with-alias-generator --read-const-beside-enum --read-dynamic-anchors-in-document-order --read-escaped-ref-pointers --read-length-keywords-by-type --read-msgspec-union-bounds-exactly --read-nullable-beside-type-list --read-schema-version-per-document --read-unevaluated-properties --rename-submodules-hidden-by-classes --reuse-model --singularize-last-word-of-item-names --snake-case-field --strict-nullable --tag-msgspec-by-payload-name --target-python-version 3.15 --use-annotated --use-decimal-in-field-forms --use-default-kwarg --use-duplicate-name-suffix-for-every-collision --use-encoded-str-for-constrained-base64 --use-field-description --use-field-description-example --use-frozen-field --use-msgspec-meta-for-map-keys --use-object-type --use-one-model-per-ref-site --use-schema-description --use-serialize-as-any-for-every-subclass --use-single-dict-for-object-maps --use-single-line-docstring --use-single-value-enum-as-const --use-site-models-for-constrained-refs --use-specialized-enum --use-standard-collections --use-subclass-enum --use-title-as-name --use-tuple-for-closed-arrays --use-tuple-for-fixed-items --use-typed-map-values-beside-other-types --use-union-operator --use-unique-items-as-set
     ```
 
 | Scope | Options | Notes |
@@ -7140,6 +7163,7 @@ These snippets show the equivalent expanded configuration without `--preset` for
 | Submodules hidden by classes renamed | `--rename-submodules-hidden-by-classes` | Rename a submodule named like a class of its package, such as pkg/Warn.py beside the class Warn of pkg/__init__.py, to the first free name with trailing underscores, so importing it leaves the class in place. |
 | SerializeAsAny for every subclass | `--use-serialize-as-any-for-every-subclass` | Under --use-serialize-as-any, wrap a field in SerializeAsAny when any subclass of its model in the output adds fields, at any depth, after reuse merges the model and through its module. |
 | Dynamic anchors read in document order | `--read-dynamic-anchors-in-document-order` | Resolve a plain-name $dynamicRef that its dynamic scope does not bind, and a reference to a plain name several schemas declare, to the first declaration in document order, so the answer no longer depends on the order the schemas are parsed in. |
+| One model per reference site | `--use-one-model-per-ref-site` | Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting. |
 | Escaped reference pointers read | `--read-escaped-ref-pointers` | Read the ~0 and ~1 escapes and the percent-encoded octets of a $ref JSON pointer as the characters they encode, so every spelling of a pointer names the one model of its target instead of a copy named after the escaped text. |
 | Practical model structure and names | `--reuse-model`, `--collapse-reuse-models`, `--use-title-as-name`, `--naming-strategy primary-first` | Deduplicate identical models without empty inheritance wrappers, prefer schema titles for class names, and keep primary definitions ahead of inline duplicate names. |
 | Practical typing and defaults | `--use-default-kwarg`, `--use-object-type`, `--use-tuple-for-fixed-items`, `--use-unique-items-as-set`, `--use-single-line-docstring` | Render defaults explicitly, prefer object for unconstrained values, preserve fixed and unique arrays, and keep short docstrings concise. |
@@ -24299,7 +24323,7 @@ This documentation is auto-generated from test cases.
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 17 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 48 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 36 | Field naming and docstring behavior |
+| 🏷️ [Field Customization](field-customization.md) | 37 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 59 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 11 | OpenAPI-specific features |
@@ -24683,6 +24707,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-non-positive-negative-number-constrained-types`](typing-customization.md#use-non-positive-negative-number-constrained-types)
 - [`--use-object-type`](typing-customization.md#use-object-type)
 - [`--use-one-literal-as-default`](model-customization.md#use-one-literal-as-default)
+- [`--use-one-model-per-ref-site`](field-customization.md#use-one-model-per-ref-site)
 - [`--use-operation-id-as-name`](openapi-only-options.md#use-operation-id-as-name)
 - [`--use-pendulum`](typing-customization.md#use-pendulum)
 - [`--use-root-model-sequence-interface`](model-customization.md#use-root-model-sequence-interface)
@@ -25728,8 +25753,9 @@ A pointer writes `/` in a name as `~1`, `~` as `~0`, and, in a URI fragment, any
 it names, keyed by its name, gets a copy named after the escaped text (`Line20Item` beside `LineItem`, `Tax1rate`
 beside `TaxRate`), which the field takes. With it every spelling of a pointer names the one model of its target, keyed
 as the `api` scope keys it; a model a reference adds is named after the decoded name, and a `--model-name-map` key that
-names a path matches it in any spelling. A `/` written unescaped inside a name is a separator then, as JSON Pointer
-reads it, so such a pointer warns as a dangling reference, unless the name holds `://`, which is still read whole.
+names a path matches it in any spelling, in the `api` scope too, where the first of the keys that spell one path renames
+it. A `/` written unescaped inside a name is a separator then, as JSON Pointer reads it, also after a `~1`, so such a
+pointer warns as a dangling reference, unless the name holds `://`, which is still read whole.
 
 !!! tip "Usage"
 
@@ -25796,29 +25822,13 @@ reads it, so such a pointer warns as a dangling reference, unless the name holds
             share: int | None = None
 
 
-        class Field5025(BaseModel):
-            share: int | None = None
-
-
-        class Line20Item(BaseModel):
-            sku: str
-
-
-        class Note0text(BaseModel):
-            body: str | None = None
-
-
-        class Tax1rate(BaseModel):
-            rate: float | None = None
-
-
         class Order(BaseModel):
-            spaced: Line20Item | None = None
-            slashed: Tax1rate | None = None
-            tilded: Note0text | None = None
-            percent: Field5025 | None = None
+            spaced: LineItem | None = None
+            slashed: TaxRate | None = None
+            tilded: NoteText | None = None
+            percent: Field50 | None = None
             raw: LineItem | None = None
-            items: list[Line20Item] | None = None
+            items: list[LineItem] | None = None
         ```
 
         <!-- fmt: on -->
@@ -36044,6 +36054,7 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/field-custom
 | [`--use-field-description`](#use-field-description) | Include schema descriptions as Field docstrings. |
 | [`--use-field-description-example`](#use-field-description-example) | Add field examples to docstrings. |
 | [`--use-inline-field-description`](#use-inline-field-description) | Add field descriptions as inline comments. |
+| [`--use-one-model-per-ref-site`](#use-one-model-per-ref-site) | Give an object `$ref` with sibling keywords one model per pl... |
 | [`--use-schema-description`](#use-schema-description) | Use schema description as class docstring. |
 | [`--use-serialization-alias`](#use-serialization-alias) | Use serialization_alias instead of alias for field aliasing ... |
 | [`--use-single-line-docstring`](#use-single-line-docstring) | Emit short docstrings on a single line. |
@@ -41120,6 +41131,265 @@ documentation without using Field() wrappers.
 
             Example: 'John Doe'
             """
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--use-one-model-per-ref-site` {#use-one-model-per-ref-site}
+
+Give an object `$ref` with sibling keywords one model per place it is written.
+
+A `$ref` beside other keywords is parsed as its target merged with them. Without this option the merged object is
+parsed at the path that reaches it, and the copy of each such `$ref` its target holds is parsed again below it, so a
+chain of N definitions whose `next` is a `$ref` to the next one beside `required` gives N(N-1)/2 site models (`Next`,
+`Next1`, ..., where the copies of one place, such as `Next1` and `Next4`, validate the same documents), one nested
+parse per hop, which stops with "Schema nesting is too deep" for a long chain. With it each place such a `$ref` is
+written, with the `$dynamicAnchor` bindings of its dynamic scope, gets one model, which every unchanged copy of the
+place shares, parsed from a worklist without nesting: N-1 site models beside the N definitions. The field that holds
+the `$ref` keeps its own required, default and alias. Where `--read-only-write-only-model-type request-response`
+splits the models, the model of a place is parsed where it is first met, so a chain still nests one parse per hop.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input ref_site_chain.json --use-one-model-per-ref-site # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-one-model-per-ref-site` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Chain",
+      "$ref": "#/$defs/Link0",
+      "$defs": {
+        "Link0": {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "integer"
+            },
+            "next": {
+              "$ref": "#/$defs/Link1",
+              "required": [
+                "v"
+              ],
+              "description": "link 0"
+            }
+          }
+        },
+        "Link1": {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "integer"
+            },
+            "next": {
+              "$ref": "#/$defs/Link2",
+              "required": [
+                "v"
+              ],
+              "description": "link 1"
+            }
+          }
+        },
+        "Link2": {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "integer"
+            },
+            "next": {
+              "$ref": "#/$defs/Link3",
+              "required": [
+                "v"
+              ],
+              "description": "link 2"
+            }
+          }
+        },
+        "Link3": {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "integer"
+            },
+            "next": {
+              "$ref": "#/$defs/Link4",
+              "required": [
+                "v"
+              ],
+              "description": "link 3"
+            }
+          }
+        },
+        "Link4": {
+          "type": "object",
+          "properties": {
+            "v": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  ref_site_chain.json
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, Field, RootModel
+
+
+        class Next3(BaseModel):
+            v: int
+
+
+        class Link3(BaseModel):
+            v: int | None = None
+            next: Next3 | None = Field(None, description='link 3')
+
+
+        class Link4(BaseModel):
+            v: int | None = None
+
+
+        class Next2(BaseModel):
+            v: int
+            next: Next3 | None = Field(None, description='link 3')
+
+
+        class Link2(BaseModel):
+            v: int | None = None
+            next: Next2 | None = Field(None, description='link 2')
+
+
+        class Next1(BaseModel):
+            v: int
+            next: Next2 | None = Field(None, description='link 2')
+
+
+        class Link1(BaseModel):
+            v: int | None = None
+            next: Next1 | None = Field(None, description='link 1')
+
+
+        class Next(BaseModel):
+            v: int
+            next: Next1 | None = Field(None, description='link 1')
+
+
+        class Link0(BaseModel):
+            v: int | None = None
+            next: Next | None = Field(None, description='link 0')
+
+
+        class Chain(RootModel[Link0]):
+            root: Link0 = Field(..., title='Chain')
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  ref_site_chain.json
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, Field, RootModel
+
+
+        class Next3(BaseModel):
+            v: int
+
+
+        class Next2(BaseModel):
+            v: int
+            next: Next3 | None = Field(None, description='link 3')
+
+
+        class Next1(BaseModel):
+            v: int
+            next: Next2 | None = Field(None, description='link 2')
+
+
+        class Next(BaseModel):
+            v: int
+            next: Next1 | None = Field(None, description='link 1')
+
+
+        class Link0(BaseModel):
+            v: int | None = None
+            next: Next | None = Field(None, description='link 0')
+
+
+        class Next6(BaseModel):
+            v: int
+
+
+        class Next5(BaseModel):
+            v: int
+            next: Next6 | None = Field(None, description='link 3')
+
+
+        class Next4(BaseModel):
+            v: int
+            next: Next5 | None = Field(None, description='link 2')
+
+
+        class Link1(BaseModel):
+            v: int | None = None
+            next: Next4 | None = Field(None, description='link 1')
+
+
+        class Next8(BaseModel):
+            v: int
+
+
+        class Next7(BaseModel):
+            v: int
+            next: Next8 | None = Field(None, description='link 3')
+
+
+        class Link2(BaseModel):
+            v: int | None = None
+            next: Next7 | None = Field(None, description='link 2')
+
+
+        class Next9(BaseModel):
+            v: int
+
+
+        class Link3(BaseModel):
+            v: int | None = None
+            next: Next9 | None = Field(None, description='link 3')
+
+
+        class Link4(BaseModel):
+            v: int | None = None
+
+
+        class Chain(RootModel[Link0]):
+            root: Link0 = Field(..., title='Chain')
         ```
 
         <!-- fmt: on -->
@@ -68797,6 +69067,7 @@ datamodel-codegen [OPTIONS]
 | [`--use-field-description`](field-customization.md#use-field-description) | Include schema descriptions as Field docstrings. |
 | [`--use-field-description-example`](field-customization.md#use-field-description-example) | Add field examples to docstrings. |
 | [`--use-inline-field-description`](field-customization.md#use-inline-field-description) | Add field descriptions as inline comments. |
+| [`--use-one-model-per-ref-site`](field-customization.md#use-one-model-per-ref-site) | Give an object `$ref` with sibling keywords one model per place it is written. |
 | [`--use-schema-description`](field-customization.md#use-schema-description) | Use schema description as class docstring. |
 | [`--use-serialization-alias`](field-customization.md#use-serialization-alias) | Use serialization_alias instead of alias for field aliasing (Pydantic v2 only). |
 | [`--use-single-line-docstring`](field-customization.md#use-single-line-docstring) | Emit short docstrings on a single line. |
@@ -69242,6 +69513,7 @@ All options sorted alphabetically:
 - [`--use-non-positive-negative-number-constrained-types`](typing-customization.md#use-non-positive-negative-number-constrained-types) - Use NonPositive/NonNegative types for number constraints.
 - [`--use-object-type`](typing-customization.md#use-object-type) - Use object instead of Any for unspecified object and array v...
 - [`--use-one-literal-as-default`](model-customization.md#use-one-literal-as-default) - Use single literal value as default when enum has only one o...
+- [`--use-one-model-per-ref-site`](field-customization.md#use-one-model-per-ref-site) - Give an object `$ref` with sibling keywords one model per pl...
 - [`--use-operation-id-as-name`](openapi-only-options.md#use-operation-id-as-name) - Use OpenAPI operationId as the generated function/class name...
 - [`--use-pendulum`](typing-customization.md#use-pendulum) - Use pendulum types for date, time, and duration fields.
 - [`--use-root-model-sequence-interface`](model-customization.md#use-root-model-sequence-interface) - Make non-null sequence-like Pydantic v2 RootModel classes im...
@@ -72923,6 +73195,37 @@ class Holder(BaseModel):
     item: First | None = None
 ```
 
+### `--use-one-model-per-ref-site`
+
+| | |
+|---|---|
+| Option | `--use-one-model-per-ref-site` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#5079](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5079), [#5076](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5076) |
+
+**Affects:** an object `$ref` with sibling keywords, such as `{"$ref": "#/$defs/Node", "required": ["v"]}`. The `$ref` is parsed as its target merged with the keywords beside it, at the path that reaches it; the target's own `$ref`s with sibling keywords are copied into the merged object and parsed again below it, so a chain of N definitions whose `next` is such a `$ref` to the next one gives N(N-1)/2 site models (`Next`, `Next1`, ..., where the copies of one place validate the same documents), one nested parse per hop, which stops with "Schema nesting is too deep" for a long chain. With the option each place such a `$ref` is written, with the `$dynamicAnchor` bindings of its dynamic scope, gets one model, which every unchanged copy of that place shares, parsed from a worklist without nesting: N-1 site models beside the N definitions. The field that holds the `$ref` keeps its own required, default and alias; a copy that a merge changed is parsed where it is, as without the option, and where request and response models are split the model is parsed where it is first met, so a chain still nests one parse per hop there.
+
+Schema: `Link0` to `Link4`, where `Link0` to `Link3` have `next: {"$ref": "#/$defs/Link<i+1>", "required": ["v"], "description": "link <i>"}`.
+
+Without the option (same as 0.89.0), `Link0.next` is `Next`, whose `next` is `Next1`, whose `next` is `Next2`, ..., and `Link1.next` is `Next4`, whose `next` is `Next5`, ...: 10 site models.
+
+With the option:
+
+```python
+class Next(BaseModel):
+    v: int
+    next: Next1 | None = Field(None, description="link 1")
+
+
+class Link0(BaseModel):
+    v: int | None = None
+    next: Next | None = Field(None, description="link 0")
+```
+
+and `Link1.next` is `Next1` too: 4 site models.
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.
@@ -73787,16 +74090,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 221 | Shared generation options. |
-| `GenerateConfig` | 236 | Public `generate()` configuration. |
-| `ParserConfig` | 184 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 186 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 194 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 196 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 187 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 187 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 186 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 187 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 222 | Shared generation options. |
+| `GenerateConfig` | 237 | Public `generate()` configuration. |
+| `ParserConfig` | 185 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 187 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 195 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 197 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 188 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 188 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 187 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 188 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -73947,6 +74250,16 @@ A plain-name fragment (`#name`) left after the embedded-resource and lenient res
 records for it against the base URI of the schema resource enclosing the reference (`parser/_schema_documents.py:plain_name_ref`,
 `ResourceRegistry.plain_name_uri`): an `$anchor` or a `$dynamicAnchor` at any position of the resource; a name the
 model resolver registered in the walk of the definitions (`parse_id`) keeps that answer (row `legacy-anchor-parse-index`).
+An object `$ref` with sibling keywords is parsed as its target merged with them at the field that holds it (row
+`ref-site` of the field table, `JsonSchemaParser._build_field_ref_site`), at each path that reaches it (row
+`legacy-merged-site-per-path`); under `--use-one-model-per-ref-site` each site, the object that holds the `$ref` with
+the `$dynamicAnchor` bindings of its dynamic scope, gets one model (`parser/_schema_refs.py:ref_site_reference`, a
+parser-owned table like the dynamic specializations; a site with schema validators takes row `validated-ref-site`,
+before `schema-validator-object`), which every copy of it a merge leaves unchanged shares, parsed from a worklist after
+the model that met it, in the context it was met in (`parse_ref_sites`, drained after each `_parse_schema_obj` and
+around the targets a parse reserves), so a chain of such sites nests no parse per hop. A recursion limit exceeded in a
+site that another site holds, parsed in place, names the option where it would remove that nesting: without it and
+unless request and response models are split (`_document_reader.py:MergedRefSiteRecursionError`, `nesting_limit`).
 A plain-name `$dynamicRef` that the dynamic-scope rule leaves to its edge reserves its target as a `$ref` does
 (`resolve_ref_callback`). A plain name that more than one schema of a document declares
 (`DocumentResources.duplicate_names`), which JSON Schema leaves undefined, warns where a reference uses it
@@ -74879,7 +75192,7 @@ A table that `types.py` reads while it is imported is a top-level leaf instead, 
 
 | Decision | Pure core | Adapters |
 | --- | --- | --- |
-| the schema a `$ref` with sibling keywords, an inherited property override or, under `--intersect-combined-schema-keywords`, a branch of an `anyOf` or `oneOf` beside keywords stands for: the intersection of its parts, keyword by keyword, keeping the earlier merge wherever it enforces the same (JSON value equality, enum intersection and tightest bounds included); an allOf whose `anyOf` and `oneOf` members hold values is the union of one intersection per combination of one branch of each, at most `BRANCH_COMBINATION_LIMIT` | `parser/_intersection.py`: `intersect_keywords`, `warn_unsatisfiable`, `json_values_equal`, `intersect_enum_values`, `intersect_constraint`, `enum_metadata`, `INTERSECTED_KEYWORDS`, `branch_combinations`; `LEGACY_ROWS`, by the option whose off state they are, the rows of 0.86.0 output a parse keeps without `--intersect-allof-keywords` (`legacy-merge-row`, `legacy-lookahead-patterns`, `legacy-all-of-site-form`, `legacy-all-of-null-as-written`) and of 0.88.0 output without `--intersect-combined-schema-keywords` (`legacy-combined-branch-row`, `legacy-enum-outside-type-kept`, `legacy-schema-maps-merged-as-schemas`, `legacy-type-narrowing-override-deferred`, `legacy-type-shape-length-from-max-items`, `legacy-all-of-ref-siblings-ignored`, `legacy-all-of-alias-member-base`, `legacy-all-of-union-null-dropped`), with `kept_legacy_rows`, the options' only policy; the inherited property override: its presentation row `inherited_override_row` and the rows of `--allof-merge-mode` (`inherits_keyword`, which keywords and defaults an override inherits; `merge_inherited_value` and `merge_inherited_keyword`, how one subschema value or keyword merges, rows `override` and `type-shape` of `InheritedRow`; `inherited_positional_tail`) | `parser/jsonschema.py`: `JsonSchemaParser._legacy_intersection` (the kept rows, read by every site the options change; `legacy-all-of-null-as-written` through `NullMode.type_excludes_member_null`; `legacy-enum-outside-type-kept` as `removes_enum_outside_type` of every site's intersection, which `parser/_schema_reading.py:_intersect_dumps` hands the core as the value check `_json_value_admitted`, also read by `parser/_schema_validators.py`), `JsonSchemaParser._combined_branch_row` (each inline branch `_combined_schema_members` gives `parse_combined_schema` and the request/response walk, over `all_of_member_row` without bounds), `JsonSchemaParser._value_ref_branch_with_site` (a `$ref` branch that names no object, merged with the value keywords beside its union as with siblings, then an inline branch, unless `legacy-ref-branch-without-site-parts`) and `JsonSchemaParser._parse_ref_branch_model` (the class of a `$ref` branch: with the allOf members beside its union, `parse_all_of` of both, unless that row), `JsonSchemaParser._parse_all_of_union_parts` and `_all_of_union_combinations` (the union parts of an allOf, a part at `union_part-<p>` below the site, and a union model per combination of one branch of each over `branch_combinations` by model, unless `legacy-union-parts-joined`); `parser/_schema_refs.py`: `intersect_ref_siblings_schema` (the merged schema of the intersection, its unsatisfiable `enum` or `const` marked as reported, for `merge_ref_with_schema`, which adds the item bounds of a `contains` beside the `$ref` through `holder` and keeps the reference it ends at through `target_ref`, and `parser/_inherited_schemas.py:resolve_inherited_parent_property`) over `intersect_ref_siblings`; `parser/_rw_split.py`: the inherited field overlay `overlay_inherited_field`; `parser/_passes/_shared.py`: the field whose default an override takes, `inherited_default_source`; `parser/_inherited_schemas.py`: `merge_properties_with_parent_constraints` and its one entry per property `inherited_override_schema` (the type shape of `--allof-merge-mode none`: `merge_inherited_type_shape_dict`, the length of a closed tuple through `get_inherited_type_shape`), `override_row` (the presentation row under the parse's merge mode, maps name by name unless `legacy-schema-maps-merged-as-schemas`, also for the allOf of maps in `parser/_all_of_values.py`), `get_deferred_inherited_property_names` with `copy_carries_override` (which partial overrides stay a copy of the inherited field), and `all_of_members` with `alias_target`, the one reader of allOf members for `JsonSchemaParser.parse_all_of` (`_parse_all_of_item` and the declared property names), `iter_allof_refs` and `JsonSchemaParser._typed_model_children` (a `$ref` member's siblings as a part where the dialect reads them, unless `legacy-all-of-ref-siblings-ignored`, and the target an alias names, unless `legacy-all-of-alias-member-base`, and a `$ref` member naming an allOf that holds a union read in its place, marked with the locations read through, unless `legacy-ref-member-union-dropped`: `_read_through_members` over `parser/_all_of_values.py:holds_union_member`); the allOf merges read its helpers (`parser/_lightweight_types.py:_intersect_constraint`, `intersect_enum_values`) and its rows `concatenating_row` and `all_of_member_row`; `parser/_all_of_values.py:all_of_value_union_site` (the allOf of value unions of `JsonSchemaParser.parse_all_of`, before it parses a member, and of a field under `--distribute-allof-over-unions`) and `all_of_value_variants` (the value branches beside object branches there), unless `legacy-value-union-members-unread` |
+| the schema a `$ref` with sibling keywords, an inherited property override or, under `--intersect-combined-schema-keywords`, a branch of an `anyOf` or `oneOf` beside keywords stands for: the intersection of its parts, keyword by keyword, keeping the earlier merge wherever it enforces the same (JSON value equality, enum intersection and tightest bounds included); an allOf whose `anyOf` and `oneOf` members hold values is the union of one intersection per combination of one branch of each, at most `BRANCH_COMBINATION_LIMIT` | `parser/_intersection.py`: `intersect_keywords`, `warn_unsatisfiable`, `json_values_equal`, `intersect_enum_values`, `intersect_constraint`, `enum_metadata`, `INTERSECTED_KEYWORDS`, `branch_combinations`; `LEGACY_ROWS`, by the option whose off state they are, the rows of 0.86.0 output a parse keeps without `--intersect-allof-keywords` (`legacy-merge-row`, `legacy-lookahead-patterns`, `legacy-all-of-site-form`, `legacy-all-of-null-as-written`) and of 0.88.0 output without `--intersect-combined-schema-keywords` (`legacy-combined-branch-row`, `legacy-enum-outside-type-kept`, `legacy-schema-maps-merged-as-schemas`, `legacy-type-narrowing-override-deferred`, `legacy-type-shape-length-from-max-items`, `legacy-all-of-ref-siblings-ignored`, `legacy-all-of-alias-member-base`, `legacy-all-of-union-null-dropped`), with `kept_legacy_rows`, the options' only policy; the inherited property override: its presentation row `inherited_override_row` and the rows of `--allof-merge-mode` (`inherits_keyword`, which keywords and defaults an override inherits; `merge_inherited_value` and `merge_inherited_keyword`, how one subschema value or keyword merges, rows `override` and `type-shape` of `InheritedRow`; `inherited_positional_tail`) | `parser/jsonschema.py`: `JsonSchemaParser._legacy_intersection` (the kept rows, read by every site the options change; `legacy-all-of-null-as-written` through `NullMode.type_excludes_member_null`; `legacy-enum-outside-type-kept` as `removes_enum_outside_type` of every site's intersection, which `parser/_schema_reading.py:_intersect_dumps` hands the core as the value check `_json_value_admitted`, also read by `parser/_schema_validators.py`), `JsonSchemaParser._combined_branch_row` (each inline branch `_combined_schema_members` gives `parse_combined_schema` and the request/response walk, over `all_of_member_row` without bounds), `JsonSchemaParser._value_ref_branch_with_site` (a `$ref` branch that names no object, merged with the value keywords beside its union as with siblings, then an inline branch, unless `legacy-ref-branch-without-site-parts`) and `JsonSchemaParser._parse_ref_branch_model` (the class of a `$ref` branch: with the allOf members beside its union, `parse_all_of` of both, unless that row), `JsonSchemaParser._parse_all_of_union_parts` and `_all_of_union_combinations` (the union parts of an allOf, a part at `union_part-<p>` below the site, and a union model per combination of one branch of each over `branch_combinations` by model, unless `legacy-union-parts-joined`); `parser/_schema_refs.py`: `intersect_ref_siblings_schema` (the merged schema of the intersection, its unsatisfiable `enum` or `const` marked as reported, for `merge_ref_with_schema`, which adds the item bounds of a `contains` beside the `$ref` through `holder` and keeps the reference it ends at through `target_ref`, and `parser/_inherited_schemas.py:resolve_inherited_parent_property`) over `intersect_ref_siblings`; `parser/_rw_split.py`: the inherited field overlay `overlay_inherited_field`; `parser/_passes/_shared.py`: the field whose default an override takes, `inherited_default_source`; `parser/_inherited_schemas.py`: `merge_properties_with_parent_constraints` and its one entry per property `inherited_override_schema` (the type shape of `--allof-merge-mode none`: `merge_inherited_type_shape_dict`, the length of a closed tuple through `get_inherited_type_shape`), `override_row` (the presentation row under the parse's merge mode, maps name by name unless `legacy-schema-maps-merged-as-schemas`, also for the allOf of maps in `parser/_all_of_values.py`), `get_deferred_inherited_property_names` with `copy_carries_override` (which partial overrides stay a copy of the inherited field), and `all_of_members` with `alias_target`, the one reader of allOf members for `JsonSchemaParser.parse_all_of` (`_parse_all_of_item` and the declared property names), `iter_allof_refs` and `JsonSchemaParser._typed_model_children` (a `$ref` member's siblings as a part where the dialect reads them, unless `legacy-all-of-ref-siblings-ignored`, and the target an alias names, unless `legacy-all-of-alias-member-base`, and a `$ref` member naming an allOf that holds a union read in its place, marked with the locations read through, unless `legacy-ref-member-union-dropped`: `_read_through_members` over `parser/_all_of_values.py:holds_union_member`, and a property such a member and another member both declare is one field, the intersection of the declarations over `all_of_member_row`: `read_through_property_conjunctions`, written where first declared by `with_conjoined_properties`); the allOf merges read its helpers (`parser/_lightweight_types.py:_intersect_constraint`, `intersect_enum_values`) and its rows `concatenating_row` and `all_of_member_row`; `parser/_all_of_values.py:all_of_value_union_site` (the allOf of value unions of `JsonSchemaParser.parse_all_of`, before it parses a member, and of a field under `--distribute-allof-over-unions`) and `all_of_value_variants` (the value branches beside object branches there), unless `legacy-value-union-members-unread` |
 | where a schema object's null comes from (a `type` of null or a `type` list holding null, an `anyOf`/`oneOf` member typed null, `nullable`, a null `enum` value) and what each L1 site reads from it; OpenAPI passes `nullable` under `--strict-nullable` as a fact (a marker the first `_get_data_type` call sets) instead of rewriting `type`; today's disagreeing sites are named `legacy-*` rows, each deleted by its fix (G12, G01 decision 3): root models ignore `nullable` (`legacy-root-model-type-only`), references read only a `type` of null (`legacy-ref-target-null-type-only`), root and array sites read `nullable` without `--strict-nullable` (`legacy-root-type-nullable-ungated`, `legacy-array-nullable-ungated`; `allOf` sites read it so by G01 decision 3, `all-of-own-null`), a copied `nullable` leaves a map without null (`legacy-map-copied-nullable`), a `Literal` enum reads its null value alone (`legacy-enum-literal-value-only`), and OpenAPI's `nullable` counts as a type list only after the type is first built (`legacy-nullable-as-type-list`); RP13 deletes the three use-site rows (`legacy-nullable-as-type-list`, `legacy-root-model-type-only`, `legacy-ref-target-null-type-only`) | `parser/_null_facts.py`: `resolve_null_facts` (`NullSources`, `NullMode`, `NullFacts`), `dump_null_sources` (the own `type` and `nullable` of a dump), and the forms converters write null in, `with_null` (`NullForm`) and `null_schema` (also the null member of `JsonSchemaParser._add_nullable_combined_schema_branches` and `parser/_all_of_values.py:all_of_site_schema`) | `parser/_intersection.py:inherited_override_row` (row `inherited-typed-without-null` from a dump); `parser/jsonschema.py:_null_sources` and `parser/_schema_object.py`: `_read_type` and `_type_null_sources` (the facts), `JsonSchemaParser._null_mode` (overridden by `parser/openapi.py:OpenAPIParser._null_mode`) and `JsonSchemaParser._null_facts`; sites `JsonSchemaObject.type_has_null`, `_excluded_null_members` (for `JsonSchemaParser.parse_combined_schema`), `_enum_entries_skip_null`, `JsonSchemaParser`: `get_object_field`, `_get_data_type`, `_get_python_type_override`, `_object_nullable`, `_create_registered_root_model`, `get_ref_data_type` and `_cache_ref_data_type_facts`, `_parse_ref_nullable_only_item`, `_build_constrained_type_union`, `parse_array_fields`, `_parse_root_type_with_context`, `_parse_multiple_types_with_properties`, `parse_enum`, `_literal_values_type`, `_add_nullable_combined_schema_branches`, `_enforced_value_keywords`, `_reads_enum_as_const`, `_all_of_part_admits_null` (site `all-of-union`, read by `parse_all_of` for the union of an allOf member's variants unless `legacy-all-of-union-null-dropped`); `parser/_schema_documents.py:_single_value_enum_as_const`, the document rewrite; `parser/_inherited_schemas.py`: `merge_inherited_type_shape_dict`, `mark_partial_inherited_fields`, `get_inherited_schema_types`; `parser/_value_keywords.py`: `resolve_array_field_required_nullable`, `extract_const_enum_from_combined`; `parser/_all_of_values.py`: `merge_all_of_root_schema`, `all_of_root_value_schema`; `parser/_object_maps.py:object_map_admits_null`; `parser/graphql.py:GraphQLParser.parse_field` (`GraphQLParser._null_mode`); the converters `parser/avro.py` (`NULL_SCHEMA`), `parser/protobuf.py` (`WELL_KNOWN_SCHEMAS`) and `parser/xmlschema.py` (`nillable`) |
 | whether a type's rendered hint, or the annotation a field writes around it, includes None, and the None a reference keeps after model merges: where the None of a type comes from is one record on the type (`TypeNull`), which each merge writes with the null of the schema every moved reference named, in both directions; row `legacy-merged-reference-null`: a reference whose schema admits null takes the null of the model it names after the merge, unless `--keep-reference-null-on-merged-models` makes the merges record that null as the one the reference keeps (`TypeNull.keeps_named`, passed by `parser/_passes/_shared.py:merge_duplicate` and `subclass_duplicate` and read by `_target_binding.py:_Binder._reference_null`) | `model/_decisions/nullability.py`: `rendered_nullability`, `takes_member_null`, `member_null`, `field_renders_none`, `reference_null`, `reference_adds_null` (record `TypeNull`) | `types.py:DataType.admits_none`, `names_nullable_model`, `adds_reference_null`; `model/_field_imports.py:field_none_source` (the field's facts into `field_renders_none`, for `model/base.py:DataModelFieldBase._field_null_source` and `field_admits_none`); writes: `types.py:DataType._materialize_render_state` (see L7) and the record, through `DataType._update_type_null`, from the store operations `redirect_reference_users`, `redirect_model_reference_users`, `mark_target_null`, `clear_target_null`, `write_rendered_null` and `drop_held_null` of `parser/generation.py:GenerationStore`; not yet: `_target_binding.py` derives the None of a reference from the bound model (`_Projector._project`, `_Models.preexisting_null`, `_Models.alias_nullable`, `_annotation_null`) |
 | whether a member of a union is the None it adds: the type None without members of its own | `types.py:_is_plain_none` | the `is_none` that a member gives `member_null` (`types.py:DataType._gives_member_null`), the members whose keywords a union takes (`types.py:DataTypeManager.constraint_keywords`) and whose leaves it enforces (`parser/_value_keywords.py:_enforcing_leaves`), and the None members an override drops from an inherited union (`parser/_field_copies.py:_without_null_members`); left out: the bare None a hint writes (`types.py:DataType._is_bare_none`), which has no alias, reference or callable either |
@@ -75229,6 +75542,7 @@ is a new named row, never an anonymous `if`.
 | `legacy-keep-order-type-statement` | `--keep-model-order` reads the value of a `type` statement, which Python defers, and the fields of the functional TypedDict only where it reads the annotations of a class, which are deferred only by `from __future__ import annotations`, not by the target | G-08 |
 | `legacy-evaluated-without-root-model` | the check of the root models that name themselves reads a Pydantic root model as a class, the own fields of the functional TypedDict where it reads the annotations of a class, and the bases of a class only then; like `--keep-model-order`, it reads them unless `from __future__ import annotations` defers them, whatever the target defers | G-08 |
 | `legacy-ref-spelling-keys` | without `--read-escaped-ref-pointers`, a reference is keyed by its spelling and a model by its parse path joined as written, so a pointer that escapes a character names a copy of the declaration it reads, named after the escaped text, and a pointer that writes `/` unescaped inside a name names the declaration whose path joins to the same text | #4952 |
+| `legacy-merged-site-per-path` | without `--use-one-model-per-ref-site`, an object `$ref` with sibling keywords is parsed as its merged target at each path that reaches it, so the copies of such a `$ref` that a merged target holds are parsed again below it, one nested parse per hop | #5079 |
 | `legacy-dynamic-anchor-parse-index` | without `--read-dynamic-anchors-in-document-order`, a plain-name `$dynamicRef` that its dynamic scope does not bind names the first `$dynamicAnchor` of its name that the parse has registered so far, else resolves through its edge, so the answer depends on the order the parse meets the schemas in | #5131 |
 | `legacy-anchor-parse-index` | a plain name the walk of the definitions registered with the model resolver (`parse_id`: an `$id` or `$anchor` at the positions of the reference pre-pass) names the schema registered last there, also where the registry names another one, such as the last declaration in document order of a name several schemas of a document declare | #5131 |
 | `legacy-first-read-dialect` | without `--read-schema-version-per-document`, the readings of a schema version are the run's: the `$ref`-sibling gate of the allOf, literal-narrowing and validator readers and the schema features (`schema_features`) are those of the document parsed at each one's first read, the gate detected as JSON Schema for every parser class (an OpenAPI or AsyncAPI document reads as draft 7 unless it holds `$defs`); whether siblings merge as parts is that of the input document being parsed, also for the schemas of a document a reference loads | keep |

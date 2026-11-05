@@ -29,7 +29,7 @@ from urllib.parse import urljoin
 
 from typing_extensions import ReadOnly, Self, TypedDict, final, override
 
-from datamodel_code_generator._json_pointer import is_pointer_fragment, join_pointer, pointer_opening
+from datamodel_code_generator._json_pointer import is_pointer_fragment, join_pointer, pointer_opening, pointer_tokens
 from datamodel_code_generator._records import record
 from datamodel_code_generator.reference import SchemaLocation
 
@@ -244,7 +244,8 @@ class DocumentResources:
     """
     duplicate_names: Mapping[str, tuple[str, ...]]
     """Each plain-name URI (an `$anchor`, a `$dynamicAnchor` or an identifier that is a fragment) that more than one
-    schema declares, to their locations in document order; JSON Schema leaves a reference to it undefined."""
+    schema declares, to their locations in document order (``_document_position``); JSON Schema leaves a reference to
+    it undefined."""
     defaults: frozenset[str]
     """The URIs that only the root base names; a document registered earlier keeps such a URI."""
     resources: frozenset[str]
@@ -257,7 +258,8 @@ class DocumentResources:
     dynamic_anchors: Mapping[str, Mapping[str, str]]
     """The `$dynamicAnchor` names of each resource to their locations; the first one wins."""
     first_dynamic_anchors: Mapping[str, str]
-    """Each `$dynamicAnchor` name of the document to the location of its first declaration in document order."""
+    """Each `$dynamicAnchor` name of the document to the location of its first declaration in document order
+    (``_document_position``)."""
     implicit_resources: bool
     """Whether the document evaluates schemas as resources without an identifier, as OpenAPI component schemas."""
     embeds_resources: bool
@@ -279,23 +281,30 @@ def walk_schema_resources(  # noqa: PLR0913
     ``base`` is the URI of the document itself and ``id_field`` the identifier keyword a configured schema version
     fixes (None to read it from `$schema`). The walk descends into the keywords ``children`` yields and then visits
     each ``implicit`` resource with the document's base and ``id_field``. An identifier other than a fragment, below
-    the root, declares a resource whose base URI applies below it.
+    the root, declares a resource whose base URI applies below it. The walk meets the schemas of the root in document
+    order and the implicit resources after them, so the declarations that ``duplicate_names`` and
+    ``first_dynamic_anchors`` order are put in document order by where they are written (``_document_position``).
     """
     names: dict[str, str] = {}
     declared: set[str] = set()
-    declarations: dict[str, dict[str, None]] = {}
+    declarations: dict[str, dict[str, str]] = {}
     resources: set[str] = set()
     bases: dict[str, str] = {}
     embedded: dict[str, dict[str, str]] = {}
     dynamic_anchors: dict[str, dict[str, str]] = {}
-    first_dynamic_anchors: dict[str, str] = {}
+    dynamic_declarations: dict[str, dict[str, str]] = {}
     root_base = base
 
-    def name(uri: str, location: str) -> None:
+    def name(uri: str, location: str, pointer: str) -> None:
         names[uri] = location
         declared.add(uri)
         if not is_pointer_fragment(uri.partition("#")[2]):
-            declarations.setdefault(uri, {})[location] = None
+            declarations.setdefault(uri, {})[location] = pointer
+
+    def in_document_order(locations: dict[str, str]) -> list[str]:
+        if not implicit or len(locations) == 1:
+            return list(locations)
+        return sorted(locations, key=lambda location: _document_position(raw, locations[location]))
 
     def visit(schema: dict[str, Any], pointer: str, base: str, id_field: str | None, resource: str) -> bool:
         nonlocal root_base
@@ -303,7 +312,7 @@ def walk_schema_resources(  # noqa: PLR0913
         location = f"{document}#{pointer}"
         embeds = False
         if isinstance(identifier_value, str):
-            name(absolute := urljoin(base, identifier_value), location)
+            name(absolute := urljoin(base, identifier_value), location, pointer)
             base = absolute.split("#", 1)[0]
             if embeds := bool(pointer) and not identifier_value.startswith("#"):
                 embedded.setdefault(resource, {}).setdefault(identifier_value, pointer)
@@ -315,10 +324,10 @@ def walk_schema_resources(  # noqa: PLR0913
             bases[pointer] = base
         for keyword in ("$anchor", "$dynamicAnchor"):
             if isinstance(anchor := schema.get(keyword), str):
-                name(urljoin(base, f"#{anchor}"), location)
+                name(urljoin(base, f"#{anchor}"), location, pointer)
                 if keyword == "$dynamicAnchor":
                     dynamic_anchors.setdefault(resource, {}).setdefault(anchor, location)
-                    first_dynamic_anchors.setdefault(anchor, location)
+                    dynamic_declarations.setdefault(anchor, {}).setdefault(location, pointer)
         for path, child in children(schema):
             embeds |= visit(child, pointer + join_pointer(path), base, id_field, resource)
         return embeds
@@ -333,17 +342,34 @@ def walk_schema_resources(  # noqa: PLR0913
         root_base=root_base,
         names=MappingProxyType(names),
         duplicate_names=MappingProxyType({
-            uri: tuple(locations) for uri, locations in declarations.items() if len(locations) > 1
+            uri: tuple(in_document_order(locations)) for uri, locations in declarations.items() if len(locations) > 1
         }),
         defaults=frozenset(names.keys() - declared),
         resources=frozenset(resources),
         bases=MappingProxyType(bases),
         embedded=MappingProxyType({key: MappingProxyType(value) for key, value in embedded.items()}),
         dynamic_anchors=MappingProxyType({key: MappingProxyType(value) for key, value in dynamic_anchors.items()}),
-        first_dynamic_anchors=MappingProxyType(first_dynamic_anchors),
+        first_dynamic_anchors=MappingProxyType({
+            anchor: in_document_order(locations)[0] for anchor, locations in dynamic_declarations.items()
+        }),
         implicit_resources=bool(implicit),
         embeds_resources=embeds_resources,
     )
+
+
+def _document_position(raw: Any, pointer: str) -> tuple[int, ...]:
+    """Return where the schema at a pointer of a loaded document is written: the index of each member it lies in.
+
+    Positions compare in document order, the order the members of the document are written in.
+    """
+    position: list[int] = []
+    node = raw
+    for token in pointer_tokens(pointer):
+        keys = node if isinstance(node, dict) else range(len(node))
+        index, key = next((index, key) for index, key in enumerate(keys) if str(key) == token)
+        position.append(index)
+        node = node[key]
+    return tuple(position)
 
 
 @final

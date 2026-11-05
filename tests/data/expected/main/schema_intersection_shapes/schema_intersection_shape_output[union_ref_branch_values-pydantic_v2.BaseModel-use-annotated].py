@@ -56,9 +56,31 @@ class AtLeastInAllOf(RootModel[Quantity | AtLeastInAllOf1]):
     root: Quantity | AtLeastInAllOf1
 
 
+class Large(RootModel[int]):
+    root: Annotated[int, Field(ge=10)]
+
+
+class AtLeastTen1(RootModel[str]):
+    root: str
+
+
+class AtLeastTen(RootModel[Large | AtLeastTen1]):
+    root: Annotated[Large | AtLeastTen1, Field(ge=5)]
+
+
+class ShortLetters1(RootModel[int]):
+    root: int
+
+
+class ShortLetters(RootModel[Text | ShortLetters1]):
+    root: Annotated[Text | ShortLetters1, Field(max_length=8)]
+
+
 class Model(BaseModel):
     at_least: AtLeast | None = None
     letters: Letters | None = None
     non_empty: NonEmpty | None = None
     at_least_in_all_of: AtLeastInAllOf | None = None
     at_least_field: Quantity | AtLeastField | None = None
+    at_least_ten: AtLeastTen | None = None
+    short_letters: ShortLetters | None = None
