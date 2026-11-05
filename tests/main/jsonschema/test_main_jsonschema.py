@@ -17352,6 +17352,43 @@ def test_main_jsonschema_import_cycle_map_key_alias(output_dir: Path, output_mod
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--collapse-root-models", "--use-annotated"], id="collapse-annotated"),
+        pytest.param(["--preset", "standard-py312-20261027"], id="preset"),
+    ],
+)
+def test_main_jsonschema_import_cycle_map_key_alias_collapsed(output_dir: Path, extra_args: list[str]) -> None:
+    """Type a map key named by a root model in every collapsed site of the map, so no import cycle is left (#6381).
+
+    ``A.m`` collapses ``Counts`` and shares its key ``Key``; typing that key by its root type in ``Counts`` left the
+    one of ``A`` naming no type, which the merge of the cycle it then made with ``keys`` wrote as ``dict[, int]``.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "import_cycle_map_key_alias",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            *extra_args,
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_dir / "z.py",
+        module_name="import_cycle_map_key_alias_collapsed_z",
+        model_name="A",
+        valid_json='{"m": {"abcd": 1}}',
+        invalid_json='{"m": {"abcde": 1}}',
+        expected_error_type="string_too_long",
+    )
+
+
 def test_main_jsonschema_property_names_anyof_ref(output_file: Path) -> None:
     """Test propertyNames with anyOf containing $refs uses union of enum types as dict key."""
     run_main_and_assert(

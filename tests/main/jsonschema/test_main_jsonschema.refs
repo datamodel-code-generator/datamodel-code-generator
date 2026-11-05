@@ -7051,6 +7051,9 @@ dataclasses.dataclass	main/jsonschema/main_jsonschema/import_cycle_map_key_alias
 msgspec.Struct	main/jsonschema/main_jsonschema/import_cycle_map_key_alias[msgspec.Struct]/
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/import_cycle_map_key_alias[pydantic_v2.BaseModel]/
 typing.TypedDict	main/jsonschema/main_jsonschema/import_cycle_map_key_alias[typing.TypedDict]/
+[test_main_jsonschema_import_cycle_map_key_alias_collapsed]
+collapse-annotated	main/jsonschema/main_jsonschema/import_cycle_map_key_alias_collapsed[collapse-annotated]/
+preset	main/jsonschema/main_jsonschema/import_cycle_map_key_alias_collapsed[preset]/
 [test_main_jsonschema_import_named_like_submodule]
 class-dataclasses.dataclass	main/jsonschema/main_jsonschema/import_named_like_submodule[class-dataclasses.dataclass].payloads.txt
 class-dataclasses.dataclass	main/jsonschema/main_jsonschema/import_named_like_submodule[class-dataclasses.dataclass]/

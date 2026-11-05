@@ -297,7 +297,7 @@ class ModulesHost(
     ConstructorInfoHost,
     ReplacedRootsHost,
     TypeOverrideHost,
-    GraphBuilderHost,
+    GenerationStoreHost,
     MergedDuplicatesHost,
     CollapseRootModelsHost,
     OutputOptionsHost,
@@ -2650,10 +2650,14 @@ def type_dict_keys_by_root_types(parser: ModulesHost, state: ModuleStateView) ->
     Runs once the root types are final: after collapse, const narrowing and type overrides. Such a root model
     named inside the root type a key takes is typed the same way, and a cycle of them stops at the first repeated
     model. A root type that cannot be a dict key either keeps the root model, as does a member of a key that is no
-    reference: another member may take every key. Each changed model refreshes its backend config, as a pattern
-    that a key takes may need another regex engine.
+    reference: another member may take every key. A key that the copies of a collapsed root type share
+    (``GenerationIndex.inlined_holders_of``) is replaced in each holder as the module of its model reaches it, with
+    the imports of that module, and leaves its reference once no holder keeps it: the holder that kept it otherwise
+    named the root model through a key that no longer names it. Each changed model refreshes its backend config, as a
+    pattern that a key takes may need another regex engine.
     """
     imports = state.imports
+    index = parser.generation_store.index
     for model in state.model_list:
         changed = False
         for field in model.fields:
@@ -2674,7 +2678,11 @@ def type_dict_keys_by_root_types(parser: ModulesHost, state: ModuleStateView) ->
                     or (root_type := root_key_data_type(parser, root_model)) is None
                 ):
                     continue
-                parser._graph_builder.detach_data_type_ref(data_type)  # noqa: SLF001
+                if not any(
+                    holder is not parent and isinstance(holder, DataType)
+                    for holder in (data_type.parent, *index.inlined_holders_of(data_type))
+                ):
+                    parser._graph_builder.detach_data_type_ref(data_type)  # noqa: SLF001
                 _replace_in_place(parser._graph_builder, parent, data_type, root_type)  # noqa: SLF001
                 producer = ImportProducer("type-dict-keys-by-root-types", model, field)
                 import_references(
