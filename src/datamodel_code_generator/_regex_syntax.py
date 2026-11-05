@@ -15,11 +15,12 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 from typing_extensions import final
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterable, Sequence
 
 __all__ = [
     "EngineRow",
     "PatternConjunction",
+    "PatternEngine",
     "conjoin_patterns",
     "control_escapes_keep_meaning",
     "has_lone_surrogate",
@@ -27,15 +28,19 @@ __all__ = [
     "is_portable_pattern",
     "literal_pattern_value",
     "lookahead_patterns",
-    "needs_python_engine",
     "pairwise_patterns",
     "pattern_admits",
+    "pattern_engine",
     "pattern_implies",
     "scan_regex_syntax",
+    "selects_python_engine",
 ]
 
 EngineRow: TypeAlias = Literal["model", "adapter"]
 """What selects the ``python-re`` engine of a pattern: the config of a model, or a schema validator's adapter."""
+PatternEngine: TypeAlias = Literal["python", "surrogate", "default"]
+"""What a pattern asks of the config that builds it (``pattern_engine``): ``python-re`` for its syntax, ``python-re``
+for a lone surrogate where the config's other patterns allow it (``selects_python_engine``), or the default engine."""
 
 _LOOKAROUND_PATTERN: Final = r"\(\?<?[=!]"
 _LONE_SURROGATE: Final = r"[\ud800-\udfff]"
@@ -153,26 +158,46 @@ def scan_regex_syntax(pattern: str, *, read_verbose: bool = False) -> tuple[bool
     return (rejected or (verbose and depth > 0), minimum_python)
 
 
-def needs_python_engine(pattern: str, *, row: EngineRow, compiled: bool = True) -> bool:
-    """Return whether pydantic needs Python's ``re`` (the ``python-re`` engine) for a pattern, decided statically.
+def pattern_engine(pattern: str, *, row: EngineRow, compiled: bool = True) -> PatternEngine | None:
+    """Return the engine a pattern asks of the config that builds it, decided statically.
 
-    A lookaround always does, and so does syntax the Rust engine rejects, whichever Python reads the pattern (#5636):
-    Rust fails at import on every Python, and ``python-re`` works on the ones that parse the syntax. Row ``adapter`` (a
-    schema validator's adapter, 0.87.0) also selects it for a pattern the scan cannot read, which includes a verbose
-    pattern. Row ``model`` (the config of a model, or of the models that use a type alias, 0.84.0) reads a verbose
-    pattern that starts with ``(?x)`` and keeps the default engine for any other one; ``compiled`` tells whether
-    pydantic compiles the pattern (that of a string type), and a pattern it does not compile needs only a lookaround.
-    Both rows select it for a pattern that holds a lone surrogate (``has_lone_surrogate``).
+    A lookaround always needs Python's ``re`` (the ``python-re`` engine), and so does syntax the Rust engine rejects,
+    whichever Python reads the pattern (#5636): Rust fails at import on every Python, and ``python-re`` works on the
+    ones that parse the syntax. Row ``adapter`` (a schema validator's adapter, 0.87.0) also selects it for a pattern
+    the scan cannot read, which includes a verbose pattern. Row ``model`` (the config of a model, or of the models
+    that use a type alias, 0.84.0) reads a verbose pattern that starts with ``(?x)`` and keeps the default engine for
+    any other one; ``compiled`` tells whether pydantic compiles the pattern (that of a string type), and a pattern it
+    does not compile asks for no engine (None) unless it holds a lookaround. A pattern that holds a lone surrogate
+    (``has_lone_surrogate``) asks for ``python-re`` only where the config builds no pattern that the default engine
+    runs as written (``selects_python_engine``).
     """
     if has_lookaround(pattern):
-        return True
+        return "python"
     if row == "model" and not compiled:
-        return False
-    if has_lone_surrogate(pattern):
-        return True
+        return None
     if row == "adapter":
-        return (scan := scan_regex_syntax(pattern)) is None or scan[0]
-    return (scan := scan_regex_syntax(pattern, read_verbose=True)) is not None and scan[0]
+        rejected = (scan := scan_regex_syntax(pattern)) is None or scan[0]
+    else:
+        rejected = (scan := scan_regex_syntax(pattern, read_verbose=True)) is not None and scan[0]
+    if rejected:
+        return "python"
+    return "surrogate" if has_lone_surrogate(pattern) else "default"
+
+
+def selects_python_engine(engines: Iterable[PatternEngine | None], *, surrogates: bool = True) -> bool:
+    """Return whether a config selects ``python-re`` for the patterns it builds, given what each asks of it.
+
+    A pattern whose syntax needs the engine selects it. With ``surrogates``, so does a lone surrogate (#6320) where
+    every other pattern the config builds holds one too or needs the engine: the default engine reads the surrogate
+    as U+FFFD, and switching would change how Python reads another pattern or refuse it at import, so a config that
+    builds one the default engine runs as written keeps that engine.
+    """
+    asked: set[PatternEngine | None] = set()
+    for engine in engines:
+        if engine == "python":
+            return True
+        asked.add(engine)
+    return surrogates and "surrogate" in asked and "default" not in asked
 
 
 def control_escapes_keep_meaning(pattern: str) -> bool:
@@ -194,7 +219,7 @@ def control_escapes_keep_meaning(pattern: str) -> bool:
 
 def is_portable_pattern(pattern: str) -> bool:
     """Return whether a pattern runs on the default regex engine of every supported pydantic (row ``adapter``)."""
-    return not needs_python_engine(pattern, row="adapter")
+    return pattern_engine(pattern, row="adapter") == "default"
 
 
 _REGEX_META_CHARACTERS: Final = frozenset(r"\.^$*+?{}[]|()")

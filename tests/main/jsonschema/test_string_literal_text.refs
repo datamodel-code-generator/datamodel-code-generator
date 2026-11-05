@@ -44,5 +44,10 @@ dataclass-type-alias	main/jsonschema/string_literal_text/regex_surrogate_engine[
 model	main/jsonschema/string_literal_text/regex_surrogate_engine[model].py
 model-type-alias	main/jsonschema/string_literal_text/regex_surrogate_engine[model-type-alias].py
 model-type-alias-target-2	main/jsonschema/string_literal_text/regex_surrogate_engine[model-type-alias-target-2].py	= main/jsonschema/string_literal_text/regex_surrogate_engine[model-type-alias].py
+[test_regex_surrogate_engine_beside_default_engine_patterns]
+dataclass-type-alias	main/jsonschema/string_literal_text/regex_surrogate_engine_beside_default_engine_patterns[dataclass-type-alias].py
+model-type-alias	main/jsonschema/string_literal_text/regex_surrogate_engine_beside_default_engine_patterns[model-type-alias].py
+[test_regex_surrogate_engine_of_schema_validator_adapters]
+	main/jsonschema/string_literal_text/regex_surrogate_engine_of_schema_validator_adapters.py
 [test_typed_dict_key_text]
 	main/jsonschema/string_literal_text/typed_dict_key_text.py

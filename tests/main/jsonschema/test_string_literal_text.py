@@ -177,6 +177,135 @@ def test_regex_surrogate_engine(output_file: Path, extra_args: list[str]) -> Non
         )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel", "--use-type-alias"], id="model-type-alias"),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass", "--use-type-alias"], id="dataclass-type-alias"),
+    ],
+)
+def test_regex_surrogate_engine_beside_default_engine_patterns(output_file: Path, extra_args: list[str]) -> None:
+    r"""Keep the default regex engine for a lone surrogate where its config also builds a pattern that engine runs.
+
+    Python's engine rejects ``\p{L}`` at import and reads ``$`` before a final line feed, so a model that builds such
+    a pattern beside a lone surrogate, in its own fields (``Sibling``), in a type alias it uses (``Holder``) or in a
+    subclass that takes its config (``Base``, through ``Child``), keeps the default engine as 0.89.0 did and warns;
+    ``Surrogate``, whose config builds lone surrogates only, still selects Python's engine (#6320), and so does
+    ``Lookaround``, whose lookaround needs it anyway.
+    """
+    surrogate, letters = "^a\ud800b$", "^\\p{L}+$"
+    schema = {
+        "title": "Surrogate",
+        "type": "object",
+        "$defs": {
+            "Text": {"type": "string", "pattern": surrogate},
+            "Holder": {
+                "type": "object",
+                "properties": {"named": {"$ref": "#/$defs/Text"}, "letters": {"type": "string", "pattern": letters}},
+            },
+            "Sibling": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "pattern": surrogate},
+                    "anchored": {"type": "string", "pattern": "^abc$"},
+                },
+            },
+            "Lookaround": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "pattern": surrogate},
+                    "look": {"type": "string", "pattern": "^(?=a)a$"},
+                },
+            },
+            "Base": {"type": "object", "properties": {"text": {"type": "string", "pattern": surrogate}}},
+            "Child": {
+                "allOf": [{"$ref": "#/$defs/Base"}],
+                "type": "object",
+                "properties": {"letters": {"type": "string", "pattern": letters}},
+            },
+        },
+        "properties": {
+            "inline": {"type": "string", "pattern": surrogate},
+            **{name.lower(): {"$ref": f"#/$defs/{name}"} for name in ("Holder", "Sibling", "Lookaround", "Child")},
+        },
+    }
+    (input_path := output_file.parent / "regex_surrogate_beside.json").write_text(json.dumps(schema), encoding="utf-8")
+    with (
+        pytest.warns(UserWarning, match=r"so Holder accepts text the schema rejects: .+ r'\^\\p\{L\}\+\$'"),
+        pytest.warns(UserWarning, match=r"so Sibling accepts text the schema rejects: .+ r'\^abc\$'"),
+        pytest.warns(UserWarning, match=r"so Base accepts text the schema rejects: .+ r'\^\\p\{L\}\+\$'"),
+    ):
+        run_main_and_assert(
+            input_path=input_path,
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--formatters", "builtin", *extra_args],
+            force_exec_validation=True,
+        )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="regex_surrogate_beside",
+        model_name="Surrogate",
+        valid_json=json.dumps({
+            "holder": {"letters": "abc"},
+            "sibling": {"anchored": "abc"},
+            "child": {"letters": "abc"},
+            "lookaround": {"look": "a"},
+        }),
+        invalid_json=json.dumps({"lookaround": {"text": "a\ufffd\ufffd\ufffdb"}}),
+        expected_error_type="string_pattern_mismatch",
+    )
+    assert_generated_model_json_invalid(
+        output_file,
+        module_name="regex_surrogate_beside_inline",
+        model_name="Surrogate",
+        invalid_json=json.dumps({"inline": "a���b"}),
+        expected_error_type="string_pattern_mismatch",
+    )
+
+
+def test_regex_surrogate_engine_of_schema_validator_adapters(output_file: Path) -> None:
+    r"""Select Python's regex engine in the adapter of a patternProperties type whose patterns all hold lone surrogates.
+
+    The adapter of ``^code`` builds the lone surrogate of the alias ``Code`` alone and selects the engine (#6320); the
+    one of ``^text`` also builds ``\p{L}``, which Python's engine rejects, so it keeps the default engine.
+    """
+    surrogate = "^a\ud800b$"
+    schema = {
+        "title": "Surrogate",
+        "type": "object",
+        "$defs": {"Code": {"type": "string", "pattern": surrogate}},
+        "patternProperties": {
+            "^code": {"$ref": "#/$defs/Code"},
+            "^text": {"anyOf": [{"type": "string", "pattern": surrogate}, {"type": "string", "pattern": "^\\p{L}+$"}]},
+        },
+    }
+    (input_path := output_file.parent / "regex_surrogate_adapter.json").write_text(json.dumps(schema), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--formatters",
+            "builtin",
+            "--generate-schema-validators",
+            "--use-type-alias",
+            "--field-constraints",
+        ],
+        force_exec_validation=True,
+    )
+    with pytest.raises(SchemaValidationError):
+        Draft7Validator(schema).validate(invalid := {"code1": "a���b"})
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="regex_surrogate_adapter",
+        model_name="Surrogate",
+        valid_json='{"text1": "abc"}',
+        invalid_json=json.dumps(invalid),
+        expected_error_type="string_pattern_mismatch",
+    )
+
+
 @pytest.mark.parametrize("output_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"])
 def test_regex_literal_control_characters(output_file: Path, output_type: str) -> None:
     r"""Write a pattern as a raw literal only where its control characters keep their meaning as regex escapes.
