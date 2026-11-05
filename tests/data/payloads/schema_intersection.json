@@ -7378,5 +7378,217 @@
         ]
       }
     }
+  },
+  "allof_value_unions": {
+    "model": "Model",
+    "fields": {
+      "pair": {
+        "valid": [
+          "ab",
+          5
+        ],
+        "invalid": [
+          "a",
+          1.5
+        ]
+      },
+      "bounded": {
+        "valid": [
+          "abc",
+          3,
+          0
+        ],
+        "invalid": [
+          "abcdef",
+          "a",
+          -1
+        ]
+      },
+      "nullable": {
+        "valid": [
+          null,
+          "ab"
+        ],
+        "invalid": [
+          "a",
+          1
+        ]
+      },
+      "common": {
+        "valid": [
+          3
+        ],
+        "invalid": [
+          "a",
+          true,
+          1.5
+        ]
+      },
+      "refs": {
+        "valid": [
+          "ab",
+          3
+        ],
+        "invalid": [
+          "a",
+          "abcdef",
+          1.5
+        ]
+      },
+      "ranges": {
+        "valid": [
+          3,
+          7
+        ],
+        "invalid": [
+          6,
+          0,
+          "a"
+        ]
+      },
+      "twice": {
+        "valid": [
+          5,
+          7
+        ],
+        "invalid": [
+          6
+        ]
+      },
+      "beside": {
+        "valid": [
+          "ab",
+          5
+        ],
+        "invalid": [
+          "a"
+        ]
+      },
+      "via_union": {
+        "valid": [
+          "ab",
+          5
+        ],
+        "invalid": [
+          "a"
+        ]
+      },
+      "via_all_of": {
+        "valid": [
+          "ab",
+          5
+        ],
+        "invalid": [
+          "a"
+        ]
+      },
+      "any_branch": {
+        "valid": [
+          "a"
+        ],
+        "invalid": [
+          1
+        ]
+      },
+      "dead": {
+        "valid": [],
+        "invalid": [
+          "a",
+          1
+        ]
+      },
+      "with_object": {
+        "valid": [
+          "ab",
+          {
+            "a": "x"
+          }
+        ],
+        "invalid": [
+          "a"
+        ]
+      },
+      "with_enum": {
+        "valid": [
+          "bb",
+          3
+        ],
+        "invalid": [
+          "a"
+        ]
+      },
+      "untyped": {
+        "valid": [
+          "a",
+          1
+        ],
+        "invalid": [
+          ""
+        ]
+      },
+      "many": {
+        "valid": [
+          6
+        ],
+        "invalid": [
+          0,
+          20
+        ]
+      },
+      "inline": {
+        "valid": [
+          "ab",
+          5
+        ],
+        "invalid": [
+          "a",
+          1.5
+        ]
+      },
+      "one_base": {
+        "valid": [
+          3,
+          7
+        ],
+        "invalid": [
+          6,
+          0
+        ]
+      },
+      "two_bases": {
+        "valid": [
+          5,
+          7
+        ],
+        "invalid": [
+          6,
+          101
+        ]
+      },
+      "two_bases_items": {
+        "valid": [
+          [
+            5
+          ],
+          [
+            7
+          ]
+        ],
+        "invalid": [
+          [
+            6
+          ]
+        ]
+      },
+      "via_union_field": {
+        "valid": [
+          "ab",
+          5
+        ],
+        "invalid": [
+          "a"
+        ]
+      }
+    }
   }
 }
