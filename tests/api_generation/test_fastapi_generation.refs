@@ -65,6 +65,8 @@ native-settings	main/generation_platform/fastapi/native-settings.txt
 native-settings	main/generation_platform/fastapi/packages/native-settings/
 parameter-errors	main/generation_platform/fastapi/packages/parameter-errors/
 parameter-errors	main/generation_platform/fastapi/parameter-errors.txt
+parameter-ref-loop-30	main/generation_platform/fastapi/packages/parameter-ref-loop-30/
+parameter-ref-loop-30	main/generation_platform/fastapi/parameter-ref-loop-30.txt
 parameters	main/generation_platform/fastapi/packages/parameters/
 parameters	main/generation_platform/fastapi/parameters.txt
 parts-bound-types-errors	main/generation_platform/fastapi/packages/parts-bound-types-errors/	= main/generation_platform/fastapi/packages/info/

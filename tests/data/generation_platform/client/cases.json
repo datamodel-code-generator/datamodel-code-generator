@@ -5594,6 +5594,10 @@
       ]
     ]
   },
+  "parameter-ref-loop-30": {
+    "input": "parameter-ref-loop-30.yaml",
+    "modules": [["client", "resources", "default", "_sync.py"]]
+  },
   "parameter-content-defaults-31": {
     "input": "parameter-content-defaults-31.yaml",
     "modules": [
