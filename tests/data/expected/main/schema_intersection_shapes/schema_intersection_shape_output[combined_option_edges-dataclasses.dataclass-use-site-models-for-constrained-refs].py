@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any, TypeAlias
 
 
@@ -17,12 +18,41 @@ class Shared1:
     y: str | None = None
 
 
+class NamedEnum(Enum):
+    A = 'a'
+    ONE = 1
+    B = 'b'
+
+
+Named: TypeAlias = NamedEnum | None
+
+
+class B(Enum):
+    x = 'x'
+    field_1 = 1
+
+
+@dataclass
+class Ordered:
+    a: int | None = None
+    b: B | None = None
+
+
 @dataclass
 class P:
     x: int | None = None
 
 
 F: TypeAlias = Any
+
+
+Str: TypeAlias = str
+
+
+@dataclass
+class Base:
+    a: str | None = None
+    b: str | None = None
 
 
 @dataclass
@@ -36,6 +66,9 @@ class NullOrObject1:
 
 
 NullOrObject: TypeAlias = NullOrObject1 | None
+
+
+IntBranches: TypeAlias = float | float | None
 
 
 @dataclass
@@ -58,3 +91,6 @@ Shared3: TypeAlias = Shared2
 class Model:
     false_branch: FalseBranch2
     shared: Shared3
+    int_branches: IntBranches | None = None
+    named: Named | None = None
+    ordered: Ordered | None = None

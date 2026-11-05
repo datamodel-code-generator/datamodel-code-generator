@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Any, TypeAlias, TypedDict
+from typing import Any, Literal, TypeAlias, TypedDict
 
 from typing_extensions import NotRequired
 
@@ -16,11 +16,24 @@ class Shared1(TypedDict):
     y: NotRequired[str]
 
 
+class Ordered(TypedDict):
+    a: NotRequired[int]
+    b: NotRequired[Literal['x', 1]]
+
+
 class P(TypedDict):
     x: NotRequired[int]
 
 
 F: TypeAlias = Any
+
+
+Str: TypeAlias = str
+
+
+class Base(TypedDict):
+    a: NotRequired[str]
+    b: NotRequired[str]
 
 
 class Shared(P):
@@ -32,6 +45,9 @@ class NullOrObject1(TypedDict):
 
 
 NullOrObject: TypeAlias = NullOrObject1 | None
+
+
+IntBranches: TypeAlias = float | float | None
 
 
 class FalseBranch2(FalseBranch1, P):
@@ -51,3 +67,6 @@ SharedModel: TypeAlias = Shared2
 class Model(TypedDict):
     false_branch: FalseBranch
     shared: SharedModel
+    int_branches: NotRequired[IntBranches]
+    named: NotRequired[Literal['a', 1, 'b'] | None]
+    ordered: NotRequired[Ordered]

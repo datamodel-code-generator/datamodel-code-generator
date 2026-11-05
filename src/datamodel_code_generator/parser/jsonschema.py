@@ -3969,8 +3969,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         The row is their merge (``all_of_member_row`` without bounds), in which the branch's value of a keyword wins.
         Unless ``legacy-combined-branch-row`` is kept, the branch is the intersection of both over that row, keyword
-        by keyword, with a warning naming ``where`` for keywords without a common value. ``nullable`` is no part of
-        it: the row's value stays, so the union reads the null of a copied ``nullable`` as the null rule does (row
+        by keyword, with a warning naming ``where`` for keywords without a common value; neither is the site's own, so
+        a ``type`` keeps null only where each of them that has a ``type`` declares it. ``nullable`` is no part of it:
+        the row's value stays, so the union reads the null of a copied ``nullable`` as the null rule does (row
         ``combined-branch`` of ``parser/_null_facts.py``).
         """
         row = all_of_member_row(outer, branch, intersect_bounds=False)
@@ -3980,6 +3981,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             [_without_nullable(outer), _without_nullable(branch)],
             _without_nullable(row),
             removes_enum_outside_type="legacy-enum-outside-type-kept" not in self._legacy_intersection,
+            own_last=False,
         )
         self._warn_intersection(where, intersection, f"the keywords beside its {keyword} and its own keywords")
         return intersection.keywords | ({"nullable": row["nullable"]} if "nullable" in row else {})

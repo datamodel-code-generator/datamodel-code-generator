@@ -3,8 +3,10 @@
 
 from __future__ import annotations
 
-from typing import Any
+from enum import Enum
+from typing import Annotated, Any
 
+from pydantic import Field
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -19,12 +21,39 @@ class Shared1:
     y: str | None = None
 
 
+class NamedEnum(Enum):
+    A = 'a'
+    B = 'b'
+
+
+Named = TypeAliasType("Named", NamedEnum | None)
+
+
+class B(Enum):
+    x = 'x'
+
+
+@dataclass
+class Ordered:
+    a: int | None = None
+    b: B | None = None
+
+
 @dataclass
 class P:
     x: int | None = None
 
 
 F = TypeAliasType("F", Any)
+
+
+Str = TypeAliasType("Str", str)
+
+
+@dataclass
+class Base:
+    a: str | None = None
+    b: str | None = None
 
 
 @dataclass
@@ -38,6 +67,11 @@ class NullOrObject1:
 
 
 NullOrObject = TypeAliasType("NullOrObject", NullOrObject1 | None)
+
+
+IntBranches = TypeAliasType(
+    "IntBranches", Annotated[int, Field(ge=5)] | Annotated[int, Field(le=1)]
+)
 
 
 @dataclass
@@ -60,3 +94,6 @@ Shared3 = TypeAliasType("Shared3", Shared2 | None)
 class Model:
     false_branch: FalseBranch2
     shared: Shared3
+    int_branches: IntBranches | None = None
+    named: Named | None = None
+    ordered: Ordered | None = None

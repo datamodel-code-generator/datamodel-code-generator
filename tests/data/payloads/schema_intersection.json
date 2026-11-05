@@ -7252,6 +7252,41 @@
             "y": 1
           }
         ]
+      },
+      "int_branches": {
+        "valid": [
+          7,
+          0
+        ],
+        "invalid": [
+          3,
+          7.5
+        ]
+      },
+      "named": {
+        "valid": [
+          "a",
+          "b"
+        ],
+        "invalid": [
+          1,
+          "c"
+        ]
+      },
+      "ordered": {
+        "valid": [
+          {
+            "b": "x"
+          }
+        ],
+        "invalid": [
+          {
+            "b": 1
+          },
+          {
+            "a": "s"
+          }
+        ]
       }
     }
   },

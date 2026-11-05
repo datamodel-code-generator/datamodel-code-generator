@@ -3,9 +3,10 @@
 
 from __future__ import annotations
 
-from typing import Any, TypeAlias
+from enum import Enum
+from typing import Annotated, Any, TypeAlias
 
-from msgspec import UNSET, Struct, UnsetType
+from msgspec import UNSET, Meta, Struct, UnsetType
 
 
 class FalseBranch(Struct):
@@ -16,11 +17,36 @@ class Shared1(Struct):
     y: str | UnsetType = UNSET
 
 
+class NamedEnum(Enum):
+    A = 'a'
+    B = 'b'
+
+
+Named: TypeAlias = NamedEnum | None
+
+
+class B(Enum):
+    x = 'x'
+
+
+class Ordered(Struct):
+    a: int | UnsetType = UNSET
+    b: B | UnsetType = UNSET
+
+
 class P(Struct):
     x: int | UnsetType = UNSET
 
 
 F: TypeAlias = Any
+
+
+Str: TypeAlias = str
+
+
+class Base(Struct):
+    a: str | UnsetType = UNSET
+    b: str | UnsetType = UNSET
 
 
 class Shared(P):
@@ -32,6 +58,15 @@ class NullOrObject1(Struct):
 
 
 NullOrObject: TypeAlias = NullOrObject1 | None
+
+
+IntBranches1: TypeAlias = Annotated[int, Meta(ge=5)]
+
+
+IntBranches2: TypeAlias = Annotated[int, Meta(le=1)]
+
+
+IntBranches: TypeAlias = int
 
 
 class FalseBranch1(Struct):
@@ -53,3 +88,6 @@ Shared3: TypeAlias = Shared2 | None
 class Model(Struct):
     false_branch: FalseBranch2
     shared: Shared3
+    int_branches: IntBranches | UnsetType = UNSET
+    named: Named | UnsetType = UNSET
+    ordered: Ordered | UnsetType = UNSET

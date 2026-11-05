@@ -3,9 +3,10 @@
 
 from __future__ import annotations
 
-from typing import Any, TypeAlias
+from enum import Enum
+from typing import Annotated, Any, TypeAlias
 
-from msgspec import UNSET, Struct, UnsetType
+from msgspec import UNSET, Meta, Struct, UnsetType
 
 
 class FalseBranch(Struct):
@@ -16,11 +17,38 @@ class Shared1(Struct):
     y: str | UnsetType = UNSET
 
 
+class NamedEnum(Enum):
+    A = 'a'
+    ONE = 1
+    B = 'b'
+
+
+Named: TypeAlias = NamedEnum | None
+
+
+class B(Enum):
+    x = 'x'
+    field_1 = 1
+
+
+class Ordered(Struct):
+    a: int | UnsetType = UNSET
+    b: B | UnsetType = UNSET
+
+
 class P(Struct):
     x: int | UnsetType = UNSET
 
 
 F: TypeAlias = Any
+
+
+Str: TypeAlias = str
+
+
+class Base(Struct):
+    a: str | UnsetType = UNSET
+    b: str | UnsetType = UNSET
 
 
 class Shared(P):
@@ -32,6 +60,15 @@ class NullOrObject1(Struct):
 
 
 NullOrObject: TypeAlias = NullOrObject1 | None
+
+
+IntBranches1: TypeAlias = Annotated[float, Meta(ge=5.0)] | None
+
+
+IntBranches2: TypeAlias = Annotated[float, Meta(le=1.0)] | None
+
+
+IntBranches: TypeAlias = float | None
 
 
 class FalseBranch1(Struct):
@@ -53,3 +90,6 @@ Shared3: TypeAlias = Shared2
 class Model(Struct):
     false_branch: FalseBranch2
     shared: Shared3
+    int_branches: IntBranches | UnsetType = UNSET
+    named: Named | UnsetType = UNSET
+    ordered: Ordered | UnsetType = UNSET

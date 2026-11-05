@@ -3,9 +3,10 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, RootModel
+from pydantic import BaseModel, RootModel, conint
 
 
 class FalseBranch1(BaseModel):
@@ -16,12 +17,39 @@ class Shared1(BaseModel):
     y: str | None = None
 
 
+class NamedEnum(Enum):
+    A = 'a'
+    B = 'b'
+
+
+class Named(RootModel[NamedEnum | None]):
+    root: NamedEnum | None = None
+
+
+class B(Enum):
+    x = 'x'
+
+
+class Ordered(BaseModel):
+    a: int | None = None
+    b: B | None = None
+
+
 class P(BaseModel):
     x: int | None = None
 
 
 class F(RootModel[Any]):
     root: Any
+
+
+class Str(RootModel[str]):
+    root: str
+
+
+class Base(BaseModel):
+    a: str | None = None
+    b: str | None = None
 
 
 class Shared(P):
@@ -34,6 +62,10 @@ class NullOrObject1(BaseModel):
 
 class NullOrObject(RootModel[NullOrObject1 | None]):
     root: NullOrObject1 | None
+
+
+class IntBranches(RootModel[conint(ge=5) | conint(le=1)]):
+    root: conint(ge=5) | conint(le=1)
 
 
 class FalseBranch2(FalseBranch1, P):
@@ -55,3 +87,6 @@ class SharedModel(RootModel[Shared2 | None]):
 class Model(BaseModel):
     false_branch: FalseBranch
     shared: SharedModel
+    int_branches: IntBranches | None = None
+    named: Named | None = None
+    ordered: Ordered | None = None
