@@ -493,6 +493,9 @@ def _update_false_schema_refs(
 _EXTERNAL_REF_MAPPING_IMPORT = ImportProducer("external-ref-mapping")
 _X_PYTHON_IMPORT = ImportProducer("x-python-import")
 _DEFAULT_LEFT_OFF_KEY = "_default_left_off"
+_BRANCH_REFERENCE_KEY = "_branch_reference"
+"""Marks the ``$ref`` branch ``_parse_ref_branch_model`` reads as an allOf member with the class its site types it as,
+the specialization of its dynamic scope included, which ``_parse_all_of_item`` takes as the base class."""
 _RECORDED_TYPE_NULL_SITES: frozenset[NullSite] = frozenset({
     "object-model",
     "root-model",
@@ -4079,12 +4082,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         It is the class of the branch with the ``properties`` and ``required`` of the site, and, unless
         ``legacy-ref-branch-without-site-parts`` is kept, the ``allOf`` members beside the union as further bases, as
         an inline branch merged with the site takes them: the ``allOf`` of the branch and those members with the
-        site's other keywords (``parse_all_of``). A branch the site adds nothing to is the branch's own class.
+        site's other keywords (``parse_all_of``), the branch's class ``reference`` (``_BRANCH_REFERENCE_KEY``), a
+        dynamic scope's specialization included, its base. A branch the site adds nothing to is the branch's own class.
         """
         if obj.allOf and "legacy-ref-branch-without-site-parts" not in self._legacy_intersection:
+            member = branch.model_copy()
+            member.__dict__[_BRANCH_REFERENCE_KEY] = reference
             return self.parse_all_of(
                 name,
-                obj.model_copy(update={"allOf": [branch, *obj.allOf], "anyOf": [], "oneOf": []}),
+                obj.model_copy(update={"allOf": [member, *obj.allOf], "anyOf": [], "oneOf": []}),
                 path,
                 ignore_duplicate_model=True,
             )
@@ -4613,7 +4619,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     self.model_resolver.add(path, name, class_name=True, loaded=True)
                     self._parse_all_of_union_parts(name, ref_schema, path, union_parts)
                 else:
-                    ref = self._add_ref(all_of_item.ref)
+                    ref = all_of_item.__dict__.get(_BRANCH_REFERENCE_KEY) or self._add_ref(all_of_item.ref)
                     if self._dynamic_target_bindings(ref.path):
                         warn(
                             f"allOf base class {stable_repr(redact_reference(all_of_item.ref))} cannot follow the "

@@ -39106,6 +39106,27 @@ def test_main_jsonschema_distribute_allof_over_unions_through_ref(
 
 
 @pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param(["--distribute-allof-over-unions"], id="with-option"), pytest.param([], id="without-option")],
+)
+def test_main_jsonschema_distribute_allof_over_unions_dynamic_branch(output_file: Path, extra_args: list[str]) -> None:
+    """Give a ``$ref`` branch whose dynamic scope specializes its target the allOf members beside its union.
+
+    ``box`` reads ``value`` by the ``$dynamicAnchor`` of ``site``, a string: the branch is ``Box1``. With
+    --distribute-allof-over-unions the class of the branch takes the allOf member's ``tag`` on that specialization
+    (``Site2(Box1)``), not on the unspecialized ``Box``, whose ``value`` accepts any value; without the option the
+    branch is ``Box1`` alone, without ``tag``.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "distribute_ref_branch_dynamic.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
     "output_model_type",
     [
         "pydantic_v2.BaseModel",
