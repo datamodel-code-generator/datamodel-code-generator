@@ -117,12 +117,34 @@ def set_items_can_hash(items: Sequence[SetItemFacts]) -> bool:
 
 
 def _takes_hashable_value(facts: SetItemFacts) -> bool:
-    """Return whether some value of the type of ``facts`` hashes."""
-    if facts.null:
-        return True
-    if facts.positions is not None:
-        return all(map(_takes_hashable_value, facts.positions))
-    return not facts.unhashable and (not facts.members or any(map(_takes_hashable_value, facts.members)))
+    """Return whether some value of the type of ``facts`` hashes.
+
+    The types it is made of are read first, with a stack of their own, so the facts of a chain of type aliases of any
+    length are read.
+    """
+    taken: dict[int, bool] = {}
+    pending = [facts]
+    while pending:
+        current = pending[-1]
+        if unread := [part for part in _read_parts(current) if id(part) not in taken]:
+            pending.extend(unread)
+            continue
+        pending.pop()
+        values = [taken[id(part)] for part in _read_parts(current)]
+        if current.null:
+            taken[id(current)] = True
+        elif current.positions is not None:
+            taken[id(current)] = all(values)
+        else:
+            taken[id(current)] = not current.unhashable and (not current.members or any(values))
+    return taken[id(facts)]
+
+
+def _read_parts(facts: SetItemFacts) -> tuple[SetItemFacts, ...]:
+    """Return the facts whose values ``_takes_hashable_value`` reads for ``facts``: its positions or its members."""
+    if facts.null or facts.unhashable:
+        return ()
+    return facts.members if facts.positions is None else facts.positions
 
 
 def class_set_item_hash(*, dicts: bool, compares_by_value: bool, frozen: bool, own_hash: bool) -> SetItemHash:

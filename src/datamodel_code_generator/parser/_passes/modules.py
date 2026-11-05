@@ -1038,9 +1038,11 @@ def replace_merged_unique_list_to_set(parser: ModulesHost, models: list[DataMode
     compared them as lists, so a model merged into the field's model may declare no ``uniqueItems`` at the same place,
     or declare it through a base: the array then keeps the list, which takes the values of both. An array in a union
     beside another member of its kind, an array or a map, that keeps its lists keeps the list too, as a msgspec union
-    holds one of each. The type aliases are decided first, as in ``replace_unique_list_to_set``, so a holder never reads
-    a set its alias's value keeps a list. Under --use-unique-items-as-set-by-value the decision on the final types
-    writes them (``parser/_unique_sets.py``).
+    holds one of each. An array of the field's own schema that ``replace_unique_list_to_set`` kept a list, as its items
+    were lists then, is read again with them: it becomes a set where the sets they become hash, frozen sets under
+    --use-generic-container-types, and every model merged into its model declares it too. The type aliases are decided
+    first, as in ``replace_unique_list_to_set``, so a holder never reads a set its alias's value keeps a list. Under
+    --use-unique-items-as-set-by-value the decision on the final types writes them (``parser/_unique_sets.py``).
     """
     if not parser.use_unique_items_as_set or parser.use_unique_items_as_set_by_value:
         return

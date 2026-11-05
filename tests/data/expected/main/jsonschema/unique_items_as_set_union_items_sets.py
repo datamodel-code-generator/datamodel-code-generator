@@ -8,3 +8,4 @@ from pydantic import BaseModel
 
 class Holder(BaseModel):
     xs: frozenset[frozenset[int] | frozenset[str]] | str | None = None
+    ys: frozenset[frozenset[int] | frozenset[str]] | None = None

@@ -40,6 +40,7 @@ __all__ = [
     "PASS_DECLS",
     "RENAME_SUBMODULES_HIDDEN_BY_CLASSES",
     "REPLACE_MERGED_UNIQUE_LIST_TO_SET",
+    "REPLACE_UNHASHABLE_UNIQUE_SET_TO_LIST",
     "SCOPE_NAMES",
     "SET_VALIDATE_DEFAULT_ON_FIELDS",
     "UNBIND_HIDDEN_TYPE_FIELDS",
@@ -420,7 +421,7 @@ REPLACE_UNIQUE_LIST_TO_SET = PassDecl(
     Phase.MODULES,
     Scope.MODULE,
     PassKind.TRANSFORM,
-    reads=_facts(Fact.CONSTRAINTS, Fact.DEFAULTS, Fact.FIELD_TYPES),
+    reads=_facts(Fact.CONSTRAINTS, Fact.DEFAULTS, Fact.FIELD_TYPES, Fact.NULLABLE, Fact.REQUIRED),
     writes=_facts(Fact.CONTAINERS, Fact.FIELD_TYPES, Fact.DEFAULTS),
     after=(After("override_required_field", "converts the defaults that inherited required fields bring"),),
 )
@@ -431,7 +432,10 @@ CHANGE_FROM_IMPORT = PassDecl(
     PassKind.TRANSFORM,
     reads=_facts(Fact.FIELD_TYPES, RenderFact.MODULE_MEMBERSHIP, RenderFact.CLASS_NAMES),
     writes=_facts(Fact.NULLABLE, RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES, RenderFact.QUOTING),
-    after=(After("alias_shadowed_imports", "imports referenced models after shadowed imports took their aliases"),),
+    after=(
+        After("alias_shadowed_imports", "imports referenced models after shadowed imports took their aliases"),
+        After("replace_unique_list_to_set", "writes the nullability of imported types after the sets read it"),
+    ),
 )
 EXTRACT_INHERITED_ENUM = PassDecl(
     "extract_inherited_enum",
@@ -474,7 +478,9 @@ REPLACE_MERGED_UNIQUE_LIST_TO_SET = PassDecl(
     Phase.MODULES,
     Scope.MODULE,
     PassKind.TRANSFORM,
-    reads=_facts(Fact.CONSTRAINTS, Fact.DEFAULTS, Fact.FIELD_TYPES, Fact.MODELS_EXIST, Fact.BASES),
+    reads=_facts(
+        Fact.CONSTRAINTS, Fact.DEFAULTS, Fact.FIELD_TYPES, Fact.MODELS_EXIST, Fact.BASES, Fact.NULLABLE, Fact.REQUIRED
+    ),
     writes=_facts(Fact.CONTAINERS, Fact.FIELD_TYPES, Fact.DEFAULTS),
     after=(
         After("reuse_model", "converts the arrays reuse compares as lists once every merge into its model is known"),
@@ -511,7 +517,16 @@ REPLACE_UNHASHABLE_UNIQUE_SET_TO_LIST = PassDecl(
     Phase.MODULES,
     Scope.MODULE,
     PassKind.TRANSFORM,
-    reads=_facts(Fact.CONSTRAINTS, Fact.CONTAINERS, Fact.DEFAULTS, Fact.FIELD_TYPES, Fact.MODEL_KIND, Fact.BASES),
+    reads=_facts(
+        Fact.CONSTRAINTS,
+        Fact.CONTAINERS,
+        Fact.DEFAULTS,
+        Fact.FIELD_TYPES,
+        Fact.MODEL_KIND,
+        Fact.BASES,
+        Fact.NULLABLE,
+        Fact.REQUIRED,
+    ),
     writes=_facts(Fact.CONTAINERS, Fact.FIELD_TYPES, Fact.DEFAULTS),
     after=(
         After("collapse_root_models", "reads the models the items of a set name once collapse inlined root models"),

@@ -2067,6 +2067,8 @@ type_statement	main/openapi/main_openapi/typed_dict_functional_forward_reference
 [test_main_openapi_union_default_object]
 msgspec.Struct-msgspec_union_default_object.py	main/openapi/msgspec_union_default_object.py
 pydantic_v2.BaseModel-pydantic_v2_union_default_object.py	main/openapi/pydantic_v2_union_default_object.py
+[test_main_openapi_unique_items_as_set_nullable_alias_items]
+	main/openapi/main_openapi/unique_items_as_set_nullable_alias_items.py
 [test_main_openapi_unquoted_null]
 	main/openapi/unquoted_null.py
 [test_main_openapi_use_default_with_default_values_parameters]

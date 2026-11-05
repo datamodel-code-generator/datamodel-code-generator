@@ -3567,6 +3567,52 @@ def test_main_with_field_constraints(
         )
 
 
+def test_main_openapi_unique_items_as_set_nullable_alias_items(tmp_path: Path, output_file: Path) -> None:
+    """Write a uniqueItems array of nullable type aliases as a set, as 0.89.0 did, as their None can be a member.
+
+    ``X`` is an array and ``S`` a string with ``nullable: true``, whose None the alias's field holds; a set can hold
+    the None of ``X``, which takes no other value that hashes, and every value of ``S``.
+    """
+    input_file = tmp_path / "unique_items_nullable_alias_items.json"
+    input_file.write_text(
+        json.dumps({
+            "openapi": "3.0.3",
+            "info": {"title": "t", "version": "1"},
+            "paths": {},
+            "components": {
+                "schemas": {
+                    "X": {"type": "array", "nullable": True, "items": {"type": "integer"}},
+                    "S": {"type": "string", "nullable": True},
+                    "Holder": {
+                        "type": "object",
+                        "properties": {
+                            "xs": {"type": "array", "uniqueItems": True, "items": {"$ref": "#/components/schemas/X"}},
+                            "ss": {"type": "array", "uniqueItems": True, "items": {"$ref": "#/components/schemas/S"}},
+                        },
+                    },
+                }
+            },
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--use-type-alias", "--use-unique-items-as-set", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="unique_items_nullable_alias_items",
+        model_name="Holder",
+        valid_json='{"xs": [null, null], "ss": ["a", "a"]}',
+        invalid_json='{"ss": [1]}',
+        expected_error_type="string_type",
+        expected_repr="Holder(xs={None}, ss={'a'})",
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--field-constraints"],
     option_description="""Generate Field() with validation constraints from schema.

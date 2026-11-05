@@ -1327,7 +1327,8 @@ _NO_UNIQUE_ITEMS: Final = UniqueItemsPlan()
 UniqueItemsSources: TypeAlias = Literal["field", "merged", "all"]
 """Which schemas declaring ``uniqueItems`` a plan reads: ``field`` the field's own schema, but that of a type list,
 which every release since 0.52.0 decides before reuse; ``merged`` the others, the type list's (0.89.0) and those of the
-nodes that record it, decided once deduplication and reuse merged models; ``all`` both."""
+nodes that record it, decided once deduplication and reuse merged models, with the lists of the field's own schema that
+``field`` kept, which the sets of the others may let hold their items; ``all`` both."""
 _Path: TypeAlias = tuple[int, ...]
 
 
@@ -1561,8 +1562,10 @@ def _declared_unique_arrays(
     """Return the arrays that the schemas ``sources`` picks declare unique, by schema, each with its node's position.
 
     The position is the path of indexes from the field's type to the node built from the schema; the arrays of the
-    field's own schema but a type list's are the ``field`` source alone, so ``merged`` leaves them out wherever a node
-    records the keyword too. With ``sets``, the sets --use-unique-items-as-set wrote are among the arrays.
+    field's own schema but a type list's are the ``field`` source, so ``merged`` leaves them out wherever a node
+    records the keyword too, and reads those of them that are still lists once more, as one schema at the field's
+    level: the lists the arrays of the other schemas become sets in may let them hold their items. With ``sets``, the
+    sets --use-unique-items-as-set wrote are among the arrays.
     """
     field_type = field.data_type
     own = _declares_unique_items(field)
@@ -1573,7 +1576,7 @@ def _declared_unique_arrays(
         found.append(((), tuple(_unique_items_arrays(field_type, sets=sets))))
     if sources == "field":
         return found
-    if own and not own_released:
+    if own and (sources == "merged" or not own_released):
         found.append(((), tuple(_unique_items_arrays(field_type, sets=sets))))
     for path, node in _nodes_with_paths(field_type, ()):
         if unique_items_of(node) and (
@@ -1629,25 +1632,46 @@ def aliases_first(models: Sequence[DataModel]) -> list[DataModel]:
 
     A pass that writes the uniqueItems lists of the models as sets in this order decides an alias before the models
     that name it, so they read the sets of its value as written (``_set_item_facts``); an alias that its own value
-    names, through other aliases or not, is read as any other model.
+    names, through other aliases or not, is read as any other model. The aliases are walked with a stack of their own,
+    so a chain of aliases of any length is ordered.
     """
     aliases = {id(model): model for model in models if isinstance(model, TypeAliasBase)}
     ordered: dict[int, DataModel] = {}
     visiting: set[int] = set()
 
-    def visit(alias: DataModel) -> None:
-        if id(alias) in ordered or id(alias) in visiting:
-            return
-        visiting.add(id(alias))
+    def named(alias: DataModel) -> Iterator[DataModel]:
         for field in alias.fields:
             for nested in field.data_type.all_data_types:
                 if (reference := nested.reference) is not None and id(reference.source) in aliases:
-                    visit(aliases[id(reference.source)])
-        ordered[id(alias)] = alias
+                    yield aliases[id(reference.source)]
 
     for alias in aliases.values():
-        visit(alias)
+        if id(alias) in visiting:
+            continue
+        visiting.add(id(alias))
+        stack: list[tuple[DataModel, Iterator[DataModel]]] = [(alias, named(alias))]
+        while stack:
+            current, pending = stack[-1]
+            if (target := next((other for other in pending if id(other) not in visiting), None)) is None:
+                stack.pop()
+                ordered[id(current)] = current
+            else:
+                visiting.add(id(target))
+                stack.append((target, named(target)))
     return [*ordered.values(), *(model for model in models if id(model) not in aliases)]
+
+
+@final
+@record
+class _Combined:
+    """The facts of a tuple (``positions``) or a union of the ``count`` types read last (``_set_item_facts``)."""
+
+    positions: bool
+    count: int
+
+
+_ItemRead: TypeAlias = "tuple[DataType, Collection[int], _PlanReading]"
+"""A type to read, with the lists of the type that become sets by id and the reading."""
 
 
 def _set_item_facts(data_type: DataType, sets: Collection[int], reading: _PlanReading) -> SetItemFacts:
@@ -1656,9 +1680,36 @@ def _set_item_facts(data_type: DataType, sets: Collection[int], reading: _PlanRe
     ``sets`` holds the lists of the type that become sets, by id. A container is read as it is written: a set under
     --use-generic-container-types is a frozen set, whose values hash. The positions of a tuple of one repeated type are
     that type. A type alias is read as its value as it is written now, whose lists the passes write as sets before the
-    models that name the alias read it (``aliases_first``); one that holds itself is read as any other model the type
+    models that name the alias read it (``aliases_first``), and takes None where its value admits it, also where the
+    alias's field holds the None (``DataModel.holds_null``); one that holds itself is read as any other model the type
     names. A model takes no hashable value where its class never hashes its instances
-    (``DataModel._instances_never_hash``) and the reading reads classes (``_PlanReading.reads_classes``).
+    (``DataModel._instances_never_hash``) and the reading reads classes (``_PlanReading.reads_classes``). The types are
+    read with a stack of their own (``_set_item_step``), so a chain of aliases of any length is read.
+    """
+    facts: list[SetItemFacts] = []
+    pending: list[_ItemRead | _Combined] = [(data_type, sets, reading)]
+    while pending:
+        if isinstance(read := pending.pop(), _Combined):
+            start = len(facts) - read.count
+            parts = tuple(facts[start:])
+            del facts[start:]
+            facts.append(SetItemFacts(positions=parts) if read.positions else SetItemFacts(members=parts))
+        elif isinstance(step := _set_item_step(*read), SetItemFacts):
+            facts.append(step)
+        else:
+            combined, nested = step
+            if combined is not None:
+                pending.append(combined)
+            pending.extend(reversed(nested))
+    return facts[0]
+
+
+def _set_item_step(
+    data_type: DataType, sets: Collection[int], reading: _PlanReading
+) -> SetItemFacts | tuple[_Combined | None, list[_ItemRead]]:
+    """Return the facts of ``data_type`` (``_set_item_facts``), or the types they are made of and how they combine.
+
+    The value of a type alias is the one type its facts are; a tuple and a union combine theirs (``_Combined``).
     """
     if data_type.is_optional:
         return SetItemFacts(null=True)
@@ -1668,7 +1719,8 @@ def _set_item_facts(data_type: DataType, sets: Collection[int], reading: _PlanRe
         and id(alias) not in reading.aliases
         and alias.fields
     ):
-        return _set_item_facts(alias.fields[0].data_type, (), replace(reading, aliases=reading.aliases | {id(alias)}))
+        value = (alias.fields[0].data_type, (), replace(reading, aliases=reading.aliases | {id(alias)}))
+        return SetItemFacts(null=True) if alias.holds_null else (None, [value])
     if (
         reading.reads_classes
         and reference is not None
@@ -1676,20 +1728,17 @@ def _set_item_facts(data_type: DataType, sets: Collection[int], reading: _PlanRe
         and model._instances_never_hash(reading.generic_base_config)  # noqa: SLF001
     ):
         return SetItemFacts(unhashable=True)
-
-    def read(nested: DataType) -> SetItemFacts:
-        return _set_item_facts(nested, sets, reading)
-
     if data_type.is_tuple:
         count = data_type.tuple_item_count
         positions = data_type.data_types if count is None else data_type.data_types[: min(count, 1)]
-        return SetItemFacts(positions=tuple(map(read, positions)))
+        return _Combined(positions=True, count=len(positions)), [(position, sets, reading) for position in positions]
     if id(data_type) in sets:
         slot: ContainerSlot | None = "set"
     else:
         slot = next((slot for slot in WRITTEN_CONTAINERS if getattr(data_type, CONTAINER_FLAGS[slot])), None)
     if slot is None:
-        return SetItemFacts(members=tuple(map(read, data_type.data_types)))
+        members = data_type.data_types
+        return _Combined(positions=False, count=len(members)), [(member, sets, reading) for member in members]
     return SetItemFacts(
         unhashable=written_slot(slot, generic=data_type.use_generic_container) in UNHASHABLE_CONTAINERS.slots
     )

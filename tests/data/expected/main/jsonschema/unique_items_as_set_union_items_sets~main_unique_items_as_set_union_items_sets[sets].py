@@ -8,3 +8,4 @@ from pydantic import BaseModel
 
 class Holder(BaseModel):
     xs: list[set[int] | set[str]] | str | None = None
+    ys: list[set[int] | set[str]] | None = None

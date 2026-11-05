@@ -8448,8 +8448,12 @@ def test_main_unique_items_as_set_alias_items_merged(
 @pytest.mark.parametrize(
     ("extra_args", "expected_repr"),
     [
-        pytest.param([], "Holder(xs=[{1, 2}])", id="sets"),
-        pytest.param(["--use-generic-container-types"], "Holder(xs=frozenset({frozenset({1, 2})}))", id="frozen-sets"),
+        pytest.param([], "Holder(xs=[{1, 2}], ys=[{1, 2}])", id="sets"),
+        pytest.param(
+            ["--use-generic-container-types"],
+            "Holder(xs=frozenset({frozenset({1, 2})}), ys=frozenset({frozenset({1, 2})}))",
+            id="frozen-sets",
+        ),
     ],
 )
 def test_main_unique_items_as_set_union_items_sets(
@@ -8460,6 +8464,8 @@ def test_main_unique_items_as_set_union_items_sets(
     The array member of ``xs`` and both arrays of its items' anyOf declare ``uniqueItems`` in nested schemas, so one
     plan decides them, the arrays of the items first. Under --use-generic-container-types they become frozen sets,
     which hash, so the array that holds them becomes a frozen set too; plain sets do not hash, so it keeps its list.
+    The array of ``ys`` is its field's own schema, decided before the nested arrays, while they are lists, so it is
+    decided again with them once they are sets.
     """
     unique = {"uniqueItems": True}
     members = [{"type": "array", "items": {"type": kind}, **unique} for kind in ("integer", "string")]
@@ -8469,7 +8475,8 @@ def test_main_unique_items_as_set_union_items_sets(
             "title": "Holder",
             "type": "object",
             "properties": {
-                "xs": {"anyOf": [{"type": "array", "items": {"anyOf": members}, **unique}, {"type": "string"}]}
+                "xs": {"anyOf": [{"type": "array", "items": {"anyOf": members}, **unique}, {"type": "string"}]},
+                "ys": {"type": "array", "items": {"anyOf": members}, **unique},
             },
         }),
         encoding="utf-8",
@@ -8486,10 +8493,48 @@ def test_main_unique_items_as_set_union_items_sets(
         output_file,
         module_name="unique_items_union_items_sets",
         model_name="Holder",
-        valid_json='{"xs": [[1, 2]]}',
+        valid_json='{"xs": [[1, 2]], "ys": [[1, 2]]}',
         invalid_json='{"xs": [[1.5]]}',
         expected_error_type="int_from_float",
         expected_repr=expected_repr,
+    )
+
+
+def test_main_unique_items_as_set_long_alias_chain(tmp_path: Path, output_file: Path) -> None:
+    """Decide the set of a uniqueItems array whose items name a chain of 1200 type aliases, as 0.89.0 generated it.
+
+    Each alias is a union of the next one and an integer, so the items take a value that hashes and the array is a
+    set. The aliases are ordered and read with stacks of their own, so the chain generates at the default recursion
+    limit, which reading them one call per alias exceeded.
+    """
+    length = 1200
+    definitions: dict[str, Any] = {
+        f"X{index}": {"anyOf": [{"$ref": f"#/$defs/X{index + 1}"}, {"type": "integer"}]} for index in range(length)
+    }
+    definitions[f"X{length}"] = {"type": "string"}
+    (input_file := tmp_path / "unique_items_alias_chain.json").write_text(
+        json.dumps({
+            "title": "Root",
+            "type": "object",
+            "properties": {"xs": {"type": "array", "uniqueItems": True, "items": {"$ref": "#/$defs/X0"}}},
+            "$defs": definitions,
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--use-type-alias",
+            "--use-unique-items-as-set",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        transform=lambda output: "".join(
+            line + "\n" for line in output.splitlines() if line.startswith(("X0 ", f"X{length} ", "    xs:"))
+        ),
     )
 
 
