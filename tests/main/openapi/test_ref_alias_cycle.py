@@ -107,6 +107,61 @@ def test_ref_alias_cycle_base_model(output_file: Path) -> None:
 
 
 @pytest.mark.parametrize(
+    ("output_model_type", "input_name", "valid_json", "expected_error_type"),
+    [
+        pytest.param(
+            output_model_type,
+            input_name,
+            valid_json,
+            expected_error_type,
+            id=f"{output_model_type}-{case}",
+            marks=pytest.mark.skipif(
+                output_model_type == "typing.TypedDict" and sys.version_info < (3, 12),
+                reason="Pydantic validates typing.TypedDict from Python 3.12 on",
+            ),
+        )
+        for output_model_type, expected_error_type in (
+            ("dataclasses.dataclass", "dataclass_type"),
+            ("typing.TypedDict", "dict_type"),
+        )
+        for case, input_name, valid_json in (
+            ("field", "ref_alias_cycle.yaml", '{"a": {"k": 1}}'),
+            (
+                "users",
+                "ref_alias_cycle_users.yaml",
+                '{"c": [1, "x"], "values": {"v": [1]}, "keys": {"k": 2}, "count": 1, "extra": {}}',
+            ),
+        )
+    ],
+)
+def test_ref_alias_cycle_any(
+    output_file: Path, output_model_type: str, input_name: str, valid_json: str, expected_error_type: str
+) -> None:
+    """Type ``Any`` where a class uses type aliases that only name each other, in output nothing builds (#6313).
+
+    ``A`` is a ``$ref`` to ``B`` and ``B`` a ``$ref`` back to ``A``: the aliases name each other and no type, so a type
+    hint naming them never resolved (a dataclass failed to import). The fields, the alias ``C`` of a list of ``A``, map
+    values, map keys and additional properties that use them take ``Any``, what a schema without a type gives; the
+    aliases keep naming each other, as no class reaches them.
+    """
+    run_main_and_assert(
+        input_path=DATA_PATH / "malformed" / input_name,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", output_model_type],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"{input_name.partition('.')[0]}_{output_model_type.replace('.', '_')}",
+        model_name="Holder",
+        valid_json=valid_json,
+        invalid_json="[]",
+        expected_error_type=expected_error_type,
+    )
+
+
+@pytest.mark.parametrize(
     "output_model_type",
     ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
 )

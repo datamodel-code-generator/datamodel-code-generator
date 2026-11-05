@@ -46,7 +46,7 @@ __all__ = [
     "SCOPE_NAMES",
     "SETTLE_MODULE_UNUSED_MODELS",
     "SET_VALIDATE_DEFAULT_ON_FIELDS",
-    "TYPE_USERS_OF_DROPPED_ROOT_MODELS_BY_ANY",
+    "TYPE_USERS_OF_LOOPING_REF_CHAINS_BY_ANY",
     "UNBIND_HIDDEN_TYPE_FIELDS",
     "UPDATE_TYPE_ALIASES",
     "WARN_REQUIRED_ASSIGNMENTS_AFTER_DEFAULTS",
@@ -857,19 +857,20 @@ SETTLE_DISCRIMINATED_UNIONS = PassDecl(
     ),
     condition="the output fields write `discriminator=`",
 )
-TYPE_USERS_OF_DROPPED_ROOT_MODELS_BY_ANY = PassDecl(
-    "type_users_of_dropped_root_models_by_any",
+TYPE_USERS_OF_LOOPING_REF_CHAINS_BY_ANY = PassDecl(
+    "type_users_of_looping_ref_chains_by_any",
     Phase.MODULES,
     Scope.GLOBAL,
     PassKind.TRANSFORM,
-    reads=_facts(Fact.MODELS_EXIST, Fact.FIELD_TYPES, RenderFact.BACKEND_CONFIG),
+    reads=_facts(Fact.MODELS_EXIST, Fact.MODEL_KIND, Fact.FIELD_TYPES, Fact.CONSTRAINTS, RenderFact.BACKEND_CONFIG),
     writes=_facts(Fact.FIELD_TYPES, RenderFact.BACKEND_CONFIG),
     summary=(
-        "After every module is processed: types every user of a root model whose root names itself, which "
-        "deduplication dropped, by `Any` (fields, types, dict keys and typed additional properties), as no module "
-        "writes it."
+        "After every module is processed: types every user of a `$ref` chain that loops back without reaching a schema "
+        "by `Any` (fields, types, dict keys and typed additional properties): a root model whose root names itself, "
+        "which deduplication dropped, and a loop of type aliases that only name each other, outside the loop, as no "
+        "module writes a type for them."
     ),
-    condition="a root model that names itself was dropped, in output that nothing builds from its annotations",
+    condition="output that nothing builds from its annotations",
     after=(
         After("apply_field_type_overrides", "a field type override replaces a type before it is read"),
         After("type_dict_keys_by_root_types", "reads the dict keys that root types typed"),
@@ -895,7 +896,7 @@ WRITE_PLAIN_ALIASES_FOR_RECURSIVE_MODELS = PassDecl(
     after=(
         After("write_rule_aliases_as_classes", "reads the aliases that stay aliases once those with rules are classes"),
         After("name_inner_models_in_rules", "reads the alias values once the rules name their inner models"),
-        After("type_users_of_dropped_root_models_by_any", "reads the alias values once every user is typed"),
+        After("type_users_of_looping_ref_chains_by_any", "reads the alias values once every user is typed"),
     ),
 )
 TAG_FIELDS_OF_TAGGED_BASES = PassDecl(

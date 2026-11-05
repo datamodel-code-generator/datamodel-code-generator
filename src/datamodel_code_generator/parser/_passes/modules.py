@@ -7,7 +7,7 @@ models of other modules, reuse, collapse and discriminator tags through the narr
 state satisfy structurally. ``process_each_module`` runs the passes of each module through the
 ``_process_single_module`` hook (``ModuleLoopHost``); ``settle_kept_parent_roots``, ``apply_base_stand_in_imports``,
 ``write_rule_aliases_as_classes`` (``RuleAliasHost``), ``name_inner_models_in_rules``, ``settle_discriminated_unions``
-and ``type_users_of_dropped_root_models_by_any`` (``DroppedRootModelUsersHost``) run once every module is processed, on
+and ``type_users_of_looping_ref_chains_by_any`` (``DroppedRootModelUsersHost``) run once every module is processed, on
 the run through ``ModulesRun``.
 """
 
@@ -97,6 +97,7 @@ from datamodel_code_generator.parser._passes._keys import _DERIVED_FROM_KEY, wit
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
 from datamodel_code_generator.parser._passes._reference_users import (
     ReferenceUsersHost,
+    alias_loops,
     type_additional_properties_users,
     type_reference_users,
 )
@@ -277,7 +278,7 @@ __all__ = [
     "sort_models",
     "type_const_narrowed_values",
     "type_dict_keys_by_root_types",
-    "type_users_of_dropped_root_models_by_any",
+    "type_users_of_looping_ref_chains_by_any",
     "write_plain_aliases_for_recursive_models",
     "write_rule_aliases_as_classes",
 ]
@@ -2912,20 +2913,26 @@ def settle_discriminated_unions(parser: ModulesHost, run: ModulesRun) -> None:
                         builder.set_type_discriminator(nested, None)
 
 
-def type_users_of_dropped_root_models_by_any(parser: DroppedRootModelUsersHost, run: ModulesRun) -> None:
-    """Type every user of a root model whose root names itself, which deduplication dropped, by ``Any``.
+def type_users_of_looping_ref_chains_by_any(parser: DroppedRootModelUsersHost, run: ModulesRun) -> None:
+    """Type every user of a ``$ref`` chain that loops back without reaching a schema by ``Any``, outside the chain.
 
-    Such a root model is a ``$ref`` chain that loops back without reaching a schema (``_self_named_root_models``): no
-    module writes it, and the output names a class it never defines. Where nothing builds from the annotations
+    Such a chain is a root model whose root names itself, which deduplication dropped (``_self_named_root_models``), or
+    a loop of type aliases that only name each other (``alias_loops``): no module writes a type for it, and the output
+    names a class it never defines or an alias whose name never resolves. Where nothing builds from the annotations
     (``alias_loop_failure``), its users take ``Any``, what a schema without a type gives, in every place a type names
-    it (``type_reference_users``), the typed additional properties of the models included. Every module is processed:
-    collapse and the type overrides of each module have written the types that name it.
+    it (``type_reference_users``), the typed additional properties of the models included; the aliases of a loop keep
+    naming each other, as no class reaches them. Every module is processed: collapse and the type overrides of each
+    module have written the types that name it.
     """
     any_type = partial(parser.data_type_manager.get_data_type, Types.any)
-    models = [model for ctx in run.contexts for model in ctx.models]
-    for dropped in parser._self_named_root_models:  # noqa: SLF001
-        reference = dropped.reference
-        type_reference_users(parser, reference, any_type)
+    models = _context_models(run.contexts)
+    chains = [
+        *((dropped, frozenset[int]()) for dropped in parser._self_named_root_models),  # noqa: SLF001
+        *((loop[0], frozenset(map(id, loop))) for loop in alias_loops(models, ()).values()),
+    ]
+    for head, members in chains:
+        reference = head.reference
+        type_reference_users(parser, reference, any_type, kept_owners=members)
         for model in models:
             if reference.path in (classes := model.additional_properties_reference_classes):
                 type_additional_properties_users(

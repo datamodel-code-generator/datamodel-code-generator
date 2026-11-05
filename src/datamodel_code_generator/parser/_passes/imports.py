@@ -37,7 +37,7 @@ from datamodel_code_generator._module_paths import (
 )
 from datamodel_code_generator._python_syntax import holds_lone_surrogate
 from datamodel_code_generator._python_target_names import is_builtin_type_name
-from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph, walk_graph
+from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._requirements import pydantic_floor
 from datamodel_code_generator._target_unicode import is_importable_part
 from datamodel_code_generator._url_redaction import redact_reference
@@ -60,7 +60,6 @@ from datamodel_code_generator.model.base import BaseClassDataType, DataModel, _b
 from datamodel_code_generator.model.enum import Enum, Member, get_raw_enum_member_value
 from datamodel_code_generator.model.output import _model_field_name_collisions
 from datamodel_code_generator.model.type_alias import TypeAliasBase
-from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._imports_plan import Added, Aliased, ImportProducer, Removed
 from datamodel_code_generator.parser._passes._import_binding import (
     ReferenceExpressionHost,
@@ -80,6 +79,7 @@ from datamodel_code_generator.parser._passes._import_edges import (
     written_import_blocks,
 )
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
+from datamodel_code_generator.parser._passes._reference_users import alias_loops
 from datamodel_code_generator.parser._passes._shared import (
     BaseStandInHost,
     DataModelTypeHost,
@@ -1040,7 +1040,7 @@ def _msgspec_recursive_alias_messages(models: Sequence[DataModel]) -> Iterator[s
 
     msgspec decodes a recursive type only through a Struct: it refuses such an alias in every form the output writes,
     and every type that uses it. The ``$ref`` chains that loop back without reaching a schema are
-    ``reject_alias_cycles_without_schema``'s (``_alias_loops``).
+    ``reject_alias_cycles_without_schema``'s (``alias_loops``).
     """
     walk = walk_graph(
         GraphSnapshot.MSGSPEC_ALIAS_RECURSION,
@@ -1051,7 +1051,7 @@ def _msgspec_recursive_alias_messages(models: Sequence[DataModel]) -> Iterator[s
     )
     if not (cycles := walk.graph.circular_components((EdgeKind.ALIAS_VALUE,))):
         return
-    loops = _alias_loops(models, ())
+    loops = alias_loops(models, ())
     order = {id(model): index for index, model in enumerate(models)}
 
     def position(model: DataModel) -> int:
@@ -1171,22 +1171,6 @@ def tuple_unique_items_warning(parser: FinishHost, field: DataModelFieldBase) ->
     )
 
 
-def _named_alias(model: DataModel) -> TypeAliasBase | None:
-    """Return the type alias that a built-in type alias writes as its whole value, by nothing but its name."""
-    if not isinstance(model, TypeAliasBase) or model._uses_custom_root_template or len(model.fields) != 1:  # noqa: SLF001
-        return None
-    field = model.fields[0]
-    if (
-        (reference := (data_type := field.data_type).reference) is None
-        or not isinstance(target := reference.source, TypeAliasBase)
-        or field.annotated
-        or field.field
-        or field.type_hint.strip("\"'") != (data_type.alias or reference.short_name).strip("\"'")
-    ):
-        return None
-    return target
-
-
 def alias_loop_failure(data_model_type: type[DataModel]) -> str | None:
     """Return what fails on a model that reaches a type alias of a looping ``$ref`` chain in ``data_model_type`` output.
 
@@ -1197,24 +1181,6 @@ def alias_loop_failure(data_model_type: type[DataModel]) -> str | None:
     if data_model_type._READ_BY_MSGSPEC:  # noqa: SLF001
         return "msgspec cannot decode"
     return None
-
-
-def _alias_loops(models: Sequence[DataModel], self_named: Sequence[DataModel]) -> dict[int, tuple[DataModel, ...]]:
-    """Map each model of a ``$ref`` chain that loops back without reaching a schema to the loop, starting at it.
-
-    The loops are those of the alias graph (`EdgeKind.ALIAS`): type aliases that only name the next alias of a cycle,
-    and the root models of ``self_named``, whose root names the model itself.
-    """
-    snapshot = GraphSnapshot.ALIAS_LOOPS
-    keyed = keyed_models((*models, *self_named), snapshot.value)
-    edges = {
-        model_key_of(model.reference): (model_key_of(target.reference),)
-        for model in models
-        if (target := _named_alias(model)) is not None
-    }
-    edges.update((key, (key,)) for key in map(model_key_of, (model.reference for model in self_named)))
-    loops = reference_graph(snapshot, keyed.models, {EdgeKind.ALIAS: edges}).loops(EdgeKind.ALIAS)
-    return {id(keyed.models[key]): tuple(map(keyed.models.__getitem__, loop)) for key, loop in loops.items()}
 
 
 def _loop_error(
@@ -1258,13 +1224,13 @@ def reject_alias_cycles_without_schema(
     whose fields reach one, directly or through type aliases, could never be built or decode a value. Aliases that no
     class reaches keep their output, unless the module evaluates the name of a dropped root model as it runs, in an
     alias or, with ``evaluates_annotations``, in a class: it then fails to import. Output that nothing builds from its
-    annotations has no such user left, as ``type_users_of_dropped_root_models_by_any`` typed them ``Any``.
+    annotations has no such user left, as ``type_users_of_looping_ref_chains_by_any`` typed them ``Any``.
     """
     self_named_models = parser._self_named_root_models  # noqa: SLF001
     self_named = {id(model): (model,) for model in self_named_models}
     models = _context_models(contexts)
     if (failure := alias_loop_failure(parser.data_model_type)) is not None and (
-        cycles := _alias_loops(models, self_named_models)
+        cycles := alias_loops(models, self_named_models)
     ):
         for model in models:
             if isinstance(model, TypeAliasBase):

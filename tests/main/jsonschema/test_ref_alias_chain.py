@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
+
 from tests.main.conftest import JSON_SCHEMA_DATA_PATH, run_main_and_assert
 
 if TYPE_CHECKING:
@@ -26,3 +28,19 @@ def test_main_jsonschema_ref_alias_chain(output_file: Path) -> None:
         extra_args=["--disable-timestamp", "--formatters", "builtin"],
         force_exec_validation=True,
     )
+
+
+@pytest.mark.filterwarnings("ignore:msgspec.Meta does not take min_length on Open:UserWarning")
+def test_main_jsonschema_ref_alias_chain_msgspec(output_file: Path) -> None:
+    """Keep the msgspec aliases of a ``$ref`` loop whose links carry keywords: they are no loop of bare names.
+
+    ``Loop1`` and ``Loop2`` name each other inside ``Annotated`` with their ``Meta``, so each writes more than the next
+    one's name; msgspec is warned about as for any alias that names itself through no Struct, and nothing is rejected.
+    """
+    with pytest.warns(UserWarning, match=r"msgspec cannot decode the type aliases Loop1, Loop2, or a type that uses"):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "ref_alias_chain.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--output-model-type", "msgspec.Struct", "--disable-timestamp", "--formatters", "builtin"],
+        )

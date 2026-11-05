@@ -595,11 +595,9 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
                 when=lambda self, _: self._tag_capabilities.writes_argument,
             ),
             PassSpec(
-                "type_users_of_dropped_root_models_by_any",
-                late(modules.type_users_of_dropped_root_models_by_any),
-                when=lambda self, _: (
-                    bool(self._self_named_root_models) and imports.alias_loop_failure(self.data_model_type) is None
-                ),
+                "type_users_of_looping_ref_chains_by_any",
+                late(modules.type_users_of_looping_ref_chains_by_any),
+                when=lambda self, _: imports.alias_loop_failure(self.data_model_type) is None,
             ),
             PassSpec(
                 "write_plain_aliases_for_recursive_models",
