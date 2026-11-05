@@ -7,7 +7,7 @@ Python data models. Supports draft-04 through draft-2020-12 schemas.
 from __future__ import annotations
 
 import json
-import math  # noqa: F401  # Preserve the established parser.jsonschema export.
+import math  # Preserve the established parser.jsonschema export.
 import re
 from collections import (
     Counter,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -253,6 +253,7 @@ from datamodel_code_generator.parser._inherited_schemas import (
     _INHERITED_OVERRIDE_KEY,
 )
 from datamodel_code_generator.parser._intersection import (
+    BRANCH_COMBINATION_LIMIT,
     INHERITED_SCHEMA_KEYWORDS,  # noqa: F401  # Preserve the established parser.jsonschema export.
     INTERSECTED_KEYWORDS,  # noqa: F401  # Preserve the established parser.jsonschema export.
     LEGACY_ROWS,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -260,6 +261,7 @@ from datamodel_code_generator.parser._intersection import (
     KeywordIntersection,
     all_of_member_row,
     bounds_admit_no_value,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    branch_combinations,
     common_types,  # noqa: F401  # Preserve the established parser.jsonschema export.
     concatenating_row,
     declared_types,
@@ -4561,7 +4563,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         fields: list[DataModelFieldBase],
         base_classes: list[Reference],
         required: list[str],
-        union_models: list[Reference],
+        union_parts: list[list[Reference]],
         declared_property_names: frozenset[str],
         inherited_parent_refs: Iterable[Reference] = (),
     ) -> None:
@@ -4583,14 +4585,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
                 if ref_schema.oneOf or ref_schema.anyOf:
                     self.model_resolver.add(path, name, class_name=True, loaded=True)
-                    if ref_schema.anyOf:
-                        union_models.extend(
-                            d.reference for d in self.parse_any_of(name, ref_schema, path) if d.reference
-                        )
-                    if ref_schema.oneOf:
-                        union_models.extend(
-                            d.reference for d in self.parse_one_of(name, ref_schema, path) if d.reference
-                        )
+                    self._parse_all_of_union_parts(name, ref_schema, path, union_parts)
                 else:
                     ref = self._add_ref(all_of_item.ref)
                     if self._dynamic_target_bindings(ref.path):
@@ -4627,16 +4622,31 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     fields,
                     base_classes,
                     required,
-                    union_models,
+                    union_parts,
                     declared_property_names,
                     parent_refs,
                 )
-                if all_of_item.anyOf:
+                if all_of_item.anyOf or all_of_item.oneOf:
                     self.model_resolver.add(path, name, class_name=True, loaded=True)
-                    union_models.extend(d.reference for d in self.parse_any_of(name, all_of_item, path) if d.reference)
-                if all_of_item.oneOf:
-                    self.model_resolver.add(path, name, class_name=True, loaded=True)
-                    union_models.extend(d.reference for d in self.parse_one_of(name, all_of_item, path) if d.reference)
+                    self._parse_all_of_union_parts(name, all_of_item, path, union_parts)
+
+    def _parse_all_of_union_parts(
+        self, name: str, schema: JsonSchemaObject, path: list[str], union_parts: list[list[Reference]]
+    ) -> None:
+        """Parse the ``anyOf`` and the ``oneOf`` of an allOf member, each one more union part of the allOf.
+
+        A part holds the models of its branches. Under ``legacy-union-parts-joined`` every part is parsed at the site's
+        path; else the first part of the site is, and part ``p`` at ``union_part-<p>`` below it, so the branches of two
+        parts are different models.
+        """
+        for keyword, parse in (("anyOf", self.parse_any_of), ("oneOf", self.parse_one_of)):
+            if getattr(schema, keyword):
+                part_path = (
+                    path
+                    if not union_parts or "legacy-union-parts-joined" in self._legacy_intersection
+                    else get_special_path(f"union_part-{len(union_parts)}", path)
+                )
+                union_parts.append([d.reference for d in parse(name, schema, part_path) if d.reference])
 
     def _build_all_of_ref_root_model(
         self,
@@ -5037,7 +5047,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         fields: list[DataModelFieldBase] = []
         base_classes: list[Reference] = []
         required: list[str] = []
-        union_models: list[Reference] = []
+        union_parts: list[list[Reference]] = []
         declared_property_names: set[str] = set()
         pending_schemas = [obj]
         while pending_schemas:
@@ -5056,9 +5066,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             fields,
             base_classes,
             required,
-            union_models,
+            union_parts,
             frozenset(declared_property_names),
         )
+        union_models = [model for part in union_parts for model in part]
         if not (fields or required or union_models) and (
             value_root := _all_of_values.merge_all_of_value_schema(self, obj, path, base_classes)
             or (
@@ -5100,10 +5111,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         name,
                         obj,
                         get_special_path(f"union_model-{index}", path),
-                        (union_model, all_of_data_type.reference),
+                        (*branches, all_of_data_type.reference),
                         ignore_duplicate_model=ignore_duplicate_model,
                     )
-                    for index, union_model in enumerate(union_models)
+                    for index, branches in enumerate(self._all_of_union_combinations(obj, union_parts))
                 ),
                 *self._all_of_union_null(obj),
             ],
@@ -5124,6 +5135,32 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             description=obj.description if self.use_schema_description else None,
         )
         return self.data_type(reference=reference)
+
+    def _all_of_union_combinations(
+        self, obj: JsonSchemaObject, union_parts: list[list[Reference]]
+    ) -> list[tuple[Reference, ...]]:
+        """Return the branch models of each union model of an allOf, which also takes the class of its other parts.
+
+        Under ``legacy-union-parts-joined`` and for one part, a union model per branch of every part. Else a union
+        model per combination of one branch of each part that has models, row by row (the first part varying
+        slowest), each model once in it and each set of models once (``branch_combinations``); above
+        ``BRANCH_COMBINATION_LIMIT`` combinations a site keeps a union model per branch, with a warning.
+        """
+        joined: list[tuple[Reference, ...]] = [(model,) for part in union_parts for model in part]
+        if (
+            "legacy-union-parts-joined" in self._legacy_intersection
+            or len(parts := [part for part in union_parts if part]) <= 1
+        ):
+            return joined
+        if (combinations := branch_combinations(parts, BRANCH_COMBINATION_LIMIT, key=lambda model: model.path)) is None:
+            warn(
+                f"{named_location(obj.schema_location, 'allOf')} has {math.prod(map(len, parts))} combinations of the "
+                f"branches of its anyOf and oneOf, more than {BRANCH_COMBINATION_LIMIT}; each branch is a union "
+                "model with the other parts of the allOf, as without --distribute-allof-over-unions.",
+                stacklevel=2,
+            )
+            return joined
+        return combinations
 
     def _all_of_names_one_base(self, obj: JsonSchemaObject) -> bool:
         """Return whether an allOf site has one base class: one schema that its ``$ref`` members name, and no union.
@@ -5212,11 +5249,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         name: str,
         obj: JsonSchemaObject,
         path: list[str],
-        bases: tuple[Reference, Reference],
+        bases: tuple[Reference, ...],
         *,
         ignore_duplicate_model: bool,
     ) -> DataType:
-        """Parse the class of one union member of an allOf, located at the member's branch.
+        """Parse the class of one union member of an allOf, located at the member's (first) branch.
 
         The class of a member whose Reference several schema objects reach is left without a location too. Row
         ``legacy-allof-members-under-holder``: every member is named after the allOf's holder, ``name``, so the members

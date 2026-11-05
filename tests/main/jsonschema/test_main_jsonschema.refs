@@ -6433,6 +6433,10 @@ pydantic-dataclass	main/jsonschema/main_jsonschema/discriminator_tag_of_earlier_
 [test_main_jsonschema_distribute_allof_over_unions]
 with-option	main/jsonschema/main_jsonschema/distribute_allof_over_unions[with-option].py	= main/schema_intersection_shapes/schema_intersection_shape_output_with_distribute_option[allof_beside_union-pydantic_v2.BaseModel-default].py
 without-option	main/jsonschema/main_jsonschema/distribute_allof_over_unions[without-option].py	= main/schema_intersection_shapes/schema_intersection_shape_output[allof_beside_union-pydantic_v2.BaseModel-default].py
+[test_main_jsonschema_distribute_allof_over_unions_through_ref]
+with-option-leaf.json	main/jsonschema/main_jsonschema/distribute_allof_over_unions_through_ref[with-option-leaf.json].py
+with-option-loop.json	main/jsonschema/main_jsonschema/distribute_allof_over_unions_through_ref[with-option-loop.json].py
+without-option-leaf.json	main/jsonschema/main_jsonschema/distribute_allof_over_unions_through_ref[without-option-leaf.json].py
 [test_main_jsonschema_dotted_directory_reference]
 collapse-root-models	main/jsonschema/main_jsonschema/dotted_directory_reference[collapse-root-models]/
 default	main/jsonschema/main_jsonschema/dotted_directory_reference[default]/

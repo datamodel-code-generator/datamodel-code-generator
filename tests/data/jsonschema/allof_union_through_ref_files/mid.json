@@ -1,0 +1,16 @@
+{
+  "title": "Mid",
+  "allOf": [
+    {
+      "$ref": "parent.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "mid": {
+          "type": "string"
+        }
+      }
+    }
+  ]
+}

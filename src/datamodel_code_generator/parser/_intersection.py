@@ -73,7 +73,7 @@ from datamodel_code_generator._records import record
 from datamodel_code_generator._regex_syntax import conjoin_patterns, pattern_implies
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
+    from collections.abc import Callable, Collection, Hashable, Iterable, Mapping, Sequence
 
 __all__ = [
     "BRANCH_COMBINATION_LIMIT",
@@ -200,16 +200,36 @@ LEGACY_ROWS: Final[Mapping[str, Mapping[str, str]]] = {
             "an OpenAPI request or response body with an allOf beside an anyOf or oneOf is parsed by its allOf, the "
             "union dropped"
         ),
+        "legacy-union-parts-joined": (
+            "every anyOf and oneOf of an allOf is parsed at the site's path and their branches join one union, each "
+            "with the other parts"
+        ),
+        "legacy-ref-member-union-dropped": (
+            "an allOf member naming an allOf that holds an anyOf or oneOf is a base, which later passes drop as a "
+            "root model"
+        ),
     },
 }
 """The rows of the output of an earlier release where parts meet, by the option whose off state they are."""
 
 
-def branch_combinations(parts: Sequence[Sequence[_T]], limit: int) -> list[tuple[_T, ...]] | None:
-    """Return each combination of one item of every part, the first part varying slowest; None above ``limit``."""
+def branch_combinations(
+    parts: Sequence[Sequence[_T]], limit: int, key: Callable[[_T], Hashable] | None = None
+) -> list[tuple[_T, ...]] | None:
+    """Return each combination of one item of every part, the first part varying slowest; None above ``limit``.
+
+    With ``key`` a combination holds the items of one key once (A and A is A), and the combinations whose items have
+    the keys of an earlier one are left out (A and B is B and A).
+    """
     if prod(map(len, parts)) > limit:
         return None
-    return list(product(*parts))
+    if key is None:
+        return list(product(*parts))
+    combinations: dict[frozenset[Hashable], tuple[_T, ...]] = {}
+    for combination in product(*parts):
+        items = tuple({key(item): item for item in combination}.values())
+        combinations.setdefault(frozenset(map(key, items)), items)
+    return list(combinations.values())
 
 
 def kept_legacy_rows(enabled: Mapping[str, bool]) -> frozenset[str]:

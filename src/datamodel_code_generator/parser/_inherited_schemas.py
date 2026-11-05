@@ -32,6 +32,7 @@ from datamodel_code_generator._url_redaction import named_location
 from datamodel_code_generator.imports import IMPORT_ANY
 from datamodel_code_generator.model import DataModel, DataModelFieldBase
 from datamodel_code_generator.model.base import _field_source_name, get_inherited_fields
+from datamodel_code_generator.parser._all_of_values import holds_union_member
 from datamodel_code_generator.parser._intersection import (
     INHERITED_SCHEMA_KEYWORDS,
     POSITIONAL_SCHEMA_KEYWORDS,
@@ -90,7 +91,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._intersection import KeywordIntersection
     from datamodel_code_generator.parser._null_facts import NullFacts, NullMode, NullSite, NullSources
     from datamodel_code_generator.parser._schema_graph import _TargetNode
-    from datamodel_code_generator.reference import ModelResolver, ModelType
+    from datamodel_code_generator.reference import ModelResolver, ModelType, SchemaLocation
 
 __all__ = [
     "InheritedSchemasHost",
@@ -167,6 +168,8 @@ _INHERITED_CONTAINER_TYPE_FIELDS: tuple[tuple[frozenset[str], frozenset[str]], .
 )
 _INHERITED_MATERIALIZED_TYPE_SHAPE_KEY = "_inherited_materialized_type_shape"
 _INHERITED_OVERRIDE_KEY = "_inherited_override"
+_READ_THROUGH_KEY = "_all_of_read_through"
+"""Marks a member ``all_of_members`` reads in place of a ``$ref``, or within one, with the locations read through."""
 _NO_INHERITED_SCHEMA_MERGE = Sentinel("_NO_INHERITED_SCHEMA_MERGE")
 
 
@@ -1647,7 +1650,8 @@ def all_of_members(parser: InheritedSchemasHost, schema: JsonSchemaObject) -> li
     legacy = parser._legacy_intersection  # noqa: SLF001
     splits = "legacy-all-of-ref-siblings-ignored" not in legacy
     follows = "legacy-all-of-alias-member-base" not in legacy
-    if not (splits or follows):
+    reads_through = "legacy-ref-member-union-dropped" not in legacy
+    if not (splits or follows or reads_through):
         return list(schema.allOf)
     members: list[JsonSchemaObject | bool] = []
     for item in schema.allOf:
@@ -1666,7 +1670,40 @@ def all_of_members(parser: InheritedSchemasHost, schema: JsonSchemaObject) -> li
                     item.schema_location
                 )
             )
-    return members
+    return _read_through_members(parser, schema, members) if reads_through else members
+
+
+def _read_through_members(
+    parser: InheritedSchemasHost, schema: JsonSchemaObject, members: list[JsonSchemaObject | bool]
+) -> list[JsonSchemaObject | bool]:
+    """Return the members of an allOf with each ``$ref`` member that names an allOf holding a union read in place.
+
+    Such a member (an allOf beside its own ``anyOf`` or ``oneOf``, or one whose members hold one,
+    ``holds_union_member``) is read as an inline member, the schema it names, so its union parts join those of the
+    site. The member is marked with the locations read through so far (the site's first), and so are the inline
+    members within it; a member naming one of them adds nothing (A and A is A).
+    """
+    within = schema.__dict__.get(_READ_THROUGH_KEY)
+    read: list[JsonSchemaObject | bool] = []
+    for member in members:
+        if not isinstance(member, JsonSchemaObject) or (not member.ref and within is None):
+            read.append(member)
+        elif not member.ref:
+            read.append(_read_within(member, within))
+        elif not (target := parser._load_ref_schema_object(member.ref)).allOf or not (  # noqa: SLF001
+            target.anyOf or target.oneOf or holds_union_member(parser, target)
+        ):
+            read.append(member)
+        elif (location := target.schema_location) not in (chain := within or frozenset({schema.schema_location})):
+            read.append(_read_within(target, chain | {location}))
+    return read
+
+
+def _read_within(schema: JsonSchemaObject, chain: frozenset[SchemaLocation | None]) -> JsonSchemaObject:
+    """Return a copy of an allOf member marked as read within the locations ``chain`` (``_read_through_members``)."""
+    copied = schema.model_copy()
+    copied.__dict__[_READ_THROUGH_KEY] = chain
+    return copied
 
 
 def alias_target(parser: InheritedSchemasHost, ref: str) -> str:

@@ -1,0 +1,11 @@
+msgspec cannot decode the union U1: its Struct types A, B are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union U2: its Struct types C, D are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.inline: its Struct types Inline4, Inline5, Inline6, Inline7 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.refs: its Struct types Refs2, Refs3, Refs4, Refs5 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.roots: its Struct types Roots2, Roots3, Roots4, Roots5 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.same: its Struct types Same2, Same3, Same4, Same5 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.hierarchy: its Struct types Hierarchy2, Hierarchy3, Hierarchy4, Hierarchy5 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.withvalue: its Struct types WithValue2, WithValue3, WithValue4 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.nulls: its Struct types Nulls2, Nulls3 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.field_: its Struct types Field2, Field3, Field4, Field5 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.many: its Struct types Many8, Many9, Many10, Many11, Many12, Many13, Many14, Many15, Many16, Many17, Many18, Many19, Many20, Many21, Many22, Many23 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.

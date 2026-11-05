@@ -81,6 +81,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "AllOfValuesHost",
+    "SchemaRefReader",
     "all_of_enum_site_schema",
     "all_of_pattern_conjunction",
     "all_of_reference_value_schema",
@@ -1436,7 +1437,17 @@ def unsatisfiable_value_keywords(parser: AllOfValuesHost, parts: Sequence[JsonSc
     ).unsatisfiable
 
 
-def holds_union_member(parser: AllOfValuesHost, schema: JsonSchemaObject, seen: frozenset[str] = frozenset()) -> bool:
+class SchemaRefReader(Protocol):
+    """The reads of a ``$ref`` that ``holds_union_member`` makes: its reference key and the schema it names."""
+
+    def _ref_path(self, ref: str) -> str:
+        """Return the reference key a reference names."""
+
+    def _load_ref_schema_object(self, ref: str) -> JsonSchemaObject:
+        """Load the schema a reference names."""
+
+
+def holds_union_member(parser: SchemaRefReader, schema: JsonSchemaObject, seen: frozenset[str] = frozenset()) -> bool:
     """Return whether an allOf member of ``schema`` holds an ``anyOf`` or ``oneOf``, also through its allOf members.
 
     A ``$ref`` member holds what the schema it names holds; a reference the walk has passed holds nothing.

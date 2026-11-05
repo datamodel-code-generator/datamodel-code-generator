@@ -209,16 +209,23 @@ Typing customization:
   --disable-future-imports
                         Disable __future__ imports
   --distribute-allof-over-unions, --no-distribute-allof-over-unions
-                        Read an `allOf` with the `anyOf` and `oneOf` beside it
-                        as JSON Schema validates them: a `$ref` branch of an
-                        `anyOf` or `oneOf` takes the `allOf` members beside
-                        it, which an inline branch already takes, and the
-                        value keywords beside it where it names no object, and
-                        an OpenAPI request or response body with an `allOf`
-                        beside an `anyOf` or `oneOf` is that union as a schema
-                        of the components is. Without it a `$ref` branch takes
-                        only the `properties` and `required` beside it and a
-                        body drops the union, as in 0.89.0
+                        Read an `allOf` with the `anyOf` and `oneOf` it holds
+                        or sits beside as JSON Schema validates them: an
+                        `allOf` of several is one union variant per
+                        combination of one branch of each, also through a
+                        `$ref` member that names an `allOf` over a union, a
+                        `$ref` branch takes the `allOf` members beside its
+                        `anyOf` or `oneOf`, which an inline branch already
+                        takes, and the value keywords beside it where it names
+                        no object, and an OpenAPI request or response body
+                        with an `allOf` beside an `anyOf` or `oneOf` is that
+                        union as a schema of the components is. Without it the
+                        branches of every `anyOf` and `oneOf` of an `allOf`
+                        join one union (the inline branches of a second
+                        replacing those of the first), a `$ref` member naming
+                        an `allOf` over a union is dropped, a `$ref` branch
+                        takes only the `properties` and `required` beside it
+                        and a body drops the union, as in 0.89.0
   --enum-field-as-literal {all,one,none}
                         Parse enum field as literal. all: all enum field type
                         are Literal. one: field type is Literal when an enum

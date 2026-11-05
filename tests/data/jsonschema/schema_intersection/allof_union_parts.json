@@ -1,0 +1,533 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "inline": {
+      "$ref": "#/$defs/Inline"
+    },
+    "refs": {
+      "$ref": "#/$defs/Refs"
+    },
+    "roots": {
+      "$ref": "#/$defs/Roots"
+    },
+    "same": {
+      "$ref": "#/$defs/Same"
+    },
+    "hierarchy": {
+      "$ref": "#/$defs/Hierarchy"
+    },
+    "withvalue": {
+      "$ref": "#/$defs/WithValue"
+    },
+    "nulls": {
+      "$ref": "#/$defs/Nulls"
+    },
+    "field": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/A"
+            },
+            {
+              "$ref": "#/$defs/B"
+            }
+          ]
+        },
+        {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/C"
+            },
+            {
+              "$ref": "#/$defs/D"
+            }
+          ]
+        }
+      ]
+    },
+    "many": {
+      "$ref": "#/$defs/Many"
+    }
+  },
+  "$defs": {
+    "A": {
+      "type": "object",
+      "required": [
+        "a"
+      ],
+      "properties": {
+        "a": {
+          "type": "string"
+        }
+      }
+    },
+    "B": {
+      "type": "object",
+      "required": [
+        "b"
+      ],
+      "properties": {
+        "b": {
+          "type": "string"
+        }
+      }
+    },
+    "C": {
+      "type": "object",
+      "required": [
+        "c"
+      ],
+      "properties": {
+        "c": {
+          "type": "string"
+        }
+      }
+    },
+    "D": {
+      "type": "object",
+      "required": [
+        "d"
+      ],
+      "properties": {
+        "d": {
+          "type": "string"
+        }
+      }
+    },
+    "Animal": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Cat": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Animal"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "meow": {
+              "type": "boolean"
+            }
+          }
+        }
+      ]
+    },
+    "U1": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/A"
+        },
+        {
+          "$ref": "#/$defs/B"
+        }
+      ]
+    },
+    "U2": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/C"
+        },
+        {
+          "$ref": "#/$defs/D"
+        }
+      ]
+    },
+    "Inline": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "a"
+              ],
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "b"
+              ],
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "c"
+              ],
+              "properties": {
+                "c": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "d"
+              ],
+              "properties": {
+                "d": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "Refs": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/A"
+            },
+            {
+              "$ref": "#/$defs/B"
+            }
+          ]
+        },
+        {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/C"
+            },
+            {
+              "$ref": "#/$defs/D"
+            }
+          ]
+        }
+      ]
+    },
+    "Roots": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/U1"
+        },
+        {
+          "$ref": "#/$defs/U2"
+        }
+      ]
+    },
+    "Same": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/A"
+            },
+            {
+              "$ref": "#/$defs/B"
+            }
+          ]
+        },
+        {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/A"
+            },
+            {
+              "$ref": "#/$defs/B"
+            }
+          ]
+        }
+      ]
+    },
+    "Hierarchy": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Animal"
+            },
+            {
+              "$ref": "#/$defs/A"
+            }
+          ]
+        },
+        {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Cat"
+            },
+            {
+              "$ref": "#/$defs/B"
+            }
+          ]
+        }
+      ]
+    },
+    "WithValue": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/A"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/C"
+            },
+            {
+              "$ref": "#/$defs/D"
+            }
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "x"
+          ],
+          "properties": {
+            "x": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
+    "Nulls": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/A"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/C"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      ]
+    },
+    "Many": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "p0"
+              ],
+              "properties": {
+                "p0": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "p1"
+              ],
+              "properties": {
+                "p1": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "p2"
+              ],
+              "properties": {
+                "p2": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "p3"
+              ],
+              "properties": {
+                "p3": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "p4"
+              ],
+              "properties": {
+                "p4": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "p5"
+              ],
+              "properties": {
+                "p5": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "q0"
+              ],
+              "properties": {
+                "q0": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "q1"
+              ],
+              "properties": {
+                "q1": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "q2"
+              ],
+              "properties": {
+                "q2": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "q3"
+              ],
+              "properties": {
+                "q3": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "q4"
+              ],
+              "properties": {
+                "q4": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "q5"
+              ],
+              "properties": {
+                "q5": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "r0"
+              ],
+              "properties": {
+                "r0": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "r1"
+              ],
+              "properties": {
+                "r1": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "r2"
+              ],
+              "properties": {
+                "r2": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "r3"
+              ],
+              "properties": {
+                "r3": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

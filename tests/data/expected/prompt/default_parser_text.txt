@@ -31,7 +31,7 @@
 - `--allof-class-hierarchy`: Controls how allOf schemas are represented in the generated class hierarchy.
 - `--allof-merge-mode`: Merge constraints from root model references in allOf schemas.
 - `--disable-future-imports`: Prevent automatic addition of __future__ imports in generated code.
-- `--distribute-allof-over-unions`: Read an `allOf` with the `anyOf` and `oneOf` beside it, as JSON Schema valid...
+- `--distribute-allof-over-unions`: Read an `allOf` with the `anyOf` and `oneOf` it holds or sits beside, as JSO...
 - `--enum-field-as-literal`: Convert all enum fields to Literal types instead of Enum classes.
 - `--enum-field-as-literal-map`: Override enum/literal generation per-field via JSON mapping.
 - `--filter-literal-values`: Keep only the values of a `const` or an `enum` that meet the constraints beside them.

@@ -184,7 +184,13 @@ COMBINED_DOCUMENTS: tuple[str, ...] = (
 """The documents whose output --intersect-combined-schema-keywords changes, pinned with ``COMBINED_OPTION_ARGS`` too."""
 DISTRIBUTE_OPTION_ARGS: tuple[str, ...] = ("--distribute-allof-over-unions",)
 """The option that reads an ``allOf`` with the ``anyOf`` and ``oneOf`` beside it, alone: it needs no other option."""
-DISTRIBUTE_DOCUMENTS: tuple[str, ...] = ("allof_beside_union", "allof_beside_union_oas31", "union_ref_branch_values")
+DISTRIBUTE_DOCUMENTS: tuple[str, ...] = (
+    "allof_beside_union",
+    "allof_beside_union_oas31",
+    "union_ref_branch_values",
+    "allof_union_parts",
+    "allof_union_through_ref",
+)
 """The documents whose output --distribute-allof-over-unions changes, pinned with ``DISTRIBUTE_OPTION_ARGS`` too."""
 
 
@@ -278,7 +284,8 @@ def test_schema_intersection_shape_output_with_distribute_option(
 
     A ``$ref`` branch of an ``anyOf`` or ``oneOf`` takes the ``allOf`` members beside it as further bases, as an
     inline branch takes them, and the value keywords beside it where it names no object; an OpenAPI body with an
-    ``allOf`` beside a union is that union.
+    ``allOf`` beside a union is that union. An ``allOf`` of several unions is the union of one model per combination
+    of their branches, also through a ``$ref`` member naming an ``allOf`` over a union.
     """
     _assert_shape_output(output_file, stem, backend, options, DISTRIBUTE_OPTION_ARGS)
 
@@ -358,7 +365,8 @@ def test_schema_intersection_shape_payloads_with_distribute_option(tmp_path: Pat
     """Record what each model generated with --distribute-allof-over-unions accepts.
 
     A value a ``$ref`` branch admits but the ``allOf`` members or the value keywords beside the union reject, such
-    as an object without the ``id`` the ``allOf`` requires or a number below the outer minimum, is rejected.
+    as an object without the ``id`` the ``allOf`` requires or a number below the outer minimum, is rejected, and so
+    is a value that meets one union of an ``allOf`` but not another.
     """
     assert_output(_shape_payload_lines(tmp_path, stem, DISTRIBUTE_OPTION_ARGS))
 

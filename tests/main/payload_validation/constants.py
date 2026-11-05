@@ -310,6 +310,14 @@ EXCLUDED_CASES: dict[str, str] = {
         "pins the 0.85.0 output G01 PR 5 fixes: an item allOf of two scalar references is an empty model that "
         "rejects valid values; test_schema_intersection_shape_payloads records it"
     ),
+    "jsonschema/schema_intersection/allof_union_parts.json": (
+        "pins the 0.89.0 output --distribute-allof-over-unions fixes: the branches of a second anyOf of an allOf "
+        "replace the first's and $ref branches join one union; test_schema_intersection_shape_payloads records it"
+    ),
+    "jsonschema/schema_intersection/allof_union_through_ref.json": (
+        "pins the 0.89.0 output --distribute-allof-over-unions fixes: an allOf member naming an allOf over a union "
+        "is a base later passes drop; test_schema_intersection_shape_payloads records it"
+    ),
     "jsonschema/schema_intersection/allof_patterns.json": (
         "hypothesis-jsonschema cannot draw a $ref whose sibling pattern differs from its target's; "
         "test_schema_intersection_shape_payloads checks the pattern conjunctions"
