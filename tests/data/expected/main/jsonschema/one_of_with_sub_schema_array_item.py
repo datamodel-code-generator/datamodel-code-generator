@@ -4,11 +4,26 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from pydantic import AnyUrl, BaseModel, Field
+from typing_extensions import TypeAliasType
+
+OfficialDocument = TypeAliasType(
+    "OfficialDocument",
+    Annotated[
+        list[AnyUrl],
+        Field(
+            description='Link to the official documents that relate to the spatial plan.',
+            min_length=1,
+            title='officialDocument',
+        ),
+    ],
+)
 
 
 class SpatialPlan(BaseModel):
-    officialDocument: str | list[AnyUrl] | None = Field(
+    officialDocument: str | OfficialDocument | None = Field(
         None,
         description='Link to the official documents that relate to the spatial plan.',
         title='officialDocument',

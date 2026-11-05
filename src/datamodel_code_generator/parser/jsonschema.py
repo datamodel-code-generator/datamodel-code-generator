@@ -5561,7 +5561,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         walk reads the same decision (``_typed_additional_properties_value``).
         """
         additional_properties = self._site_schema(additional_properties)
-        if not self._output_model_context.supports_annotated_constraints:
+        if not (
+            self._output_model_context.supports_annotated_constraints
+            or self._writes_item_counts_on_alias(additional_properties)
+        ):
             return _MapValue(
                 additional_properties,
                 parent if self.field_constraints and self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS else None,
@@ -5677,6 +5680,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 path,
                 data_model_root_type=data_model_root_type,
                 preserve_constraints=True,
+                use_annotated=True,
             )
 
         root_type_path = get_special_path("array", path)
@@ -5687,6 +5691,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             root_type_path,
             data_model_root_type=data_model_root_type,
             preserve_constraints=True,
+            use_annotated=True,
         )
 
     def _add_nullable_combined_schema_branches(self, obj: JsonSchemaObject) -> JsonSchemaObject:
@@ -6162,6 +6167,40 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
 
     def _parse_constrained_item(self, site: _Site) -> DataType:
+        return self._parse_item_root(site, preserve_constraints=self._has_materialized_container_constraints(site.obj))
+
+    def _writes_item_counts_on_alias(self, item: JsonSchemaObject) -> bool:
+        """Return whether a nested array writes its item counts on a type alias of its own, as no field holds them.
+
+        Without --field-constraints, under which a nested array writes them on a root model of its own, an output that
+        writes constraints in ``Annotated`` (``supports_internal_annotated_constraints``) gives the array the
+        ``Annotated`` form a member of a type list takes, where it declares item counts (``_has_effective_constraints``)
+        that its type does not fix itself, as a fixed-length tuple does, and no type list or enum its own build writes.
+        """
+        return bool(
+            not self.field_constraints
+            and self._output_model_context.supports_internal_annotated_constraints
+            and item.is_array
+            and not item.enum
+            and not self._get_array_union_non_array_types(item)
+            and self._has_effective_constraints(item)
+            and not self._is_fixed_length_tuple(item)
+        )
+
+    def _types_item_counts_by_alias(self, site: _Site) -> bool:
+        """Return whether a union member or the items of an array (a site with a parent) take an item-count alias."""
+        return site.parent is not None and self._writes_item_counts_on_alias(site.obj)
+
+    def _parse_item_counts_alias(self, site: _Site) -> DataType:
+        return self._parse_item_root(
+            site,
+            data_model_root_type=self._nested_constrained_model_type,
+            preserve_constraints=True,
+            use_annotated=True,
+        )
+
+    def _parse_item_root(self, site: _Site, **options: Any) -> DataType:
+        """Parse the schema of an item site as a root model of its own, named after the site."""
         root_type_path = get_special_path("array", site.path)
         return self._parse_root_type_with_context(
             self.model_resolver.add(
@@ -6172,7 +6211,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             ).name,
             site.obj,
             root_type_path,
-            preserve_constraints=self._has_materialized_container_constraints(site.obj),
+            **options,
         )
 
     def _parse_ref_nullable_only_item(self, site: _Site) -> DataType:
@@ -6427,6 +6466,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 "constrained-type-union",
                 _field_constrained_type_union_applies,
                 _build_field_constrained_type_union,
+            ),
+            Row(
+                "item-counts-alias",
+                _types_item_counts_by_alias,
+                _parse_item_counts_alias,
+                typed=_types_constrained_item,
             ),
             Row("array", _array_applies, _build_field_array),
             Row(

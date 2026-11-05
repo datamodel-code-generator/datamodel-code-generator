@@ -8558,6 +8558,66 @@ def test_main_unique_items_as_set_nested_arrays(output_model: str, tmp_path: Pat
         )
 
 
+@pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass"])
+def test_main_nested_array_item_counts(output_model: str, tmp_path: Path, output_file: Path) -> None:
+    """Write the item counts of a nested array on a type alias of its own, as the member of a type list takes them.
+
+    The member of an anyOf, a oneOf and a nullable anyOf, the items of an array and the values of a map take
+    ``Annotated[list[...], Field(min_length=...)]`` without --field-constraints; an array whose only keyword is
+    ``uniqueItems`` and the items of an array with constraints of its own keep their forms, and an output that writes no
+    constraints keeps the list. Up to 0.88.0 the counts of these arrays were dropped without a warning, so the model
+    accepted arrays the schema rejects.
+    """
+
+    def counted(**counts: int) -> dict[str, Any]:
+        return {"type": "array", "items": {"type": "integer"}, **counts}
+
+    input_file = tmp_path / "item_counts.json"
+    input_file.write_text(
+        json.dumps({
+            "title": "Model",
+            "type": "object",
+            "properties": {
+                "any_of": {"anyOf": [counted(minItems=2, maxItems=3), {"type": "string"}]},
+                "one_of": {"oneOf": [counted(minItems=2), {"type": "string"}]},
+                "nullable": {"anyOf": [counted(minItems=2), {"type": "null"}]},
+                "items": {"type": "array", "items": counted(minItems=2)},
+                "values": {"type": "object", "additionalProperties": counted(maxItems=2)},
+                "unique": {"anyOf": [{"type": "array", "uniqueItems": True}, {"type": "string"}]},
+                "counted_items": {"type": "array", "minItems": 1, "items": counted(minItems=2)},
+            },
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=["--output-model-type", output_model, "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    if output_model != "dataclasses.dataclass":
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="nested_array_item_counts",
+            model_name="Model",
+            valid_json=(
+                '{"any_of": [1, 2], "one_of": "x", "nullable": [1, 2], "items": [[1, 2]], "values": {"k": [1, 2]}}'
+            ),
+            invalid_json='{"values": {"k": [1, 2, 3]}}',
+            expected_error_type="too_long",
+            expected_attribute_path=("items",),
+            expected_attribute_value=[[1, 2]],
+            invalid_keyword_arguments=[
+                ({"any_of": [1]}, "too_short"),
+                ({"one_of": [1]}, "too_short"),
+                ({"nullable": [1]}, "too_short"),
+                ({"items": [[1]]}, "too_short"),
+            ],
+        )
+
+
 def _validation_verdict(validate: ABCCallable[[Any], object], value: object) -> str:
     """Say whether ``validate`` accepts ``value``; the tests below record both verdicts."""
     try:
