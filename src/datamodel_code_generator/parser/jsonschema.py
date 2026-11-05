@@ -5160,7 +5160,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> DataType:
         """Parse the class of one union member of an allOf, located at the member's branch.
 
-        The class of a member whose Reference several schema objects reach is left without a location too.
+        The class of a member whose Reference several schema objects reach is left without a location too. Row
+        ``legacy-allof-members-under-holder``: every member is named after the allOf's holder, ``name``, so the members
+        are numbered after it (``Event1``, ``Event2``), not named after their branches (#4847).
         """
         union_model = bases[0]
         data_type = self._parse_object_common_part(

@@ -86,6 +86,21 @@ SEAMS: Final = (
         "_record_schema_location",
         "model_graph.record_schema_location",
     ),
+    *(
+        Seam(f"{_PACKAGE}.reference", "ModelResolver", method, "naming.recorded")
+        for method in (
+            "add",
+            "_add_ref_at",
+            "_add_affixed",
+            "_delete_at",
+            "delete_names",
+            "get_class_name",
+            "name_past_parent",
+            "refresh_reference_names",
+            "settle_yielding_names",
+        )
+    ),
+    Seam(f"{_PASSES}.naming", None, "name_models", "naming.name_models"),
     Seam(f"{_PACKAGE}.parser._schema_graph", "SchemaGraphBuilder", "schema", "schema_graph.schema"),
     Seam(f"{_PACKAGE}.parser.openapi_scope", "ApiOpenAPIParser", "_site_facts", "schema_graph.site_facts"),
     Seam(

@@ -1,0 +1,13 @@
+from __future__ import annotations
+
+from typing import Optional
+
+from pydantic import BaseModel
+
+
+class Pet2(BaseModel):
+    name: Optional[str] = None
+
+
+class M1(BaseModel):
+    pet: Optional[Pet2] = None

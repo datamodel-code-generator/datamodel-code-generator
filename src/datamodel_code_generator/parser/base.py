@@ -174,6 +174,7 @@ from datamodel_code_generator.parser._model_shapes import (
     ShapeRow,
     stdout_fingerprint,  # noqa: F401  # Preserve the established parser.base export.
 )
+from datamodel_code_generator.parser._naming import NamingPlan
 from datamodel_code_generator.parser._passes import _shared, _state, settle, structure
 from datamodel_code_generator.parser._passes import modules as _modules
 from datamodel_code_generator.parser._passes import plans as _plans
@@ -1061,6 +1062,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         }
         self.reuse_model: bool = config.reuse_model
         self._reuse_groups = ReuseGroups()
+        self._naming_plan = NamingPlan()
         self._const_narrowed_references: list[tuple[Reference, _ConstNarrowing]] = []
         self._const_narrowed_values: dict[int, tuple[DataType, _ConstNarrowing]] = {}
         self._enum_admits_other_values: list[tuple[DataModelFieldBase, _ConstNarrowing]] = []

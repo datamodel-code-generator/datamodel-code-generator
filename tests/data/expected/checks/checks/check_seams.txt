@@ -15,6 +15,16 @@ datamodel_code_generator.parser.jsonschema:JsonSchemaParser.parse_enum <- tests.
 datamodel_code_generator.parser.jsonschema:JsonSchemaParser._parse_file <- tests.checks.model_graph.parses_document
 datamodel_code_generator.parser.jsonschema:JsonSchemaParser._get_rw_model_variant_reference <- tests.checks.model_graph.get_rw_model_variant_reference
 datamodel_code_generator.parser.jsonschema:JsonSchemaParser._record_schema_location <- tests.checks.model_graph.record_schema_location
+datamodel_code_generator.reference:ModelResolver.add <- tests.checks.naming.recorded
+datamodel_code_generator.reference:ModelResolver._add_ref_at <- tests.checks.naming.recorded
+datamodel_code_generator.reference:ModelResolver._add_affixed <- tests.checks.naming.recorded
+datamodel_code_generator.reference:ModelResolver._delete_at <- tests.checks.naming.recorded
+datamodel_code_generator.reference:ModelResolver.delete_names <- tests.checks.naming.recorded
+datamodel_code_generator.reference:ModelResolver.get_class_name <- tests.checks.naming.recorded
+datamodel_code_generator.reference:ModelResolver.name_past_parent <- tests.checks.naming.recorded
+datamodel_code_generator.reference:ModelResolver.refresh_reference_names <- tests.checks.naming.recorded
+datamodel_code_generator.reference:ModelResolver.settle_yielding_names <- tests.checks.naming.recorded
+datamodel_code_generator.parser._passes.naming:name_models <- tests.checks.naming.name_models
 datamodel_code_generator.parser._schema_graph:SchemaGraphBuilder.schema <- tests.checks.schema_graph.schema
 datamodel_code_generator.parser.openapi_scope:ApiOpenAPIParser._site_facts <- tests.checks.schema_graph.site_facts
 datamodel_code_generator._site_facts:site_facts_of <- tests.checks.schema_graph.site_facts_of
