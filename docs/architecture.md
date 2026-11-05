@@ -327,6 +327,14 @@ A plain-name fragment (`#name`) left after the embedded-resource and lenient res
 records for it against the base URI of the schema resource enclosing the reference (`parser/_schema_documents.py:plain_name_ref`,
 `ResourceRegistry.plain_name_uri`): an `$anchor` or a `$dynamicAnchor` at any position of the resource; a name the
 model resolver registered in the walk of the definitions (`parse_id`) keeps that answer (row `legacy-anchor-parse-index`).
+An object `$ref` with sibling keywords is parsed as its target merged with them at the field that holds it (row
+`ref-site` of the field table, `JsonSchemaParser._build_field_ref_site`), at each path that reaches it (row
+`legacy-merged-site-per-path`); under `--use-one-model-per-ref-site` each site, the object that holds the `$ref` with
+the `$dynamicAnchor` bindings of its dynamic scope, gets one model (`parser/_schema_refs.py:ref_site_reference`, a
+parser-owned table like the dynamic specializations), which every copy of it a merge leaves unchanged shares, parsed
+from a worklist after the model that met it (`parse_ref_sites`, drained after each `_parse_schema_obj` and around the
+targets a parse reserves), so a chain of such sites nests no parse per hop. A recursion limit that merged sites exceed
+in place names the option (`_document_reader.py:MergedRefSiteRecursionError`, `nesting_limit`).
 A plain-name `$dynamicRef` that the dynamic-scope rule leaves to its edge reserves its target as a `$ref` does
 (`resolve_ref_callback`). A plain name that more than one schema of a document declares
 (`DocumentResources.duplicate_names`), which JSON Schema leaves undefined, warns where a reference uses it
@@ -1609,6 +1617,7 @@ is a new named row, never an anonymous `if`.
 | `legacy-keep-order-type-statement` | `--keep-model-order` reads the value of a `type` statement, which Python defers, and the fields of the functional TypedDict only where it reads the annotations of a class, which are deferred only by `from __future__ import annotations`, not by the target | G-08 |
 | `legacy-evaluated-without-root-model` | the check of the root models that name themselves reads a Pydantic root model as a class, the own fields of the functional TypedDict where it reads the annotations of a class, and the bases of a class only then; like `--keep-model-order`, it reads them unless `from __future__ import annotations` defers them, whatever the target defers | G-08 |
 | `legacy-ref-spelling-keys` | without `--read-escaped-ref-pointers`, a reference is keyed by its spelling and a model by its parse path joined as written, so a pointer that escapes a character names a copy of the declaration it reads, named after the escaped text, and a pointer that writes `/` unescaped inside a name names the declaration whose path joins to the same text | #4952 |
+| `legacy-merged-site-per-path` | without `--use-one-model-per-ref-site`, an object `$ref` with sibling keywords is parsed as its merged target at each path that reaches it, so the copies of such a `$ref` that a merged target holds are parsed again below it, one nested parse per hop | #5079 |
 | `legacy-dynamic-anchor-parse-index` | without `--read-dynamic-anchors-in-document-order`, a plain-name `$dynamicRef` that its dynamic scope does not bind names the first `$dynamicAnchor` of its name that the parse has registered so far, else resolves through its edge, so the answer depends on the order the parse meets the schemas in | #5131 |
 | `legacy-anchor-parse-index` | a plain name the walk of the definitions registered with the model resolver (`parse_id`: an `$id` or `$anchor` at the positions of the reference pre-pass) names the schema registered last there, also where the registry names another one, such as the last declaration in document order of a name several schemas of a document declare | #5131 |
 | `legacy-first-read-dialect` | without `--read-schema-version-per-document`, the readings of a schema version are the run's: the `$ref`-sibling gate of the allOf, literal-narrowing and validator readers and the schema features (`schema_features`) are those of the document parsed at each one's first read, the gate detected as JSON Schema for every parser class (an OpenAPI or AsyncAPI document reads as draft 7 unless it holds `$defs`); whether siblings merge as parts is that of the input document being parsed, also for the schemas of a document a reference loads | keep |

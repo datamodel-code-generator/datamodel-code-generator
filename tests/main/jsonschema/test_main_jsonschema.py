@@ -22941,6 +22941,109 @@ def test_main_jsonschema_external_ref_mapping_whole_document_in_input_directory(
     )
 
 
+@pytest.mark.cli_doc(
+    options=["--use-one-model-per-ref-site"],
+    option_description="""Give an object `$ref` with sibling keywords one model per place it is written.
+
+A `$ref` beside other keywords is parsed as its target merged with them. Without this option the merged object is
+parsed at the path that reaches it, and the copy of each such `$ref` its target holds is parsed again below it, so a
+chain of N definitions whose `next` is a `$ref` to the next one beside `required` gives N(N+1)/2 models (`Next`,
+`Next1`, ... that validate the same documents), one nested parse per hop, which stops with "Schema nesting is too deep"
+for a long chain. With it each place such a `$ref` is written, with the `$dynamicAnchor` bindings of its dynamic scope,
+gets one model, which every unchanged copy of the place shares, parsed from a worklist without nesting: N-1 models
+beside the N definitions. The field that holds the `$ref` keeps its own required, default and alias.""",
+    input_schema="jsonschema/ref_site_chain.json",
+    cli_args=["--use-one-model-per-ref-site"],
+    golden_output="main/jsonschema/use_one_model_per_ref_site~main_use_one_model_per_ref_site[site].py",
+    comparison_output="main/jsonschema/use_one_model_per_ref_site.py",
+)
+@pytest.mark.parametrize(
+    "extra_args", [pytest.param([], id="released"), pytest.param(["--use-one-model-per-ref-site"], id="site")]
+)
+def test_main_use_one_model_per_ref_site(output_file: Path, extra_args: list[str]) -> None:
+    """Give each `$ref` with sibling keywords of a chain one model (#5079).
+
+    `Link0` to `Link3` each have a `next` that references the next link beside `required: [v]`. Without the option the
+    models of the sites repeat below each other (`Next` to `Next9`); with it each site has one model, which the copies
+    of it share: `Next` to `Next3`.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "ref_site_chain.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel"),
+            *extra_args,
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="ref_site_chain",
+        model_name="Link0",
+        valid_json='{"next": {"v": 1, "next": {"v": 2, "next": {"v": 3}}}}',
+        invalid_json='{"next": {"v": 1, "next": {"next": {"v": 3}}}}',
+        expected_error_type="missing",
+    )
+
+
+def test_main_use_one_model_per_ref_site_changed_copy(output_file: Path) -> None:
+    """Parse a copy of a `$ref` site that a merge changed in place under --use-one-model-per-ref-site.
+
+    `changed` merges `A` with a `next` that requires `w` too, so its copy of the site `A.next` holds another value and
+    gets a model of its own, `Next`, parsed where it is; `A.next` itself, met later, is the site and gets `Next1`.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "ref_site_changed_copy.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--use-one-model-per-ref-site"),
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="ref_site_changed_copy",
+        model_name="Holder",
+        valid_json='{"changed": {"next": {"v": 1, "w": "a"}}, "plain": {"next": {"v": 2}}}',
+        invalid_json='{"changed": {"next": {"v": 1}}}',
+        expected_error_type="missing",
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_name", "extra_args"),
+    [
+        pytest.param("read_only_write_only_constrained_item.json", [], id="parsed-facts"),
+        pytest.param(
+            "read_only_write_only_ref_sibling_chain.json", ["--dedupe-request-response-variants"], id="schema-graph"
+        ),
+    ],
+)
+def test_main_use_one_model_per_ref_site_request_response(
+    output_file: Path, input_name: str, extra_args: list[str]
+) -> None:
+    """Share the models of `$ref` sites where request and response models are split.
+
+    The model of a site is parsed where it is first met, as the variants of the model that holds it are decided from
+    the site model's fields; the temporary parse of inherited fields that the facts of 0.86.0 read
+    (`parsed-facts`) parses its sites in place, as its models are no other parse's.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--use-one-model-per-ref-site"),
+            *("--read-only-write-only-model-type", "request-response", *extra_args),
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize(
     ("name", "model_name", "valid_json", "invalid_json"),
     [
@@ -30093,11 +30196,8 @@ def test_main_long_ref_alias_chain(tmp_path: Path, output_file: Path) -> None:
     )
 
 
-def test_main_ref_sibling_nesting_too_deep(
-    tmp_path: Path, output_file: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    """Stop with an error, not a partial result, when merged $ref siblings nest deeper than the parse can follow."""
-    length = 200
+def _ref_sibling_chain(tmp_path: Path, length: int) -> Path:
+    """Write a chain of `length` objects whose `next` references the next one beside `required` and a description."""
     links: dict[str, Any] = {
         f"D{index}": {
             "type": "object",
@@ -30117,15 +30217,44 @@ def test_main_ref_sibling_nesting_too_deep(
         }),
         encoding="utf-8",
     )
+    return input_path
+
+
+def test_main_ref_sibling_nesting_too_deep(
+    tmp_path: Path, output_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Stop with an error, not a partial result, when merged $ref siblings nest deeper than the parse can follow.
+
+    The error names --use-one-model-per-ref-site, which parses such a chain without nesting.
+    """
     run_main_and_assert(
-        input_path=input_path,
+        input_path=_ref_sibling_chain(tmp_path, 200),
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--disable-timestamp", "--formatters", "builtin"],
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr_contains="Schema nesting is too deep to generate",
+        expected_stderr_contains=(
+            "Schema nesting is too deep to generate: parsing the nested schemas exceeded the Python recursion limit "
+            f"({sys.getrecursionlimit()}). A chain of $refs with sibling keywords is parsed one nested model per hop; "
+            "--use-one-model-per-ref-site parses it without nesting."
+        ),
         output_should_not_exist=True,
+    )
+
+
+def test_main_ref_sibling_chain_with_one_model_per_site(tmp_path: Path, output_file: Path) -> None:
+    """Generate a chain of 200 `$ref`s with sibling keywords under --use-one-model-per-ref-site (#5076, #5079).
+
+    Each site gets one model, parsed from the worklist without nesting, so the chain generates at the default recursion
+    limit: the 201 links, the 201 sites and the root, 403 classes instead of an error.
+    """
+    run_main_and_assert(
+        input_path=_ref_sibling_chain(tmp_path, 200),
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--formatters", "builtin", "--use-one-model-per-ref-site"],
+        transform=lambda output: f"{output.count(chr(10) + 'class ')} classes\n",
     )
 
 

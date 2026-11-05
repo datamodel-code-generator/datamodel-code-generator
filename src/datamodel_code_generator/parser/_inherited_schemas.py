@@ -69,7 +69,12 @@ from datamodel_code_generator.parser.base import (
     _get_inherited_type_modifiers,
 )
 from datamodel_code_generator.python_literal import stable_repr
-from datamodel_code_generator.reference import Reference, _is_special_path, get_inferred_module_name
+from datamodel_code_generator.reference import (
+    Reference,
+    _is_special_path,
+    context_variable,
+    get_inferred_module_name,
+)
 from datamodel_code_generator.types import ANY, DataType
 
 if TYPE_CHECKING:
@@ -222,6 +227,7 @@ class InheritedSchemasHost(Protocol):
     _inherited_schema_ancestor_cache: dict[str, frozenset[str]]
     _inherited_schema_cache: dict[str, JsonSchemaObject]
     _inherited_schema_linearization_cache: dict[tuple[str, ...], tuple[str, ...]]
+    _parses_unowned_fields: bool
 
     @property
     def allof_merge_mode(self) -> AllOfMergeMode:
@@ -1955,7 +1961,14 @@ def parse_inherited_schema_fields(
     owner_path = [] if "legacy-rw-unowned-parent-fields" in parser._legacy_rw_variants else [reference.path]  # noqa: SLF001
 
     _, *members = _inline_all_of_closure(parser, schema)
-    with parser._inherited_ref_context(reference.path):  # noqa: SLF001
+    with (
+        parser._inherited_ref_context(reference.path),  # noqa: SLF001
+        context_variable(
+            partial(setattr, parser, "_parses_unowned_fields"),
+            parser._parses_unowned_fields,  # noqa: SLF001
+            parser._parses_unowned_fields or not owner_path,  # noqa: SLF001
+        ),
+    ):
         for source in (*members, schema):
             if not source.properties:
                 continue

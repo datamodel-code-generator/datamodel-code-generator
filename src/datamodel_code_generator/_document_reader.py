@@ -33,6 +33,7 @@ __all__ = [
     "MISSING",
     "ArrayIndexOutOfRangeError",
     "MemberRow",
+    "MergedRefSiteRecursionError",
     "as_mapping",
     "descend",
     "discriminator_mapping_ref",
@@ -136,20 +137,30 @@ def descend(value: YamlValue, tokens: Iterable[str], row: MemberRow, missing: Ya
     return value
 
 
+class MergedRefSiteRecursionError(RecursionError):
+    """A recursion limit exceeded while a `$ref` with sibling keywords is parsed in place of the schema it names."""
+
+
 @contextmanager
 def nesting_limit() -> Generator[None]:
     """Read the nested schemas of a document in the block; a read that exceeds the Python recursion limit is an error.
 
     A document whose schemas nest too deep, or hold themselves through a YAML alias, ends in this error instead of a
-    traceback or a partial result, whichever reader walks it.
+    traceback or a partial result, whichever reader walks it. Where `$ref`s with sibling keywords nest one parse per
+    hop (``MergedRefSiteRecursionError``), it names --use-one-model-per-ref-site, which parses them without nesting.
     """
     try:
         yield
-    except RecursionError:
+    except RecursionError as error:
         msg = (
             "Schema nesting is too deep to generate: parsing the nested schemas exceeded the Python recursion "
             f"limit ({sys.getrecursionlimit()})."
         )
+        if isinstance(error, MergedRefSiteRecursionError):
+            msg += (
+                " A chain of $refs with sibling keywords is parsed one nested model per hop; "
+                "--use-one-model-per-ref-site parses it without nesting."
+            )
         raise Error(msg) from None
 
 

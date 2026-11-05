@@ -10,7 +10,7 @@ This documentation is auto-generated from test cases.
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 17 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 48 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 36 | Field naming and docstring behavior |
+| 🏷️ [Field Customization](field-customization.md) | 37 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 59 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 11 | OpenAPI-specific features |
@@ -394,6 +394,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-non-positive-negative-number-constrained-types`](typing-customization.md#use-non-positive-negative-number-constrained-types)
 - [`--use-object-type`](typing-customization.md#use-object-type)
 - [`--use-one-literal-as-default`](model-customization.md#use-one-literal-as-default)
+- [`--use-one-model-per-ref-site`](field-customization.md#use-one-model-per-ref-site)
 - [`--use-operation-id-as-name`](openapi-only-options.md#use-operation-id-as-name)
 - [`--use-pendulum`](typing-customization.md#use-pendulum)
 - [`--use-root-model-sequence-interface`](model-customization.md#use-root-model-sequence-interface)

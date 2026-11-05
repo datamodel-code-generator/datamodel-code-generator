@@ -119,6 +119,7 @@ from datamodel_code_generator._constraint_applicability import (
 from datamodel_code_generator._container_kinds import ARRAYS, MAPPINGS, SEQUENCES
 from datamodel_code_generator._document_reader import (
     ArrayIndexOutOfRangeError,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    MergedRefSiteRecursionError,
     string_keyed,
 )
 from datamodel_code_generator._format_types import (
@@ -6196,6 +6197,32 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _field_object_applies(self, site: _Site) -> bool:  # noqa: PLR6301
         return bool(site.obj.is_object or site.obj.patternProperties or site.obj.propertyNames is not None)
 
+    def _field_ref_site_applies(self, site: _Site) -> bool:
+        """Return whether a field site is an object with properties merged from a `$ref` and its sibling keywords."""
+        return bool(
+            _MERGED_REF_TARGET_KEY in site.obj.__dict__
+            and site.obj.properties
+            and site.obj.schema_location is not None
+            and self._field_object_applies(site)
+        )
+
+    def _build_field_ref_site(self, site: _Site) -> DataType:
+        """Build the type of an object `$ref` with sibling keywords.
+
+        Under --use-one-model-per-ref-site the site gets one model, which every copy of it shares
+        (``_schema_refs.ref_site_reference``). Without it, row ``legacy-merged-site-per-path``, and for a copy a merge
+        changed, each path that reaches the site parses a model of its own in place, one nested parse per hop of a
+        chain, so a recursion limit it exceeds names the option (``MergedRefSiteRecursionError``).
+        """
+        if self.config.use_one_model_per_ref_site and (reference := _schema_refs.ref_site_reference(self, site)):
+            return self._join_object_type_array(site, self.data_type(reference=reference))
+        try:
+            return self._parse_object_item(site)
+        except MergedRefSiteRecursionError:
+            raise
+        except RecursionError as error:
+            raise MergedRefSiteRecursionError(*error.args) from error
+
     def _field_enum_applies(self, site: _Site) -> bool:
         return bool(site.obj.enum and not self.ignore_enum_constraints)
 
@@ -6258,6 +6285,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             _field_union_row("any-of", "anyOf"),
             _field_union_row("one-of", "oneOf"),
             Row("all-of", _all_of_applies, _parse_all_of_field_item),
+            Row("ref-site", _field_ref_site_applies, _build_field_ref_site),
             Row("object", _field_object_applies, _parse_object_item),
             Row("enum", _field_enum_applies, _parse_enum_item),
             Row(
@@ -7744,6 +7772,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._dynamic_specialization_paths: set[tuple[str, ...]] = set()
         self._pending_dynamic_specializations: deque[_DynamicSpecialization] = deque()
         self._draining_dynamic_specializations = False
+        self._ref_site_models: dict[
+            tuple[SchemaLocation, frozenset[tuple[str, str]]], tuple[Reference, dict[str, Any]]
+        ] = {}
+        self._pending_ref_sites: deque[_schema_refs._RefSite] = deque()
+        self._draining_ref_sites = False
+        self._parses_unowned_fields = False
         self._dynamic_anchor_usage: dict[_TargetNode, frozenset[str]] = {}
         self._dynamic_ref_graph: dict[_TargetNode, _DynamicEdges] = {}
         self._dynamic_ref_nodes: dict[str, _TargetNode] = {}
@@ -8113,9 +8147,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         obj: JsonSchemaObject,
         path: list[str],
     ) -> None:
-        """Dispatch a JsonSchemaObject to the parse method for its schema shape (``_DEFINITION_TABLE``)."""
+        """Dispatch a JsonSchemaObject to the parse method for its schema shape (``_DEFINITION_TABLE``).
+
+        The models of the `$ref` sites its parse met are parsed after it (``_schema_refs.parse_ref_sites``).
+        """
         choice = self._DEFINITION_TABLE.choose(self, SchemaSite(name, self._site_schema(obj), path))
         choice.build(self, choice.site)
+        _schema_refs.parse_ref_sites(self)
 
     def _merge_definition_ref(self, site: _Site) -> _Site:
         """Merge the `$ref` of a definition with its sibling keywords, in the dynamic scope the merged schema names."""
@@ -8471,7 +8509,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Parse in the block, then the targets it leaves (``resolve``), end the schema parsing and clear the caches."""
         try:
             yield
+            _schema_refs.parse_ref_sites(self)
             (resolve or self._resolve_unparsed_json_pointer)()
+            _schema_refs.parse_ref_sites(self)
             self._end_schema_parsing()
         finally:
             self._clear_inherited_field_caches()

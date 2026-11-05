@@ -8705,6 +8705,8 @@ jsonschema	main/jsonschema/ref_fragment_opened_by_an_encoded_slash.py
 openapi	main/jsonschema/ref_fragment_opened_by_an_encoded_slash.py	= main/jsonschema/ref_fragment_opened_by_an_encoded_slash~main_ref_fragment_opened_by_an_encoded_slash[openapi].py
 [test_main_ref_nullable_import_fast_path]
 	main/jsonschema/ref_nullable_import_fast_path.py
+[test_main_ref_sibling_chain_with_one_model_per_site]
+	main/jsonschema/main_jsonschema/main_ref_sibling_chain_with_one_model_per_site.py
 [test_main_refreshes_modified_custom_template_between_calls]
 	main/jsonschema/custom_template_refresh/first.py
 	main/jsonschema/custom_template_refresh/second.py
@@ -9314,6 +9316,14 @@ pydantic_v2.BaseModel-use_frozen_field_v2.py	main/jsonschema/use_frozen_field_v2
 2.12	main/jsonschema/use_generic_base_class_target_pydantic_v2_11.py
 [test_main_use_generic_base_class_with_inheritance]
 	main/jsonschema/use_generic_base_class_with_inheritance.py
+[test_main_use_one_model_per_ref_site]
+released	main/jsonschema/use_one_model_per_ref_site.py
+site	main/jsonschema/use_one_model_per_ref_site.py	= main/jsonschema/use_one_model_per_ref_site~main_use_one_model_per_ref_site[site].py
+[test_main_use_one_model_per_ref_site_changed_copy]
+	main/jsonschema/main_jsonschema/main_use_one_model_per_ref_site_changed_copy.py
+[test_main_use_one_model_per_ref_site_request_response]
+parsed-facts	main/jsonschema/main_jsonschema/main_use_one_model_per_ref_site_request_response[parsed-facts].py
+schema-graph	main/jsonschema/main_jsonschema/main_use_one_model_per_ref_site_request_response[schema-graph].py
 [test_main_use_root_model_type_alias]
 	main/jsonschema/root_model_type_alias.py
 [test_main_use_total_false_for_typed_dict]

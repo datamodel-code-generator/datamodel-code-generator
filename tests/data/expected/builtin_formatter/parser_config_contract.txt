@@ -153,6 +153,7 @@ reviewed-safe use_msgspec_tagged_unions
 reviewed-safe use_non_positive_negative_number_constrained_types
 reviewed-safe use_object_type
 reviewed-safe use_one_literal_as_default
+reviewed-safe use_one_model_per_ref_site
 reviewed-safe use_operation_id_as_name
 reviewed-safe use_pendulum
 reviewed-safe use_root_model_sequence_interface

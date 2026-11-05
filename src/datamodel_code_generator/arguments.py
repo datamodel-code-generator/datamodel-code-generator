@@ -891,6 +891,13 @@ _toggle(
     help="Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the "
     "values all parts admit, instead of the referenced type, which leaves the added assertions out",
 )
+_toggle(
+    typing_options,
+    "--use-one-model-per-ref-site",
+    help="Give an object $ref with sibling keywords one model per place it is written, which every copy of that place "
+    "shares, and parse such chains without nesting; without it each path that reaches the place gets a model of its "
+    "own (N(N+1)/2 models for a chain of N), as in 0.89.0.",
+)
 _deprecated_flag(typing_options, "--set-default-enum-member")
 typing_options.add_argument(
     "--strict-types",

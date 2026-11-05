@@ -916,6 +916,15 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
+        title="One model per reference site",
+        config=PresetConfig(use_one_model_per_ref_site=True),
+        description=(
+            "Give an object $ref with sibling keywords one model per place it is written, which every copy of that "
+            "place shares, so a chain of N such references gives N-1 models instead of N(N+1)/2, parsed without "
+            "nesting."
+        ),
+    ),
+    PresetOptionGroup(
         title="Escaped reference pointers read",
         config=PresetConfig(read_escaped_ref_pointers=True),
         description=(
@@ -1226,9 +1235,10 @@ def render_presets_markdown() -> str:
             "`PetsGetResponse`), `--name-converted-payloads-by-message` drops the placeholder title `Model` of an "
             "AsyncAPI Avro or XML Schema payload that names no type, so it is named after its message, and "
             "`--singularize-last-word-of-item-names` singularizes only the last word of an item model's name "
-            "(`actions_caches` names `ActionsCache`), and `--read-escaped-ref-pointers` reads the escapes of a `$ref` "
+            "(`actions_caches` names `ActionsCache`), `--read-escaped-ref-pointers` reads the escapes of a `$ref` "
             "pointer as the characters they encode, so `#/$defs/a~1b` names the model `AB` of `a/b` instead of a copy "
-            "`A1b`."
+            "`A1b`, and `--use-one-model-per-ref-site` gives an object `$ref` with sibling keywords one model per "
+            "place it is written instead of one per path that reaches it."
         ),
         "",
         "## Override Preset Options",

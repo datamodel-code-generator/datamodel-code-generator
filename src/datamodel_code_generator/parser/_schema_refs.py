@@ -23,6 +23,7 @@ from __future__ import annotations
 
 from contextlib import nullcontext
 from copy import deepcopy
+from dataclasses import replace
 from functools import partial
 from itertools import chain
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, NamedTuple, TypeVar, cast
@@ -30,7 +31,7 @@ from urllib.parse import unquote, urljoin
 
 from typing_extensions import Protocol, final
 
-from datamodel_code_generator import Error
+from datamodel_code_generator import Error, ReadOnlyWriteOnlyModelType
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._json_pointer import escape_token, join_pointer
 from datamodel_code_generator._json_schema import REF_PRE_PASS_FIELDS, REF_PRE_PASS_POSITIONS, SCHEMA_SHAPES
@@ -38,6 +39,7 @@ from datamodel_code_generator._records import record
 from datamodel_code_generator._scc import find_circular_sccs, strongly_connected_components
 from datamodel_code_generator._url_redaction import named_location
 from datamodel_code_generator.parser._intersection import concatenating_row
+from datamodel_code_generator.parser._schema_dispatch import SchemaSite
 from datamodel_code_generator.parser._schema_graph import (
     DocumentId,
     RefEdge,
@@ -62,12 +64,13 @@ from datamodel_code_generator.parser._schema_reading import (
     split_json_pointer,
 )
 from datamodel_code_generator.parser.base import get_special_path
-from datamodel_code_generator.reference import ModelResolver, Reference, SchemaLocation, is_url
+from datamodel_code_generator.reference import ModelResolver, Reference, SchemaLocation, context_variable, is_url
 
 if TYPE_CHECKING:
     from collections import deque
     from collections.abc import Callable, Generator, Iterable, Iterator, Sequence
     from contextlib import AbstractContextManager
+    from pathlib import Path
 
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator.parser._intersection import KeywordIntersection
@@ -114,6 +117,7 @@ __all__ = [
     "merge_ref_with_schema",
     "outside_home",
     "parse_dynamic_specializations",
+    "parse_ref_sites",
     "pin_recursive_refs",
     "prepared_ref_document",
     "push_ref_cycle_frame",
@@ -121,6 +125,7 @@ __all__ = [
     "ref_file_document",
     "ref_key",
     "ref_path",
+    "ref_site_reference",
     "ref_target_dump",
     "resolve_dynamic_ref",
     "resolve_recursive_ref",
@@ -181,6 +186,18 @@ class _DynamicEdges:
     """The `$dynamicAnchor` names its `$dynamicRef` initially resolve to."""
     targets: tuple[str, ...]
     """The keys of the schemas its `$ref` and those `$dynamicAnchor` name."""
+
+
+class _RefSite(NamedTuple):
+    """A `$ref` with sibling keywords whose one model is parsed from the worklist, in the context it was met in."""
+
+    site: SchemaSite[JsonSchemaObject]
+    """The field site, its schema merged with the target, at the path of the site's model."""
+    root: tuple[str, ...]
+    base_path: Path | None
+    dynamic: tuple[str | None, tuple[str, ...], str, dict[str, str]]
+    """The document, path, pointer and bindings of the dynamic scope (``_dynamic_scope_context``)."""
+    raw_obj: dict[str, YamlValue]
 
 
 class _DynamicSpecialization(NamedTuple):
@@ -245,6 +262,10 @@ class SchemaRefsHost(Protocol):
     _false_schema_refs: set[str] | None
     _has_embedded_schema_resources: bool
     _pending_dynamic_specializations: deque[_DynamicSpecialization]
+    _pending_ref_sites: deque[_RefSite]
+    _ref_site_models: dict[tuple[SchemaLocation, frozenset[tuple[str, str]]], tuple[Reference, dict[str, Any]]]
+    _draining_ref_sites: bool
+    _parses_unowned_fields: bool
     _recursive_anchor_index: dict[tuple[str, ...], list[str]]
     _ref_data_type_facts: dict[str, tuple[Any, bool]]
     _ref_target_dumps: dict[tuple[_TargetNode, str], tuple[dict[str, Any], str]]
@@ -254,6 +275,10 @@ class SchemaRefsHost(Protocol):
     _schema_resource_path_parts: dict[str, list[str]]
     _schema_resource_registry: ResourceRegistry
     _schema_resource_root_bases: dict[str, str]
+
+    @property
+    def read_only_write_only_model_type(self) -> ReadOnlyWriteOnlyModelType | None:
+        """Whether, and how, models are split by readOnly/writeOnly (``--read-only-write-only-model-type``)."""
 
     @property
     def _reads_dynamic_anchors_in_document_order(self) -> bool:
@@ -407,6 +432,22 @@ class SchemaRefsHost(Protocol):
         path: list[str],
     ) -> None:
         """Dispatch a JsonSchemaObject to the parse method for its schema shape (``_DEFINITION_TABLE``)."""
+
+    def _merge_field_ref(self, site: SchemaSite[JsonSchemaObject]) -> SchemaSite[JsonSchemaObject]:
+        """Merge the `$ref` of a field site with its sibling keywords, in the dynamic scope the merged schema names."""
+
+    def _apply_title_as_name(self, name: str, obj: JsonSchemaObject) -> str:
+        """Apply title as name if use_title_as_name is enabled."""
+
+    def parse_object(
+        self,
+        name: str,
+        obj: JsonSchemaObject,
+        path: list[str],
+        singular_name: bool = False,  # noqa: FBT001, FBT002
+        unique: bool = True,  # noqa: FBT001, FBT002
+    ) -> DataType:
+        """Parse object schema into a data model."""
 
     def _plain_name_ref(self, ref: str, pointer: str) -> str:
         """Return the reference a plain-name fragment of the document parsed now names, written at ``pointer``."""
@@ -1011,6 +1052,85 @@ def dynamic_specialization_reference(parser: SchemaRefsHost, ref: str, resolved_
         _DynamicSpecialization(resolved_ref, bindings, reference, tuple(path))
     )
     return reference
+
+
+def ref_site_reference(parser: SchemaRefsHost, site: SchemaSite[JsonSchemaObject]) -> Reference | None:
+    """Return the one model of the `$ref` with sibling keywords that a field site merged, under the option.
+
+    Under --use-one-model-per-ref-site a site is the object that holds the `$ref`, with the `$dynamicAnchor` bindings
+    of its dynamic scope; every copy of it that a merged target holds unchanged names the same model. The first meeting
+    adds the model at the path the parse in place would give it there and leaves its parse to the worklist
+    (``parse_ref_sites``), so a chain of such sites is parsed without nesting a frame per hop; where request and
+    response models are split, it parses the model there, as the variants of the model that holds the site are decided
+    from the fields of the site's model. A copy that holds another
+    value at the location, which a merge changed, is no site: it is parsed in place, as without the option (None), and
+    so is a site met by the parse of inherited fields at no owner's path (row ``legacy-rw-unowned-parent-fields``),
+    whose models no other parse names.
+    """
+    if parser._parses_unowned_fields:  # noqa: SLF001
+        return None
+    obj = site.obj
+    location = cast("SchemaLocation", obj.schema_location)
+    dump = obj.model_dump(exclude_unset=True, by_alias=True)
+    key = (location, frozenset(parser._current_dynamic_scope().items()))  # noqa: SLF001
+    if (known := parser._ref_site_models.get(key)) is None:  # noqa: SLF001
+        _, document = parser._prepared_ref_document(location.document)  # noqa: SLF001
+        holder = parser._shared_schema_object(_get_model_by_decoded_path(document, location.tokens), [str(location)])  # noqa: SLF001
+        if (
+            parser._merge_field_ref(SchemaSite(site.name, holder, site.path)).obj.model_dump(  # noqa: SLF001
+                exclude_unset=True, by_alias=True
+            )
+            != dump
+        ):
+            return None
+        path = get_special_path("object", site.path)
+        reference = parser.model_resolver.add(
+            path,
+            parser._apply_title_as_name(site.name, obj),  # noqa: SLF001
+            class_name=True,
+            singular_name=site.singular_name,
+        )
+        known = parser._ref_site_models[key] = reference, dump  # noqa: SLF001
+        if parser.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
+            parser.parse_object(site.name, obj, path, singular_name=site.singular_name)
+            return reference
+        resolver = parser.model_resolver
+        parser._pending_ref_sites.append(  # noqa: SLF001
+            _RefSite(
+                replace(site, path=path, scope=None),
+                tuple(resolver.current_root),
+                resolver.current_base_path,
+                (
+                    parser._dynamic_document,  # noqa: SLF001
+                    parser._dynamic_scope_path,  # noqa: SLF001
+                    parser._dynamic_scope_pointer,  # noqa: SLF001
+                    parser._dynamic_bindings,  # noqa: SLF001
+                ),
+                parser.raw_obj,
+            )
+        )
+    return known[0] if known[1] == dump else None
+
+
+def parse_ref_sites(parser: SchemaRefsHost) -> None:
+    """Parse the models of the `$ref` sites met so far, from the worklist, in the context each was met in."""
+    if parser._draining_ref_sites or not parser._pending_ref_sites:  # noqa: SLF001
+        return
+    parser._draining_ref_sites = True  # noqa: SLF001
+    resolver = parser.model_resolver
+    try:
+        while parser._pending_ref_sites:  # noqa: SLF001
+            pending = parser._pending_ref_sites.popleft()  # noqa: SLF001
+            site, (document, path, pointer, bindings) = pending.site, pending.dynamic
+            with (
+                resolver.current_root_context(pending.root),
+                resolver.current_base_path_context(pending.base_path),
+                parser._dynamic_scope_context(path, bindings, pointer, document),  # noqa: SLF001
+                context_variable(partial(setattr, parser, "raw_obj"), parser.raw_obj, pending.raw_obj),
+            ):
+                parser.parse_object(site.name, site.obj, site.path, singular_name=site.singular_name)
+    finally:
+        parser._draining_ref_sites = False  # noqa: SLF001
 
 
 def parse_dynamic_specializations(parser: SchemaRefsHost) -> None:

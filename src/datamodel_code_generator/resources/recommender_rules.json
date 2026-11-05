@@ -1400,6 +1400,10 @@
       "not_recommended": "style",
       "reason": "Defaults one-value literals; an API choice of the project."
     },
+    "use_one_model_per_ref_site": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "use_operation_id_as_name": {
       "not_recommended": "style",
       "reason": "Names operation models; the schemas scope the recommender analyses has none."
