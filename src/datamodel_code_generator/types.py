@@ -2005,14 +2005,13 @@ class DataTypeManager(ABC):
                     (reference := member.reference) is None
                     or id(reference) in current_seen
                     or (model := model_of(reference)) is None
+                    or (model.form == "alias" and not model.fields)
                 ):
                     return None
                 if model.form != "alias":
                     keywords.update(cls.member_constraint_keywords(member, target_version, model_of) or ())
-                elif not (fields := model.fields):
-                    return None
                 else:
-                    pending.append((cast("DataType", fields[0].data_type), current_seen | {id(reference)}))
+                    pending.append((cast("DataType", model.fields[0].data_type), current_seen | {id(reference)}))
         return frozenset(keywords)
 
     @classmethod

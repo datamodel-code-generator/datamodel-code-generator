@@ -1233,17 +1233,16 @@ def _loop_error(
 def _evaluated_data_types(model: DataModel, *, evaluates_annotations: bool) -> Iterator[DataType]:
     """Yield the data types that the statements defining a model evaluate as the module runs.
 
-    They are the types of the fields that ``definition_reads`` reads (row ``legacy-evaluated-without-root-model``), and
-    where it reads the model's own fields, every type of the model, its bases included.
+    Where ``definition_reads`` reads the fields of the model (row ``legacy-evaluated-without-root-model``), they are
+    every type of the model, its bases included. Only Pydantic and msgspec output reaches this check
+    (``alias_loop_failure``), and there a definition reads the model's own fields or none: the subset a functional
+    TypedDict evaluates never comes here.
     """
-    fields = definition_reads(
-        model, row="legacy-evaluated-without-root-model", evaluates_annotations=evaluates_annotations
-    )
-    if fields is model.fields:
+    if (
+        definition_reads(model, row="legacy-evaluated-without-root-model", evaluates_annotations=evaluates_annotations)
+        is not None
+    ):
         yield from model.all_data_types
-        return
-    for field in fields or ():
-        yield from field.data_type.all_data_types
 
 
 def reject_alias_cycles_without_schema(
