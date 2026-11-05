@@ -3007,6 +3007,24 @@ def test_filename_with_various_control_characters(tmp_path: Path) -> None:
         compile(generated_content, str(output_path), "exec")
 
 
+@pytest.mark.parametrize("enable_command_header", [False, True], ids=["filename", "command"])
+def test_header_replaces_lone_surrogate_of_file_name(tmp_path: Path, *, enable_command_header: bool) -> None:
+    r"""Write a file name that is no valid UTF-8 in the header with U+FFFD for the bad byte (#6307).
+
+    The name of such a file holds a surrogate escape (``\udcff`` for the byte ``0xff``), which a UTF-8 file cannot
+    hold, so writing the output failed; the command header holds the name too.
+    """
+    run_generate_and_assert(
+        input_='{"type": "object", "properties": {"a": {"type": "string"}}}',
+        input_filename="bad\udcff.json",
+        input_file_type=InputFileType.JsonSchema,
+        output=tmp_path / "output.py",
+        disable_timestamp=True,
+        enable_command_header=enable_command_header,
+        command_line="datamodel-codegen --input 'bad\udcff.json'",
+    )
+
+
 def test_generate_with_nonexistent_file(tmp_path: Path) -> None:
     """Test that generating from a nonexistent file raises an error."""
     nonexistent_file = tmp_path / "nonexistent.json"

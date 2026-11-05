@@ -742,6 +742,9 @@ constructor-ordering-checks_off0	main/generation_without_parse_checks.py
 constructor-ordering-checks_off1	main/generation_without_parse_checks.py
 decisions-checks_off0	main/generation_without_parse_checks.py	= main/generation_without_parse_checks~generation_without_parse_checks[decisions-checks_off0].py
 decisions-checks_off1	main/generation_without_parse_checks.py	= main/generation_without_parse_checks~generation_without_parse_checks[decisions-checks_off0].py
+[test_header_replaces_lone_surrogate_of_file_name]
+command	main/main_general/header_replaces_lone_surrogate_of_file_name[command].py
+filename	main/main_general/header_replaces_lone_surrogate_of_file_name[filename].py
 [test_import_overrides]
 	main/import_overrides.py
 [test_import_overrides_apply_to_additional_imports]
