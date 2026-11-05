@@ -131,6 +131,46 @@ def test_msgspec_union_member_hook_that_takes_no_options(recwarn: pytest.Warning
     )
 
 
+def test_msgspec_union_bounds_superseded_extra(output_file: Path, recwarn: pytest.WarningsRecorder) -> None:
+    """Read no field extra that a schema bound supersedes as a bound of the exact integer check of a union.
+
+    ``x-ge: 10`` beside ``minimum: 0`` is written as ``ge=0``, the schema's bound, so under
+    ``--read-msgspec-union-bounds-exactly`` the number member admits every integer from 0 on and the int member goes
+    without its ``ge=5``: ``1``, which the number branch accepts, decodes.
+    """
+    input_path = NUMBER_LIMITS / "union_superseded_extra.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *(
+                "--formatters",
+                "builtin",
+                "--output-model-type",
+                "msgspec.Struct",
+                "--read-msgspec-union-bounds-exactly",
+            ),
+            *("--field-extra-keys-without-x-prefix", "x-ge"),
+        ],
+    )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(warning.message) for warning in recwarn if warning.category is UserWarning)
+        ),
+        name="warnings",
+    )
+    payloads = json.loads((PAYLOADS / "union_superseded_extra.json").read_text())
+    validator = Draft202012Validator(json.loads(input_path.read_text()))
+    for payload in payloads["valid"]:
+        validator.validate(payload)
+    for change in payloads["invalid"]:
+        with pytest.raises(SchemaValidationError):
+            validator.validate({**payloads["valid"][0], **change})
+    assert_output(_payload_verdicts(output_file, payloads), name="payloads")
+
+
 def _payload_verdicts(output_file: Path, payloads: dict[str, Any]) -> str:
     """Return whether the generated ``Model`` decodes each valid payload and each invalid change of the first one."""
     documents = [

@@ -1269,7 +1269,8 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
 
         Read exactly, each side that ``Meta`` bounds is every schema bound of that side it takes, written or
         superseded, at the value the schema writes: the ``ge`` that ``minimum`` and ``exclusiveMinimum`` come to reads
-        as both, so the check reads the integers they admit together.
+        as both, so the check reads the integers they admit together. A field extra that a schema bound superseded is
+        no bound of the schema, and ``Meta`` does not write it.
         """
         omitted: list[Omitted] = []
         args, _ = self._meta_call_arguments(omitted)
@@ -1279,7 +1280,11 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         sides = {_BOUND_SIDES[k] for k, _ in written if k in _BOUND_SIDES}
         taken = (
             *((item, entry.value) for entry in args.kwargs() for item in entry.items),
-            *((entry.item, entry.value) for entry in omitted if entry.reason == "superseded"),
+            *(
+                (entry.item, entry.value)
+                for entry in omitted
+                if entry.reason == "superseded" and entry.item.startswith("constraint:")
+            ),
         )
         exact = [(k, v) for k, v in written if k not in _BOUND_SIDES]
         for item, value in taken:
