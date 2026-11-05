@@ -7,13 +7,14 @@ to these functions (``parser/jsonschema.py``), and these functions call them thr
 
 from __future__ import annotations
 
+from functools import partial
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 from typing_extensions import Protocol
 
 from datamodel_code_generator._regex_syntax import literal_pattern_value
 from datamodel_code_generator._url_redaction import named_location
-from datamodel_code_generator.parser._naming import composed_name
+from datamodel_code_generator.parser._naming import Composed, composed_name
 from datamodel_code_generator.parser._origins import with_field_origin, with_type_origin
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import _merges_ref_siblings, _object_map_other_types
@@ -21,14 +22,15 @@ from datamodel_code_generator.parser.base import get_special_path
 from datamodel_code_generator.types import ANY, Types, build_union
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Sequence
+    from collections.abc import Callable, Iterable, Iterator, Sequence
 
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.model import DataModel, DataModelFieldBase
     from datamodel_code_generator.model.output import OutputModelContext
+    from datamodel_code_generator.parser._naming import Claim
     from datamodel_code_generator.parser._null_facts import NullFacts, NullSite
-    from datamodel_code_generator.reference import ModelResolver
+    from datamodel_code_generator.reference import ModelResolver, Reference
     from datamodel_code_generator.types import DataType, DataTypeManager
 
 __all__ = [
@@ -111,6 +113,9 @@ class ObjectMapsHost(Protocol):
     @property
     def _legacy_object_maps(self) -> frozenset[str]:
         """The rows of 0.86.0 object maps kept."""
+
+    def _claimed(self, claim: Claim, parse: Callable[[], DataType]) -> DataType:
+        """Return what ``parse`` returns, run in a naming frame that makes ``claim`` for the model it builds."""
 
     @property
     def _output_model_context(self) -> OutputModelContext:
@@ -289,26 +294,31 @@ def _schema_assertions(schema: JsonSchemaObject) -> dict[str, Any]:
 
 def get_typed_additional_properties_field(
     parser: ObjectMapsHost,
+    reference: Reference,
     class_name: str,
     obj: JsonSchemaObject,
     path: list[str],
 ) -> DataModelFieldBase | None:
-    """Build the output model's typed extra field for schema-valued extras (``_typed_extra_field_schema``).
+    """Build the typed extra field of the model of ``reference`` for its schema-valued extras.
 
-    The field and its dict record the location of the additionalProperties schema as their origin
-    (``reference.field_origin_of``, ``reference.type_origin_of``).
+    The extras are those of ``_typed_extra_field_schema``. The field and its dict record the location of the
+    additionalProperties schema as their origin (``reference.field_origin_of``, ``reference.type_origin_of``). The model
+    of the values is named after ``class_name``, the model's name, which L1 records as its claim (``Composed``) while
+    it records naming frames.
     """
     if (additional_props := parser._typed_extra_field_schema(obj)) is None:  # noqa: SLF001
         return None
     additional_props = parser._add_nullable_combined_schema_branches(additional_props)  # noqa: SLF001
     additional_property_name = composed_name(class_name, "additional-property")
-    extra_value_type = parser._parse_additional_properties_value(  # noqa: SLF001
+    parse_value = partial(
+        parser._parse_additional_properties_value,  # noqa: SLF001
         additional_property_name,
         [*path, "additionalProperties"],
         obj,
         additional_properties=additional_props,
         constrained_name=additional_property_name,
     )
+    extra_value_type = parser._claimed(Composed(reference, "additional-property"), parse_value)  # noqa: SLF001
     dict_key = parser._object_map_key_type(obj.propertyNames, "extra-field")  # noqa: SLF001
 
     location = additional_props.schema_location

@@ -8,6 +8,7 @@ call them through the parser.
 from __future__ import annotations
 
 from collections import Counter
+from functools import partial
 from typing import TYPE_CHECKING, Any, Union
 
 from typing_extensions import Protocol, final
@@ -24,12 +25,13 @@ from datamodel_code_generator.model._decisions.tag_value import (
     union_tag_values,
 )
 from datamodel_code_generator.model.base import sanitize_module_name
-from datamodel_code_generator.parser._naming import composed_name
+from datamodel_code_generator.parser._naming import Ordinal, composed_name
 from datamodel_code_generator.parser._schema_object import Discriminator, JsonSchemaObject
 
 if TYPE_CHECKING:
-    from collections.abc import Container, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Container, Iterable, Iterator, Mapping, Sequence
 
+    from datamodel_code_generator.parser._naming import Claim
     from datamodel_code_generator.parser._schema_graph import _TargetNode
     from datamodel_code_generator.parser._schema_object import JsonSchemaLiteral
     from datamodel_code_generator.reference import ModelResolver, SchemaLocation
@@ -70,6 +72,9 @@ class UnionTagsHost(Protocol):
     @property
     def use_tag_as_union_variant_name(self) -> bool:
         """Whether union branches are named after their tags (``--use-tag-as-union-variant-name``)."""
+
+    def _claimed(self, claim: Claim, parse: Callable[[], DataType]) -> DataType:
+        """Return what ``parse`` returns, run in a naming frame that makes ``claim`` for the model it builds."""
 
     @property
     def _tag_key_variants(self) -> dict[SchemaLocation | None, tuple[str, str]]:
@@ -491,19 +496,21 @@ def parse_combined_schema_items(  # noqa: PLR0913, PLR0917
     variant_names: Sequence[str | None] | None,
     variant_keys: Mapping[int, str],
 ) -> list[DataType]:
-    """Parse the branches of a union, recording the key and name of each branch named after its key by its node."""
+    """Parse the branches of a union, recording the key and name of each branch named after its key by its node.
+
+    A branch without a name of its own takes the union's name, and its position as its claim while L1 records naming
+    frames (``Ordinal``).
+    """
     parent_name = composed_name(name, "variant-parent")
     if variant_names:
         for index, key in variant_keys.items():
             location = combined_schemas[index].schema_location
             parser._tag_key_variants[location] = (key, variant_names[index] or parent_name)  # noqa: SLF001
-    return [
-        parser.parse_item(
-            (variant_names[index] or parent_name) if variant_names else parent_name,
-            item,
-            [*path, str(index)],
-            singular_name=False,
-            parent=obj,
+    data_types: list[DataType] = []
+    for index, item in enumerate(combined_schemas):
+        variant_name = variant_names[index] if variant_names else None
+        parse = partial(
+            parser.parse_item, variant_name or parent_name, item, [*path, str(index)], singular_name=False, parent=obj
         )
-        for index, item in enumerate(combined_schemas)
-    ]
+        data_types.append(parse() if variant_name else parser._claimed(Ordinal(index + 1), parse))  # noqa: SLF001
+    return data_types

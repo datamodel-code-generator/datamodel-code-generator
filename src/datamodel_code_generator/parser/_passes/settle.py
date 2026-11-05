@@ -146,6 +146,9 @@ class ParseHost(Protocol):
     def parse_raw(self) -> None:
         """Load the sources and parse them into models (L0 and L1)."""
 
+    def _start_naming_frames(self) -> None:
+        """Open the naming frames before L1 when it records them."""
+
 
 def _runtime_validation_names_later_model(
     models: list[DataModel],
@@ -470,10 +473,12 @@ def record_source_reference_paths(run: SettleRun[Any]) -> None:
 
 
 def parse_raw(parser: ParseHost, run: SettleRun[Any]) -> None:
-    """Run L0 and L1, without repeating warnings on a retry; the HTTP session closes either way.
+    """Run L0 and L1, without repeating warnings on a retry, with the naming frames open while L1 records them.
 
-    A parse that exceeds the recursion limit on deeply nested schemas stops with an error, not a partial result.
+    The HTTP session closes either way. A parse that exceeds the recursion limit on deeply nested schemas stops with
+    an error, not a partial result.
     """
+    parser._start_naming_frames()  # noqa: SLF001
     try:
         with nesting_limit():
             if run.suppress_parse_warnings:

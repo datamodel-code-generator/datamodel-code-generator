@@ -30,6 +30,7 @@ from functools import (
     lru_cache,
     partial,
     reduce,
+    wraps,
 )
 from itertools import chain, compress  # noqa: F401  # Preserve the established parser.jsonschema export.
 from operator import and_, is_not  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -284,7 +285,7 @@ from datamodel_code_generator.parser._intersection import (
     warn_untaken_patterns,
 )
 from datamodel_code_generator.parser._intersection import json_values_equal as _json_literal_values_equal
-from datamodel_code_generator.parser._naming import composed_name
+from datamodel_code_generator.parser._naming import Composed, composed_name
 from datamodel_code_generator.parser._null_facts import (
     NullFacts,
     NullMode,
@@ -453,6 +454,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr, PythonTypeRuntimeSymbol
     from datamodel_code_generator._types import JSONSchemaParserConfigDict
     from datamodel_code_generator.config import JSONSchemaParserConfig
+    from datamodel_code_generator.parser._naming import Claim
     from datamodel_code_generator.parser._rw_split import _Site
     from datamodel_code_generator.parser._schema_reading import SlashNames
     from datamodel_code_generator.parser.base import DocumentRoles
@@ -906,6 +908,53 @@ def _mark_location_conflict(reference: Reference) -> None:
     """Leave a Reference that several schema objects reach without a location."""
     reference.__dict__[SCHEMA_LOCATION_KEY] = None
     reference.__dict__[SCHEMA_LOCATION_CONFLICT_KEY] = True
+
+
+def _ends_with(tokens: tuple[str, ...], container: tuple[str, ...]) -> bool:
+    """Return whether ``tokens`` name an entry of ``container``, its tokens right before the last one."""
+    return len(tokens) > len(container) and tokens[-1 - len(container) : -1] == container
+
+
+_BuilderT = TypeVar("_BuilderT", bound="Callable[..., Any]")
+_ClaimedT = TypeVar("_ClaimedT")
+
+
+def _builds_model(method: _BuilderT) -> _BuilderT:
+    """Run a model builder in a frame of the naming frames, while L1 records them (``Parser._naming_frames``).
+
+    The frame takes the model the builder returns when that model was recorded inside it, so the innermost such frame
+    of another model names the model whose parse built it (``BuildRecord.owner``).
+    """
+
+    @wraps(method)
+    def build(self: JsonSchemaParser, *args: Any, **kwargs: Any) -> Any:
+        if (frames := self._naming_frames) is None:
+            return method(self, *args, **kwargs)
+        frame = frames.open()
+        try:
+            result = method(self, *args, **kwargs)
+        finally:
+            frames.close()
+        frames.built(frame, result)
+        return result
+
+    return cast("_BuilderT", build)
+
+
+def _parses_document(method: _BuilderT) -> _BuilderT:
+    """Run a document parse with no naming frame open, so its models are roots whatever parse reached it."""
+
+    @wraps(method)
+    def parse(self: JsonSchemaParser, *args: Any, **kwargs: Any) -> Any:
+        if (frames := self._naming_frames) is None:
+            return method(self, *args, **kwargs)
+        stack = frames.detach()
+        try:
+            return method(self, *args, **kwargs)
+        finally:
+            frames.attach(stack)
+
+    return cast("_BuilderT", parse)
 
 
 @snooper_to_methods()  # noqa: PLR0904
@@ -1885,8 +1934,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         *,
         loaded: bool = False,
     ) -> Reference:
-        """Create a variant reference, reserving request/response paths for recursive uses."""
-        return _rw_split.get_rw_model_variant_reference(self, base_reference, suffix, loaded=loaded)
+        """Create a variant reference, reserving request/response paths for recursive uses.
+
+        A variant asked for as loaded is built: while L1 records naming frames, it stands for its base in them.
+        """
+        reference = _rw_split.get_rw_model_variant_reference(self, base_reference, suffix, loaded=loaded)
+        if loaded and (frames := self._naming_frames) is not None:
+            frames.variant(reference, base_reference, suffix)
+        return reference
 
     def _update_data_type_ref_for_variant(
         self,
@@ -2525,12 +2580,35 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if obj.id:
             self.extra_template_data[path]["schema_id"] = obj.id
 
-    def _record_schema_location(self, reference: Reference, location: SchemaLocation | None) -> None:  # noqa: PLR6301
-        """Record where the model of ``reference`` is built from (L1).
+    def _record_schema_location(self, reference: Reference, location: SchemaLocation | None) -> None:
+        """Record where the model of ``reference`` is built from (L1), and the naming frames open while L1 records them.
 
-        It is kept on the Reference object, so it stays valid when later passes change ``Reference.path``.
+        Both are kept on the Reference object, so they stay valid when later passes change ``Reference.path``.
         """
         _set_schema_location(reference, location)
+        if (frames := self._naming_frames) is not None:
+            frames.record(reference, definition=self._is_definition_location(location))
+
+    def _claimed(self, claim: Claim, parse: Callable[[], _ClaimedT]) -> _ClaimedT:
+        """Return what ``parse`` returns, run in a naming frame that makes ``claim`` for the model it builds.
+
+        The frame is opened only while L1 records naming frames (``Parser._naming_frames``).
+        """
+        return parse() if (frames := self._naming_frames) is None else frames.claimed(claim, parse)
+
+    def _is_definition_location(self, location: SchemaLocation | None) -> bool:
+        """Return whether ``location`` is an entry of a definitions container of its document's schema paths.
+
+        A container is one at the document root or in such an entry, so a ``$defs`` entry of a definition is one too.
+        """
+        if location is None or not (tokens := location.tokens):
+            return False
+        containers = tuple(tuple(split) for _, split in self._schema_paths_at(location))
+        while tokens:
+            if (container := next((split for split in containers if _ends_with(tokens, split)), None)) is None:
+                return False
+            tokens = tokens[: -1 - len(container)]
+        return True
 
     def _record_schema_object(self, reference: Reference, obj: JsonSchemaObject) -> None:
         """Record the schema object the model of ``reference`` is built from, and take its template data and marks."""
@@ -4419,6 +4497,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self, reference_path, name, obj, path, fields, base_classes, include_property_count=include_property_count
         )
 
+    @_builds_model
     def _parse_object_common_part(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         self,
         name: str,
@@ -4516,7 +4595,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         original_class_name = name
         name = self._apply_title_as_name(name, obj)  # pragma: no cover
         reference = self.model_resolver.add(path, name, class_name=True, loaded=True)
-        extra_field = _object_maps.get_typed_additional_properties_field(self, reference.name, obj, path)
+        extra_field = _object_maps.get_typed_additional_properties_field(self, reference, reference.name, obj, path)
         # ignore an undetected object
         if (
             ignore_duplicate_model
@@ -5056,6 +5135,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             else self.parse_root_type(name, merged_root, path)
         )
 
+    @_builds_model
     def parse_all_of(  # noqa: PLR0911
         self,
         name: str,
@@ -5619,6 +5699,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         return obj.model_copy(update=updates) if updates else obj
 
+    @_builds_model
     def parse_object(
         self,
         name: str,
@@ -5659,7 +5740,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         has_declared_fields = bool(fields)
         if has_declared_fields and (
-            extra_field := _object_maps.get_typed_additional_properties_field(self, class_name, obj, path)
+            extra_field := _object_maps.get_typed_additional_properties_field(self, reference, class_name, obj, path)
         ):
             extra_field.target_python_version = self.target_python_version
             fields.insert(0, extra_field)
@@ -6720,6 +6801,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             declares=bool(non_array_types and constraints),
         )
 
+    @_builds_model
     def parse_array(
         self,
         name: str,
@@ -6781,6 +6863,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         return self.data_type(reference=reference)
 
+    @_builds_model
     def parse_root_type(
         self,
         name: str,
@@ -7413,6 +7496,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return _semantic_value_text(enum_part["const"])
         return f"value_{index}"
 
+    @_builds_model
     def parse_enum(  # noqa: PLR0912, PLR0914, PLR0915
         self,
         name: str,
@@ -7550,7 +7634,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
             if message := _shifted_enum_entries_message(enum_reference.name, obj, named_values):
                 warn(message, stacklevel=2)
-            data_type = create_enum(enum_reference)
+            data_type = self._claimed(Composed(reference, "enum"), partial(create_enum, enum_reference))
             custom_base_class_name = class_key("reference-name", reference)
 
         self._register_root_model(
@@ -8773,6 +8857,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> Iterator[tuple[str, YamlValue, list[str]]]:
         return _schema_documents.iter_schema_definition_entries(self, definitions, base_path)
 
+    @_parses_document
     def _parse_file(  # noqa: PLR0913
         self,
         raw: dict[str, Any],
