@@ -25,6 +25,11 @@ null	main/asyncapi/main_asyncapi/components_that_are_not_an_object[null].py	= ma
 	main/asyncapi/external_message_ref.py
 [test_main_asyncapi_multi_format_schema_objects]
 	main/asyncapi/multi_format_schemas.py
+[test_main_asyncapi_name_converted_payloads_by_message]
+by-message	main/asyncapi/main_asyncapi/name_converted_payloads_by_message[by-message].py
+released	main/asyncapi/main_asyncapi/name_converted_payloads_by_message[released].py
+title-as-name-by-message	main/asyncapi/main_asyncapi/name_converted_payloads_by_message[title-as-name-by-message].py
+title-as-name-released	main/asyncapi/main_asyncapi/name_converted_payloads_by_message[title-as-name-released].py
 [test_main_asyncapi_non_finite_embedded_schemas]
 	main/asyncapi/non_finite_embedded_schemas.py
 [test_main_asyncapi_non_object_components]

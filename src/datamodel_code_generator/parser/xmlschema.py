@@ -382,8 +382,12 @@ def _convert_xml_schema_data(  # noqa: PLR0913
     schema_version_mode: VersionMode | None = None,
     encoding: str = "utf-8",
     source_safe_non_finite: bool,
+    placeholder_title: bool = True,
 ) -> dict[str, YamlValue]:
-    """Convert XML Schema data for a parser that may need source-safe float values."""
+    """Convert XML Schema data for a parser that may need source-safe float values.
+
+    A root that holds several global elements takes the title ``Model``, unless ``placeholder_title`` is False.
+    """
     if not isinstance(raw_schema, str):
         msg = "XML Schema schemaFormat requires an XSD schema string"
         raise Error(msg)
@@ -393,7 +397,7 @@ def _convert_xml_schema_data(  # noqa: PLR0913
         xmlschema_version=xmlschema_version,
         schema_version_mode=schema_version_mode,
         source_safe_non_finite=source_safe_non_finite,
-    ).convert(Source(path=Path("__asyncapi_schema__.xsd"), text=raw_schema))
+    ).convert(Source(path=Path("__asyncapi_schema__.xsd"), text=raw_schema), placeholder_title=placeholder_title)
 
 
 class _XMLSchemaConverter:
@@ -435,7 +439,7 @@ class _XMLSchemaConverter:
         self._definition_names: dict[DefinitionKey, str] = {}
         self.loaded_source_paths: set[Path] = set()
 
-    def convert(self, source: Source) -> dict[str, YamlValue]:
+    def convert(self, source: Source, *, placeholder_title: bool = True) -> dict[str, YamlValue]:
         if source.raw_data is not None:
             if not isinstance(source.raw_data, dict):  # pragma: no cover
                 msg = f"Expected dict, got {type(source.raw_data).__name__}"
@@ -489,7 +493,7 @@ class _XMLSchemaConverter:
                 name = cast("str", element.get("name"))
                 properties[name] = self._convert_global_element_as_property(element)
             schema = {
-                "title": "Model",
+                **({"title": "Model"} if placeholder_title else {}),
                 "type": "object",
                 "properties": properties,
                 "required": list(properties),

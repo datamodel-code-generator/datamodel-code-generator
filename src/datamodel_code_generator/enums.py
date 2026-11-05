@@ -177,11 +177,12 @@ class HTTPBackend(Enum):
 
 
 class NamingStrategy(Enum):
-    """Strategy for generating unique model names when duplicates occur.
+    """Strategy for naming models and telling duplicate model names apart.
 
     numbered: Append numeric suffix (Address1, Address2) [default].
-    parent_prefixed: Prefix with parent model name (CustomerAddress, UserAddress).
-    full_path: Use full schema path for unique names (OrdersItemsAddress).
+    parent_prefixed: Prefix every nested model with the name of the model that holds it, in CamelCase, nested parents
+        included (CompanyAddress, CompanyEmployeeHomeAddress); the model names are those of full_path.
+    full_path: Prefix every nested model with the names of the models that hold it (CompanyEmployeeHomeAddress).
     primary_first: Prioritize primary schema definitions, others get suffix.
     """
 

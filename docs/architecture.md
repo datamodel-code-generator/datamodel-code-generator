@@ -167,16 +167,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 206 | Shared generation options. |
-| `GenerateConfig` | 221 | Public `generate()` configuration. |
-| `ParserConfig` | 171 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 173 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 180 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 181 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 174 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 174 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 173 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 174 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 211 | Shared generation options. |
+| `GenerateConfig` | 226 | Public `generate()` configuration. |
+| `ParserConfig` | 174 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 176 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 184 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 186 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 177 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 177 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 176 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 177 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -1519,7 +1519,11 @@ is a new named row, never an anonymous `if`.
 | `legacy.pdc-annotated-strip` | a Pydantic dataclass drops the `Annotated` import whenever it must see the field's metadata, also when the hint writes `Annotated` | RP15b |
 | `legacy-run-alias-generator-import` | a BaseModel keeps importing the run's `--alias-generator` where it does not render it, so that class naming is unchanged | RP15b |
 | `legacy-reparse-for-final-names` | the L1 rows read the name a model is created under; when a yielding name changed and an L1 key names the created or the final name, the whole input is parsed again with the final names | keep |
-| `legacy-module-suffix-model` | the `module` scheme of L3 `replace_duplicate_name_in_module` gives a taken name the suffix `Model` without reading the `--duplicate-name-suffix` map | keep |
+| `legacy-number-before-case` | under `--capitalise-enum-members` a member whose capitalized name is taken is numbered without its casing (`a_1` beside `A`, `FieldNameResolver.get_valid_name`), unless `--capitalise-numbered-enum-members` cases it too (`A_1`) | keep |
+| `legacy-first-character-of-path-key` | a paths key loses its first character when its operation models are named, a leading slash or not (`pets` names `EtsGetResponse`, `OpenAPIParser._process_path_items`), unless `--keep-first-character-of-path-keys` strips only a leading slash, as for webhook names | keep |
+| `legacy-converter-placeholder-title` | an AsyncAPI payload in Avro or XML Schema that names no type of its own takes the converter's title `Model` (`convert_avro_schema_data`, `_convert_xml_schema_data`), which its field writes and `--use-title-as-name` names its class by, unless `--name-converted-payloads-by-message` drops it, so the payload is named after its message as a JSON Schema payload is | keep |
+| `legacy-whole-name-singular` | the item model of an array is named by singularizing its whole name as one word (`actions_caches` names `ActionsCach`, `ModelResolver._singular_name`), unless `--singularize-last-word-of-item-names` singularizes only its last word (`ActionsCache`) | keep |
+| `legacy-module-suffix-model` | the `module` scheme of L3 `replace_duplicate_name_in_module` gives a taken name the suffix `Model` without reading the `--duplicate-name-suffix` map, unless `--use-duplicate-name-suffix-for-every-collision` reads it (row `map-or-model`) | keep |
 | `legacy-both-prefixes` | under `--parent-scoped-naming` with `--naming-strategy full-path` an inline model takes the parent's name twice, the `full-path` prefix before the `parent-prefixed` one (`ModelResolver._parent_prefixed`) | #5666 |
 | `legacy-predicted-rename` | the later holders of a root model that the `parent` strategy collapsed keep naming it where the run renames colliding types and both models are written in one module, until `settle_kept_parent_roots` reads the final class names | keep |
 | `legacy-decide-in-union-module` | a discriminated union is tagged when its module is processed, not after the module loop | G05 |

@@ -358,6 +358,7 @@ class BaseGenerateConfig(BaseModel):
     use_generic_container_types: bool = False
     enable_faux_immutability: bool = False
     disable_appending_item_suffix: bool = False
+    singularize_last_word_of_item_names: bool = False
     empty_enum_field_name: str | None = None
     field_extra_keys: set[str] | None = None
     field_include_all_keys: bool = False
@@ -436,6 +437,7 @@ class BaseGenerateConfig(BaseModel):
     special_field_name_prefix: str | None = None
     remove_special_field_name_prefix: bool = False
     capitalise_enum_members: bool = False
+    capitalise_numbered_enum_members: bool = False
     keep_model_order: bool = False
     order_constructor_fields_by: Sequence[ConstructorFieldOrder] = ()
     custom_file_header: str | None = None
@@ -464,6 +466,7 @@ class BaseGenerateConfig(BaseModel):
     parent_scoped_naming: bool = False
     naming_strategy: NamingStrategy | None = None
     duplicate_name_suffix: dict[str, str] | None = None
+    use_duplicate_name_suffix_for_every_collision: bool = False
     dataclass_arguments: DataclassArguments | None = None
     disable_future_imports: bool = False
     import_overrides: dict[str, str] | None = None
@@ -472,6 +475,8 @@ class BaseGenerateConfig(BaseModel):
     read_only_write_only_model_type: ReadOnlyWriteOnlyModelType | None = None
     dedupe_request_response_variants: bool = False
     use_status_code_in_response_name: bool = False
+    keep_first_character_of_path_keys: bool = False
+    name_converted_payloads_by_message: bool = False
     all_exports_scope: AllExportsScope | None = None
     all_exports_collision_strategy: AllExportsCollisionStrategy | None = None
     field_type_collision_strategy: FieldTypeCollisionStrategy | None = None

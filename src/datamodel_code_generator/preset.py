@@ -17,7 +17,7 @@ from datamodel_code_generator._format_types import (
     Formatter,
     PythonVersion,
 )
-from datamodel_code_generator._option_names import option_flag, toml_value
+from datamodel_code_generator._option_names import option_flag, option_flags, toml_value
 from datamodel_code_generator._option_rules import implied_options
 from datamodel_code_generator._registry_render import _render_registry_json
 from datamodel_code_generator._requirements import python_target_meets
@@ -390,9 +390,9 @@ def _ensure_preset_enum_config_value(
 
 
 def _config_item_to_cli_option(item: PresetConfigItem) -> str:
-    """Translate a typed config field name to its CLI option spelling."""
-    option = option_flag(item.field_name)
-    if option not in CLI_OPTION_META:  # pragma: no cover
+    """Translate a typed config field name to the spelling of its CLI options that the CLI reference documents."""
+    option = next((flag for flag in option_flags(item.field_name) if flag in CLI_OPTION_META), None)
+    if option is None:  # pragma: no cover
         msg = f"Preset field {stable_repr(item.field_name)} does not map to a documented CLI option"
         raise PresetError(msg)
     if item.value is True:
@@ -804,6 +804,22 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "the schema writes, so a bound past 2**53 no longer rejects an integer the number member accepts."
         ),
     ),
+    PresetOptionGroup(
+        title="Model names taken from the schema",
+        config=PresetConfig(
+            use_duplicate_name_suffix_for_every_collision=True,
+            capitalise_numbered_enum_members=True,
+            keep_first_character_of_path_keys=True,
+            name_converted_payloads_by_message=True,
+            singularize_last_word_of_item_names=True,
+        ),
+        description=(
+            "Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize "
+            "the number of a capitalized enum member, strip only a leading slash from a paths key, name a "
+            "converted AsyncAPI payload that names no type after its message, and singularize only the last word "
+            "of an item model's name."
+        ),
+    ),
 )
 
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
@@ -1073,6 +1089,17 @@ def render_presets_markdown() -> str:
             "`--read-msgspec-union-bounds-exactly`: the int member of a msgspec union with a number member keeps its "
             "bounds only when they admit every integer the number member's bounds, read as the schema writes them, "
             "admit."
+        ),
+        "",
+        (
+            "The 20261104 presets also name models from the schema: `--use-duplicate-name-suffix-for-every-collision` "
+            "gives the `--duplicate-name-suffix` suffix to every model renamed because its name is taken, "
+            "`--capitalise-numbered-enum-members` capitalizes the number a capitalized enum member takes (`A_1`), "
+            "`--keep-first-character-of-path-keys` strips only a leading slash from a paths key (`pets` names "
+            "`PetsGetResponse`), `--name-converted-payloads-by-message` drops the placeholder title `Model` of an "
+            "AsyncAPI Avro or XML Schema payload that names no type, so it is named after its message, and "
+            "`--singularize-last-word-of-item-names` singularizes only the last word of an item model's name "
+            "(`actions_caches` names `ActionsCache`)."
         ),
         "",
         "## Override Preset Options",

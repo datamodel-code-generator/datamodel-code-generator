@@ -343,7 +343,12 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         group=_G.MODEL_NAMING,
         implies=_relations("--naming-strategy", value=NamingStrategy.ParentPrefixed.value),
     ),
-    **_opts(_C.MODEL, "--naming-strategy --duplicate-name-suffix", group=_G.MODEL_NAMING),
+    **_opts(
+        _C.MODEL,
+        "--naming-strategy --duplicate-name-suffix --use-duplicate-name-suffix-for-every-collision",
+        "--name-converted-payloads-by-message --singularize-last-word-of-item-names",
+        group=_G.MODEL_NAMING,
+    ),
     **_opts(_C.MODEL, "--use-one-literal-as-default --use-serialize-as-any"),
     **_opts(_C.MODEL, "--skip-root-model --use-root-model-sequence-interface", group=_G.ROOT_MODEL),
     **_opts(_C.MODEL, "--use-generic-base-class", group=_G.MODEL_SHAPE),
@@ -360,8 +365,8 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     ),
     **_opts(
         _C.FIELD,
-        "--capitalize-enum-members --special-field-name-prefix --remove-special-field-name-prefix",
-        "--empty-enum-field-name",
+        "--capitalize-enum-members --capitalize-numbered-enum-members --special-field-name-prefix",
+        "--remove-special-field-name-prefix --empty-enum-field-name",
     ),
     **_opts(_C.FIELD, "--set-default-enum-member"),
     **_opts(
@@ -487,7 +492,11 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--read-only-write-only-model-type --dedupe-request-response-variants",
         group=_G.READ_ONLY_WRITE_ONLY,
     ),
-    **_opts(_C.OPENAPI, "--include-path-parameters --openapi-include-paths", group=_G.OPENAPI_PATHS),
+    **_opts(
+        _C.OPENAPI,
+        "--include-path-parameters --openapi-include-paths --keep-first-character-of-path-keys",
+        group=_G.OPENAPI_PATHS,
+    ),
     **_opts(_C.OPENAPI, "--openapi-include-info-version"),
     **_opts(_C.OPENAPI, "--openapi-as-definitions", group=_G.OPENAPI_SCOPES),
     **_opts(_C.OPENAPI, "--validation"),

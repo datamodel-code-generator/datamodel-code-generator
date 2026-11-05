@@ -407,6 +407,12 @@ Typing customization:
 Field customization:
   --capitalise-enum-members, --capitalize-enum-members
                         Capitalize field names on enum
+  --capitalise-numbered-enum-members, --capitalize-numbered-enum-members
+                        Under --capitalise-enum-members, capitalize also the
+                        number a member takes when its capitalized name is
+                        taken (A_1 instead of a_1 for the members 'a' and
+                        'A'); without it the numbered name stays as written,
+                        as in 0.88.0
   --empty-enum-field-name EMPTY_ENUM_FIELD_NAME
                         Set field name when enum value is empty (default: `_`)
   --field-extra-keys FIELD_EXTRA_KEYS [FIELD_EXTRA_KEYS ...]
@@ -615,19 +621,30 @@ Model customization:
   --module-split-mode {single}
                         Split generated models into separate files. 'single':
                         generate one file per model class.
+  --name-converted-payloads-by-message
+                        AsyncAPI only: name a payload that an Avro or XML
+                        Schema converter gives no name of its own, such as an
+                        Avro string or array, after its message, as a JSON
+                        Schema payload is, and drop the placeholder title
+                        Model the converter gives it (Field(...,
+                        title='Model'), and the class Model under --use-title-
+                        as-name); without it the placeholder stays, as in
+                        0.88.0
   --naming-strategy {numbered,parent-prefixed,full-path,primary-first}
-                        Strategy for generating unique model names when
-                        duplicates occur. 'numbered' (default): Append numeric
+                        Strategy for naming models and telling duplicate model
+                        names apart. 'numbered' (default): Append numeric
                         suffix (Address, Address1, Address2). Simple but names
-                        don't indicate context. 'parent-prefixed': Prefix with
-                        parent model name using underscore (Company_Address,
-                        Company_Employee_Address for nested). Names show
-                        hierarchy. 'full-path': Similar to parent-prefixed but
-                        joins with CamelCase (CompanyAddress,
-                        CompanyEmployeeAddress). More readable for deep
-                        nesting. 'primary-first': Keep clean names for primary
-                        definitions (in /definitions/ or
-                        /components/schemas/), only add suffix to
+                        don't indicate context. 'parent-prefixed': Prefix
+                        every nested model with the name of the model that
+                        holds it, joined in CamelCase, nested parents included
+                        (CompanyAddress, CompanyEmployeeHomeAddress), also
+                        where the name is unique; the model names are the same
+                        as with 'full-path'. 'full-path': Prefix every nested
+                        model with the names of the models that hold it,
+                        joined in CamelCase (CompanyAddress,
+                        CompanyEmployeeHomeAddress). 'primary-first': Keep
+                        clean names for primary definitions (in /definitions/
+                        or /components/schemas/), only add suffix to
                         inline/nested duplicates.
   --order-constructor-fields-by {final-names,written-defaults} [{final-names,written-defaults} ...]
                         Decide the order of constructor fields by each given
@@ -686,6 +703,12 @@ Model customization:
                         Name of the shared module for --reuse-scope=tree
                         (default: "shared"). Use this option if your schema
                         has a file named "shared".
+  --singularize-last-word-of-item-names
+                        Name the item model of an array by singularizing only
+                        the last word of its name (actions_caches gives
+                        ActionsCache, payment_status gives PaymentStatusItem);
+                        without it the whole name is singularized as one word
+                        (ActionsCach, PaymentStatu), as in 0.88.0
   --skip-root-model     Skip generating the model for the root schema element
   --strict-dotted-module-names, --no-strict-dotted-module-names
                         Only infer dotted schema names as module paths when
@@ -726,6 +749,13 @@ Model customization:
                         becomes 'foo/bar.py'). Use --no-treat-dot-as-module to
                         keep dots in names as underscores for single-file
                         output.
+  --use-duplicate-name-suffix-for-every-collision
+                        Give the --duplicate-name-suffix suffix also to a
+                        model renamed because its name is taken in its module,
+                        by another model or by a name the module imports (an
+                        inline Item beside a definition Item, a definition
+                        AnyUrl beside a uri field); without it such a model
+                        takes the suffix Model, as in 0.88.0
   --use-exact-imports   import exact types instead of modules, for example:
                         "from .foo import Bar" instead of "from . import foo"
                         with "foo.Bar"
@@ -865,6 +895,12 @@ OpenAPI-only options:
   --include-path-parameters
                         Include path parameters in generated parameter models
                         in addition to query parameters (Only OpenAPI)
+  --keep-first-character-of-path-keys
+                        Strip only a leading slash from a paths key when
+                        naming its operation models, as webhook names are, so
+                        the key pets gives PetsGetResponse; without it the
+                        first character is dropped whatever it is
+                        (EtsGetResponse), as in 0.88.0
   --openapi-as-definitions {paths-bodies,ref-components} [{paths-bodies,ref-components} ...]
                         Give each given kind of OpenAPI schema the model a
                         definitions entry of the same schema gets. paths-

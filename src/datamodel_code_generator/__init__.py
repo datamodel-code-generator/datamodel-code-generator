@@ -1177,6 +1177,7 @@ def _openapi_shared_options(config: GenerateConfig) -> OpenAPIParserConfigDict:
         "openapi_scopes": config.openapi_scopes,
         "include_path_parameters": config.include_path_parameters,
         "use_status_code_in_response_name": config.use_status_code_in_response_name,
+        "keep_first_character_of_path_keys": config.keep_first_character_of_path_keys,
         "openapi_include_paths": config.openapi_include_paths,
         "openapi_include_info_version": config.openapi_include_info_version,
         "openapi_as_definitions": config.openapi_as_definitions,
@@ -1469,6 +1470,7 @@ def _build_parser(  # noqa: PLR0911, PLR0913
             asyncapi_additional_options: AsyncAPIParserConfigDict = {
                 **_openapi_shared_options(config),
                 "asyncapi_version": asyncapi_version,
+                "name_converted_payloads_by_message": config.name_converted_payloads_by_message,
                 **additional_options,
             }
             parser_config = _create_parser_config(config, asyncapi_additional_options)

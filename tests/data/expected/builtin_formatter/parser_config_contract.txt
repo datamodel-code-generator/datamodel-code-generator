@@ -16,6 +16,7 @@ guarded base_class_map
 reviewed-safe base_path
 reviewed-safe builtin_format_line_length
 reviewed-safe capitalise_enum_members
+reviewed-safe capitalise_numbered_enum_members
 reviewed-safe check_pattern_maps_strictly
 guarded class_decorators
 reviewed-safe class_name
@@ -102,6 +103,7 @@ reviewed-safe schema_validator_base_class_name
 reviewed-safe serialization_aliases
 reviewed-safe set_default_enum_member
 reviewed-safe shared_module_name
+reviewed-safe singularize_last_word_of_item_names
 reviewed-safe skip_root_model
 reviewed-safe snake_case_field
 reviewed-safe special_field_name_prefix
@@ -126,6 +128,7 @@ reviewed-safe use_decimal_in_field_forms
 reviewed-safe use_default_factory_for_optional_nested_models
 reviewed-safe use_default_kwarg
 reviewed-safe use_double_quotes
+reviewed-safe use_duplicate_name_suffix_for_every_collision
 reviewed-safe use_encoded_str_for_constrained_base64
 reviewed-safe use_enum_values_in_discriminator
 reviewed-safe use_exact_imports
@@ -183,6 +186,8 @@ reviewed-safe schema_version_mode
 [AsyncAPIParserConfig]
 reviewed-safe asyncapi_version
 reviewed-safe include_path_parameters
+reviewed-safe keep_first_character_of_path_keys
+reviewed-safe name_converted_payloads_by_message
 reviewed-safe openapi_as_definitions
 reviewed-safe openapi_include_info_version
 reviewed-safe openapi_include_paths

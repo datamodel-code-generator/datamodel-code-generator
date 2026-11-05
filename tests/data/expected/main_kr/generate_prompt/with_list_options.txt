@@ -78,6 +78,7 @@
 ### Field Customization
 - `--aliases`: Apply custom field and class name aliases via inline JSON or a JSON file path.
 - `--capitalize-enum-members`: Capitalize enum member names to UPPER_CASE format.
+- `--capitalize-numbered-enum-members`: Capitalize the numbered name an enum member takes when its name is taken.
 - `--default-values`: Override field default values via inline JSON or a JSON file path.
 - `--deserialize-default-values`: Deserialize selected direct scalar field defaults into their generated Python ...
 - `--empty-enum-field-name`: Name for empty string enum field values.
@@ -139,7 +140,8 @@
 - `--model-extra-keys`: Add model-level schema extensions to ConfigDict json_schema_extra.
 - `--model-extra-keys-without-x-prefix`: Strip x- prefix from model-level schema extensions and add to ConfigDic...
 - `--model-name-map`: Rename generated model classes from a JSON mapping.
-- `--naming-strategy`: Use parent-prefixed naming strategy for duplicate model names.
+- `--name-converted-payloads-by-message`: Name a converted payload that names no type of its own after its message.
+- `--naming-strategy`: Choose how models are named and how duplicate model names are told apart.
 - `--no-allow-population-by-field-name`
 - `--no-collapse-root-models`
 - `--no-use-frozen-field`
@@ -151,6 +153,7 @@
 - `--read-nullable-beside-type-list`: Write the null that `nullable: true` declares beside a `type` list into th...
 - `--reuse-model`: Reuse identical model definitions instead of generating duplicates.
 - `--reuse-scope`: Scope for model reuse detection (root or tree).
+- `--singularize-last-word-of-item-names`: Name the item model of an array by singularizing only the last word o...
 - `--skip-root-model`: Skip generation of root model when schema contains nested definitions.
 - `--strict-nullable`: Treat default field as a non-nullable field.
 - `--strip-default-none`: Remove fields with None as default value from generated models.
@@ -161,6 +164,7 @@
 - `--use-default`: Use default values from schema in generated models.
 - `--use-default-factory-for-optional-nested-models`: Generate default_factory for optional nested model fields.
 - `--use-default-kwarg`: Use default= keyword argument instead of positional argument for fields with defaults.
+- `--use-duplicate-name-suffix-for-every-collision`: Give the `--duplicate-name-suffix` suffix to every model re...
 - `--use-frozen-field`: Generate frozen (immutable) field definitions for readOnly properties.
 - `--use-generic-base-class`: Generate a shared base class with model configuration to avoid repetition (DRY).
 - `--use-missing-sentinel`: Use Pydantic's MISSING sentinel for unset optional BaseModel or dataclass fields.
@@ -205,6 +209,7 @@
 ### OpenAPI-only Options
 - `--dedupe-request-response-variants`: Decide Request/Response variants from the schema graph and build each in...
 - `--include-path-parameters`: Include OpenAPI path parameters in generated parameter models.
+- `--keep-first-character-of-path-keys`: Strip only a leading slash from a paths key when naming its operation m...
 - `--openapi-as-definitions`: Give OpenAPI paths bodies or ref components the models their definitions get.
 - `--openapi-include-info-version`: Emit OpenAPI info.version as a generated constant.
 - `--openapi-include-paths`: Filter OpenAPI paths to include in model generation.
@@ -686,6 +691,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
 [36;1mField customization[0m:
   --capitalise-enum-members, --capitalize-enum-members
                         Capitalize field names on enum
+  --capitalise-numbered-enum-members, --capitalize-numbered-enum-members
+                        Under --capitalise-enum-members, capitalize also the
+                        number a member takes when its capitalized name is
+                        taken (A_1 instead of a_1 for the members 'a' and
+                        'A'); without it the numbered name stays as written,
+                        as in 0.88.0
   --empty-enum-field-name EMPTY_ENUM_FIELD_NAME
                         Set field name when enum value is empty (default: `_`)
   --field-extra-keys FIELD_EXTRA_KEYS [FIELD_EXTRA_KEYS ...]
@@ -894,19 +905,30 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --module-split-mode {single}
                         Split generated models into separate files. 'single':
                         generate one file per model class.
+  --name-converted-payloads-by-message
+                        AsyncAPI only: name a payload that an Avro or XML
+                        Schema converter gives no name of its own, such as an
+                        Avro string or array, after its message, as a JSON
+                        Schema payload is, and drop the placeholder title
+                        Model the converter gives it (Field(...,
+                        title='Model'), and the class Model under --use-title-
+                        as-name); without it the placeholder stays, as in
+                        0.88.0
   --naming-strategy {numbered,parent-prefixed,full-path,primary-first}
-                        Strategy for generating unique model names when
-                        duplicates occur. 'numbered' (default): Append numeric
+                        Strategy for naming models and telling duplicate model
+                        names apart. 'numbered' (default): Append numeric
                         suffix (Address, Address1, Address2). Simple but names
-                        don't indicate context. 'parent-prefixed': Prefix with
-                        parent model name using underscore (Company_Address,
-                        Company_Employee_Address for nested). Names show
-                        hierarchy. 'full-path': Similar to parent-prefixed but
-                        joins with CamelCase (CompanyAddress,
-                        CompanyEmployeeAddress). More readable for deep
-                        nesting. 'primary-first': Keep clean names for primary
-                        definitions (in /definitions/ or
-                        /components/schemas/), only add suffix to
+                        don't indicate context. 'parent-prefixed': Prefix
+                        every nested model with the name of the model that
+                        holds it, joined in CamelCase, nested parents included
+                        (CompanyAddress, CompanyEmployeeHomeAddress), also
+                        where the name is unique; the model names are the same
+                        as with 'full-path'. 'full-path': Prefix every nested
+                        model with the names of the models that hold it,
+                        joined in CamelCase (CompanyAddress,
+                        CompanyEmployeeHomeAddress). 'primary-first': Keep
+                        clean names for primary definitions (in /definitions/
+                        or /components/schemas/), only add suffix to
                         inline/nested duplicates.
   --order-constructor-fields-by {final-names,written-defaults} [{final-names,written-defaults} ...]
                         Decide the order of constructor fields by each given
@@ -965,6 +987,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Name of the shared module for --reuse-scope=tree
                         (default: "shared"). Use this option if your schema
                         has a file named "shared".
+  --singularize-last-word-of-item-names
+                        Name the item model of an array by singularizing only
+                        the last word of its name (actions_caches gives
+                        ActionsCache, payment_status gives PaymentStatusItem);
+                        without it the whole name is singularized as one word
+                        (ActionsCach, PaymentStatu), as in 0.88.0
   --skip-root-model     Skip generating the model for the root schema element
   --strict-dotted-module-names, --no-strict-dotted-module-names
                         Only infer dotted schema names as module paths when
@@ -1005,6 +1033,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         becomes 'foo/bar.py'). Use --no-treat-dot-as-module to
                         keep dots in names as underscores for single-file
                         output.
+  --use-duplicate-name-suffix-for-every-collision
+                        Give the --duplicate-name-suffix suffix also to a
+                        model renamed because its name is taken in its module,
+                        by another model or by a name the module imports (an
+                        inline Item beside a definition Item, a definition
+                        AnyUrl beside a uri field); without it such a model
+                        takes the suffix Model, as in 0.88.0
   --use-exact-imports   import exact types instead of modules, for example:
                         "from .foo import Bar" instead of "from . import foo"
                         with "foo.Bar"
@@ -1144,6 +1179,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --include-path-parameters
                         Include path parameters in generated parameter models
                         in addition to query parameters (Only OpenAPI)
+  --keep-first-character-of-path-keys
+                        Strip only a leading slash from a paths key when
+                        naming its operation models, as webhook names are, so
+                        the key pets gives PetsGetResponse; without it the
+                        first character is dropped whatever it is
+                        (EtsGetResponse), as in 0.88.0
   --openapi-as-definitions {paths-bodies,ref-components} [{paths-bodies,ref-components} ...]
                         Give each given kind of OpenAPI schema the model a
                         definitions entry of the same schema gets. paths-

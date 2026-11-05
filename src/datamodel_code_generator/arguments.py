@@ -491,6 +491,13 @@ _flag(
 _flag(
     model_options, "--disable-appending-item-suffix", help="Disable appending `Item` suffix to model name in an array"
 )
+_flag(
+    model_options,
+    "--singularize-last-word-of-item-names",
+    help="Name the item model of an array by singularizing only the last word of its name (actions_caches gives "
+    "ActionsCache, payment_status gives PaymentStatusItem); without it the whole name is singularized as one word "
+    "(ActionsCach, PaymentStatu), as in 0.88.0",
+)
 _flag(model_options, "--disable-timestamp", help="Disable timestamp on file headers")
 _flag(model_options, "--enable-faux-immutability", help="Enable faux immutability")
 _flag(model_options, "--enable-version-header", help="Enable package version on file headers")
@@ -679,13 +686,14 @@ model_options.add_argument(
 _deprecated_flag(model_options, "--parent-scoped-naming")
 model_options.add_argument(
     "--naming-strategy",
-    help="Strategy for generating unique model names when duplicates occur. "
+    help="Strategy for naming models and telling duplicate model names apart. "
     "'numbered' (default): Append numeric suffix (Address, Address1, Address2). "
     "Simple but names don't indicate context. "
-    "'parent-prefixed': Prefix with parent model name using underscore "
-    "(Company_Address, Company_Employee_Address for nested). Names show hierarchy. "
-    "'full-path': Similar to parent-prefixed but joins with CamelCase "
-    "(CompanyAddress, CompanyEmployeeAddress). More readable for deep nesting. "
+    "'parent-prefixed': Prefix every nested model with the name of the model that holds it, joined in "
+    "CamelCase, nested parents included (CompanyAddress, CompanyEmployeeHomeAddress), also where the name is "
+    "unique; the model names are the same as with 'full-path'. "
+    "'full-path': Prefix every nested model with the names of the models that hold it, joined in CamelCase "
+    "(CompanyAddress, CompanyEmployeeHomeAddress). "
     "'primary-first': Keep clean names for primary definitions (in /definitions/ or "
     "/components/schemas/), only add suffix to inline/nested duplicates.",
     choices=_values(NamingStrategy),
@@ -699,6 +707,21 @@ model_options.add_argument(
     "When not specified, uses numeric suffix (Address1, Address2).",
     type=str,
     default=None,
+)
+_flag(
+    model_options,
+    "--use-duplicate-name-suffix-for-every-collision",
+    help="Give the --duplicate-name-suffix suffix also to a model renamed because its name is taken in its module, "
+    "by another model or by a name the module imports (an inline Item beside a definition Item, a definition AnyUrl "
+    "beside a uri field); without it such a model takes the suffix Model, as in 0.88.0",
+)
+_flag(
+    model_options,
+    "--name-converted-payloads-by-message",
+    help="AsyncAPI only: name a payload that an Avro or XML Schema converter gives no name of its own, such as an "
+    "Avro string or array, after its message, as a JSON Schema payload is, and drop the placeholder title Model the "
+    "converter gives it (Field(..., title='Model'), and the class Model under --use-title-as-name); without it the "
+    "placeholder stays, as in 0.88.0",
 )
 model_options.add_argument(
     "--all-exports-scope",
@@ -1039,6 +1062,13 @@ typing_options.add_argument(
 # Customization options for generated model fields
 # ======================================================================================
 _flag(field_options, *option_flags("capitalise_enum_members"), help="Capitalize field names on enum")
+_flag(
+    field_options,
+    *option_flags("capitalise_numbered_enum_members"),
+    help="Under --capitalise-enum-members, capitalize also the number a member takes when its capitalized name is "
+    "taken (A_1 instead of a_1 for the members 'a' and 'A'); without it the numbered name stays as written, as in "
+    "0.88.0",
+)
 field_options.add_argument(
     "--empty-enum-field-name",
     help="Set field name when enum value is empty (default:  `_`)",
@@ -1424,6 +1454,13 @@ _flag(
     openapi_options,
     "--use-status-code-in-response-name",
     help="Include HTTP status code in response model names (e.g., ResourceGetResponse200, ResourceGetResponseDefault)",
+)
+_flag(
+    openapi_options,
+    "--keep-first-character-of-path-keys",
+    help="Strip only a leading slash from a paths key when naming its operation models, as webhook names are, so "
+    "the key pets gives PetsGetResponse; without it the first character is dropped whatever it is (EtsGetResponse), "
+    "as in 0.88.0",
 )
 # ======================================================================================
 # Schema version options (for both JSON Schema and OpenAPI)

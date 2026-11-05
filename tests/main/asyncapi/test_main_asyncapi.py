@@ -482,3 +482,53 @@ def test_main_asyncapi_invalid_schema_version(output_file: Path, capsys: pytest.
         expected_stderr_contains="Invalid AsyncAPI version: invalid-version",
         capsys=capsys,
     )
+
+
+@pytest.mark.cli_doc(
+    options=["--name-converted-payloads-by-message"],
+    option_description="""Name a converted payload that names no type of its own after its message.
+
+An AsyncAPI payload in Avro or XML Schema is converted to JSON Schema first. A payload that names no type of its own,
+such as an Avro `string`, array, map or union, or an XML Schema with several global elements, takes the converter's
+placeholder title `Model`: the field writes `Field(..., title='Model')`, and under `--use-title-as-name` the class is
+named `Model`. With `--name-converted-payloads-by-message` such a payload takes no title, as a JSON Schema payload,
+so its class is named after its message (`PingPublishPayload`) under `--use-title-as-name` too. A payload that names
+its type, such as an Avro record, keeps that name.""",
+    input_schema="asyncapi/converted_payload_names.yaml",
+    cli_args=["--name-converted-payloads-by-message"],
+    golden_output="main/asyncapi/main_asyncapi/name_converted_payloads_by_message[by-message].py",
+    comparison_output="main/asyncapi/main_asyncapi/name_converted_payloads_by_message[released].py",
+    related_options=["--use-title-as-name"],
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="released"),
+        pytest.param(["--name-converted-payloads-by-message"], id="by-message"),
+        pytest.param(["--use-title-as-name"], id="title-as-name-released"),
+        pytest.param(["--use-title-as-name", "--name-converted-payloads-by-message"], id="title-as-name-by-message"),
+    ],
+)
+def test_main_asyncapi_name_converted_payloads_by_message(output_file: Path, extra_args: list[str]) -> None:
+    """Drop the converter's placeholder title of a converted payload under ``--name-converted-payloads-by-message``.
+
+    The Avro ``string``, array and union payloads and the XML Schema payload with two global elements take the title
+    ``Model`` without the option, so their field writes ``title='Model'`` and ``--use-title-as-name`` names their
+    classes ``Model``, ``Model1``, ...; with it they take no title and the names of their messages (#5677). The record
+    named ``Model`` keeps its name.
+    """
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "converted_payload_names.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=[*PY310_TARGET_ARGS, *extra_args],
+    )
+    if "--name-converted-payloads-by-message" in extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="asyncapi_name_converted_payloads_by_message",
+            model_name="TextPublishPayload",
+            valid_json='"a"',
+            invalid_json="1",
+            expected_error_type="string_type",
+        )

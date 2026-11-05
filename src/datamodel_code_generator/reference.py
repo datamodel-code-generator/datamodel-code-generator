@@ -71,7 +71,7 @@ from datamodel_code_generator._user_keys import (
 )
 from datamodel_code_generator.enums import ClassNameAffixScope, HTTPBackend
 from datamodel_code_generator.python_literal import stable_repr
-from datamodel_code_generator.util import camel_to_snake
+from datamodel_code_generator.util import camel_to_snake, last_camel_word
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Sequence
@@ -516,6 +516,7 @@ class FieldNameResolver:
         no_alias: bool = False,  # noqa: FBT001, FBT002
         use_subclass_enum: bool = False,  # noqa: FBT001, FBT002
         target_python_version: PythonVersion | None = None,
+        capitalise_numbered_enum_members: bool = False,  # noqa: FBT001, FBT002
     ) -> None:
         """Initialize field name resolver with transformation options.
 
@@ -539,6 +540,7 @@ class FieldNameResolver:
             raise Error(msg)
         self.remove_special_field_name_prefix: bool = remove_special_field_name_prefix
         self.capitalise_enum_members: bool = capitalise_enum_members
+        self.capitalise_numbered_enum_members: bool = capitalise_numbered_enum_members
         self.no_alias = no_alias
         self.use_subclass_enum: bool = use_subclass_enum
 
@@ -643,7 +645,11 @@ class FieldNameResolver:
         ignore_snake_case_field: bool = False,  # noqa: FBT001, FBT002
         upper_camel: bool = False,  # noqa: FBT001, FBT002
     ) -> str:
-        """Convert a name to a valid Python identifier."""
+        """Convert a name to a valid Python identifier.
+
+        Under ``--capitalise-enum-members`` a taken name is numbered without its casing (``a_1`` beside ``A``, row
+        ``legacy-number-before-case``), or cased too under ``--capitalise-numbered-enum-members`` (``A_1``).
+        """
         if not name:
             name = self.empty_field_name
         if name[0] == "#":
@@ -695,6 +701,8 @@ class FieldNameResolver:
                     new_name = name
                 continue
             new_name = f"{name}{count}" if upper_camel else f"{name}_{count}"
+            if self.capitalise_numbered_enum_members and self.capitalise_enum_members and not upper_camel:
+                new_name = upper(new_name, target)
             count += 1
         return new_name
 
@@ -868,6 +876,7 @@ class _FieldNameResolverOptions(NamedTuple):
     no_alias: bool
     use_subclass_enum: bool
     target_python_version: PythonVersion | None
+    capitalise_numbered_enum_members: bool
 
 
 class _FieldNameResolvers:
@@ -911,6 +920,7 @@ class _FieldNameResolvers:
         resolver = resolver_class(
             **options._replace(
                 capitalise_enum_members=options.capitalise_enum_members if is_enum else False,
+                capitalise_numbered_enum_members=options.capitalise_numbered_enum_members if is_enum else False,
                 use_subclass_enum=options.use_subclass_enum if is_enum else False,
             )._asdict()
         )
@@ -1030,6 +1040,8 @@ class ModelResolver:  # noqa: PLR0904
         model_name_map: Mapping[str, str] | None = None,
         default_value_overrides: Mapping[str, Any] | None = None,
         http_backend: HTTPBackend = HTTPBackend.AUTO,
+        capitalise_numbered_enum_members: bool = False,  # noqa: FBT001, FBT002
+        singularize_last_word_of_item_names: bool = False,  # noqa: FBT001, FBT002
     ) -> None:
         """Initialize model resolver with naming and resolution options."""
         self.references: dict[str, Reference] = {}
@@ -1045,6 +1057,7 @@ class ModelResolver:  # noqa: PLR0904
         self.singular_name_suffix: str = (
             singular_name_suffix if isinstance(singular_name_suffix, str) else SINGULAR_NAME_SUFFIX
         )
+        self.singularize_last_word_of_item_names = singularize_last_word_of_item_names
         self._field_name_resolvers: dict[ModelType, FieldNameResolver] | _FieldNameResolvers = _FieldNameResolvers(
             field_name_resolver_classes,
             _FieldNameResolverOptions(
@@ -1058,6 +1071,7 @@ class ModelResolver:  # noqa: PLR0904
                 no_alias=no_alias,
                 use_subclass_enum=use_subclass_enum,
                 target_python_version=target_python_version,
+                capitalise_numbered_enum_members=capitalise_numbered_enum_members,
             ),
         )
         self.class_name_generator = custom_class_name_generator or self.default_class_name_generator
@@ -1998,7 +2012,7 @@ class ModelResolver:  # noqa: PLR0904
             # TODO: create a validate for module name
             name = self.get_valid_field_name(name, model_type=ModelType.CLASS)
             if singular_name:  # pragma: no cover
-                name = get_singular_name(name, singular_name_suffix or self.singular_name_suffix)
+                name = self._singular_name(name, singular_name_suffix)
             elif unique:  # pragma: no cover
                 unique_name = self._get_unique_name(name, path=joined_path)
                 if unique_name != name:
@@ -2173,7 +2187,7 @@ class ModelResolver:  # noqa: PLR0904
         class_name = self._generate_class_name(class_name, preserve_name=preserve_name)
 
         if singular_name:
-            class_name = get_singular_name(class_name, singular_name_suffix or self.singular_name_suffix)
+            class_name = self._singular_name(class_name, singular_name_suffix)
 
         if not skip_affix:
             class_name = self._apply_class_name_affix(class_name, model_type=model_type, is_root=is_root)
@@ -2190,6 +2204,17 @@ class ModelResolver:  # noqa: PLR0904
                 duplicate_name = class_name
             class_name = unique_name
         return ClassName(name=f"{prefix}{class_name}", duplicate_name=duplicate_name)
+
+    def _singular_name(self, name: str, suffix: str | None) -> str:
+        """Return the item name of ``name``, or ``name`` with the suffix where it has no singular.
+
+        The whole name is singularized as one word (row ``legacy-whole-name-singular``), or only its last word under
+        ``--singularize-last-word-of-item-names``.
+        """
+        suffix = suffix or self.singular_name_suffix
+        if self.singularize_last_word_of_item_names:
+            return get_last_word_singular_name(name, suffix)
+        return get_singular_name(name, suffix)
 
     def _get_unique_name(  # noqa: PLR0913
         self,
@@ -2478,6 +2503,20 @@ def get_singular_name(name: str, suffix: str = SINGULAR_NAME_SUFFIX) -> str:
     if singular_name is False:
         singular_name = f"{name}{suffix}"
     return singular_name
+
+
+@lru_cache(maxsize=4096)
+def get_last_word_singular_name(name: str, suffix: str = SINGULAR_NAME_SUFFIX) -> str:
+    """Convert a plural name to singular form by its last word, split as ``camel_to_snake`` splits words.
+
+    ``ActionsCaches`` gives ``ActionsCache`` and ``PaymentStatus``, whose last word has no singular,
+    ``PaymentStatusItem``.
+    """
+    last_word = last_camel_word(name) or name
+    singular_word = _get_inflect_engine().singular_noun(cast("inflect.Word", last_word))  # ty: ignore[redundant-cast]
+    if singular_word is False:
+        return f"{name}{suffix}"
+    return f"{name[: len(name) - len(last_word)]}{singular_word}"
 
 
 @lru_cache(maxsize=4096)

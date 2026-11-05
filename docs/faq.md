@@ -468,6 +468,148 @@ With the option:
 lengths: Annotated[str, Field(min_length=4, max_length=8), EncodedStr(encoder=Base64Encoder)] | None = None
 ```
 
+### `--use-duplicate-name-suffix-for-every-collision`
+
+| | |
+|---|---|
+| Option | `--use-duplicate-name-suffix-for-every-collision` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.89.0 |
+| Issue | [#5420](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5420) |
+
+**Affects:** with `--duplicate-name-suffix`, a model renamed because its name is taken in its module: a definition named like an inline model (`Item` beside an inline `item`), or like a name the module imports (`AnyUrl` beside a `format: uri` field). Such a model takes the suffix `Model` whatever the map says; with the option it takes the suffix the map gives its kind (`model`, `enum`, else `default`), and `Model` where the map gives none. Without `--duplicate-name-suffix` the option changes nothing.
+
+Schema: `$defs` `Item` beside an inline object property `item`, with `--duplicate-name-suffix '{"model": "Schema"}'`.
+
+Without the option (same as 0.88.0):
+
+```python
+class ItemModel(BaseModel):
+    v: str | None = None
+```
+
+With the option:
+
+```python
+class ItemSchema(BaseModel):
+    v: str | None = None
+```
+
+### `--capitalise-numbered-enum-members`
+
+| | |
+|---|---|
+| Option | `--capitalise-numbered-enum-members` (also `--capitalize-numbered-enum-members`) |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.89.0 |
+| Issue | [#5665](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5665) |
+
+**Affects:** under `--capitalise-enum-members`, an enum whose members differ only by case. The second member finds the capitalized name taken and is numbered, and the number goes on the name as written; with the option the numbered name is capitalized too. Without `--capitalise-enum-members` the option changes nothing.
+
+Schema: `{"type": "string", "enum": ["a", "A"]}`, with `--capitalise-enum-members`.
+
+Without the option (same as 0.88.0):
+
+```python
+class E(Enum):
+    A = "a"
+    a_1 = "A"
+```
+
+With the option:
+
+```python
+class E(Enum):
+    A = "a"
+    A_1 = "A"
+```
+
+### `--keep-first-character-of-path-keys`
+
+| | |
+|---|---|
+| Option | `--keep-first-character-of-path-keys` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.89.0 |
+| Issue | [#5539](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5539) |
+
+**Affects:** an OpenAPI `paths` key that does not start with `/` (not valid OpenAPI, but read), under `--openapi-scopes paths`. Its operation models lose the first character of the key; with the option only a leading slash is stripped, as for webhook names and the `api` scope. Keys that start with `/` are named as before.
+
+Schema: `paths: {pets: {get: ...}}`, with `--openapi-scopes schemas paths parameters`.
+
+Without the option (same as 0.88.0):
+
+```python
+class EtsGetResponse(BaseModel):
+    a: str | None = None
+```
+
+With the option:
+
+```python
+class PetsGetResponse(BaseModel):
+    a: str | None = None
+```
+
+### `--name-converted-payloads-by-message`
+
+| | |
+|---|---|
+| Option | `--name-converted-payloads-by-message` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.89.0 |
+| Issue | [#5677](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5677) |
+
+**Affects:** an AsyncAPI payload in Avro or XML Schema that names no type of its own: an Avro `string`, array, map or union, or an XML Schema with several global elements. The converter gives it the placeholder title `Model`, so the field writes `Field(..., title='Model')` (also in `model_json_schema()`) and `--use-title-as-name` names the class `Model`. With the option the payload takes no title, as a JSON Schema payload, and is named after its message. A payload that names its type, such as an Avro record, keeps that name.
+
+Schema: a message `Ping` with `schemaFormat: application/vnd.apache.avro;version=1.9.0` and `payload: string`.
+
+Without the option (same as 0.88.0):
+
+```python
+class PingPublishPayload(RootModel[str]):
+    root: str = Field(..., title="Model")
+```
+
+With the option:
+
+```python
+class PingPublishPayload(RootModel[str]):
+    root: str
+```
+
+### `--singularize-last-word-of-item-names`
+
+| | |
+|---|---|
+| Option | `--singularize-last-word-of-item-names` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.89.0 |
+| Issue | [#4824](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4824) |
+
+**Affects:** the item model of an array, named by singularizing the name of the array. The whole name is singularized as one word, which goes wrong for some endings: `actions_caches` gives `ActionsCach` and `payment_status` gives `PaymentStatu`. With the option only the last word is singularized, and a last word without a singular takes the `Item` suffix (or none under `--disable-appending-item-suffix`). Names whose whole-name singular is right, such as `shipping_addresses` (`ShippingAddress`), are unchanged.
+
+Schema: a property `actions_caches` of `type: array` with inline object items.
+
+Without the option (same as 0.88.0):
+
+```python
+class ActionsCach(BaseModel):
+    id: int | None = None
+```
+
+With the option:
+
+```python
+class ActionsCache(BaseModel):
+    id: int | None = None
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.

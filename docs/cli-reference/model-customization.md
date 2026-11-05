@@ -29,7 +29,8 @@
 | [`--model-extra-keys`](#model-extra-keys) | Add model-level schema extensions to ConfigDict json_schema_... |
 | [`--model-extra-keys-without-x-prefix`](#model-extra-keys-without-x-prefix) | Strip x- prefix from model-level schema extensions and add t... |
 | [`--model-name-map`](#model-name-map) | Rename generated model classes from a JSON mapping. |
-| [`--naming-strategy`](#naming-strategy) | Use parent-prefixed naming strategy for duplicate model name... |
+| [`--name-converted-payloads-by-message`](#name-converted-payloads-by-message) | Name a converted payload that names no type of its own after... |
+| [`--naming-strategy`](#naming-strategy) | Choose how models are named and how duplicate model names ar... |
 | [`--omit-redundant-reference-null`](#omit-redundant-reference-null) | Do not write None again at a reference to a model that holds... |
 | [`--order-constructor-fields-by`](#order-constructor-fields-by) | Order constructor fields by final names or by written defaul... |
 | [`--output-model-type`](#output-model-type) | Select the output model type (Pydantic v2, Pydantic v2 datac... |
@@ -38,6 +39,7 @@
 | [`--read-nullable-beside-type-list`](#read-nullable-beside-type-list) | Write the null that `nullable: true` declares beside a `type... |
 | [`--reuse-model`](#reuse-model) | Reuse identical model definitions instead of generating dupl... |
 | [`--reuse-scope`](#reuse-scope) | Scope for model reuse detection (root or tree). |
+| [`--singularize-last-word-of-item-names`](#singularize-last-word-of-item-names) | Name the item model of an array by singularizing only the la... |
 | [`--skip-root-model`](#skip-root-model) | Skip generation of root model when schema contains nested de... |
 | [`--strict-nullable`](#strict-nullable) | Treat default field as a non-nullable field. |
 | [`--strip-default-none`](#strip-default-none) | Remove fields with None as default value from generated mode... |
@@ -48,6 +50,7 @@
 | [`--use-default`](#use-default) | Use default values from schema in generated models. |
 | [`--use-default-factory-for-optional-nested-models`](#use-default-factory-for-optional-nested-models) | Generate default_factory for optional nested model fields. |
 | [`--use-default-kwarg`](#use-default-kwarg) | Use default= keyword argument instead of positional argument... |
+| [`--use-duplicate-name-suffix-for-every-collision`](#use-duplicate-name-suffix-for-every-collision) | Give the `--duplicate-name-suffix` suffix to every model ren... |
 | [`--use-frozen-field`](#use-frozen-field) | Generate frozen (immutable) field definitions for readOnly p... |
 | [`--use-generic-base-class`](#use-generic-base-class) | Generate a shared base class with model configuration to avo... |
 | [`--use-missing-sentinel`](#use-missing-sentinel) | Use Pydantic's MISSING sentinel for unset optional BaseModel... |
@@ -4079,17 +4082,177 @@ warning. GraphQL input does not apply `--model-name-map`, so every key is report
 
 ---
 
+## `--name-converted-payloads-by-message` {#name-converted-payloads-by-message}
+
+Name a converted payload that names no type of its own after its message.
+
+An AsyncAPI payload in Avro or XML Schema is converted to JSON Schema first. A payload that names no type of its own,
+such as an Avro `string`, array, map or union, or an XML Schema with several global elements, takes the converter's
+placeholder title `Model`: the field writes `Field(..., title='Model')`, and under `--use-title-as-name` the class is
+named `Model`. With `--name-converted-payloads-by-message` such a payload takes no title, as a JSON Schema payload,
+so its class is named after its message (`PingPublishPayload`) under `--use-title-as-name` too. A payload that names
+its type, such as an Avro record, keeps that name.
+
+**Related:** [`--use-title-as-name`](field-customization.md#use-title-as-name)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input converted_payload_names.yaml --name-converted-payloads-by-message # (1)!
+    ```
+
+    1. :material-arrow-left: `--name-converted-payloads-by-message` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    asyncapi: 2.6.0
+    info: {title: t, version: '1'}
+    channels:
+      text:
+        publish:
+          message:
+            name: Text
+            schemaFormat: application/vnd.apache.avro;version=1.9.0
+            payload: string
+      ping:
+        publish:
+          message:
+            name: Ping
+            schemaFormat: application/vnd.apache.avro;version=1.9.0
+            payload: {type: array, items: string}
+      pong:
+        publish:
+          message:
+            name: Pong
+            schemaFormat: application/vnd.apache.avro;version=1.9.0
+            payload: {type: map, values: int}
+      rec:
+        publish:
+          message:
+            name: Rec
+            schemaFormat: application/vnd.apache.avro;version=1.9.0
+            payload: {type: record, name: Model, fields: [{name: a, type: string}]}
+      uni:
+        publish:
+          message:
+            name: Uni
+            schemaFormat: application/vnd.apache.avro;version=1.9.0
+            payload: ["null", "string"]
+      xml:
+        publish:
+          message:
+            name: Xml
+            schemaFormat: application/xml;version=1.0
+            payload: |
+              <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+                <xs:element name="A" type="xs:string"/>
+                <xs:element name="B" type="xs:int"/>
+              </xs:schema>
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  converted_payload_names.yaml
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, Field, RootModel, conint
+
+
+        class TextPublishPayload(RootModel[str]):
+            root: str
+
+
+        class PingPublishPayload(RootModel[list[str]]):
+            root: list[str]
+
+
+        class PongPublishPayload(RootModel[dict[str, int]]):
+            root: dict[str, int]
+
+
+        class RecPublishPayload(BaseModel):
+            a: str
+
+
+        class UniPublishPayload(RootModel[str | None]):
+            root: str | None
+
+
+        class XmlPublishPayload(BaseModel):
+            A: str = Field(..., title='A')
+            B: conint(ge=-2147483648, le=2147483647) = Field(..., title='B')
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  converted_payload_names.yaml
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, Field, RootModel, conint
+
+
+        class TextPublishPayload(RootModel[str]):
+            root: str = Field(..., title='Model')
+
+
+        class PingPublishPayload(RootModel[list[str]]):
+            root: list[str] = Field(..., title='Model')
+
+
+        class PongPublishPayload(RootModel[dict[str, int]]):
+            root: dict[str, int]
+
+
+        class RecPublishPayload(BaseModel):
+            a: str
+
+
+        class UniPublishPayload(RootModel[str | None]):
+            root: str | None = Field(..., title='Model')
+
+
+        class XmlPublishPayload(BaseModel):
+            A: str = Field(..., title='A')
+            B: conint(ge=-2147483648, le=2147483647) = Field(..., title='B')
+        ```
+
+        <!-- fmt: on -->
+
+---
+
 ## `--naming-strategy` {#naming-strategy}
 
-Use parent-prefixed naming strategy for duplicate model names.
+Choose how models are named and how duplicate model names are told apart.
 
-The `--naming-strategy parent-prefixed` flag prefixes model names with their
-parent model name when duplicates occur. For example, if both `Order` and
-`Cart` have an inline `Item` definition, they become `OrderItem` and `CartItem`.
+`numbered` (the default) keeps a model's own name and numbers a duplicate (`Item`, `Item1`). `parent-prefixed` and
+`full-path` prefix every nested model with the name of the model that holds it, joined in CamelCase and with nested
+parents included, also where the name is unique: both give the same model names. For example, `Order` and `Cart`
+with an inline `item` give `OrderItem` and `CartItem` (here `ModelOrderItem` and `ModelCartItem`, as the definitions
+sit below the root model `Model`), and `Company` > `employee` > `home_address` gives `CompanyEmployeeHomeAddress`.
 
 Generated clients and servers (experimental) follow the same rules for their method, argument, module, and class
-names, with the resource or router group as the parent of a method and the method as the parent of an argument;
-under `primary-first`, a primary name is one the root document declares.
+names, with the resource or router group as the parent of a method and the method as the parent of an argument, but
+prefix only a name their scope already holds: `parent-prefixed` with its innermost enclosing scope, `full-path` with
+every enclosing scope; under `primary-first`, a primary name is one the root document declares.
 
 **Related:** [`--duplicate-name-suffix`](#duplicate-name-suffix), [`--parent-scoped-naming`](#parent-scoped-naming)
 
@@ -6148,6 +6311,128 @@ The `--reuse-scope` flag configures the code generation behavior.
 
 ---
 
+## `--singularize-last-word-of-item-names` {#singularize-last-word-of-item-names}
+
+Name the item model of an array by singularizing only the last word of its name.
+
+The item model of an array property is named by singularizing the property name. Without the option the whole name
+is singularized as one word, which goes wrong for some endings: `actions_caches` gives `ActionsCach` and
+`payment_status` gives `PaymentStatu`. With `--singularize-last-word-of-item-names` only the last word is
+singularized, `ActionsCache`, and a last word without a singular takes the `Item` suffix, `PaymentStatusItem`.
+
+**Related:** [`--disable-appending-item-suffix`](template-customization.md#disable-appending-item-suffix)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input singularize_last_word_of_item_names.yaml --singularize-last-word-of-item-names # (1)!
+    ```
+
+    1. :material-arrow-left: `--singularize-last-word-of-item-names` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.0.3
+    info: {title: singular, version: "1"}
+    paths: {}
+    components:
+      schemas:
+        ActionsCacheList:
+          type: object
+          properties:
+            actions_caches:
+              type: array
+              items:
+                type: object
+                properties:
+                  id: {type: integer}
+            payment_status:
+              type: array
+              items:
+                type: object
+                properties:
+                  s: {type: string}
+            shipping_addresses:
+              type: array
+              items:
+                type: object
+                properties:
+                  city: {type: string}
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  singularize_last_word_of_item_names.yaml
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel
+
+
+        class ActionsCache(BaseModel):
+            id: int | None = None
+
+
+        class PaymentStatusItem(BaseModel):
+            s: str | None = None
+
+
+        class ShippingAddress(BaseModel):
+            city: str | None = None
+
+
+        class ActionsCacheList(BaseModel):
+            actions_caches: list[ActionsCache] | None = None
+            payment_status: list[PaymentStatusItem] | None = None
+            shipping_addresses: list[ShippingAddress] | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  singularize_last_word_of_item_names.yaml
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel
+
+
+        class ActionsCach(BaseModel):
+            id: int | None = None
+
+
+        class PaymentStatu(BaseModel):
+            s: str | None = None
+
+
+        class ShippingAddress(BaseModel):
+            city: str | None = None
+
+
+        class ActionsCacheList(BaseModel):
+            actions_caches: list[ActionsCach] | None = None
+            payment_status: list[PaymentStatu] | None = None
+            shipping_addresses: list[ShippingAddress] | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
 ## `--skip-root-model` {#skip-root-model}
 
 Skip generation of root model when schema contains nested definitions.
@@ -7503,6 +7788,150 @@ default values.
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--use-duplicate-name-suffix-for-every-collision` {#use-duplicate-name-suffix-for-every-collision}
+
+Give the `--duplicate-name-suffix` suffix to every model renamed in its module.
+
+The parse names a model whose name another model already holds with the suffix of `--duplicate-name-suffix`. A model
+renamed later because its name is taken in its module, by an inline model of the same name or by a name the module
+imports (a definition `AnyUrl` beside a `format: uri` field), takes the suffix `Model` whatever the option says. With
+`--use-duplicate-name-suffix-for-every-collision` it takes the suffix the map gives its kind (`model` or `enum`, else
+`default`), and `Model` where the map gives none. Without `--duplicate-name-suffix` the option changes nothing.
+
+**Related:** [`--duplicate-name-suffix`](#duplicate-name-suffix)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input duplicate_name_suffix_every_collision.json --duplicate-name-suffix '{"model": "Schema", "enum": "Kind"}' --use-duplicate-name-suffix-for-every-collision # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-duplicate-name-suffix-for-every-collision` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$defs": {
+        "Item": {"type": "object", "properties": {"v": {"type": "string"}}},
+        "AnyUrl": {"type": "object", "properties": {"href": {"type": "string"}}},
+        "Status": {"type": "string", "enum": ["open", "closed"]}
+      },
+      "title": "Root",
+      "type": "object",
+      "properties": {
+        "item": {"type": "object", "properties": {"w": {"type": "integer"}}},
+        "other": {"$ref": "#/$defs/Item"},
+        "site": {"type": "string", "format": "uri"},
+        "link": {"$ref": "#/$defs/AnyUrl"},
+        "status": {"type": "string", "enum": ["new", "old"]},
+        "state": {"$ref": "#/$defs/Status"}
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  duplicate_name_suffix_every_collision.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+
+        from pydantic import AnyUrl, BaseModel
+
+
+        class Item(BaseModel):
+            w: int | None = None
+
+
+        class Status(Enum):
+            new = 'new'
+            old = 'old'
+
+
+        class ItemSchema(BaseModel):
+            v: str | None = None
+
+
+        class AnyUrlSchema(BaseModel):
+            href: str | None = None
+
+
+        class StatusKind(Enum):
+            open = 'open'
+            closed = 'closed'
+
+
+        class Root(BaseModel):
+            item: Item | None = None
+            other: ItemSchema | None = None
+            site: AnyUrl | None = None
+            link: AnyUrlSchema | None = None
+            status: Status | None = None
+            state: StatusKind | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  duplicate_name_suffix_every_collision.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+
+        from pydantic import AnyUrl, BaseModel
+
+
+        class Item(BaseModel):
+            w: int | None = None
+
+
+        class Status(Enum):
+            new = 'new'
+            old = 'old'
+
+
+        class ItemModel(BaseModel):
+            v: str | None = None
+
+
+        class AnyUrlModel(BaseModel):
+            href: str | None = None
+
+
+        class StatusModel(Enum):
+            open = 'open'
+            closed = 'closed'
+
+
+        class Root(BaseModel):
+            item: Item | None = None
+            other: ItemModel | None = None
+            site: AnyUrl | None = None
+            link: AnyUrlModel | None = None
+            status: Status | None = None
+            state: StatusModel | None = None
+        ```
+
+        <!-- fmt: on -->
 
 ---
 

@@ -244,6 +244,7 @@ class ParserConfig(BaseModel):
     enable_faux_immutability: bool = False
     remote_text_cache: DefaultPutDictSchema | None = None
     disable_appending_item_suffix: bool = False
+    singularize_last_word_of_item_names: bool = False
     strict_types: Sequence[StrictTypes] | None = None
     empty_enum_field_name: str | None = None
     custom_class_name_generator: CallableSchema | None = None
@@ -297,6 +298,7 @@ class ParserConfig(BaseModel):
     special_field_name_prefix: str | None = None
     remove_special_field_name_prefix: bool = False
     capitalise_enum_members: bool = False
+    capitalise_numbered_enum_members: bool = False
     keep_model_order: bool = False
     order_constructor_fields_by: Sequence[ConstructorFieldOrder] = ()
     use_one_literal_as_default: bool = False
@@ -342,6 +344,7 @@ class ParserConfig(BaseModel):
     parent_scoped_naming: bool = False
     naming_strategy: NamingStrategy | None = None
     duplicate_name_suffix: dict[str, str] | None = None
+    use_duplicate_name_suffix_for_every_collision: bool = False
     dataclass_arguments: DataclassArguments | None = None
     import_overrides: dict[str, str] | None = None
     type_mappings: list[str] | None = None
@@ -390,6 +393,7 @@ class OpenAPIParserConfig(JSONSchemaParserConfig):
     openapi_scopes: list[OpenAPIScope] | None = None
     include_path_parameters: bool = False
     use_status_code_in_response_name: bool = False
+    keep_first_character_of_path_keys: bool = False
     openapi_include_paths: list[str] | None = None
     openapi_include_info_version: bool = False
     openapi_as_definitions: Sequence[OpenAPIAsDefinitions] = ()
@@ -402,11 +406,13 @@ class AsyncAPIParserConfig(JSONSchemaParserConfig):
     openapi_scopes: list[OpenAPIScope] | None = None
     include_path_parameters: bool = False
     use_status_code_in_response_name: bool = False
+    keep_first_character_of_path_keys: bool = False
     openapi_include_paths: list[str] | None = None
     openapi_include_info_version: bool = False
     openapi_as_definitions: Sequence[OpenAPIAsDefinitions] = ()
     openapi_version: OpenAPIVersion | None = None
     asyncapi_version: AsyncAPIVersion | None = None
+    name_converted_payloads_by_message: bool = False
 
 
 class XMLSchemaParserConfig(JSONSchemaParserConfig):

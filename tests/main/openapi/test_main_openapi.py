@@ -17015,3 +17015,122 @@ def test_main_openapi_merge_shared_variant_tags_msgspec(tmp_path: Path) -> None:
             extra_args=[*common, "--merge-shared-variant-tags"],
             expected_output=output_file.read_text(encoding="utf-8"),
         )
+
+
+@pytest.mark.cli_doc(
+    options=["--keep-first-character-of-path-keys"],
+    option_description="""Strip only a leading slash from a paths key when naming its operation models.
+
+The models of an operation are named after its path, without the leading `/`. A paths key that does not start with
+`/`, which OpenAPI does not allow but which is read, loses its first character instead: `pets` gives `EtsGetResponse`.
+With `--keep-first-character-of-path-keys` only a leading slash is stripped, as for webhook names and the `api` scope:
+`pets` gives `PetsGetResponse`. Keys that start with `/` are named as before.""",
+    input_schema="openapi/paths_key_without_leading_slash.yaml",
+    cli_args=["--openapi-scopes", "schemas", "paths", "parameters", "--keep-first-character-of-path-keys"],
+    golden_output="main/openapi/main_openapi/keep_first_character_of_path_keys[pydantic_v2-kept].py",
+    comparison_output="main/openapi/main_openapi/keep_first_character_of_path_keys[pydantic_v2].py",
+    related_options=["--openapi-scopes"],
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2"),
+        pytest.param("pydantic_v2.BaseModel", ["--keep-first-character-of-path-keys"], id="pydantic_v2-kept"),
+        pytest.param("typing.TypedDict", ["--keep-first-character-of-path-keys"], id="typed_dict-kept"),
+    ],
+)
+def test_main_openapi_keep_first_character_of_path_keys(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Name the operation models of a paths key without a leading slash after the whole key (#5539).
+
+    ``pets`` gives ``EtsGetParametersQuery`` and ``EtsGetResponse`` without the option and ``PetsGetParametersQuery``
+    and ``PetsGetResponse`` with it; ``/stores`` gives ``StoresGetResponse`` either way.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "paths_key_without_leading_slash.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "parameters",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    if output_model_type == "pydantic_v2.BaseModel" and extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="keep_first_character_of_path_keys",
+            model_name="PetsGetResponse",
+            valid_json=json.dumps({"a": "x"}),
+            invalid_json=json.dumps({"a": 1}),
+            expected_error_type="string_type",
+        )
+
+
+@pytest.mark.cli_doc(
+    options=["--singularize-last-word-of-item-names"],
+    option_description="""Name the item model of an array by singularizing only the last word of its name.
+
+The item model of an array property is named by singularizing the property name. Without the option the whole name
+is singularized as one word, which goes wrong for some endings: `actions_caches` gives `ActionsCach` and
+`payment_status` gives `PaymentStatu`. With `--singularize-last-word-of-item-names` only the last word is
+singularized, `ActionsCache`, and a last word without a singular takes the `Item` suffix, `PaymentStatusItem`.""",
+    input_schema="openapi/singularize_last_word_of_item_names.yaml",
+    cli_args=["--singularize-last-word-of-item-names"],
+    golden_output="main/openapi/main_openapi/singularize_last_word_of_item_names[pydantic_v2-last-word].py",
+    comparison_output="main/openapi/main_openapi/singularize_last_word_of_item_names[pydantic_v2].py",
+    related_options=["--disable-appending-item-suffix"],
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2"),
+        pytest.param("pydantic_v2.BaseModel", ["--singularize-last-word-of-item-names"], id="pydantic_v2-last-word"),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--singularize-last-word-of-item-names", "--naming-strategy", "full-path"],
+            id="pydantic_v2-last-word-full-path",
+        ),
+        pytest.param("msgspec.Struct", ["--singularize-last-word-of-item-names"], id="msgspec-last-word"),
+    ],
+)
+def test_main_openapi_singularize_last_word_of_item_names(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Singularize only the last word of an item model's name under ``--singularize-last-word-of-item-names`` (#4824).
+
+    ``actions_caches`` and ``payment_status`` give ``ActionsCach`` and ``PaymentStatu`` without the option and
+    ``ActionsCache`` and ``PaymentStatusItem`` with it; ``shipping_addresses`` gives ``ShippingAddress`` either way.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "singularize_last_word_of_item_names.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    if output_model_type == "pydantic_v2.BaseModel" and extra_args == ["--singularize-last-word-of-item-names"]:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="singularize_last_word_of_item_names",
+            model_name="ActionsCacheList",
+            valid_json=json.dumps({"actions_caches": [{"id": 1}], "payment_status": [{"s": "x"}]}),
+            invalid_json=json.dumps({"actions_caches": [{"id": "x"}]}),
+            expected_error_type="int_parsing",
+        )
