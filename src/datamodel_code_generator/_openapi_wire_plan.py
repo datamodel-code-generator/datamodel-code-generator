@@ -44,7 +44,6 @@ from datamodel_code_generator._target_contract import (
     is_required,
     label,
     members_by_consumer,
-    openapi_release,
     operation_schemes,
     parameter_location,
     parameter_place,
@@ -63,6 +62,7 @@ from datamodel_code_generator._target_types import (
     untyped,
     unwrapped,
 )
+from datamodel_code_generator.enums import OpenAPIVersion
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
@@ -116,7 +116,7 @@ class WirePlan:
     parameters: tuple[tuple[OperationId, tuple[ParameterPlan, ...]], ...]
     diagnostics: tuple[CodecDiagnostic, ...]
     kinds: LexicalKinds
-    version: str = ""
+    version: OpenAPIVersion = OpenAPIVersion.V31
     headers: tuple[tuple[TypeUseId, ParameterPlan], ...] = ()
     forms: tuple[tuple[TypeUseId, tuple[FieldPlan, ...], FieldPlan | None, tuple[ParameterPlan, ...]], ...] = ()
     styles: tuple[tuple[TypeUseId, tuple[ParameterPlan, ...]], ...] = ()
@@ -415,7 +415,7 @@ def member_encodings(use: TypeUseBinding | None, encodings: Iterable[WireDeclara
     return (encoding for encoding in encodings if (encoding.name or "") in names)
 
 
-def part_json(kinds: LexicalKinds, value: TypeView, encoding: WireDeclaration | None, version: str) -> bool:
+def part_json(kinds: LexicalKinds, value: TypeView, encoding: WireDeclaration | None, version: OpenAPIVersion) -> bool:
     """Return whether a form-data member holding no files, of a type, is JSON by that type rather than text of its kind.
 
     A type without one kind is JSON, and so is one that takes any value unless the member's encoding gives it a style
@@ -523,22 +523,22 @@ def parameter_plans(wire: WirePlan) -> dict[OperationId, dict[tuple[ParameterLoc
     return {operation: {(plan.location, plan.name): plan for plan in planned} for operation, planned in wire.parameters}
 
 
-def form_styled(encoding: WireDeclaration, version: str, *, multipart: bool) -> bool:
+def form_styled(encoding: WireDeclaration, version: OpenAPIVersion, *, multipart: bool) -> bool:
     """Return whether an encoding gives its form member a query parameter's style, explode, or allowReserved.
 
     OpenAPI 3.0 applies them to application/x-www-form-urlencoded alone and ignores them for multipart/form-data,
     whose member is then written as its contentType says; 3.1 and later apply them to both, and write the parts they
     give without percent-encoding.
     """
-    if multipart and openapi_release(version) == (3, 0):
+    if multipart and version == OpenAPIVersion.V30:
         return False
     return any(fact(encoding, key) is not None for key in STYLED)
 
 
-def _allow_reserved(version: str, location: ParameterLocation, declaration: WireDeclaration) -> bool:
+def _allow_reserved(version: OpenAPIVersion, location: ParameterLocation, declaration: WireDeclaration) -> bool:
     """Return the effective allowReserved flag for the root OpenAPI version and parameter location."""
     return fact(declaration, "allowReserved") is True and not (
-        location == "path" and openapi_release(version) in {(3, 0), (3, 1)}
+        location == "path" and version in {OpenAPIVersion.V30, OpenAPIVersion.V31}
     )
 
 
@@ -668,7 +668,7 @@ def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[
         return _content_parameter(planner, declaration, location, name, required=required)
     shape, kind, fields, additional = _shape(_encoded(_schema_use(planner, declaration.schemas, source)).value)
     style, explode = _style_of(declaration, location)
-    if style == "cookie" and openapi_release(planner.version, row="legacy-target-version-text") != (3, 2):
+    if style == "cookie" and planner.version != OpenAPIVersion.V32:
         raise _PlanError(source, "Cookie style requires OpenAPI 3.2")
     try:
         return ParameterPlan(
@@ -692,8 +692,6 @@ def _content_parameter(
     planner: _WirePlanner, declaration: WireDeclaration, location: ParameterLocation, name: str, *, required: bool
 ) -> ParameterPlan:
     source = declaration.use_site
-    if location == "querystring" and openapi_release(planner.version, row="legacy-target-version-text") != (3, 2):
-        raise _PlanError(source, "Querystring parameters require OpenAPI 3.2")
     media = normalize_media_type(declaration.children[0].name or "")
     if not builtin_content(location, media):
         raise _PlanError(source, "The parameter content has no builtin encoding")

@@ -72,7 +72,6 @@ from datamodel_code_generator._target_contract import (
     label,
     literal_text,
     members_by_consumer,
-    openapi_release,
     operation_schemes,
     parameter_place,
     range_start,
@@ -109,7 +108,7 @@ from datamodel_code_generator._target_operations import (
 )
 from datamodel_code_generator._target_types import present, sole_present
 from datamodel_code_generator._url_redaction import redact_reference
-from datamodel_code_generator.enums import DataModelType
+from datamodel_code_generator.enums import DataModelType, OpenAPIVersion
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.python_literal import stable_repr
 
@@ -527,7 +526,7 @@ def _files(media: MediaSpec) -> frozenset[str]:
     return frozenset(() if parts is None else (name for name, part in parts.members if part.file))
 
 
-def _json_members(media: MediaSpec, version: str) -> frozenset[str | None]:
+def _json_members(media: MediaSpec, version: OpenAPIVersion) -> frozenset[str | None]:
     """Return the multipart members whose encodings send them as JSON: one JSON media type and no style.
 
     A style that the document's version applies leaves the media type unused, and a member holding files keeps its
@@ -544,7 +543,7 @@ def _json_members(media: MediaSpec, version: str) -> frozenset[str | None]:
     )
 
 
-def _typed_members(media: MediaSpec, kinds: LexicalKinds, version: str) -> frozenset[str | None]:
+def _typed_members(media: MediaSpec, kinds: LexicalKinds, version: OpenAPIVersion) -> frozenset[str | None]:
     """Return the multipart members whose encodings name media types the adapters read their parts in.
 
     A member is read as JSON in a JSON media type; one of a single scalar kind, whose field parts Starlette reads as
@@ -563,7 +562,7 @@ def _typed_members(media: MediaSpec, kinds: LexicalKinds, version: str) -> froze
     }
 
 
-def _encoded(media: MediaSpec, kinds: LexicalKinds, version: str) -> WireDeclaration | None:
+def _encoded(media: MediaSpec, kinds: LexicalKinds, version: OpenAPIVersion) -> WireDeclaration | None:
     """Return the first multipart encoding that the form adapter does not read.
 
     No adapter reads part headers, nor a style for a member holding files, which the client refuses too. A style that
@@ -588,7 +587,7 @@ def _untyped(encoding: WireDeclaration, typed: frozenset[str | None]) -> bool:
     return fact(encoding, "contentType") is not None and encoding.name not in typed
 
 
-def _planned(encoding: WireDeclaration, version: str, textless: frozenset[str], *, multipart: bool) -> bool:
+def _planned(encoding: WireDeclaration, version: OpenAPIVersion, textless: frozenset[str], *, multipart: bool) -> bool:
     """Return whether a form member's encoding is read by its query parameter plan rather than as plain text.
 
     A form's own text reads the default `form` style with explode of a member of one scalar kind; a URL-encoded
@@ -902,7 +901,7 @@ class Planner:  # noqa: PLR0904
             if argument.location == "path" and argument.name == argument.wire_name
         }
         taken = {*RESERVED, *(argument.name for argument in arguments if argument.name not in own)}
-        repeatable = openapi_release(self.wire.version, row="legacy-target-version-text") != (3, 2)
+        repeatable = self.wire.version != OpenAPIVersion.V32
         try:
             return route_path(operation.path, taken, repeatable=repeatable)
         except RouteError as error:

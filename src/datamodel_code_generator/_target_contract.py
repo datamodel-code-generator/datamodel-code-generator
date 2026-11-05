@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Final, Literal, NewType, TypeAlias, TypeVar, g
 from datamodel_code_generator._all_or_none import all_or_none
 from datamodel_code_generator._runtime.model_codecs.media import is_token
 from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation
+from datamodel_code_generator.enums import OpenAPIVersion
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
@@ -609,9 +610,10 @@ class OperationContract:
 class GeneratedTypeContractBatch:
     """Own one accepted attempt's immutable contracts, with no parser or source mappings.
 
-    `document_facts` are the OpenAPI version, info, tags and servers the root document declares. `hint_type` is the
-    model generator's configured type class, which composes model types as the models spell them, and `hint_imports`
-    the names its spellings write as they are. `names` names generated API code with the models' naming options.
+    `openapi` is the OpenAPI version the parser reads the root document by: `--schema-version`, else the version it
+    declares. `document_facts` are the info, tags and servers the root document declares. `hint_type` is the model
+    generator's configured type class, which composes model types as the models spell them, and `hint_imports` the
+    names its spellings write as they are. `names` names generated API code with the models' naming options.
     """
 
     attempt: AttemptId
@@ -624,35 +626,11 @@ class GeneratedTypeContractBatch:
     fields: tuple[FieldUseBinding, ...]
     security_schemes: tuple[WireDeclaration, ...] = ()
     api_scope: bool = False
+    openapi: OpenAPIVersion = OpenAPIVersion.V31
     document_facts: tuple[tuple[str, FrozenLiteral], ...] = ()
     hint_type: type[DataType] | None = None
     hint_imports: tuple[Import, ...] = ()
     names: TargetNames | None = None
-
-    @property
-    def openapi(self) -> str:
-        """Return the OpenAPI version the root document declares, empty when it declares none."""
-        version = literal_fact(self.document_facts, "openapi")
-        return str(version.value) if isinstance(version, LiteralScalar) else ""
-
-
-ReleaseRow: TypeAlias = Literal["release", "legacy-target-version-text", "legacy-served-version-regex"]
-
-_RELEASES: Final[dict[ReleaseRow, re.Pattern[str]]] = {
-    "release": re.compile(r"(3)\.([0-2])(?:\.|\Z)"),
-    "legacy-target-version-text": re.compile(r"([0-9])\.([0-9])"),
-    "legacy-served-version-regex": re.compile(r"(\d+)\.(\d+)"),
-}
-
-
-def openapi_release(version: str, *, row: ReleaseRow = "release") -> tuple[int, int] | None:
-    """Return the (major, minor) release an OpenAPI version text names by the rule of `row`, or None when it names none.
-
-    `release` reads 3.0, 3.1 or 3.2 before the second dot, as the parser reads a version (3.0.4 is 3.0, 3.01 none).
-    `legacy-target-version-text` reads the first three characters (3.20 is 3.2, 3.01 is 3.0), and
-    `legacy-served-version-regex` the digits around the first dot (3.01 is 3.1, 3.20 is 3.20).
-    """
-    return (int(found[1]), int(found[2])) if (found := _RELEASES[row].match(version)) else None
 
 
 ApiKeyLocation: TypeAlias = Literal["query", "header", "cookie"]
@@ -786,7 +764,9 @@ def _named_scopes(entry: RequirementEntry) -> tuple[str, tuple[str, ...]] | None
     return (name, scopes) if isinstance(name, str) and scopes is not None else None
 
 
-def scope_problem(name: str, declaration: WireDeclaration, scopes: tuple[str, ...] | None, openapi: str) -> str | None:
+def scope_problem(
+    name: str, declaration: WireDeclaration, scopes: tuple[str, ...] | None, openapi: OpenAPIVersion
+) -> str | None:
     """Return what a requirement gets wrong in the scopes it lists for a scheme, or None when they are valid.
 
     An oauth2 or openIdConnect scheme lists scope tokens (RFC 6749 section 3.3). Any other scheme lists role names,
@@ -798,7 +778,7 @@ def scope_problem(name: str, declaration: WireDeclaration, scopes: tuple[str, ..
     tokens = fact(declaration, "type") in _SCOPE_SCHEMES
     if tokens and not all(map(_SCOPE_TOKEN.fullmatch, scopes)):
         return f"requires valid scope tokens for scheme {stable_repr(name)}"
-    if scopes and not tokens and openapi_release(openapi, row="legacy-target-version-text") == (3, 0):
+    if scopes and not tokens and openapi == OpenAPIVersion.V30:
         return f"lists scopes for scheme {stable_repr(name)}, whose type takes none in OpenAPI 3.0"
     return None
 
