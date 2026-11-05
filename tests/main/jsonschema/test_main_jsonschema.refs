@@ -2426,7 +2426,7 @@ dynamic-unsupported_allof-False	main/jsonschema/compound_property_names/scalar_k
 api-allof_branch_title-False	main/jsonschema/compound_property_names/allof_custom_template.py
 api-allof_collapsed-False	main/jsonschema/compound_property_names/allof_collapsed.py
 api-allof_custom_template-False	main/jsonschema/compound_property_names/allof_custom_template.py
-api-allof_field_constraints-False	main/jsonschema/compound_property_names/allof_field_constraints.py
+api-allof_field_constraints-False	main/jsonschema/compound_property_names/allof_field_constraints.py	= main/jsonschema/compound_property_names/allof_field_constraints~compound_property_names_compatibility[api-allof_field_constraints-False].py
 api-allof_frozen-False	main/jsonschema/compound_property_names/allof_frozen.py
 api-allof_lookbehind_field_constraints-False	main/jsonschema/compound_property_names/allof_field_constraints.py
 api-allof_type_alias-False	main/jsonschema/compound_property_names/allof_type_alias.py
@@ -2446,7 +2446,7 @@ api-unsupported_sibling-False	main/jsonschema/compound_property_names/unsupporte
 cli-allof_branch_title-False	main/jsonschema/compound_property_names/allof_custom_template.py
 cli-allof_collapsed-False	main/jsonschema/compound_property_names/allof_collapsed.py
 cli-allof_custom_template-False	main/jsonschema/compound_property_names/allof_custom_template.py
-cli-allof_field_constraints-False	main/jsonschema/compound_property_names/allof_field_constraints.py
+cli-allof_field_constraints-False	main/jsonschema/compound_property_names/allof_field_constraints.py	= main/jsonschema/compound_property_names/allof_field_constraints~compound_property_names_compatibility[api-allof_field_constraints-False].py
 cli-allof_frozen-False	main/jsonschema/compound_property_names/allof_frozen.py
 cli-allof_lookbehind_field_constraints-False	main/jsonschema/compound_property_names/allof_field_constraints.py
 cli-allof_type_alias-False	main/jsonschema/compound_property_names/allof_type_alias.py
@@ -5541,6 +5541,10 @@ to_snake-target-unset	main/jsonschema/alias_generator_target_pydantic/to_snake_u
 	main/jsonschema/all_of_ref_self.py
 [test_main_all_of_ref_with_property_override]
 	main/jsonschema/all_of_ref_with_property_override.py
+[test_main_all_of_value_site_keywords]
+msgspec.Struct-extra_args2	main/jsonschema/all_of_value_site_keywords.py
+pydantic_v2.BaseModel-extra_args0	main/jsonschema/all_of_value_site_keywords.py	= main/jsonschema/all_of_value_site_keywords~main_all_of_value_site_keywords[pydantic_v2.BaseModel-extra_args0].py
+pydantic_v2.BaseModel-extra_args1	main/jsonschema/all_of_value_site_keywords.py	= main/jsonschema/all_of_value_site_keywords~main_all_of_value_site_keywords[pydantic_v2.BaseModel-extra_args1].py
 [test_main_all_of_very_deep_hierarchy_property_override]
 	main/jsonschema/all_of_very_deep_hierarchy_property_override.py
 [test_main_all_of_with_object]

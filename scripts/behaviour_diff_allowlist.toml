@@ -180,3 +180,59 @@ match = "^\\[constraints\\] Wrapping:rows: Union\\[None, list\\[list\\[Item\\]\\
 reason = "without --field-constraints, the minItems of the items of an array were dropped without a warning; they are kept on a type alias of the item array (schema-mismatch fix)"
 decision = "#6171"
 release_note = "without --field-constraints, the minItems and maxItems of an array that has no field of its own (the member of an anyOf or oneOf, the items of an array, the values of a map) are written on a type alias of the array (Annotated[list[int], Field(min_length=2)]) instead of being dropped"
+
+[[accepted]]
+input = "*allof_scalar_roots*"
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints\\] (?:Cat|Described|Named|Pet):nickname: .* -> .*(?:MaxLen\\(max_length=8\\)|Meta\\(max_length=8\\)).*|type\\] Nickname1: str -> Annotated\\[str, Meta\\(max_length=8\\)\\])$"
+reason = "an allOf value site that keeps the form it is written in (without --intersect-allof-keywords) took its root's constraints from the allOf site, which declares none of its parts' keywords, so the maxLength of its part was dropped without a warning (under --field-constraints, the presets and msgspec); the root writes the keywords of its parts now (schema-mismatch fix)"
+decision = "#6171"
+release_note = "an allOf of value parts that keeps the form it is written in writes the keywords of its parts on its root, so a lone allOf member's minItems, maxLength or bounds are no longer dropped"
+
+[[accepted]]
+input = "*allof_with_required_inherited_*"
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] \\w+(?::\\w+)?: .* -> .*(?:MinLen|MaxLen|Ge\\(|Le\\(|MultipleOf|Meta\\().*$"
+reason = "an allOf value site that keeps the form it is written in (without --intersect-allof-keywords) took its root's constraints from the allOf site, which declares none of its parts' keywords, so the lengths, bounds and multipleOf of its parts were dropped without a warning; the root writes them now (schema-mismatch fix)"
+decision = "#6171"
+release_note = "an allOf of value parts that keeps the form it is written in writes the keywords of its parts on its root, so a lone allOf member's minItems, maxLength or bounds are no longer dropped"
+
+[[accepted]]
+input = "*compound_property_names"
+aspects = [ "constraints", "type", "probe" ]
+match = "^\\[(?:(?:constraints|type)\\] (?:allof_branch_title|unsupported_allof):Root\\d*: .* -> .*(?:StringConstraints|Meta)\\(min_length=2,pattern='\\^a'\\).*|probe\\] (?:allof_branch_title|unsupported_allof):Root: accept -> reject)$"
+reason = "the allOf of a propertyNames schema that keeps the form it is written in dropped the minLength and pattern of its parts, so the map accepted keys the schema rejects; its keys write them now (schema-mismatch fix; the probe example key breaks them)"
+decision = "#6171"
+release_note = "an allOf of value parts that keeps the form it is written in writes the keywords of its parts on its root, so a lone allOf member's minItems, maxLength or bounds are no longer dropped"
+
+[[accepted]]
+input = "*fixed_length_array_tuples*"
+aspects = [ "constraints", "type", "probe" ]
+match = "^\\[(?:(?:constraints|type)\\] (?:FixedLengthArrayTuples:)?(?:allOf|all_of_|AllOf)(?:Vector|Empty|vector|empty): list\\[str\\] -> Annotated\\[list\\[str\\], .*(?:MinLen|Meta).*\\]|probe\\] AllOfEmpty: accept -> reject)$"
+reason = "a lone allOf member of an array that keeps the form it is written in dropped its minItems and maxItems, so the model accepted arrays the schema rejects; the root writes them now (schema-mismatch fix; the probe example breaks the count)"
+decision = "#6171"
+release_note = "an allOf of value parts that keeps the form it is written in writes the keywords of its parts on its root, so a lone allOf member's minItems, maxLength or bounds are no longer dropped"
+
+[[accepted]]
+input = "*items_array_tuple_allof*"
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] (?:Model:value|Value): list\\[str\\] -> Annotated\\[list\\[str\\], .*(?:MinLen\\(min_length=2\\)|Meta\\(max_length=2,min_length=2\\)).*\\]$"
+reason = "a lone allOf member of an array that keeps the form it is written in dropped its minItems and maxItems; the root writes them now (schema-mismatch fix)"
+decision = "#6171"
+release_note = "an allOf of value parts that keeps the form it is written in writes the keywords of its parts on its root, so a lone allOf member's minItems, maxLength or bounds are no longer dropped"
+
+[[accepted]]
+input = "*reuse_scope_tree_root_key"
+aspects = [ "constraints", "type", "probe" ]
+match = "^\\[(?:(?:constraints|type)\\] [ab]:(?:Settings|Limits)\\d*: .* -> .*(?:StringConstraints|Meta)\\(min_length=2,pattern='\\^k'\\).*|probe\\] [ab]:(?:Settings|Limits): accept -> reject)$"
+reason = "the allOf of a propertyNames schema that keeps the form it is written in dropped the minLength and pattern of its parts, so the map accepted keys the schema rejects; its keys write them now (schema-mismatch fix; the probe example key breaks them)"
+decision = "#6171"
+release_note = "an allOf of value parts that keeps the form it is written in writes the keywords of its parts on its root, so a lone allOf member's minItems, maxLength or bounds are no longer dropped"
+
+[[accepted]]
+input = "*schema_intersection"
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] allof_value(?:_part)?s:\\w+(?::\\w+)?: .* -> .*(?:MinLen|Ge\\(|Le\\(|MultipleOf|Meta\\(|list\\[[A-Z]\\w*\\]).*$"
+reason = "an allOf value site that keeps the form it is written in (without --intersect-allof-keywords) took its root's constraints from the allOf site, so the bounds, lengths and multipleOf of its parts were dropped without a warning; the root writes them now (schema-mismatch fix)"
+decision = "#6171"
+release_note = "an allOf of value parts that keeps the form it is written in writes the keywords of its parts on its root, so a lone allOf member's minItems, maxLength or bounds are no longer dropped"

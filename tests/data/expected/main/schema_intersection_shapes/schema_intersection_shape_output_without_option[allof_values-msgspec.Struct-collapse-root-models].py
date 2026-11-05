@@ -8,6 +8,9 @@ from typing import Annotated, Any, TypeAlias
 
 from msgspec import UNSET, Meta, Struct, UnsetType
 
+LevelItem: TypeAlias = Annotated[int, Meta(ge=0, le=10)]
+
+
 LevelMap: TypeAlias = Annotated[int, Meta(ge=0, le=10)]
 
 
@@ -25,8 +28,8 @@ class Untyped(Struct):
 
 class Model(Struct):
     level: Annotated[int, Meta(ge=0, le=10)] | UnsetType = UNSET
-    level_prop: int | UnsetType = UNSET
-    level_items: list[int] | UnsetType = UNSET
+    level_prop: Annotated[int, Meta(ge=0, le=10)] | UnsetType = UNSET
+    level_items: list[LevelItem] | UnsetType = UNSET
     level_map: dict[str, LevelMap] | UnsetType = UNSET
     mode: Mode | UnsetType = UNSET
     mode_prop: int | UnsetType = UNSET
@@ -43,4 +46,4 @@ class Model(Struct):
     untyped_prop: Any | UnsetType = UNSET
     untyped_items: list[Any] | UnsetType = UNSET
     untyped_map: dict[str, Any] | UnsetType = UNSET
-    p: str | UnsetType = UNSET
+    p: Annotated[str, Meta(min_length=2)] | UnsetType = UNSET

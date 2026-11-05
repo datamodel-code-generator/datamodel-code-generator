@@ -137,13 +137,13 @@ msgspec.Struct default level 11 rejected
 msgspec.Struct default level 1.5 rejected
 msgspec.Struct default level_prop 0 accepted
 msgspec.Struct default level_prop 10 accepted
-msgspec.Struct default level_prop -1 accepted
-msgspec.Struct default level_prop 11 accepted
+msgspec.Struct default level_prop -1 rejected
+msgspec.Struct default level_prop 11 rejected
 msgspec.Struct default level_prop 1.5 rejected
 msgspec.Struct default level_items [0] accepted
 msgspec.Struct default level_items [10] accepted
-msgspec.Struct default level_items [-1] accepted
-msgspec.Struct default level_items [11] accepted
+msgspec.Struct default level_items [-1] rejected
+msgspec.Struct default level_items [11] rejected
 msgspec.Struct default level_items [1.5] rejected
 msgspec.Struct default level_map {"k": 0} accepted
 msgspec.Struct default level_map {"k": 10} accepted
@@ -195,7 +195,7 @@ msgspec.Struct default untyped_map {"k": 5} accepted
 msgspec.Struct default untyped_map {"k": ""} accepted
 msgspec.Struct default untyped_map {"k": "abcdef"} accepted
 msgspec.Struct default p "ab" accepted
-msgspec.Struct default p "a" accepted
+msgspec.Struct default p "a" rejected
 pydantic_v2.BaseModel --field-constraints level 0 accepted
 pydantic_v2.BaseModel --field-constraints level 10 accepted
 pydantic_v2.BaseModel --field-constraints level -1 rejected
@@ -203,18 +203,18 @@ pydantic_v2.BaseModel --field-constraints level 11 rejected
 pydantic_v2.BaseModel --field-constraints level 1.5 rejected
 pydantic_v2.BaseModel --field-constraints level_prop 0 accepted
 pydantic_v2.BaseModel --field-constraints level_prop 10 accepted
-pydantic_v2.BaseModel --field-constraints level_prop -1 accepted
-pydantic_v2.BaseModel --field-constraints level_prop 11 accepted
+pydantic_v2.BaseModel --field-constraints level_prop -1 rejected
+pydantic_v2.BaseModel --field-constraints level_prop 11 rejected
 pydantic_v2.BaseModel --field-constraints level_prop 1.5 rejected
 pydantic_v2.BaseModel --field-constraints level_items [0] accepted
 pydantic_v2.BaseModel --field-constraints level_items [10] accepted
-pydantic_v2.BaseModel --field-constraints level_items [-1] accepted
-pydantic_v2.BaseModel --field-constraints level_items [11] accepted
+pydantic_v2.BaseModel --field-constraints level_items [-1] rejected
+pydantic_v2.BaseModel --field-constraints level_items [11] rejected
 pydantic_v2.BaseModel --field-constraints level_items [1.5] rejected
 pydantic_v2.BaseModel --field-constraints level_map {"k": 0} accepted
 pydantic_v2.BaseModel --field-constraints level_map {"k": 10} accepted
-pydantic_v2.BaseModel --field-constraints level_map {"k": -1} accepted
-pydantic_v2.BaseModel --field-constraints level_map {"k": 11} accepted
+pydantic_v2.BaseModel --field-constraints level_map {"k": -1} rejected
+pydantic_v2.BaseModel --field-constraints level_map {"k": 11} rejected
 pydantic_v2.BaseModel --field-constraints level_map {"k": 1.5} rejected
 pydantic_v2.BaseModel --field-constraints mode 1 accepted
 pydantic_v2.BaseModel --field-constraints mode 2 accepted
@@ -261,7 +261,7 @@ pydantic_v2.BaseModel --field-constraints untyped_map {"k": 5} accepted
 pydantic_v2.BaseModel --field-constraints untyped_map {"k": ""} accepted
 pydantic_v2.BaseModel --field-constraints untyped_map {"k": "abcdef"} accepted
 pydantic_v2.BaseModel --field-constraints p "ab" accepted
-pydantic_v2.BaseModel --field-constraints p "a" accepted
+pydantic_v2.BaseModel --field-constraints p "a" rejected
 pydantic_v2.BaseModel --use-annotated level 0 accepted
 pydantic_v2.BaseModel --use-annotated level 10 accepted
 pydantic_v2.BaseModel --use-annotated level -1 rejected
@@ -269,13 +269,13 @@ pydantic_v2.BaseModel --use-annotated level 11 rejected
 pydantic_v2.BaseModel --use-annotated level 1.5 rejected
 pydantic_v2.BaseModel --use-annotated level_prop 0 accepted
 pydantic_v2.BaseModel --use-annotated level_prop 10 accepted
-pydantic_v2.BaseModel --use-annotated level_prop -1 accepted
-pydantic_v2.BaseModel --use-annotated level_prop 11 accepted
+pydantic_v2.BaseModel --use-annotated level_prop -1 rejected
+pydantic_v2.BaseModel --use-annotated level_prop 11 rejected
 pydantic_v2.BaseModel --use-annotated level_prop 1.5 rejected
 pydantic_v2.BaseModel --use-annotated level_items [0] accepted
 pydantic_v2.BaseModel --use-annotated level_items [10] accepted
-pydantic_v2.BaseModel --use-annotated level_items [-1] accepted
-pydantic_v2.BaseModel --use-annotated level_items [11] accepted
+pydantic_v2.BaseModel --use-annotated level_items [-1] rejected
+pydantic_v2.BaseModel --use-annotated level_items [11] rejected
 pydantic_v2.BaseModel --use-annotated level_items [1.5] rejected
 pydantic_v2.BaseModel --use-annotated level_map {"k": 0} accepted
 pydantic_v2.BaseModel --use-annotated level_map {"k": 10} accepted
@@ -327,7 +327,7 @@ pydantic_v2.BaseModel --use-annotated untyped_map {"k": 5} accepted
 pydantic_v2.BaseModel --use-annotated untyped_map {"k": ""} accepted
 pydantic_v2.BaseModel --use-annotated untyped_map {"k": "abcdef"} accepted
 pydantic_v2.BaseModel --use-annotated p "ab" accepted
-pydantic_v2.BaseModel --use-annotated p "a" accepted
+pydantic_v2.BaseModel --use-annotated p "a" rejected
 pydantic_v2.BaseModel --collapse-root-models level 0 accepted
 pydantic_v2.BaseModel --collapse-root-models level 10 accepted
 pydantic_v2.BaseModel --collapse-root-models level -1 rejected
@@ -401,13 +401,13 @@ msgspec.Struct --collapse-root-models level 11 rejected
 msgspec.Struct --collapse-root-models level 1.5 rejected
 msgspec.Struct --collapse-root-models level_prop 0 accepted
 msgspec.Struct --collapse-root-models level_prop 10 accepted
-msgspec.Struct --collapse-root-models level_prop -1 accepted
-msgspec.Struct --collapse-root-models level_prop 11 accepted
+msgspec.Struct --collapse-root-models level_prop -1 rejected
+msgspec.Struct --collapse-root-models level_prop 11 rejected
 msgspec.Struct --collapse-root-models level_prop 1.5 rejected
 msgspec.Struct --collapse-root-models level_items [0] accepted
 msgspec.Struct --collapse-root-models level_items [10] accepted
-msgspec.Struct --collapse-root-models level_items [-1] accepted
-msgspec.Struct --collapse-root-models level_items [11] accepted
+msgspec.Struct --collapse-root-models level_items [-1] rejected
+msgspec.Struct --collapse-root-models level_items [11] rejected
 msgspec.Struct --collapse-root-models level_items [1.5] rejected
 msgspec.Struct --collapse-root-models level_map {"k": 0} accepted
 msgspec.Struct --collapse-root-models level_map {"k": 10} accepted
@@ -459,7 +459,7 @@ msgspec.Struct --collapse-root-models untyped_map {"k": 5} accepted
 msgspec.Struct --collapse-root-models untyped_map {"k": ""} accepted
 msgspec.Struct --collapse-root-models untyped_map {"k": "abcdef"} accepted
 msgspec.Struct --collapse-root-models p "ab" accepted
-msgspec.Struct --collapse-root-models p "a" accepted
+msgspec.Struct --collapse-root-models p "a" rejected
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs level 0 accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs level 10 accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs level -1 rejected
@@ -599,13 +599,13 @@ msgspec.Struct --use-site-models-for-constrained-refs level 11 rejected
 msgspec.Struct --use-site-models-for-constrained-refs level 1.5 rejected
 msgspec.Struct --use-site-models-for-constrained-refs level_prop 0 accepted
 msgspec.Struct --use-site-models-for-constrained-refs level_prop 10 accepted
-msgspec.Struct --use-site-models-for-constrained-refs level_prop -1 accepted
-msgspec.Struct --use-site-models-for-constrained-refs level_prop 11 accepted
+msgspec.Struct --use-site-models-for-constrained-refs level_prop -1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs level_prop 11 rejected
 msgspec.Struct --use-site-models-for-constrained-refs level_prop 1.5 rejected
 msgspec.Struct --use-site-models-for-constrained-refs level_items [0] accepted
 msgspec.Struct --use-site-models-for-constrained-refs level_items [10] accepted
-msgspec.Struct --use-site-models-for-constrained-refs level_items [-1] accepted
-msgspec.Struct --use-site-models-for-constrained-refs level_items [11] accepted
+msgspec.Struct --use-site-models-for-constrained-refs level_items [-1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs level_items [11] rejected
 msgspec.Struct --use-site-models-for-constrained-refs level_items [1.5] rejected
 msgspec.Struct --use-site-models-for-constrained-refs level_map {"k": 0} accepted
 msgspec.Struct --use-site-models-for-constrained-refs level_map {"k": 10} accepted
@@ -657,7 +657,7 @@ msgspec.Struct --use-site-models-for-constrained-refs untyped_map {"k": 5} accep
 msgspec.Struct --use-site-models-for-constrained-refs untyped_map {"k": ""} accepted
 msgspec.Struct --use-site-models-for-constrained-refs untyped_map {"k": "abcdef"} accepted
 msgspec.Struct --use-site-models-for-constrained-refs p "ab" accepted
-msgspec.Struct --use-site-models-for-constrained-refs p "a" accepted
+msgspec.Struct --use-site-models-for-constrained-refs p "a" rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level 0 accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level 10 accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level -1 rejected
@@ -665,18 +665,18 @@ pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level 1.5 rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_prop 0 accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_prop 10 accepted
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_prop -1 accepted
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_prop 11 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_prop -1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_prop 11 rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_prop 1.5 rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_items [0] accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_items [10] accepted
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_items [-1] accepted
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_items [11] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_items [-1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_items [11] rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_items [1.5] rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_map {"k": 0} accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_map {"k": 10} accepted
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_map {"k": -1} accepted
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_map {"k": 11} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_map {"k": -1} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_map {"k": 11} rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs level_map {"k": 1.5} rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs mode 1 accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs mode 2 accepted
@@ -723,7 +723,7 @@ pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_map {"k": ""} accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped_map {"k": "abcdef"} accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs p "ab" accepted
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs p "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs p "a" rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level 0 accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level 10 accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs level -1 rejected

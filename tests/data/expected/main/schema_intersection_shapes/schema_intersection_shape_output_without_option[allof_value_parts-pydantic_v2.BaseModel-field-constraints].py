@@ -93,27 +93,27 @@ class NullableMap(RootModel[Any]):
 
 
 class OuterProp(RootModel[int]):
-    root: int = Field(..., description='site', le=9)
+    root: int = Field(..., description='site', ge=0, le=9)
 
 
 class OuterItem(RootModel[int]):
-    root: int = Field(..., description='site', le=9)
+    root: int = Field(..., description='site', ge=0, le=9)
 
 
 class OuterMap(RootModel[int]):
-    root: int = Field(..., description='site', le=9)
+    root: int = Field(..., description='site', ge=0, le=9)
 
 
 class MultipleProp(RootModel[int]):
-    root: int
+    root: int = Field(..., multiple_of=6)
 
 
 class MultipleItem(RootModel[int]):
-    root: int
+    root: int = Field(..., multiple_of=6)
 
 
 class MultipleMap(RootModel[int]):
-    root: int
+    root: int = Field(..., multiple_of=6)
 
 
 class ConstConflictProp(RootModel[str]):
