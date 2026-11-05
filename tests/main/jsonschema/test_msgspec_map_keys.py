@@ -44,8 +44,8 @@ def test_msgspec_map_keys(output_file: Path, option_set: str) -> None:
     """Write the constrained keys of a map as ``Annotated[str, Meta(...)]`` under --use-msgspec-meta-for-map-keys.
 
     Without it the keys are ``str`` and every invalid key decodes, as in 0.88.0. With it the keys of a propertyNames
-    pattern, of its lengths, of patternProperties, of both, and of a map inside an array are rejected as the schema
-    rejects them; the keys of a propertyNames union stay ``str``.
+    pattern, of its lengths, of patternProperties, of both, of a map inside an array and of an ``anyOf`` with one
+    branch are rejected as the schema rejects them; the keys of a propertyNames union stay ``str``.
     """
     run_main_and_assert(
         input_path=INPUT,

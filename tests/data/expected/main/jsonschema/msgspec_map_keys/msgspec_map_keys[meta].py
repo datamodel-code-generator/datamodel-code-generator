@@ -21,3 +21,4 @@ class Model(Struct):
         UNSET
     )
     either: dict[str, str] | UnsetType = UNSET
+    single_branch: dict[Annotated[str, Meta(pattern='^a')], str] | UnsetType = UNSET

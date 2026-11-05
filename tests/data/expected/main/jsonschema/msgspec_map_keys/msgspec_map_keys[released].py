@@ -13,3 +13,4 @@ class Model(Struct):
     named_and_patterned: dict[str, str] | UnsetType = UNSET
     nested: list[dict[str, bool]] | UnsetType = UNSET
     either: dict[str, str] | UnsetType = UNSET
+    single_branch: dict[str, str] | UnsetType = UNSET

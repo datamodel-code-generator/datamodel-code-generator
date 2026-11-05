@@ -34487,6 +34487,11 @@ them. With this option the keys are `Annotated[str, Meta(...)]`, which msgspec c
           "type": "object",
           "propertyNames": {"anyOf": [{"pattern": "^a"}, {"pattern": "^b"}]},
           "additionalProperties": {"type": "string"}
+        },
+        "single_branch": {
+          "type": "object",
+          "propertyNames": {"anyOf": [{"pattern": "^a"}]},
+          "additionalProperties": {"type": "string"}
         }
       }
     }
@@ -34522,6 +34527,7 @@ them. With this option the keys are `Annotated[str, Meta(...)]`, which msgspec c
                 UNSET
             )
             either: dict[str, str] | UnsetType = UNSET
+            single_branch: dict[Annotated[str, Meta(pattern='^a')], str] | UnsetType = UNSET
         ```
 
         <!-- fmt: on -->
@@ -34546,6 +34552,7 @@ them. With this option the keys are `Annotated[str, Meta(...)]`, which msgspec c
             named_and_patterned: dict[str, str] | UnsetType = UNSET
             nested: list[dict[str, bool]] | UnsetType = UNSET
             either: dict[str, str] | UnsetType = UNSET
+            single_branch: dict[str, str] | UnsetType = UNSET
         ```
 
         <!-- fmt: on -->
