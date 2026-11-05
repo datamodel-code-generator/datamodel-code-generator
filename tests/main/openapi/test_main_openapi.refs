@@ -913,6 +913,8 @@ wrapper-in-other-module	main/openapi/main_openapi/collapse_shared_parent_wrapper
 	main/openapi/complex_reference.py
 [test_main_openapi_component_embedded_ids]
 	main/openapi/component_embedded_ids.py
+[test_main_openapi_component_embedded_ids_inferred_input_type]
+	main/openapi/main_openapi/component_embedded_ids_inferred_input_type.py	= main/openapi/component_embedded_ids.py
 [test_main_openapi_component_embedded_remote_ids]
 	main/openapi/component_embedded_remote_ids.py
 [test_main_openapi_const]

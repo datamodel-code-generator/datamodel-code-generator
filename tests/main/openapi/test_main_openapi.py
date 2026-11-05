@@ -15467,6 +15467,21 @@ def test_main_openapi_component_embedded_ids(output_file: Path) -> None:
     )
 
 
+def test_main_openapi_component_embedded_ids_inferred_input_type(output_file: Path) -> None:
+    """Name the input in the warnings of references resolved for compatibility when its file type is inferred."""
+    with pytest.warns(SchemaResourceRefWarning) as warning_records:
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "component_embedded_ids" / "api.yaml",
+            output_path=output_file,
+            extra_args=["--openapi-scopes", "schemas", "paths", "--output-model-type", "pydantic_v2.BaseModel"],
+        )
+    assert_warnings_contain(
+        warning_records,
+        "$ref '#/components/schemas/Tag' in api.yaml is resolved against the document for compatibility",
+        "$ref 'shared.json' in api.yaml loads the referenced document for compatibility",
+    )
+
+
 def test_main_openapi_component_embedded_remote_ids(output_file: Path) -> None:
     """Resolve a reference to the absolute $id of a component schema when remote references are not fetched."""
     run_main_and_assert(
