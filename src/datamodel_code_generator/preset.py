@@ -936,6 +936,14 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
+        title="Enum literal aliases kept",
+        config=PresetConfig(keep_enum_literal_aliases=True),
+        description=(
+            "Under --collapse-root-models, keep a named enum that the output writes as a Literal type alias named at "
+            "its uses."
+        ),
+    ),
+    PresetOptionGroup(
         title="SerializeAsAny for every subclass",
         config=PresetConfig(use_serialize_as_any_for_every_subclass=True),
         description=(
@@ -1266,7 +1274,9 @@ def render_presets_markdown() -> str:
             "item types and written only where every value of its items hashes by value, and models whose arrays "
             "differ in `uniqueItems` are not merged, and `--keep-constrained-root-models-in-every-container`: under "
             "`--collapse-root-models` with `--field-constraints` a constrained root model stays named inside a set, "
-            "`Sequence` or `Mapping` of its holder, so their items keep its constraints."
+            "`Sequence` or `Mapping` of its holder, so their items keep its constraints, and "
+            "`--keep-enum-literal-aliases`: under `--collapse-root-models` a named enum written as a `Literal` type "
+            "alias stays named at its uses."
         ),
         "",
         (

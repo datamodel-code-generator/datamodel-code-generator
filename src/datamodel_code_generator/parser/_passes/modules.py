@@ -70,6 +70,7 @@ from datamodel_code_generator.model.base import (
     inherited_root_field,
 )
 from datamodel_code_generator.model.enum import Enum, Member, _enum_class, enum_value_base, get_raw_enum_member_value
+from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._graph_ids import UNRESOLVED_MODEL_KEY, keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._model_shapes import REUSE_MODEL
@@ -175,7 +176,12 @@ from datamodel_code_generator.parser._tag_plan import (
     union_site,
 )
 from datamodel_code_generator.python_literal import runtime_expression_imports, stable_repr
-from datamodel_code_generator.reference import _ALIAS_RESOLUTION_CLASS_NAME_KEY, ModelResolver, schema_path_of
+from datamodel_code_generator.reference import (
+    _ALIAS_RESOLUTION_CLASS_NAME_KEY,
+    ModelResolver,
+    enum_literal_of,
+    schema_path_of,
+)
 from datamodel_code_generator.types import DataType, Types, _copy_data_type
 
 if TYPE_CHECKING:
@@ -451,6 +457,10 @@ class CollapseHost(
     @property
     def keep_constrained_root_models_in_every_container(self) -> bool:
         """Whether a constrained root model stays named inside every container of its holder."""
+
+    @property
+    def keep_enum_literal_aliases(self) -> bool:
+        """Whether a type alias of the Literal of an enum stays named under collapse."""
 
     @property
     def _const_narrowed_values(self) -> dict[int, tuple[DataType, _ConstNarrowing]]:
@@ -1300,6 +1310,9 @@ def collapse_site_facts(
             keeps_tuples=parser.use_tuple_for_closed_arrays,
             generic_base_config=generic_base_config(parser),
         ),
+        enum_literal_alias=parser.keep_enum_literal_aliases
+        and isinstance(root_model, TypeAliasBase)
+        and enum_literal_of(root_data_type),
         needs_model_regex_engine=_site_needs_model_regex_engine(root_model),
         field_constraints=field_constraints,
         constrains_through_root_types=not field_constraints and _has_preservable_root_constraints(root_model),

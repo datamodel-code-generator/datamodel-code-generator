@@ -488,6 +488,13 @@ _toggle(
 )
 _toggle(
     model_options,
+    "--keep-enum-literal-aliases",
+    help="Under --collapse-root-models, keep a named enum that the output writes as a `Literal` type alias named at "
+    "its uses (`Status = Literal['open', 'resolved']`, `a: Status`); without it every use repeats the `Literal`, as "
+    "in 0.89.0",
+)
+_toggle(
+    model_options,
     "--collapse-reuse-models",
     help="When used with --reuse-model, collapse duplicate models by replacing references instead of creating "
     "empty inheritance subclasses. This eliminates 'class Foo(Bar): pass' patterns",

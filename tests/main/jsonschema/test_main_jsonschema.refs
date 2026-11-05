@@ -5665,6 +5665,12 @@ python-3.14	main/jsonschema/identifier_case_target_314.py
 msgspec	main/jsonschema/collapse_constrained_roots_in_containers.py
 pydantic	main/jsonschema/collapse_constrained_roots_in_containers.py	= main/jsonschema/collapse_constrained_roots_in_containers~main_collapse_constrained_roots_in_containers[pydantic].py
 without-option	main/jsonschema/collapse_constrained_roots_in_containers.py	= main/jsonschema/collapse_constrained_roots_in_containers~main_collapse_constrained_roots_in_containers[without-option].py
+[test_main_collapse_enum_literal_aliases]
+msgspec	main/jsonschema/collapse_enum_literal_aliases.py
+root-model	main/jsonschema/collapse_enum_literal_aliases.py	= main/jsonschema/collapse_enum_literal_aliases~main_collapse_enum_literal_aliases[root-model].py
+type-alias	main/jsonschema/collapse_enum_literal_aliases.py	= main/jsonschema/collapse_enum_literal_aliases~main_collapse_enum_literal_aliases[type-alias].py
+typed-dict	main/jsonschema/collapse_enum_literal_aliases.py	= main/jsonschema/collapse_enum_literal_aliases~main_collapse_enum_literal_aliases[typed-dict].py
+without-option	main/jsonschema/collapse_enum_literal_aliases.py	= main/jsonschema/collapse_enum_literal_aliases~main_collapse_enum_literal_aliases[without-option].py
 [test_main_combined_array]
 	main/jsonschema/combined_array.py
 [test_main_complicated_enum_default_member]

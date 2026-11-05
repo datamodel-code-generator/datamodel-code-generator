@@ -918,6 +918,10 @@
       "not_recommended": "preset",
       "reason": "Under --collapse-root-models with --field-constraints only: set by the 20261104 presets; the recommendation starts from a preset."
     },
+    "keep_enum_literal_aliases": {
+      "not_recommended": "preset",
+      "reason": "Under --collapse-root-models only: set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "keep_enum_member_values": {
       "not_recommended": "preset",
       "reason": "Set by the 20261027 presets; the recommendation starts from a preset."

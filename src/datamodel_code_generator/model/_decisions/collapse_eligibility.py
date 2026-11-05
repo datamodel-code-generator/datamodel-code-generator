@@ -31,6 +31,7 @@ KeepRule: TypeAlias = Literal[
     "circular",
     "runtime-object-validation",
     "unhashable-set-item",
+    "enum-literal-alias",
     "fieldless-site-regex-engine",
     "constraints-in-type",
     "constrained-map",
@@ -48,6 +49,9 @@ KeepRule: TypeAlias = Literal[
 * ``unhashable-set-item``: the site is the item of a set or frozen set and no value of the root type hashes (a list, a
   dict), so the set would reject every item once the root type is inlined, while the root model is a class whose
   instances hash (the identity hash of a Pydantic set item); a root model written as an alias is its type anyway.
+* ``enum-literal-alias``: under ``--keep-enum-literal-aliases``, the root model is a type alias of the ``Literal`` of
+  an enum definition, which the output names instead of an Enum class (row ``legacy-collapse-enum-literal-aliases``
+  inlines it, as 0.89.0 did); a type alias holds the values of its type, so its holders parse the same values.
 * ``fieldless-site-regex-engine``: the root model is the model of a site that earlier releases wrote as a model
   without fields (``FIELDLESS_SITE_KEY``) and its pattern needs a regex engine in the config of the model that holds
   it: inlined, that engine would apply to the other patterns of its holder.
@@ -83,6 +87,8 @@ class CollapseSiteFacts:
     unhashable_set_item: bool = False
     """The site is the item of a set or frozen set, no value of the root type hashes and the root model is a class
     whose instances hash."""
+    enum_literal_alias: bool = False
+    """Under ``--keep-enum-literal-aliases``, the root model is a type alias of the ``Literal`` of an enum."""
     needs_model_regex_engine: bool = False
     """The root model is a fieldless site whose pattern needs a regex engine in its holder's config."""
     field_constraints: bool = False
@@ -116,6 +122,8 @@ def keeps_root_model_named(facts: CollapseSiteFacts, /) -> KeepRule | None:  # n
         return "runtime-object-validation"
     if facts.unhashable_set_item:
         return "unhashable-set-item"
+    if facts.enum_literal_alias:
+        return "enum-literal-alias"
     if facts.needs_model_regex_engine:
         return "fieldless-site-regex-engine"
     if not facts.field_constraints and facts.constrains_through_root_types:

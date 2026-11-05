@@ -750,6 +750,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         there; without it such a root model is inlined into
                         those containers and its constraints are lost, as in
                         0.89.0
+  --keep-enum-literal-aliases, --no-keep-enum-literal-aliases
+                        Under --collapse-root-models, keep a named enum that
+                        the output writes as a `Literal` type alias named at
+                        its uses (`Status = Literal['open', 'resolved']`, `a:
+                        Status`); without it every use repeats the `Literal`,
+                        as in 0.89.0
   --keep-model-order    Keep generated models' order
   --keyword-only        Defined models as keyword only (for example
                         dataclass(kw_only=True)).

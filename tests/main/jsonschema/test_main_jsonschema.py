@@ -8840,6 +8840,83 @@ def test_main_collapse_constrained_roots_in_containers(extra_args: list[str], ou
     )
 
 
+@pytest.mark.cli_doc(
+    options=["--keep-enum-literal-aliases"],
+    option_description="""Keep a named enum written as a Literal type alias named under collapse.
+
+An output that writes an enum definition as a `Literal` type alias (TypedDict, or `--enum-field-as-literal all`) names
+it at its uses (`Status = Literal['open', 'resolved']`, `status: Status`), but `--collapse-root-models` inlines it, so
+every use repeats the `Literal` and the name of the enum is lost. With `--keep-enum-literal-aliases` the alias stays
+named; a type alias holds the values of its type, so its uses parse the same values. A Pydantic `RootModel` class of
+the `Literal` still collapses.""",
+    input_schema="jsonschema/collapse_enum_literal_aliases.json",
+    cli_args=["--output-model-type", "typing.TypedDict", "--collapse-root-models", "--keep-enum-literal-aliases"],
+    golden_output="main/jsonschema/collapse_enum_literal_aliases~main_collapse_enum_literal_aliases[typed-dict].py",
+    comparison_output=(
+        "main/jsonschema/collapse_enum_literal_aliases~main_collapse_enum_literal_aliases[without-option].py"
+    ),
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--output-model-type", "typing.TypedDict"], id="without-option"),
+        pytest.param(["--output-model-type", "typing.TypedDict", "--keep-enum-literal-aliases"], id="typed-dict"),
+        pytest.param(
+            ["--output-model-type", "msgspec.Struct", "--enum-field-as-literal", "all", "--keep-enum-literal-aliases"],
+            id="msgspec",
+        ),
+        pytest.param(
+            [
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--use-type-alias",
+                "--enum-field-as-literal",
+                "all",
+                "--keep-enum-literal-aliases",
+            ],
+            id="type-alias",
+        ),
+        pytest.param(
+            [
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--enum-field-as-literal",
+                "all",
+                "--keep-enum-literal-aliases",
+            ],
+            id="root-model",
+        ),
+    ],
+)
+def test_main_collapse_enum_literal_aliases(extra_args: list[str], output_file: Path) -> None:
+    """Keep the Literal type alias of an enum named at its uses under --collapse-root-models.
+
+    With --keep-enum-literal-aliases ``Status`` stays a named alias of its ``Literal``, while the alias of a plain
+    string, ``Name``, is inlined; a Pydantic ``RootModel`` class of the ``Literal`` collapses as without the option, as
+    keeping it would wrap the values its holders parse.
+    """
+    name = "collapse_enum_literal_aliases"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[*extra_args, "--collapse-root-models", "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    if "pydantic_v2.BaseModel" not in extra_args:
+        return
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=name,
+        model_name="Ticket",
+        valid_json='{"status": "open", "history": ["resolved"], "name": "x"}',
+        invalid_json='{"status": "closed", "history": []}',
+        expected_error_type="literal_error",
+        expected_repr="Ticket(status='open', history=['resolved'], name='x')",
+    )
+
+
 @pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct", "typing.TypedDict"])
 def test_main_unique_items_as_set_nested_arrays(output_model: str, tmp_path: Path, output_file: Path) -> None:
     """Write as a set every array whose own schema declares ``uniqueItems``, wherever the array is.

@@ -10,7 +10,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from datamodel_code_generator.reference import FIELD_ORIGIN_KEY, TYPE_ORIGIN_KEY, UNIQUE_ITEMS_KEY, FieldOrigin
+from datamodel_code_generator.reference import (
+    ENUM_LITERAL_KEY,
+    FIELD_ORIGIN_KEY,
+    TYPE_ORIGIN_KEY,
+    UNIQUE_ITEMS_KEY,
+    FieldOrigin,
+)
 
 if TYPE_CHECKING:
     from datamodel_code_generator.model import DataModelFieldBase
@@ -18,7 +24,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.reference import FieldOriginKind, SchemaLocation
     from datamodel_code_generator.types import DataType
 
-__all__ = ["with_field_origin", "with_type_origin", "with_unique_items"]
+__all__ = ["with_enum_literal", "with_field_origin", "with_type_origin", "with_unique_items"]
 
 
 def with_field_origin(
@@ -44,6 +50,12 @@ def with_type_origin(data_type: DataType, location: SchemaLocation | None) -> Da
         pending.extend(node.data_types)
         if node.dict_key is not None:
             pending.append(node.dict_key)
+    return data_type
+
+
+def with_enum_literal(data_type: DataType) -> DataType:
+    """Record on ``data_type`` that it is the ``Literal`` of the values of an ``enum``."""
+    data_type.__dict__[ENUM_LITERAL_KEY] = True
     return data_type
 
 

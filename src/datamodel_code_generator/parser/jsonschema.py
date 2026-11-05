@@ -296,7 +296,12 @@ from datamodel_code_generator.parser._null_facts import (
     resolve_null_facts,
 )
 from datamodel_code_generator.parser._object_maps import _schema_assertions, _with_null
-from datamodel_code_generator.parser._origins import with_field_origin, with_type_origin, with_unique_items
+from datamodel_code_generator.parser._origins import (
+    with_enum_literal,
+    with_field_origin,
+    with_type_origin,
+    with_unique_items,
+)
 from datamodel_code_generator.parser._passes._keys import (
     _DERIVED_FROM_KEY,
     _RAW_SCHEMA_DEFAULT_UNDEFINED,
@@ -7038,8 +7043,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     data_type = self._get_const_data_type(self._exact_const_enum_value(obj)[0], obj)
                 elif self.should_parse_enum_as_literal(obj, property_name=name):
                     narrowed = self._const_narrowed_enum(obj)
-                    data_type = self._enum_literal(
-                        narrowed, _value_keywords.literal_written(self, narrowed, narrowed.enum, writes=writes)
+                    data_type = with_enum_literal(
+                        self._enum_literal(
+                            narrowed, _value_keywords.literal_written(self, narrowed, narrowed.enum, writes=writes)
+                        )
                     )
                 else:  # pragma: no cover
                     data_type = self.parse_enum(name, obj, path)
