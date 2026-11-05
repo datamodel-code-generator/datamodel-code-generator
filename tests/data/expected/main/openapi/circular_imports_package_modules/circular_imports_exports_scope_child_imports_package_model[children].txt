@@ -1,0 +1,10 @@
+pkg.other.Thing {}: schema accepts, model accepts
+pkg.other.Thing {"x": 1}: schema accepts, model accepts
+pkg.other.Thing {"x": "a"}: schema rejects, model rejects
+pkg.sub.Holder {}: schema accepts, model accepts
+pkg.sub.Holder {"thing": {"x": 1}}: schema accepts, model accepts
+pkg.sub.Holder {"thing": {"x": "a"}}: schema rejects, model rejects
+pkg.sub.api.Order {}: schema accepts, model accepts
+pkg.sub.api.Order {"h": {"thing": {"x": 1}}}: schema accepts, model accepts
+pkg.sub.api.Order {"h": {"thing": {"x": "a"}}}: schema rejects, model rejects
+pkg.sub.api.Order {"h": []}: schema rejects, model rejects

@@ -1,0 +1,22 @@
+openapi: 3.1.0
+info:
+  title: Package exports that run a submodule importing the package back
+  version: "1"
+paths: {}
+components:
+  schemas:
+    pkg.other.Thing:
+      type: object
+      properties:
+        x:
+          type: integer
+    pkg.sub.Holder:
+      type: object
+      properties:
+        thing:
+          $ref: "#/components/schemas/pkg.other.Thing"
+    pkg.sub.api.Order:
+      type: object
+      properties:
+        h:
+          $ref: "#/components/schemas/pkg.sub.Holder"

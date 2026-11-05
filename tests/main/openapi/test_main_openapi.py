@@ -13825,6 +13825,40 @@ def test_main_openapi_all_exports_scope_package_cycle(output_dir: Path) -> None:
 
 
 @pytest.mark.parametrize(
+    "output_model_type",
+    [
+        DataModelType.MsgspecStruct.value,
+        DataModelType.PydanticV2Dataclass.value,
+        DataModelType.DataclassesDataclass.value,
+        DataModelType.TypingTypedDict.value,
+    ],
+)
+def test_main_openapi_all_exports_scope_package_cycle_output_model_types(
+    output_model_type: str, output_dir: Path
+) -> None:
+    """Merge the root package, whose exports run ``sub``, which imports a model of the root, in every output (#6194).
+
+    ``sub`` only uses ``RootModel`` of the root package, but with ``--all-exports-scope recursive`` the root
+    ``__init__`` module imports ``sub`` before it defines ``RootModel``, so importing either failed.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "circular_imports_acyclic.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--all-exports-scope",
+            "recursive",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
     ("expected_name", "extra_args"),
     [
         pytest.param("dot_notation_collapse_reuse_models", [], id="module"),

@@ -495,6 +495,11 @@ source_mismatch	main/openapi/invalid_dotted_schema_name_legacy_stdout.py
 	main/openapi/invalid_dotted_schema_name_stdout_no_timestamp.py
 [test_main_openapi_all_exports_scope_package_cycle]
 	main/openapi/main_openapi/all_exports_scope_package_cycle/
+[test_main_openapi_all_exports_scope_package_cycle_output_model_types]
+dataclasses.dataclass	main/openapi/main_openapi/all_exports_scope_package_cycle_output_model_types[dataclasses.dataclass]/
+msgspec.Struct	main/openapi/main_openapi/all_exports_scope_package_cycle_output_model_types[msgspec.Struct]/
+pydantic_v2.dataclass	main/openapi/main_openapi/all_exports_scope_package_cycle_output_model_types[pydantic_v2.dataclass]/
+typing.TypedDict	main/openapi/main_openapi/all_exports_scope_package_cycle_output_model_types[typing.TypedDict]/
 [test_main_openapi_all_of_request_body]
 	main/openapi/main_openapi/all_of_request_body.py
 [test_main_openapi_all_of_required]
