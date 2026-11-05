@@ -9270,6 +9270,9 @@ extra-items	main/jsonschema/typed_dict_extra_items_py315.py
 [test_main_union_annotation_at_line_length]
 formatters0	main/jsonschema/union_annotation_at_line_length.py
 formatters1	main/jsonschema/union_annotation_at_line_length.py
+[test_main_unique_items_as_set_alias_items_merged]
+merged	main/jsonschema/unique_items_as_set_alias_items_merged.py
+sets	main/jsonschema/unique_items_as_set_alias_items_merged.py	= main/jsonschema/unique_items_as_set_alias_items_merged~main_unique_items_as_set_alias_items_merged[sets].py
 [test_main_unique_items_as_set_by_value]
 frozen-dataclass	main/jsonschema/unique_items_as_set_by_value.py	= main/jsonschema/unique_items_as_set_by_value~main_unique_items_as_set_by_value[frozen-dataclass].py
 frozen-pydantic	main/jsonschema/unique_items_as_set_by_value.py

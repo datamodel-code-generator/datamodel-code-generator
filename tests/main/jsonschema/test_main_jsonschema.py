@@ -8384,6 +8384,67 @@ def test_main_unique_items_as_set_nested_merged(extra_args: list[str], expected_
     )
 
 
+@pytest.mark.parametrize(
+    ("extra_args", "expected_repr"),
+    [
+        pytest.param([], "Holder(xs=frozenset({frozenset({1, 2})}), b=None)", id="sets"),
+        pytest.param(["--reuse-model"], "Holder(xs=[[1, 2]], b=None)", id="merged"),
+    ],
+)
+def test_main_unique_items_as_set_alias_items_merged(
+    extra_args: list[str], expected_repr: str, tmp_path: Path, output_file: Path
+) -> None:
+    """Keep a uniqueItems array of a type alias a list where reuse keeps the lists of the alias's value.
+
+    Both arrays of the anyOf of ``A`` declare ``uniqueItems``, so they are frozen sets under
+    --use-generic-container-types, and so is the array of ``A`` beside a string in ``Holder.xs``. With --reuse-model,
+    ``B``, which declares no ``uniqueItems``, merges into ``A``, whose arrays keep their lists, so ``xs`` keeps its list
+    too, where it read the frozen sets ``A`` would hold without the merge and rejected every non-empty array.
+    """
+    unique = {"uniqueItems": True}
+    members = [{"type": "array", "items": {"type": kind}} for kind in ("integer", "string")]
+    input_file = tmp_path / "unique_items_alias_items_merged.json"
+    input_file.write_text(
+        json.dumps({
+            "$defs": {
+                "A": {"anyOf": [{**member, **unique} for member in members]},
+                "B": {"anyOf": members},
+                "Holder": {
+                    "type": "object",
+                    "properties": {
+                        "xs": {
+                            "anyOf": [{"type": "array", "items": {"$ref": "#/$defs/A"}, **unique}, {"type": "string"}]
+                        },
+                        "b": {"$ref": "#/$defs/B"},
+                    },
+                },
+            },
+            "$ref": "#/$defs/Holder",
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *("--use-unique-items-as-set", "--use-generic-container-types", "--use-type-alias", *extra_args),
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="unique_items_alias_items_merged",
+        model_name="Holder",
+        valid_json='{"xs": [[1, 2]]}',
+        invalid_json='{"xs": [1]}',
+        expected_error_type="frozen_set_type" if not extra_args else "list_type",
+        expected_repr=expected_repr,
+    )
+
+
 @pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct"])
 def test_main_unique_items_as_set_unhashable_items(output_model: str, tmp_path: Path, output_file: Path) -> None:
     """Keep a uniqueItems array a list where no value of its items hashes, or where its list default cannot be a set.

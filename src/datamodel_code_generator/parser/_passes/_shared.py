@@ -1379,14 +1379,13 @@ def _unique_items_plan(
     if merged:
         declared = [{path for path, _ in _declared_unique_arrays(other, "all")} if other else set() for other in merged]
         arrays = [(path, group) for path, group in arrays if all(path in paths for paths in declared)]
-    items = replace(reading, sources="field" if reading.sources == "field" else "all")
     return plan_unique_sets(
         field,
         [group for _, group in arrays],
         default=default if isinstance(default := field.default, list) else None,
         keeps_tuples=reading.keeps_tuples,
         can_hold=lambda node, sets: set_items_can_hash(
-            tuple(_set_item_facts(item, sets, items) for item in node.data_types)
+            tuple(_set_item_facts(item, sets, reading) for item in node.data_types)
         ),
     )
 
@@ -1549,13 +1548,40 @@ def takes_hashable_value(
     return set_items_can_hash((_set_item_facts(data_type, (), _PlanReading(keeps_tuples, "all", generic_base_config)),))
 
 
+def aliases_first(models: Sequence[DataModel]) -> list[DataModel]:
+    """Return ``models`` with their type aliases first, each after the aliases of ``models`` that its value names.
+
+    A pass that writes the uniqueItems lists of the models as sets in this order decides an alias before the models
+    that name it, so they read the sets of its value as written (``_set_item_facts``); an alias that its own value
+    names, through other aliases or not, is read as any other model.
+    """
+    aliases = {id(model): model for model in models if isinstance(model, TypeAliasBase)}
+    ordered: dict[int, DataModel] = {}
+    visiting: set[int] = set()
+
+    def visit(alias: DataModel) -> None:
+        if id(alias) in ordered or id(alias) in visiting:
+            return
+        visiting.add(id(alias))
+        for field in alias.fields:
+            for nested in field.data_type.all_data_types:
+                if (reference := nested.reference) is not None and id(reference.source) in aliases:
+                    visit(aliases[id(reference.source)])
+        ordered[id(alias)] = alias
+
+    for alias in aliases.values():
+        visit(alias)
+    return [*ordered.values(), *(model for model in models if id(model) not in aliases)]
+
+
 def _set_item_facts(data_type: DataType, sets: Collection[int], reading: _PlanReading) -> SetItemFacts:
     """Return the facts of an item type of an array that ``set_items_can_hash`` reads.
 
     ``sets`` holds the lists of the type that become sets, by id. A container is read as it is written: a set under
     --use-generic-container-types is a frozen set, whose values hash. The positions of a tuple of one repeated type are
-    that type. A type alias is read as its value, whose lists become sets as its own plan says; one that holds itself is
-    read as any other model the type names. A model takes no hashable value where its class never hashes its instances
+    that type. A type alias is read as its value as it is written now, whose lists the passes write as sets before the
+    models that name the alias read it (``aliases_first``); one that holds itself is read as any other model the type
+    names. A model takes no hashable value where its class never hashes its instances
     (``DataModel._instances_never_hash``).
     """
     if data_type.is_optional:
@@ -1566,9 +1592,7 @@ def _set_item_facts(data_type: DataType, sets: Collection[int], reading: _PlanRe
         and id(alias) not in reading.aliases
         and alias.fields
     ):
-        value = alias.fields[0]
-        inside = replace(reading, aliases=reading.aliases | {id(alias)})
-        return _set_item_facts(value.data_type, {*map(id, _unique_items_plan(value, inside, ()).sets)}, inside)
+        return _set_item_facts(alias.fields[0].data_type, (), replace(reading, aliases=reading.aliases | {id(alias)}))
     if (
         reference is not None
         and isinstance(model := reference.source, DataModel)

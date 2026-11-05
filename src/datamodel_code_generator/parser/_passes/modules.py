@@ -120,6 +120,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _restore_inherited_field_names_for_unique_aliases,
     _rule_data_types,
     _runtime_validation_reference_keys,
+    aliases_first,
     compared_models,
     definition_reads,
     enum_site_override_import,
@@ -1006,13 +1007,14 @@ def replace_unique_list_to_set(parser: ModulesHost, models: list[DataModel]) -> 
     """Write the uniqueItems arrays of each field's own schema that ``unique_items_plan`` decides as sets.
 
     A field typed as another container, such as a ``Sequence``, keeps its type and its default. The array of a type
-    list and the arrays a nested schema declares unique wait for reuse (``replace_merged_unique_list_to_set``). This is
-    row ``legacy-unique-items-decided-before-collapse``: under --use-unique-items-as-set-by-value every array stays a
+    list and the arrays a nested schema declares unique wait for reuse (``replace_merged_unique_list_to_set``). The type
+    aliases are decided first, so the arrays of their holders read the sets their values hold (``aliases_first``). This
+    is row ``legacy-unique-items-decided-before-collapse``: under --use-unique-items-as-set-by-value every array stays a
     list for the decision on the final types (``parser/_unique_sets.py``).
     """
     if not parser.use_unique_items_as_set or parser.use_unique_items_as_set_by_value:
         return
-    for model in models:
+    for model in aliases_first(models):
         for model_field in model.fields:
             if (
                 plan := unique_items_plan(
@@ -1033,12 +1035,13 @@ def replace_merged_unique_list_to_set(parser: ModulesHost, models: list[DataMode
     compared them as lists, so a model merged into the field's model may declare no ``uniqueItems`` at the same place,
     or declare it through a base: the array then keeps the list, which takes the values of both. An array in a union
     beside another member of its kind, an array or a map, that keeps its lists keeps the list too, as a msgspec union
-    holds one of each. Under --use-unique-items-as-set-by-value the decision on the final types writes them
-    (``parser/_unique_sets.py``).
+    holds one of each. The type aliases are decided first, as in ``replace_unique_list_to_set``, so a holder never reads
+    a set its alias's value keeps a list. Under --use-unique-items-as-set-by-value the decision on the final types
+    writes them (``parser/_unique_sets.py``).
     """
     if not parser.use_unique_items_as_set or parser.use_unique_items_as_set_by_value:
         return
-    for model in models:
+    for model in aliases_first(models):
         merged = merged_models(parser, model)
         for model_field in model.fields:
             if (
