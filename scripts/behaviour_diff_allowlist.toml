@@ -245,3 +245,27 @@ match = "^\\[type\\] Root:pets: Union\\[msgspec\\.UnsetType, set\\[Pet\\]\\] -> 
 reason = "with --use-unique-items-as-set (the practical presets), a uniqueItems array of msgspec Structs that compare by value without being frozen was set[Pet], which msgspec cannot decode (TypeError: cannot use 'Pet' as a set element); such items, and those of a TypedDict, a non-frozen dataclass and a RootModel alias, keep a list (crash-class fix)"
 decision = "#6266"
 release_note = "with --use-unique-items-as-set, a uniqueItems array of models whose class can never hash its instances (TypedDict, non-frozen dataclasses and msgspec Structs, RootModel aliases) stays a list instead of a set that rejects every non-empty array, and the models of a type alias that a set names take the set item hash"
+
+[[accepted]]
+input = "*unique_items_collapsed_root_items*"
+aspects = [ "type" ]
+match = "^\\[type\\] Root:(?:tags|objects): Union\\[None, set\\[(?:list\\[str\\]|dict\\[str, int\\])\\]\\] -> Union\\[None, set\\[(?:Tags|Object)\\]\\]$"
+reason = "with --collapse-root-models --use-unique-items-as-set (the practical presets), a root model of a list or a dict inlined into the items of a set gave set[list[str]] or set[dict[str, int]], which rejects every non-empty array; the root model stays named there, as without collapse, and hashes by identity (crash-class fix)"
+decision = "#6192"
+release_note = "with --collapse-root-models and --use-unique-items-as-set, a root model whose root type has no hashable value stays named as the item of a set instead of being inlined into a set that rejects every non-empty array"
+
+[[accepted]]
+input = "*unique_items_frozen_set*"
+aspects = [ "type" ]
+match = "^\\[type\\] Holder:groups: Union\\[None, frozenset\\[(?:list|set)\\[int\\]\\]\\] -> Union\\[None, frozenset\\[Group\\]\\]$"
+reason = "with --collapse-root-models (the presets), a root model of an array inlined into the items of a frozen set gave frozenset[list[int]] or frozenset[set[int]], which rejects every non-empty array; the root model stays named there and hashes by identity (crash-class fix)"
+decision = "#6192"
+release_note = "with --collapse-root-models and --use-unique-items-as-set, a root model whose root type has no hashable value stays named as the item of a set instead of being inlined into a set that rejects every non-empty array"
+
+[[accepted]]
+input = "*prefix_items_unique_items_sequence*"
+aspects = [ "type" ]
+match = "^\\[type\\] PrefixItemsUniqueItemsSequence:pairs: Union\\[None, set\\[list\\[Union\\[int, str\\]\\]\\]\\] -> Union\\[None, set\\[Pair\\]\\]$"
+reason = "with --collapse-root-models --use-unique-items-as-set (the practical presets), the root model of a closed prefixItems pair inlined into the items of a set gave set[list[int | str]], which rejects every non-empty array; the root model stays named there and hashes by identity (crash-class fix)"
+decision = "#6192"
+release_note = "with --collapse-root-models and --use-unique-items-as-set, a root model whose root type has no hashable value stays named as the item of a set instead of being inlined into a set that rejects every non-empty array"

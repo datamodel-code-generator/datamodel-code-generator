@@ -26,6 +26,7 @@ from datamodel_code_generator._container_kinds import (
     CONTAINER_FLAGS,
     CONTAINERS,
     MAPPINGS,
+    SETS,
     UNHASHABLE_CONTAINERS,
 )
 from datamodel_code_generator._graph import reach
@@ -133,6 +134,7 @@ from datamodel_code_generator.parser._passes._shared import (
     run_unused_models,
     site_display_name,
     subclass_duplicate,
+    takes_hashable_value,
     unique_items_plan,
     without_stand_ins,
 )
@@ -419,6 +421,7 @@ class InlineVariantHost(Protocol):
 
 class CollapseHost(
     CollisionRenameHost,
+    GenericBaseHost,
     InlineVariantHost,
     RecursionFactsHost,
     ReimportHost,
@@ -436,6 +439,10 @@ class CollapseHost(
     @property
     def _collapses_list_item_root_models(self) -> bool:
         """Whether collapse inlines the root models that list items name."""
+
+    @property
+    def use_tuple_for_closed_arrays(self) -> bool:
+        """Whether a closed array is written as a tuple."""
 
     @property
     def _const_narrowed_values(self) -> dict[int, tuple[DataType, _ConstNarrowing]]:
@@ -1273,6 +1280,15 @@ def collapse_site_facts(
         is not None,
         circular=model_key_of(root_model.reference) in circular_root_models,
         runtime_object_validation=root_model.has_runtime_object_validation,
+        unhashable_set_item=isinstance(holder := data_type.parent, DataType)
+        and holder in SETS
+        and not root_model.IS_ALIAS
+        and not root_model._instances_never_hash(generic_base_config(parser))  # noqa: SLF001
+        and not takes_hashable_value(
+            root_data_type,
+            keeps_tuples=parser.use_tuple_for_closed_arrays,
+            generic_base_config=generic_base_config(parser),
+        ),
         needs_model_regex_engine=_site_needs_model_regex_engine(root_model),
         field_constraints=field_constraints,
         constrains_through_root_types=not field_constraints and _has_preservable_root_constraints(root_model),

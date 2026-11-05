@@ -8548,6 +8548,65 @@ def test_main_unique_items_as_set_model_items(
     )
 
 
+@pytest.mark.parametrize(
+    ("extra_args", "expected_repr"),
+    [
+        pytest.param(
+            [],
+            "Root(tags={Tags(root=['a'])}, objects={Object(root={'a': 1})}, names={'x'})",
+            id="set",
+        ),
+        pytest.param(
+            ["--use-generic-container-types"],
+            "Root(tags=frozenset({Tags(root=['a'])}), objects=frozenset({Object(root={'a': 1})}), "
+            "names=frozenset({'x'}))",
+            id="frozenset",
+        ),
+        pytest.param(["--output-model-type", "msgspec.Struct"], None, id="msgspec"),
+    ],
+)
+def test_main_unique_items_as_set_collapsed_root_items(
+    extra_args: list[str], expected_repr: str | None, output_file: Path
+) -> None:
+    """Keep a root model named where it is the item of a set and no value of its root type hashes.
+
+    ``Tags`` (a list) and ``Object`` (a dict) stay named as without --collapse-root-models, so the set holds their
+    instances, which hash by identity; ``Name`` (a string) is inlined. Up to 0.89.0 collapse inlined them all, and
+    ``set[list[str]]`` and ``set[dict[str, int]]`` rejected every non-empty array. msgspec writes the root models as
+    aliases, whose arrays the set rule reads as their values, so they stay lists.
+    """
+    name = "unique_items_collapsed_root_items"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *extra_args,
+            "--use-unique-items-as-set",
+            "--collapse-root-models",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    payload = '{"tags": [["a"]], "objects": [{"a": 1}], "names": ["x", "x"]}'
+    if expected_repr is None:
+        with _generated_model(output_file, name, "Root") as model:
+            msgspec.json.decode(payload, type=model)
+        return
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=name,
+        model_name="Root",
+        valid_json=payload,
+        invalid_json='{"names": [1]}',
+        expected_error_type="string_type",
+        expected_repr=expected_repr,
+    )
+
+
 @pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct", "typing.TypedDict"])
 def test_main_unique_items_as_set_nested_arrays(output_model: str, tmp_path: Path, output_file: Path) -> None:
     """Write as a set every array whose own schema declares ``uniqueItems``, wherever the array is.
