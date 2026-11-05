@@ -338,6 +338,16 @@ class _UnionLeaf(NamedTuple):
         return frozenset(name for name, _ in self.constraints)
 
 
+class _LeafRead(NamedTuple):
+    """A union member ``_union_leaves`` reads, with the alias members spread to reach it, constraints and aliases."""
+
+    member: DataType
+    spread: tuple[tuple[DataType, DataModelField], ...]
+    constraints: tuple[tuple[str, Any], ...]
+    seen: frozenset[int]
+    schema_constraints: tuple[tuple[str, Any], ...]
+
+
 if TYPE_CHECKING:
     from collections import defaultdict
     from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
@@ -1668,7 +1678,27 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
 
         A member is an alias chain ending in a scalar or a Literal of one type; msgspec spreads an alias of a union,
         or of a type and None, into the union that names it, so the members of such an alias count as its own.
-        Other members yield nothing.
+        Other members yield nothing. The members of the aliases are walked with a stack of their own, in order, so
+        a chain of aliases of any length is read.
+        """
+        pending = [_LeafRead(member, spread, constraints, seen, schema_constraints)]
+        while pending:
+            inner_reads, leaves = self._union_leaf_step(*pending.pop())
+            yield from leaves
+            pending.extend(reversed(inner_reads))
+
+    def _union_leaf_step(
+        self,
+        member: DataType,
+        spread: tuple[tuple[DataType, DataModelField], ...],
+        constraints: tuple[tuple[str, Any], ...],
+        seen: frozenset[int],
+        schema_constraints: tuple[tuple[str, Any], ...],
+    ) -> tuple[list[_LeafRead], tuple[_UnionLeaf, ...]]:
+        """Return the members of the alias of a union that ``member`` names, to read in its place, or its leaves.
+
+        The alias chain of ``member`` ends in the alias that msgspec spreads, whose members are read with the
+        constraints of the chain where it has one member, or in the type the member decodes as (``_union_leaves``).
         """
         data_type = member
         while (reference := data_type.reference) is not None:
@@ -1680,7 +1710,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
                 or id(source) in seen
                 or not isinstance(alias_field := source.fields[0], DataModelField)
             ):
-                return
+                return [], ()
             seen |= {id(source)}
             if alias_field.use_annotated:
                 written, exact = alias_field._union_meta_constraints()  # noqa: SLF001
@@ -1688,22 +1718,24 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
                 schema_constraints += exact
             if alias_field._field_has_top_level_none() or self._data_type_is_plain_union(alias_field.data_type):  # noqa: SLF001
                 members = self._non_none_members(alias_field.data_type)
-                for inner in members:
-                    yield from self._union_leaves(
+                single = len(members) == 1
+                return [
+                    _LeafRead(
                         inner,
                         (*spread, (member, alias_field)),
-                        constraints if len(members) == 1 else (),
+                        constraints if single else (),
                         seen,
-                        schema_constraints if len(members) == 1 else (),
+                        schema_constraints if single else (),
                     )
-                return
+                    for inner in members
+                ], ()
             data_type = alias_field.data_type
         if (
             data_type.data_types or data_type.is_optional or data_type.enum_member_literals or data_type._is_container  # noqa: SLF001
         ):
-            return
+            return [], ()
         kinds = {type(literal).__name__ for literal in data_type.literals} or {data_type.type}
-        yield from (
+        return [], tuple(
             _UnionLeaf(spread, member, kind, data_type, constraints, schema_constraints)
             for kind in kinds
             if kind and len(kinds) == 1

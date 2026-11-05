@@ -8538,6 +8538,46 @@ def test_main_unique_items_as_set_long_alias_chain(tmp_path: Path, output_file: 
     )
 
 
+@pytest.mark.parametrize("output_model", ["msgspec.Struct", "dataclasses.dataclass"])
+def test_main_type_alias_long_chain(output_model: str, tmp_path: Path, output_file: Path) -> None:
+    """Generate a chain of 400 type aliases, each a union of the next one and an integer, as Pydantic output does.
+
+    msgspec reads the members its unions spread and both outputs read whether an alias names None with stacks of their
+    own, so the chain generates at the default recursion limit. Up to 0.89.0 they raised RecursionError (#6373).
+    """
+    length = 400
+    definitions: dict[str, Any] = {
+        f"X{index}": {"anyOf": [{"$ref": f"#/$defs/X{index + 1}"}, {"type": "integer"}]} for index in range(length)
+    }
+    definitions[f"X{length}"] = {"type": "string"}
+    (input_file := tmp_path / "type_alias_chain.json").write_text(
+        json.dumps({
+            "title": "Root",
+            "type": "object",
+            "properties": {"x": {"$ref": "#/$defs/X0"}},
+            "$defs": definitions,
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model,
+            "--use-type-alias",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+        transform=lambda output: "".join(
+            line + "\n" for line in output.splitlines() if line.startswith(("X0:", f"X{length}:", "    x:"))
+        ),
+    )
+
+
 @pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct"])
 def test_main_unique_items_as_set_unhashable_items(output_model: str, tmp_path: Path, output_file: Path) -> None:
     """Keep a uniqueItems array a list where no value of its items hashes, or where its list default cannot be a set.
