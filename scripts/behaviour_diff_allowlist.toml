@@ -375,3 +375,12 @@ match = "^\\[constraints\\] (?:union_root_kept_keywords:)?Model:loop: Annotated\
 reason = "the maxLength beside the anyOf of a string and the root model Loop was written beside the union of the root models TextOrLoop1 and Loop, which Pydantic cannot apply to a root model instance, so the model raised TypeError for every value that is not null; TextOrLoop1 keeps the maxLength on its string, so the field is written without it and warns, as msgspec does (crash fix)"
 decision = "#6035"
 release_note = "a keyword beside a union whose members are all model or root model instances is no longer written on the field, which made every value raise TypeError; the members keep the check where they can, and the field warns"
+
+[[accepted]]
+input = "tests/data/jsonschema/ref_alias_chain*"
+backends = [ "pydantic_v2.BaseModel" ]
+aspects = [ "constraints" ]
+match = "^\\[constraints\\] (?:ref_alias_chain:)?(?:Entry: Annotated\\[Loop1, MaxLen\\(max_length=5\\)\\] -> Loop1|Loop1: Annotated\\[Loop2, MinLen\\(min_length=1\\)\\] -> Loop2|Loop2: Annotated\\[Loop1, MinLen\\(min_length=2\\)\\] -> Loop1)$"
+reason = "the maxLength and minLength beside the $ref cycle Entry -> Loop1 -> Loop2 -> Loop1 were written on root models whose root is another root model, which Pydantic cannot apply to a root model instance; validating any value that is not null recursed through the cycle until the process crashed in 0.89.0 and still does, so the bounds were never enforced; the root models are written without them and warn, as msgspec does (crash fix)"
+decision = "#6035"
+release_note = "a keyword beside a reference to a root model, such as minLength beside a $ref whose target is another reference, is no longer written on the root model class, which made every value raise TypeError; it is left out with a warning"
