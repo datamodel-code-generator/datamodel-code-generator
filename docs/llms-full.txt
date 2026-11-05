@@ -73499,7 +73499,8 @@ than `x-propertyNames` through `_document_child_entries`). `_parse_file` then ca
 adds the document to the schema graph (`parser/_schema_graph.py`): `walk_schema_resources` finds which absolute URI
 names which schema of it (the root, `$id` or draft-04 `id` resources, the implicit component resources of OpenAPI,
 the schemas of the object a reference names the document's root as, `$anchor` and `$dynamicAnchor`) and returns one
-frozen `DocumentResources` record, from which
+frozen `DocumentResources` record (with the base URI of each resource and the plain names more than one schema
+declares), from which
 `ResourceRegistry.register` fills the registry dicts L1 resolves references through; then `$ref`s that resolve through
 an embedded `$id` are rewritten copy-on-write (`parser/_schema_documents.py:rewrite_schema_resource_refs`), and one walk of the prepared document
 (`SchemaGraphBuilder.index_document`, see [Metadata Output](#metadata-output)) indexes the location of every object and
@@ -73556,6 +73557,14 @@ and `_parse_file`: the root, the definitions and each schema parsed through `_pa
 `parser/_schema_refs.py:resolve_dynamic_ref`, `_resolve_recursive_ref` and `recursive_ref_target`: a `$recursiveAnchor` below `properties`
 is never registered, and an OpenAPI component's `$dynamicRef` parsed before the component that declares its anchor
 resolves through its edge instead.
+A plain-name fragment (`#name`) left after the embedded-resource and lenient resolutions names the schema the registry
+records for it against the base URI of the schema resource enclosing the reference (`parser/_schema_documents.py:plain_name_ref`,
+`ResourceRegistry.plain_name_uri`): an `$anchor` or a `$dynamicAnchor` at any position of the resource; a name the
+model resolver registered in the walk of the definitions (`parse_id`) keeps that answer (row `legacy-anchor-parse-index`).
+A plain-name `$dynamicRef` that the dynamic-scope rule leaves to its edge reserves its target as a `$ref` does
+(`resolve_ref_callback`). A plain name that more than one schema of a document declares
+(`DocumentResources.duplicate_names`), which JSON Schema leaves undefined, warns where a reference uses it
+(`note_duplicate_name`, a `SchemaResourceRefWarning` per name).
 OpenAPI parses its main document in `_parse_specification` (merging path-level parameters into shallow copies of
 operations in `_process_path_items`) instead of `_parse_file`. Converted inputs (Avro, XML Schema, Protocol Buffers)
 build a JSON Schema dict and call `_parse_file` without `parser/_schema_documents.py:read_document`, so document rewrites do not apply to them.
@@ -74832,6 +74841,7 @@ is a new named row, never an anonymous `if`.
 | `legacy-class-body-without-alias-values` | the order of the models whose class body evaluates others (`_sort_models_by_class_body_references`, the unresolved models of `sort_data_models`) reads the fields of a root model only, not the value of a type alias, the fields of the functional TypedDict or annotations the module evaluates | G-08 |
 | `legacy-keep-order-type-statement` | `--keep-model-order` reads the value of a `type` statement, which Python defers, and the fields of the functional TypedDict only where it reads the annotations of a class, which are deferred only by `from __future__ import annotations`, not by the target | G-08 |
 | `legacy-evaluated-without-root-model` | the check of the root models that name themselves reads a Pydantic root model as a class, the own fields of the functional TypedDict where it reads the annotations of a class, and the bases of a class only then; like `--keep-model-order`, it reads them unless `from __future__ import annotations` defers them, whatever the target defers | G-08 |
+| `legacy-anchor-parse-index` | a plain name the walk of the definitions registered with the model resolver (`parse_id`: an `$id` or `$anchor` at the positions of the reference pre-pass) names the schema registered last there, also where the registry names another one, such as the last declaration in document order of a name several schemas of a document declare | #5131 |
 | `legacy-first-read-dialect` | without `--read-schema-version-per-document`, the readings of a schema version are the run's: the `$ref`-sibling gate of the allOf, literal-narrowing and validator readers and the schema features (`schema_features`) are those of the document parsed at each one's first read, the gate detected as JSON Schema for every parser class (an OpenAPI or AsyncAPI document reads as draft 7 unless it holds `$defs`); whether siblings merge as parts is that of the input document being parsed, also for the schemas of a document a reference loads | keep |
 | `legacy-count-ref-member-as-written` | without `--read-schema-version-per-document`, the property-count validator reads `minProperties`/`maxProperties` beside an allOf `$ref` member in every schema version, where the other validator walkers read them only in a version that applies the keywords beside a `$ref` | keep |
 

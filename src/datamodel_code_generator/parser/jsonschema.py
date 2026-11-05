@@ -2652,7 +2652,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 return self._get_x_python_import_expression(
                     x_python_import, self._ref_path(ref)
                 ) or self._get_x_python_import(full_path)
-        except Error:
+        except (Error, RecursionError):
             raise
         except Exception:  # noqa: BLE001, S110
             pass
@@ -7507,6 +7507,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Resolve an external anchor before falling back to legacy shorthand pointers."""
         return _schema_documents.normalize_external_ref(self, ref)
 
+    def _plain_name_ref(self, ref: str, pointer: str) -> str:
+        """Return the reference a plain-name fragment of the document parsed now names, written at ``pointer``."""
+        return _schema_documents.plain_name_ref(self, ref, pointer)
+
+    def _note_plain_name(self, document: str, pointer: str, ref: str) -> None:
+        """Note a plain-name fragment written at ``pointer`` of a registered document, warning on a duplicate."""
+        return _schema_documents.note_plain_name(self, document, pointer, ref)
+
     def _resolve_local_ref_path(self, path: Path, ref: str) -> Path:
         if cached_path := self._local_ref_path_cache.get(path):
             return cached_path
@@ -7714,9 +7722,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._implicit_documents: set[str] = set()
         self._document_roles: dict[str, dict[str, None]] = {}
         self._roles_recorded_after_preparation = False
-        self._rewritten_documents: set[str] = set()
         self._resource_ref_warnings: set[str] = set()
-        self._schema_resources: dict[str, set[str]] = registry.resources
         self._dynamic_anchors: dict[tuple[str, str], dict[str, str]] = registry.dynamic_anchors
         self._embedded_resources: dict[tuple[str, str], dict[str, str]] = registry.embedded
         self._dynamic_scope_pointer = ""
@@ -8479,10 +8485,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _resolve_unparsed_json_pointer(self) -> None:
         """Parse the targets each source reserves, in key order, until a round over the sources adds no model.
 
-        A target is read from the prepared tree of its source document, the tree the document's models came from. A
-        document whose references the embedded-resource rewrite changed, and that does not resolve references against
-        itself, is the named legacy row ``rewritten-document``: its targets are read from a fresh load of the source,
-        which holds the references as written.
+        A target is read from the prepared tree of its source document, the tree the document's models came from, where
+        the references an embedded `$id` resolves name their targets in the document.
         """
         while True:
             model_count = len(self.results)
@@ -8492,17 +8496,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     continue
                 if self.current_source_path is not None:
                     self.current_source_path = source.path
-                prepared = self._schema_resource_cache[document := self._schema_resource_document(path_parts)][1]
-                rewritten = document in self._rewritten_documents and document not in self._lenient_documents
-                loads: list[dict[str, YamlValue]] = []
+                prepared = self._schema_resource_cache[self._schema_resource_document(path_parts)][1]
                 with (
                     self.model_resolver.current_base_path_context(source.path.parent),
                     self.model_resolver.current_root_context(path_parts),
                 ):
                     for target in self._reserved_targets(path_parts, prepared, self._reserved_ref_loaded):
-                        tree = self._load_source_once(source, loads) if rewritten else prepared
-                        self.raw_obj = tree
-                        self.parse_json_pointer(tree, target["key"], path_parts)
+                        self.raw_obj = prepared
+                        self.parse_json_pointer(prepared, target["key"], path_parts)
             if model_count == len(self.results):
                 return
 
@@ -8524,12 +8525,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _reserved_ref_settled(self, key: str) -> bool:
         """Return whether a reserved key has no reference, or names a loaded model."""
         return (reference := self.model_resolver.references.get(key)) is None or reference.loaded
-
-    def _load_source_once(self, source: Source, loads: list[dict[str, YamlValue]]) -> dict[str, YamlValue]:
-        """Return a fresh load of a source as a located tree; ``loads`` keeps the one load a round makes."""
-        if not loads:
-            loads.append(self._index_document(self._load_source_dict(source), list(source.path.parts)))
-        return loads[0]
 
     def parse_json_pointer(self, raw: dict[str, YamlValue], ref: str, path_parts: list[str]) -> None:
         """Parse a JSON pointer reference into a model."""

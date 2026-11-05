@@ -114,10 +114,13 @@ __all__ = [
     "loads_document",
     "mount_converted_schema",
     "normalize_external_ref",
+    "note_duplicate_name",
+    "note_plain_name",
     "parse_converted_sources",
     "parse_id",
     "parse_ref",
     "parse_source",
+    "plain_name_ref",
     "prepare_schema_resources",
     "read_document",
     "referenced_document_context",
@@ -231,7 +234,6 @@ class SchemaDocumentsHost(Protocol):
     _local_source_cache: tuple[Source, ...] | None
     _remote_response_observer: ResponseObserver | None
     _resource_ref_warnings: set[str]
-    _rewritten_documents: set[str]
     _schema_resource_cache: dict[str, tuple[dict[str, Any], dict[str, Any]]]
     _schema_resource_document_aliases: dict[str, str]
     _schema_resource_locations: dict[str, str]
@@ -583,6 +585,46 @@ def document_id_field(parser: SchemaDocumentsHost, document: str) -> str:
     return parser.schema_features.id_field
 
 
+def plain_name_ref(parser: SchemaDocumentsHost, ref: str, pointer: str) -> str:
+    """Return the reference a plain-name fragment of the document parsed now names, written at ``pointer`` of it.
+
+    The name names the schema the registry records for it against the base URI of the schema resource that encloses
+    ``pointer``: an `$anchor` or a `$dynamicAnchor` at any position of the resource. A name the model resolver has an
+    `$id` or `$anchor` for in the document keeps that answer, row ``legacy-anchor-parse-index``: the walk of the
+    definitions registers the ones at the positions it visits, the last one where several schemas declare the name
+    (``note_duplicate_name``). A name nothing declares stays as written.
+    """
+    document = parser._schema_resource_document(list(parser.model_resolver.current_root))  # noqa: SLF001
+    registry = parser._schema_resource_registry  # noqa: SLF001
+    note_duplicate_name(parser, document, uri := registry.plain_name_uri(document, pointer, ref))
+    if parser.model_resolver.registered_id(ref) is not None or (location := registry.locations.get(uri)) is None:
+        return ref
+    return keep_resolved_ref(ref, _document_location(location, document))
+
+
+def note_plain_name(parser: SchemaDocumentsHost, document: str, pointer: str, ref: str) -> None:
+    """Note a plain-name fragment written at ``pointer`` of a registered document (``note_duplicate_name``)."""
+    if _is_plain_name_fragment(ref):
+        note_duplicate_name(parser, document, parser._schema_resource_registry.plain_name_uri(document, pointer, ref))  # noqa: SLF001
+
+
+def note_duplicate_name(parser: SchemaDocumentsHost, document: str, uri: str) -> None:
+    """Warn once the schemas are parsed when a reference names a plain name several schemas of a document declare.
+
+    JSON Schema leaves such a reference undefined (2020-12 Core 8.2.2 and 9.1.2): it names one of them.
+    """
+    if (locations := parser._schema_resource_registry.duplicate_names.get(document, {}).get(uri)) is None:  # noqa: SLF001
+        return
+    name = uri.partition("#")[2]
+    source = redact_url("/".join(parser._schema_resource_path_parts[document]))  # noqa: SLF001
+    declarations = ", ".join(stable_repr(redact_url(_document_location(location, document))) for location in locations)
+    parser._resource_ref_warnings.add(  # noqa: SLF001
+        f"The anchor {stable_repr(name)} is declared by more than one schema in {source} ({declarations}), so a "
+        f"reference to {stable_repr(f'#{name}')} names one of them, which JSON Schema leaves undefined. Give each "
+        "schema an anchor of its own."
+    )
+
+
 def resolve_schema_resource_ref(
     parser: SchemaDocumentsHost, reference: str, base: str, document: str, *, nested_scope: bool
 ) -> str:
@@ -590,6 +632,7 @@ def resolve_schema_resource_ref(
     if document in parser._lenient_documents:  # noqa: SLF001
         return resolve_lenient_resource_ref(parser, reference, base, document)
     absolute = urljoin(base, reference)
+    note_duplicate_name(parser, document, absolute)
     resource, _, fragment = absolute.partition("#")
     if (location := parser._schema_resource_registry.location(absolute)) is not None:  # noqa: SLF001
         return _document_location(location, document)
@@ -613,7 +656,8 @@ def resolve_lenient_resource_ref(parser: SchemaDocumentsHost, reference: str, ba
     resolves elsewhere warns, so the schema can be fixed to mean the same under both.
     """
     if _is_plain_name_fragment(reference):
-        location = parser._schema_resource_locations.get(urljoin(base, reference))  # noqa: SLF001
+        note_duplicate_name(parser, document, absolute := urljoin(base, reference))
+        location = parser._schema_resource_locations.get(absolute)  # noqa: SLF001
         return reference if location is None else _document_location(location, document)
     if (location := parser._schema_resource_registry.location(urljoin(base, reference))) is None:  # noqa: SLF001
         return reference
@@ -773,7 +817,6 @@ def prepare_schema_resources(parser: SchemaDocumentsHost, raw: dict[str, Any], p
     registry.forget(document)
     parser._lenient_documents.pop(document, None)  # noqa: SLF001
     parser._implicit_documents.discard(document)  # noqa: SLF001
-    parser._rewritten_documents.discard(document)  # noqa: SLF001
     base = document if is_url(document) else Path(document).as_uri() if document else f"{parser.base_path.as_uri()}/"
     id_field = (
         parser.schema_features.id_field
@@ -800,8 +843,6 @@ def prepare_schema_resources(parser: SchemaDocumentsHost, raw: dict[str, Any], p
         prepared = rewrite_schema_resource_refs(
             parser, raw, document, base, resources.root_base, id_field, is_root=True
         )
-        if prepared is not raw:
-            parser._rewritten_documents.add(document)  # noqa: SLF001
     prepared = parser._index_document(prepared, path_parts)  # noqa: SLF001
     parser._schema_resource_cache[document] = raw, prepared  # noqa: SLF001
     return prepared

@@ -28,3 +28,11 @@ aspects = [ "numbered-name-removed", "name-removed", "type", "kind", "constraint
 reason = "an allOf whose anyOf or oneOf members admit only values was written as a model without fields, which rejects every value the schema accepts in every output form; it is the union of the intersections of one branch of each with the other parts now (rejects-all fix, as #5406 did for an allOf of values), and the numbered classes such a site left, the default factory of its fields, the empty class --reuse-model merged others into and the names --collapse-root-models now inlines go with that model"
 decision = "#4495"
 release_note = "an allOf whose anyOf or oneOf members hold only values, such as allOf: [{anyOf: [{type: string}, {type: integer}]}, {minLength: 2}], is written as the union of the intersections, RootModel[constr(min_length=2) | int], instead of a model without fields that rejected every value; the numbered classes such a site left are no longer written"
+
+[[accepted]]
+input = "tests/data/jsonschema/reserved_target_rewritten_document"
+aspects = [ "name-removed", "type" ]
+match = "^\\[name-removed\\] box:ItemModel: removed$|^\\[type\\] (?:box:Other|holder:Model:(?:item|other)): .*\\b(?:Any|ItemModel)\\b.* -> .*$"
+reason = "a $ref of another file into a property of a definition with an embedded $id read its target from a fresh load of the file, where the property's $ref '#/definitions/Item' (written against the embedded resource) names nothing, so the reference became an Any model with a dangling-reference warning and the model accepted every value where the schema requires a string; the target is read from the prepared document, where the embedded resource resolved the $ref (schema-mismatch fix)"
+decision = "#5126"
+release_note = "a $ref of another file into a property of a schema that declares an embedded $id resolves the property's own $ref against that $id, so the field takes the type the schema gives (str) instead of an Any model with a dangling-reference warning"

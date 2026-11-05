@@ -12200,14 +12200,16 @@ def test_main_openapi_dynamic_anchor_registered_after_its_reference() -> None:
     """A `$dynamicRef` parsed before the components that declare its anchor resolves through its edge.
 
     `Holder` is parsed before `First` and `Second` register `$dynamicAnchor: T`, so `#T` resolves as a reference,
-    to the last component that declares the anchor; parsed after them it resolves to the first.
+    to the last component that declares the anchor; parsed after them it resolves to the first. Two components declare
+    the name, which JSON Schema leaves undefined, so the reference warns (#5131).
     """
-    output = generate(
-        OPEN_API_DATA_PATH / "dynamic_ref_anchor_parse_order.yaml",
-        input_file_type=InputFileType.OpenAPI,
-        disable_timestamp=True,
-        formatters=[Formatter.BUILTIN],
-    )
+    with pytest.warns(SchemaResourceRefWarning, match=r"^The anchor 'T' is declared by more than one schema in "):
+        output = generate(
+            OPEN_API_DATA_PATH / "dynamic_ref_anchor_parse_order.yaml",
+            input_file_type=InputFileType.OpenAPI,
+            disable_timestamp=True,
+            formatters=[Formatter.BUILTIN],
+        )
     assert_output(str(output))
 
 
