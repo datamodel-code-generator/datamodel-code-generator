@@ -206,6 +206,7 @@ openapi/datetime_local.yaml	yaml_fast_constructor/parity.txt
 openapi/default_object.yaml	yaml_fast_constructor/parity.txt
 openapi/default_values_parameters.yaml	yaml_fast_constructor/parity.txt
 openapi/definitions.yaml	yaml_fast_constructor/parity.txt
+openapi/definitions_first.yaml	yaml_fast_constructor/parity.txt
 openapi/deprecated_field.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator.yaml	yaml_fast_constructor/parity.txt
 openapi/discriminator_alias_generator.yaml	yaml_fast_constructor/parity.txt

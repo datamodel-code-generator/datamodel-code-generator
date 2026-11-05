@@ -1330,3 +1330,24 @@ def test_main_graphql_without_graphql_core_names_a_complete_install_command(
             "Please run `pip install 'datamodel-code-generator[graphql]'` to generate data-model from a GraphQL schema."
         ),
     )
+
+
+def test_main_graphql_naming_strategy_definitions_first(output_file: Path) -> None:
+    """Keep the names of the GraphQL types under ``--naming-strategy definitions-first``, which names no type again.
+
+    GraphQL names its types by their affixed names alone (row ``legacy-graphql-affix-only``), so no plan renames one.
+    """
+    run_main_and_assert(
+        input_path=GRAPHQL_DATA_PATH / "simple-star-wars.graphql",
+        output_path=output_file,
+        input_file_type="graphql",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--naming-strategy",
+            "definitions-first",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )

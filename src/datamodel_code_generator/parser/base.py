@@ -116,6 +116,7 @@ from datamodel_code_generator._warning_control import quiet
 from datamodel_code_generator.enums import (
     ConstructorFieldOrder,
     DefaultValueType,
+    NamingStrategy,
     StrictTypes,
 )
 from datamodel_code_generator.imports import (
@@ -174,7 +175,7 @@ from datamodel_code_generator.parser._model_shapes import (
     ShapeRow,
     stdout_fingerprint,  # noqa: F401  # Preserve the established parser.base export.
 )
-from datamodel_code_generator.parser._naming import NamingFrames, NamingPlan
+from datamodel_code_generator.parser._naming import NamingFrames, NamingPlan, NamingRules
 from datamodel_code_generator.parser._passes import _shared, _state, settle, structure
 from datamodel_code_generator.parser._passes import modules as _modules
 from datamodel_code_generator.parser._passes import plans as _plans
@@ -418,10 +419,45 @@ class ParserRunContext:
     records_model_names: bool = False
     final_name_keys: tuple[tuple[str, tuple[str, ...]], ...] = ()
     import_cycle_seeds: ImportCycleSeeds = NO_IMPORT_CYCLE_SEEDS
+    planned_names: tuple[tuple[str, tuple[str, str | None]], ...] = ()
+    """The name and duplicate name of every reference that a naming plan gave in an earlier parse, by path."""
     """What an earlier attempt of the run found to fail as the output is imported, which this one lays out otherwise."""
 
 
 _DEFAULT_PARSER_RUN_CONTEXT = ParserRunContext()
+_RESOLVER_NAMING_METHODS: Final = (
+    "add",
+    "add_ref",
+    "get_class_name",
+    "_get_unique_name",
+    "default_class_name_generator",
+)
+"""The methods of ``ModelResolver`` that name models, which a resolver class outside the package may override."""
+
+
+def _naming_rules_of(naming_strategy: NamingStrategy | None, resolver_class: type[ModelResolver]) -> NamingRules:
+    """Return the naming rules ``--naming-strategy`` turns on, for the models a resolver of ``resolver_class`` names.
+
+    A resolver class outside the package that overrides how ``ModelResolver`` names models keeps the names it gives:
+    the rules stay off, with a warning that names the strategy.
+    """
+    rules = NamingRules(definitions_first=naming_strategy is NamingStrategy.DefinitionsFirst)
+    if rules.legacy or not (
+        overridden := [
+            name
+            for name in _RESOLVER_NAMING_METHODS
+            if (owner := next(cls for cls in resolver_class.__mro__ if name in vars(cls))) is not ModelResolver
+            and not owner.__module__.startswith("datamodel_code_generator.")
+        ]
+    ):
+        return rules
+    warn(
+        f"--naming-strategy {cast('NamingStrategy', naming_strategy).value}: {resolver_class.__qualname__} overrides "
+        f"{', '.join(overridden)} of ModelResolver, so the models keep the names it gives",
+        UserWarning,
+        stacklevel=2,
+    )
+    return NamingRules()
 
 
 def dump_templates(templates: list[DataModel]) -> str:
@@ -523,10 +559,14 @@ class _ModelShapeSource:
     """
 
     target_python_version: PythonVersion
+    naming_plan: NamingPlan
 
-    def own_class_name(self, model: DataModel) -> str | None:  # noqa: PLR6301
-        """Return the class name the model shares with its duplicates, or None for the name it renders under."""
-        return model.duplicate_class_name
+    def own_class_name(self, model: DataModel) -> str | None:
+        """Return the class name the model shares with its duplicates, or None for the name it renders under.
+
+        It is the name the model was numbered from (``NamingPlan.base_of``).
+        """
+        return self.naming_plan.base_of(model)
 
     def render(self, model: DataModel, class_name: str | None) -> tuple[str, Hashable, tuple[Hashable, ...]]:  # noqa: PLR6301
         """Return the model rendered under a class name, its imports and its values as written, uncached."""
@@ -660,6 +700,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         records_model_names: bool = False,
         final_name_keys: tuple[tuple[str, tuple[str, ...]], ...] = (),
         import_cycle_seeds: ImportCycleSeeds | None = None,
+        planned_names: tuple[tuple[str, tuple[str, str | None]], ...] = (),
     ) -> None:
         """Configure parser run state without exposing implementation attributes.
 
@@ -667,7 +708,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         what the run names (``ModelResolver.model_name_record``) for that translation. ``final_name_keys`` are the
         output names keys name of the models renamed after L2, by the path of the model (``translate_final_name_keys``):
         the lookups of the model at a path read them after its own names, and the template data of each name joins
-        that of the path, before the entry of the model's name.
+        that of the path, before the entry of the model's name. ``planned_names`` are the names every reference ended
+        with in a parse whose naming plan renamed a model that such keys name, which the references take when created.
         """
         context = ParserRunContext(
             diagnostic_source_path=diagnostic_source_path,
@@ -682,9 +724,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             records_model_names=records_model_names,
             final_name_keys=final_name_keys,
             import_cycle_seeds=import_cycle_seeds or NO_IMPORT_CYCLE_SEEDS,
+            planned_names=planned_names,
         )
         self._run_context = None if context == _DEFAULT_PARSER_RUN_CONTEXT else context
         self.model_resolver.assigned_yielding_names = dict(yielding_names)
+        self.model_resolver._assigned_names = dict(planned_names)  # noqa: SLF001
         if final_name_keys:
             self.model_resolver.final_name_keys = dict(final_name_keys)
             for path, names in final_name_keys:
@@ -1083,6 +1127,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._enum_admits_other_values: list[tuple[DataModelFieldBase, _ConstNarrowing]] = []
         self.typed_nullable_maps = False
         self.yielding_names_to_assign: tuple[tuple[str, tuple[str, str | None]], ...] = ()
+        self.planned_names_to_assign: tuple[tuple[str, tuple[str, str | None]], ...] = ()
         self.final_name_keys_to_assign: tuple[tuple[str, tuple[str, ...]], ...] = ()
         self.import_cycle_seeds_to_apply: ImportCycleSeeds | None = None
         self.fails_to_import = False
@@ -1229,6 +1274,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 else None
             ),
         )
+        self._naming_rules = _naming_rules_of(config.naming_strategy, type(self.model_resolver))
         self.class_name: str | None = config.class_name
         self.allow_leading_underscore_class_name: bool = config.allow_leading_underscore_class_name
         self.wrap_string_literal: bool | None = config.wrap_string_literal
@@ -1652,7 +1698,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def _model_shapes(self, row: ShapeRow) -> ModelShapes[DataModel, Reference]:
         """Return the keys of one comparison pass of the dedup or reuse user of a row."""
-        return ModelShapes(row, _ModelShapeSource(self.target_python_version), self._tag_plan.reuse_snapshot)
+        return ModelShapes(
+            row, _ModelShapeSource(self.target_python_version, self._naming_plan), self._tag_plan.reuse_snapshot
+        )
 
     def _create_discriminator_data_type(
         self,
@@ -2746,12 +2794,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     def _report_parse_diagnostics(self) -> None:
         """Report diagnostics collected while parsing the input schema."""
 
-    def _records_naming_claims(self) -> bool:  # noqa: PLR6301
-        """Return whether L1 records the naming frames and claims of the models, which a naming rule reads.
-
-        No rule of the legacy naming policy, the only one, reads them (``parser/_naming.py``).
-        """
-        return False
+    def _records_naming_claims(self) -> bool:
+        """Return whether L1 records the naming frames and claims of the models, which a naming rule reads."""
+        return not self._naming_rules.legacy
 
     def _start_naming_frames(self) -> None:
         """Open the naming frames before L1 when it records them, and let the resolver record the names models ask."""

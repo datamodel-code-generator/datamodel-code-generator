@@ -713,7 +713,11 @@ model_options.add_argument(
     "'full-path': Prefix every nested model with the names of the models that hold it, joined in CamelCase "
     "(CompanyAddress, CompanyEmployeeHomeAddress). "
     "'primary-first': Keep clean names for primary definitions (in /definitions/ or "
-    "/components/schemas/), only add suffix to inline/nested duplicates.",
+    "/components/schemas/), only add suffix to inline/nested duplicates. "
+    "'definitions-first': Give every definition (in /definitions/, /$defs/ or /components/schemas/ of any document) "
+    "its own name before an inline model, a variant or another definition that asked for it first, which takes the "
+    "name the definition would have taken (Package1); unlike 'primary-first', which renames only models of other "
+    "files, as in 0.89.0.",
     choices=_values(NamingStrategy),
     default=None,
 )

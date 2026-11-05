@@ -122,7 +122,7 @@ Refresh: TypeAlias = Literal["now", "deferred"]
 """When a store operation marks the facts stale: ``now``, or ``deferred`` until another mutation marks them; the
 models it noted are recorded again at the next refresh either way."""
 RenameScheme: TypeAlias = Literal[
-    "module", "flattened-module", "field-type", "imported-name", "internal-module", "collapsed-root"
+    "plan", "module", "flattened-module", "field-type", "imported-name", "internal-module", "collapsed-root"
 ]
 """The scheme a rename after the L2 settle applies (``GenerationStore.rename_model``)."""
 _OrderedSetItem = TypeVar("_OrderedSetItem")
@@ -1779,9 +1779,10 @@ class GenerationStore:  # noqa: PLR0904
     ) -> None:
         """Change a model's class or reference name after parsing, the writer of names after the L2 settle.
 
-        The callers name one of six schemes: ``module`` (unique among the classes and imports of one module,
-        ``Model`` for a taken name), ``flattened-module`` (unique among the live models, with the
-        ``--duplicate-name-suffix`` map and ``Model``), ``field-type`` (a type hidden by a field of its user),
+        The callers name one of seven schemes: ``plan`` (the name the L2 naming plan gives, ``parser/_naming.py``),
+        ``module`` (unique among the classes and imports of one module, ``Model`` for a taken name),
+        ``flattened-module`` (unique among the live models, with the ``--duplicate-name-suffix`` map and ``Model``),
+        ``field-type`` (a type hidden by a field of its user),
         ``imported-name`` (a local model shadowed by an import), ``internal-module`` (``<name>_<n>`` in a module
         cycle's ``_internal`` module) and ``collapsed-root`` (the inner model takes the root model's name and path).
         A rename that also relocates the model passes the new path and output file, and the path of the schema the

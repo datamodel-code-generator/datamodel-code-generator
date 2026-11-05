@@ -1979,6 +1979,7 @@ def _build_generation_parser(  # noqa: PLR0913, PLR0917
     model_name_keys: ModelNameKeys | None = None,
     records_model_names: bool = False,
     final_name_keys: tuple[tuple[str, tuple[str, ...]], ...] = (),
+    planned_names: tuple[tuple[str, tuple[str, str | None]], ...] = (),
 ) -> Any:
     """Build one fresh parser using the caller's reference-resolution base."""
     jsonschema_version, openapi_version, asyncapi_version, xmlschema_version, protobuf_version = schema_versions
@@ -2016,6 +2017,7 @@ def _build_generation_parser(  # noqa: PLR0913, PLR0917
         records_model_names=records_model_names,
         final_name_keys=final_name_keys,
         import_cycle_seeds=import_cycle_seeds,
+        planned_names=planned_names,
     )
     return parser
 
@@ -2331,6 +2333,7 @@ def _parse_again(  # noqa: PLR0913, PLR0917
     ignored_warnings: type[Warning] | None = Warning,
     collapse_retry: bool = False,
     final_name_keys: tuple[tuple[str, tuple[str, ...]], ...] = (),
+    planned_names: tuple[tuple[str, tuple[str, str | None]], ...] = (),
 ) -> tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]:
     """Parse once more with a fresh parser that reuses the first parse's ``caches`` of documents and base path.
 
@@ -2338,7 +2341,8 @@ def _parse_again(  # noqa: PLR0913, PLR0917
     of nullable maps get models that give their names to every other model. Options keyed by class name are looked up
     while models are created, so a run whose map value models end under other names, which such options name, is
     parsed again with those models named as they end; one whose models renamed after L2 end under names such keys
-    name is parsed again with those names as further names of their paths (``final_name_keys``).
+    name is parsed again with those names as further names of their paths (``final_name_keys``), and one whose naming
+    plan renamed a model such keys name, by either name, with every reference named as it ended (``planned_names``).
 
     A run keeps these values untyped when typing them changes where models are written, the files written, or the
     models a collapse keeps; the decision covers the whole run, so every input of a directory run is then untyped.
@@ -2389,6 +2393,7 @@ def _parse_again(  # noqa: PLR0913, PLR0917
                 model_name_keys=model_name_keys,
                 records_model_names=records_model_names,
                 final_name_keys=final_name_keys,
+                planned_names=planned_names,
             )
             try:
                 results = (_parse_collapse_root_models_retry if collapse_retry else _parse_with_disposal)(
@@ -2743,6 +2748,21 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
                 preserve_circular_root_models=preserve_circular_root_models,
                 untyped_nullable_maps=False,
                 yielding_names=yielding_names,
+                document_roles=document_roles,
+            )
+        if planned_names := parser.planned_names_to_assign:
+            caches = _reparse_caches(parser)
+            preserve_circular_root_models = parser.run_context.preserve_circular_root_models
+            document_roles = parser.run_context.document_roles
+            _dispose_capture_parser(parser, capture, discard=True)
+            del parser
+            parse_again = partial(parse_again, planned_names=planned_names)
+            parser, results, data_model_types, defer_formatting, extra_template_data = parse_again(
+                config,
+                _prepare_generation_extra_template_data(config),
+                caches,
+                preserve_circular_root_models=preserve_circular_root_models,
+                untyped_nullable_maps=False,
                 document_roles=document_roles,
             )
         if final_name_keys := parser.final_name_keys_to_assign:

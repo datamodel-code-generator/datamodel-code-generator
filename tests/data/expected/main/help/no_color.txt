@@ -747,7 +747,7 @@ Model customization:
                         title='Model'), and the class Model under --use-title-
                         as-name); without it the placeholder stays, as in
                         0.88.0
-  --naming-strategy {numbered,parent-prefixed,full-path,primary-first}
+  --naming-strategy {numbered,parent-prefixed,full-path,primary-first,definitions-first}
                         Strategy for naming models and telling duplicate model
                         names apart. 'numbered' (default): Append numeric
                         suffix (Address, Address1, Address2). Simple but names
@@ -762,7 +762,14 @@ Model customization:
                         CompanyEmployeeHomeAddress). 'primary-first': Keep
                         clean names for primary definitions (in /definitions/
                         or /components/schemas/), only add suffix to
-                        inline/nested duplicates.
+                        inline/nested duplicates. 'definitions-first': Give
+                        every definition (in /definitions/, /$defs/ or
+                        /components/schemas/ of any document) its own name
+                        before an inline model, a variant or another
+                        definition that asked for it first, which takes the
+                        name the definition would have taken (Package1);
+                        unlike 'primary-first', which renames only models of
+                        other files, as in 0.89.0.
   --order-constructor-fields-by {final-names,written-defaults} [{final-names,written-defaults} ...]
                         Decide the order of constructor fields by each given
                         value. final-names: order the constructor fields of

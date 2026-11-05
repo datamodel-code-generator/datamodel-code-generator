@@ -25845,10 +25845,17 @@ parents included, also where the name is unique: both give the same model names.
 with an inline `item` give `OrderItem` and `CartItem` (here `ModelOrderItem` and `ModelCartItem`, as the definitions
 sit below the root model `Model`), and `Company` > `employee` > `home_address` gives `CompanyEmployeeHomeAddress`.
 
+`primary-first` numbers a duplicate as `numbered` does, but renames a model of another file that holds the name of a
+primary definition. `definitions-first` gives every definition (in `/definitions/`, `/$defs/` or
+`/components/schemas/` of any document) its own name before an inline model, a union branch or another definition
+that asked for it first, which takes the name the definition would have taken (`Item1`); a model whose name is made
+from a renamed model, such as the model of its extra properties, is renamed with it.
+
 Generated clients and servers (experimental) follow the same rules for their method, argument, module, and class
 names, with the resource or router group as the parent of a method and the method as the parent of an argument, but
 prefix only a name their scope already holds: `parent-prefixed` with its innermost enclosing scope, `full-path` with
-every enclosing scope; under `primary-first`, a primary name is one the root document declares.""",
+every enclosing scope; under `primary-first` and `definitions-first`, a primary name is one the root document
+declares.""",
     input_schema="jsonschema/naming_strategy/input.json",
     cli_args=["--naming-strategy", "parent-prefixed"],
     golden_output="main/jsonschema/naming_strategy/parent_prefixed/output.py",
@@ -40434,3 +40441,96 @@ def test_main_jsonschema_ignore_ref_siblings_by_schema_version_identifier_and_im
             invalid_json=json.dumps({"address": "1.2.3.4"}),
             expected_error_type="string_too_long",
         )
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", ["--naming-strategy", "definitions-first"], id="pydantic_v2"),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--naming-strategy", "definitions-first", "--duplicate-name-suffix", '{"model": "Schema"}'],
+            id="pydantic_v2-suffix",
+        ),
+        pytest.param(
+            "msgspec.Struct",
+            ["--naming-strategy", "definitions-first", "--duplicate-name-suffix", '{"model": "Schema"}'],
+            id="msgspec-suffix",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            [
+                "--naming-strategy",
+                "definitions-first",
+                "--aliases",
+                str(ALIASES_DATA_PATH / "definitions_first.json"),
+            ],
+            id="pydantic_v2-aliases",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--naming-strategy", "definitions-first", "--model-name-map", '{"Item": "Piece"}'],
+            id="pydantic_v2-model-name-map",
+        ),
+    ],
+)
+def test_main_naming_strategy_definitions_first(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Give the definition ``Item`` of ``$defs`` its own name before the inline ``item`` of the root (#4825, #5420).
+
+    The inline model takes ``Item1``, or ``ItemSchema`` under ``--duplicate-name-suffix``, where 0.89.0 gives it
+    ``Item`` and the definition ``Item1`` (``ItemModel`` with the suffix). The ``--aliases`` keys name the classes of
+    the output: ``Item.v`` names the field of the definition, and ``Item.w`` names no field, as the inline model is
+    ``Item1``, so the parse is done again with the planned names. A ``--model-name-map`` key names a class of the
+    output without the map: ``Item`` names the definition, which becomes ``Piece``.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "duplicate_name_suffix_every_collision.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    if output_model_type == "pydantic_v2.BaseModel" and "--aliases" in extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="naming_strategy_definitions_first",
+            model_name="Root",
+            valid_json=json.dumps({"item": {"w": 1}, "other": {"v": "x"}}),
+            invalid_json=json.dumps({"other": {"v": 1}}),
+            expected_error_type="string_type",
+        )
+
+
+def test_naming_strategy_definitions_first_beside_a_resolver_that_names_models() -> None:
+    """A model resolver class that overrides how models are named keeps its names under ``definitions-first``.
+
+    The parser warns once that the strategy's names are not given, and the inline ``item`` keeps ``Item`` as in
+    0.89.0.
+    """
+    from datamodel_code_generator import NamingStrategy
+    from datamodel_code_generator.reference import ModelResolver
+
+    class NamingResolver(ModelResolver):
+        def get_class_name(self, *args: Any, **kwargs: Any) -> Any:
+            return super().get_class_name(*args, **kwargs)
+
+    class NamingParser(JsonSchemaParser):
+        _model_resolver_factory = staticmethod(NamingResolver)
+
+    with warnings.catch_warnings(record=True) as records:
+        warnings.simplefilter("always", UserWarning)
+        output = NamingParser(
+            JSON_SCHEMA_DATA_PATH / "duplicate_name_suffix_every_collision.json",
+            naming_strategy=NamingStrategy.DefinitionsFirst,
+            formatters=[Formatter.BUILTIN],
+        ).parse()
+    assert_output("".join(f"{record.message}\n" for record in records if record.category is UserWarning) + str(output))

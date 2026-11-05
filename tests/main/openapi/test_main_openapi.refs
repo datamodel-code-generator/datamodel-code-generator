@@ -1542,6 +1542,15 @@ msgspec_tagged_unions_modules_variants_first	main/openapi/discriminator/msgspec_
 	main/openapi/msgspec_use_union_operator.py	= main/openapi/msgspec_nullable.py
 [test_main_openapi_namespace_subns_ref]
 	main/openapi/namespace_subns_ref//*.py
+[test_main_openapi_naming_strategy_definitions_first]
+dataclass-definitions-first	main/openapi/main_openapi/naming_strategy_definitions_first[dataclass-definitions-first].py
+pydantic_v2	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2].py
+pydantic_v2-definitions-first	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2-definitions-first].py
+pydantic_v2-definitions-first-annotated	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2-definitions-first-annotated].py
+pydantic_v2-definitions-first-request-response	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2-definitions-first-request-response].py
+pydantic_v2-definitions-first-titles	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2-definitions-first-titles].py
+pydantic_v2-primary-first	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2-primary-first].py	= main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2].py
+typed_dict-definitions-first	main/openapi/main_openapi/naming_strategy_definitions_first[typed_dict-definitions-first].py
 [test_main_openapi_no_file]
 	main/openapi/no_file.py	= main_kr/main_no_file/output.py
 [test_main_openapi_non_operations_and_security]

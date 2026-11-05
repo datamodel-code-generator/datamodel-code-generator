@@ -13,23 +13,25 @@ code that names the model claims for it (``Claim``): the model its name is compo
 branch named as the union.
 
 Once every model has claimed its name, the L2 pass ``name_models`` records the names planned after the last claim
-(``NamingPlan``, made by ``plan_names`` under a ``NamingPolicy``), which L3 reads for the name a model was numbered
+(``NamingPlan``, made by ``plan_names`` under the ``NamingRules``), which L3 reads for the name a model was numbered
 from.
 This module imports only the standard library, ``typing_extensions`` and the model keys, so every layer may use it.
 """
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass, field
 from string import digits
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar, cast
 
 from typing_extensions import Protocol, final
 
+from datamodel_code_generator._free_names import first_free, is_numbered
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping
+    from collections.abc import Callable, Iterable, Mapping, Sequence
 
 _ResultT = TypeVar("_ResultT")
 
@@ -38,11 +40,14 @@ __all__ = [
     "BuildFrame",
     "BuildRecord",
     "Claim",
+    "ClaimRole",
     "Composed",
     "ComposedRole",
+    "NameClaim",
+    "Namer",
     "NamingFrames",
     "NamingPlan",
-    "NamingPolicy",
+    "NamingRules",
     "Ordinal",
     "PlannedName",
     "VariantRole",
@@ -259,13 +264,74 @@ def build_record_of(reference: object) -> BuildRecord | None:
     return reference.__dict__.get(BUILD_RECORD_KEY)
 
 
-NamingPolicy: TypeAlias = Literal["legacy"]
-"""The rules that plan the names of the models after their last claim (``plan_names``).
+ClaimRole: TypeAlias = Literal["definition", "root", "owned", "composed", "ordinal"]
+"""What a model is to the naming rules (``NameClaim.role``), read from its records once L1 has built every model.
 
-``legacy`` plans no name. Every model keeps the name the L1 resolver gave it, first come, first served (row
-``legacy-first-come``), and the name ``settle_yielding_names`` settled; L3 numbers a class that its module holds from
-the name the model asked for and gives that name back where the module leaves it free (row ``legacy-module-restore``).
+``composed``: its name is composed from another model's (``Composed``); ``ordinal``: a union branch named as the
+union (``Ordinal``); ``owned``: built by the builder of another model (``BuildRecord.owner``); ``definition``: built by
+no other model's builder from an entry of a definitions container of its document; ``root``: none of these, such as a
+document root or an operation model.
 """
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class NameClaim:
+    """The claim of one model to a name, with the facts the naming rules read and the name L1 gave it.
+
+    The name is ``module`` (its dotted prefix with the dot, ``""`` for the root module) and ``cls``; ``base`` is the
+    class name it asked for where L1 numbered it, else ``cls``. ``document`` is the rank of its schema document, in
+    the order the parse first claimed a name in each, and ``order`` its place in that order among all claims.
+    """
+
+    key: ModelKey
+    path: str
+    role: ClaimRole
+    owner: ModelKey | None
+    composed_from: ModelKey | None
+    word: str
+    """The role of a composed claim (``Composed.role``), else ``""``."""
+    position: int
+    """The position of an ordinal claim (``Ordinal.position``), else 0."""
+    document: int
+    order: int
+    module: str
+    cls: str
+    base: str
+    kind: str
+    """The kind of the class whose duplicate name suffix numbers it: ``model`` or ``enum``."""
+    keyed: bool
+    """Whether ``--model-name-map`` named the model, which no rule renames."""
+
+    @property
+    def name(self) -> str:
+        """The name L1 gave the model, its module included."""
+        return f"{self.module}{self.cls}"
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class NamingRules:
+    """The rules that plan the names of the models after their last claim (``plan_names``).
+
+    With no rule on (``legacy``) the plan names no model. Every model keeps the name the L1 resolver gave it, first
+    come, first served (row ``legacy-first-come``), and the name ``settle_yielding_names`` settled; L3 numbers a class
+    that its module holds from the name the model asked for and gives that name back where the module leaves it free
+    (row ``legacy-module-restore``).
+
+    ``definitions_first`` (``--naming-strategy definitions-first``): in each family of models that asked for one name
+    in one module, the first definition in definition order (a definition of the input documents before one of a
+    document they reference, in the order the parse reached them) takes the name, and a model that held it takes the
+    name the definition gave up where that is a numbered name, else the first free one; a model whose name is composed
+    from one of them is named again from its new name (#4825).
+    """
+
+    definitions_first: bool = False
+
+    @property
+    def legacy(self) -> bool:
+        """Whether no rule is on, so the plan names no model."""
+        return not self.definitions_first
 
 
 @final
@@ -296,9 +362,9 @@ class _NamedModel(Protocol):
 @final
 @dataclass(frozen=True, slots=True)
 class NamingPlan:
-    """The names planned after the last claim under ``policy``, by model key; a model it leaves out keeps its name."""
+    """The names planned after the last claim under ``rules``, by model key; a model it leaves out keeps its name."""
 
-    policy: NamingPolicy = "legacy"
+    rules: NamingRules = field(default_factory=NamingRules)
     names: Mapping[ModelKey, PlannedName] = field(default_factory=dict)
 
     def base_of(self, model: _NamedModel) -> str:
@@ -311,6 +377,145 @@ class NamingPlan:
         return model.duplicate_class_name if planned is None else planned.base
 
 
-def plan_names(policy: NamingPolicy) -> NamingPlan:
-    """Return the names ``policy`` plans after the last claim; ``legacy`` plans none."""
-    return NamingPlan(policy)
+class Namer(Protocol):
+    """How the plan asks the parse which names are held and how L1 names a model (``parser/_passes/naming.py``)."""
+
+    def held(self, name: str) -> int:
+        """Return how many references of the parse hold ``name``, its module included."""
+
+    def reserved(self, module: str, cls: str, path: str) -> bool:
+        """Return whether a name no reference holds is not free for the model at ``path``: excluded or reserved."""
+
+    def suffix(self, kind: str) -> str | None:
+        """Return the duplicate name suffix of the classes of ``kind`` (``--duplicate-name-suffix``)."""
+
+    def composed(self, claim: NameClaim, base: str) -> tuple[str, str]:
+        """Return the module and class L1 gives the composed model of ``claim`` when its base is named ``base``."""
+
+
+@final
+class _Allocation:
+    """The names the plan gives, against the names the models outside it hold."""
+
+    __slots__ = ("_given", "_namer", "_released")
+
+    def __init__(self, namer: Namer, released: Counter[str]) -> None:
+        self._namer = namer
+        self._released = released
+        self._given: set[str] = set()
+
+    def taken(self, module: str, cls: str, path: str) -> bool:
+        """Return whether ``cls`` is not free in ``module``, at its root as the yielding names count it too."""
+        return any(
+            name in self._given or self._namer.held(name) > self._released[name]
+            for name in dict.fromkeys((f"{module}{cls}", cls))
+        ) or self._namer.reserved(module, cls, path)
+
+    def give(self, claim: NameClaim, cls: str, base: str) -> PlannedName:
+        """Give ``cls`` to ``claim``, numbered from ``base``."""
+        self._given.add(f"{claim.module}{cls}")
+        return PlannedName(claim.module, cls, base)
+
+    def first_free(self, claim: NameClaim, base: str, module: str | None = None) -> str:
+        """Return the first free name of ``base`` numbered as the models are (``joined``, the duplicate suffix)."""
+        module = claim.module if module is None else module
+        return first_free(
+            base,
+            lambda candidate: self.taken(module, candidate, claim.path),
+            "joined",
+            suffix=self._namer.suffix(claim.kind),
+        )[0]
+
+
+def _definitions_first(claims: Sequence[NameClaim]) -> dict[ModelKey, NameClaim]:
+    """Return the claims the definitions-first rule touches, each with the first definition of its family.
+
+    A family is the claims that asked for one class name in one module. Its first definition, in definition order,
+    is touched where it does not hold that name or another claim of the family holds it too; so is each such holder.
+    """
+    families: dict[tuple[str, str], list[NameClaim]] = {}
+    for claim in claims:
+        if not claim.keyed:
+            families.setdefault((claim.module, claim.base), []).append(claim)
+    touched: dict[ModelKey, NameClaim] = {}
+    for (_, base), members in families.items():
+        if not (definitions := [claim for claim in members if claim.role == "definition"]):
+            continue
+        first = min(definitions, key=lambda claim: (claim.document, claim.order))
+        holders = [claim for claim in members if claim is not first and claim.cls == base]
+        if holders or first.cls != base:
+            touched.update((claim.key, first) for claim in (first, *holders))
+    return touched
+
+
+def _closure(touched: Iterable[ModelKey], claims: Sequence[NameClaim], namer: Namer) -> dict[ModelKey, None]:
+    """Return ``touched`` and every claim composed from one of them, recursively, bases before what they compose.
+
+    A claim is composed from its base where L1 named it so: its name is the one L1 composes from the base's name, or a
+    numbered one of it.
+    """
+    by_key = {claim.key: claim for claim in claims}
+    composed: dict[ModelKey, list[NameClaim]] = {}
+    for claim in claims:
+        if claim.composed_from is not None and not claim.keyed:
+            composed.setdefault(claim.composed_from, []).append(claim)
+    closure = dict.fromkeys(touched)
+    pending = list(closure)
+    while pending:
+        base = by_key[pending.pop(0)]
+        for child in composed.get(base.key, ()):
+            module, cls = namer.composed(child, base.name)
+            if (
+                child.key not in closure
+                and module == child.module
+                and is_numbered(child.cls, cls, "joined", namer.suffix(child.kind))
+            ):
+                closure[child.key] = None
+                pending.append(child.key)
+    return closure
+
+
+def plan_names(rules: NamingRules, claims: Sequence[NameClaim], namer: Namer) -> NamingPlan:
+    """Return the names ``rules``, a rule on at least, plan after the last claim, by model key.
+
+    A rule touches some claims; every claim composed from a touched one, recursively, is named again from its base's
+    new name, and every other model keeps its name, which no planned name takes. Under ``definitions_first`` the first
+    definition of a family takes the family's name, or the first free one where a model outside the plan holds it;
+    each claim that held it takes the name the definition gave up where that is a numbered name of it, else the first
+    free one.
+    """
+    if not (touched := _definitions_first(claims)):
+        return NamingPlan(rules)
+    by_key = {claim.key: claim for claim in claims}
+    closure = _closure(touched, claims, namer)
+    allocation = _Allocation(namer, Counter(by_key[key].name for key in closure))
+    names: dict[ModelKey, PlannedName] = {}
+    for key, first in touched.items():
+        if key == first.key:
+            names[key] = allocation.give(first, allocation.first_free(first, first.base), first.base)
+    for key, first in touched.items():
+        if key != first.key:
+            claim = by_key[key]
+            given_up = first.cls
+            name = (
+                given_up
+                if given_up != first.base
+                and is_numbered(given_up, first.base, "joined", namer.suffix(first.kind))
+                and not allocation.taken(claim.module, given_up, claim.path)
+                else allocation.first_free(claim, first.base)
+            )
+            names[key] = allocation.give(claim, name, first.base)
+    for key in closure:
+        if key not in names:
+            claim = by_key[key]
+            base = names[cast("ModelKey", claim.composed_from)]
+            _, cls = namer.composed(claim, f"{base.module}{base.cls}")
+            names[key] = allocation.give(claim, allocation.first_free(claim, cls), cls)
+    return NamingPlan(
+        rules,
+        {
+            key: planned
+            for key, planned in names.items()
+            if (planned.cls, planned.base) != (by_key[key].cls, by_key[key].base)
+        },
+    )

@@ -74,6 +74,8 @@ github-api-issue-states.graphql-extra_args2-github_api_issue_states-IssueState	m
 	main/graphql/msgspec_unions_warnings.txt
 [test_main_graphql_multiple_aliases_pydantic_v2]
 	main/graphql/graphql_multiple_aliases_pydantic_v2.py
+[test_main_graphql_naming_strategy_definitions_first]
+	main/graphql/main_graphql/naming_strategy_definitions_first.py	= main/jsonschema/model_metadata/schema_location_metadata[graphql].py
 [test_main_graphql_no_typename]
 	main/graphql/no_typename.py
 [test_main_graphql_root_type_references]

@@ -123,7 +123,7 @@ ModuleSplitMode: TypeAlias = Literal['single']
 
 
 NamingStrategy: TypeAlias = Literal[
-    'numbered', 'parent-prefixed', 'full-path', 'primary-first'
+    'numbered', 'parent-prefixed', 'full-path', 'primary-first', 'definitions-first'
 ]
 
 

@@ -186,12 +186,15 @@ class NamingStrategy(Enum):
         (Company_address) here and in CamelCase (CompanyAddress) under full_path.
     full_path: Prefix every nested model with the names of the models that hold it (CompanyEmployeeHomeAddress).
     primary_first: Prioritize primary schema definitions, others get suffix.
+    definitions_first: Give a definition its own name before any other model that asks for it, in every document, and
+        number the model that took it first; the models are numbered as by numbered otherwise.
     """
 
     Numbered = "numbered"
     ParentPrefixed = "parent-prefixed"
     FullPath = "full-path"
     PrimaryFirst = "primary-first"
+    DefinitionsFirst = "definitions-first"
 
 
 class ClassNameAffixScope(Enum):

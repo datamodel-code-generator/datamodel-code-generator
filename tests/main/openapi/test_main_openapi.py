@@ -17708,3 +17708,86 @@ def test_main_openapi_allof_member_parts_request_response(output_file: Path, ext
             "builtin",
         ],
     )
+
+
+@pytest.mark.cli_doc(
+    options=["--naming-strategy"],
+    option_description="""Give every definition its own name before the other models that ask for it.
+
+Models take their names in the order the parser reaches them, so an inline model or a union branch that asks for the
+name of a definition parsed after it takes the name, and the definition is numbered: the inline `package` of `build`
+takes `Package` and the definition `package` becomes `Package1`. `primary-first` renames only models of other files.
+With `--naming-strategy definitions-first` the first definition of a name (in `/definitions/`, `/$defs/` or
+`/components/schemas/` of any document, those of the input before those of the documents it references) takes it,
+and the model that held it takes the name the definition would have taken. A model whose name is made from a renamed
+model, such as the model of its extra properties or its request and response variants, is renamed with it.""",
+    input_schema="openapi/definitions_first.yaml",
+    cli_args=["--naming-strategy", "definitions-first"],
+    golden_output="main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2-definitions-first].py",
+    comparison_output="main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2].py",
+    related_options=["--duplicate-name-suffix", "--read-only-write-only-model-type"],
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2"),
+        pytest.param("pydantic_v2.BaseModel", ["--naming-strategy", "primary-first"], id="pydantic_v2-primary-first"),
+        pytest.param(
+            "pydantic_v2.BaseModel", ["--naming-strategy", "definitions-first"], id="pydantic_v2-definitions-first"
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--naming-strategy", "definitions-first", "--use-annotated"],
+            id="pydantic_v2-definitions-first-annotated",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--naming-strategy", "definitions-first", "--read-only-write-only-model-type", "request-response"],
+            id="pydantic_v2-definitions-first-request-response",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--naming-strategy", "definitions-first", "--use-title-as-name"],
+            id="pydantic_v2-definitions-first-titles",
+        ),
+        pytest.param("typing.TypedDict", ["--naming-strategy", "definitions-first"], id="typed_dict-definitions-first"),
+        pytest.param(
+            "dataclasses.dataclass", ["--naming-strategy", "definitions-first"], id="dataclass-definitions-first"
+        ),
+    ],
+)
+def test_main_openapi_naming_strategy_definitions_first(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Give the component ``package`` its own name before the inline ``package`` of ``build`` (#4825).
+
+    Without the option and under ``primary-first`` the inline model, parsed first, takes ``Package`` and the component
+    is ``Package1``; under ``definitions-first`` the component takes ``Package`` and the inline model ``Package1``, and
+    the models of their extra properties and their request and response variants follow them. Under
+    ``--use-annotated`` the constrained string branch of ``charge`` gives way to the component ``charge``
+    (``Charge1``, ``Charge``) instead of the component taking ``ChargeModel``. Under ``--use-title-as-name`` the
+    model of the extra properties of the inline ``package`` takes its title, ``PackageExtra``, and keeps it.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "definitions_first.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    if extra_args == ["--naming-strategy", "definitions-first"] and output_model_type == "pydantic_v2.BaseModel":
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="naming_strategy_definitions_first",
+            model_name="Holder",
+            valid_json=json.dumps({"pkg": {"name": "x", "box": {"weight": 1}}}),
+            invalid_json=json.dumps({"pkg": {"name": 1}}),
+            expected_error_type="string_type",
+        )
