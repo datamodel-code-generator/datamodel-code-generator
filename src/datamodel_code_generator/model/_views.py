@@ -241,5 +241,9 @@ class ModelView(Protocol):
     def value_base(self) -> str | None:
         """The builtin type an enum subclasses for the values of its members (``str`` of a ``StrEnum``), or None."""
 
+    @property
+    def has_length(self) -> bool:
+        """Whether the instance of the model has a length: a root model written with the sequence interface."""
+
     def set_item_hash(self, *, user_imports: bool) -> SetItemHash:
         """How the instances of the class hash as set items, by the class alone (``DataModel.set_item_hash``)."""

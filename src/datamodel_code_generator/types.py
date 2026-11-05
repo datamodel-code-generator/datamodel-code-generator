@@ -1988,9 +1988,10 @@ class DataTypeManager(ABC):
         A keyword none of them takes fails on every value of the type. Each member of the union the type is, other than
         None, counts: one that names a type alias stands for its type, read the same way, and one that names another
         model takes what ``member_constraint_keywords`` gives (an enum whose base is its value type what that type
-        takes; a root model, an object model, a dataclass or a plain enum none). The answer is None where a value is no
-        instance of a model, whose keywords the field assembly decided, or names a model ``model_of`` does not hold or
-        an alias that names itself again (``seen``).
+        takes; a root model, an object model, a dataclass or a plain enum none), and the length keywords too where its
+        instance has a length (``ModelView.has_length``, the sequence interface of a root model), which Pydantic checks
+        by ``len()``. The answer is None where a value is no instance of a model, whose keywords the field assembly
+        decided, or names a model ``model_of`` does not hold or an alias that names itself again (``seen``).
         """
         keywords: set[str] = set()
         # The values of the aliases a member names are read from a stack of their own, so a long chain of aliases
@@ -2010,6 +2011,8 @@ class DataTypeManager(ABC):
                     return None
                 if model.form != "alias":
                     keywords.update(cls.member_constraint_keywords(member, target_version, model_of) or ())
+                    if model.has_length:
+                        keywords.update(_applicability.LENGTH_KEYWORDS | _applicability.ITEM_COUNT_KEYWORDS)
                 else:
                     pending.append((cast("DataType", model.fields[0].data_type), current_seen | {id(reference)}))
         return frozenset(keywords)

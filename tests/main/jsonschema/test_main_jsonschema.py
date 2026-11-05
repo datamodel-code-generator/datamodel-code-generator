@@ -22633,6 +22633,7 @@ def test_main_jsonschema_contains_true_count_constraints(output_file: Path) -> N
         pytest.param(["--use-root-model-type-alias"], '{"color":"blue"}', "enum", id="root_model_type_alias"),
         pytest.param(["--output-model-type", "pydantic_v2.dataclass"], '{"tags":["a"]}', "too_short", id="dataclass"),
         pytest.param(["--collapse-root-models"], '{"tagsAsFloats":["a","b","c","d"]}', "too_long", id="collapse"),
+        pytest.param(["--use-root-model-sequence-interface"], '{"tags":["a"]}', "too_short", id="sequence_interface"),
     ],
 )
 def test_main_jsonschema_contains_count_beside_model_reference(
@@ -22642,8 +22643,8 @@ def test_main_jsonschema_contains_count_beside_model_reference(
 
     Pydantic applies ``min_length`` to the value the type validates to, so beside a root model, an object model, an
     enum or a union of them it raised ``TypeError`` for every value; the field is written without the counts and
-    warns, as msgspec does. A type alias (``pydantic_v2.dataclass``) and a collapsed root keep them, and so do the
-    counts written as integral floats (#5942).
+    warns, as msgspec does. A type alias (``pydantic_v2.dataclass``), a collapsed root and a root model whose
+    sequence interface gives it a length keep them, and so do the counts written as integral floats (#5942).
     """
     with (
         pytest.warns(

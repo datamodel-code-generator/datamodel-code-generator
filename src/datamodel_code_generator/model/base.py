@@ -3195,6 +3195,11 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """The builtin type an enum subclasses for the values of its members; a model that is no enum has none."""
         return None
 
+    @property
+    def has_length(self) -> bool:
+        """Whether the instance of the model has a length (``__len__``); only a sequence interface gives it one."""
+        return False
+
     @classmethod
     def create_base_class_model(
         cls,
