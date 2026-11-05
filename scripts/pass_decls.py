@@ -506,6 +506,18 @@ COLLAPSE_ROOT_MODELS = PassDecl(
     summary="Inlines the root models the module references.",
     condition="collapse_root_models",
 )
+REPLACE_UNHASHABLE_UNIQUE_SET_TO_LIST = PassDecl(
+    "replace_unhashable_unique_set_to_list",
+    Phase.MODULES,
+    Scope.MODULE,
+    PassKind.TRANSFORM,
+    reads=_facts(Fact.CONSTRAINTS, Fact.CONTAINERS, Fact.DEFAULTS, Fact.FIELD_TYPES, Fact.MODEL_KIND, Fact.BASES),
+    writes=_facts(Fact.CONTAINERS, Fact.FIELD_TYPES, Fact.DEFAULTS),
+    after=(
+        After("collapse_root_models", "reads the models the items of a set name once collapse inlined root models"),
+    ),
+    summary="Writes back as lists the uniqueItems sets that cannot hold their items once root models collapsed.",
+)
 SET_DEFAULT_ENUM_MEMBER = PassDecl(
     "set_default_enum_member",
     Phase.MODULES,
@@ -516,6 +528,10 @@ SET_DEFAULT_ENUM_MEMBER = PassDecl(
     after=(
         After("collapse_root_models", "writes enum members as defaults of the types collapse inlined"),
         After("replace_merged_unique_list_to_set", "writes enum members as defaults of the sets written after reuse"),
+        After(
+            "replace_unhashable_unique_set_to_list",
+            "writes enum members as defaults of the sets that stay sets after collapse",
+        ),
     ),
 )
 SORT_MODELS = PassDecl(

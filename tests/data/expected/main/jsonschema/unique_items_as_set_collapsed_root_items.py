@@ -18,7 +18,14 @@ class Object(RootModel[Mapping[str, int]]):
     root: Mapping[str, int]
 
 
+class Pet(BaseModel):
+    __hash__ = object.__hash__
+    id: int
+
+
 class Root(BaseModel):
     tags: frozenset[Tags] | None = None
     objects: frozenset[Object] | None = None
     names: frozenset[str] | None = None
+    pets: frozenset[Pet] | None = None
+    tag_sets: frozenset[Tags] | None = None

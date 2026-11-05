@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Annotated, TypeAlias
 
-from msgspec import UNSET, Meta, Struct, UnsetType
+from msgspec import UNSET, Meta, Struct, UnsetType, field
 
 
 class Pet(Struct):
@@ -24,7 +24,7 @@ Shape: TypeAlias = Circle | str
 
 
 class Root(Struct):
-    pets: list[Pet] | UnsetType = UNSET
-    names: set[Name] | UnsetType = UNSET
+    pets: list[Pet] | UnsetType = field(default_factory=list)
+    names: set[Name] | UnsetType = field(default_factory=lambda: {'a', 'b'})
     shapes: set[Shape] | UnsetType = UNSET
     maybe_pets: set[Pet | None] | UnsetType = UNSET

@@ -29,7 +29,7 @@ Shape = TypeAliasType("Shape", Circle | str)
 
 @dataclass(frozen=True)
 class Root:
-    pets: set[Pet] | None = None
-    names: set[Name] | None = None
+    pets: set[Pet] | None = Field(default_factory=set, validate_default=True)
+    names: set[Name] | None = Field(default_factory=lambda: {'a', 'b'})
     shapes: set[Shape] | None = None
     maybe_pets: set[Pet | None] | None = None

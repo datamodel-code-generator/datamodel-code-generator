@@ -6,7 +6,13 @@ from __future__ import annotations
 from msgspec import UNSET, Struct, UnsetType
 
 
+class Pet(Struct):
+    id: int
+
+
 class Root(Struct):
     tags: list[list[str]] | UnsetType = UNSET
     objects: list[dict[str, int]] | UnsetType = UNSET
     names: set[str] | UnsetType = UNSET
+    pets: list[Pet] | UnsetType = UNSET
+    tag_sets: list[list[str]] | UnsetType = UNSET

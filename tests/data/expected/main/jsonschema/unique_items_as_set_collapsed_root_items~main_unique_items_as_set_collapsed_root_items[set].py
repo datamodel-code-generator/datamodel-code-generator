@@ -16,7 +16,14 @@ class Object(RootModel[dict[str, int]]):
     root: dict[str, int]
 
 
+class Pet(BaseModel):
+    __hash__ = object.__hash__
+    id: int
+
+
 class Root(BaseModel):
     tags: set[Tags] | None = None
     objects: set[Object] | None = None
     names: set[str] | None = None
+    pets: set[Pet] | None = None
+    tag_sets: set[Tags] | None = None

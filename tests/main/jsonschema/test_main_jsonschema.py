@@ -8617,16 +8617,22 @@ def test_main_unique_items_as_set_model_items(
     [
         pytest.param(
             [],
-            "Root(tags={Tags(root=['a'])}, objects={Object(root={'a': 1})}, names={'x'})",
+            "Root(tags={Tags(root=['a'])}, objects={Object(root={'a': 1})}, names={'x'}, pets={Pet(id=1)}, "
+            "tag_sets={Tags(root=['a'])})",
             id="set",
         ),
         pytest.param(
             ["--use-generic-container-types"],
             "Root(tags=frozenset({Tags(root=['a'])}), objects=frozenset({Object(root={'a': 1})}), "
-            "names=frozenset({'x'}))",
+            "names=frozenset({'x'}), pets=frozenset({Pet(id=1)}), tag_sets=frozenset({Tags(root=['a'])}))",
             id="frozenset",
         ),
         pytest.param(["--output-model-type", "msgspec.Struct"], None, id="msgspec"),
+        pytest.param(
+            ["--use-root-model-type-alias"],
+            "Root(tags=[['a']], objects=[{'a': 1}], names={'x'}, pets={Pet(id=1)}, tag_sets=[['a']])",
+            id="root-model-type-alias",
+        ),
     ],
 )
 def test_main_unique_items_as_set_collapsed_root_items(
@@ -8637,7 +8643,11 @@ def test_main_unique_items_as_set_collapsed_root_items(
     ``Tags`` (a list) and ``Object`` (a dict) stay named as without --collapse-root-models, so the set holds their
     instances, which hash by identity; ``Name`` (a string) is inlined. Up to 0.89.0 collapse inlined them all, and
     ``set[list[str]]`` and ``set[dict[str, int]]`` rejected every non-empty array. msgspec writes the root models as
-    aliases, whose arrays the set rule reads as their values, so they stay lists.
+    aliases, whose arrays the set rule reads as their values, so they stay lists, and so do the Structs of ``Pets``,
+    which never hash. A RootModel written as an alias (``--use-root-model-type-alias``) never hashes, so its set is
+    decided once collapse inlined it: ``Name`` gives the set of strings 0.89.0 wrote, and the lists and dicts of
+    ``Tags`` and ``Object``, also inside ``TagSets``, keep lists. ``Pets`` and ``TagSets`` are inlined at a field that
+    names them, which shares the nodes of their root types.
     """
     name = "unique_items_collapsed_root_items"
     run_main_and_assert(
@@ -8655,7 +8665,7 @@ def test_main_unique_items_as_set_collapsed_root_items(
         ],
         force_exec_validation=True,
     )
-    payload = '{"tags": [["a"]], "objects": [{"a": 1}], "names": ["x", "x"]}'
+    payload = '{"tags": [["a"]], "objects": [{"a": 1}], "names": ["x", "x"], "pets": [{"id": 1}], "tag_sets": [["a"]]}'
     if expected_repr is None:
         with _generated_model(output_file, name, "Root") as model:
             msgspec.json.decode(payload, type=model)

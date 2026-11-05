@@ -7,7 +7,7 @@ from typing import Annotated, TypeAlias
 
 from msgspec import UNSET, Meta
 from msgspec import Struct as _Struct
-from msgspec import UnsetType
+from msgspec import UnsetType, field
 
 
 class Struct(_Struct, frozen=True):
@@ -30,7 +30,7 @@ Shape: TypeAlias = Circle | str
 
 
 class Root(Struct):
-    pets: set[Pet] | UnsetType = UNSET
-    names: set[Name] | UnsetType = UNSET
+    pets: set[Pet] | UnsetType = field(default_factory=set)
+    names: set[Name] | UnsetType = field(default_factory=lambda: {'a', 'b'})
     shapes: set[Shape] | UnsetType = UNSET
     maybe_pets: set[Pet | None] | UnsetType = UNSET

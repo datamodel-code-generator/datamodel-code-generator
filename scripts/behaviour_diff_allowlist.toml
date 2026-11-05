@@ -247,9 +247,18 @@ decision = "#6266"
 release_note = "with --use-unique-items-as-set, a uniqueItems array of models whose class can never hash its instances (TypedDict, non-frozen dataclasses and msgspec Structs, RootModel aliases) stays a list instead of a set that rejects every non-empty array, and the models of a type alias that a set names take the set item hash"
 
 [[accepted]]
+input = "*unique_items_model_items*"
+backends = [ "msgspec.Struct" ]
+aspects = [ "default" ]
+match = "^\\[default\\] Root:pets: 'factory:set' -> 'factory:list'$"
+reason = "the array default of a uniqueItems array of msgspec Structs that stays a list (#6266) is the list the schema declares, as the default of any list, instead of an empty set"
+decision = "#6266"
+release_note = "with --use-unique-items-as-set, a uniqueItems array of models whose class can never hash its instances (TypedDict, non-frozen dataclasses and msgspec Structs, RootModel aliases) stays a list instead of a set that rejects every non-empty array, and the models of a type alias that a set names take the set item hash"
+
+[[accepted]]
 input = "*unique_items_collapsed_root_items*"
 aspects = [ "type" ]
-match = "^\\[type\\] Root:(?:tags|objects): Union\\[None, set\\[(?:list\\[str\\]|dict\\[str, int\\])\\]\\] -> Union\\[None, set\\[(?:Tags|Object)\\]\\]$"
+match = "^\\[type\\] Root:(?:tags|objects|tag_sets): Union\\[None, set\\[(?:list\\[str\\]|dict\\[str, int\\])\\]\\] -> Union\\[None, set\\[(?:Tags|Object)\\]\\]$"
 reason = "with --collapse-root-models --use-unique-items-as-set (the practical presets), a root model of a list or a dict inlined into the items of a set gave set[list[str]] or set[dict[str, int]], which rejects every non-empty array; the root model stays named there, as without collapse, and hashes by identity (crash-class fix)"
 decision = "#6192"
 release_note = "with --collapse-root-models and --use-unique-items-as-set, a root model whose root type has no hashable value stays named as the item of a set instead of being inlined into a set that rejects every non-empty array"

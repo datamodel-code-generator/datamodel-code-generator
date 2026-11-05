@@ -1026,6 +1026,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._kept_parent_roots: dict[int, _KeptParentRoot] = {}
         """Each root model that the ``parent`` strategy named its inner model after and kept for its later holders,
         by id, until ``settle_kept_parent_roots`` decides it once every module is processed."""
+        self._unique_set_defaults: dict[int, tuple[DataModelFieldBase, Any]] = {}
+        """The list default of each field whose default --use-unique-items-as-set wrote as a set, with the field, by
+        the field's id, which the field takes back where its sets turn back into lists after collapse."""
         self._emitting_module_names: dict[int, str] = {}
         self._emitting_module_lists: list[tuple[str, list[DataModel]]] = []
         self._collapsed_reuse_models: dict[int, list[DataModel]] = {}

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, RootModel, constr
+from pydantic import BaseModel, Field, RootModel, constr
 
 
 class Pet(BaseModel):
@@ -23,7 +23,7 @@ Shape = RootModel[Circle | str]
 
 
 class Root(BaseModel):
-    pets: set[Pet] | None = None
-    names: list[Name] | None = None
+    pets: set[Pet] | None = Field(set(), validate_default=True)
+    names: list[Name] | None = ['b', 'a']
     shapes: list[Shape] | None = None
     maybe_pets: set[Pet | None] | None = None
