@@ -23,6 +23,29 @@ DAY_TIME_DURATION_PATTERN = re.compile(
     r"(?:T(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+(?:\.\d+)?)S)?)?$"
 )
 XSD_WHITESPACE_CHARS = " \t\n\r"
+_XSD_SECONDS = r"(?:(?:\d+(?:\.\d*)?|\.\d+)S)?"
+_XSD_TIME_PART = rf"(?:T(?!$)(?:\d+H)?(?:\d+M)?{_XSD_SECONDS})?"
+XSD_DURATION_LEXICAL_FORMS: dict[str, tuple[re.Pattern[str], str]] = {
+    "duration": (
+        re.compile(rf"^-?P(?!$)(?:\d+Y)?(?:\d+M)?(?:\d+D)?{_XSD_TIME_PART}$"),
+        (
+            "P, then years (Y), months (M) and days (D), then after a T hours (H), minutes (M) and seconds (S),"
+            " with at least one component, and one after a T"
+        ),
+    ),
+    "dayTimeDuration": (
+        re.compile(rf"^-?P(?!$)(?:\d+D)?{_XSD_TIME_PART}$"),
+        (
+            "P, then days (D), then after a T hours (H), minutes (M) and seconds (S), with at least one component,"
+            " and one after a T"
+        ),
+    ),
+    "yearMonthDuration": (
+        re.compile(r"^-?P(?!$)(?:\d+Y)?(?:\d+M)?$"),
+        "P, then years (Y) and months (M), with at least one component",
+    ),
+}
+"""The lexical form of each built-in duration type and the words that describe it, by the type's local name."""
 IMPORT_DATETIME_MODULE = imports.IMPORT_DATETIME_MODULE
 
 
@@ -109,3 +132,13 @@ def _safe_day_time_duration_expression(value: str) -> _PythonExpression | None:
         call_text(".timedelta", arguments or ("0",)),
         prefix="-" if duration_match["sign"] else "",
     )
+
+
+def invalid_duration_message(type_name: str, value: str) -> str | None:
+    """Return why ``value`` is no lexical value of the built-in duration type ``type_name``; None when it is one."""
+    if (form := XSD_DURATION_LEXICAL_FORMS.get(type_name)) is None:
+        return None
+    pattern, requirement = form
+    if pattern.match(value.strip(XSD_WHITESPACE_CHARS)):
+        return None
+    return f"{value!r} is not a valid xs:{type_name} value: XML Schema requires {requirement}"
