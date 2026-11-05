@@ -345,6 +345,7 @@ from datamodel_code_generator.parser._schema_object import (
     _source_location,
     _type_null_sources,
     get_ref_type,
+    reads_ref_alone,
 )
 from datamodel_code_generator.parser._schema_reading import (
     _ARRAY_ITEMS_CONSTRAINT_FIELDS,
@@ -7783,8 +7784,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         path: list[str],
         validated_obj: JsonSchemaObject | None = None,
     ) -> None:
-        """Parse a raw schema, reusing a validated object when available."""
-        if isinstance(raw, dict) and "x-python-import" in raw and not self._is_base_stand_in_path(path):
+        """Parse a raw schema, reusing a validated object when available.
+
+        A schema with ``x-python-import`` is the class it imports, unless --ignore-ref-siblings-by-schema-version reads
+        it as its ``$ref`` alone (``reads_ref_alone``).
+        """
+        if (
+            isinstance(raw, dict)
+            and "x-python-import" in raw
+            and not self._is_base_stand_in_path(path)
+            and not reads_ref_alone(raw, self._schema_validation_context)
+        ):
             self.model_resolver.add(path, name, class_name=True, loaded=True)
             self._python_import_values[self.model_resolver.join_path(tuple(path))] = raw["x-python-import"]
             return

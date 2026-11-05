@@ -39446,3 +39446,41 @@ def test_main_jsonschema_ignore_ref_siblings_by_schema_version(output_file: Path
             expected_attribute_path=("tags", "root"),
             expected_attribute_value=["a", "a"],
         )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="overlaid"), pytest.param(["--ignore-ref-siblings-by-schema-version"], id="ignored")],
+)
+def test_main_jsonschema_ignore_ref_siblings_by_schema_version_identifier_and_import(
+    output_file: Path, extra_args: list[str]
+) -> None:
+    """Leave out an ``$id`` and an ``x-python-import`` beside a ``$ref`` of a draft-07 document under the option.
+
+    Draft 7 ignores every keyword beside a ``$ref``. Without the option the ``$id`` beside the ``$ref`` of ``name``
+    rebases it onto a resource that holds no ``Name``, which leaves ``name`` an ``Any`` model with a warning, and the
+    ``x-python-import`` beside the ``$ref`` of ``Address`` types ``address`` as ``IPv4Address``; with it both are read
+    as their targets, the three-character string ``Name``.
+    """
+    with warnings.catch_warnings(record=True) as records:
+        warnings.simplefilter("always", DanglingRefWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "ref_siblings_ignored_identifier_draft07.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(sorted({f"{record.message}\n" for record in records if record.category is DanglingRefWarning})),
+        name="warnings",
+    )
+    if extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="ignore_ref_siblings_by_schema_version_identifier_and_import",
+            model_name="Holder",
+            valid_json=json.dumps({"name": "abc", "address": "abc"}),
+            invalid_json=json.dumps({"address": "1.2.3.4"}),
+            expected_error_type="string_too_long",
+        )

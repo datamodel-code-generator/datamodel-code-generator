@@ -348,6 +348,9 @@ class SchemaDocumentsHost(Protocol):
     def _resolve_schema_resource_ref(self, reference: str, base: str, document: str, *, nested_scope: bool) -> str:
         """Resolve registered resources before considering a physical document fetch."""
 
+    def _ignores_ref_siblings_at(self, location: SchemaLocation | None) -> bool:
+        """Return whether the schema version of a location ignores the keywords beside a ``$ref``."""
+
     def _read_dialect(self, raw: dict[str, Any], *, inherited: DocumentDialect | None = None) -> DocumentDialect:
         """Return the dialect a document of the parser's kind is read by (``parser/jsonschema.py``)."""
 
@@ -550,11 +553,19 @@ def schema_resource_identifier(
     """Inherit draft identifiers while preserving fallbacks for roots and unknown dialects.
 
     A schema below no `$schema` reads the identifier keyword of the version its document is read by under
-    --read-schema-version-per-document, else that of ``schema_features`` (row ``legacy-first-read-dialect``).
+    --read-schema-version-per-document, else that of ``schema_features`` (row ``legacy-first-read-dialect``). Under
+    --ignore-ref-siblings-by-schema-version a schema with a `$ref` declares none where the version of its document
+    ignores the keywords beside the `$ref`, as its schema object is the `$ref` alone (``reads_ref_alone``).
     """
     if "$schema" in schema and getattr(parser.config, "jsonschema_version", None) in {None, JsonSchemaVersion.Auto}:
         version = _detect_declared_jsonschema_version(schema)
         id_field = JsonSchemaFeatures.from_version(version).id_field if version is not None else None
+    if (
+        parser.config.ignore_ref_siblings_by_schema_version
+        and isinstance(schema.get("$ref"), str)
+        and parser._ignores_ref_siblings_at(SchemaLocation(document, ()))  # noqa: SLF001
+    ):
+        return id_field, None
     identifier = schema.get(id_field or document_id_field(parser, document))
     if not identifier and (is_root or id_field is None):
         identifier = schema.get("$id") or schema.get("id")
