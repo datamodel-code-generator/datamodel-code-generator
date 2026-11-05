@@ -344,16 +344,34 @@ release_note = "minContains and maxContains written as integral floats such as 2
 [[accepted]]
 input = "tests/data/jsonschema/contains_count_beside_model_reference.json"
 aspects = [ "constraints" ]
-match = "^\\[constraints\\] ContainsCountBesideModelReference:tags_?[Aa]s_?[Ff]loats: .* -> .*(?:MinLen\\(min_length=2\\), MaxLen\\(max_length=3\\)|Meta\\(max_length=3,min_length=2\\)).*$"
+match = "^\\[constraints\\] ContainsCountBesideModelReference:tags_?[Aa]s_?[Ff]loats: .* -> .*(?:MinLen\\(min_length=2\\), ?MaxLen\\(max_length=3\\)|Meta\\(max_length=3,min_length=2\\)).*$"
 reason = "minContains and maxContains written as integral floats (2.0, 3.0) beside a reference to an array that the output writes as a list or a type alias of one were dropped, so the model accepted arrays with fewer or more items than the schema allows; they are read as the integers they are, as minItems is (schema-mismatch fix)"
 decision = "#5942"
 release_note = "minContains and maxContains written as integral floats such as 2.0 give the array its minimum and maximum length, as the integers 2 and 3 do"
 
 [[accepted]]
 input = "tests/data/jsonschema/contains_count_beside_model_reference.json"
-backends = [ "pydantic_v2.BaseModel" ]
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
 aspects = [ "constraints" ]
 match = "^\\[constraints\\] ContainsCountBesideModelReference:owner: Annotated\\[Union\\[None, Owner\\], MinLen\\(min_length=1\\)\\] -> Union\\[None, Owner\\]$"
 reason = "the item counts that contains implies were written beside a model class, which Pydantic cannot apply them to, so the model raised TypeError for every value; the field is written without them and warns, as msgspec does (crash fix)"
 decision = "#6035"
 release_note = "a property that references a model and states contains or minContains no longer gets min_length on the model class, which made every value raise TypeError; the counts are left out with a warning where the written type cannot take them"
+
+[[accepted]]
+input = "tests/data/jsonschema/schema_intersection*"
+backends = [ "pydantic_v2.dataclass" ]
+aspects = [ "constraints" ]
+match = "^\\[constraints\\] (?:allof_ref_item_constraints:)?Model:point_items: Union\\[None, list\\[Annotated\\[Point, Ge\\(ge=5\\)\\]\\]\\] -> Union\\[None, list\\[Point\\]\\]$"
+reason = "the minimum beside the allOf of a $ref to the object model Point was written on the item alias of that model class (PointItem = Annotated[Point, Field(ge=5)]), which Pydantic cannot apply to a Point, so the model raised TypeError for every non-empty list; a minimum does not apply to an object, so the item is written as Point and the keyword is left out with a warning, as msgspec does (crash fix)"
+decision = "#6035"
+release_note = "a numeric or length keyword beside a reference to an object model, such as minimum beside the allOf of a $ref to it, is no longer written on that model class, which made every value raise TypeError; it is left out with a warning, as msgspec does"
+
+[[accepted]]
+input = "tests/data/jsonschema/field_constraint_sites*"
+backends = [ "pydantic_v2.BaseModel" ]
+aspects = [ "constraints" ]
+match = "^\\[constraints\\] (?:union_root_kept_keywords:)?Model:loop: Annotated\\[Union\\[Loop, None, TextOrLoop1\\], MaxLen\\(max_length=3\\)\\] -> Union\\[Loop, None, TextOrLoop1\\]$"
+reason = "the maxLength beside the anyOf of a string and the root model Loop was written beside the union of the root models TextOrLoop1 and Loop, which Pydantic cannot apply to a root model instance, so the model raised TypeError for every value that is not null; TextOrLoop1 keeps the maxLength on its string, so the field is written without it and warns, as msgspec does (crash fix)"
+decision = "#6035"
+release_note = "a keyword beside a union whose members are all model or root model instances is no longer written on the field, which made every value raise TypeError; the members keep the check where they can, and the field warns"
