@@ -28,6 +28,10 @@ inline-docstrings-typing.TypedDict	main/jsonschema/string_literal_text/lone_surr
 dataclasses.dataclass	main/jsonschema/string_literal_text/lone_surrogate_literal_text[dataclasses.dataclass].py
 msgspec.Struct	main/jsonschema/string_literal_text/lone_surrogate_literal_text[msgspec.Struct].py
 typing.TypedDict	main/jsonschema/string_literal_text/lone_surrogate_literal_text[typing.TypedDict].py
+[test_lone_surrogate_reference]
+jsonschema	main/jsonschema/string_literal_text/lone_surrogate_reference[jsonschema].py
+jsonschema-missing-target	main/jsonschema/string_literal_text/lone_surrogate_reference[jsonschema-missing-target].py
+openapi	main/jsonschema/string_literal_text/lone_surrogate_reference[openapi].py
 [test_lone_surrogate_typed_dict_key_text]
 	main/jsonschema/string_literal_text/lone_surrogate_typed_dict_key_text.py
 [test_regex_literal_control_characters]

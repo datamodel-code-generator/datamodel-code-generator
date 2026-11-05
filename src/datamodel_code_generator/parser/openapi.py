@@ -51,7 +51,7 @@ from datamodel_code_generator.parser._naming import composed_name
 from datamodel_code_generator.parser._origins import with_type_origin
 from datamodel_code_generator.parser._rw_split import update_field_refs_for_variant
 from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row, SchemaSite
-from datamodel_code_generator.parser._schema_graph import keep_resolved_ref
+from datamodel_code_generator.parser._schema_graph import keep_resolved_ref, validate_resolved_ref
 from datamodel_code_generator.parser._schema_object import _has_map_key_keywords, _located_model_schema
 from datamodel_code_generator.parser._schema_refs import ref_file_document
 from datamodel_code_generator.parser.base import Result, get_special_path
@@ -132,7 +132,7 @@ class ReferenceObject(BaseModel):
     @classmethod
     def _keep_resolved_ref(cls, value: Any, handler: ValidatorFunctionWrapHandler) -> Any:
         """Keep the edge of a reference of a loaded document."""
-        return keep_resolved_ref(value, handler(value))
+        return validate_resolved_ref(value, handler)
 
 
 def _reference_first(value: Any, handler: ValidatorFunctionWrapHandler) -> Any:

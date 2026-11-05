@@ -614,3 +614,73 @@ def test_lone_surrogate_enum_unused_by_pydantic(output_file: Path) -> None:
         extra_args=["--formatters", "builtin"],
         force_exec_validation=True,
     )
+
+
+@pytest.mark.parametrize(
+    ("input_file_type", "schema"),
+    [
+        pytest.param(
+            "jsonschema",
+            {
+                "type": "object",
+                "properties": {"a": {"$ref": "#/definitions/D\ud800"}},
+                "definitions": {"D\ud800": {"type": "string"}},
+            },
+            id="jsonschema",
+        ),
+        pytest.param(
+            "jsonschema",
+            {
+                "type": "object",
+                "properties": {"a": {"$ref": "#/definitions/D\ud800"}},
+                "definitions": {"D": {"type": "string"}},
+            },
+            id="jsonschema-missing-target",
+            marks=pytest.mark.filterwarnings("ignore:Unresolved local \\$ref:UserWarning"),
+        ),
+        pytest.param(
+            "openapi",
+            {
+                "openapi": "3.0.0",
+                "info": {"title": "t", "version": "1"},
+                "paths": {
+                    "/x": {
+                        "get": {
+                            "parameters": [{"$ref": "#/components/parameters/P\ud800"}],
+                            "responses": {"200": {"$ref": "#/components/responses/R\ud800"}},
+                        }
+                    }
+                },
+                "components": {
+                    "parameters": {"P\ud800": {"name": "p", "in": "query", "schema": {"type": "string"}}},
+                    "responses": {
+                        "R\ud800": {
+                            "description": "d",
+                            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/S\ud800"}}},
+                        }
+                    },
+                    "schemas": {"S\ud800": {"type": "object", "properties": {"a": {"type": "string"}}}},
+                },
+            },
+            id="openapi",
+        ),
+    ],
+)
+def test_lone_surrogate_reference(output_file: Path, input_file_type: str, schema: dict[str, object]) -> None:
+    """Resolve a `$ref` that holds a lone surrogate, which failed as a schema validation error (#6306).
+
+    A missing target gets the fallback model of any unresolved reference. The schema is written here, as a YAML
+    parser rejects the escape of a lone surrogate in a fixture file.
+    """
+    (input_path := output_file.parent / "surrogate_ref.json").write_text(json.dumps(schema), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type=input_file_type,
+        extra_args=[
+            "--formatters",
+            "builtin",
+            *(["--openapi-scopes", "schemas", "paths", "parameters"] if input_file_type == "openapi" else []),
+        ],
+        force_exec_validation=True,
+    )
