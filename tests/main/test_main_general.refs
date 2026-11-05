@@ -718,6 +718,9 @@ typed-dict-extra-items	main/template_data/builtin_typed_dict.py
 	main/additional_imports_invalid.txt
 [test_main_rejects_additional_import_injection_in_extra_template_data]
 	main/additional_imports_invalid.txt
+[test_main_relative_base_class_and_type_override_paths]
+msgspec.Struct	main/main_general/main_relative_base_class_and_type_override_paths[msgspec.Struct]/
+pydantic_v2.BaseModel	main/main_general/main_relative_base_class_and_type_override_paths[pydantic_v2.BaseModel]/
 [test_main_use_single_line_docstring]
 	main/use_single_line_docstring.py
 [test_mcp_tools]

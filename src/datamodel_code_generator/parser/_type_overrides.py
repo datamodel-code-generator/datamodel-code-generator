@@ -390,17 +390,17 @@ def _override_expression(parser: TypeOverridesHost, path: str) -> PythonTypeExpr
 
     A value that names no type, such as an empty one, is an error, and so is a value with brackets that is no
     annotation, as neither has an import to write. A value without brackets names a class to import when it is a
-    dotted path, or a bare name that no builtin and no standard-library type of the registry has; a bare name that one
-    has, or a union of names such as ``str | None``, is an annotation. A name or a dotted path is read by the target's
-    identifier characters, which the parser of the Python that runs the generator may not know; the parser reads the
-    other values.
+    dotted path, relative (``..types.T``) or not, or a bare name that no builtin and no standard-library type of the
+    registry has; a bare name that one has, or a union of names such as ``str | None``, is an annotation. A name or a
+    dotted path is read by the target's identifier characters, which the parser of the Python that runs the generator
+    may not know; the parser reads the other values.
     """
     from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
         PythonTypeName,
         PythonTypeQualifiedName,
     )
 
-    if "[" not in path and is_dotted_python_name(path, parser.target_python_version):
+    if "[" not in path and is_dotted_python_name(path.lstrip("."), parser.target_python_version):
         if "." in path or not (
             parser._is_target_python_builtin_type(path)  # noqa: SLF001
             or parser._resolve_type_import(path)  # noqa: SLF001
