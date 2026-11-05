@@ -5792,6 +5792,34 @@ def test_main_read_escaped_ref_pointers_unescaped_slash(tmp_path: Path) -> None:
         )
 
 
+def test_main_read_escaped_ref_pointers_hash(output_file: Path) -> None:
+    """Read `%23` in a `$ref` pointer as the `#` of a name under --read-escaped-ref-pointers, also into another file.
+
+    `defs.json#/$defs/Tag%23` and `defs.json#/%24defs/Tag%23` name the definition `Tag#` of `defs.json`, not `Tag`,
+    and `#/$defs/Count%23` names `Count#`: the key of a reference keeps such a `#` percent-encoded, so it ends no
+    fragment and the reference is not read as one to the root of `defs.json#/$defs/Tag`.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "escaped_ref_pointer_hash" / "root.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel"),
+            "--read-escaped-ref-pointers",
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="escaped_ref_pointer_hash",
+        model_name="Tagged",
+        valid_json='{"external": "ab", "external_again": "cd", "local": 1}',
+        invalid_json='{"external": "abc"}',
+        expected_error_type="string_too_long",
+    )
+
+
 def test_json_pointer_decoding_preserves_ordinary_references(output_file: Path) -> None:
     """Keep ordinary escaped tokens, array indices and external references byte-identical."""
     run_main_and_assert(

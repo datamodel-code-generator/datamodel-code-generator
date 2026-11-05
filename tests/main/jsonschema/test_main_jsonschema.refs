@@ -8437,6 +8437,8 @@ unrelated-custom-explicit-target-unset	main/jsonschema/pydantic_v2_dataclass_ref
 read	main/jsonschema/read_escaped_ref_pointers.py
 read-name-map	main/jsonschema/read_escaped_ref_pointers.py	= main/jsonschema/read_escaped_ref_pointers~main_read_escaped_ref_pointers[read-name-map].py
 released	main/jsonschema/read_escaped_ref_pointers.py	= main/jsonschema/read_escaped_ref_pointers~main_read_escaped_ref_pointers[released].py
+[test_main_read_escaped_ref_pointers_hash]
+	main/jsonschema/read_escaped_ref_pointers_hash.py
 [test_main_read_escaped_ref_pointers_spellings]
 false_reference_fast_path.json	main/jsonschema/main_jsonschema/main_read_escaped_ref_pointers_spellings[false_reference_fast_path.json].py
 json_pointer_decoding/control.json	main/jsonschema/main_jsonschema/main_read_escaped_ref_pointers_spellings[json_pointer_decoding_control.json].py

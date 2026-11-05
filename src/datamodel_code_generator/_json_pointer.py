@@ -66,10 +66,10 @@ def decode_token(token: str, /) -> str:
 def fragment_pointer(tokens: Iterable[str | int], /) -> str:
     """Return the pointer of reference tokens in the fewest characters that ``reference_tokens`` reads back as them.
 
-    Each token is escaped and its ``%`` written as ``%25``; every other character stays as written, so a token without
-    ``~``, ``/`` or ``%`` keeps its text.
+    Each token is escaped, its ``%`` written as ``%25`` and its ``#``, which would end the fragment of the reference,
+    as ``%23``; every other character stays as written, so a token without ``~``, ``/``, ``%`` or ``#`` keeps its text.
     """
-    return "".join(f"/{escape_token(token).replace('%', '%25')}" for token in tokens)
+    return "".join(f"/{escape_token(token).replace('%', '%25').replace('#', '%23')}" for token in tokens)
 
 
 def join_pointer(tokens: Iterable[str | int], /) -> str:
