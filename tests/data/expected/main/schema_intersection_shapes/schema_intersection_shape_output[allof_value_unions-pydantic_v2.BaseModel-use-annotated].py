@@ -287,6 +287,30 @@ class Many(RootModel[Many8]):
     root: Many8
 
 
+class SiteProperties1(BaseModel):
+    b: str
+
+
+class SiteProperties2(RootModel[str]):
+    root: Annotated[str, Field(max_length=3)]
+
+
+class SiteProperties3(BaseModel):
+    a: str | None = None
+
+
+class SiteProperties4(SiteProperties1, SiteProperties3):
+    a: str | None = None
+
+
+class SiteProperties5(SiteProperties3):
+    a: str | None = None
+
+
+class SiteProperties(RootModel[SiteProperties4 | SiteProperties5]):
+    root: SiteProperties4 | SiteProperties5
+
+
 class OneBase3(BaseModel):
     pass
 

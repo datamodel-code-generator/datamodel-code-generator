@@ -141,6 +141,8 @@ _ALL_OF_PARTS: Final = "its allOf members and its own keywords"
 _ALL_OF_MEMBER_ANNOTATIONS: Final = frozenset({"description", "default", "examples", "deprecated"})
 """The annotations an allOf site takes from its members when it does not write them itself."""
 _COMBINATORS: Final = frozenset({"allOf", "anyOf", "oneOf"})
+_OBJECT_KEYWORDS: Final = frozenset({*schema_positions("object"), "required", "minProperties", "maxProperties"})
+"""The keywords that constrain objects only, which the values beside the object branches of an allOf do not meet."""
 _ValueConjunction: TypeAlias = tuple[tuple[JsonSchemaObject, ...], tuple[str, ...]]
 """The value parts of one combination of branches, and the ``$ref`` its members and branches write themselves."""
 
@@ -1465,34 +1467,47 @@ def holds_union_member(parser: SchemaRefReader, schema: JsonSchemaObject, seen: 
     return False
 
 
-def _member_conjunctions(
+def _member_conjunctions(  # noqa: PLR0913
     parser: AllOfValuesHost,
     item: JsonSchemaObject | bool,  # noqa: FBT001
     where: str,
     *,
     skips_objects: bool,
     branch: bool = False,
+    in_branch: bool = False,
 ) -> list[_ValueConjunction] | None:
     """Return the conjunctions of value parts whose union an allOf member or a branch is (``_value_conjunctions``).
 
     ``true`` is one conjunction without parts, ``false`` none. A ``$ref`` is the schema it names merged with its
     siblings, which the conjunctions write as that reference; a circular one stays a reference, no value part. With
-    ``skips_objects`` a ``branch`` that is no schema of one value is none, as the classes of the branches type it.
+    ``skips_objects`` a ``branch`` that is no schema of one value is none, as the classes of the branches type it, and
+    a member outside the branches (not ``in_branch``) is read without its keywords that constrain objects only.
     """
     if not isinstance(item, JsonSchemaObject):
         return [((), ())] if item else []
     refs: tuple[str, ...] = ()
     if item.ref:
         refs, item = (item.ref,), parser._merge_ref_with_schema(item, where)  # noqa: SLF001
+    if skips_objects and not (branch or in_branch) and _OBJECT_KEYWORDS.intersection(item.model_fields_set):
+        item = parser._schema_object(item.model_dump(exclude=_OBJECT_KEYWORDS, exclude_unset=True, by_alias=True))  # noqa: SLF001
     if not (item.allOf or item.anyOf or item.oneOf):
         conjunctions: list[_ValueConjunction] | None = [((item,), refs)] if is_all_of_value_part(parser, item) else None
-    elif (conjunctions := _value_conjunctions(parser, item, where, skips_objects=skips_objects)) is not None:
+    elif (
+        conjunctions := _value_conjunctions(
+            parser, item, where, skips_objects=skips_objects, in_branch=branch or in_branch
+        )
+    ) is not None:
         conjunctions = [(parts, refs or inner) for parts, inner in conjunctions]
     return [] if conjunctions is None and skips_objects and branch else conjunctions
 
 
 def _value_conjunctions(
-    parser: AllOfValuesHost, schema: JsonSchemaObject, where: str, *, skips_objects: bool = False
+    parser: AllOfValuesHost,
+    schema: JsonSchemaObject,
+    where: str,
+    *,
+    skips_objects: bool = False,
+    in_branch: bool = False,
 ) -> list[_ValueConjunction] | None:
     """Return the conjunctions of value parts whose union ``schema`` is, one per combination of its branches.
 
@@ -1500,16 +1515,20 @@ def _value_conjunctions(
     branches), and the combinations take one of each in document order, the first varying slowest; the own keywords
     are a part of each where they write a value keyword or an item schema, as ``collect_all_of_value_parts`` reads
     them. None where a part is no schema of one value (``is_all_of_value_part``) or there are more combinations than
-    ``BRANCH_COMBINATION_LIMIT``.
+    ``BRANCH_COMBINATION_LIMIT``. With ``skips_objects`` the own keywords that constrain objects only are no part
+    outside the branches (not ``in_branch``), as an allOf member's (``_member_conjunctions``).
     """
+    excluded = _COMBINATORS | _OBJECT_KEYWORDS if skips_objects and not in_branch else _COMBINATORS
     if not is_all_of_value_part(
         parser,
-        own := parser._schema_object(schema.model_dump(exclude=_COMBINATORS, exclude_unset=True, by_alias=True)),  # noqa: SLF001
+        own := parser._schema_object(schema.model_dump(exclude=excluded, exclude_unset=True, by_alias=True)),  # noqa: SLF001
     ):
         return None
     slots: list[list[_ValueConjunction]] = []
     for item in schema.allOf:
-        if (member := _member_conjunctions(parser, item, where, skips_objects=skips_objects)) is None:
+        if (
+            member := _member_conjunctions(parser, item, where, skips_objects=skips_objects, in_branch=in_branch)
+        ) is None:
             return None
         slots.append(member)
     for branches in (schema.anyOf, schema.oneOf):
@@ -1517,7 +1536,9 @@ def _value_conjunctions(
             union: list[_ValueConjunction] = []
             for branch in branches:
                 if (
-                    choices := _member_conjunctions(parser, branch, where, skips_objects=skips_objects, branch=True)
+                    choices := _member_conjunctions(
+                        parser, branch, where, skips_objects=skips_objects, branch=True, in_branch=in_branch
+                    )
                 ) is None:
                     return None
                 union.extend(choices)
@@ -1538,19 +1559,26 @@ def _value_conjunctions(
 
 
 def _value_variants(
-    parser: AllOfValuesHost, conjunctions: list[_ValueConjunction], *, objects_admitted: bool
+    parser: AllOfValuesHost,
+    conjunctions: list[_ValueConjunction],
+    *,
+    objects_admitted: bool,
+    leaves_unread: bool = False,
 ) -> tuple[list[dict[str, Any]], bool] | None:
     """Return the value of each satisfiable conjunction of value parts, and whether every one excludes objects.
 
-    None where a part is not intersected here (``intersects_value_parts`` without literals), unless
-    ``objects_admitted`` where a value admits an object, and under ``legacy-all-of-site-form`` where a pattern needs a
-    regex engine of the models that use its type (``patterns_need_holder_engine``).
+    None where a part is not intersected here (``intersects_value_parts`` without literals; with ``leaves_unread``
+    that conjunction is left out instead), where a value admits an object unless ``objects_admitted``, and under
+    ``legacy-all-of-site-form`` where a pattern needs a regex engine of the models that use its type
+    (``patterns_need_holder_engine``).
     """
     legacy = "legacy-all-of-site-form" in parser._legacy_intersection  # noqa: SLF001
     variants: list[dict[str, Any]] = []
     excludes_objects = True
     for parts, refs in conjunctions:
         if not intersects_value_parts(parser, parts, literals=False):
+            if leaves_unread:
+                continue
             return None
         if unsatisfiable_value_keywords(parser, parts):
             continue
@@ -1567,12 +1595,17 @@ def all_of_value_variants(parser: AllOfValuesHost, obj: JsonSchemaObject) -> lis
     """Return the values an allOf of object and value branches admits beside the classes of its object branches.
 
     They are the intersections of each combination of value branches with the site's other parts, the object
-    branches left out (``_value_conjunctions`` with ``skips_objects``), as ``all_of_value_union_site`` writes them;
-    none where its parts leave none or are not read here. A null is left to the null of the union
+    branches left out (``_value_conjunctions`` with ``skips_objects``) and so are the keywords of the site and its
+    allOf members that constrain objects only, as ``all_of_value_union_site`` writes them; none where its parts leave
+    none or are not read here. A combination that is not intersected here, such as one with an ``enum``, is left out,
+    as its branch's class, an enum's included, types it. A null is left to the null of the union
     (``JsonSchemaParser._all_of_union_null``).
     """
     conjunctions = _value_conjunctions(parser, obj, named_location(obj.schema_location, "allOf"), skips_objects=True)
-    if conjunctions is None or (read := _value_variants(parser, conjunctions, objects_admitted=True)) is None:
+    if (
+        conjunctions is None
+        or (read := _value_variants(parser, conjunctions, objects_admitted=True, leaves_unread=True)) is None
+    ):
         return []
     return [value for value in read[0] if value.get("type") != "null"]
 

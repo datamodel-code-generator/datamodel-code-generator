@@ -195,7 +195,7 @@ class WithProperties5(WithProperties1):
     pass
 
 
-WithProperties: TypeAlias = WithProperties4 | WithProperties5
+WithProperties: TypeAlias = WithProperties4 | WithProperties5 | str | int
 
 
 class WithEnum1(Enum):
@@ -212,7 +212,10 @@ class WithEnum3(Enum):
     bb = 'bb'
 
 
-WithEnum: TypeAlias = WithEnum3
+WithEnum4: TypeAlias = int
+
+
+WithEnum: TypeAlias = WithEnum3 | WithEnum4
 
 
 Untyped1: TypeAlias = Any
@@ -258,6 +261,32 @@ class Many18(Many17):
 
 
 Many: TypeAlias = Many18
+
+
+class SiteProperties1(Struct):
+    b: str
+
+
+SiteProperties2: TypeAlias = Annotated[str, Meta(max_length=3)]
+
+
+class SiteProperties3(Struct):
+    a: str | UnsetType = UNSET
+
+
+class SiteProperties4(Struct):
+    b: str
+    a: str | UnsetType = UNSET
+
+
+class SiteProperties5(SiteProperties3):
+    a: str | UnsetType = UNSET
+
+
+SiteProperties6: TypeAlias = Annotated[str, Meta(max_length=3)]
+
+
+SiteProperties: TypeAlias = SiteProperties4 | SiteProperties5 | SiteProperties6
 
 
 class Model(Struct):

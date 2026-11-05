@@ -46,7 +46,7 @@ pydantic_v2.BaseModel default with_object "ab" accepted
 pydantic_v2.BaseModel default with_object {"a": "x"} accepted
 pydantic_v2.BaseModel default with_object "a" rejected
 pydantic_v2.BaseModel default with_enum "bb" accepted
-pydantic_v2.BaseModel default with_enum 3 rejected
+pydantic_v2.BaseModel default with_enum 3 accepted
 pydantic_v2.BaseModel default with_enum "a" accepted
 pydantic_v2.BaseModel default untyped "a" accepted
 pydantic_v2.BaseModel default untyped 1 accepted
@@ -120,7 +120,7 @@ pydantic_v2.dataclass default with_object "ab" accepted
 pydantic_v2.dataclass default with_object {"a": "x"} accepted
 pydantic_v2.dataclass default with_object "a" rejected
 pydantic_v2.dataclass default with_enum "bb" accepted
-pydantic_v2.dataclass default with_enum 3 rejected
+pydantic_v2.dataclass default with_enum 3 accepted
 pydantic_v2.dataclass default with_enum "a" accepted
 pydantic_v2.dataclass default untyped "a" accepted
 pydantic_v2.dataclass default untyped 1 accepted
@@ -194,7 +194,7 @@ msgspec.Struct default with_object "ab" accepted
 msgspec.Struct default with_object {"a": "x"} accepted
 msgspec.Struct default with_object "a" rejected
 msgspec.Struct default with_enum "bb" accepted
-msgspec.Struct default with_enum 3 rejected
+msgspec.Struct default with_enum 3 accepted
 msgspec.Struct default with_enum "a" accepted
 msgspec.Struct default untyped "a" accepted
 msgspec.Struct default untyped 1 accepted
@@ -268,7 +268,7 @@ pydantic_v2.BaseModel --field-constraints with_object "ab" accepted
 pydantic_v2.BaseModel --field-constraints with_object {"a": "x"} accepted
 pydantic_v2.BaseModel --field-constraints with_object "a" rejected
 pydantic_v2.BaseModel --field-constraints with_enum "bb" accepted
-pydantic_v2.BaseModel --field-constraints with_enum 3 rejected
+pydantic_v2.BaseModel --field-constraints with_enum 3 accepted
 pydantic_v2.BaseModel --field-constraints with_enum "a" accepted
 pydantic_v2.BaseModel --field-constraints untyped "a" accepted
 pydantic_v2.BaseModel --field-constraints untyped 1 accepted
@@ -342,7 +342,7 @@ pydantic_v2.BaseModel --use-annotated with_object "ab" accepted
 pydantic_v2.BaseModel --use-annotated with_object {"a": "x"} accepted
 pydantic_v2.BaseModel --use-annotated with_object "a" rejected
 pydantic_v2.BaseModel --use-annotated with_enum "bb" accepted
-pydantic_v2.BaseModel --use-annotated with_enum 3 rejected
+pydantic_v2.BaseModel --use-annotated with_enum 3 accepted
 pydantic_v2.BaseModel --use-annotated with_enum "a" accepted
 pydantic_v2.BaseModel --use-annotated untyped "a" accepted
 pydantic_v2.BaseModel --use-annotated untyped 1 accepted
@@ -416,7 +416,7 @@ pydantic_v2.BaseModel --collapse-root-models with_object "ab" accepted
 pydantic_v2.BaseModel --collapse-root-models with_object {"a": "x"} accepted
 pydantic_v2.BaseModel --collapse-root-models with_object "a" rejected
 pydantic_v2.BaseModel --collapse-root-models with_enum "bb" accepted
-pydantic_v2.BaseModel --collapse-root-models with_enum 3 rejected
+pydantic_v2.BaseModel --collapse-root-models with_enum 3 accepted
 pydantic_v2.BaseModel --collapse-root-models with_enum "a" accepted
 pydantic_v2.BaseModel --collapse-root-models untyped "a" accepted
 pydantic_v2.BaseModel --collapse-root-models untyped 1 accepted
@@ -490,7 +490,7 @@ msgspec.Struct --collapse-root-models with_object "ab" accepted
 msgspec.Struct --collapse-root-models with_object {"a": "x"} accepted
 msgspec.Struct --collapse-root-models with_object "a" rejected
 msgspec.Struct --collapse-root-models with_enum "bb" accepted
-msgspec.Struct --collapse-root-models with_enum 3 rejected
+msgspec.Struct --collapse-root-models with_enum 3 accepted
 msgspec.Struct --collapse-root-models with_enum "a" accepted
 msgspec.Struct --collapse-root-models untyped "a" accepted
 msgspec.Struct --collapse-root-models untyped 1 accepted
@@ -564,7 +564,7 @@ pydantic_v2.BaseModel --use-site-models-for-constrained-refs with_object "ab" ac
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs with_object {"a": "x"} accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs with_object "a" rejected
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs with_enum "bb" accepted
-pydantic_v2.BaseModel --use-site-models-for-constrained-refs with_enum 3 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs with_enum 3 accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs with_enum "a" accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped "a" accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped 1 accepted
@@ -638,7 +638,7 @@ pydantic_v2.dataclass --use-site-models-for-constrained-refs with_object "ab" ac
 pydantic_v2.dataclass --use-site-models-for-constrained-refs with_object {"a": "x"} accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs with_object "a" rejected
 pydantic_v2.dataclass --use-site-models-for-constrained-refs with_enum "bb" accepted
-pydantic_v2.dataclass --use-site-models-for-constrained-refs with_enum 3 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs with_enum 3 accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs with_enum "a" accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped "a" accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped 1 accepted
@@ -712,7 +712,7 @@ msgspec.Struct --use-site-models-for-constrained-refs with_object "ab" accepted
 msgspec.Struct --use-site-models-for-constrained-refs with_object {"a": "x"} accepted
 msgspec.Struct --use-site-models-for-constrained-refs with_object "a" rejected
 msgspec.Struct --use-site-models-for-constrained-refs with_enum "bb" accepted
-msgspec.Struct --use-site-models-for-constrained-refs with_enum 3 rejected
+msgspec.Struct --use-site-models-for-constrained-refs with_enum 3 accepted
 msgspec.Struct --use-site-models-for-constrained-refs with_enum "a" accepted
 msgspec.Struct --use-site-models-for-constrained-refs untyped "a" accepted
 msgspec.Struct --use-site-models-for-constrained-refs untyped 1 accepted
@@ -786,7 +786,7 @@ pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs with_object {"a": "x"} accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs with_object "a" rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs with_enum "bb" accepted
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs with_enum 3 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs with_enum 3 accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs with_enum "a" accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped "a" accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped 1 accepted
@@ -860,7 +860,7 @@ pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-r
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs with_object {"a": "x"} accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs with_object "a" rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs with_enum "bb" accepted
-pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs with_enum 3 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs with_enum 3 accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs with_enum "a" accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped "a" accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped 1 accepted

@@ -137,7 +137,7 @@ class WithProperties5(WithProperties1):
     pass
 
 
-WithProperties = TypeAliasType("WithProperties", WithProperties4 | WithProperties5)
+WithProperties = TypeAliasType("WithProperties", WithProperties4 | WithProperties5 | str | int)
 
 
 class WithEnum1(Enum):
@@ -155,7 +155,7 @@ class WithEnum3(Enum):
     bb = 'bb'
 
 
-WithEnum = TypeAliasType("WithEnum", WithEnum3)
+WithEnum = TypeAliasType("WithEnum", WithEnum3 | int)
 
 
 Untyped = TypeAliasType("Untyped", Any | int)
@@ -169,6 +169,27 @@ class Loop1:
 @dataclass
 class Many:
     pass
+
+
+@dataclass
+class SiteProperties1:
+    b: str
+
+
+@dataclass
+class SiteProperties2:
+    a: str | None = None
+
+
+@dataclass
+class SiteProperties3(SiteProperties1, SiteProperties2):
+    b: str = Field(..., kw_only=True)
+    a: str | None = None
+
+
+SiteProperties = TypeAliasType(
+    "SiteProperties", SiteProperties3 | Annotated[str, Field(max_length=3)]
+)
 
 
 @dataclass

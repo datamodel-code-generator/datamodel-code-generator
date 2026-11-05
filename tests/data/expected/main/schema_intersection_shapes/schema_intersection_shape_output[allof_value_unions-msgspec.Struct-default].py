@@ -232,6 +232,29 @@ class Many8(Many7):
 Many: TypeAlias = Many8
 
 
+class SiteProperties1(Struct):
+    b: str
+
+
+SiteProperties2: TypeAlias = Annotated[str, Meta(max_length=3)]
+
+
+class SiteProperties3(Struct):
+    a: str | UnsetType = UNSET
+
+
+class SiteProperties4(Struct):
+    b: str
+    a: str | UnsetType = UNSET
+
+
+class SiteProperties5(SiteProperties3):
+    a: str | UnsetType = UNSET
+
+
+SiteProperties: TypeAlias = SiteProperties4 | SiteProperties5
+
+
 class OneBase3(Struct):
     pass
 

@@ -83,6 +83,22 @@ class Many(BaseModel):
     pass
 
 
+class SiteProperties1(BaseModel):
+    b: str
+
+
+class SiteProperties2(BaseModel):
+    a: str | None = None
+
+
+class SiteProperties3(SiteProperties1, SiteProperties2):
+    a: str | None = None
+
+
+class SiteProperties(RootModel[SiteProperties3]):
+    root: SiteProperties3
+
+
 class Model(BaseModel):
     pair: constr(min_length=2) | int | None = None
     bounded: constr(min_length=2, max_length=5) | conint(ge=0) | None = None

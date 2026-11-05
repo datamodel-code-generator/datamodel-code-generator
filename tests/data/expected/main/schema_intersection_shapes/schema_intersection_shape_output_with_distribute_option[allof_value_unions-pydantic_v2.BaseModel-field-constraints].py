@@ -245,8 +245,8 @@ class WithProperties5(WithProperties1):
     pass
 
 
-class WithProperties(RootModel[WithProperties4 | WithProperties5]):
-    root: WithProperties4 | WithProperties5
+class WithProperties(RootModel[WithProperties4 | WithProperties5 | str | int]):
+    root: WithProperties4 | WithProperties5 | str | int
 
 
 class WithEnum1(Enum):
@@ -263,8 +263,12 @@ class WithEnum3(Enum):
     bb = 'bb'
 
 
-class WithEnum(RootModel[WithEnum3]):
-    root: WithEnum3
+class WithEnum4(RootModel[int]):
+    root: int
+
+
+class WithEnum(RootModel[WithEnum3 | WithEnum4]):
+    root: WithEnum3 | WithEnum4
 
 
 class Untyped1(RootModel[Any]):
@@ -321,6 +325,34 @@ class Many18(Many17):
 
 class Many(RootModel[Many18]):
     root: Many18
+
+
+class SiteProperties1(BaseModel):
+    b: str
+
+
+class SiteProperties2(RootModel[str]):
+    root: str = Field(..., max_length=3)
+
+
+class SiteProperties3(BaseModel):
+    a: str | None = None
+
+
+class SiteProperties4(SiteProperties1, SiteProperties3):
+    a: str | None = None
+
+
+class SiteProperties5(SiteProperties3):
+    a: str | None = None
+
+
+class SiteProperties6(RootModel[str]):
+    root: str = Field(..., max_length=3)
+
+
+class SiteProperties(RootModel[SiteProperties4 | SiteProperties5 | SiteProperties6]):
+    root: SiteProperties4 | SiteProperties5 | SiteProperties6
 
 
 class Model(BaseModel):

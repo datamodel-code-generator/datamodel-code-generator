@@ -131,8 +131,8 @@ class WithProperties5(WithProperties1):
     pass
 
 
-class WithProperties(RootModel[WithProperties4 | WithProperties5]):
-    root: WithProperties4 | WithProperties5
+class WithProperties(RootModel[WithProperties4 | WithProperties5 | str | int]):
+    root: WithProperties4 | WithProperties5 | str | int
 
 
 class WithEnum1(Enum):
@@ -149,8 +149,8 @@ class WithEnum3(Enum):
     bb = 'bb'
 
 
-class WithEnum(RootModel[WithEnum3]):
-    root: WithEnum3
+class WithEnum(RootModel[WithEnum3 | int]):
+    root: WithEnum3 | int
 
 
 class Untyped(RootModel[Any | int]):
@@ -163,6 +163,22 @@ class Loop1(BaseModel):
 
 class Many(BaseModel):
     pass
+
+
+class SiteProperties1(BaseModel):
+    b: str
+
+
+class SiteProperties2(BaseModel):
+    a: str | None = None
+
+
+class SiteProperties3(SiteProperties1, SiteProperties2):
+    a: str | None = None
+
+
+class SiteProperties(RootModel[SiteProperties3 | constr(max_length=3)]):
+    root: SiteProperties3 | constr(max_length=3)
 
 
 class Model(BaseModel):
