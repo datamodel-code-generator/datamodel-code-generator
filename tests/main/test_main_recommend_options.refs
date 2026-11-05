@@ -78,6 +78,7 @@ api-scope-excluded-path-operations	main/main_recommend_options/recommend_options
 asyncapi	main/main_recommend_options/recommend_options_for_schemas[asyncapi].stdout.txt
 asyncapi-avro-messages	main/main_recommend_options/recommend_options_for_schemas[asyncapi-avro-messages].stdout.txt
 asyncapi-avro-payload	main/main_recommend_options/recommend_options_for_schemas[asyncapi-avro-payload].stdout.txt
+asyncapi-avro-shared-names	main/main_recommend_options/recommend_options_for_schemas[asyncapi-avro-shared-names].stdout.txt
 asyncapi-multi-format-extension	main/main_recommend_options/recommend_options_for_schemas[asyncapi-multi-format-extension].stdout.txt
 asyncapi-v3	main/main_recommend_options/recommend_options_for_schemas[asyncapi-v3].stdout.txt
 blank-union-titles	main/main_recommend_options/recommend_options_for_schemas[blank-union-titles].stdout.txt

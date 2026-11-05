@@ -7,6 +7,7 @@ import re
 from collections import Counter, defaultdict
 from copy import copy
 from dataclasses import dataclass
+from operator import itemgetter
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, get_args
 
 from datamodel_code_generator import SchemaParseError
@@ -573,7 +574,7 @@ class _Walker:
         self.variant_tags: defaultdict[tuple[str, str], set[frozenset[str]]] = defaultdict(set)
         self.component_keys = frozenset(refs.values())
         self.max_depth = 0
-        self.converted_components: dict[str, Any] = {}
+        self.converted_components: list[tuple[str, Any]] = []
 
     def shape(self, node: object) -> int:
         """Return an interned id of a schema's structure, ignoring documentation keywords."""
@@ -653,7 +654,8 @@ class _Walker:
     def walk_converted(self, key: str, document: _ConvertedDocument) -> None:
         """Walk a converted document as generation parses it: its root as the named schema, then the schemas it uses.
 
-        Its references are read in the document alone; the definitions walked are named schemas beside the components.
+        Its references are read in the document alone; the definitions walked are named schemas beside the components,
+        kept apart from those of the other documents and from components of the same name, as generation names them.
         """
         definitions = definition_schemas(document)
         walker = copy(self)
@@ -662,7 +664,7 @@ class _Walker:
         walker.component_keys = frozenset(definitions)
         walker.references = defaultdict(set)
         walker.walk_named(key, {name: value for name, value in document.items() if name not in DEFINITION_KEYS})
-        self.converted_components.update(_walk_components(walker, definitions, [key]))
+        self.converted_components.extend(_walk_components(walker, definitions, [key]).items())
         self.max_depth = max(self.max_depth, walker.max_depth)
 
     def record_name(self, name: str, parent: str, parents: defaultdict[str, set[str]]) -> None:
@@ -837,23 +839,20 @@ def _reference_cycles(references: Mapping[str, set[str]]) -> int:
     return sum(len(group) > 1 for group in groups)
 
 
-def _count_titles(counts: Counter[str], titles: Mapping[str, str], keys: AbstractSet[str]) -> Counter[str]:
-    """Count component titles that collide or repeat the normalized component ``keys``; return the shared titles."""
-    groups = Counter(normalize_name(title) for title in titles.values())
+def _count_titles(counts: Counter[str], titles: Sequence[tuple[str, str]], keys: AbstractSet[str]) -> Counter[str]:
+    """Count component titles, (key, title) pairs, that collide or repeat the normalized ``keys``; return the shared."""
+    groups = Counter(normalize_name(title) for _, title in titles)
     shared = {title: count for title, count in groups.items() if count > 1}
     counts["titled_components"] = len(titles)
     counts["component_title_duplicate_groups"] = len(shared)
     counts["component_titles_in_duplicate_groups"] = sum(shared.values())
     counts["component_titles_equal_own_key"] = sum(
-        normalize_name(title) == normalize_name(key) for key, title in titles.items()
+        normalize_name(title) == normalize_name(key) for key, title in titles
     )
     counts["component_titles_equal_other_key"] = sum(
-        (normalized := normalize_name(title)) != normalize_name(key) and normalized in keys
-        for key, title in titles.items()
+        (normalized := normalize_name(title)) != normalize_name(key) and normalized in keys for key, title in titles
     )
-    return Counter({
-        title: shared[normalize_name(title)] for title in titles.values() if normalize_name(title) in shared
-    })
+    return Counter({title: shared[normalize_name(title)] for _, title in titles if normalize_name(title) in shared})
 
 
 def _count_names(counts: Counter[str], walker: _Walker, keys: AbstractSet[str]) -> Counter[str]:
@@ -916,11 +915,16 @@ def measure_signals(
         extra = list(_message_schemas(document))
     for key, node in extra:
         walker.walk_named(key, node)
-    components = _walk_components(walker, all_components, None if whole else [key for key, _ in extra])
-    components = dict(sorted({**walker.converted_components, **components}.items()))
-    named = {key: node for key, node in components.items() if isinstance(node, dict)}
-    counts["component_enums"] = sum(_is_enum(node) for node in named.values())
-    titles = {key: title for key, node in named.items() if (title := _title(node))}
+    components = sorted(
+        [
+            *_walk_components(walker, all_components, None if whole else [key for key, _ in extra]).items(),
+            *walker.converted_components,
+        ],
+        key=itemgetter(0),
+    )
+    named = [(key, node) for key, node in components if isinstance(node, dict)]
+    counts["component_enums"] = sum(_is_enum(node) for _, node in named)
+    titles = [(key, title) for key, node in named if (title := _title(node))]
     root_title = ""
     if kind == "jsonschema":
         root = {key: value for key, value in document.items() if key not in DEFINITION_KEYS}
@@ -938,11 +942,11 @@ def measure_signals(
     counts["variants_with_differing_tags"] = len({
         variant for (variant, _), tags in walker.variant_tags.items() if len(tags) > 1
     })
-    keys = {normalize_name(key) for key in components}
+    keys = {normalize_name(key) for key, _ in components}
     shared_names = _count_names(counts, walker, keys)
     shared_titles = _count_titles(counts, titles, keys)
     counts["inline_title_max_repeat"] = max(walker.inline_titles.values(), default=0)
-    dotted = [key for key in components if "." in key]
+    dotted = [key for key, _ in components if "." in key]
     counts["dotted_keys"] = len(dotted)
     counts["dotted_key_namespaces"] = len({_module(key) for key in dotted})
     counts["dotted_namespace_reference_cycles"] = _reference_cycles(walker.references) if dotted else 0
@@ -952,7 +956,7 @@ def measure_signals(
     counts["estimated_models"] = (
         counts["components"] + counts["inline_objects"] + counts["inline_enums"] + counts["inline_union_variants"]
     )
-    styles = Counter(_key_style(key) for key in components).most_common(1)
+    styles = Counter(_key_style(key) for key, _ in components).most_common(1)
     return Signals(
         counts={name: int(counts[name]) for name in sorted(SIGNAL_NAMES)},
         facts={
@@ -965,5 +969,7 @@ def measure_signals(
             "root_title": root_title,
             "format_examples": _example_text(walker.formats),
         },
-        component_names=frozenset(normalize_name(key) for key in (*all_components, *walker.converted_components)),
+        component_names=frozenset(
+            normalize_name(key) for key in (*all_components, *(key for key, _ in walker.converted_components))
+        ),
     )
