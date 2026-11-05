@@ -21,11 +21,41 @@
     "objectBesideListOfStructs": {
       "anyOf": [{"$ref": "#/$defs/PodList"}, {"$ref": "#/$defs/PodSpec"}],
       "default": {"a": "q"}
+    },
+    "listOfStructsBesideString": {
+      "anyOf": [{"type": "array", "items": {"$ref": "#/$defs/PodSpec"}}, {"type": "string"}],
+      "default": [{"a": "v"}]
+    },
+    "listOfStructsOrNull": {
+      "anyOf": [{"type": "array", "items": {"$ref": "#/$defs/PodSpec"}}, {"type": "null"}],
+      "default": [{"a": "u"}]
+    },
+    "secondTaggedVariant": {
+      "oneOf": [{"$ref": "#/$defs/Cat"}, {"$ref": "#/$defs/Dog"}],
+      "discriminator": {"propertyName": "kind"},
+      "default": {"kind": "dog", "bark": "loud"}
+    },
+    "structMapsBesideString": {
+      "anyOf": [{"type": "array", "items": {"$ref": "#/$defs/PodMap"}}, {"type": "string"}],
+      "default": [{"k": {"a": "m"}}]
+    },
+    "nullItemBesideString": {
+      "anyOf": [{"type": "array", "items": {"$ref": "#/$defs/NullablePod"}}, {"type": "string"}],
+      "default": [null, {"a": "n"}]
+    },
+    "nullItem": {"type": "array", "items": {"$ref": "#/$defs/NullablePod"}, "default": [null]},
+    "countsInOneMember": {
+      "anyOf": [{"type": "object", "additionalProperties": {"type": "integer"}}],
+      "default": {"k": 1}
     }
   },
   "$defs": {
     "PodSpec": {"type": "object", "properties": {"a": {"type": "string"}}},
     "PodOrCount": {"anyOf": [{"$ref": "#/$defs/PodSpec"}, {"type": "integer"}]},
-    "PodList": {"type": "array", "items": {"$ref": "#/$defs/PodSpec"}}
+    "PodList": {"type": "array", "items": {"$ref": "#/$defs/PodSpec"}},
+    "PodMap": {"type": "object", "additionalProperties": {"$ref": "#/$defs/PodSpec"}},
+    "NullablePod": {"type": ["object", "null"], "properties": {"a": {"type": "string"}}},
+    "Cat": {"type": "object", "properties": {"kind": {"const": "cat"}, "meow": {"type": "string"}}, "required": ["kind"]},
+    "Dog": {"type": "object", "properties": {"kind": {"const": "dog"}, "bark": {"type": "string"}}, "required": ["kind"]}
   }
 }

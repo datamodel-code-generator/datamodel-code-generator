@@ -193,28 +193,80 @@ def test_msgspec_graphql_scalar_alias_defaults(entrypoint: str, use_alias_type: 
 
 
 def test_msgspec_union_member_defaults(output_file: Path) -> None:
-    """Convert a union's default only to the member that takes its JSON kind, so ``Model()`` builds its defaults.
+    """Convert a union's default only to the member it fits, as the union writes it, so ``Model()`` builds its defaults.
 
-    A Struct takes an object default, a type alias what its type takes; a list default beside a Struct member stays
-    the value. Valid documents decode and invalid ones are rejected.
+    A Struct takes an object default, holding its tag if it holds the tag field, a type alias what its type takes; a
+    list default beside a Struct member stays the value, and one of Structs beside a str or None converts to the list,
+    as the list of a field does, with its item type admitting None where an item is None. Valid documents decode and
+    invalid ones are rejected.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "msgspec_union_member_defaults.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        extra_args=["--output-model-type", "msgspec.Struct", "--formatters", "builtin", "--disable-timestamp"],
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--use-msgspec-tagged-unions",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
     )
     documents = {
-        "valid": {"listBesideStruct": {"a": "s"}, "objectBesideList": ["t"], "listBesideAlias": 3},
+        "valid": {
+            "listBesideStruct": {"a": "s"},
+            "objectBesideList": ["t"],
+            "listBesideAlias": 3,
+            "listOfStructsBesideString": "r",
+            "listOfStructsOrNull": None,
+            "secondTaggedVariant": {"kind": "cat", "meow": "m"},
+            "structMapsBesideString": [{"j": {"a": "p"}}],
+            "nullItemBesideString": "o",
+            "nullItem": [None, {"a": "l"}],
+        },
         "invalid": {"listBesideStruct": [1]},
+        "invalid_tag": {"secondTaggedVariant": {"kind": "cow"}},
     }
     with _generated_model(output_file, "msgspec_union_member_defaults_model", "Model") as model:
         default = model()
         actual: dict[str, object] = {
             "defaults": msgspec.to_builtins(default),
             "default_types": {field: type(getattr(default, field)).__name__ for field in default.__struct_fields__},
+            "list_item_types": {
+                field: [type(item).__name__ for item in value]
+                for field in default.__struct_fields__
+                if isinstance(value := getattr(default, field), list)
+            },
         }
         actual.update((label, _converted(model, document)) for label, document in documents.items())
+    assert_output(f"{json.dumps(actual, indent=2)}\n")
+
+
+def test_msgspec_array_member_union_defaults(output_file: Path) -> None:
+    """Convert a default beside two array-like members only to the member whose items it fits, so ``Model()`` builds.
+
+    msgspec decodes no union of two array-like members, which generation warns about; the defaults still build, a
+    list of str as the value, a list of objects as the list of Structs a type alias names and a list of a Literal's
+    values as the list of the Literal.
+    """
+    with pytest.warns(
+        UserWarning, match=r"msgspec cannot decode the union Model\.\w+: it holds the array-like members"
+    ):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "msgspec_union_array_member_defaults.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--output-model-type", "msgspec.Struct", "--formatters", "builtin", "--disable-timestamp"],
+        )
+    with _generated_model(output_file, "msgspec_union_array_member_defaults_model", "Model") as model:
+        default = model()
+        actual = {
+            "defaults": msgspec.to_builtins(default),
+            "item_types": {
+                field: [type(item).__name__ for item in getattr(default, field)] for field in default.__struct_fields__
+            },
+        }
     assert_output(f"{json.dumps(actual, indent=2)}\n")
 
 

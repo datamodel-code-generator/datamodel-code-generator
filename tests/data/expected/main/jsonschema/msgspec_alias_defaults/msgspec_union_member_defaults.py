@@ -18,6 +18,21 @@ PodOrCount: TypeAlias = PodSpec | int
 PodList: TypeAlias = list[PodSpec]
 
 
+PodMap: TypeAlias = dict[str, PodSpec]
+
+
+class NullablePod(Struct):
+    a: str | UnsetType = UNSET
+
+
+class Cat(Struct, tag_field='kind', tag='cat'):
+    meow: str | UnsetType = UNSET
+
+
+class Dog(Struct, tag_field='kind', tag='dog'):
+    bark: str | UnsetType = UNSET
+
+
 class Model(Struct):
     listBesideStruct: PodSpec | list[str] | UnsetType = field(
         default_factory=lambda: ['x']
@@ -33,4 +48,27 @@ class Model(Struct):
     )
     objectBesideListOfStructs: PodList | PodSpec | UnsetType = field(
         default_factory=lambda: convert({'a': 'q'}, type=PodSpec)
+    )
+    listOfStructsBesideString: list[PodSpec] | str | UnsetType = field(
+        default_factory=lambda: convert([{'a': 'v'}], type=list[PodSpec])
+    )
+    listOfStructsOrNull: list[PodSpec] | None | UnsetType = field(
+        default_factory=lambda: convert([{'a': 'u'}], type=list[PodSpec])
+    )
+    secondTaggedVariant: Cat | Dog | UnsetType = field(
+        default_factory=lambda: convert({'kind': 'dog', 'bark': 'loud'}, type=Dog)
+    )
+    structMapsBesideString: list[PodMap] | str | UnsetType = field(
+        default_factory=lambda: convert([{'k': {'a': 'm'}}], type=list[PodMap])
+    )
+    nullItemBesideString: list[NullablePod | None] | str | UnsetType = field(
+        default_factory=lambda: convert(
+            [None, {'a': 'n'}], type=list[NullablePod | None]
+        )
+    )
+    nullItem: list[NullablePod | None] | UnsetType = field(
+        default_factory=lambda: convert([None], type=list[NullablePod | None])
+    )
+    countsInOneMember: dict[str, int] | UnsetType = field(
+        default_factory=lambda: {'k': 1}
     )

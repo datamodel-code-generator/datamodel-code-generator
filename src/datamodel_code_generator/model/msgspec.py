@@ -324,26 +324,55 @@ if TYPE_CHECKING:
     from datamodel_code_generator.types import UnionIntFloat
 
 
-def _takes_default_kind(data_type: DataType, default: object) -> bool:
-    """Return whether a union member that names a Struct or a type alias takes a default of the default's JSON kind.
+_SCALAR_VALUE_TYPES: Mapping[str, tuple[type, ...]] = MappingProxyType({
+    "str": (str,),
+    "int": (int,),
+    "float": (int, float),
+    "bool": (bool,),
+    NONE: (type(None),),
+})
+"""The Python types of the JSON values that ``msgspec.convert`` takes for each scalar type."""
 
-    A Struct takes an object; a type alias, what the type it names takes, so one of a list of Structs an array.
+
+def _takes_default(data_type: DataType, default: object, seen: frozenset[int] = frozenset()) -> bool:  # noqa: PLR0911
+    """Return whether ``msgspec.convert`` takes a default for a type, by the JSON kind of the default at every level.
+
+    A Struct takes an object that holds the Struct's tag where it holds its tag field; a type alias, what the type it
+    names takes besides itself (``seen`` holds the aliases followed since the last value read); a union, what one of
+    its members takes; an array type, an array whose items its item types take; a mapping, an object whose values its
+    value types take; a Literal, its values; str, int, float, bool and None, values of their JSON kind. An optional
+    type takes None too, and any other type any value.
     """
-    pending, seen = [data_type], set[int]()
-    while pending:
-        if (reference := (member := pending.pop()).reference) is not None:
-            if not isinstance(source := reference.source, TypeAliasBase):
-                if isinstance(default, dict):
-                    return True
-            elif source.fields and id(source) not in seen:
-                seen.add(id(source))
-                pending.append(source.fields[0].data_type)
-        elif member in MAPPINGS or member in ARRAYS:
-            if isinstance(default, dict if member in MAPPINGS else list):
-                return True
-        else:
-            pending.extend(member.data_types)
-    return False
+    if default is None and data_type.is_optional:
+        return True
+    if (reference := data_type.reference) is not None:
+        if isinstance(source := reference.source, TypeAliasBase):
+            return (
+                bool(source.fields)
+                and id(source) not in seen
+                and _takes_default(source.fields[0].data_type, default, seen | {id(source)})
+            )
+        return not isinstance(source, Struct) or (
+            isinstance(default, dict)
+            and ((tag := source.discriminator_tag) is None or default.get(tag[0], tag[1]) == tag[1])
+        )
+    if (array := data_type in ARRAYS) or data_type in MAPPINGS:
+        values: Iterable[object] = ()
+        match default:
+            case list() if array:
+                values = default
+            case dict() if not array:
+                values = default.values()
+            case _:
+                return False
+        return not data_type.data_types or all(
+            any(_takes_default(item, value) for item in data_type.data_types) for value in values
+        )
+    if data_type.data_types:
+        return any(_takes_default(member, default, seen) for member in data_type.data_types)
+    if data_type.literals:
+        return any(type(literal) is type(default) and literal == default for literal in data_type.literals)
+    return (kinds := _SCALAR_VALUE_TYPES.get(data_type.type or "")) is None or type(default) in kinds
 
 
 def _is_instance_field(field: DataModelFieldBase) -> bool:
@@ -1764,6 +1793,9 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         """Convert default value to Struct model using msgspec convert."""
         if self._uses_empty_builtin_container_factory():
             return None
+        members = self._non_none_members(self.data_type)
+        if self.data_type.is_union or len(members) > 1:
+            return self._union_default_as_struct_model(members)
 
         data_types = self.data_type.data_types or (self.data_type,)
         if self.data_type.is_list and (item_type := data_types[0]).is_list:
@@ -1784,7 +1816,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
                     and (isinstance(data_type_child.reference.source, (Struct, TypeAliasBase)))
                     and isinstance(self.default, list)
                 ):
-                    return _StructConversion(self._PARSE_METHOD, self.default, data_type_child, of_list=True)
+                    return self._list_conversion(data_type, data_type_child)
             elif data_type.reference and (
                 isinstance(data_type.reference.source, Struct)
                 or (
@@ -1792,15 +1824,44 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
                     and self._type_alias_needs_struct_conversion(data_type.reference.source)
                 )
             ):
-                if self.data_type.is_union:
-                    if not _takes_default_kind(data_type, self.default):
-                        continue
-                    if isinstance(self.default, dict) and any(dt.is_dict for dt in self.data_type.data_types):
-                        continue
                 return _StructConversion(
                     self._PARSE_METHOD, self.default, data_type, self.data_type if self.data_type.is_list else None
                 )
         return None
+
+    def _union_default_as_struct_model(self, members: Sequence[DataType]) -> _StructConversion | None:
+        """Convert the default of a field of several types to the first written member it fits that names Structs.
+
+        ``members`` are the members the field's type writes (``_non_none_members``), a container of several types being
+        one. A member takes the default as ``_takes_default`` reads it, and names Structs when it is a Struct, a type
+        alias of one, or a list of a Struct or a type alias. An object default beside a dict member stays the value.
+        """
+        if isinstance(default := self.default, dict) and any(member.is_dict for member in members):
+            return None
+        for member in members:
+            if not _takes_default(member, default):
+                continue
+            if member.is_list and len(member.data_types) == 1:
+                if (child := member.data_types[0]).reference and isinstance(
+                    child.reference.source, (Struct, TypeAliasBase)
+                ):
+                    return self._list_conversion(member, child)
+            elif (reference := member.reference) and (
+                isinstance(source := reference.source, Struct)
+                or (isinstance(source, TypeAliasBase) and self._type_alias_needs_struct_conversion(source))
+            ):
+                return _StructConversion(self._PARSE_METHOD, default, member)
+        return None
+
+    def _list_conversion(self, data_type: DataType, item: DataType) -> _StructConversion:
+        """Return the factory that converts a list default to the list ``data_type`` of ``item``.
+
+        It converts to ``list[Item]``, or to the list as the field writes it where an item of the default is None, which
+        only an item type that admits None takes.
+        """
+        if item.is_optional and None in cast("list[object]", self.default):
+            return _StructConversion(self._PARSE_METHOD, self.default, item, data_type)
+        return _StructConversion(self._PARSE_METHOD, self.default, item, of_list=True)
 
     def _type_alias_needs_struct_conversion(self, source: TypeAliasBase) -> bool:
         """Follow alias targets without changing direct defaults or empty factories."""
