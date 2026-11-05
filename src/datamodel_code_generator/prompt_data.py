@@ -199,6 +199,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--treat-dot-as-module": "Treat dots in schema names as module separators.",
     "--type-mappings": "Override default type mappings for schema formats.",
     "--type-overrides": "Replace schema model types with custom Python types via JSON mapping.",
+    "--type-overrides-replace-whole-type": "Make every `--type-overrides` value of a field replace the field's whol...",
     "--union-mode": "Union mode for combining anyOf/oneOf schemas (smart or left_to_right).",
     "--update-lock": "Create or atomically update the selected remote lock after generation (experimental).",
     "--url": "Fetch a schema from a URL with custom HTTP headers.",

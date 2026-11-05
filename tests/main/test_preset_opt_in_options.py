@@ -77,6 +77,7 @@ OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
     "--keep-enum-literal-aliases",
     "--read-input-model-dataclass-fields-by-alias",
     "--use-plain-alias-for-recursive-models",
+    "--type-overrides-replace-whole-type",
 )
 """The options the 20261104 presets set beyond the 20261027 presets."""
 
@@ -247,6 +248,18 @@ CASES_20261104: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--output-model-type", "pydantic_v2.dataclass"],
         id="use-plain-alias-for-recursive-models",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "type_overrides_replace_whole_type.json",
+        "jsonschema",
+        [
+            *("--output-model-type", "pydantic_v2.BaseModel", "--type-overrides"),
+            (
+                '{"Inventory.counts": "builtins.dict", "Inventory.sized": "builtins.dict", '
+                '"Inventory.tags": "builtins.tuple"}'
+            ),
+        ],
+        id="type-overrides-replace-whole-type",
     ),
 )
 """The inputs each opt-in option of the 20261104 presets changes."""

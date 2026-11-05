@@ -952,6 +952,15 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
+        title="Whole types replaced by type overrides",
+        config=PresetConfig(type_overrides_replace_whole_type=True),
+        description=(
+            "Make a class path of --type-overrides replace an object map itself (dict, not dict[str, dict]), and "
+            "keep the item or property counts of the array or map an override replaces only where the new type "
+            "counts the same."
+        ),
+    ),
+    PresetOptionGroup(
         title="SerializeAsAny for every subclass",
         config=PresetConfig(use_serialize_as_any_for_every_subclass=True),
         description=(
@@ -1297,7 +1306,10 @@ def render_presets_markdown() -> str:
             "that has an alias keeps its Python type (`deque[int]`) like one without, and "
             "`--use-plain-alias-for-recursive-models`: in Pydantic output a type "
             "alias whose whole value is a model that names itself is written as `Alias: TypeAlias = Node`, which "
-            "Pydantic builds for every model that uses it."
+            "Pydantic builds for every model that uses it, and "
+            "`--type-overrides-replace-whole-type`: a class path of `--type-overrides` replaces an object map itself "
+            "(`dict`, not `dict[str, dict]`), and the item or property counts of the array or map an override "
+            "replaces stay only where the new type counts the same."
         ),
         "",
         (

@@ -63,6 +63,7 @@ if TYPE_CHECKING:
 __all__ = [
     "ARRAY_KEYWORDS",
     "BASE_OUTPUT",
+    "ITEM_COUNT_KEYWORDS",
     "LENGTH_KEYWORDS",
     "LENGTH_KEYWORD_ORDER",
     "LENGTH_META_KEYWORDS",
@@ -107,6 +108,7 @@ __all__ = [
     "is_non_finite",
     "json_integer",
     "json_number",
+    "key_count_keywords",
     "keyword_kinds",
     "kind_keywords",
     "length_keywords_by_type",
@@ -255,6 +257,23 @@ META_SCHEMA_KEYWORDS: Final[Mapping[str, str]] = MappingProxyType({
 })
 """The ``msgspec.Meta`` arguments and the schema keyword each checks."""
 LENGTH_META_KEYWORDS: Final[frozenset[str]] = frozenset({"min_length", "max_length"})
+
+_MAPPING_CLASS_PATHS: Final[frozenset[str]] = frozenset({
+    "dict",
+    "typing.Dict",
+    "collections.abc.Mapping",
+    "collections.abc.MutableMapping",
+    "typing.Mapping",
+    "typing.MutableMapping",
+    "collections.OrderedDict",
+    "typing.OrderedDict",
+    "collections.Counter",
+    "typing.Counter",
+})
+"""The classes, by the path that classifies them, whose length counts their keys and on which Pydantic checks one:
+the classes that take the property counts of a map (``key_count_keywords``)."""
+ITEM_COUNT_KEYWORDS: Final[frozenset[str]] = frozenset({"minItems", "maxItems"})
+"""The keywords that count the items of an array, which a type that takes them takes as the lengths of the array."""
 
 _SEQUENCE_TYPE_KEYWORDS: Final[Mapping[str, frozenset[str]]] = MappingProxyType(
     dict.fromkeys(("list", "set", "frozenset", "tuple"), SEQUENCE_KEYWORDS)
@@ -767,17 +786,31 @@ def all_of_root_keyword_kinds(schema_type: str, mapped_type: str) -> frozenset[s
     return None
 
 
-def shape_keywords(*, mapping: bool, sequence: bool, reference: bool) -> frozenset[str] | None:
+def shape_keywords(
+    *, mapping: bool, sequence: bool, reference: bool, counts_keys: bool = False
+) -> frozenset[str] | None:
     """Return the keywords a container or a referenced model takes, or None when the type itself decides.
 
     A mapping takes none, a sequence the sequence keywords, and a referenced model all of them, as its own root type
-    decides them.
+    decides them. With ``counts_keys`` the keywords a type takes as the property counts of a map are returned instead
+    (``key_count_keywords``): the lengths for a mapping, which count its keys, none for a sequence.
     """
     if mapping:
-        return NO_KEYWORDS
+        return LENGTH_KEYWORDS if counts_keys else NO_KEYWORDS
     if sequence:
-        return SEQUENCE_KEYWORDS
+        return NO_KEYWORDS if counts_keys else SEQUENCE_KEYWORDS
     return TYPE_DEPENDENT_KEYWORDS if reference else None
+
+
+def key_count_keywords(path: str, keywords: frozenset[str]) -> frozenset[str]:
+    """Return the keywords a type takes as the property counts of a map, from its path and the ``keywords`` it takes.
+
+    A mapping class (``_MAPPING_CLASS_PATHS``) takes the lengths, which count its keys, and a type the generator cannot
+    classify, which takes every keyword, keeps them all; any other type takes none.
+    """
+    if path in _MAPPING_CLASS_PATHS:
+        return LENGTH_KEYWORDS
+    return keywords if keywords >= TYPE_DEPENDENT_KEYWORDS else NO_KEYWORDS
 
 
 def member_keywords(members: Iterable[frozenset[str]], *, number_values: bool) -> frozenset[str]:

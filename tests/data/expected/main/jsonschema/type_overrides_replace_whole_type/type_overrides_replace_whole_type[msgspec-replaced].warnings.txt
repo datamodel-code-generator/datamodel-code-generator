@@ -1,0 +1,4 @@
+msgspec.Meta does not take min_length on dict; Inventory.sized is generated without this constraint.
+--type-overrides writes Any in place of dict[str, float]; Inventory.amounts is generated without this constraint.
+msgspec.Meta does not take min_length on dict[str, str]; Inventory.labels is generated without this constraint.
+--type-overrides writes str in place of list[str]; Inventory.notes is generated without this constraint.

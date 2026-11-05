@@ -1172,6 +1172,15 @@ typing_options.add_argument(
     type=str,
     default=None,
 )
+_toggle(
+    typing_options,
+    "--type-overrides-replace-whole-type",
+    help="Make every --type-overrides value of a field replace the field's whole type: a class path replaces an "
+    "object map itself, as an annotation already does (dict for builtins.dict, not dict[str, dict]), and the item "
+    "counts of an array and the property counts of a map it replaces stay only where the new type counts the same "
+    "(a sequence its items, a mapping class its keys), with a warning otherwise; without it a class path keeps the "
+    "dict of a map around the class and every override keeps those counts whatever its type, as in 0.89.0",
+)
 
 # ======================================================================================
 # Customization options for generated model fields

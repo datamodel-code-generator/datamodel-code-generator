@@ -1899,10 +1899,13 @@ class DataTypeManager(ABC):
         return copied_data_type
 
     @staticmethod
-    def _shape_constraint_keywords(data_type: DataType) -> frozenset[str] | None:
+    def _shape_constraint_keywords(data_type: DataType, *, counts_keys: bool = False) -> frozenset[str] | None:
         """Return the keywords a container or a referenced model takes, or None for any other type."""
         return _applicability.shape_keywords(
-            mapping=data_type in MAPPINGS, sequence=data_type in ARRAYS, reference=bool(data_type.reference)
+            mapping=data_type in MAPPINGS,
+            sequence=data_type in ARRAYS,
+            reference=bool(data_type.reference),
+            counts_keys=counts_keys,
         )
 
     @property
@@ -1929,6 +1932,7 @@ class DataTypeManager(ABC):
         *,
         number_values: bool = False,
         target_model_version: TargetPydanticVersion | str | None = None,
+        counts_keys: bool = False,
     ) -> frozenset[str]:
         """Return the type-dependent keywords that every member of an emitted type takes in this output model.
 
@@ -1939,7 +1943,9 @@ class DataTypeManager(ABC):
         enum with a number value and a type of ``NUMBER_VALUE_TYPES`` take the number keywords, and an explicit
         ``target_model_version`` adds the ``TARGET_NUMBER_KEYWORDS`` it reaches. A type that names a model takes them
         all, as the model's own type decides them (row ``legacy-reference-takes-every-keyword`` of
-        ``_constraint_keywords``).
+        ``_constraint_keywords``). With ``counts_keys`` the keywords a value of the type takes as the property counts of
+        a map are returned instead: the lengths where every member counts its keys, a mapping or a mapping class
+        (``_constraint_applicability.key_count_keywords``), which no value of a ``Literal`` does.
         """
         return cast(
             "frozenset[str]",
@@ -1950,6 +1956,7 @@ class DataTypeManager(ABC):
                 frozenset(),
                 number_values=number_values,
                 target_model_version=target_model_version,
+                counts_keys=counts_keys,
             ),
         )
 
@@ -2021,6 +2028,7 @@ class DataTypeManager(ABC):
         *,
         number_values: bool = False,
         target_model_version: TargetPydanticVersion | str | None = None,
+        counts_keys: bool = False,
     ) -> frozenset[str] | None:
         """Return the keywords of ``constraint_keywords``, reading the model a type names with ``model_of``.
 
@@ -2053,7 +2061,7 @@ class DataTypeManager(ABC):
                 )
             if _is_plain_none(node):
                 return None
-        if (keywords := cls._shape_constraint_keywords(node)) is not None:
+        if (keywords := cls._shape_constraint_keywords(node, counts_keys=counts_keys)) is not None:
             return keywords
         if node.data_types:
             members = [
@@ -2068,6 +2076,7 @@ class DataTypeManager(ABC):
                         seen,
                         number_values=number_values,
                         target_model_version=target_model_version,
+                        counts_keys=counts_keys,
                     )
                 )
                 is not None
@@ -2086,6 +2095,7 @@ class DataTypeManager(ABC):
             return cls._literal_keywords(
                 {_LITERAL_VALUE_TYPE_PATHS.get(type(value), "") for value in node.literals if value is not None},
                 target_version,
+                counts_keys=counts_keys,
             )
         if node.python_type is None:
             import_ = node.import_
@@ -2094,12 +2104,14 @@ class DataTypeManager(ABC):
                 target_version,
                 number_values=number_values,
                 target_model_version=target_model_version,
+                counts_keys=counts_keys,
             )
         return cls._annotation_constraint_keywords(
             node.python_type.expression,
             target_version,
             number_values=number_values,
             target_model_version=target_model_version,
+            counts_keys=counts_keys,
         )
 
     @classmethod
@@ -2110,6 +2122,7 @@ class DataTypeManager(ABC):
         *,
         number_values: bool = False,
         target_model_version: TargetPydanticVersion | str | None = None,
+        counts_keys: bool = False,
     ) -> frozenset[str]:
         """Return the keywords every member of a union takes, or those of the type that Annotated or Final qualifies.
 
@@ -2145,6 +2158,7 @@ class DataTypeManager(ABC):
                         target_version,
                         number_values=number_values,
                         target_model_version=target_model_version,
+                        counts_keys=counts_keys,
                     )
                     for member in members
                 ),
@@ -2152,7 +2166,10 @@ class DataTypeManager(ABC):
             )
         if path == "typing.Literal" and base is not expression:
             return cls._literal_keywords(
-                set(cls._literal_value_paths(expression)), target_version, number_values=number_values
+                set(cls._literal_value_paths(expression)),
+                target_version,
+                number_values=number_values,
+                counts_keys=counts_keys,
             )
         if (
             path == "tuple"
@@ -2162,24 +2179,35 @@ class DataTypeManager(ABC):
         ):
             return _applicability.NO_KEYWORDS
         return cls.type_constraint_keywords(
-            path, target_version, number_values=number_values, target_model_version=target_model_version
+            path,
+            target_version,
+            number_values=number_values,
+            target_model_version=target_model_version,
+            counts_keys=counts_keys,
         )
 
     @classmethod
     def _literal_keywords(
-        cls, value_paths: Iterable[str], target_version: tuple[int, int], *, number_values: bool = False
+        cls,
+        value_paths: Iterable[str],
+        target_version: tuple[int, int],
+        *,
+        number_values: bool = False,
+        counts_keys: bool = False,
     ) -> frozenset[str]:
         """Return the keywords a ``Literal`` takes: those every value takes as an instance of its type at its path.
 
         A value of a type the generator cannot classify (path ``""``) takes none, or all of them with
         ``number_values``, where a ``Literal`` takes what one value takes; an output model that checks no keyword on
-        a ``Literal`` takes none.
+        a ``Literal`` takes none. With ``counts_keys`` a value takes the property counts of a map, which none does.
         """
         if not cls.LITERALS_TAKE_CONSTRAINTS:
             return _applicability.NO_KEYWORDS
         return _applicability.member_keywords(
             (
-                cls.type_constraint_keywords(value, target_version, number_values=number_values)
+                cls.type_constraint_keywords(
+                    value, target_version, number_values=number_values, counts_keys=counts_keys
+                )
                 if value or not number_values
                 else TYPE_DEPENDENT_KEYWORDS
                 for value in value_paths
@@ -2215,6 +2243,7 @@ class DataTypeManager(ABC):
         *,
         number_values: bool = False,
         target_model_version: TargetPydanticVersion | str | None = None,
+        counts_keys: bool = False,
     ) -> frozenset[str]:
         """Return the type-dependent keywords a type takes: its table entry, none for a known type, else all of them.
 
@@ -2223,9 +2252,25 @@ class DataTypeManager(ABC):
         A known type is a Python builtin or a standard-library type of the import registry that the target has, or a
         type that the generator itself imports; a type the generator cannot classify keeps the keywords the schema
         declares. With ``number_values`` a type of ``NUMBER_VALUE_TYPES`` takes the number keywords, and a type of
-        ``TARGET_NUMBER_KEYWORDS`` also those an explicit ``target_model_version`` reaches.
+        ``TARGET_NUMBER_KEYWORDS`` also those an explicit ``target_model_version`` reaches. With ``counts_keys`` the
+        keywords it takes as the property counts of a map are returned instead (``key_count_keywords``).
         """
         path = _standard_type_path(path, target_version)
+        keywords = cls._listed_or_unlisted_keywords(
+            path, target_version, number_values=number_values, target_model_version=target_model_version
+        )
+        return _applicability.key_count_keywords(path, keywords) if counts_keys else keywords
+
+    @classmethod
+    def _listed_or_unlisted_keywords(
+        cls,
+        path: str,
+        target_version: tuple[int, int],
+        *,
+        number_values: bool,
+        target_model_version: TargetPydanticVersion | str | None,
+    ) -> frozenset[str]:
+        """Return the keywords of a classified path: its table entry, else none for a known type and all for another."""
         if (
             keywords := _applicability.listed_type_keywords(
                 path,

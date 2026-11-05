@@ -9,7 +9,7 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 18 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 50 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 51 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 38 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 61 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
@@ -27,7 +27,7 @@ Use these pages when you know the workflow area but not the exact option name.
 |-------|---------|--------|
 | [Model Customization](topics/model-customization.md) | 29 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 23 | Custom Templates, Generated Output, Imports, Output Formatting |
-| [Typing Customization](topics/typing-customization.md) | 32 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
+| [Typing Customization](topics/typing-customization.md) | 33 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 10 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
 
 ## 🔗 Option Relationships
@@ -366,6 +366,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--treat-dot-as-module`](template-customization.md#treat-dot-as-module)
 - [`--type-mappings`](typing-customization.md#type-mappings)
 - [`--type-overrides`](typing-customization.md#type-overrides)
+- [`--type-overrides-replace-whole-type`](typing-customization.md#type-overrides-replace-whole-type)
 
 ### U {#u}
 

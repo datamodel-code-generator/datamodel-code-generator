@@ -36,6 +36,7 @@ from datamodel_code_generator.model._render_plan import (
     NESTED_MODEL_FACTORY,
     PLAIN_ANNOTATION,
     REQUIRED_FIELD,
+    TYPE_OVERRIDE,
     UNTAKEN_BY_TYPE,
     CallPlan,
     FieldDefault,
@@ -97,7 +98,6 @@ _USE_FIELD_DESCRIPTION = Why(
 )
 _DECLARED_FACTORY = Why(RuleId("D4.default.declared-factory"), keyword="default_factory")
 _FACTORY_NOT_APPLICABLE = Why(RuleId("D4.default.factory-of-required-or-valued"), keyword="default_factory")
-_OVERRIDE = Why(RuleId("D2.type-override"), option="--type-overrides")
 _ANYURL = RuleId("legacy-anyurl-keeps-string-keywords")
 _CONSTRAINT = RuleId("D2.pydantic.constraint")
 _NONE_TYPE = RuleId("D2.pydantic.none-type-number")
@@ -469,7 +469,7 @@ class DataModelField(DataModelFieldBase):
         if overridden := self.overridden_constraints:
             replaced, count = overridden
             omitted.append(
-                Omitted("override", count, "override-type-does-not-take", _OVERRIDE, warns=True, detail=replaced)
+                Omitted("override", count, "override-type-does-not-take", TYPE_OVERRIDE, warns=True, detail=replaced)
             )
         return omitted, anyurl
 
