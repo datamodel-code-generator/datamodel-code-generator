@@ -1732,6 +1732,39 @@ def test_main_jsonschema_anchor_declared_twice(output_file: Path) -> None:
     )
 
 
+def test_main_jsonschema_anchor_declared_twice_in_document_order(output_file: Path) -> None:
+    """Name the first declaration of a plain name two schemas declare under --read-dynamic-anchors-in-document-order.
+
+    The `$ref` to `#T` names `First`, where it names the last `$anchor`, `Second`, without the option; the
+    `$dynamicRef` to `#D` names the first `$dynamicAnchor`, `Third`, either way. The input's file type is inferred, and
+    the warning names the input.
+    """
+    with pytest.warns(SchemaResourceRefWarning) as warning_records:
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "anchor_declared_twice.json",
+            output_path=output_file,
+            extra_args=[
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--read-dynamic-anchors-in-document-order",
+                "--disable-timestamp",
+            ],
+        )
+    assert_warnings_contain(
+        warning_records,
+        "The anchor 'T' is declared by more than one schema in anchor_declared_twice.json ('#/$defs/First', "
+        "'#/$defs/Second'), so a reference to '#T' names the first of them, which JSON Schema leaves undefined.",
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="jsonschema_anchor_declared_twice_in_document_order",
+        model_name="Holder",
+        valid_json='{"item": {"first": 1}, "dynamic": {"third": true}}',
+        invalid_json='{"item": {"first": "one"}}',
+        expected_error_type="int_parsing",
+    )
+
+
 @pytest.mark.parametrize(
     ("input_name", "expected_file", "extra_args"),
     [

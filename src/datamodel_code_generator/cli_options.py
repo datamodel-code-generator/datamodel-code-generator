@@ -245,6 +245,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--input-file-type --encoding --schema-version --schema-version-mode",
         "--read-schema-version-per-document --no-read-schema-version-per-document",
         "--read-escaped-ref-pointers --no-read-escaped-ref-pointers",
+        "--read-dynamic-anchors-in-document-order --no-read-dynamic-anchors-in-document-order",
         "--ignore-ref-siblings-by-schema-version --no-ignore-ref-siblings-by-schema-version",
         "--external-ref-mapping --preset",
     ),

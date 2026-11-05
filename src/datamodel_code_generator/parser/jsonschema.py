@@ -1277,6 +1277,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         return self._read_dialect(self.raw_obj, kind="jsonschema").features.ref_sibling_keywords
 
+    @property
+    def _reads_dynamic_anchors_in_document_order(self) -> bool:
+        """Whether --read-dynamic-anchors-in-document-order resolves a $dynamicRef from its document as loaded."""
+        return self.config.read_dynamic_anchors_in_document_order
+
     @cached_property
     def _reads_schema_version_per_document(self) -> bool:
         """Whether --read-schema-version-per-document reads each schema in the version of its own document.

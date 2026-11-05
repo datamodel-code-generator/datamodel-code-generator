@@ -256,6 +256,8 @@ class DocumentResources:
     """The identifiers, as written, of the resources each resource embeds, to their pointers; the first one wins."""
     dynamic_anchors: Mapping[str, Mapping[str, str]]
     """The `$dynamicAnchor` names of each resource to their locations; the first one wins."""
+    first_dynamic_anchors: Mapping[str, str]
+    """Each `$dynamicAnchor` name of the document to the location of its first declaration in document order."""
     implicit_resources: bool
     """Whether the document evaluates schemas as resources without an identifier, as OpenAPI component schemas."""
     embeds_resources: bool
@@ -286,6 +288,7 @@ def walk_schema_resources(  # noqa: PLR0913
     bases: dict[str, str] = {}
     embedded: dict[str, dict[str, str]] = {}
     dynamic_anchors: dict[str, dict[str, str]] = {}
+    first_dynamic_anchors: dict[str, str] = {}
     root_base = base
 
     def name(uri: str, location: str) -> None:
@@ -315,6 +318,7 @@ def walk_schema_resources(  # noqa: PLR0913
                 name(urljoin(base, f"#{anchor}"), location)
                 if keyword == "$dynamicAnchor":
                     dynamic_anchors.setdefault(resource, {}).setdefault(anchor, location)
+                    first_dynamic_anchors.setdefault(anchor, location)
         for path, child in children(schema):
             embeds |= visit(child, pointer + join_pointer(path), base, id_field, resource)
         return embeds
@@ -336,6 +340,7 @@ def walk_schema_resources(  # noqa: PLR0913
         bases=MappingProxyType(bases),
         embedded=MappingProxyType({key: MappingProxyType(value) for key, value in embedded.items()}),
         dynamic_anchors=MappingProxyType({key: MappingProxyType(value) for key, value in dynamic_anchors.items()}),
+        first_dynamic_anchors=MappingProxyType(first_dynamic_anchors),
         implicit_resources=bool(implicit),
         embeds_resources=embeds_resources,
     )
@@ -354,6 +359,9 @@ class ResourceRegistry:
     """The base URI of each resource root of a document, by the document and the root's pointer."""
     dynamic_anchors: dict[tuple[str, str], dict[str, str]] = field(default_factory=dict)
     embedded: dict[tuple[str, str], dict[str, str]] = field(default_factory=dict)
+    first_dynamic_anchors: dict[str, Mapping[str, str]] = field(default_factory=dict)
+    """The first declaration of each `$dynamicAnchor` name of a document, by the document
+    (``DocumentResources.first_dynamic_anchors``)."""
     duplicate_names: dict[str, Mapping[str, tuple[str, ...]]] = field(default_factory=dict)
     """The plain-name URIs that more than one schema of a document declares, by the document
     (``DocumentResources.duplicate_names``)."""
@@ -369,6 +377,7 @@ class ResourceRegistry:
             self.bases.pop((document, resource), None)
             self.dynamic_anchors.pop((document, resource), None)
             self.embedded.pop((document, resource), None)
+        self.first_dynamic_anchors.pop(document, None)
         self.duplicate_names.pop(document, None)
 
     def register(self, resources: DocumentResources) -> None:
@@ -383,6 +392,7 @@ class ResourceRegistry:
         self.resources[document] = set(resources.resources)
         for resource, base in resources.bases.items():
             self.bases[document, resource] = base
+        self.first_dynamic_anchors[document] = resources.first_dynamic_anchors
         self.duplicate_names[document] = resources.duplicate_names
         for resource, anchors in resources.dynamic_anchors.items():
             self.dynamic_anchors[document, resource] = dict(anchors)

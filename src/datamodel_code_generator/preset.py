@@ -907,6 +907,15 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
+        title="Dynamic anchors read in document order",
+        config=PresetConfig(read_dynamic_anchors_in_document_order=True),
+        description=(
+            "Resolve a plain-name $dynamicRef that its dynamic scope does not bind, and a reference to a plain name "
+            "several schemas declare, to the first declaration in document order, so the answer no longer depends on "
+            "the order the schemas are parsed in."
+        ),
+    ),
+    PresetOptionGroup(
         title="Escaped reference pointers read",
         config=PresetConfig(read_escaped_ref_pointers=True),
         description=(
@@ -1203,7 +1212,10 @@ def render_presets_markdown() -> str:
             "`--rename-submodules-hidden-by-classes`: a submodule named like a class of its package is renamed "
             "(`pkg/Warn_.py`), so importing it leaves the class in place, and "
             "`--use-serialize-as-any-for-every-subclass`: under `--use-serialize-as-any` a field is wrapped in "
-            "`SerializeAsAny` when any subclass of its model in the output adds fields."
+            "`SerializeAsAny` when any subclass of its model in the output adds fields, and "
+            "`--read-dynamic-anchors-in-document-order`: a plain-name `$dynamicRef` its dynamic scope does not bind, "
+            "and a reference to a plain name several schemas declare, resolve to the first declaration in document "
+            "order."
         ),
         "",
         (

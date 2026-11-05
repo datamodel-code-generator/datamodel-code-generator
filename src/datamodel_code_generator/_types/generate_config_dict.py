@@ -120,6 +120,7 @@ class BaseGenerateConfig(TypedDict):
     merge_shared_variant_tags: NotRequired[bool]
     read_schema_version_per_document: NotRequired[bool]
     read_escaped_ref_pointers: NotRequired[bool]
+    read_dynamic_anchors_in_document_order: NotRequired[bool]
     ignore_ref_siblings_by_schema_version: NotRequired[bool]
     use_msgspec_tagged_unions: NotRequired[bool]
     tag_msgspec_by_payload_name: NotRequired[bool]

@@ -908,6 +908,34 @@ class Model(BaseModel):
     ab: AB | None = None
 ```
 
+### `--read-dynamic-anchors-in-document-order`
+
+| | |
+|---|---|
+| Option | `--read-dynamic-anchors-in-document-order` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#5131](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5131) |
+
+**Affects:** a plain-name `$dynamicRef` (`#T`) that its dynamic scope does not bind, and a `$ref` or `$dynamicRef` to a plain name that several schemas of one document declare, which JSON Schema leaves undefined and which warns either way. The `$dynamicRef` names the first `$dynamicAnchor` of its name that the parse has met, so the answer depends on the order of the schemas: an OpenAPI component written before the components that declare the anchor resolves to the last of them, one written after them to the first. A `$ref` to a duplicated `$anchor` names the last declaration. With the option the document as loaded decides: both name the first declaration in document order.
+
+Schema: the components `First` and `Second` both declare `$dynamicAnchor: T`, and `Holder`, written before them, has `item: {$dynamicRef: "#T"}`.
+
+Without the option (same as 0.89.0):
+
+```python
+class Holder(BaseModel):
+    item: Second | None = None
+```
+
+With the option:
+
+```python
+class Holder(BaseModel):
+    item: First | None = None
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.

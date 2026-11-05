@@ -12213,6 +12213,60 @@ def test_main_openapi_dynamic_anchor_registered_after_its_reference() -> None:
     assert_output(str(output))
 
 
+@pytest.mark.cli_doc(
+    options=["--read-dynamic-anchors-in-document-order"],
+    option_description="""Resolve a `$dynamicRef` to the first `$dynamicAnchor` of its name in document order.
+
+A plain-name `$dynamicRef` that its dynamic scope does not bind names a `$dynamicAnchor` of its name in its document.
+Without this option that is the first one the parse has met, so the answer depends on the order of the schemas: with
+`Holder` written before the components `First` and `Second` that both declare `$dynamicAnchor: T`, `#T` resolves to
+`Second`, written after them to `First`. With it the document as loaded decides: the first declaration in document
+order. A `$ref` or `$dynamicRef` to a plain name several schemas of a document declare, which JSON Schema leaves
+undefined and which warns either way, names the first declaration too, where it names the last without the option.""",
+    input_schema="openapi/dynamic_ref_anchor_parse_order.yaml",
+    cli_args=["--read-dynamic-anchors-in-document-order"],
+    golden_output="main/openapi/main_openapi/read_dynamic_anchors_in_document_order[read].py",
+    comparison_output="main/openapi/main_openapi/read_dynamic_anchors_in_document_order[released].py",
+)
+@pytest.mark.parametrize(
+    ("extra_args", "invalid_json", "expected_error_type"),
+    [
+        pytest.param([], '{"item": {"second": 2}}', "string_type", id="released"),
+        pytest.param(
+            ["--read-dynamic-anchors-in-document-order"], '{"item": {"first": "one"}}', "int_parsing", id="read"
+        ),
+    ],
+)
+def test_main_openapi_read_dynamic_anchors_in_document_order(
+    output_file: Path, extra_args: list[str], invalid_json: str, expected_error_type: str
+) -> None:
+    """Resolve a `$dynamicRef` parsed before the anchors it names to the first in document order (#5131).
+
+    `Holder` is parsed before `First` and `Second`, which both declare `$dynamicAnchor: T`. Without the option `#T`
+    resolves through its edge to the last declaration, `Second`, where parsed after them it resolves to `First`; with
+    it the document decides, so it is `First` in either order. The duplicated name warns either way.
+    """
+    with pytest.warns(SchemaResourceRefWarning, match=r"^The anchor 'T' is declared by more than one schema in "):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "dynamic_ref_anchor_parse_order.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                *("--output-model-type", "pydantic_v2.BaseModel"),
+                *extra_args,
+                *("--formatters", "builtin", "--disable-timestamp"),
+            ],
+        )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_read_dynamic_anchors_in_document_order",
+        model_name="Holder",
+        valid_json='{"item": {"first": 1, "second": "a"}}',
+        invalid_json=invalid_json,
+        expected_error_type=expected_error_type,
+    )
+
+
 def test_main_openapi_all_of_request_body(output_file: Path) -> None:
     """A request body of the paths scope that is an `allOf` is parsed as the model of its parts."""
     run_main_and_assert(
