@@ -1727,10 +1727,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     def _model_shapes(self, row: ShapeRow) -> ModelShapes[DataModel, Reference]:
         """Return the keys of one comparison pass of the dedup or reuse user of a row."""
         return ModelShapes(
-            row, _ModelShapeSource(self.target_python_version, self._naming_plan), self._tag_plan.reuse_snapshot
             row,
             _ModelShapeSource(
                 self.target_python_version,
+                self._naming_plan,
                 unique_items=self.use_unique_items_as_set and self.use_unique_items_as_set_by_value,
             ),
             self._tag_plan.reuse_snapshot,
