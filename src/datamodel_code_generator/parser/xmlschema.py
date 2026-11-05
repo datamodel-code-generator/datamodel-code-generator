@@ -897,7 +897,7 @@ class _XMLSchemaConverter:
                 return local
             if key not in self.simple_types or key in seen:
                 return None
-            simple_type = context = self.simple_types[key]
+            simple_type = self.simple_types[key]
             seen |= {key}
         if simple_type is None or (restriction := _first_xsd_child(simple_type, "restriction")) is None:
             return None
