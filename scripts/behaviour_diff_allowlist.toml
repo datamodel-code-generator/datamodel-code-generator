@@ -332,3 +332,11 @@ match = "^\\[type\\] child:Child:other: other_1\\.Other -> Other$|^\\[type\\] gr
 reason = "the TypedDict Child of the directory input narrows a key of Base, another module, so it declares the keys of Base itself (the entry above): it no longer imports Base, and its keys and those GrandChild inherits name the same classes Other and Detail through the imports of its own module"
 decision = "#6250"
 release_note = "a TypedDict that declares the keys of a base of another module itself imports the models those keys name and no longer imports the base (see above)"
+
+[[accepted]]
+input = "tests/data/jsonschema/contains_integral_float_counts.json"
+aspects = [ "constraints", "probe" ]
+match = "^\\[constraints\\] ContainsIntegralFloatCounts:(?:values|never): .* -> .*(?:MinLen\\(min_length=[12]\\), MaxLen\\(max_length=[03]\\)|Meta\\(max_length=[03],min_length=[12]\\)).*$|^\\[probe\\] ContainsIntegralFloatCounts: accept -> reject$"
+reason = "minContains and maxContains written as integral floats (2.0, 3.0) were dropped, so the model accepted arrays with fewer or more items than the schema allows; they are read as the integers they are, as minItems is (schema-mismatch fix)"
+decision = "#5942"
+release_note = "minContains and maxContains written as integral floats such as 2.0 give the array its minimum and maximum length, as the integers 2 and 3 do"

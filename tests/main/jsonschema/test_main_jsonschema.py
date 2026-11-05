@@ -22625,6 +22625,48 @@ def test_main_jsonschema_contains_true_count_constraints(output_file: Path) -> N
     )
 
 
+def test_main_jsonschema_contains_integral_float_counts(output_file: Path) -> None:
+    """Read ``minContains`` and ``maxContains`` written as integral floats as the integers they are (#5942).
+
+    ``2.0`` and ``3.0`` give the lengths ``2`` and ``3`` do, and ``contains: false`` with ``minContains: 1.0`` rejects
+    every array, where both were dropped and the model accepted arrays the schema rejects.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "contains_integral_float_counts.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="contains_integral_float_counts",
+        model_name="ContainsIntegralFloatCounts",
+        valid_json='{"values":[1,2]}',
+        invalid_json='{"values":[1]}',
+        expected_error_type="too_short",
+        expected_attribute_path=("values",),
+        expected_attribute_value=[1, 2],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="contains_integral_float_counts",
+        model_name="ContainsIntegralFloatCounts",
+        valid_json='{"values":[1,2,3]}',
+        invalid_json='{"values":[1,2,3,4]}',
+        expected_error_type="too_long",
+        expected_attribute_path=("values",),
+        expected_attribute_value=[1, 2, 3],
+    )
+    assert_generated_model_json_invalid(
+        output_file,
+        module_name="contains_integral_float_counts",
+        model_name="ContainsIntegralFloatCounts",
+        invalid_json='{"never":[]}',
+        expected_error_type="too_short",
+    )
+
+
 def test_main_jsonschema_contains_empty_schema_count_constraints(output_file: Path) -> None:
     """Test contains empty schema count constraints are generated as array length constraints."""
     run_main_and_assert(

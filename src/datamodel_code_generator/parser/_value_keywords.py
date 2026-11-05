@@ -1048,21 +1048,31 @@ def contains_matches_every_item(parser: ValueKeywordsHost | type[ValueKeywordsHo
     return contains is True or contains == {}
 
 
+def _contains_count(obj: JsonSchemaObject, keyword: str) -> int | None:
+    """Return the count ``minContains`` or ``maxContains`` gives, or None when the schema writes no integer there.
+
+    A float without a fraction (``2.0``) is the integer it spells, as JSON Schema reads it and the item counts
+    (``minItems``) are read; a bool, a fraction and any other value give none.
+    """
+    value = obj.extras.get(keyword)
+    if json_integer(value):
+        return value
+    return int(value) if isinstance(value, float) and value.is_integer() else None
+
+
 def get_contains_count_constraints(
     cls: type[ValueKeywordsHost],  # noqa: ARG001
     obj: JsonSchemaObject,
 ) -> tuple[int | None, int | None]:
-    min_contains = obj.extras.get("minContains")
-    max_contains = obj.extras.get("maxContains")
+    min_contains = _contains_count(obj, "minContains")
     min_items = (
         min_contains
-        if json_integer(min_contains) and min_contains > 0
+        if min_contains is not None and min_contains > 0
         else 1
         if "minContains" not in obj.extras
         else None
     )
-    max_items = max_contains if json_integer(max_contains) else None
-    return min_items, max_items
+    return min_items, _contains_count(obj, "maxContains")
 
 
 def contains_false_requires_match(parser: ValueKeywordsHost | type[ValueKeywordsHost], obj: JsonSchemaObject) -> bool:  # noqa: ARG001
@@ -1070,8 +1080,7 @@ def contains_false_requires_match(parser: ValueKeywordsHost | type[ValueKeywords
         return False
     if "minContains" not in obj.extras:
         return True
-    min_contains = obj.extras["minContains"]
-    return json_integer(min_contains) and min_contains > 0
+    return (min_contains := _contains_count(obj, "minContains")) is not None and min_contains > 0
 
 
 def get_effective_array_length(cls: type[ArrayBoundsHost], obj: JsonSchemaObject) -> int | None:
