@@ -76105,8 +76105,9 @@ steps. The labels that only the checks read live in `scripts/pass_decls.py`: the
 sub-table of each hook (`HOOK_BODIES`). The `Runner` is the only caller of a pass; the finality check of the test suite
 (`tests/checks/parse.py`) runs each one inside the scope of its declaration with the models it compares
 (`CHECKED_MODELS`); steps call passes through the parser instance, so overrides and `--debug` tracing apply as to any
-method. The two diagnostics warnings that name the code calling
-`parse()` find that frame however deep the pipeline is (`stacklevel_at_parse_caller`).
+method. The diagnostics warnings that name the code calling
+`parse()` (the dangling and schema-resource references, and each `enum` that lists no value, which the schema objects of
+a document collect as they are validated) find that frame however deep the pipeline is (`stacklevel_at_parse_caller`).
 
 The order rule (`scripts/check_pass_pipeline.py:check_order`): two passes of one segment conflict when one writes what
 the other reads or both write the same fact. Where only the earlier writes what the later reads, a derived edge orders
@@ -77400,8 +77401,8 @@ Messages name the same location, as `document#pointer` with the document URL red
 (`_url_redaction.py:named_location`): the
 `SchemaParseError` that `_validate_schema_object` raises for a schema value it cannot read, the unsatisfiable-schema errors
 (`parser/_all_of_values.py:raise_unsatisfiable_schema` takes the schema whose `allOf` or `anyOf` leaves no value), the
-warnings about schemas whose parts no value satisfies, patterns no regular expression joins and object maps one dict
-cannot express, the `Schema path:` warnings
+warnings about schemas whose parts no value satisfies, an `enum` that lists no value, patterns no regular expression
+joins and object maps one dict cannot express, the `Schema path:` warnings
 of `--schema-version-mode strict`, and "A Parser can not resolve classes" (`location_of` of each model). A value that
 is not a JSON object (a boolean schema, or a scalar where a schema belongs) takes the location of its holder from the
 code that reads it there (`_validate_member`, `_parse_raw_at`). Where no location is known (a copy a custom parser

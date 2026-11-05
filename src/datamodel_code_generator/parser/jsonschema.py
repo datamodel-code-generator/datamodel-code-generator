@@ -339,6 +339,7 @@ from datamodel_code_generator.parser._schema_object import (
     _COPIED_NULLABLE_KEY,
     _NULLABLE_TYPE_LIST_KEY,
     DEFAULT_FIELD_KEYS,
+    EMPTY_ENUM_CONTEXT,
     EXCLUDE_FIELD_KEYS,  # noqa: F401  # Preserve the established parser.jsonschema export.
     EXCLUDE_FIELD_KEYS_IN_JSON_SCHEMA,  # noqa: F401  # Preserve the established parser.jsonschema export.
     IGNORED_REF_SIBLINGS_CONTEXT,
@@ -1024,6 +1025,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._dangling_refs: set[tuple[str, str]] = set()
         self._unescaped_slash_pointers: dict[tuple[str, str], str] = {}
         """Under --read-escaped-ref-pointers, the pointer of the key a dangling reference's unescaped ``/`` splits."""
+        self._empty_enum_locations: set[SchemaLocation] = set()
         self._documents_as_written: dict[int, tuple[dict[str, YamlValue], dict[str, YamlValue]]] = {}
         self._held_value: tuple[YamlValue, SchemaLocation] | None = None
         self._inexact_object_maps: set[str] = set()
@@ -8090,18 +8092,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self.root_id = previous_root_id
 
     @cached_property
-    def _schema_validation_context(self) -> dict[str, object] | None:
+    def _schema_validation_context(self) -> dict[str, object]:
         """Return the validation context of the schema objects.
 
-        It says whether they read ``unevaluatedProperties``, and under --ignore-ref-siblings-by-schema-version whether
-        the version of a location ignores the keywords beside a ``$ref`` (``_ref_siblings_apply_to``).
+        It collects the schema objects whose ``enum`` lists no value (``_report_parse_diagnostics``), says whether
+        they read ``unevaluatedProperties``, and under --ignore-ref-siblings-by-schema-version whether the version of a
+        location ignores the keywords beside a ``$ref`` (``_ref_siblings_apply_to``).
         """
-        context: dict[str, object] = {}
+        context: dict[str, object] = {EMPTY_ENUM_CONTEXT: self._empty_enum_locations}
         if self.read_unevaluated_properties:
             context[READ_UNEVALUATED_PROPERTIES_CONTEXT] = True
         if self.config.ignore_ref_siblings_by_schema_version:
             context[IGNORED_REF_SIBLINGS_CONTEXT] = self._ignores_ref_siblings_at
-        return context or None
+        return context
 
     def _ignores_ref_siblings_at(self, location: SchemaLocation | None) -> bool:
         """Return whether the schema version of a location ignores the keywords beside a ``$ref``.
@@ -8843,10 +8846,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     @override
     def _report_parse_diagnostics(self) -> None:
-        """Report each unique dangling local reference and compatibility resolution after schema parsing completes."""
+        """Report each unique dangling local reference and compatibility resolution after schema parsing completes.
+
+        Each schema object of a document whose ``enum`` lists no value is reported too: no value is valid against it,
+        while the generated code reads it as if it had no ``enum``.
+        """
         for message in sorted(self._resource_ref_warnings):
             warn(message, SchemaResourceRefWarning, stacklevel=stacklevel_at_parse_caller())
         self._resource_ref_warnings.clear()
+        for where in sorted({named_location(location, "schema") for location in self._empty_enum_locations}):
+            warn(
+                f"The schema at {where} admits no value: its enum is empty. It is generated as if it had no enum.",
+                stacklevel=stacklevel_at_parse_caller(),
+            )
+        self._empty_enum_locations.clear()
         if not self._dangling_refs:
             return
 
