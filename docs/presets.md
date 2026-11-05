@@ -50,7 +50,7 @@ datamodel-codegen \
   --enum-field-as-literal none
 ```
 
-Use documented `--no-*` options for boolean settings that support negation. For value options, pass the replacement value explicitly, such as `--enum-field-as-literal none`. A list option replaces the whole list a preset sets, such as `--openapi-as-definitions paths-bodies`; in pyproject.toml an empty list, such as `openapi-as-definitions = []`, turns off every value the preset sets.
+Use the `--no-*` form of a boolean option to turn it off; every boolean option a preset turns on has one, such as `--no-read-length-keywords-by-type`, and `false` beside the preset in pyproject.toml, such as `read-length-keywords-by-type = false`, turns it off the same way. For value options, pass the replacement value explicitly, such as `--enum-field-as-literal none`. A list option replaces the whole list a preset sets, such as `--openapi-as-definitions paths-bodies`; in pyproject.toml an empty list, such as `openapi-as-definitions = []`, turns off every value the preset sets.
 
 ## Add Options On Top
 

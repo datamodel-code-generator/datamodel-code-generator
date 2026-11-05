@@ -3,6 +3,13 @@
 [test_option_list_in_pyproject]
 empty-list-under-preset	main/preset_opt_in_options/option_list_in_pyproject[empty-list-under-preset].py
 toml-list	main/preset_opt_in_options/option_list_in_pyproject[toml-list].py	= main/openapi/main_openapi/strip_default_none_constructor_order[msgspec].py
+[test_preset_option_turned_off]
+capitalize-numbered-enum-members-alias-command-line	main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-command-line].py
+capitalize-numbered-enum-members-alias-pyproject	main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-command-line].py
+read-const-beside-enum-command-line	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].py
+read-const-beside-enum-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].py
+read-length-keywords-by-type-command-line	main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-command-line].py
+read-length-keywords-by-type-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-command-line].py
 [test_preset_sets_opt_in_option]
 capitalise-numbered-enum-members-practical	main/preset_opt_in_options/preset_sets_opt_in_option[capitalise-numbered-enum-members-practical].py	= main/preset_opt_in_options/preset_sets_opt_in_option[capitalise-numbered-enum-members-standard].py
 capitalise-numbered-enum-members-standard	main/preset_opt_in_options/preset_sets_opt_in_option[capitalise-numbered-enum-members-standard].py
