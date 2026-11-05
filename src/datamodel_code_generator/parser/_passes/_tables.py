@@ -606,6 +606,11 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
                 when=lambda self, _: self._tag_capabilities.struct_tags,
             ),
             PassSpec(
+                "flatten_narrowed_inherited_fields",
+                cross_module.flatten_narrowed_inherited_fields,
+                when=lambda self, _: self.data_model_type._KEEPS_INHERITED_FIELD_TYPES,  # noqa: SLF001
+            ),
+            PassSpec(
                 "write_enum_member_tags_as_values",
                 cross_module.write_enum_member_tags_as_values,
                 when=lambda self, _: not self._tag_capabilities.literal_holds_members,

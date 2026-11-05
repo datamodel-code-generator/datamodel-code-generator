@@ -25,7 +25,7 @@ class Tags1(TypedDict):
     b: str
 
 
-class Child(Base):
+class Child(TypedDict):
     tags: NotRequired[Tags1]
     kind: NotRequired[Literal['c']]
     size: NotRequired[str]

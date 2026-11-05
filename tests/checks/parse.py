@@ -143,6 +143,7 @@ CHECKED_MODELS: Final[dict[str, Callable[[Any, Any], Sequence[Any]]]] = {
     "apply_base_class_type_overrides": _model_list,
     "settle_discriminated_unions": _context_models,
     "tag_fields_of_tagged_bases": _context_models,
+    "flatten_narrowed_inherited_fields": _context_models,
     "write_enum_member_tags_as_values": _context_models,
     "assign_forward_reference_fields": _model_list,
     "fix_constructor_field_ordering": _models_before_override_removal,

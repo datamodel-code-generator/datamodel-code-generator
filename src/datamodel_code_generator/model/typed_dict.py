@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from typing_extensions import override
 
+from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._python_syntax import SINGLE_QUOTED_ESCAPES, keyword_argument, subscript_text
 from datamodel_code_generator._target_unicode import is_python_name
 from datamodel_code_generator.imports import Import, _holds, _remove_all
@@ -20,6 +21,8 @@ from datamodel_code_generator.model.base import (
     _USE_CLOSED_TYPED_DICT_TEMPLATE_DATA_KEY,
     UNDEFINED,
     _field_source_name,
+    _find_base_classes,
+    linearize_data_models,
 )
 from datamodel_code_generator.model.imports import (
     IMPORT_NOT_REQUIRED,
@@ -41,7 +44,7 @@ from datamodel_code_generator.types import NOT_REQUIRED, READ_ONLY, REQUIRED
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Iterable, Iterator, Mapping
+    from collections.abc import Collection, Iterable, Iterator, Mapping
     from pathlib import Path
 
     from datamodel_code_generator._mro import MemberRule
@@ -65,6 +68,64 @@ def _is_valid_field_name(field: DataModelFieldBase) -> bool:
     return is_python_name(name, field.data_type.python_version)
 
 
+_CONTAINERS = ("is_dict", "is_list", "is_set", "is_frozen_set", "is_mapping", "is_sequence", "is_tuple")
+
+
+def _written_union(data_types: Iterable[DataType]) -> tuple[frozenset[tuple[object, ...]], bool]:
+    """Return the types a union of ``data_types`` writes, in no order, a model by its key, and whether it holds None.
+
+    It reads the facts final at B1. A union writes the members of a member that writes nothing of its own, so a type and
+    a union of it alone, or a None member and a nullable type, write the same; a TypedDict writes no constraint, call
+    or discriminator.
+    """
+    members = [(data_type, data_type._is_bare_none) for data_type in data_types]  # noqa: SLF001
+    return (
+        frozenset(written for data_type, none in members if not none for written in _written(data_type)),
+        any(none or data_type.admits_none for data_type, none in members),
+    )
+
+
+def _written(data_type: DataType) -> Iterator[tuple[object, ...]]:
+    """Yield the types ``data_type`` writes as a member of a union (``_written_union``)."""
+    writes_members = data_type._writes_nothing_of_its_own  # noqa: SLF001
+    if writes_members and not (data_type.literals or data_type.enum_member_literals):
+        for member in data_type.data_types:
+            yield from _written_union((member,))[0]
+        return
+    members = data_type.data_types
+    enum = data_type._enum_member_literal_reference  # noqa: SLF001
+    yield (
+        data_type.type if (reference := data_type.reference) is None else model_key_of(reference),
+        data_type.import_,
+        data_type.python_type,
+        frozenset((type(value), value) for value in data_type.literals),
+        None if enum is None else model_key_of(enum),
+        frozenset(member for _, member in data_type.enum_member_literals),
+        tuple(getattr(data_type, container) for container in _CONTAINERS),
+        data_type.tuple_item_count,
+        None if (key := data_type.dict_key) is None else _written_union((key,)),
+        tuple(_written_union((member,)) for member in members) if data_type.is_tuple else _written_union(members),
+    )
+
+
+def _key_declaration(field: DataModelFieldBase) -> tuple[object, ...]:
+    """Return what the annotation of a key declares: whether it is required, ``ReadOnly`` and None, and its types."""
+    return (
+        field.required,
+        field.use_frozen_field and field.read_only,
+        field._admits_none(),  # noqa: SLF001
+        _written_union((field.data_type,))[0],
+    )
+
+
+def _inherits_written_keys(model: DataModel, kept: Collection[Import]) -> bool:
+    """Return whether the model is a TypedDict whose bases are generated models or the classes of ``kept``."""
+    return isinstance(model, TypedDict) and all(
+        isinstance(reference.source, DataModel) if (reference := base.reference) else base.import_ in kept
+        for base in model.base_classes
+    )
+
+
 class TypedDict(DataModel):
     """DataModel implementation for Python TypedDict."""
 
@@ -77,6 +138,30 @@ class TypedDict(DataModel):
     _FREEZES_FIELD_RENDER_PLANS: ClassVar[bool] = True
     _PYTHON_CHECKS_BASES: ClassVar[bool] = False
     _BASE_FIELDS: ClassVar[MemberRule] = "nearest"
+    _KEEPS_INHERITED_FIELD_TYPES: ClassVar[bool] = True
+
+    @override
+    def _narrows_inherited_field(self) -> bool:
+        """Return whether a key of the class declares a key of a generated base with another annotation.
+
+        A type checker holds a key that a subclass declares again to the type, the requiredness and the ``ReadOnly``
+        of the base's, which would lose the narrower declaration of the schema. Such a class takes the bases it is
+        configured with instead, so the bases it leaves must declare their keys in the output: generated TypedDicts or
+        ``TypedDict``. The functional form writes no base, and a custom template keeps the bases as they are.
+        """
+        if not _find_base_classes(self) or self.is_functional_syntax or self._uses_custom_root_template:
+            return False
+        kept = {Import.from_full_path(base) for base in (self.BASE_CLASS, *self._configured_base_classes())}
+        ancestors = linearize_data_models([self])
+        if not all(_inherits_written_keys(model, kept) for model in ancestors):
+            return False
+        own = {key: field for field in self.fields if (key := _field_source_name(field)) is not None}
+        return any(
+            (declared := own.get(_field_source_name(field))) is not None
+            and _key_declaration(declared) != _key_declaration(field)
+            for ancestor in ancestors[1:]
+            for field in ancestor.fields
+        )
 
     @override
     def _class_hash(self, generic_base_config: Mapping[str, Any] | None) -> SetItemHash:

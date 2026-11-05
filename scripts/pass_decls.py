@@ -858,6 +858,45 @@ TAG_FIELDS_OF_TAGGED_BASES = PassDecl(
     ),
     condition="msgspec",
 )
+FLATTEN_NARROWED_INHERITED_FIELDS = PassDecl(
+    "flatten_narrowed_inherited_fields",
+    Phase.CROSS_MODULE,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(
+        Fact.BASES,
+        Fact.FIELD_SET,
+        Fact.FIELD_NAMES,
+        Fact.FIELD_TYPES,
+        Fact.CONTAINERS,
+        Fact.REQUIRED,
+        Fact.NULLABLE,
+        Fact.METADATA,
+        RenderFact.MODULE_MEMBERSHIP,
+        RenderFact.MODULE_IMPORTS,
+    ),
+    writes=_facts(
+        Fact.BASES,
+        Fact.FIELD_SET,
+        Fact.FIELD_TYPES,
+        Fact.REQUIRED,
+        Fact.DEFAULTS,
+        RenderFact.MODULE_IMPORTS,
+        RenderFact.IMPORT_ALIASES,
+    ),
+    after=(
+        After(
+            "tag_fields_of_tagged_bases",
+            "both make models of any module declare the fields of their bases and import what those fields name",
+        ),
+    ),
+    summary=(
+        "Makes a TypedDict whose key narrows a key of a generated base, as a type checker holds to the base's type, "
+        "requiredness and ReadOnly, declare every key of its bases without them, bases first, importing the models "
+        "of other modules that the copied keys name."
+    ),
+    condition="an output whose subclasses keep inherited field types (TypedDict)",
+)
 WRITE_ENUM_MEMBER_TAGS_AS_VALUES = PassDecl(
     "write_enum_member_tags_as_values",
     Phase.CROSS_MODULE,
@@ -868,6 +907,10 @@ WRITE_ENUM_MEMBER_TAGS_AS_VALUES = PassDecl(
     after=(
         After(
             "tag_fields_of_tagged_bases", "the tags read a member literal as no literal until the structs are tagged"
+        ),
+        After(
+            "flatten_narrowed_inherited_fields",
+            "writes the values of the tags that models copy from their bases with the other fields",
         ),
     ),
     summary="Writes the values of the enum members that tag a variant, where the output's Literal holds no member.",
@@ -893,6 +936,10 @@ IMPORT_REMOVED_REUSE_CANONICALS = PassDecl(
             "tag_fields_of_tagged_bases",
             "repairs the imports of every module once the fields reused structs copy from their bases import theirs",
         ),
+        After(
+            "flatten_narrowed_inherited_fields",
+            "repairs the imports of every module once the fields models copy from their bases import theirs",
+        ),
     ),
     removed_by="RP15b",
 )
@@ -907,6 +954,10 @@ IMPORT_RENAMED_TYPES = PassDecl(
         After(
             "tag_fields_of_tagged_bases",
             "imports renamed types once the fields reused structs copy from their bases import theirs",
+        ),
+        After(
+            "flatten_narrowed_inherited_fields",
+            "imports renamed types once the fields models copy from their bases import theirs",
         ),
         After(
             "import_removed_reuse_canonicals",

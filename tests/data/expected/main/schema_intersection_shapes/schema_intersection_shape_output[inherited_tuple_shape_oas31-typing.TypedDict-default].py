@@ -17,7 +17,7 @@ class Parent(TypedDict):
 ClosedItem: TypeAlias = str
 
 
-class Child(Parent):
+class Child(TypedDict):
     closed: NotRequired[list[ClosedItem | int]]
     open: NotRequired[list[Any]]
     contained: NotRequired[list[str | int]]

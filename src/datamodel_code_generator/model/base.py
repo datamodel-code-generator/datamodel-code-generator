@@ -2249,6 +2249,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     _PYTHON_CHECKS_BASES: ClassVar[bool] = True
     """Whether Python creates the class from its bases, refusing a base listed twice and bases whose orders C3 cannot
     merge; a TypedDict merges the keys of its bases itself."""
+    _KEEPS_INHERITED_FIELD_TYPES: ClassVar[bool] = False
+    """Whether a subclass must declare an inherited field as its bases declare it, as type checkers hold a TypedDict
+    key: a model whose field narrows one declares the fields of its bases without them (`_narrows_inherited_field`)."""
     REQUIRES_FIELD_DEPENDENCY_ORDERING: ClassVar[bool] = False
     REQUIRES_TAGGED_UNION_DISCRIMINATOR: ClassVar[bool] = False
     REQUIRES_UNIQUE_FIELD_ALIASES: ClassVar[bool] = False
@@ -2347,6 +2350,10 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
     def flatten_conflicting_base_layouts(self, view: BaseLayoutView, flatten: Callable[[DataModel], None]) -> None:
         """Flatten the model where the output cannot combine the layouts of its generated bases, as msgspec cannot."""
+
+    def _narrows_inherited_field(self) -> bool:  # noqa: PLR6301
+        """Return whether a field of the model declares an inherited one otherwise (`_KEEPS_INHERITED_FIELD_TYPES`)."""
+        return False
 
     def flatten_base_layouts(
         self, adopt_field: Callable[[DataModelFieldBase, bool], DataModelFieldBase]
@@ -2889,16 +2896,15 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             for owner_model in owner_models:
                 owner_model.invalidate_render_caches()
 
+    def _configured_base_classes(self) -> list[str]:
+        """Return the base classes the model takes without generated bases: the configured ones, else ``BASE_CLASS``."""
+        if (custom_base_class := self.custom_base_class) is None:
+            return [self.BASE_CLASS] if self.BASE_CLASS else []
+        return custom_base_class if isinstance(custom_base_class, list) else [custom_base_class]
+
     def set_base_class(self) -> None:
         """Set up the base class(es) for this model."""
-        if self.custom_base_class is None:
-            base_class_list = [self.BASE_CLASS] if self.BASE_CLASS else []
-        elif isinstance(self.custom_base_class, list):
-            base_class_list = self.custom_base_class
-        else:
-            base_class_list = [self.custom_base_class]
-
-        if not base_class_list:
+        if not (base_class_list := self._configured_base_classes()):
             self.base_classes = []
             self.invalidate_render_caches()
             return
