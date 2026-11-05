@@ -23,9 +23,11 @@ How do I convert enums to Literal types?
 - `--input-model`: Import a Python type or dict schema from a module or Python file.
 - `--input-model-ref-strategy`: Strategy for referenced types when using --input-model.
 - `--no-ignore-ref-siblings-by-schema-version`
+- `--no-read-escaped-ref-pointers`
 - `--no-read-schema-version-per-document`
 - `--output`: Specify the destination path for generated Python code.
 - `--preset`: Apply an immutable built-in option preset.
+- `--read-escaped-ref-pointers`: Read the escapes of a `$ref` JSON pointer as the characters they encode.
 - `--read-schema-version-per-document`: Read each document by the schema version it declares.
 - `--schema-version`: Schema version to use for parsing.
 - `--schema-version-mode`: Schema version validation mode.
@@ -485,6 +487,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Apply an immutable built-in option preset. Preset
                         names include the target Python version so generated
                         syntax is pinned.
+  --read-escaped-ref-pointers, --no-read-escaped-ref-pointers
+                        Read the ~0 and ~1 escapes and the percent-encoded
+                        octets of a $ref JSON pointer as the characters they
+                        encode, as JSON Pointer and URI fragments do, so
+                        #/$defs/a~1b, and #/$defs/Foo Bar written with its
+                        space percent-encoded, name the models of the
+                        definitions a/b and Foo Bar; without it such a
+                        reference gets a copy of its target named after the
+                        escaped text (A1b, Foo20Bar), as in 0.89.0.
   --read-schema-version-per-document, --no-read-schema-version-per-document
                         Read each document by the schema version it declares
                         ($schema, or the openapi or asyncapi field); a

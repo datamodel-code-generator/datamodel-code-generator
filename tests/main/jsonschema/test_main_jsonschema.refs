@@ -5998,9 +5998,11 @@ typed-dict-3.14	main/jsonschema/identifier_unicode_target_typed_dict_314.py
 [test_main_json_pointer]
 	main/jsonschema/json_pointer.py
 [test_main_json_pointer_empty_token]
-	main/jsonschema/json_pointer_empty_token.py
+read-escaped	main/jsonschema/json_pointer_empty_token.py
+released	main/jsonschema/json_pointer_empty_token.py
 [test_main_json_pointer_through_scalar]
-	main/jsonschema/json_pointer_through_scalar.py
+read-escaped	main/jsonschema/json_pointer_through_scalar.py
+released	main/jsonschema/json_pointer_through_scalar.py
 [test_main_json_reuse_enum]
 	main/jsonschema/json_reuse_enum.py
 [test_main_json_reuse_enum_default_member]
@@ -8429,6 +8431,17 @@ unrelated-custom-explicit-target-2.12	main/jsonschema/pydantic_v2_dataclass_refe
 unrelated-custom-explicit-target-unset	main/jsonschema/pydantic_v2_dataclass_reference_alias_defaults_modern.py
 [test_main_pydantic_v2_model_rebuild_inheritance]
 	main/jsonschema/pydantic_v2_model_rebuild_inheritance.py
+[test_main_read_escaped_ref_pointers]
+read	main/jsonschema/read_escaped_ref_pointers.py
+read-name-map	main/jsonschema/read_escaped_ref_pointers.py	= main/jsonschema/read_escaped_ref_pointers~main_read_escaped_ref_pointers[read-name-map].py
+released	main/jsonschema/read_escaped_ref_pointers.py	= main/jsonschema/read_escaped_ref_pointers~main_read_escaped_ref_pointers[released].py
+[test_main_read_escaped_ref_pointers_spellings]
+false_reference_fast_path.json	main/jsonschema/main_jsonschema/main_read_escaped_ref_pointers_spellings[false_reference_fast_path.json].py
+json_pointer_decoding/control.json	main/jsonschema/main_jsonschema/main_read_escaped_ref_pointers_spellings[json_pointer_decoding_control.json].py
+json_pointer_decoding/root.json	main/jsonschema/main_jsonschema/main_read_escaped_ref_pointers_spellings[json_pointer_decoding_root.json].py
+schema_location.json	main/jsonschema/main_jsonschema/main_read_escaped_ref_pointers_spellings[schema_location.json].py
+[test_main_read_escaped_ref_pointers_unescaped_slash]
+	main/jsonschema/main_jsonschema/main_read_escaped_ref_pointers_unescaped_slash/
 [test_main_read_length_keywords_by_type]
 collapse_root_models	main/jsonschema/main_jsonschema/main_read_length_keywords_by_type[collapse_root_models].verdicts.txt
 collapse_root_models	main/jsonschema/read_length_keywords_by_type.py	= main/jsonschema/read_length_keywords_by_type~main_read_length_keywords_by_type[collapse_root_models].py

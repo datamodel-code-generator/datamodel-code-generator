@@ -53,6 +53,8 @@ pin-aliases-with-alias-generator-practical	main/preset_opt_in_options/preset_set
 pin-aliases-with-alias-generator-standard	main/preset_opt_in_options/preset_sets_opt_in_option[pin-aliases-with-alias-generator-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[pin-aliases-with-alias-generator-practical].py
 read-const-beside-enum-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-const-beside-enum-practical].py
 read-const-beside-enum-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-const-beside-enum-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-const-beside-enum-practical].py
+read-escaped-ref-pointers-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-escaped-ref-pointers-practical].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-escaped-ref-pointers-standard].py
+read-escaped-ref-pointers-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-escaped-ref-pointers-standard].py
 read-length-keywords-by-type-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-length-keywords-by-type-practical].py
 read-length-keywords-by-type-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-length-keywords-by-type-standard].py
 read-msgspec-union-bounds-exactly-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-msgspec-union-bounds-exactly-practical].py

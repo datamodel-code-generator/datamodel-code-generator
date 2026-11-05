@@ -906,6 +906,15 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "output adds fields, at any depth, after reuse merges the model and through its module."
         ),
     ),
+    PresetOptionGroup(
+        title="Escaped reference pointers read",
+        config=PresetConfig(read_escaped_ref_pointers=True),
+        description=(
+            "Read the ~0 and ~1 escapes and the percent-encoded octets of a $ref JSON pointer as the characters they "
+            "encode, so every spelling of a pointer names the one model of its target instead of a copy named after "
+            "the escaped text."
+        ),
+    ),
 )
 
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
@@ -1205,7 +1214,9 @@ def render_presets_markdown() -> str:
             "`PetsGetResponse`), `--name-converted-payloads-by-message` drops the placeholder title `Model` of an "
             "AsyncAPI Avro or XML Schema payload that names no type, so it is named after its message, and "
             "`--singularize-last-word-of-item-names` singularizes only the last word of an item model's name "
-            "(`actions_caches` names `ActionsCache`)."
+            "(`actions_caches` names `ActionsCache`), and `--read-escaped-ref-pointers` reads the escapes of a `$ref` "
+            "pointer as the characters they encode, so `#/$defs/a~1b` names the model `AB` of `a/b` instead of a copy "
+            "`A1b`."
         ),
         "",
         "## Override Preset Options",

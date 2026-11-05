@@ -5655,6 +5655,110 @@ def test_json_pointer_decoding_api_and_cli(output_file: Path, strict_refs: bool,
         )
 
 
+@pytest.mark.cli_doc(
+    options=["--read-escaped-ref-pointers"],
+    option_description="""Read the escapes of a `$ref` JSON pointer as the characters they encode.
+
+A pointer writes `/` in a name as `~1`, `~` as `~0`, and, in a URI fragment, any other character percent-encoded
+(`%20` for a space). Without this option a reference keeps the escaped text as the key of its target, so the definition
+it names, keyed by its name, gets a copy named after the escaped text (`Line20Item` beside `LineItem`, `Tax1rate`
+beside `TaxRate`), which the field takes. With it every spelling of a pointer names the one model of its target, keyed
+as the `api` scope keys it; a model a reference adds is named after the decoded name, and a `--model-name-map` key that
+names a path matches it in any spelling. A `/` written unescaped inside a name is a separator then, as JSON Pointer
+reads it, so such a pointer warns as a dangling reference, unless the name holds `://`, which is still read whole.""",
+    input_schema="jsonschema/escaped_ref_pointers.json",
+    cli_args=["--read-escaped-ref-pointers"],
+    golden_output="main/jsonschema/read_escaped_ref_pointers.py",
+    comparison_output="main/jsonschema/read_escaped_ref_pointers~main_read_escaped_ref_pointers[released].py",
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="released"),
+        pytest.param(["--read-escaped-ref-pointers"], id="read"),
+        pytest.param(
+            [
+                "--read-escaped-ref-pointers",
+                "--model-name-map",
+                '{"#/$defs/Line Item": "LineEntry", "#/$defs/tax~1rate": "Rate"}',
+            ],
+            id="read-name-map",
+        ),
+    ],
+)
+def test_main_read_escaped_ref_pointers(output_file: Path, extra_args: list[str]) -> None:
+    """Read `~0`, `~1` and percent-encoded octets of a `$ref` pointer as the characters they encode (#4952).
+
+    Without the option `#/$defs/Line%20Item`, `tax~1rate`, `note~0text` and `50%25` each get a copy of the definition
+    they name, named after the escaped text, beside the definition's own model. With it each names the definition's
+    model, as `#/$defs/Line Item` does, and the `--model-name-map` keys name the definitions in either spelling.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "escaped_ref_pointers.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel"),
+            *extra_args,
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="escaped_ref_pointers",
+        model_name="Order",
+        valid_json=(
+            '{"spaced": {"sku": "a"}, "slashed": {"rate": 0.1}, "tilded": {"body": "b"}, "percent": {"share": 2}}'
+        ),
+        invalid_json='{"spaced": {}}',
+        expected_error_type="missing",
+    )
+
+
+@pytest.mark.parametrize(
+    "input_name",
+    [
+        "false_reference_fast_path.json",
+        "json_pointer_decoding/root.json",
+        "json_pointer_decoding/control.json",
+        "schema_location.json",
+    ],
+)
+def test_main_read_escaped_ref_pointers_spellings(output_file: Path, input_name: str) -> None:
+    """Generate the inputs that spell one pointer in several ways under --read-escaped-ref-pointers: one model each."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--read-escaped-ref-pointers", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+
+
+def test_main_read_escaped_ref_pointers_unescaped_slash(tmp_path: Path) -> None:
+    """Read a pointer that writes `/` unescaped inside a name as JSON Pointer does under --read-escaped-ref-pointers.
+
+    The escaped `https:~1~1example.com~1schema.json` names the model of its definition. `#/definitions/user/created`
+    names no member, so it warns as a dangling reference that says how to write the key it splits; a pointer whose
+    unescaped name holds `://` is still found by the parts it is read in, as a model of its own at the pointer's key.
+    """
+    with pytest.warns(
+        DanglingRefWarning,
+        match=(
+            r"^Unresolved local \$ref '#/definitions/user/created' in schema\.json: JSON pointer was not found "
+            r"\(a '/' in a name is written '~1': '#/definitions/user~1created' names the key the pointer splits\)\. "
+        ),
+    ):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "external_ref_slash_key" / "schema.json",
+            output_path=tmp_path / "model",
+            input_file_type="jsonschema",
+            extra_args=["--read-escaped-ref-pointers", "--disable-timestamp", "--target-python-version", "3.10"],
+            force_exec_validation=True,
+        )
+
+
 def test_json_pointer_decoding_preserves_ordinary_references(output_file: Path) -> None:
     """Keep ordinary escaped tokens, array indices and external references byte-identical."""
     run_main_and_assert(
@@ -5668,8 +5772,9 @@ def test_json_pointer_decoding_preserves_ordinary_references(output_file: Path) 
     )
 
 
-def test_main_json_pointer_through_scalar(output_file: Path) -> None:
-    """A pointer through a scalar, a null or a string names nothing, as a missing member does."""
+@pytest.mark.parametrize("extra_args", [[], ["--read-escaped-ref-pointers"]], ids=["released", "read-escaped"])
+def test_main_json_pointer_through_scalar(output_file: Path, extra_args: list[str]) -> None:
+    """A pointer through a scalar, a null or a string names nothing, as a missing member does, and splits no key."""
     with warnings.catch_warnings(record=True) as warning_records:
         warnings.simplefilter("always", DanglingRefWarning)
         run_main_and_assert(
@@ -5677,12 +5782,15 @@ def test_main_json_pointer_through_scalar(output_file: Path) -> None:
             output_path=output_file,
             input_file_type="jsonschema",
             assert_func=assert_file_content,
+            extra_args=extra_args,
         )
+    assert not [record for record in warning_records if "'~1'" in str(record.message)]
 
     assert_warnings_contain(warning_records, "#/x-ext/k/j", "#/x-ext/items/0/j", "#/x-ext/none/j", "#/x-ext/text/0")
 
 
-def test_main_json_pointer_empty_token(output_file: Path) -> None:
+@pytest.mark.parametrize("extra_args", [[], ["--read-escaped-ref-pointers"]], ids=["released", "read-escaped"])
+def test_main_json_pointer_empty_token(output_file: Path, extra_args: list[str]) -> None:
     """A pointer with an empty token names the member of the key `""`, or nothing, and never keeps the run looping."""
     with warnings.catch_warnings(record=True) as warning_records:
         warnings.simplefilter("always", DanglingRefWarning)
@@ -5691,6 +5799,7 @@ def test_main_json_pointer_empty_token(output_file: Path) -> None:
             output_path=output_file,
             input_file_type="jsonschema",
             assert_func=assert_file_content,
+            extra_args=extra_args,
         )
 
     assert_warnings_contain(warning_records, "#/definitions//k", "#/definitions//m")

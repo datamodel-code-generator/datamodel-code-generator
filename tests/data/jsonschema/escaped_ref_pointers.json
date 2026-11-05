@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Order",
+  "type": "object",
+  "properties": {
+    "spaced": {"$ref": "#/$defs/Line%20Item"},
+    "slashed": {"$ref": "#/$defs/tax~1rate"},
+    "tilded": {"$ref": "#/$defs/note~0text"},
+    "percent": {"$ref": "#/$defs/50%25"},
+    "raw": {"$ref": "#/$defs/Line Item"},
+    "items": {"type": "array", "items": {"$ref": "#/$defs/Line%20Item"}}
+  },
+  "$defs": {
+    "Line Item": {"type": "object", "properties": {"sku": {"type": "string"}}, "required": ["sku"]},
+    "tax/rate": {"type": "object", "properties": {"rate": {"type": "number"}}},
+    "note~text": {"type": "object", "properties": {"body": {"type": "string"}}},
+    "50%": {"type": "object", "properties": {"share": {"type": "integer"}}}
+  }
+}

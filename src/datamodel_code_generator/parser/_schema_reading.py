@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple
 from typing_extensions import Sentinel
 
 from datamodel_code_generator._document_reader import ArrayIndexOutOfRangeError, member, member_key
-from datamodel_code_generator._json_pointer import decode_token, is_pointer_fragment
+from datamodel_code_generator._json_pointer import decode_token, fragment_pointer, is_pointer_fragment
 from datamodel_code_generator._json_schema import (
     INSTANCE_DATA_KEYWORDS,
     SCHEMA_MAP_KEYS,
@@ -282,6 +282,23 @@ def _get_model_by_decoded_path(
             return _MISSING_JSON_POINTER if or_missing else {}
         current = value
     raise AssertionError  # pragma: no cover
+
+
+def unescaped_slash_pointer(document: object, tokens: Sequence[str | int]) -> str | None:
+    """Return the pointer of a key holding ``/`` that the unescaped ``/`` of ``tokens`` splits, or None.
+
+    ``tokens`` name no node. Where the tokens from one onward, joined by ``/``, are a key of the dict the tokens before
+    them reach, the pointer of that key is returned with its ``/`` escaped (``/definitions/user~1created``).
+    """
+    node = document
+    for index, token in enumerate(tokens):
+        if not isinstance(node, dict):
+            return None
+        if index < len(tokens) - 1 and (key := "/".join(map(str, tokens[index:]))) in node:
+            return fragment_pointer((*tokens[:index], key))
+        if (node := node.get(str(token), _MISSING_JSON_POINTER)) is _MISSING_JSON_POINTER:
+            return None
+    raise AssertionError  # pragma: no cover - the tokens of a dangling reference name no node
 
 
 def _fragment_value(document: Any, fragment: str, *, or_missing: bool = False) -> Any:

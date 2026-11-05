@@ -1700,6 +1700,9 @@ models	main/openapi/main_openapi/pointer_into_document_with_integer_top_level_ke
 	main/openapi/parameter_without_name.py
 [test_main_openapi_querystring_parameter_requires_32]
 	main/openapi/querystring_parameter_31.py
+[test_main_openapi_read_escaped_ref_pointers]
+read	main/openapi/main_openapi/read_escaped_ref_pointers[read].py
+released	main/openapi/main_openapi/read_escaped_ref_pointers[released].py
 [test_main_openapi_read_nullable_beside_type_list]
 with-option	main/openapi/main_openapi/read_nullable_beside_type_list[with-option].py	= main/schema_intersection_shapes/schema_intersection_shape_output[null_multiple_types_oas30-pydantic_v2.BaseModel-use-missing-sentinel].py
 without-option	main/openapi/main_openapi/read_nullable_beside_type_list[without-option].py

@@ -19,9 +19,11 @@
 - `--input-model`: Import a Python type or dict schema from a module or Python file.
 - `--input-model-ref-strategy`: Strategy for referenced types when using --input-model.
 - `--no-ignore-ref-siblings-by-schema-version`
+- `--no-read-escaped-ref-pointers`
 - `--no-read-schema-version-per-document`
 - `--output`: Specify the destination path for generated Python code.
 - `--preset`: Apply an immutable built-in option preset.
+- `--read-escaped-ref-pointers`: Read the escapes of a `$ref` JSON pointer as the characters they encode.
 - `--read-schema-version-per-document`: Read each document by the schema version it declares.
 - `--schema-version`: Schema version to use for parsing.
 - `--schema-version-mode`: Schema version validation mode.

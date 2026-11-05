@@ -244,6 +244,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--input --output --emit-model-metadata --http-backend --url --input-model --input-model-ref-strategy",
         "--input-file-type --encoding --schema-version --schema-version-mode",
         "--read-schema-version-per-document --no-read-schema-version-per-document",
+        "--read-escaped-ref-pointers --no-read-escaped-ref-pointers",
         "--ignore-ref-siblings-by-schema-version --no-ignore-ref-siblings-by-schema-version",
         "--external-ref-mapping --preset",
     ),
