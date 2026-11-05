@@ -1,0 +1,25 @@
+{
+  "$defs": {
+    "b.Holder": {
+      "type": "object",
+      "properties": {
+        "tags": {
+          "$ref": "#/$defs/a.Tags"
+        }
+      }
+    },
+    "a.Tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    }
+  },
+  "type": "object",
+  "properties": {
+    "holder": {
+      "$ref": "#/$defs/b.Holder"
+    }
+  }
+}

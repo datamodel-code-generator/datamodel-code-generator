@@ -329,8 +329,8 @@ def seal_facts(original: Callable[..., Any]) -> Callable[..., Any]:
     """
 
     @wraps(original)
-    def seal_facts(self: Any, modules: Any, member_keywords: Any) -> Any:
-        facts = original(self, modules, member_keywords)
+    def seal_facts(self: Any, modules: Any, member_keywords: Any, options: Any) -> Any:
+        facts = original(self, modules, member_keywords, options)
         checks = PARSE_CHECKS.get()
         return facts if checks is None or checks.finality is None else _views(checks.finality, facts)
 
@@ -360,6 +360,16 @@ def drop_field_constraints(original: Callable[..., None]) -> Callable[..., None]
         return original(self, viewed(model), viewed(field), keywords)
 
     return drop_field_constraints
+
+
+def write_sets(original: Callable[..., None]) -> Callable[..., None]:
+    """Wrap ``_DecisionWriter.write_sets``: it writes the objects that the guarded views a decision read name."""
+
+    @wraps(original)
+    def write_sets(self: Any, model: Any, field: Any, lists: Any, default: Any) -> None:
+        return original(self, viewed(model), viewed(field), [viewed(data_type) for data_type in lists], default)
+
+    return write_sets
 
 
 def mark_serialized_as_any(original: Callable[..., None]) -> Callable[..., None]:

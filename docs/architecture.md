@@ -168,16 +168,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 223 | Shared generation options. |
-| `GenerateConfig` | 238 | Public `generate()` configuration. |
-| `ParserConfig` | 186 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 188 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 196 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 198 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 189 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 189 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 188 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 189 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 224 | Shared generation options. |
+| `GenerateConfig` | 239 | Public `generate()` configuration. |
+| `ParserConfig` | 187 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 189 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 197 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 199 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 190 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 190 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 189 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 190 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -1627,6 +1627,8 @@ is a new named row, never an anonymous `if`.
 | `legacy-anchor-parse-index` | a plain name the walk of the definitions registered with the model resolver (`parse_id`: an `$id` or `$anchor` at the positions of the reference pre-pass) names the schema registered last there, also where the registry names another one, such as the last declaration in document order of a name several schemas of a document declare | #5131 |
 | `legacy-first-read-dialect` | without `--read-schema-version-per-document`, the readings of a schema version are the run's: the `$ref`-sibling gate of the allOf, literal-narrowing and validator readers and the schema features (`schema_features`) are those of the document parsed at each one's first read, the gate detected as JSON Schema for every parser class (an OpenAPI or AsyncAPI document reads as draft 7 unless it holds `$defs`); whether siblings merge as parts is that of the input document being parsed, also for the schemas of a document a reference loads | keep |
 | `legacy-count-ref-member-as-written` | without `--read-schema-version-per-document`, the property-count validator reads `minProperties`/`maxProperties` beside an allOf `$ref` member in every schema version, where the other validator walkers read them only in a version that applies the keywords beside a `$ref` | keep |
+| `legacy-dedup-keys-without-unique-items` | without `--use-unique-items-as-set-by-value`, the dedup and reuse keys leave out which arrays declare `uniqueItems`, which they compare as the lists they still are | keep |
+| `legacy-unique-items-decided-before-collapse` | without `--use-unique-items-as-set-by-value`, `--use-unique-items-as-set` writes its sets in L5, before root models collapse, type overrides apply and the other modules are processed, and a set item model hashes by identity | keep |
 
 **Scope on schema objects, not parse paths.** When an option applies to part of a document, the walk that defines the
 part marks the schema objects in scope where the document is rewritten (L0), and L1 checks the mark on the object it

@@ -17,6 +17,8 @@ from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
+    from datamodel_code_generator.model._decisions.hashability import SetItemHash
+
 __all__ = ["DataTypeView", "FieldView", "ModelForm", "ModelView", "ReferenceView"]
 
 ModelForm: TypeAlias = Literal["alias", "root", "enum", "object"]
@@ -238,3 +240,6 @@ class ModelView(Protocol):
     @property
     def value_base(self) -> str | None:
         """The builtin type an enum subclasses for the values of its members (``str`` of a ``StrEnum``), or None."""
+
+    def set_item_hash(self, *, user_imports: bool) -> SetItemHash:
+        """How the instances of the class hash as set items, by the class alone (``DataModel.set_item_hash``)."""

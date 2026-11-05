@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from datamodel_code_generator.imports import Import
+    from datamodel_code_generator.model._decisions.hashability import SetItemHash
     from datamodel_code_generator.model.base import DataModelFieldBase
 
 
@@ -72,6 +73,6 @@ class RootModelTypeAlias(RootModel):
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_ROOT_MODEL,)
 
     @override
-    def _instances_never_hash(self, generic_base_config: Mapping[str, Any] | None) -> bool:
-        """Return True: the alias ``Foo = RootModel[type]`` has no class body for the identity hash of a set item."""
-        return self._class_never_hashes()
+    def _class_hash(self, generic_base_config: Mapping[str, Any] | None) -> SetItemHash:
+        """Return ``never``: the alias ``Foo = RootModel[type]`` has no class body for the hash of a set item."""
+        return self._compared_class_hash()

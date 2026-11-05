@@ -269,3 +269,30 @@ match = "^\\[type\\] PrefixItemsUniqueItemsSequence:pairs: Union\\[None, set\\[l
 reason = "with --collapse-root-models --use-unique-items-as-set (the practical presets), the root model of a closed prefixItems pair inlined into the items of a set gave set[list[int | str]], which rejects every non-empty array; the root model stays named there and hashes by identity (crash-class fix)"
 decision = "#6192"
 release_note = "with --collapse-root-models and --use-unique-items-as-set, a root model whose root type has no hashable value stays named as the item of a set instead of being inlined into a set that rejects every non-empty array"
+
+[[accepted]]
+input = "*unique_items_by_value.json"
+backends = [ "pydantic_v2.BaseModel" ]
+aspects = [ "type" ]
+match = "^\\[type\\] Root:(?:tags|pairs): Union\\[None, set\\[list\\[(?:str|Union\\[int, str\\])\\]\\]\\] -> Union\\[None, set\\[(?:Tags|Pair)\\]\\]$"
+reason = "with --collapse-root-models --use-unique-items-as-set (the practical presets), a root model of an array inlined into the items of a set gave set[list[...]], which rejects every non-empty array; the root model stays named there, as without collapse, and hashes by identity (crash-class fix)"
+decision = "#6192"
+release_note = "with --collapse-root-models and --use-unique-items-as-set, a root model whose root type has no hashable value stays named as the item of a set instead of being inlined into a set that rejects every non-empty array"
+
+[[accepted]]
+input = "*unique_items_by_value.json"
+backends = [ "msgspec.Struct" ]
+aspects = [ "type" ]
+match = "^\\[type\\] Root:(?:pets|settings|limits|points): Union\\[msgspec\\.UnsetType, set\\[(?:Pet|Settings|Limits|Point)\\]\\] -> Union\\[list\\[(?:Pet|Settings|Limits|Point)\\], msgspec\\.UnsetType\\]$"
+reason = "with --use-unique-items-as-set (the practical presets), a uniqueItems array of msgspec Structs that compare by value without being frozen was a set of them, which msgspec cannot decode (TypeError: cannot use the Struct as a set element); it keeps a list (crash-class fix)"
+decision = "#6266"
+release_note = "with --use-unique-items-as-set, a uniqueItems array of models whose class can never hash its instances (TypedDict, non-frozen dataclasses and msgspec Structs, RootModel aliases) stays a list instead of a set that rejects every non-empty array, and the models of a type alias that a set names take the set item hash"
+
+[[accepted]]
+input = "*unique_items_by_value.json"
+backends = [ "msgspec.Struct" ]
+aspects = [ "type" ]
+match = "^\\[type\\] Root:(?:tags|pairs): Union\\[msgspec\\.UnsetType, set\\[list\\[(?:str|Union\\[int, str\\])\\]\\]\\] -> Union\\[list\\[list\\[(?:str|Union\\[int, str\\])\\]\\], msgspec\\.UnsetType\\]$"
+reason = "with --use-unique-items-as-set (the practical presets), a uniqueItems array of arrays was set[list[...]], which rejects every non-empty array; it stays a list (crash-class fix)"
+decision = "#6190"
+release_note = "with --use-unique-items-as-set, a uniqueItems array whose items can never be set members (objects, arrays, a tuple holding an array) stays a list instead of a set that rejects every non-empty array, and a list default that cannot be a set keeps its list"

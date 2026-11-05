@@ -318,6 +318,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._constraint_applicability import ConstraintOptions
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.model._decisions.assignment import AssignmentRow
+    from datamodel_code_generator.model._decisions.hashability import SetItemHash
     from datamodel_code_generator.model._render_plan import OmitReason
     from datamodel_code_generator.reference import Reference
     from datamodel_code_generator.types import UnionIntFloat
@@ -746,8 +747,8 @@ class Struct(DataModel):
         return struct_discriminator_tag(*self._tag_options(), class_name=self.class_name)
 
     @override
-    def _instances_never_hash(self, generic_base_config: Mapping[str, Any] | None) -> bool:
-        """Return whether the struct compares by value (``eq`` on, the default) without being frozen.
+    def _class_hash(self, generic_base_config: Mapping[str, Any] | None) -> SetItemHash:
+        """Return how the struct hashes: by value where it compares by value (``eq`` on, the default) and is frozen.
 
         Each option is the one of the first struct of the chain (the struct and the generated structs it inherits from,
         as a walk of the reference graph meets them, then the generic base class all of them inherit from) that sets
@@ -764,11 +765,9 @@ class Struct(DataModel):
                 (value in {True, "True"} for option in options if (value := option.get(name)) is not None), default
             )
 
-        frozen = first("frozen", default=False)
-        return first("eq", default=True) and all(
-            struct._class_never_hashes(frozen=frozen)  # noqa: SLF001
-            for struct in chain
-        )
+        compares_by_value, frozen = first("eq", default=True), first("frozen", default=False)
+        hashes = {struct._compared_class_hash(compares_by_value=compares_by_value, frozen=frozen) for struct in chain}  # noqa: SLF001
+        return next(kind for kind in ("identity", "never", "value") if kind in hashes)
 
     @override
     def has_keyword_only_definition(self) -> bool:

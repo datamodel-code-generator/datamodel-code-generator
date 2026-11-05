@@ -72,6 +72,7 @@ OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
     "--read-escaped-ref-pointers",
     "--read-dynamic-anchors-in-document-order",
     "--use-one-model-per-ref-site",
+    "--use-unique-items-as-set-by-value",
 )
 """The options the 20261104 presets set beyond the 20261027 presets."""
 
@@ -218,6 +219,12 @@ CASES_20261104: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="use-one-model-per-ref-site",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "unique_items_by_value.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel", "--use-unique-items-as-set"],
+        id="use-unique-items-as-set-by-value",
     ),
 )
 """The inputs each opt-in option of the 20261104 presets changes."""

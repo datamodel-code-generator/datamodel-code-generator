@@ -256,6 +256,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--use-typed-nullable-map-values": "Type the values of nullable maps as their schemas say instead of Any.",
     "--use-union-operator": "Use | operator for Union types (PEP 604).",
     "--use-unique-items-as-set": "Generate set types for arrays with uniqueItems constraint.",
+    "--use-unique-items-as-set-by-value": "Write a uniqueItems set only where its final items hash by value.",
     "--validation": "Enable validation constraints (deprecated, use --field-constraints).",
     "--validators": "Add custom field validators to generated Pydantic v2 models.",
     "--watch": "Watch input file(s) for changes and regenerate output automatically.",

@@ -1075,6 +1075,38 @@ class Link0(BaseModel):
 
 and `Link1.next` is `Next1` too: 4 site models.
 
+### `--use-unique-items-as-set-by-value`
+
+| | |
+|---|---|
+| Option | `--use-unique-items-as-set-by-value` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#4834](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4834), [#4936](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4936), [#6191](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6191) |
+
+**Affects:** output under `--use-unique-items-as-set`. Its sets are decided before `--collapse-root-models`, `--type-overrides` and the other modules, and a model that is a set item hashes by identity, so `[{"id": 1}, {"id": 1}]` parses to a set of two equal `Pet`s (#4936). Deduplication, `--reuse-model`, `--collapse-reuse-models` and `--reuse-scope tree` compare such arrays as the lists they still are, so a model whose array declares no `uniqueItems` merges into one whose array does, and its `["b", "a", "b"]` parses to `{"a", "b"}` (#4834); a root model of another module is collapsed into a list or a set as the order of the modules says (#6191). With the option a set is decided on the final item types and written only where every value of its items hashes by value: scalars, enums, tuples and frozen sets of them, and frozen models whose fields hash. An array of models that hash only by identity, of `Any` or of containers stays a list, and models whose arrays differ in `uniqueItems` stay apart.
+
+Schema: `Labels.names` declares `uniqueItems`, `History.names` does not, and `pets` is a `uniqueItems` array of `Pet` objects; with `--use-unique-items-as-set --reuse-model --collapse-reuse-models`.
+
+Without the option (same as 0.89.0):
+
+```python
+class Root(BaseModel):
+    labels: Labels | None = None
+    history: Labels | None = None
+    pets: set[Pet] | None = None
+```
+
+With the option:
+
+```python
+class Root(BaseModel):
+    labels: Labels | None = None
+    history: History | None = None
+    pets: list[Pet] | None = None
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.

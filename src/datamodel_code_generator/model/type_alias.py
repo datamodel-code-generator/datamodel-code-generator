@@ -6,7 +6,7 @@ TypeAlias annotation, TypeAliasType, and type statement (Python 3.12+).
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from typing_extensions import override
 
@@ -20,9 +20,10 @@ from datamodel_code_generator.model import DataModel
 from datamodel_code_generator.types import chain_as_tuple
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Mapping
 
     from datamodel_code_generator._requirements import PydanticConstruct
+    from datamodel_code_generator.model._decisions.hashability import SetItemHash
 
 
 class TypeAliasBase(DataModel):
@@ -36,6 +37,11 @@ class TypeAliasBase(DataModel):
     FIELD_DOCSTRING_INDENT: ClassVar[int] = 0
     _FREEZES_FIELD_RENDER_PLANS: ClassVar[bool] = True
     """A field that renders from a plan (Pydantic's) writes the alias from its frozen plan; others build none."""
+
+    @override
+    def _class_hash(self, generic_base_config: Mapping[str, Any] | None) -> SetItemHash:
+        """Return ``alias``: the values of a type alias are those of its type, which a set item is read as."""
+        return "alias"
 
     @property
     @override

@@ -1048,6 +1048,16 @@ _toggle(
 )
 _toggle(
     typing_options,
+    "--use-unique-items-as-set-by-value",
+    help="Under --use-unique-items-as-set, decide each set once the item types are final (after "
+    "--collapse-root-models, --type-overrides and every module) and write a set only where every value of its items "
+    "hashes by value (scalars, enums, tuples and frozen sets of them, frozen models); an array of models that hash "
+    "only by identity, of Any or of containers stays a list. Deduplication and --reuse-model also keep apart models "
+    "whose arrays differ in uniqueItems; without it the sets are decided before root models collapse, set item models "
+    "hash by identity and such models merge, as in 0.89.0",
+)
+_toggle(
+    typing_options,
     "--use-tuple-for-fixed-items",
     help="Generate tuple types for arrays with items array syntax when minItems equals maxItems equals items length",
 )

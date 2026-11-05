@@ -90,6 +90,7 @@ SEAMS: Final = (
     Seam(f"{_PACKAGE}.parser._phases", "_DecisionWriter", "drop_held_null", "parse.drop_held_null"),
     Seam(f"{_PACKAGE}.parser._phases", "_DecisionWriter", "drop_field_constraints", "parse.drop_field_constraints"),
     Seam(f"{_PACKAGE}.parser._phases", "_DecisionWriter", "mark_serialized_as_any", "parse.mark_serialized_as_any"),
+    Seam(f"{_PACKAGE}.parser._phases", "_DecisionWriter", "write_sets", "parse.write_sets"),
     Seam(
         f"{_PASSES}._shared",
         None,

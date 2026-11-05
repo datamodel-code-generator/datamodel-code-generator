@@ -98,6 +98,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model.enum import Member
     from datamodel_code_generator.parser._field_rows import FieldIdentity
     from datamodel_code_generator.parser._graph_ids import KeyedModels
+    from datamodel_code_generator.parser._phases import DecisionOptions
     from datamodel_code_generator.parser._sites import Position, ProvenanceHow, RefKind
     from datamodel_code_generator.types import DataType
 
@@ -1417,6 +1418,7 @@ class GenerationStore:  # noqa: PLR0904
         self,
         modules: Iterable[tuple[tuple[str, ...], Iterable[DataModel]]],
         member_keywords: Callable[[DataTypeView, Callable[[ReferenceView], ModelView | None]], frozenset[str] | None],
+        options: DecisionOptions,
     ) -> FinalFacts:
         """Return the facts final at B1 for the decision phase: the live models of ``modules``, in module order.
 
@@ -1425,7 +1427,10 @@ class GenerationStore:  # noqa: PLR0904
         """
         module_facts = tuple(ModuleFacts(module, tuple(models)) for module, models in modules)
         return FinalFacts(
-            module_facts, tuple(model for facts in module_facts for model in facts.live_models), member_keywords
+            module_facts,
+            tuple(model for facts in module_facts for model in facts.live_models),
+            member_keywords,
+            options,
         )
 
     @deprecated("Use GenerationStore.builder().register_model() instead.", category=None)

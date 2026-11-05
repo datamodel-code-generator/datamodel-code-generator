@@ -473,7 +473,8 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(_C.TYPING, "--use-non-positive-negative-number-constrained-types"),
     **_opts(
         _C.TYPING,
-        "--use-unique-items-as-set --no-use-unique-items-as-set --use-tuple-for-fixed-items",
+        "--use-unique-items-as-set --no-use-unique-items-as-set --use-unique-items-as-set-by-value",
+        "--no-use-unique-items-as-set-by-value --use-tuple-for-fixed-items",
         "--no-use-tuple-for-fixed-items --use-tuple-for-closed-arrays --no-use-tuple-for-closed-arrays",
         "--use-tuple-for-fixed-length-arrays",
         group=_G.COLLECTION_TYPES,

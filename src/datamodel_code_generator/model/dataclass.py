@@ -74,6 +74,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import DataclassArguments
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._decisions.assignment import AssignmentRow, DataclassItems, WrittenData
+    from datamodel_code_generator.model._decisions.hashability import SetItemHash
     from datamodel_code_generator.model._render_plan import Omitted
     from datamodel_code_generator.reference import Reference
 
@@ -238,16 +239,18 @@ class _DataclassReuseMixin:
         """Return whether a dataclass declaration enables keyword-only fields."""
         return bool(cast("DataModel", self).dataclass_arguments.get("kw_only"))
 
-    def _instances_never_hash(self, generic_base_config: Mapping[str, Any] | None) -> bool:  # noqa: ARG002
-        """Return whether the dataclass compares by value (``eq``, the default) without being frozen.
+    def _class_hash(self, generic_base_config: Mapping[str, Any] | None) -> SetItemHash:  # noqa: ARG002
+        """Return how the dataclass hashes: by value where it compares by value (``eq``, the default) and is frozen.
 
-        Such a dataclass sets ``__hash__`` to None; ``unsafe_hash`` gives it a hash, and so does ``eq=False``, which
-        keeps the identity hash. Its decorator alone decides, whatever its bases.
+        One that compares by value without being frozen sets ``__hash__`` to None; ``unsafe_hash`` gives it a hash of
+        its own, and ``eq=False`` keeps the identity hash. Its decorator alone decides, whatever its bases.
         """
         model = cast("DataModel", self)
         arguments = model.dataclass_arguments
-        return bool(arguments.get("eq", True)) and model._class_never_hashes(  # noqa: SLF001
-            frozen=bool(arguments.get("frozen")), own_hash=bool(arguments.get("unsafe_hash"))
+        return model._compared_class_hash(  # noqa: SLF001
+            compares_by_value=bool(arguments.get("eq", True)),
+            frozen=bool(arguments.get("frozen")),
+            own_hash=bool(arguments.get("unsafe_hash")),
         )
 
     def _derived_options(self) -> dict[str, Any]:

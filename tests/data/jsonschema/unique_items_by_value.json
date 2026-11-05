@@ -1,0 +1,226 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "labels": {
+      "$ref": "#/$defs/Labels"
+    },
+    "history": {
+      "$ref": "#/$defs/History"
+    },
+    "pets": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Pet"
+      }
+    },
+    "colors": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Color"
+      }
+    },
+    "tags": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Tags"
+      }
+    },
+    "anything": {
+      "type": "array",
+      "uniqueItems": true
+    },
+    "numbers": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "integer"
+      },
+      "default": [
+        1,
+        2
+      ]
+    },
+    "first": {
+      "type": "object",
+      "properties": {
+        "entry": {
+          "title": "Entry",
+          "type": "object",
+          "properties": {
+            "tags": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "second": {
+      "type": "object",
+      "properties": {
+        "entry": {
+          "title": "Entry",
+          "type": "object",
+          "properties": {
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "codes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "settings": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Settings"
+      }
+    },
+    "pairs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "string"
+          }
+        ],
+        "items": false,
+        "minItems": 2
+      }
+    },
+    "limits": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Limits"
+      }
+    },
+    "points": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Point"
+      }
+    }
+  },
+  "$defs": {
+    "Labels": {
+      "type": "object",
+      "properties": {
+        "names": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "History": {
+      "type": "object",
+      "properties": {
+        "names": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Pet": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "nicknames": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Color": {
+      "type": "string",
+      "enum": [
+        "red",
+        "blue"
+      ]
+    },
+    "Tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "Settings": {
+      "type": "object",
+      "properties": {
+        "options": {
+          "type": "object",
+          "default": {}
+        }
+      }
+    },
+    "Limits": {
+      "type": "object",
+      "properties": {
+        "levels": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "integer"
+          },
+          "default": [
+            1
+          ]
+        }
+      }
+    },
+    "Point": {
+      "type": "object",
+      "required": [
+        "x",
+        "y"
+      ],
+      "properties": {
+        "x": {
+          "type": "integer"
+        },
+        "y": {
+          "type": "integer"
+        }
+      }
+    }
+  },
+  "required": [
+    "codes"
+  ]
+}

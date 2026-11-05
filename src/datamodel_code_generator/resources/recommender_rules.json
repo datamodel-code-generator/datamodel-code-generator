@@ -1527,6 +1527,10 @@
       "not_recommended": "runtime-behaviour",
       "reason": "A set drops duplicate items instead of rejecting them and loses their order (serialized in a different order per process), so it does not check uniqueItems; the practical presets choose it as a typing style."
     },
+    "use_unique_items_as_set_by_value": {
+      "not_recommended": "preset",
+      "reason": "Under --use-unique-items-as-set only: set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "validation": {
       "not_recommended": "compat",
       "reason": "Deprecated; use --field-constraints."

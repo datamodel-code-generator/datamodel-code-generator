@@ -94,7 +94,7 @@ from datamodel_code_generator.reference import (
 from datamodel_code_generator.types import DataType, DefaultValueRecipe, union_members
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 
     from typing_extensions import Unpack
 
@@ -1379,25 +1379,49 @@ def _unique_items_plan(
     if merged:
         declared = [{path for path, _ in _declared_unique_arrays(other, "all")} if other else set() for other in merged]
         arrays = [(path, group) for path, group in arrays if all(path in paths for paths in declared)]
+    items = replace(reading, sources="field" if reading.sources == "field" else "all")
+    return plan_unique_sets(
+        field,
+        [group for _, group in arrays],
+        default=default if isinstance(default := field.default, list) else None,
+        keeps_tuples=reading.keeps_tuples,
+        can_hold=lambda node, sets: set_items_can_hash(
+            tuple(_set_item_facts(item, sets, items) for item in node.data_types)
+        ),
+    )
+
+
+def plan_unique_sets(
+    field: DataModelFieldBase,
+    arrays: Iterable[tuple[DataType, ...]],
+    *,
+    default: Sequence[Any] | None,
+    keeps_tuples: bool,
+    can_hold: Callable[[DataType, Collection[int]], bool],
+) -> UniqueItemsPlan:
+    """Return the plan of a field whose schemas declare ``arrays`` unique, each group the arrays of one schema.
+
+    The lists of a group become sets, inner lists first, where ``can_hold`` says a set can hold the items of the list
+    once the lists of ``sets`` (by id) are sets; under ``keeps_tuples`` a tuple among a group keeps all of it. A list
+    but those of the field's own schema (``_own_unique_arrays``) stays a list in a union beside another member of its
+    kind that keeps its lists (``_beside_its_kind``), decided again until no such set is left. The field's array
+    ``default`` becomes the set of its values where a list of the field's own level becomes one and they hash;
+    otherwise those lists stay.
+    """
     lists: dict[int, DataType] = {}
     tuples: dict[int, DataType] = {}
-    for _, group in arrays:
-        if reading.keeps_tuples and any(array.is_tuple for array in group):
+    for group in arrays:
+        if keeps_tuples and any(array.is_tuple for array in group):
             tuples.update((id(array), array) for array in group if array.is_tuple)
         else:
             lists.update((id(array), array) for array in group if array.is_list)
-    items = replace(reading, sources="field" if reading.sources == "field" else "all")
     own = _own_unique_arrays(field)
     nodes = dict(_nodes_with_paths(field.data_type, ()))
     kept: set[_Path] = set()
     while True:
         sets: dict[int, DataType] = {}
         for path, node in nodes.items():
-            if (
-                id(node) in lists
-                and path not in kept
-                and set_items_can_hash(tuple(_set_item_facts(item, sets, items) for item in node.data_types))
-            ):
+            if id(node) in lists and path not in kept and can_hold(node, sets):
                 sets[id(node)] = node
         if not (
             beside := {
@@ -1408,16 +1432,16 @@ def _unique_items_plan(
         ):
             break
         kept |= beside
-    default = None
-    if (own_level := [array for array in _unique_items_arrays(field.data_type) if id(array) in sets]) and isinstance(
-        field.default, list
+    default_set = None
+    if (own_level := [array for array in _unique_items_arrays(field.data_type) if id(array) in sets]) and (
+        default is not None
     ):
         try:
-            default = set(field.default)
+            default_set = set(default)
         except TypeError:
             for array in own_level:
                 del sets[id(array)]
-    return UniqueItemsPlan(tuple(sets.values()), default, tuple(tuples.values()))
+    return UniqueItemsPlan(tuple(sets.values()), default_set, tuple(tuples.values()))
 
 
 def _own_unique_arrays(field: DataModelFieldBase) -> set[int]:
@@ -1487,6 +1511,15 @@ def _declared_unique_arrays(
         ):
             found.append((path, group))
     return found
+
+
+def unique_items_positions(model: DataModel) -> tuple[tuple[_Path, ...], ...]:
+    """Return, field by field, the positions of the arrays whose schemas declare ``uniqueItems`` in the field's type.
+
+    Two models that differ in them are no duplicates under --use-unique-items-as-set-by-value, which writes sets on the
+    final types only where a schema declares the keyword.
+    """
+    return tuple(tuple(path for path, _ in _declared_unique_arrays(field, "all")) for field in model.fields)
 
 
 def _nodes_with_paths(data_type: DataType, path: _Path) -> Iterator[tuple[_Path, DataType]]:
