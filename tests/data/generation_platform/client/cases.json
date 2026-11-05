@@ -2465,6 +2465,16 @@
   "auth-roles-30": {
     "input": "auth-roles-30.yaml"
   },
+  "version-per-document": {
+    "input": "version-per-document.yaml",
+    "references": ["version-per-document-parameters.yaml"],
+    "model": {"read_schema_version_per_document": true},
+    "modules": [["client", "_operations.py"]]
+  },
+  "version-per-document-root": {
+    "input": "version-per-document.yaml",
+    "references": ["version-per-document-parameters.yaml"]
+  },
   "auth-roles-30-read-as-31": {
     "input": "auth-roles-30.yaml",
     "model": {"schema_version": "3.1"},

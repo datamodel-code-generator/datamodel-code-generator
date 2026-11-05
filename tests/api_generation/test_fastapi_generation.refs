@@ -131,6 +131,10 @@ unbound	main/generation_platform/fastapi/packages/unbound/
 unbound	main/generation_platform/fastapi/unbound.txt
 unbound-body	main/generation_platform/fastapi/packages/unbound-body/
 unbound-body	main/generation_platform/fastapi/unbound-body.txt
+version-per-document	main/generation_platform/fastapi/packages/version-per-document/
+version-per-document	main/generation_platform/fastapi/version-per-document.txt
+version-per-document-root	main/generation_platform/fastapi/packages/version-per-document-root/	= main/generation_platform/fastapi/packages/info/
+version-per-document-root	main/generation_platform/fastapi/version-per-document-root.txt	= main/generation_platform/client/version-per-document-root.txt
 [test_fastapi_scope]
 	main/generation_platform/fastapi/acceptance/scope.txt
 [test_fastapi_template_fallback]

@@ -385,6 +385,9 @@ uploads-plans	main/generation_platform/client/packages/uploads-plans/typing_Type
 uploads-plans	main/generation_platform/client/uploads-plans.txt
 validation-ambiguous	main/generation_platform/client/packages/validation-ambiguous/dataclasses_dataclass//*.py
 validation-ambiguous	main/generation_platform/client/validation-ambiguous.txt
+version-per-document	main/generation_platform/client/packages/version-per-document/pydantic_v2_BaseModel//*.py
+version-per-document	main/generation_platform/client/version-per-document.txt
+version-per-document-root	main/generation_platform/client/version-per-document-root.txt
 webhooks	main/generation_platform/client/packages/webhooks/pydantic_v2_BaseModel//*.py
 webhooks	main/generation_platform/client/webhooks.txt
 webhooks-adapters	main/generation_platform/client/packages/webhooks-adapters/pydantic_v2_BaseModel//*.py

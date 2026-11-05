@@ -3943,13 +3943,31 @@ def bind_operations(
             fields,
             security_schemes,
             api_scope=True,
-            openapi=parser.document_versions.get(root := next(iter(documents.ids), ""), OpenAPIVersion.V31),
+            openapi=(
+                version := parser.document_versions.get(root := next(iter(documents.ids), ""), OpenAPIVersion.V31)
+            ),
+            document_versions=_own_versions(parser, documents, version),
             document_facts=parser.document_facts.get(root, ()),
             hint_type=builder.binder.hints.hint_type,
             hint_imports=tuple(builder.binder.hints.fixed),
             names=TargetNames.of(parser.model_resolver),
         ),
         _pristine(parser, documents.documents),
+    )
+
+
+def _own_versions(
+    parser: TargetApiOpenAPIParser, documents: _Documents, root: OpenAPIVersion
+) -> tuple[tuple[SourceDocumentId, OpenAPIVersion], ...]:
+    """Return the loaded documents that --read-schema-version-per-document reads by another version than the root's.
+
+    Each is read as the parser reads it (``_dialect_at``); without the option there are none.
+    """
+    return tuple(
+        (identity, version)
+        for uri, identity in documents.ids.items()
+        if (dialect := parser._dialect_at(SchemaLocation(uri, ()))) is not None  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
+        and (version := cast("OpenAPIVersion", dialect.version)) != root
     )
 
 

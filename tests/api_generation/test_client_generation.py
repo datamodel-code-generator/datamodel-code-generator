@@ -53,6 +53,8 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "auth-roles",
         "auth-roles-30",
         "auth-roles-30-read-as-31",
+        "version-per-document",
+        "version-per-document-root",
         "auth-context",
         "auth-wire-conflicts",
         "credential-name-errors",

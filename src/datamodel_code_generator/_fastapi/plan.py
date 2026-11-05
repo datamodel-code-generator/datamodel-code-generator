@@ -125,6 +125,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_contract import (
         FrozenLiteral,
         ModelFieldFacts,
+        OpenAPIVersions,
         OperationContract,
         SymbolId,
         TypeArgument,
@@ -526,7 +527,7 @@ def _files(media: MediaSpec) -> frozenset[str]:
     return frozenset(() if parts is None else (name for name, part in parts.members if part.file))
 
 
-def _json_members(media: MediaSpec, version: OpenAPIVersion) -> frozenset[str | None]:
+def _json_members(media: MediaSpec, versions: OpenAPIVersions) -> frozenset[str | None]:
     """Return the multipart members whose encodings send them as JSON: one JSON media type and no style.
 
     A style that the document's version applies leaves the media type unused, and a member holding files keeps its
@@ -539,11 +540,11 @@ def _json_members(media: MediaSpec, version: OpenAPIVersion) -> frozenset[str | 
     return frozenset(
         child.name
         for child in _encodings(media)
-        if child.name in texts and _json_type(child) and not form_styled(child, version, multipart=True)
+        if child.name in texts and _json_type(child) and not form_styled(child, versions, multipart=True)
     )
 
 
-def _typed_members(media: MediaSpec, kinds: LexicalKinds, version: OpenAPIVersion) -> frozenset[str | None]:
+def _typed_members(media: MediaSpec, kinds: LexicalKinds, versions: OpenAPIVersions) -> frozenset[str | None]:
     """Return the multipart members whose encodings name media types the adapters read their parts in.
 
     A member is read as JSON in a JSON media type; one of a single scalar kind, whose field parts Starlette reads as
@@ -552,7 +553,7 @@ def _typed_members(media: MediaSpec, kinds: LexicalKinds, version: OpenAPIVersio
     assert media.use is not None
     files = _files(media)
     scalars = {member.name for member in form_members(kinds, media.use) if member.kind is not None}
-    return _json_members(media, version) | {
+    return _json_members(media, versions) | {
         child.name
         for child in _encodings(media)
         if (
@@ -562,7 +563,7 @@ def _typed_members(media: MediaSpec, kinds: LexicalKinds, version: OpenAPIVersio
     }
 
 
-def _encoded(media: MediaSpec, kinds: LexicalKinds, version: OpenAPIVersion) -> WireDeclaration | None:
+def _encoded(media: MediaSpec, kinds: LexicalKinds, versions: OpenAPIVersions) -> WireDeclaration | None:
     """Return the first multipart encoding that the form adapter does not read.
 
     No adapter reads part headers, nor a style for a member holding files, which the client refuses too. A style that
@@ -570,14 +571,14 @@ def _encoded(media: MediaSpec, kinds: LexicalKinds, version: OpenAPIVersion) -> 
     a member is read in the media types `_typed_members` says. A URL-encoded member's encoding, which carries no
     headers, is read by its query parameter plan.
     """
-    typed = _typed_members(media, kinds, version)
+    typed = _typed_members(media, kinds, versions)
     files = _files(media)
     return next(
         (
             child
             for child in _encodings(media)
             if child.children
-            or (child.name in files if form_styled(child, version, multipart=True) else _untyped(child, typed))
+            or (child.name in files if form_styled(child, versions, multipart=True) else _untyped(child, typed))
         ),
         None,
     )
@@ -587,13 +588,15 @@ def _untyped(encoding: WireDeclaration, typed: frozenset[str | None]) -> bool:
     return fact(encoding, "contentType") is not None and encoding.name not in typed
 
 
-def _planned(encoding: WireDeclaration, version: OpenAPIVersion, textless: frozenset[str], *, multipart: bool) -> bool:
+def _planned(
+    encoding: WireDeclaration, versions: OpenAPIVersions, textless: frozenset[str], *, multipart: bool
+) -> bool:
     """Return whether a form member's encoding is read by its query parameter plan rather than as plain text.
 
     A form's own text reads the default `form` style with explode of a member of one scalar kind; a URL-encoded
     member's content and allowReserved need the plan too, while a part is never percent-encoded.
     """
-    styled = form_styled(encoding, version, multipart=multipart)
+    styled = form_styled(encoding, versions, multipart=multipart)
     if multipart and not styled:
         return False
     return (
@@ -845,7 +848,12 @@ class Planner:  # noqa: PLR0904
             if (
                 name in self.schemes
                 and (declaration := declared.get(name)) is not None
-                and (problem := scope_problem(name, declaration, scopes, self.request.batch.openapi)) is not None
+                and (
+                    problem := scope_problem(
+                        name, declaration, scopes, self.request.batch.versions.of(operation.id.use_site)
+                    )
+                )
+                is not None
             ):
                 message = f"The security of {label(operation)} {problem}"
                 self.problems.append(_problem("F_SECURITY_INVALID", message, operation.id.use_site))
@@ -901,7 +909,7 @@ class Planner:  # noqa: PLR0904
             if argument.location == "path" and argument.name == argument.wire_name
         }
         taken = {*RESERVED, *(argument.name for argument in arguments if argument.name not in own)}
-        repeatable = self.wire.version != OpenAPIVersion.V32
+        repeatable = self.wire.versions.root != OpenAPIVersion.V32
         try:
             return route_path(operation.path, taken, repeatable=repeatable)
         except RouteError as error:
@@ -1221,7 +1229,7 @@ class Planner:  # noqa: PLR0904
         ):
             self.unsupported(operation, (media,))
             return spec
-        if media.kind == "multipart" and (encoded := _encoded(media, self.wire.kinds, self.wire.version)) is not None:
+        if media.kind == "multipart" and (encoded := _encoded(media, self.wire.kinds, self.wire.versions)) is not None:
             self.unsupported(operation, (media,), f"the {encoded.name} encoding of ")
             return spec
         read = self.form_read(media)
@@ -1248,7 +1256,7 @@ class Planner:  # noqa: PLR0904
         assert media.use is not None
         members = tuple(form_members(self.wire.kinds, media.use))
         encoded = self.encoded(media, members)
-        json_members = _json_members(media, self.wire.version)
+        json_members = _json_members(media, self.wire.versions)
         encodings = {encoding.name or "": encoding for encoding in _encodings(media)}
         multipart = media.kind == "multipart"
         read = [
@@ -1262,7 +1270,7 @@ class Planner:  # noqa: PLR0904
                     json=multipart
                     and (
                         member.name in json_members
-                        or part_json(self.wire.kinds, member.type, encodings.get(member.name), self.wire.version)
+                        or part_json(self.wire.kinds, member.type, encodings.get(member.name), self.wire.versions)
                     ),
                     untyped=multipart and self.wire.kinds.untyped(member.leaf),
                 ),
@@ -1286,7 +1294,7 @@ class Planner:  # noqa: PLR0904
             additional = self.form_plan(
                 media,
                 extras,
-                json=multipart and part_json(self.wire.kinds, extras.type, None, self.wire.version),
+                json=multipart and part_json(self.wire.kinds, extras.type, None, self.wire.versions),
                 untyped=multipart and self.wire.kinds.untyped(extras.leaf),
             )
         elif multipart and (media.use.parts is None or media.use.parts.extra is None):
@@ -1327,7 +1335,7 @@ class Planner:  # noqa: PLR0904
         textless = frozenset(member.name for member in members if member.kind is None)
         multipart = media.kind == "multipart"
         encodings = tuple(
-            child for child in _encodings(media) if _planned(child, self.wire.version, textless, multipart=multipart)
+            child for child in _encodings(media) if _planned(child, self.wire.versions, textless, multipart=multipart)
         )
         if not encodings:
             return {}

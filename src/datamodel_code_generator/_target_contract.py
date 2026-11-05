@@ -609,13 +609,36 @@ class OperationContract:
 
 
 @dataclass(frozen=True, slots=True)
+class OpenAPIVersions:
+    """The OpenAPI version the parser reads each loaded document by.
+
+    `root` is the root document's: `--schema-version`, else the version it declares. `documents` gives the others that
+    --read-schema-version-per-document reads by a version of their own; without the option it is empty, and every
+    document reads as the root.
+    """
+
+    root: OpenAPIVersion = OpenAPIVersion.V31
+    documents: tuple[tuple[SourceDocumentId, OpenAPIVersion], ...] = ()
+
+    def of(self, location: SourceLocation) -> OpenAPIVersion:
+        """Return the version the document of a location is read by."""
+        return next((version for document, version in self.documents if document == location.document), self.root)
+
+    def declared(self, declaration: WireDeclaration) -> OpenAPIVersion:
+        """Return the version the document that declares a parameter, an encoding or a header is read by."""
+        return self.of(declaration.declaration.location)
+
+
+@dataclass(frozen=True, slots=True)
 class GeneratedTypeContractBatch:
     """Own one accepted attempt's immutable contracts, with no parser or source mappings.
 
     `openapi` is the OpenAPI version the parser reads the root document by: `--schema-version`, else the version it
-    declares. `document_facts` are the info, tags and servers the root document declares. `hint_type` is the model
-    generator's configured type class, which composes model types as the models spell them, and `hint_imports` the
-    names its spellings write as they are. `names` names generated API code with the models' naming options.
+    declares; `document_versions` those of the documents --read-schema-version-per-document reads by their own
+    (`OpenAPIVersions`). `document_facts` are the info, tags and servers the root document declares. `hint_type` is
+    the model generator's configured type class, which composes model types as the models spell them, and
+    `hint_imports` the names its spellings write as they are. `names` names generated API code with the models'
+    naming options.
     """
 
     attempt: AttemptId
@@ -629,10 +652,16 @@ class GeneratedTypeContractBatch:
     security_schemes: tuple[WireDeclaration, ...] = ()
     api_scope: bool = False
     openapi: OpenAPIVersion = OpenAPIVersion.V31
+    document_versions: tuple[tuple[SourceDocumentId, OpenAPIVersion], ...] = ()
     document_facts: tuple[tuple[str, FrozenLiteral], ...] = ()
     hint_type: type[DataType] | None = None
     hint_imports: tuple[Import, ...] = ()
     names: TargetNames | None = None
+
+    @property
+    def versions(self) -> OpenAPIVersions:
+        """Return the OpenAPI version each loaded document is read by."""
+        return OpenAPIVersions(self.openapi, self.document_versions)
 
 
 ApiKeyLocation: TypeAlias = Literal["query", "header", "cookie"]
@@ -773,7 +802,8 @@ def scope_problem(
 
     An oauth2 or openIdConnect scheme lists scope tokens (RFC 6749 section 3.3). Any other scheme lists role names,
     which OpenAPI 3.1 leaves to the API (any text) and OpenAPI 3.0 does not allow (its array must be empty). `scopes` is
-    None when the requirement lists them as anything but an array of strings.
+    None when the requirement lists them as anything but an array of strings; `openapi` is the version of the document
+    that uses the operation, whose schemes the requirement names (`operation_schemes`).
     """
     if scopes is None:
         return f"must list its scopes as an array of strings for scheme {stable_repr(name)}"

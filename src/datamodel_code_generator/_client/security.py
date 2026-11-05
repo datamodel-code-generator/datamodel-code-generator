@@ -134,7 +134,7 @@ class SecurityPlanner:
         self.catalogues: dict[SourceDocumentId, dict[str, SecuritySchemeEntry]] = {}
         self.declarations: dict[str, WireDeclaration] = {}
         self.declared = scheme_catalogues(batch)
-        self.openapi = batch.openapi
+        self.versions = batch.versions
         root = batch.documents[0].id
         for document, schemes in self.declared.items():
             for name, item in schemes.items():
@@ -214,7 +214,8 @@ class SecurityPlanner:
                     self.problem(operation, f"requires the unavailable scheme {stable_repr(name)}")
                     continue
                 declaration = operation_schemes(self.declared, operation)[name]
-                if (invalid := scope_problem(name, declaration, scopes, self.openapi)) is not None:
+                version = self.versions.of(operation.id.use_site)
+                if (invalid := scope_problem(name, declaration, scopes, version)) is not None:
                     self.problem(operation, invalid)
                     continue
                 required = tuple(sorted(set(scopes or ())))
