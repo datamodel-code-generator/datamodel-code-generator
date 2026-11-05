@@ -1,0 +1,2 @@
+msgspec cannot decode the type alias Nested, or a type that uses it: its value names itself through no Struct, while msgspec decodes a recursive type only through a Struct.
+msgspec cannot decode the type aliases A, B, or a type that uses them: their values name each other through no Struct, while msgspec decodes a recursive type only through a Struct.

@@ -11921,21 +11921,25 @@ def test_main_openapi_type_alias_mutual_recursive_py311(output_file: Path) -> No
     reason="Installed black doesn't support the target python version",
 )
 def test_main_openapi_type_alias_mutual_recursive_typealiastype_py311(output_file: Path) -> None:
-    """Test mutual recursive type aliases render with quoted forward refs for TypeAliasType on Python 3.11."""
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "type_alias_mutual_recursive.yaml",
-        output_path=output_file,
-        input_file_type="openapi",
-        assert_func=assert_file_content,
-        expected_file="msgspec_mutual_type_alias.py",
-        extra_args=[
-            "--use-type-alias",
-            "--target-python-version",
-            "3.11",
-            "--output-model-type",
-            "msgspec.Struct",
-        ],
-    )
+    """Test mutual recursive type aliases render with quoted forward refs for TypeAliasType on Python 3.11.
+
+    msgspec decodes no type alias on a recursion that no Struct breaks, which the generation warns about.
+    """
+    with pytest.warns(UserWarning, match=r"msgspec cannot decode the type aliases NodeA, NodeB, or a type that uses"):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "type_alias_mutual_recursive.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            expected_file="msgspec_mutual_type_alias.py",
+            extra_args=[
+                "--use-type-alias",
+                "--target-python-version",
+                "3.11",
+                "--output-model-type",
+                "msgspec.Struct",
+            ],
+        )
 
 
 @pytest.mark.skipif(

@@ -128,18 +128,25 @@ def test_msgspec_alias_default_controls(output_model_type: DataModelType, output
 
 
 def test_msgspec_recursive_alias_default(output_file: Path) -> None:
-    """Keep recursive non-model alias defaults unchanged without looping during generation."""
-    run_generate_file_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "msgspec_alias_defaults_recursive.json",
-        output_path=output_file,
-        input_file_type=InputFileType.JsonSchema,
-        assert_func=assert_file_content,
-        expected_file="msgspec_alias_defaults_recursive.py",
-        output_model_type=DataModelType.MsgspecStruct,
-        use_type_alias=True,
-        target_python_version=PythonVersion.PY_310,
-        disable_timestamp=True,
-    )
+    """Keep recursive non-model alias defaults unchanged without looping during generation.
+
+    msgspec decodes no type alias on a recursion that no Struct breaks (Values, and CycleA with CycleB), which the
+    generation warns about.
+    """
+    with pytest.warns(
+        UserWarning, match=r"msgspec cannot decode the type alias(es)? (Values|CycleA, CycleB), or a type that uses"
+    ):
+        run_generate_file_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "msgspec_alias_defaults_recursive.json",
+            output_path=output_file,
+            input_file_type=InputFileType.JsonSchema,
+            assert_func=assert_file_content,
+            expected_file="msgspec_alias_defaults_recursive.py",
+            output_model_type=DataModelType.MsgspecStruct,
+            use_type_alias=True,
+            target_python_version=PythonVersion.PY_310,
+            disable_timestamp=True,
+        )
 
 
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])

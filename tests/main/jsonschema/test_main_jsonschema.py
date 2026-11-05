@@ -20535,11 +20535,15 @@ def test_main_jsonschema_type_alias_recursive_container(
 ) -> None:
     """Quote the containers of a TypeAliasType value that recurse into its own alias cycle.
 
-    msgspec.Meta takes no length on the fixed-length tuple of Pair, so msgspec output leaves it out with a warning, and
-    msgspec decodes no union of two lists, which it warns about for each union holding them.
+    msgspec.Meta takes no length on the fixed-length tuple of Pair, so msgspec output leaves it out with a warning,
+    msgspec decodes no union of two lists, which it warns about for each union holding them, and no type alias on a
+    recursion that no Struct breaks, which it warns about for each cycle of them.
     """
     msgspec_container = output_model_type == "msgspec.Struct" and input_file == "container"
     with (
+        pytest.warns(UserWarning, match=r"msgspec cannot decode the type alias(es)? \w+")
+        if msgspec_container
+        else nullcontext(),
         pytest.warns(UserWarning, match=r"msgspec\.Meta does not take max_length, min_length on tuple")
         if msgspec_container
         else nullcontext(),

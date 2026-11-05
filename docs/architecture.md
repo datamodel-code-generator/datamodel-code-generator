@@ -103,7 +103,7 @@ topological ordering, the stack walk over what some starts reach (`reach`) and t
 circular module SCCs into `_internal.py` forwarder modules when imports would otherwise cycle. `_mro.py` gives the
 C3 order of classes and their bases over any item, also without recursion. The passes that read
 cycles or an order among models (module dependencies, class body order, circular root models, keep model order, alias
-cycles, nested model default factories, the structs below tagged bases, alias loops) each take a snapshot of one reference graph, `_reference_graph.py`:
+cycles, nested model default factories, the structs below tagged bases, alias loops, msgspec alias recursion) each take a snapshot of one reference graph, `_reference_graph.py`:
 the models by model key and the edges between them by kind, which answers their components, orders and loops. The
 references between models come from the generation store (`GenerationIndex.reference_graph`). The edges between
 groups of models, such as the modules of a quotient and the import cycles that the `_internal` merges check, are a
