@@ -1,0 +1,14 @@
+{
+  "cycle": [
+    "list",
+    3
+  ],
+  "pets": [
+    "list",
+    2
+  ],
+  "counts": [
+    "set",
+    2
+  ]
+}

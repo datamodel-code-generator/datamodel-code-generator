@@ -9019,6 +9019,81 @@ def test_main_unique_items_as_set_by_value_class_hashes(
     )
 
 
+def test_main_unique_items_as_set_by_value_long_alias_chain(tmp_path: Path, output_file: Path) -> None:
+    """Read a chain of 400 type aliases the items of a uniqueItems array name under --use-unique-items-as-set-by-value.
+
+    Each alias is a union of the next one and an integer, so every value of the items hashes and the array is a set.
+    The aliases are read in order, each after the aliases its value names, so the chain generates at the default
+    recursion limit, which reading an alias's value with one call per alias exceeded.
+    """
+    length = 400
+    definitions: dict[str, Any] = {
+        f"X{index}": {"anyOf": [{"$ref": f"#/$defs/X{index + 1}"}, {"type": "integer"}]} for index in range(length)
+    }
+    definitions[f"X{length}"] = {"type": "string"}
+    (input_file := tmp_path / "unique_items_by_value_alias_chain.json").write_text(
+        json.dumps({
+            "title": "Root",
+            "type": "object",
+            "properties": {"xs": {"type": "array", "uniqueItems": True, "items": {"$ref": "#/$defs/X0"}}},
+            "$defs": definitions,
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--use-type-alias",
+            "--use-unique-items-as-set",
+            "--use-unique-items-as-set-by-value",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        transform=lambda output: "".join(
+            line + "\n" for line in output.splitlines() if line.startswith(("X0 ", f"X{length} ", "    xs:"))
+        ),
+    )
+
+
+def test_main_unique_items_as_set_by_value_recursive_aliases(output_file: Path) -> None:
+    """Read type aliases that name each other or a model as uniqueItems items under --use-unique-items-as-set-by-value.
+
+    ``Left`` and ``Right`` name each other, so their values may hold themselves and the array of ``Left`` stays a list,
+    as does the array of ``PetOrCount``, whose ``Pet`` hashes by identity; ``Count`` holds scalars, so its array is a
+    set. The arrays validate their values.
+    """
+    name = "unique_items_by_value_recursive_aliases"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--use-type-alias",
+            "--use-unique-items-as-set",
+            "--use-unique-items-as-set-by-value",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    values = {"cycle": [1, "a", 1], "pets": [{"id": 1}, 2], "counts": [1, "a", 1]}
+    with _generated_model(output_file, name, "Root") as model:
+        validated = {field: _validated_container(model, field, value) for field, value in values.items()}
+    assert_output(f"{json.dumps(validated, indent=2)}\n")
+
+
+def _validated_container(model: Any, field: str, value: object) -> object:
+    """Return the class name and length of the container a model validates for one field, or the error type."""
+    try:
+        parsed = getattr(model.model_validate({field: value}), field)
+    except ValidationError as error:
+        return error.errors()[0]["type"]
+    return [type(parsed).__name__, len(parsed)]
+
+
 @pytest.mark.cli_doc(
     options=["--keep-constrained-root-models-in-every-container"],
     option_description="""Keep constrained root models named in every container of a holder.
