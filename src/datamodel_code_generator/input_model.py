@@ -1385,6 +1385,7 @@ def _partition_inherited_fields(
             overrides[child_wire] = parent_wire
         else:
             inherited_names.add(child_wire)
+    inherited_names -= overrides.keys()
     return (
         {k: v for k, v in original_props.items() if k not in inherited_names},
         [name for name in original_required if name not in inherited_names],

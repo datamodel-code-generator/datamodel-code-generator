@@ -1,0 +1,47 @@
+{
+  "$defs": {
+    "AliasParent": {
+      "properties": {
+        "old": {
+          "default": 1,
+          "title": "Old",
+          "type": "integer"
+        }
+      },
+      "title": "AliasParent",
+      "type": "object",
+      "x-is-base-class": true
+    },
+    "AliasPairParent": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/AliasParent"
+        }
+      ],
+      "properties": {
+        "old_other": {
+          "default": 4,
+          "title": "Old Other",
+          "type": "integer"
+        }
+      },
+      "title": "AliasPairParent",
+      "type": "object",
+      "x-is-base-class": true
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/AliasPairParent"
+    }
+  ],
+  "properties": {
+    "old_other": {
+      "default": 4,
+      "title": "Old Other",
+      "type": "integer"
+    }
+  },
+  "title": "AliasTakenChild",
+  "type": "object"
+}
