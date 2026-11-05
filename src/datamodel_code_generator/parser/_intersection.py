@@ -42,7 +42,8 @@ A parse keeps the rows of ``LEGACY_ROWS`` whose option is off (``kept_legacy_row
 ``--intersect-allof-keywords`` the output of 0.86.0 where parts meet, and without
 ``--intersect-combined-schema-keywords`` (which turns ``--intersect-allof-keywords`` on) the output of 0.88.0 where an
 ``enum`` meets a ``type`` that rejects some of its values, and in each branch of an ``anyOf`` or ``oneOf`` beside
-keywords. With ``admits_value`` (left out under ``legacy-enum-outside-type-kept``) an ``enum`` value that the
+keywords, and without ``--distribute-allof-over-unions`` the output of 0.89.0 where an ``allOf`` meets an ``anyOf`` or
+``oneOf``. With ``admits_value`` (left out under ``legacy-enum-outside-type-kept``) an ``enum`` value that the
 merged ``type`` rejects is removed (``{"$ref": I, "enum": [1, 2.5, "x"]}`` with an ``integer`` target keeps ``1``),
 and an ``enum`` none of whose values it admits is a keyword without a common value; without it they are kept.
 """
@@ -188,6 +189,16 @@ LEGACY_ROWS: Final[Mapping[str, Mapping[str, str]]] = {
         "legacy-all-of-union-null-dropped": (
             "the union of the variants an allOf member's anyOf or oneOf gives admits no null, even where every part "
             "does"
+        ),
+    },
+    "distribute_allof_over_unions": {
+        "legacy-ref-branch-without-site-parts": (
+            "a `$ref` branch of an anyOf or oneOf takes the `properties` and `required` beside it, not the allOf "
+            "members nor the value keywords beside it"
+        ),
+        "legacy-operation-all-of-before-union": (
+            "an OpenAPI request or response body with an allOf beside an anyOf or oneOf is parsed by its allOf, the "
+            "union dropped"
         ),
     },
 }

@@ -700,6 +700,10 @@
       "not_recommended": "debug",
       "reason": "Hides warnings; it does not change the models."
     },
+    "distribute_allof_over_unions": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "duplicate_name_suffix": {
       "not_recommended": "style",
       "reason": "Replaces the first collision number with a word; the names stay counters, so it disambiguates nothing."

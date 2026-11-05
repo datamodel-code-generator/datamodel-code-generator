@@ -430,6 +430,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         implies=_implied("intersect_combined_schema_keywords"),
     ),
     **_opts(_C.TYPING, "--no-intersect-combined-schema-keywords"),
+    **_opts(_C.TYPING, "--distribute-allof-over-unions --no-distribute-allof-over-unions"),
     **_opts(
         _C.MODEL,
         "--read-nullable-beside-type-list --no-read-nullable-beside-type-list",

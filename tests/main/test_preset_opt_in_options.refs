@@ -19,6 +19,8 @@ collapse-shared-parent-wrappers-practical	main/preset_opt_in_options/preset_sets
 collapse-shared-parent-wrappers-standard	main/preset_opt_in_options/preset_sets_opt_in_option[collapse-shared-parent-wrappers-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[collapse-shared-parent-wrappers-practical].py
 dedupe-request-response-variants-practical	main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-request-response-variants-practical].py
 dedupe-request-response-variants-standard	main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-request-response-variants-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-request-response-variants-practical].py
+distribute-allof-over-unions-practical	main/preset_opt_in_options/preset_sets_opt_in_option[distribute-allof-over-unions-practical].py
+distribute-allof-over-unions-standard	main/preset_opt_in_options/preset_sets_opt_in_option[distribute-allof-over-unions-standard].py
 filter-literal-values-practical	main/preset_opt_in_options/preset_sets_opt_in_option[filter-literal-values-practical].py
 filter-literal-values-standard	main/preset_opt_in_options/preset_sets_opt_in_option[filter-literal-values-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[filter-literal-values-practical].py
 ignore-ref-siblings-by-schema-version-practical	main/preset_opt_in_options/preset_sets_opt_in_option[ignore-ref-siblings-by-schema-version-practical].py

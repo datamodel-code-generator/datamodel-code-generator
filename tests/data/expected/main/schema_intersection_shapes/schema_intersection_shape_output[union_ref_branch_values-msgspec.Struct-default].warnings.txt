@@ -1,0 +1,3 @@
+msgspec.Meta does not take ge on Quantity | AtLeast1; AtLeast is generated without this constraint.
+msgspec.Meta does not take pattern on Text | Letters1; Letters is generated without this constraint.
+msgspec.Meta does not take min_length on Words | NonEmpty1; NonEmpty is generated without this constraint.

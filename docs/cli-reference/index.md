@@ -9,7 +9,7 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 15 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 47 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 48 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 36 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 59 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
@@ -169,6 +169,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--disable-future-imports`](typing-customization.md#disable-future-imports)
 - [`--disable-timestamp`](template-customization.md#disable-timestamp)
 - [`--disable-warnings`](general-options.md#disable-warnings)
+- [`--distribute-allof-over-unions`](typing-customization.md#distribute-allof-over-unions)
 - [`--duplicate-name-suffix`](model-customization.md#duplicate-name-suffix)
 
 ### E {#e}

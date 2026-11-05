@@ -7590,5 +7590,216 @@
         ]
       }
     }
+  },
+  "allof_beside_union": {
+    "model": "Model",
+    "fields": {
+      "pet": {
+        "valid": [
+          {
+            "id": "p",
+            "meow": true
+          },
+          {
+            "id": "p",
+            "bark": false
+          }
+        ],
+        "invalid": [
+          {
+            "meow": true
+          },
+          {
+            "id": "p"
+          }
+        ]
+      },
+      "pet_inline_member": {
+        "valid": [
+          {
+            "id": "p",
+            "meow": true
+          }
+        ],
+        "invalid": [
+          {
+            "meow": true
+          }
+        ]
+      },
+      "pet_mixed": {
+        "valid": [
+          {
+            "id": "p",
+            "meow": true
+          },
+          {
+            "id": "p",
+            "bark": true
+          }
+        ],
+        "invalid": [
+          {
+            "meow": true
+          }
+        ]
+      },
+      "pet_inline": {
+        "valid": [
+          {
+            "id": "p",
+            "meow": true
+          }
+        ],
+        "invalid": [
+          {
+            "meow": true
+          }
+        ]
+      },
+      "pet_props": {
+        "valid": [
+          {
+            "id": "p",
+            "meow": true
+          }
+        ],
+        "invalid": [
+          {
+            "meow": true
+          }
+        ]
+      },
+      "pet_field": {
+        "valid": [
+          {
+            "id": "p",
+            "meow": true
+          }
+        ],
+        "invalid": [
+          {
+            "meow": true
+          }
+        ]
+      },
+      "items": {
+        "valid": [
+          [
+            {
+              "id": "p",
+              "meow": true
+            }
+          ]
+        ],
+        "invalid": [
+          [
+            {
+              "meow": true
+            }
+          ]
+        ]
+      },
+      "values": {
+        "valid": [
+          {
+            "k": {
+              "id": "p",
+              "bark": true
+            }
+          }
+        ],
+        "invalid": [
+          {
+            "k": {
+              "bark": true
+            }
+          }
+        ]
+      }
+    }
+  },
+  "allof_beside_union_oas31": {
+    "model": "Holder",
+    "dialect": "https://json-schema.org/draft/2020-12/schema",
+    "fields": {
+      "pet": {
+        "valid": [
+          {
+            "id": "p",
+            "petType": "cat",
+            "meow": true
+          },
+          {
+            "id": "p",
+            "petType": "dog",
+            "bark": true
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "cat",
+            "meow": true
+          },
+          {
+            "id": "p",
+            "petType": "cat"
+          }
+        ]
+      }
+    }
+  },
+  "union_ref_branch_values": {
+    "model": "Model",
+    "fields": {
+      "at_least": {
+        "valid": [
+          7,
+          "s"
+        ],
+        "invalid": [
+          3
+        ]
+      },
+      "letters": {
+        "valid": [
+          "aa",
+          5
+        ],
+        "invalid": [
+          "b",
+          "aaaa"
+        ]
+      },
+      "non_empty": {
+        "valid": [
+          [
+            "x"
+          ],
+          3
+        ],
+        "invalid": [
+          []
+        ]
+      },
+      "at_least_in_all_of": {
+        "valid": [
+          7,
+          "s"
+        ],
+        "invalid": [
+          3
+        ]
+      },
+      "at_least_field": {
+        "valid": [
+          7,
+          "s"
+        ],
+        "invalid": [
+          3
+        ]
+      }
+    }
   }
 }

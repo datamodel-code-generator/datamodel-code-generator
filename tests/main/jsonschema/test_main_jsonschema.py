@@ -38609,6 +38609,49 @@ def test_main_jsonschema_intersect_combined_schema_keywords(output_file: Path, e
     )
 
 
+@pytest.mark.cli_doc(
+    options=["--distribute-allof-over-unions"],
+    option_description="""Read an `allOf` with the `anyOf` and `oneOf` beside it, as JSON Schema validates them.
+
+A schema with an `allOf` beside an `anyOf` or `oneOf` admits a value that every `allOf` member and one branch admit.
+An inline branch is parsed with the `allOf` merged in, but a `$ref` branch takes only the `properties` and `required`
+beside it, so `{allOf: [Base], oneOf: [Cat, Dog]}` writes `Cat | Dog` and drops `Base`. With
+`--distribute-allof-over-unions` such a branch gets a class whose bases are the branch and the `allOf` members
+(`Pet1(Cat, Base)`), at a definition, a property, an array item and a map value alike, and an OpenAPI request or
+response body is that union too (without the option it is parsed by its `allOf` and the union is dropped). A `$ref`
+branch that names no object takes the value keywords beside the union, as an inline branch does, so `minimum: 5`
+beside `anyOf: [{$ref: Quantity}, {type: string}]` rejects `3`. An `allOf` member's value keywords meet such a branch
+under `--use-site-models-for-constrained-refs`, as they meet a `$ref` member of an `allOf` there.""",
+    input_schema="jsonschema/schema_intersection/allof_beside_union.json",
+    cli_args=["--distribute-allof-over-unions"],
+    golden_output=(
+        "main/schema_intersection_shapes/"
+        "schema_intersection_shape_output_with_distribute_option[allof_beside_union-pydantic_v2.BaseModel-default].py"
+    ),
+    comparison_output=(
+        "main/schema_intersection_shapes/"
+        "schema_intersection_shape_output_without_option[allof_beside_union-pydantic_v2.BaseModel-default].py"
+    ),
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param(["--distribute-allof-over-unions"], id="with-option"), pytest.param([], id="without-option")],
+)
+def test_main_jsonschema_distribute_allof_over_unions(output_file: Path, extra_args: list[str]) -> None:
+    """Give a ``$ref`` branch of an anyOf or oneOf the allOf members beside it with the option.
+
+    Without --distribute-allof-over-unions the ``$ref`` branch drops them, as in 0.89.0 (#4820): ``Pet`` is
+    ``Cat | Dog`` without the ``id`` that ``Base`` requires.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "schema_intersection" / "allof_beside_union.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize(
     "output_model_type",
     [

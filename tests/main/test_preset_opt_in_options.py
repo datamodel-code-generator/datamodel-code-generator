@@ -61,6 +61,7 @@ OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
     "--read-schema-version-per-document",
     "--ignore-ref-siblings-by-schema-version",
     "--intersect-combined-schema-keywords",
+    "--distribute-allof-over-unions",
     "--keep-reference-null-on-merged-models",
     "--use-msgspec-meta-for-map-keys",
     "--rename-submodules-hidden-by-classes",
@@ -150,6 +151,12 @@ CASES_20261104: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="intersect-combined-schema-keywords",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "schema_intersection" / "allof_beside_union.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="distribute-allof-over-unions",
     ),
     pytest.param(
         JSON_SCHEMA_DATA_PATH / "keep_reference_null_on_merged_models.json",

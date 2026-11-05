@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "at_least": {
+      "$ref": "#/$defs/AtLeast"
+    },
+    "letters": {
+      "$ref": "#/$defs/Letters"
+    },
+    "non_empty": {
+      "$ref": "#/$defs/NonEmpty"
+    },
+    "at_least_in_all_of": {
+      "$ref": "#/$defs/AtLeastInAllOf"
+    },
+    "at_least_field": {
+      "minimum": 5,
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Quantity"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "Quantity": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "Text": {
+      "type": "string",
+      "maxLength": 3
+    },
+    "Words": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "AtLeast": {
+      "minimum": 5,
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Quantity"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "Letters": {
+      "pattern": "^a+$",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Text"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "NonEmpty": {
+      "minItems": 1,
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Words"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "AtLeastInAllOf": {
+      "allOf": [
+        {
+          "minimum": 5
+        }
+      ],
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Quantity"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    }
+  }
+}

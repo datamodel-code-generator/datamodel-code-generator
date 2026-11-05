@@ -864,6 +864,14 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
+        title="allOf distributed over unions",
+        config=PresetConfig(distribute_allof_over_unions=True),
+        description=(
+            "Read a $ref branch of an anyOf or oneOf with the allOf members and the value keywords beside it, and an "
+            "OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them."
+        ),
+    ),
+    PresetOptionGroup(
         title="Reference null kept on merged models",
         config=PresetConfig(keep_reference_null_on_merged_models=True),
         description=(
@@ -1172,7 +1180,9 @@ def render_presets_markdown() -> str:
             "the keywords beside an anyOf or oneOf are combined with each branch, an inherited override merges its "
             "nested properties name by name and by the type it narrows, an allOf member reads its $ref siblings, "
             "$ref aliases and null branches, and no enum value that the merged type rejects is kept, as JSON Schema "
-            "validates them, and `--keep-reference-null-on-merged-models`: a reference whose schema admits null keeps "
+            "validates them, and `--distribute-allof-over-unions`: a $ref branch of an anyOf or oneOf takes the allOf "
+            "members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf is "
+            "that union, and `--keep-reference-null-on-merged-models`: a reference whose schema admits null keeps "
             "its `| None` when its model is merged into an equal model that rejects null. They also add "
             "`--use-msgspec-meta-for-map-keys`: the keys of a msgspec map whose keys propertyNames or "
             "patternProperties constrain are written as `Annotated[str, Meta(...)]`, so msgspec checks them, and "

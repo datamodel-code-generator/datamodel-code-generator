@@ -208,6 +208,17 @@ Typing customization:
                         map > customBasePath (in schema) > base-class.
   --disable-future-imports
                         Disable __future__ imports
+  --distribute-allof-over-unions, --no-distribute-allof-over-unions
+                        Read an `allOf` with the `anyOf` and `oneOf` beside it
+                        as JSON Schema validates them: a `$ref` branch of an
+                        `anyOf` or `oneOf` takes the `allOf` members beside
+                        it, which an inline branch already takes, and the
+                        value keywords beside it where it names no object, and
+                        an OpenAPI request or response body with an `allOf`
+                        beside an `anyOf` or `oneOf` is that union as a schema
+                        of the components is. Without it a `$ref` branch takes
+                        only the `properties` and `required` beside it and a
+                        body drops the union, as in 0.89.0
   --enum-field-as-literal {all,one,none}
                         Parse enum field as literal. all: all enum field type
                         are Literal. one: field type is Literal when an enum

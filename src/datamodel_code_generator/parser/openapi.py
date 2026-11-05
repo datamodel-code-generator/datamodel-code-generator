@@ -58,6 +58,7 @@ from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaObject,
     JsonSchemaParser,
     _all_of_applies,
+    _all_of_beside_one_of_applies,
     _array_applies,
     _get_ref_data_type_site,
     _locate,
@@ -1038,6 +1039,15 @@ class OpenAPIParser(JsonSchemaParser):
     def _build_operation_array(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
         return self.parse_array(site.name, site.obj, [*site.path, site.name])
 
+    def _operation_all_of_beside_one_of_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:
+        """Return whether a body is the union of the anyOf or oneOf beside its allOf, as a definition of it is.
+
+        Not under ``legacy-operation-all-of-before-union``, where the allOf row parses it and the union is dropped.
+        """
+        return "legacy-operation-all-of-before-union" not in self._legacy_intersection and (
+            _all_of_beside_one_of_applies(self, site)
+        )
+
     def _operation_object_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:  # noqa: PLR6301
         return site.obj.is_object
 
@@ -1072,6 +1082,7 @@ class OpenAPIParser(JsonSchemaParser):
     _OPENAPI_OPERATION_TABLE: ClassVar[DispatchTable[OpenAPIParser, JsonSchemaObject, DataType]] = DispatchTable(
         (
             Row("array", _array_applies, _build_operation_array),
+            Row("all-of-beside-one-of", _operation_all_of_beside_one_of_applies, _parse_combined_root),
             Row("all-of", _all_of_applies, _parse_all_of_site),
             Row("one-of-any-of", _one_of_any_of_applies, _parse_combined_root),
             Row("object", _operation_object_applies, _build_operation_object),
