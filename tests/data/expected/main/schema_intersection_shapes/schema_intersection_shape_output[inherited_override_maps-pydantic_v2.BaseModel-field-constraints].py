@@ -3,12 +3,20 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from pydantic import BaseModel, Field, constr
+from typing_extensions import TypeAliasType
 
 
 class Settings(BaseModel):
     name: str | None = Field(None, max_length=3)
     type: str | None = None
+
+
+TaggedPatternProperty = TypeAliasType(
+    "TaggedPatternProperty", Annotated[int, Field(ge=0)]
+)
 
 
 class Settings1(BaseModel):
@@ -28,6 +36,6 @@ class Base(BaseModel):
 
 class Child(Base):
     settings: Settings | None = None
-    tagged: dict[constr(pattern=r'^n'), int] | dict[constr(pattern=r'type'), str] | None = (
-        None
-    )
+    tagged: (
+        dict[constr(pattern=r'^n'), TaggedPatternProperty] | dict[constr(pattern=r'type'), str] | None
+    ) = None

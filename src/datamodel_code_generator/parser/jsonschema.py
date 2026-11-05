@@ -5632,39 +5632,64 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 additional_properties,
                 parent if self.field_constraints and self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS else None,
             )
+        if (constrained := self._constrained_value_schema(name, additional_properties)) is None:
+            return _MapValue(additional_properties)
+        value_schema, preserve_root_model = constrained
+        return _MapValue(
+            value_schema,
+            parent,
+            constrained=True,
+            preserve_root_model=preserve_root_model,
+            item_counts_site=item_counts_site,
+        )
+
+    def _overrides_parse_hooks(self) -> bool:
+        """Return whether the parser or its class overrides a parse hook.
+
+        The hooks are ``parse_item``, ``parse_root_type`` and ``_register_root_model``.
+        """
         parser_type = type(self)
         parser_attributes = self.__dict__
-        has_instance_hooks = (
+        return (
             "parse_item" in parser_attributes
             or "parse_root_type" in parser_attributes
             or "_register_root_model" in parser_attributes
+        ) or (
+            parser_type is not JsonSchemaParser
+            and (
+                parser_type.parse_item is not JsonSchemaParser.parse_item
+                or parser_type.parse_root_type is not JsonSchemaParser.parse_root_type
+                or parser_type._register_root_model is not JsonSchemaParser._register_root_model  # noqa: SLF001
+            )
         )
-        has_class_hooks = parser_type is not JsonSchemaParser and (
-            parser_type.parse_item is not JsonSchemaParser.parse_item
-            or parser_type.parse_root_type is not JsonSchemaParser.parse_root_type
-            or parser_type._register_root_model is not JsonSchemaParser._register_root_model  # noqa: SLF001
-        )
-        if has_instance_hooks or has_class_hooks:
-            return _MapValue(additional_properties)
-        if (
-            self._should_create_type_alias_for_title(additional_properties, name)
-            or additional_properties.enum
-            or additional_properties.anyOf
-            or additional_properties.oneOf
-        ):
-            return _MapValue(additional_properties)
 
-        preserve_root_model = bool(additional_properties.allOf)
+    def _constrained_value_schema(self, name: str, schema: JsonSchemaObject) -> tuple[JsonSchemaObject, bool] | None:
+        """Return the schema whose constraints a map value keeps on a type of its own, or None where it keeps none.
+
+        That is the value, its $ref merged with its siblings (without the title of the target), or its allOf of
+        primitives merged into one schema, which the second item tells, where it has effective constraints. A parser
+        that overrides a parse hook, a titled alias, an enum and a union keep none.
+        """
+        if (
+            self._overrides_parse_hooks()
+            or self._should_create_type_alias_for_title(schema, name)
+            or schema.enum
+            or schema.anyOf
+            or schema.oneOf
+        ):
+            return None
+
+        preserve_root_model = bool(schema.allOf)
         if preserve_root_model:
-            if (value_schema := _object_maps._merge_additional_properties_all_of(self, additional_properties)) is None:  # noqa: SLF001
-                return _MapValue(additional_properties)
+            if (value_schema := _object_maps._merge_additional_properties_all_of(self, schema)) is None:  # noqa: SLF001
+                return None
         else:
-            value_schema = additional_properties
+            value_schema = schema
         if not preserve_root_model and _merges_ref_siblings(value_schema):
             value_schema = self._merge_ref_with_schema(value_schema)
             if value_schema.title:
                 extras = value_schema.extras
-                if not additional_properties.title:
+                if not schema.title:
                     extras = {key: value for key, value in extras.items() if key != "title"}
                 value_schema = value_schema.model_copy(
                     update={
@@ -5673,14 +5698,43 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     }
                 )
         if not self._has_effective_constraints(value_schema):
-            return _MapValue(additional_properties)
-        return _MapValue(
-            value_schema,
-            parent,
-            constrained=True,
-            preserve_root_model=preserve_root_model,
-            item_counts_site=item_counts_site,
-        )
+            return None
+        return value_schema, preserve_root_model
+
+    def _pattern_value_alias(
+        self, name: str, schema: JsonSchemaObject, value_type: DataType, path: list[str]
+    ) -> DataType | None:
+        """Return the type alias that writes a patternProperties value with the constraints its type leaves out.
+
+        No field holds the value, so where the output writes constraints in ``Annotated``
+        (``supports_internal_annotated_constraints``) the constraints of its schema that ``value_type``, the type
+        ``parse_item`` built, leaves out go on an alias of that type, ``<name>PatternProperty``, as a preserved root
+        writes them: under --field-constraints those of the schema ``_constrained_value_schema`` reads, and otherwise
+        the item counts of an array (``_writes_item_counts_on_alias``). The value keeps its type, so every model it
+        builds keeps its name; a type that names a model, an x-python-type and a merged enum take none. The alias gives
+        way to the name of every other model (``yielding_new_references``).
+        """
+        if value_type.reference is not None or not self._output_model_context.supports_internal_annotated_constraints:
+            return None
+        schema = self._site_schema(schema)
+        if not (
+            (self.field_constraints or self._writes_item_counts_on_alias(schema))
+            and (constrained := self._constrained_value_schema(name, schema)) is not None
+            and self._constrained_value_row(value_schema := constrained[0]) == "root"
+            and self._assemble_field_constraints(value_schema, value_type, _ROOT_SITE, preserve=True).constraints
+        ):
+            return None
+        with self.model_resolver.yielding_new_references():
+            return JsonSchemaParser._parse_root_type_with_context(
+                self,
+                composed_name(name, "pattern-property"),
+                value_schema,
+                get_special_path("patternProperty", path),
+                data_model_root_type=self._nested_constrained_model_type,
+                preserve_constraints=True,
+                use_annotated=True,
+                root_type=value_type,
+            )
 
     def _parse_additional_properties_value(
         self,
@@ -7038,8 +7092,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         data_model_root_type: type[DataModel] | None = None,
         preserve_constraints: bool = False,
         use_annotated: bool | None = None,
+        root_type: DataType | None = None,
     ) -> DataType:
-        """Parse a root type with an internal output representation override."""
+        """Parse a root type with an internal output representation override; ``root_type`` is a type already built."""
         reference: Reference | None = None
         array_constraints: Any = None
         constraint_obj = obj
@@ -7047,9 +7102,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         writes = (self.field_constraints or preserve_constraints) and not (
             self._should_skip_root_field_constraints_for_multiple_types(obj)
         )
-        match self._root_type_row(obj):
+        match "built" if root_type is not None else self._root_type_row(obj):
+            case "built":
+                data_type: DataType = cast("DataType", root_type)
             case "ref":
-                data_type: DataType = self.get_ref_data_type(cast("str", obj.ref))
+                data_type = self.get_ref_data_type(cast("str", obj.ref))
             case "custom-type":
                 data_type = self.data_type_manager.get_data_type_from_full_path(
                     self._get_emitted_python_type_path(

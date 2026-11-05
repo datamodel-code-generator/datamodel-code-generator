@@ -294,6 +294,12 @@ class DataTypeManager(_DataTypeManagerBase):
             use_serialize_as_any,
         )
 
+    @property
+    @override
+    def checks_map_key_patterns(self) -> bool:
+        """Return True: Pydantic checks the ``pattern`` of the ``constr`` or ``StringConstraints`` key type."""
+        return True
+
     def type_map_factory(  # noqa: PLR0913, PLR0917
         self,
         data_type: type[DataType],

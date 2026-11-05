@@ -7,7 +7,7 @@ to these functions (``parser/jsonschema.py``), and these functions call them thr
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, cast
 
 from typing_extensions import Protocol
 
@@ -22,7 +22,7 @@ from datamodel_code_generator.reference import unique_items_of
 from datamodel_code_generator.types import ANY, Types, build_union
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Sequence
+    from collections.abc import Callable, Iterable, Iterator, Sequence
 
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator.enums import TargetPydanticVersion
@@ -224,6 +224,11 @@ class ObjectMapsHost(Protocol):
     ) -> DataType:
         """Build the key type of an anyOf, oneOf or allOf propertyNames schema, parsing it only when needed."""
 
+    def _pattern_value_alias(
+        self, name: str, schema: JsonSchemaObject, value_type: DataType, path: list[str]
+    ) -> DataType | None:
+        """Return the type alias that writes a patternProperties value with the constraints its type leaves out."""
+
     def _schema_has_own_value_keywords(self, schema: JsonSchemaObject) -> bool:
         """Return whether a schema has value keywords of its own."""
 
@@ -265,19 +270,24 @@ def _nullable_map_value_schema(obj: JsonSchemaObject, *, beside_other_types: boo
 
 
 def _pattern_value_groups(
-    patterns: list[str], value_types: list[DataType]
+    patterns: list[str], value_types: list[DataType], built_types: list[DataType]
 ) -> dict[str, tuple[list[str], list[DataType]]]:
-    """Group the patterns of row ``legacy-map-union-of-dicts`` by the rendered hint of their value types.
+    """Group the patterns of row ``legacy-map-union-of-dicts`` by the rendered hint of the types their values built.
 
-    A group keeps the value type of its first pattern and that of each later pattern whose schemas declare
-    ``uniqueItems`` at other nodes, which are written alike as one; --use-unique-items-as-set then writes an array as a
-    set where every value of the group declares it.
+    A value written as the alias that holds its constraints (``_pattern_value_alias``) is grouped by the type the alias
+    holds, so the dicts are those of a map without the aliases. A group keeps the value type of its first pattern and
+    that of each later pattern that is written as another type, an alias, or whose schemas declare ``uniqueItems`` at
+    other nodes, which are written alike as one; --use-unique-items-as-set then writes an array as a set where every
+    value of the group declares it.
     """
     groups: dict[str, tuple[list[str], list[DataType]]] = {}
-    for pattern, value_type in zip(patterns, value_types, strict=True):
-        group_patterns, group_values = groups.setdefault(value_type.type_hint, ([], []))
+    for pattern, value_type, built_type in zip(patterns, value_types, built_types, strict=True):
+        group_patterns, group_values = groups.setdefault(built_type.type_hint, ([], []))
         group_patterns.append(pattern)
-        if _unique_items_paths(value_type) not in map(_unique_items_paths, group_values):
+        if all(
+            kept.type_hint != value_type.type_hint or _unique_items_paths(kept) != _unique_items_paths(value_type)
+            for kept in group_values
+        ):
             group_values.append(value_type)
     return groups
 
@@ -484,12 +494,16 @@ def parse_pattern_properties(
     Row ``legacy-map-union-of-dicts`` keeps the map of 0.86.0, a union of dicts, one per value type, whose keys
     match its patterns; an output that cannot decode a union of several dicts, such as msgspec, gets the one dict.
     """
-    patterns, value_types = parse_pattern_values(parser, name, pattern_properties, path)
+    values = parse_pattern_values(parser, name, pattern_properties, path)
+    patterns = [value.pattern for value in values]
+    value_types = _constrained_pattern_values(
+        parser, name, values, keys_checked=lambda: _pattern_keys_checked(parser, property_names)
+    )
     if (
         "legacy-map-union-of-dicts" in parser._legacy_object_maps  # noqa: SLF001
         and value_types
         and (
-            len(groups := _pattern_value_groups(patterns, value_types)) == 1
+            len(groups := _pattern_value_groups(patterns, value_types, [value.data_type for value in values])) == 1
             or parser._output_model_context.decodes_value_unions  # noqa: SLF001
         )
     ):
@@ -503,22 +517,81 @@ def parse_pattern_properties(
     return pattern_map_type(parser, patterns, value_types, property_names, joins_patterns=True)
 
 
+class _PatternValue(NamedTuple):
+    """A pattern that admits a key, the schema of its value, where it is parsed and its type.
+
+    A ``true`` pattern has no schema; its value admits anything, so no value of its dict takes constraints.
+    """
+
+    pattern: str
+    schema: JsonSchemaObject | None
+    path: list[str]
+    data_type: DataType
+
+
 def parse_pattern_values(
     parser: ObjectMapsHost, name: str, pattern_properties: dict[str, JsonSchemaObject | bool], path: list[str]
-) -> tuple[list[str], list[DataType]]:
+) -> list[_PatternValue]:
     """Return the patterns that admit a key and their value types, parsed where each pattern declares its value."""
-    patterns: list[str] = []
-    value_types: list[DataType] = []
+    values: list[_PatternValue] = []
     for i, (pattern, schema) in enumerate(pattern_properties.items()):
         if schema is False:
             continue
-        patterns.append(pattern)
-        value_types.append(
-            parser.data_type_manager.get_data_type(Types.any)
-            if schema is True
-            else parser.parse_item(name, schema, get_special_path(f"patternProperties/{i}", path))
-        )
-    return patterns, value_types
+        if schema is True:
+            values.append(_PatternValue(pattern, None, path, parser.data_type_manager.get_data_type(Types.any)))
+            continue
+        value_path = get_special_path(f"patternProperties/{i}", path)
+        values.append(_PatternValue(pattern, schema, value_path, parser.parse_item(name, schema, value_path)))
+    return values
+
+
+def _constrained_pattern_values(
+    parser: ObjectMapsHost,
+    name: str,
+    values: list[_PatternValue],
+    *,
+    keys_checked: Callable[[], bool],
+    beside: Sequence[DataType] = (),
+) -> list[DataType]:
+    """Return the value types of the dict of a pattern map, each written with the constraints its type leaves out.
+
+    A value takes them (``_pattern_value_alias``) only where the dict admits no key that matches none of its patterns,
+    or types such keys by additionalProperties beside the patterns, which ``keys_checked`` tells: elsewhere a value at
+    such a key, which the patterns leave unconstrained, would be checked against them. A dict whose value admits
+    anything, as one of its values or those ``beside`` them does, takes none; nor does a dict of several values where
+    the output decodes some unions of values only (msgspec), whose union drops the constraints of members of one type
+    once its fallbacks are decided.
+    """
+    value_types = [value.data_type for value in values]
+    if (
+        not (parser._output_model_context.decodes_value_unions or len(value_types) + len(beside) == 1)  # noqa: SLF001
+        or any(_is_plain_any(value_type) for value_type in (*value_types, *beside))
+        or not keys_checked()
+    ):
+        return value_types
+    return [
+        parser._pattern_value_alias(name, cast("JsonSchemaObject", value.schema), value.data_type, value.path)  # noqa: SLF001
+        or value.data_type
+        for value in values
+    ]
+
+
+def _pattern_keys_checked(
+    parser: ObjectMapsHost,
+    property_names: JsonSchemaObject | bool | None,  # ruff: ignore[boolean-type-hint-positional-argument]
+) -> bool:
+    """Return whether the dict of a pattern map rejects every key that matches none of its patterns.
+
+    Its key joins the patterns (``object_map_key_type``), which the type manager's map key type checks where it checks a
+    pattern (``checks_map_key_patterns``), unless propertyNames, its $ref merged with its siblings, types the keys by
+    itself (``_property_name_key_row``), which does not read the patterns.
+    """
+    if not parser.data_type_manager.checks_map_key_patterns:
+        return False
+    if not isinstance(property_names, JsonSchemaObject):
+        return True
+    schema = parser._merge_ref_with_schema(property_names) if property_names.ref else property_names  # noqa: SLF001
+    return _property_name_key_row(parser, schema) == "string"
 
 
 def parse_pattern_map(  # noqa: PLR0913, PLR0917
@@ -533,16 +606,20 @@ def parse_pattern_map(  # noqa: PLR0913, PLR0917
 
     The dict's keys are those of ``property_names`` and its value joins the value of ``other_keys`` last.
     """
-    patterns, value_types = parse_pattern_values(parser, name, pattern_properties, path)
-    value_types.append(
-        parser._parse_additional_properties_value(  # noqa: SLF001
-            name,
-            get_special_path("additionalProperties", path),
-            other_keys,
-            additional_properties=other_keys,
-        )
+    values = parse_pattern_values(parser, name, pattern_properties, path)
+    other_keys_type = parser._parse_additional_properties_value(  # noqa: SLF001
+        name,
+        get_special_path("additionalProperties", path),
+        other_keys,
+        additional_properties=other_keys,
     )
-    return pattern_map_type(parser, patterns, value_types, property_names, joins_patterns=False)
+    value_types = [
+        *_constrained_pattern_values(parser, name, values, keys_checked=lambda: True, beside=(other_keys_type,)),
+        other_keys_type,
+    ]
+    return pattern_map_type(
+        parser, [value.pattern for value in values], value_types, property_names, joins_patterns=False
+    )
 
 
 def pattern_map_type(
@@ -638,27 +715,26 @@ def parse_property_name_key_schema(  # noqa: PLR0911
     """
     if isinstance(property_names, bool):
         return parser.data_type_manager.get_data_type(Types.string)
-    if (python_type := parser._get_x_python_type(property_names)) is not None:  # noqa: SLF001
-        from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
-            python_type_expr_base_name,
-        )
-
-        match python_type_expr_base_name(python_type):
-            case "int":
-                return parser.data_type_manager.get_data_type(Types.integer)
-            case "bool":
-                return parser.data_type_manager.get_data_type(Types.boolean)
-            case "str":
-                return parser.data_type_manager.get_data_type(Types.string)
-    if property_names.ref:
-        return parser.get_ref_data_type(property_names.ref)
-    if property_names.enum:
-        string_enums = [value for value in parser._const_narrowed_enum(property_names).enum if isinstance(value, str)]  # noqa: SLF001
-        if string_enums:
-            return parser.data_type(literals=string_enums)
-        return parser.data_type_manager.get_data_type(Types.string)
-    if isinstance(property_names.extras.get("const"), str):
-        return parser.data_type(literals=[property_names.extras["const"]])
+    match _property_name_key_row(parser, property_names):
+        case "int":
+            return parser.data_type_manager.get_data_type(Types.integer)
+        case "bool":
+            return parser.data_type_manager.get_data_type(Types.boolean)
+        case "str":
+            return parser.data_type_manager.get_data_type(Types.string)
+        case "ref":
+            return parser.get_ref_data_type(cast("str", property_names.ref))
+        case "enum":
+            string_enums = [
+                value
+                for value in parser._const_narrowed_enum(property_names).enum  # noqa: SLF001
+                if isinstance(value, str)
+            ]
+            if string_enums:
+                return parser.data_type(literals=string_enums)
+            return parser.data_type_manager.get_data_type(Types.string)
+        case "const":
+            return parser.data_type(literals=[property_names.extras["const"]])
     if (
         property_names.pattern is not None
         or property_names.minLength is not None
@@ -672,6 +748,31 @@ def parse_property_name_key_schema(  # noqa: PLR0911
         manager = parser.data_type_manager
         return manager.get_data_type(Types.string, **kwargs) if member else manager.get_map_key_str_type(**kwargs)
     return parser.data_type_manager.get_data_type(Types.string)
+
+
+def _property_name_key_row(
+    parser: ObjectMapsHost, property_names: JsonSchemaObject
+) -> Literal["int", "bool", "str", "ref", "enum", "const", "string"]:
+    """Return what types the keys of a propertyNames schema (``parse_property_name_key_schema``).
+
+    The first that applies: its x-python-type of ``int``, ``bool`` or ``str``, its $ref, its enum, its string const,
+    else a string that its pattern and lengths constrain (``string``).
+    """
+    if (python_type := parser._get_x_python_type(property_names)) is not None:  # noqa: SLF001
+        from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
+            python_type_expr_base_name,
+        )
+
+        match base_name := python_type_expr_base_name(python_type):
+            case "int" | "bool" | "str":
+                return base_name
+    if property_names.ref:
+        return "ref"
+    if property_names.enum:
+        return "enum"
+    if isinstance(property_names.extras.get("const"), str):
+        return "const"
+    return "string"
 
 
 def parse_string_property_name_union(

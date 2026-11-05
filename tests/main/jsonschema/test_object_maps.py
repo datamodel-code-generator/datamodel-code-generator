@@ -47,6 +47,7 @@ OBJECT_MAP_INPUTS = (
     "pattern_additional",
     "declared_patterns",
     "pattern_checks",
+    "pattern_value_constraints",
 )
 OUTPUT_MODEL_TYPES = (
     "pydantic_v2.BaseModel",
@@ -249,6 +250,27 @@ def test_pattern_maps_schema_validators_without_single_dict(output_file: Path, n
             "--generate-schema-validators",
         ],
     )
+
+
+@pytest.mark.parametrize("extra_args", [pytest.param([SINGLE_DICT], id="single_dict"), pytest.param([], id="released")])
+def test_object_maps_msgspec_meta_keys(output_file: Path, extra_args: list[str]) -> None:
+    """Write a msgspec pattern value with the constraints of its schema where msgspec checks the keys of its map.
+
+    Under --use-msgspec-meta-for-map-keys a pattern map admits no key that matches none of its patterns, so its one
+    value is written as the alias that holds the constraints of its pattern; a map of several values keeps their
+    types, as msgspec checks each member of a union against the constraints of every member of its type.
+    """
+    run_main_and_assert(
+        input_path=OBJECT_MAPS / "pattern_value_constraints.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--formatters", "builtin", "--output-model-type", "msgspec.Struct"),
+            *("--use-msgspec-meta-for-map-keys", *extra_args),
+        ],
+    )
+    payloads = json.loads((PAYLOADS / "pattern_value_constraints.json").read_text())
+    assert_output(_payload_verdicts(output_file, "msgspec.Struct", payloads), name="payloads")
 
 
 @pytest.mark.parametrize("output_model_type", OUTPUT_MODEL_TYPES)

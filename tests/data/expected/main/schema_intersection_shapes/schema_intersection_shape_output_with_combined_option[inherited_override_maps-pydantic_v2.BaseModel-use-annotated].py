@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from pydantic import BaseModel, Field, StringConstraints
+from typing_extensions import TypeAliasType
 
 
 class Settings(BaseModel):
@@ -15,6 +16,11 @@ class Settings(BaseModel):
     examples: int | None = None
     example: bool | None = None
     type: str | None = None
+
+
+TaggedPatternProperty = TypeAliasType(
+    "TaggedPatternProperty", Annotated[int, Field(ge=0)]
+)
 
 
 class Settings1(BaseModel):
@@ -38,6 +44,6 @@ class Child(Base):
     settings: Settings | None = None
     tagged: (
         dict[Annotated[str, StringConstraints(pattern=r'default|type')], str]
-        | dict[Annotated[str, StringConstraints(pattern=r'^n')], int]
+        | dict[Annotated[str, StringConstraints(pattern=r'^n')], TaggedPatternProperty]
         | None
     ) = None

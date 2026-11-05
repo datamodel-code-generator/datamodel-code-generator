@@ -2076,6 +2076,12 @@ class DataTypeManager(_DataTypeManager):
     LITERALS_TAKE_CONSTRAINTS: ClassVar[bool] = _applicability.MSGSPEC_OUTPUT.literals_take
     REFUSED_LITERAL_TYPES: ClassVar[tuple[type, ...]] = _applicability.MSGSPEC_OUTPUT.refused_literal_types
 
+    @property
+    @override
+    def checks_map_key_patterns(self) -> bool:
+        """Whether the keys of a map are written as ``Annotated[str, Meta(...)]`` (--use-msgspec-meta-for-map-keys)."""
+        return self.use_msgspec_meta_for_map_keys
+
     @override
     def get_map_key_str_type(self, **kwargs: Any) -> DataType:
         """Return ``Annotated[str, Meta(...)]`` under --use-msgspec-meta-for-map-keys, so msgspec checks the keys.
