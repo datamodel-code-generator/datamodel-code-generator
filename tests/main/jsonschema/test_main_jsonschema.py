@@ -20823,12 +20823,16 @@ def test_main_jsonschema_type_alias_recursive_container(
     """Quote the containers of a TypeAliasType value that recurse into its own alias cycle.
 
     msgspec.Meta takes no length on the fixed-length tuple of Pair, so msgspec output leaves it out with a warning,
-    msgspec decodes no union of two lists, which it warns about for each union holding them, and no type alias on a
-    recursion that no Struct breaks, which it warns about for each cycle of them.
+    msgspec decodes no union of two lists, which it warns about for each union holding them, no type alias on a
+    recursion that no Struct breaks, which it warns about for each cycle of them, and only the TypeAliasType of
+    typing, which it warns about for the aliases written as that of typing_extensions.
     """
     msgspec_container = output_model_type == "msgspec.Struct" and input_file == "container"
     with (
         pytest.warns(UserWarning, match=r"msgspec cannot decode the type alias(es)? \w+")
+        if msgspec_container
+        else nullcontext(),
+        pytest.warns(UserWarning, match=r"msgspec may not decode the type aliases .* typing_extensions\.TypeAliasType")
         if msgspec_container
         else nullcontext(),
         pytest.warns(UserWarning, match=r"msgspec\.Meta does not take max_length, min_length on tuple")
@@ -21038,21 +21042,30 @@ def test_main_jsonschema_type_alias_type_non_pydantic(
     output_model: str,
     expected_file: str,
 ) -> None:
-    """Force TypeAliasType for Python 3.10 non-Pydantic output."""
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "type_alias.json",
-        output_path=output_file,
-        input_file_type=None,
-        assert_func=assert_file_content,
-        expected_file=expected_file,
-        extra_args=[
-            "--use-type-alias-type",
-            "--target-python-version",
-            "3.10",
-            "--output-model-type",
-            output_model,
-        ],
-    )
+    """Force TypeAliasType for Python 3.10 non-Pydantic output.
+
+    msgspec decodes only the TypeAliasType of typing, so msgspec output warns about the aliases it writes as that of
+    typing_extensions.
+    """
+    with (
+        pytest.warns(UserWarning, match=r"msgspec may not decode the type aliases .* typing_extensions\.TypeAliasType")
+        if output_model == "msgspec.Struct"
+        else nullcontext()
+    ):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "type_alias.json",
+            output_path=output_file,
+            input_file_type=None,
+            assert_func=assert_file_content,
+            expected_file=expected_file,
+            extra_args=[
+                "--use-type-alias-type",
+                "--target-python-version",
+                "3.10",
+                "--output-model-type",
+                output_model,
+            ],
+        )
 
 
 @pytest.mark.skipif(

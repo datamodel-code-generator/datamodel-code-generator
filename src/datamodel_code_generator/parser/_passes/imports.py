@@ -45,6 +45,7 @@ from datamodel_code_generator.enums import DefaultValueType
 from datamodel_code_generator.imports import (
     IMPORT_ANNOTATIONS,
     IMPORT_LITERAL,
+    IMPORT_TYPE_ALIAS_TYPE,
     Import,
     _aliased_name,
     _import_bindings,
@@ -1483,6 +1484,29 @@ def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleCon
                 )
     for message in _msgspec_recursive_alias_messages(models):
         warn_as_parser_base(message, UserWarning, stacklevel=2)
+    if message := _msgspec_backport_alias_message(models):
+        warn_as_parser_base(message, UserWarning, stacklevel=2)
+
+
+def _msgspec_backport_alias_message(models: Iterable[DataModel]) -> str | None:
+    """Describe the type aliases written as ``typing_extensions.TypeAliasType``, which msgspec may not decode.
+
+    msgspec decodes only ``typing.TypeAliasType``: Python 3.10 and 3.11 have none, and typing_extensions 4.13 and later
+    write a class of their own before Python 3.15. A target of Python 3.12 or later writes ``type`` statements instead.
+    """
+    if not (names := [model.class_name for model in models if IMPORT_TYPE_ALIAS_TYPE in model.imports]):
+        return None
+    aliases = (
+        f"type alias {names[0]}, or a type that uses it: it is"
+        if len(names) == 1
+        else f"type aliases {', '.join(names)}, or a type that uses them: they are"
+    )
+    return (
+        f"msgspec may not decode the {aliases} written as typing_extensions.TypeAliasType, while msgspec decodes only "
+        "typing.TypeAliasType, which Python 3.10 and 3.11 lack and which typing_extensions 4.13 and later replace with "
+        "a class of their own before Python 3.15; --target-python-version 3.12 writes type statements instead, which "
+        "msgspec decodes."
+    )
 
 
 def _names_written_as_text(models: Iterable[DataModel]) -> set[str]:
