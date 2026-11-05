@@ -1250,7 +1250,7 @@ class ModelResolver:  # noqa: PLR0904
             paths: tuple[str, ...] = ()
             names: tuple[str, ...] = () if generated_name in self._matched_model_name_keys else (generated_name,)
         else:
-            paths = model_name_path_keys(path)
+            paths = tuple(map(self._written_path_key, model_name_path_keys(path)))
             names = (generated_name, original_name) if match_names else ()
             if names and self._released_model_names:
                 renamed_by = self._model_name_map_keys.get(path)
@@ -1265,6 +1265,10 @@ class ModelResolver:  # noqa: PLR0904
                 if row == "created" and candidate in names:
                     self._matched_model_name_keys.add(candidate)
         return matched
+
+    def _written_path_key(self, key: str) -> str:  # noqa: PLR6301
+        """Return the ``--model-name-map`` key the user writes for a path key: the key itself."""
+        return key
 
     def unmatched_model_name_keys(self) -> set[str]:
         """Return the ``--model-name-map`` keys that matched no model, as the user wrote them."""

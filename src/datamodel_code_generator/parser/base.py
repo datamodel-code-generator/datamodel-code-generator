@@ -898,6 +898,18 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """
         return _build_for_target(self.target_python_version, factory, **kwargs)
 
+    def _model_resolver_class(self, config: ParserConfigT) -> Callable[..., ModelResolver]:
+        """Return the model resolver of the parser, which keys pointers canonically under --read-escaped-ref-pointers.
+
+        Without the option, row ``legacy-ref-spelling-keys``, a reference is keyed by its spelling. A parser class whose
+        own resolver keys pointers already (the ``api`` scope) keeps it.
+        """
+        if not config.read_escaped_ref_pointers or self._model_resolver_factory is not ModelResolver:
+            return self._model_resolver_factory
+        from datamodel_code_generator.parser._api_reference import EscapedPointerModelResolver  # noqa: PLC0415
+
+        return EscapedPointerModelResolver
+
     def __init__(  # noqa: PLR0915
         self,
         source: str | Path | list[Path] | ParseResult | dict[str, YamlValue],
@@ -1179,7 +1191,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             pin_aliases_with_alias_generator=config.pin_aliases_with_alias_generator,
         )
 
-        self.model_resolver = self._model_resolver_factory(
+        self.model_resolver = self._model_resolver_class(config)(
             base_url=source.geturl() if isinstance(source, ParseResult) else None,
             singular_name_suffix="" if config.disable_appending_item_suffix else None,
             singularize_last_word_of_item_names=config.singularize_last_word_of_item_names,

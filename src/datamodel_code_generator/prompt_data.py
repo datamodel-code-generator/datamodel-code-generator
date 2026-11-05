@@ -147,6 +147,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--pin-aliases-with-alias-generator": "Decide a field's alias by the alias generator its model applies.",
     "--preset": "Apply an immutable built-in option preset.",
     "--read-const-beside-enum": "Read a `const` beside an `enum` as JSON Schema does.",
+    "--read-escaped-ref-pointers": "Read the escapes of a `$ref` JSON pointer as the characters they encode.",
     "--read-length-keywords-by-type": "Read the string and the array keywords for their own kind only, as JSON Sche...",
     "--read-msgspec-union-bounds-exactly": "Decide the bounds of the int member of a msgspec union on the bounds th...",
     "--read-nullable-beside-type-list": "Write the null that `nullable: true` declares beside a `type` list into th...",

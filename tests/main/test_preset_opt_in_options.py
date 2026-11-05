@@ -66,6 +66,7 @@ OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
     "--use-msgspec-meta-for-map-keys",
     "--rename-submodules-hidden-by-classes",
     "--use-serialize-as-any-for-every-subclass",
+    "--read-escaped-ref-pointers",
 )
 """The options the 20261104 presets set beyond the 20261027 presets."""
 
@@ -181,6 +182,12 @@ CASES_20261104: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--output-model-type", "pydantic_v2.BaseModel", "--use-serialize-as-any"],
         id="use-serialize-as-any-for-every-subclass",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "escaped_ref_pointers.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="read-escaped-ref-pointers",
     ),
 )
 """The inputs each opt-in option of the 20261104 presets changes."""

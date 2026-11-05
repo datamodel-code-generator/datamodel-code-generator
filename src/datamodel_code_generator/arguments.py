@@ -1560,6 +1560,14 @@ _toggle(
 )
 _toggle(
     base_options,
+    "--read-escaped-ref-pointers",
+    help="Read the ~0 and ~1 escapes and the percent-encoded octets of a $ref JSON pointer as the characters they "
+    "encode, as JSON Pointer and URI fragments do, so #/$defs/a~1b, and #/$defs/Foo Bar written with its space "
+    "percent-encoded, name the models of the definitions a/b and Foo Bar; without it such a reference gets a copy of "
+    "its target named after the escaped text (A1b, Foo20Bar), as in 0.89.0.",
+)
+_toggle(
+    base_options,
     "--ignore-ref-siblings-by-schema-version",
     help="Read a $ref as its target alone where the schema version ignores the keywords beside it (JSON Schema "
     "draft 4, 6 and 7, OpenAPI 3.0, AsyncAPI 2), as those versions specify: a $ref with a sibling format: binary "

@@ -878,6 +878,36 @@ class Holder(BaseModel):
     c: SerializeAsAny[C] | None = None
 ```
 
+### `--read-escaped-ref-pointers`
+
+| | |
+|---|---|
+| Option | `--read-escaped-ref-pointers` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#4952](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4952) |
+
+**Affects:** a `$ref` whose JSON pointer escapes a character: `~1` for `/`, `~0` for `~`, or a percent-encoded octet such as `%20` for a space. The reference keeps the escaped text as the key of its target, so the definition it names, which is keyed by its name, gets a copy named after the escaped text (`Foo20Bar` beside `FooBar`, `A1b` beside `AB`), and the field takes the copy. Both classes validate the same documents, but an instance of the definition's class is not one of the copy's. With the option a pointer is keyed by the characters its escapes encode, as JSON Pointer and URI fragments read it, in every scope as the `api` scope already keys it, so every spelling of a pointer names the one model of its target; a model a reference adds is named after the decoded last token, and a `--model-name-map` key that names a path matches it in any spelling. A `/` written unescaped inside a name is a separator then, as JSON Pointer reads it: `#/definitions/user/created` no longer names the definition `user/created` and warns as a dangling reference, while a name that holds `://` is still read whole.
+
+Schema: `$defs` holds `Foo Bar` and `a/b`, and the properties `fb` and `ab` reference them as `#/$defs/Foo%20Bar` and `#/$defs/a~1b`.
+
+Without the option (same as 0.89.0):
+
+```python
+class Model(BaseModel):
+    fb: Foo20Bar | None = None
+    ab: A1b | None = None
+```
+
+With the option:
+
+```python
+class Model(BaseModel):
+    fb: FooBar | None = None
+    ab: AB | None = None
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.

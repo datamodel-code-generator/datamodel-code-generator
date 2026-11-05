@@ -126,7 +126,9 @@ from datamodel_code_generator._format_types import (
 )
 from datamodel_code_generator._json_pointer import (
     escape_token,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    fragment_pointer,
     join_pointer,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    reference_tokens,
     unescape_token,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
 from datamodel_code_generator._json_schema import (
@@ -8535,14 +8537,25 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self.parse_obj(reference.name, self._validate_schema_object(raw, [ref]), [ref])
             return
         models = self._get_model_by_json_pointer(raw, object_paths, ref)
-        model_name = reference_paths[-1]
+        tokens = self._pointer_path_tokens(ref, reference_paths)
 
         self._parse_raw_at(
-            model_name,
+            tokens[-1],
             models,
-            self._pointer_parse_path(path_parts, reference_paths),
+            self._pointer_parse_path(path_parts, tokens),
             self._member_location(raw, *object_paths),
         )
+
+    def _pointer_path_tokens(self, ref: str | None, reference_paths: list[str]) -> list[str]:
+        """Return the tokens of the pointer of ``ref`` that its target's parse path and model name are made of.
+
+        Under --read-escaped-ref-pointers they are the reference tokens the pointer encodes, the ones its key is made of
+        (``EscapedPointerModelResolver``); without it, row ``legacy-ref-spelling-keys``, the parts of the pointer as the
+        reference spells them.
+        """
+        if not self.config.read_escaped_ref_pointers:
+            return reference_paths
+        return list(reference_tokens((ref or "").partition("#")[2]) or ())
 
     def _get_model_by_json_pointer(
         self,
@@ -8640,7 +8653,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         object_paths = [o for o in object_paths or [] if o]
         reference_paths = [r for r in reference_paths or [] if r]
         path = (
-            self._pointer_parse_path(path_parts, tokens) if (tokens := reference_paths or object_paths) else path_parts
+            self._pointer_parse_path(path_parts, tokens)
+            if (tokens := self._pointer_path_tokens(ref, reference_paths or object_paths))
+            else path_parts
         )
         with self.model_resolver.current_root_context(path_parts):
             prepared = self._prepare_schema_resources(raw, path_parts)
@@ -8736,16 +8751,18 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     self.parse_obj(reference.name, self._validate_schema_object(raw, [reserved_path]), [reserved_path])
                     continue
                 models = self._get_model_by_json_pointer(raw, object_paths, reserved_path)
-                model_name = reference_paths[-1]
-                path = self._pointer_parse_path(path_parts, reference_paths)
-                self.parse_obj(model_name, self._validate_pointer_target(raw, object_paths, models, path), path)
+                tokens = self._pointer_path_tokens(reserved_path, reference_paths)
+                path = self._pointer_parse_path(path_parts, tokens)
+                self.parse_obj(tokens[-1], self._validate_pointer_target(raw, object_paths, models, path), path)
 
-    def _pointer_parse_path(self, root: list[str], tokens: list[str]) -> list[str]:  # noqa: PLR6301
+    def _pointer_parse_path(self, root: list[str], tokens: list[str]) -> list[str]:
         """Return the parse path of the target that the ``tokens`` of a JSON pointer name below the path ``root``.
 
-        An instance method, as ``snooper_to_methods`` does not keep staticmethod descriptors on parser subclasses.
+        Under --read-escaped-ref-pointers the tokens are raw and the first one is written encoded into the pointer the
+        path opens with (``fragment_pointer``).
         """
-        return [*root, f"#/{tokens[0]}", *tokens[1:]]
+        head = fragment_pointer(tokens[:1]) if self.config.read_escaped_ref_pointers else f"/{tokens[0]}"
+        return [*root, f"#{head}", *tokens[1:]]
 
 
 # Snapshot the default hooks after JsonSchemaParser is fully defined. The local

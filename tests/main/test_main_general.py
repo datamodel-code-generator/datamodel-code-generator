@@ -2066,6 +2066,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "dedupe_request_response_variants",
         "keep_first_character_of_path_keys",
         "read_schema_version_per_document",
+        "read_escaped_ref_pointers",
         "ignore_ref_siblings_by_schema_version",
         "server_include_request",
     ])

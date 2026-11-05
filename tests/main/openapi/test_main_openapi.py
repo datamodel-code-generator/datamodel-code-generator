@@ -15602,6 +15602,37 @@ def test_main_openapi_anchor_refs_in_object_document_loaded_by_pointer_unresolve
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="released"), pytest.param(["--read-escaped-ref-pointers"], id="read")],
+)
+def test_main_openapi_read_escaped_ref_pointers(output_file: Path, extra_args: list[str]) -> None:
+    """Name the component an escaped pointer spells, parsed before the component, by its name (#4952).
+
+    `Order` references `Line Item`, `tax/rate` and `50%` as `Line%20Item`, `tax~1rate` and `50%25` before they are
+    declared. Without the option each reference gets a copy named after the escaped text (`Line20Item`, `Tax1rate`,
+    `Field5025`); with it each names the component's model, named after the decoded name.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "escaped_ref_pointers.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel"),
+            *extra_args,
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_escaped_ref_pointers",
+        model_name="Order",
+        valid_json='{"line": {"sku": "a"}, "tax": {"rate": 0.2}, "share": {"share": 1}}',
+        invalid_json='{"share": {"share": "one"}}',
+        expected_error_type="int_parsing",
+    )
+
+
 def test_main_openapi_allof_array_ref_no_duplicate_model(output_file: Path) -> None:
     """Test allOf with array property referencing another schema (#2959).
 

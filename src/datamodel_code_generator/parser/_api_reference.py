@@ -1,15 +1,24 @@
-"""Canonical declaration addresses for the opt-in OpenAPI generation scope."""
+"""Canonical declaration addresses for the opt-in OpenAPI generation scope and for --read-escaped-ref-pointers."""
 
 from __future__ import annotations
 
-from collections.abc import Sequence  # noqa: TC003 - Public annotations support get_type_hints().
+from collections.abc import Callable, Mapping, Sequence  # noqa: TC003 - Public annotations support get_type_hints().
 from functools import cached_property, lru_cache
+from types import MappingProxyType
+from typing import Literal, TypeAlias
 from urllib.parse import quote
 
 from typing_extensions import override
 
 from datamodel_code_generator import SchemaParseError
-from datamodel_code_generator._json_pointer import escape_token, pointer_opening, reference_tokens
+from datamodel_code_generator._json_pointer import (
+    decode_token,
+    escape_token,
+    fragment_pointer,
+    is_pointer_fragment,
+    pointer_opening,
+    reference_tokens,
+)
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.parser._schema_reading import split_json_pointer
@@ -22,10 +31,14 @@ from datamodel_code_generator.reference import (
 )
 
 
-def pointer_tokens(ref: str) -> tuple[str, ...] | None:
-    """Read a URI fragment strictly (``reference_tokens``), distinguishing named anchors from pointers."""
+def pointer_tokens(ref: str, *, strict: bool = True) -> tuple[str, ...] | None:
+    """Read a URI fragment (``reference_tokens``), distinguishing named anchors from pointers.
+
+    ``strict`` refuses a ``%`` that starts no octet, octets that are no UTF-8 and a ``~`` that starts no escape;
+    otherwise they are read as the characters they spell.
+    """
     try:
-        return reference_tokens(ref.partition("#")[2], strict=True)
+        return reference_tokens(ref.partition("#")[2], strict=strict)
     except ValueError as exc:
         msg = f"API_REF_NONCANONICAL_POINTER: {stable_repr(redact_reference(ref))}"
         raise SchemaParseError(msg, path=[ref], original_error=exc) from exc
@@ -47,13 +60,105 @@ def pointer_fragment(tokens: Sequence[str]) -> str:
     return "/" + "/".join(quote(escape_token(token), safe="~") for token in tokens) if tokens else ""
 
 
-def canonical_ref(ref: str) -> str:
-    """Normalize the source portion while preserving generated special paths verbatim."""
+KeyForm: TypeAlias = Literal["api", "fragment"]
+"""How a canonical reference reads and writes a pointer: row ``api``, the ``api`` scope's, reads it strictly and
+percent-encodes every character but the unreserved ones and ``~`` (``pointer_fragment``); row ``fragment``, that of
+--read-escaped-ref-pointers, reads it leniently and writes it in the fewest characters that read back
+(``fragment_pointer``), so a pointer whose names hold no ``~``, ``/`` or ``%`` keeps its text."""
+_KEY_POINTERS: dict[KeyForm, Callable[[Sequence[str]], str]] = {"api": pointer_fragment, "fragment": fragment_pointer}
+
+
+def canonical_ref(ref: str, *, form: KeyForm = "api") -> str:
+    """Normalize the source portion while preserving generated special paths verbatim (``pointer_tokens``)."""
     source, marker, generated = ref.partition(SPECIAL_PATH_MARKER)
-    if "#" not in source or (tokens := pointer_tokens(source)) is None:
+    if "#" not in source or (tokens := pointer_tokens(source, strict=form == "api")) is None:
         return ref
-    canonical = source.partition("#")[0] + "#" + pointer_fragment(tokens)
+    canonical = source.partition("#")[0] + "#" + _KEY_POINTERS[form](tokens)
     return canonical + marker + generated
+
+
+def canonical_path(path: tuple[str, ...], *, form: KeyForm = "api") -> str:
+    """Join a parse path into its canonical reference: the components after the document's pointer are raw tokens.
+
+    The component that holds ``#`` ends the document and starts the pointer, read as a URI fragment
+    (``pointer_tokens``); a generated special path is kept verbatim. Row ``fragment`` joins it as
+    ``ModelResolver.join_path`` does, without a ``/`` before a component that opens with ``#``.
+    """
+    encode = _KEY_POINTERS[form]
+    for index, part in enumerate(path):
+        if "#" not in part:
+            continue
+        document, _, prefix = part.partition("#")
+        document = "/".join((*path[:index], document)) if document else "/".join(path[:index])
+        if _is_special_path(part):
+            return canonical_ref(document + "#" + "/".join((prefix, *path[index + 1 :])), form=form)
+        tokens = list(pointer_tokens("#" + prefix, strict=form == "api") or ())
+        for offset, token in enumerate(path[index + 1 :], start=index + 1):
+            if _is_special_path(token):
+                generated = "/" + "/".join(path[offset:])
+                return (
+                    document
+                    + "#"
+                    + encode(tokens)
+                    + (generated.replace("/#", "#") if form == "fragment" else generated)
+                )
+            tokens.append(token)
+        return document + "#" + encode(tokens)
+    return "/".join(path) + "#"
+
+
+class EscapedPointerModelResolver(ModelResolver):
+    """The model resolver of --read-escaped-ref-pointers: a pointer is keyed by its tokens, as the api scope keys it.
+
+    A ``$ref`` that writes ``~0``, ``~1`` or a percent-encoded octet and the declaration it names share one key
+    (``canonical_ref``), read leniently: an escape that is not canonical stands for the characters it spells. A parse
+    path holds raw tokens after its document's pointer (``canonical_path``). A model a reference adds is named after the
+    decoded last token of its pointer, as the declaration that the pointer names is.
+    """
+
+    _written_keys_of: Mapping[str, str] | None = None
+    _written_keys: Mapping[str, str] = MappingProxyType({})
+
+    @override
+    def resolve_ref(self, path: Sequence[str] | str) -> str:
+        """Canonicalize pointers before and after the file, base and identifier resolution."""
+        original = path if isinstance(path, str) else self.join_path(tuple(path))
+        return canonical_ref(super().resolve_ref(canonical_ref(original, form="fragment")), form="fragment")
+
+    @override
+    def _written_path_key(self, key: str) -> str:
+        """Return the ``--model-name-map`` key that names a canonical path key in any spelling of its pointer."""
+        if self._written_keys_of is not self.model_name_map:
+            self._written_keys_of = self.model_name_map
+            self._written_keys = {
+                canonical_ref(name, form="fragment"): name for name in self.model_name_map if "#" in name
+            }
+        return self._written_keys.get(key, key)
+
+    @override
+    def add_ref(self, ref: str, resolved: bool = False) -> Reference:
+        """Add the reference at the canonical key of ``ref``."""
+        return super().add_ref(
+            canonical_ref(ref, form="fragment") if resolved else self.resolve_ref(ref), resolved=True
+        )
+
+    @override
+    def _add_ref_at(self, path: str, ref: str) -> Reference:
+        """Return the Reference at the canonical ``path``, named after the decoded last token of ``ref``."""
+        return super()._add_ref_at(canonical_ref(path, form="fragment"), ref)
+
+    @override
+    def ref_original_name(self, ref: str, path: str) -> str:
+        """Return the name a reference derives: the last token of its pointer, decoded."""
+        name = super().ref_original_name(ref, path)
+        return decode_token(name) if (fragment := ref.partition("#")[2]) and is_pointer_fragment(fragment) else name
+
+    @staticmethod
+    @override
+    @lru_cache(maxsize=4096)
+    def join_path(path: tuple[str, ...]) -> str:
+        """Join a parse path into its canonical reference (``canonical_path``)."""
+        return canonical_path(path, form="fragment")
 
 
 class ApiModelResolver(ModelResolver):
@@ -100,18 +205,5 @@ class ApiModelResolver(ModelResolver):
     @override
     @lru_cache(maxsize=4096)
     def join_path(path: tuple[str, ...]) -> str:
-        """Encode raw tokens after the compiler's document/pointer boundary."""
-        for index, part in enumerate(path):
-            if "#" not in part:
-                continue
-            document, _, prefix = part.partition("#")
-            document = "/".join((*path[:index], document)) if document else "/".join(path[:index])
-            if _is_special_path(part):
-                return canonical_ref(document + "#" + "/".join((prefix, *path[index + 1 :])))
-            tokens = list(pointer_tokens("#" + prefix) or ())
-            for offset, token in enumerate(path[index + 1 :], start=index + 1):
-                if _is_special_path(token):
-                    return document + "#" + pointer_fragment(tokens) + "/" + "/".join(path[offset:])
-                tokens.append(token)
-            return document + "#" + pointer_fragment(tokens)
-        return "/".join(path) + "#"
+        """Encode raw tokens after the compiler's document/pointer boundary (``canonical_path``)."""
+        return canonical_path(path)
