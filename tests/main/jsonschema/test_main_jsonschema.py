@@ -8493,6 +8493,9 @@ def test_main_unique_items_as_set_unhashable_items(output_model: str, tmp_path: 
             ["--output-model-type", "typing.TypedDict"],
             "{'pets': [{'id': 1}], 'names': {'a'}, 'shapes': {'x'}, 'maybe_pets': {None}}",
             id="typed-dict",
+            marks=pytest.mark.skipif(
+                sys.version_info < (3, 12), reason="Pydantic validates typing.TypedDict from Python 3.12 on"
+            ),
         ),
         pytest.param(["--output-model-type", "msgspec.Struct"], None, id="msgspec"),
         pytest.param(
