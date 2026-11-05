@@ -6446,9 +6446,13 @@ without-option	main/jsonschema/main_jsonschema/distribute_allof_over_unions[with
 [test_main_jsonschema_distribute_allof_over_unions_dynamic_branch]
 with-option	main/jsonschema/main_jsonschema/distribute_allof_over_unions_dynamic_branch[with-option].py
 without-option	main/jsonschema/main_jsonschema/distribute_allof_over_unions_dynamic_branch[without-option].py
+[test_main_jsonschema_distribute_allof_over_unions_imported_member]
+with-option	main/jsonschema/main_jsonschema/distribute_allof_over_unions_imported_member[with-option].py
+without-option	main/jsonschema/main_jsonschema/distribute_allof_over_unions_imported_member[without-option].py	= main/jsonschema/main_jsonschema/distribute_allof_over_unions_imported_member[with-option].py
 [test_main_jsonschema_distribute_allof_over_unions_through_ref]
 with-option-leaf.json	main/jsonschema/main_jsonschema/distribute_allof_over_unions_through_ref[with-option-leaf.json].py
 with-option-loop.json	main/jsonschema/main_jsonschema/distribute_allof_over_unions_through_ref[with-option-loop.json].py
+with-option-recursive.json	main/jsonschema/main_jsonschema/distribute_allof_over_unions_through_ref[with-option-recursive.json].py
 without-option-leaf.json	main/jsonschema/main_jsonschema/distribute_allof_over_unions_through_ref[without-option-leaf.json].py
 [test_main_jsonschema_dotted_directory_reference]
 collapse-root-models	main/jsonschema/main_jsonschema/dotted_directory_reference[collapse-root-models]/

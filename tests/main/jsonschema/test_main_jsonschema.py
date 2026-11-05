@@ -39083,6 +39083,7 @@ def test_main_jsonschema_distribute_allof_over_unions(output_file: Path, extra_a
         pytest.param("leaf.json", ["--distribute-allof-over-unions"], id="with-option-leaf.json"),
         pytest.param("leaf.json", [], id="without-option-leaf.json"),
         pytest.param("loop.json", ["--distribute-allof-over-unions"], id="with-option-loop.json"),
+        pytest.param("recursive.json", ["--distribute-allof-over-unions"], id="with-option-recursive.json"),
     ],
 )
 def test_main_jsonschema_distribute_allof_over_unions_through_ref(
@@ -39094,7 +39095,8 @@ def test_main_jsonschema_distribute_allof_over_unions_through_ref(
     ``Leaf`` keeps only its own property. With it ``Leaf`` is the union of ``Parent``'s variants with the properties
     of ``Mid`` and ``Leaf``, across the three documents; a member naming a schema already read in place adds
     nothing, so ``Loop`` and ``Back``, each an allOf over the other, end (without the option their models fail to
-    import).
+    import). A member of another document is read as that document reads it: the ``$recursiveRef: "#"`` of ``Mid``
+    names the root of its own document (``child: RecursiveMid``), not that of ``Recursive``.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "allof_union_through_ref_files" / input_name,
@@ -39102,6 +39104,25 @@ def test_main_jsonschema_distribute_allof_over_unions_through_ref(
         input_file_type="jsonschema",
         extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp"],
         force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param(["--distribute-allof-over-unions"], id="with-option"), pytest.param([], id="without-option")],
+)
+def test_main_jsonschema_distribute_allof_over_unions_imported_member(output_file: Path, extra_args: list[str]) -> None:
+    """Keep a member that names an allOf over a union typed by ``x-python-import`` a base, with the option too.
+
+    The class the schema imports is the base of ``Imported`` (``class Imported(ImportedMid)``), as without
+    --distribute-allof-over-unions, instead of the member read in place; the output imports ``mypkg``, so it is
+    compiled, not run.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "allof_union_through_ref_files" / "imported.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp"],
     )
 
 

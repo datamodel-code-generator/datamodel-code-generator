@@ -559,6 +559,9 @@ class InheritedSchemasHost(Protocol):
     def _ref_path(self, ref: str) -> str:
         """Return the reference key a reference names."""
 
+    def _ref_target_dump(self, ref: str, resolved_ref: str) -> tuple[dict[str, Any], str]:
+        """Return a fresh dump of a referenced schema for the current document, and the reference it ends at."""
+
     def _ref_siblings_are_parts_of(self, schema: JsonSchemaObject) -> bool:
         """Return whether the keywords beside the ``$ref`` of ``schema`` are parts of it."""
 
@@ -586,8 +589,14 @@ class InheritedSchemasHost(Protocol):
     ) -> JsonSchemaObject | None:
         """Drop type-specific constraints when a boolean parent supplies no usable type."""
 
+    def _schema_location(self, resolved_ref: str) -> str:
+        """Return the registry location of a resolved reference."""
+
     def _schema_object(self, raw: object) -> JsonSchemaObject:
         """Validate a raw schema into a schema object."""
+
+    def _schema_resource_document(self, path_parts: list[str]) -> str:
+        """Identify one physical schema document without changing its public reference names."""
 
     def _select_inherited_distributed_shape(
         self,
@@ -1692,7 +1701,9 @@ def _read_through_members(
     Such a member (an allOf beside its own ``anyOf`` or ``oneOf``, or one whose members hold one,
     ``holds_union_member``) is read as an inline member, the schema it names, so its union parts join those of the
     site. The member is marked with the locations read through so far (the site's first), and so are the inline
-    members within it; a member naming one of them adds nothing (A and A is A).
+    members within it; a member naming one of them adds nothing (A and A is A). A schema that an ``x-python-import``
+    types is the class it imports, as ``alias_target`` reads it, so a member naming it stays a base. A schema of another
+    document is read as the current document reads it (``_read_through_target``).
     """
     within = schema.__dict__.get(_READ_THROUGH_KEY)
     read: list[JsonSchemaObject | bool] = []
@@ -1701,13 +1712,28 @@ def _read_through_members(
             read.append(member)
         elif not member.ref:
             read.append(_read_within(member, within))
-        elif not (target := parser._load_ref_schema_object(member.ref)).allOf or not (  # noqa: SLF001
-            target.anyOf or target.oneOf or holds_union_member(parser, target)
+        elif (
+            not (target := parser._load_ref_schema_object(member.ref)).allOf  # noqa: SLF001
+            or "x-python-import" in target.extras
+            or not (target.anyOf or target.oneOf or holds_union_member(parser, target))
         ):
             read.append(member)
         elif (location := target.schema_location) not in (chain := within or frozenset({schema.schema_location})):
-            read.append(_read_within(target, chain | {location}))
+            read.append(_read_within(_read_through_target(parser, member.ref, target), chain | {location}))
     return read
+
+
+def _read_through_target(parser: InheritedSchemasHost, ref: str, target: JsonSchemaObject) -> JsonSchemaObject:
+    """Return the schema ``target`` that a member read in place names, as the document being parsed reads it.
+
+    A schema of another document is its dump for this document (``_ref_target_dump``), where each ``$recursiveRef``
+    that has a fixed target there names it, as a schema merged from there reads it.
+    """
+    resolved_ref = parser._ref_path(ref)  # noqa: SLF001
+    document = parser._schema_resource_document(list(parser.model_resolver.current_root))  # noqa: SLF001
+    if parser._schema_location(resolved_ref).partition("#")[0] == document:  # noqa: SLF001
+        return target
+    return parser._schema_object(parser._ref_target_dump(ref, resolved_ref)[0])  # noqa: SLF001
 
 
 def _read_within(schema: JsonSchemaObject, chain: frozenset[SchemaLocation | None]) -> JsonSchemaObject:
