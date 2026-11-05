@@ -411,6 +411,42 @@ def test_lone_surrogate_configured_alias_refused_by_pydantic(
     )
 
 
+@pytest.mark.parametrize("output_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"])
+def test_lone_surrogate_alias_replaced_by_serialization_alias(output_file: Path, output_type: str) -> None:
+    r"""Keep the model whose only alias holding a lone surrogate the call does not write (#5983).
+
+    ``--use-serialization-alias`` writes the serialization alias that ``--serialization-aliases`` gives in place of the
+    property name ``k\ud800y``, so Pydantic reads no lone surrogate and the module builds, as in 0.89.0.
+    """
+    schema = {"title": "Surrogate", "type": "object", "properties": {"k\ud800y": {"type": "string"}}}
+    (input_path := output_file.parent / "surrogate_replaced.json").write_text(json.dumps(schema), encoding="utf-8")
+    (aliases_path := output_file.parent / "surrogate_replaced_aliases.json").write_text(
+        json.dumps({"k\ud800y": "key"}), encoding="utf-8"
+    )
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_type,
+            "--use-serialization-alias",
+            "--serialization-aliases",
+            str(aliases_path),
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="surrogate_replaced",
+        model_name="Surrogate",
+        valid_json='{"k_y": "v"}',
+        invalid_json='{"k_y": 1}',
+        expected_error_type="string_type",
+        expected_attribute_path=("k_y",),
+        expected_attribute_value="v",
+    )
+
+
 def test_lone_surrogate_renamed_field_refused_by_msgspec(output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Fail for a msgspec field renamed to a name that holds a lone surrogate (#5983).
 
