@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, RootModel, conint, constr
+from pydantic import BaseModel, ConfigDict, Field, RootModel, conint, constr
 
 
 class Text(RootModel[constr(max_length=3)]):
@@ -33,6 +33,13 @@ class LiteralModel(RootModel[Literal['a', 'bb']]):
     root: Literal['a', 'bb']
 
 
+class Patterned(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: constr(pattern=r'(?=^a)(?=z$)')
+
+
 class Model(BaseModel):
     text: Text | None = None
     split: Split | None = None
@@ -40,3 +47,4 @@ class Model(BaseModel):
     numbers: Numbers | None = None
     conflict: Conflict | None = None
     literal: LiteralModel | None = None
+    patterned: Patterned | None = None

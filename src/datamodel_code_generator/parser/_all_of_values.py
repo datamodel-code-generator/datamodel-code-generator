@@ -713,7 +713,8 @@ def legacy_site_keywords(parser: AllOfValuesHost, obj: JsonSchemaObject) -> Json
     without references, literals, two item schemas or two formats (``intersects_value_parts``). The intersection
     declares no ``type``, so the type of that earlier form decides which keywords the field takes (``Any`` takes none),
     and the field leaves out those its type enforces itself; nor the patterns of two parts, whose lookaheads under
-    ``legacy-lookahead-patterns`` no engine is checked to run. None for every other site, whose root writes none.
+    ``legacy-lookahead-patterns`` no engine is checked to run: it writes the site's own pattern then, if any, as it did
+    up to 0.89.0. None for every other site, whose root writes none.
     """
     parts: list[JsonSchemaObject] = []
     if (
@@ -723,16 +724,15 @@ def legacy_site_keywords(parser: AllOfValuesHost, obj: JsonSchemaObject) -> Json
         or not intersects_value_parts(parser, parts, literals=False)
     ):
         return None
-    left_out = (
-        {"type"} if len({part.pattern for part in parts if part.pattern is not None}) <= 1 else {"type", "pattern"}
-    )
+    lookaheads = len({part.pattern for part in parts if part.pattern is not None}) > 1
     keywords = intersect_all_of_value_parts(parser, parts, all_of_value_row(parser, obj), None)
     return parser._schema_object(  # noqa: SLF001
         {
             keyword: value
             for keyword, value in keywords.model_dump(exclude_unset=True, by_alias=True).items()
-            if keyword not in left_out
+            if keyword != "type" and (keyword != "pattern" or not lookaheads)
         }
+        | ({"pattern": obj.pattern} if lookaheads and obj.pattern is not None else {})
     )
 
 

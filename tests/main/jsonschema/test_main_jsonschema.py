@@ -9095,7 +9095,9 @@ def test_main_all_of_value_site_keywords(
     A lone member, a type beside a keyword part and an array member write their bounds as the root field's constraints
     wherever the type does not enforce them itself; parts that no value meets and parts with an ``enum`` keep their
     output. Up to 0.88.0 the root took its constraints from the allOf site, which declares none, so ``Numbers`` dropped
-    its ``minItems`` without a warning, and under --field-constraints and in msgspec every type dropped its bounds.
+    its ``minItems`` without a warning, and under --field-constraints and in msgspec every type dropped its bounds. A
+    site whose own pattern meets the pattern of a part, ``patterned``, keeps its own as before, as the root writes no
+    lookaheads of two patterns.
     """
     input_file = tmp_path / "all_of_value_sites.json"
     input_file.write_text(
@@ -9109,6 +9111,7 @@ def test_main_all_of_value_site_keywords(
                 "numbers": {"allOf": [{"type": "array", "items": {"type": "integer"}, "minItems": 2}]},
                 "conflict": {"allOf": [{"type": "string", "maxLength": 3}, {"type": "string", "minLength": 5}]},
                 "literal": {"allOf": [{"type": "string", "enum": ["a", "bb"]}, {"maxLength": 1}]},
+                "patterned": {"allOf": [{"type": "string", "pattern": "^a"}], "pattern": "z$"},
             },
         }),
         encoding="utf-8",
@@ -9133,6 +9136,7 @@ def test_main_all_of_value_site_keywords(
                 ({"text": "abcd"}, "string_too_long"),
                 ({"split": "abcd"}, "string_too_long"),
                 ({"number": 4}, "less_than_equal"),
+                ({"patterned": "abc"}, "string_pattern_mismatch"),
             ],
         )
 

@@ -26,6 +26,9 @@ Conflict: TypeAlias = str
 LiteralModel: TypeAlias = Literal['a', 'bb']
 
 
+Patterned: TypeAlias = Annotated[str, Meta(pattern='z$')]
+
+
 class Model(Struct):
     text: Text | UnsetType = UNSET
     split: Split | UnsetType = UNSET
@@ -33,3 +36,4 @@ class Model(Struct):
     numbers: Numbers | UnsetType = UNSET
     conflict: Conflict | UnsetType = UNSET
     literal: LiteralModel | UnsetType = UNSET
+    patterned: Patterned | UnsetType = UNSET
