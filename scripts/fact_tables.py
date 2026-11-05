@@ -1126,6 +1126,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     AttributeFact("Parser", "_tag_plan", FactKind.FACT, (RenderFact.PLANS,), Phase.CROSS_MODULE, FreezePoint.B1),
     AttributeFact("Parser", "_recursion_facts", FactKind.FACT, (RenderFact.PLANS,), Phase.MODULES, FreezePoint.B1),
     AttributeFact("Parser", "_reuse_groups", FactKind.FACT, (RenderFact.PLANS,), Phase.SETTLE, FreezePoint.B1),
+    AttributeFact("Parser", "_naming_plan", FactKind.FACT, (RenderFact.PLANS,), Phase.SETTLE, FreezePoint.B1),
     AttributeFact(
         "ModuleContext",
         "models",

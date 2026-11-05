@@ -48,6 +48,11 @@ class Area(Enum):
     modules are written, as the plan the field's facts give then; the type expression of the field's type hint frozen
     with it renders as the type hint then (``render_plans.py``)."""
 
+    NAMING = "DATAMODEL_CODE_GENERATOR_CHECK_NAMING"
+    """The names the L1 resolver and the L2 settle give are a function of the resolver's naming calls: replayed on a
+    copy of the resolver when ``name_models`` starts, they give every reference its name, and every model of the parse
+    is named by a reference of the resolver (``naming.py``)."""
+
     STORE_WRITES = "DATAMODEL_CODE_GENERATOR_CHECK_STORE_WRITES"
     """After L1, data types, fields and models change their facts only inside store operations (``finality.py``)."""
 

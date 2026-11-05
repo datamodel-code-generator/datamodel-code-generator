@@ -27,6 +27,7 @@ from tests.checks.finality import (
     parse_checks,
 )
 from tests.checks.model_graph import check_emitted_models, check_model_owners
+from tests.checks.naming import start as start_naming
 from tests.checks.schema_graph import check_shared_schemas
 from tests.checks.schema_locations import check_schema_locations
 from tests.checks.trace import MODULE_TRACE_MARK, TRACE
@@ -229,6 +230,7 @@ def _run_pipeline(original: Callable[..., None], runner: Any, steps: Any, parser
     modes = read_modes()
     token, module = MODES.set(modes), _IN_MODULE.set(False)
     try:
+        start_naming(parser)
         with NO_SCOPE if Area.STORE_WRITES not in modes and Area.FACT_FINALITY not in modes else _checks(parser):
             return original(runner, steps, parser, state)
     finally:

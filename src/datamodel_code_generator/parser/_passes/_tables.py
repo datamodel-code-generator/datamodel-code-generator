@@ -24,6 +24,7 @@ from datamodel_code_generator.parser._passes import (
     decide,
     imports,
     modules,
+    naming,
     plans,
     render_prep,
     settle,
@@ -91,6 +92,7 @@ class RunContextView(Protocol):
 class PipelineHost(
     settle.SettleHost[Any],
     settle.ParseHost,
+    naming.NamingHost,
     structure.StructureHost,
     modules.RuleAliasHost,
     plans.PlansHost,
@@ -475,6 +477,7 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
         _as_settle_run,
         (
             PassSpec("settle_yielding_names", late(settle.settle_yielding_names)),
+            PassSpec("name_models", late(naming.name_models)),
             PassSpec("report_parse_diagnostics", late(settle.report_parse_diagnostics)),
             PassSpec(
                 "warn_about_unmatched_model_name_keys",

@@ -152,6 +152,19 @@ SETTLE_YIELDING_NAMES = PassDecl(
         " models whose names yield, and the site models, yield the canonical place of a group of duplicates."
     ),
 )
+NAME_MODELS = PassDecl(
+    "name_models",
+    Phase.SETTLE,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(RenderFact.CLASS_NAMES),
+    writes=_facts(RenderFact.CLASS_NAMES, RenderFact.PLANS),
+    after=(After("settle_yielding_names", "plans the names the yielding names leave"),),
+    summary=(
+        "Plans the names of the models after their last claim (parser/_naming.py:NamingPlan), which L3 reads for the"
+        " name a model was numbered from; under the legacy policy the plan is empty and no model is renamed."
+    ),
+)
 REPORT_PARSE_DIAGNOSTICS = PassDecl(
     "report_parse_diagnostics",
     Phase.SETTLE,
@@ -232,7 +245,7 @@ DELETE_DUPLICATE_MODELS = PassDecl(
     Phase.STRUCTURE,
     Scope.MODULE,
     PassKind.TRANSFORM,
-    reads=_facts(*Fact, RenderFact.FIELD_ORDER, RenderFact.CLASS_NAMES, RenderFact.MODULE_MEMBERSHIP),
+    reads=_facts(*Fact, RenderFact.FIELD_ORDER, RenderFact.CLASS_NAMES, RenderFact.MODULE_MEMBERSHIP, RenderFact.PLANS),
     writes=_facts(
         Fact.MODELS_EXIST, Fact.BASES, Fact.FIELD_ALIASES, Fact.FIELD_TYPES, Fact.NULLABLE, RenderFact.CLASS_NAMES
     ),
@@ -243,7 +256,7 @@ REPLACE_DUPLICATE_NAME_IN_MODULE = PassDecl(
     Phase.STRUCTURE,
     Scope.MODULE,
     PassKind.TRANSFORM,
-    reads=_facts(RenderFact.CLASS_NAMES, RenderFact.MODULE_IMPORTS),
+    reads=_facts(RenderFact.CLASS_NAMES, RenderFact.MODULE_IMPORTS, RenderFact.PLANS),
     writes=_facts(Fact.NULLABLE, RenderFact.CLASS_NAMES),
     after=(After("delete_duplicate_models", "renames the duplicates that deletion keeps"),),
     summary="Makes class names unique within a module; row legacy-l3-import-nullability writes nullability first.",

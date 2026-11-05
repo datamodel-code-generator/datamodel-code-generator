@@ -1,3 +1,4 @@
+settle_yielding_names reads CLASS_NAMES before name_models writes it (plans the names the yielding names leave)
 sort_data_models reads BASES before sort_base_classes_for_mro writes it (the model order reads the bases as parsed; the MRO order of bases follows it)
 delete_duplicate_models reads CLASS_NAMES, NULLABLE before replace_duplicate_name_in_module writes it (renames the duplicates that deletion keeps)
 replace_duplicate_name_in_module reads CLASS_NAMES before apply_forced_invalid_dotted_stdout_repair writes it (flattens invalid roots under the names deduplication gave)

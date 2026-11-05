@@ -1859,7 +1859,10 @@ class ModelResolver:  # noqa: PLR0904
         """Find the closest parent reference for a given path.
 
         Traverses up the path hierarchy to find the first existing parent reference, passing over one whose child
-        on the way is named past it.
+        on the way is named past it. Row ``legacy-closest-registered-parent``: the parent is the closest path that a
+        reference holds when the model is named, not the model it is built for, so a definition that no ``$ref`` named
+        first takes the root model's name (``ModelCustomer``) and a model can take the name of a reference above its
+        owner (#4855).
         Returns None if no parent reference is found.
         """
         parent_path = list(path[:-1])
@@ -1899,7 +1902,12 @@ class ModelResolver:  # noqa: PLR0904
 
     @staticmethod
     def _is_primary_definition(path: Sequence[str]) -> bool:
-        """Check if path represents a primary schema definition."""
+        """Check if path represents a primary schema definition.
+
+        Row ``legacy-fixed-definition-patterns``: a primary definition is a direct child of ``#/definitions/``,
+        ``#/components/schemas/`` or ``#/$defs/`` in the text of its path, not of the definition containers the parser
+        reads (``JsonSchemaParser._is_named_schema_definition_path``).
+        """
         # Primary definitions are directly under /definitions/ or /components/schemas/
         path_str = "/".join(path)
         primary_patterns = [
@@ -1922,7 +1930,9 @@ class ModelResolver:  # noqa: PLR0904
         For PrimaryFirst strategy, when a primary definition in the main file
         has the same name as an external reference, rename the external reference
         so the primary definition can use the clean name. A yielding reference is left to give its name way
-        when the primary definition takes it.
+        when the primary definition takes it. Row ``legacy-external-only-primary-first``: only a reference of another
+        file gives its name to the primary definition; an inline model of the same file that took the name first keeps
+        it, and the definition is numbered (#4825).
         """
         for ref_path, ref in self.references.items():
             if ref.name == name and ref_path != current_path and not self.is_yielding(ref):
@@ -1954,6 +1964,8 @@ class ModelResolver:  # noqa: PLR0904
         A reference yields its name when ``yields`` says so, or when it is created inside
         ``yielding_new_references()`` and is no primary definition; a yielding reference keeps yielding. A yielding
         reference takes the name ``assigned_yielding_names`` gives its path, the name it ended with in an earlier parse.
+        Row ``legacy-first-come``: the first model to ask for a name takes it and a later one is numbered, in the order
+        L1 reaches them, whatever each model is (a definition, an inline model, a variant) (#4825).
         """
         joined_path = self.join_path(tuple(path))
         is_root = joined_path == "#" or (joined_path.endswith("#") and "/" not in joined_path.split("#")[-1])
@@ -2076,10 +2088,14 @@ class ModelResolver:  # noqa: PLR0904
 
         A deleted model is no model of the output, so no class-name key of ``--model-name-map`` names it there.
         """
-        if (reference := self.references.pop(resolved := self.resolve_ref(path), None)) is not None:
+        self._delete_at(self.resolve_ref(path))
+
+    def _delete_at(self, path: str) -> None:
+        """Delete the reference at a resolved ``path`` if it exists (``delete``)."""
+        if (reference := self.references.pop(path, None)) is not None:
             self._release_reference_name(reference)
             if (record := self.model_name_record) is not None:
-                record.allocated[:] = [allocation for allocation in record.allocated if allocation[0] != resolved]
+                record.allocated[:] = [allocation for allocation in record.allocated if allocation[0] != path]
 
     def delete_names(self, names: AbstractSet[str]) -> None:
         """Delete the references holding any of ``names``, whatever paths they were added under."""

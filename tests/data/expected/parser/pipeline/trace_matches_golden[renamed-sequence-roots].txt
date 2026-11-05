@@ -2,6 +2,7 @@ set_typed_extra_annotation_mode
 parse_raw
 index_const_narrowed_values
 settle_yielding_names
+name_models
 report_parse_diagnostics
 warn_about_unmatched_model_name_keys
 prepare_parse_config

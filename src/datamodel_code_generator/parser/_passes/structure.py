@@ -61,6 +61,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.config import ParserConfig
     from datamodel_code_generator.format import CodeFormatter, Formatter
     from datamodel_code_generator.parser._model_shapes import ModelShapes
+    from datamodel_code_generator.parser._naming import NamingPlan
     from datamodel_code_generator.parser._passes._import_edges import ImportCycleSeeds
     from datamodel_code_generator.parser._passes._state import (
         ConfigT,
@@ -115,6 +116,10 @@ class StructureHost(
     @property
     def _declared_class_stand_ins(self) -> set[ModelKey]:
         """The stand-ins of schemas whose ``x-python-import`` declares the class, which no root-model rule drops."""
+
+    @property
+    def _naming_plan(self) -> NamingPlan:
+        """The names planned after the last claim (``parser/_passes/naming.py:name_models``)."""
 
     @property
     def _import_cycle_seeds(self) -> ImportCycleSeeds:
@@ -346,7 +351,7 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
                 continue
             _drop_root_model_bases(parser, model)
 
-        class_name = model.duplicate_class_name or model.class_name
+        class_name = parser._naming_plan.base_of(model) or model.class_name  # noqa: SLF001
         if (
             reuse_allowed
             and (original_model := model_class_names.get(class_name)) is not None
@@ -403,6 +408,8 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
 def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataModel]) -> None:
     """Make class names unique within a module.
 
+    Row ``legacy-module-restore``: once the classes are unique, a model the resolver numbered takes back the name it
+    asked for (``NamingPlan.base_of``) where the module leaves it free, the first such model first.
     Renames change the rendered type hints of referencing models, so cached dedup keys of the
     module are dropped whenever a model is renamed. Models of typed map values come last, so the other
     models keep the names they had before values were typed. A stand-in, which is never written, neither takes nor
@@ -454,7 +461,7 @@ def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataMod
         model_names[model.class_name] = model
 
     for model in models:
-        duplicate_name = model.duplicate_class_name
+        duplicate_name = parser._naming_plan.base_of(model)  # noqa: SLF001
         # check only first desired name
         if (
             duplicate_name

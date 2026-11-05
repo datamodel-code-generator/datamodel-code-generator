@@ -7,14 +7,17 @@ import subprocess
 import sys
 from typing import TYPE_CHECKING
 
+import pytest
+
+from datamodel_code_generator import Error
+from datamodel_code_generator.format import Formatter
+from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from tests.checks.__main__ import main
 from tests.checks.seams import report
-from tests.conftest import CHECK_FACT_FINALITY_ENV, CHECK_RENDER_MEMOS_ENV, assert_output
+from tests.conftest import CHECK_FACT_FINALITY_ENV, CHECK_NAMING_ENV, CHECK_RENDER_MEMOS_ENV, assert_output
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-    import pytest
 
 _EXTENSION_MAKES_A_MEMO_STALE = """
 from datamodel_code_generator import Error
@@ -87,3 +90,38 @@ def test_check_area_with_unknown_mode(
     """A value other than 0, 1 or report:<path> fails the run with an error that names the variable."""
     status = _run_with_check_mode(tmp_path, "report:", monkeypatch)
     assert_output(f"exit status {status}\n{capsys.readouterr().err.splitlines()[-1]}")
+
+
+_RENAMED_DEFINITION = (
+    '{"title": "M", "type": "object", "properties": {"pet": {"$ref": "#/definitions/Pet"}},'
+    ' "definitions": {"Pet": {"type": "object", "properties": {"name": {"type": "string"}}}}}'
+)
+
+
+class _RenamingParser(JsonSchemaParser):
+    """A parser extension that renames a model outside the resolver while L1 runs."""
+
+    def parse_raw(self) -> None:
+        super().parse_raw()
+        self.model_resolver.references["#/definitions/Pet"].name = "Animal"
+
+
+def test_naming_check_reports_a_name_no_naming_call_gives() -> None:
+    """A name that no naming call of the resolver gives fails the parse when ``name_models`` starts.
+
+    The naming check is on (`1`, as the test suite sets it); the replay of the calls names the definition ``Pet``.
+    """
+    with pytest.raises(
+        Error,
+        match=(
+            rf"^{CHECK_NAMING_ENV}: names the resolver's naming calls do not explain: "
+            r"#/definitions/Pet: 'Animal' \(asked None\) where its calls give 'Pet' \(asked None\)$"
+        ),
+    ):
+        _RenamingParser(_RENAMED_DEFINITION, formatters=[Formatter.BUILTIN]).parse()
+
+
+def test_naming_check_turned_off(monkeypatch: pytest.MonkeyPatch) -> None:
+    """With the naming check set to 0, the parse writes the name the extension gave and records no naming call."""
+    monkeypatch.setenv(CHECK_NAMING_ENV, "0")
+    assert_output(str(_RenamingParser(_RENAMED_DEFINITION, formatters=[Formatter.BUILTIN]).parse()))
