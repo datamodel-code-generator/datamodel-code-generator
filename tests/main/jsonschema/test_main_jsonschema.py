@@ -4580,6 +4580,46 @@ def test_main_jsonschema_submodule_hidden_by_package(
     assert_output("\n".join(verdicts) + "\n", name="payloads")
 
 
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"])
+def test_main_jsonschema_forwarded_class_beside_loaded_submodule(output_dir: Path, output_model_type: str) -> None:
+    """Write a package whose ``__init__.py`` re-exports a class named like a submodule that it loads first.
+
+    An import cycle merge moves ``pkg.Warn`` and ``pkg.api.Order`` into ``pkg/_internal.py``, and ``pkg/__init__.py``
+    writes ``from ._internal import Warn``. ``_internal`` imports ``pkg/Warn.py`` for ``Order.detail`` while the
+    ``__init__.py`` runs, before it binds the class, so the class stays bound and the output is written (#6067). The
+    package is imported as Python imports it, a package before its modules: the code validation of the stored outputs
+    runs a module before its package, and ``_internal`` would then import an ``__init__.py`` that imports it half built.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "submodule_named_like_forwarded_loaded_class.json",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        skip_code_validation=True,
+    )
+    decoded = [
+        ("pkg.api", "Order", ['{"detail": {"message": "m"}, "warn": {"count": 1}}', '{"detail": {"message": 1}}']),
+        ("pkg", "Warn", ['{"count": 1, "order": {"detail": {"message": "m"}}}', '{"count": "x"}']),
+    ]
+    verdicts = []
+    with _generated_package_module(output_dir, "pkg.api"):
+        for module_path, model_name, payloads in decoded:
+            module = importlib.import_module(f"{output_dir.name}.{module_path}")
+            verdicts += [
+                _decode_with_generated_model(output_model_type, getattr(module, model_name), payload)
+                for payload in payloads
+            ]
+    assert_output("\n".join(verdicts) + "\n", name="payloads")
+
+
 @pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass"])
 @pytest.mark.parametrize(
     ("input_name", "model_name", "payloads"),
@@ -38814,6 +38854,12 @@ def test_main_jsonschema_refuses_keyword_module(
             id="collapse-renamed",
         ),
         pytest.param(
+            "submodule_named_like_forwarded_class",
+            [],
+            "the class 'Warn' in the package 'pkg' beside the module 'pkg.Warn' (pkg/Warn.py)",
+            id="forwarded",
+        ),
+        pytest.param(
             "shared_module_named_like_root_class",
             [
                 "--rename-submodules-hidden-by-classes",
@@ -38844,8 +38890,10 @@ def test_main_jsonschema_refuses_class_named_like_submodule(
     where the ``__init__.py`` loads the module before its classes are defined (it imports from it, or
     ``--all-exports-scope`` re-exports a module of it) the output works and is written. The class names are the final
     ones, a later rename included (``Decimal1`` beside the import of ``decimal.Decimal``, the ``parent`` name of a
-    collapsed root model), and the refusal names --rename-submodules-hidden-by-classes, which renames such a module;
-    with it the run fails only for a module that the option does not rename, the shared module of tree-scope reuse.
+    collapsed root model), and a class that an import cycle merge moves into ``pkg/_internal.py`` is bound by the
+    ``__init__.py`` that re-exports it. The refusal names --rename-submodules-hidden-by-classes, which renames such a
+    module; with it the run fails only for a module that the option does not rename, the shared module of tree-scope
+    reuse.
     """
     hint = (
         "--rename-submodules-hidden-by-classes renames only the modules that the schema names and the input files "

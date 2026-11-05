@@ -2077,6 +2077,7 @@ def _package_bindings(
 def _class_named_like_submodule(
     contexts: Sequence[ModuleContextView],
     bindings: Sequence[tuple[ModulePath, ModuleContextView, tuple[str, ...]]],
+    forwarder_map: ForwarderMap,
     *,
     treat_dot_as_module: bool | None,
     all_exports_scope: AllExportsScope | None,
@@ -2084,8 +2085,9 @@ def _class_named_like_submodule(
     """Return the first class a package's ``__init__.py`` binds beside a module of its name that replaces it, or None.
 
     The module replaces the class where the ``__init__.py`` does not load it while its imports run, before its classes
-    are defined (``reject_class_named_like_submodule``). The class comes with the written path of the ``__init__.py``,
-    the module's parts and the path of its file.
+    are defined (``reject_class_named_like_submodule``); a forwarder loads the modules it re-exports from
+    (``Forwarder.names``) and what they load. The class comes with the written path of the ``__init__.py``, the
+    module's parts and the path of its file.
     """
     written = sorted(
         ((written_path(ctx.module, treat_dot_as_module=treat_dot_as_module), ctx) for ctx in contexts if ctx.models),
@@ -2098,14 +2100,22 @@ def _class_named_like_submodule(
             submodules.setdefault(parts[:size], path if size == len(parts) else (*parts[:size], "__init__.py"))
     clashes = [
         (path, name, module, file)
-        for path, ctx, names in bindings
-        if ctx.models
+        for path, _, names in bindings
         for name in names
         if (file := submodules.get(module := (*path[:-1], name))) is not None
     ]
     if not clashes:
         return None
     edges = module_import_edges(contexts, treat_dot_as_module=treat_dot_as_module, all_exports_scope=all_exports_scope)
+    written_modules = {
+        ctx.module_key: dotted_module(written_path(ctx.module, treat_dot_as_module=treat_dot_as_module))
+        for ctx in contexts
+    }
+    for ctx in contexts:
+        if not ctx.models and (forwarder := forwarder_map.get(ctx.module_key)) is not None:
+            edges.setdefault(written_modules[ctx.module_key], set()).update(
+                written_modules[source] for source, _, _ in forwarder.names
+            )
     for path, name, module, file in clashes:
         loaded = reach([dotted_module(path)], lambda importer: edges.get(importer, ()))
         if not any(is_within_name(loaded_name, ".".join(module)) for loaded_name in loaded):
@@ -2188,14 +2198,15 @@ def reject_class_named_like_submodule(
     *,
     all_exports_scope: AllExportsScope | None,
 ) -> None:
-    """Refuse a package whose ``__init__.py`` defines a class named like a module or package below it.
+    """Refuse a package whose ``__init__.py`` binds a class named like a module or package below it.
 
     Loading ``pkg.Warn`` binds ``Warn`` in ``pkg`` over the class ``Warn`` of ``pkg/__init__.py``, so the models that
     name the class then fail to import or decode, and ``from . import Warn`` gives the class, so a model of the module
-    (``Warn.Detail``) fails too. It is judged on the final class names and import plans, where the modules are
+    (``Warn.Detail``) fails too; a class that an import cycle merge moved into ``_internal`` and the ``__init__.py``
+    re-exports is bound alike. It is judged on the final class names and import plans, where the modules are
     written. It holds where the ``__init__.py`` loads the module while its imports run, before its classes are
-    defined (it imports from the module or below it, a module it imports does, or ``--all-exports-scope`` re-exports a
-    module of it): the class takes the name after, and no later import rebinds it
+    defined or re-exported (it imports from the module or below it, a module it imports does, or
+    ``--all-exports-scope`` re-exports a module of it): the class takes the name after, and no later import rebinds it
     (``submodules_hidden_by_packages``). Renaming the class or the module changes names that the models and the files
     go by, so the run fails and names both. Under --rename-submodules-hidden-by-classes, where the renames of the
     submodules disagree with the names the packages bind here (``_final_class_seeds``), the run is parsed again with
@@ -2205,7 +2216,7 @@ def reject_class_named_like_submodule(
     config, treat_dot_as_module = parser.config, parser.treat_dot_as_module
     bindings = _package_bindings(contexts, forwarder_map, treat_dot_as_module=treat_dot_as_module)
     hidden = _class_named_like_submodule(
-        contexts, bindings, treat_dot_as_module=treat_dot_as_module, all_exports_scope=all_exports_scope
+        contexts, bindings, forwarder_map, treat_dot_as_module=treat_dot_as_module, all_exports_scope=all_exports_scope
     )
     refusal = None if hidden is None else _hidden_class_refusal(hidden, config)
     if (

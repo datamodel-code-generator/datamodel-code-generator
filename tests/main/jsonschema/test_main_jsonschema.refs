@@ -6947,6 +6947,13 @@ pydantic-dataclass-self-named-pydantic-2	main/jsonschema/field_type_collision_ru
 pydantic-dataclass-self-named-pydantic-2	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-subclass	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_subclass.py
 pydantic-dataclass-subclass	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+[test_main_jsonschema_forwarded_class_beside_loaded_submodule]
+dataclasses.dataclass	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[dataclasses.dataclass].payloads.txt
+dataclasses.dataclass	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[dataclasses.dataclass]/
+msgspec.Struct	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[msgspec.Struct].payloads.txt
+msgspec.Struct	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[msgspec.Struct]/
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[dataclasses.dataclass].payloads.txt
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[pydantic_v2.BaseModel]/
 [test_main_jsonschema_forwarding_reference_collapse_root]
 	main/jsonschema/forwarding_reference//*.py
 [test_main_jsonschema_generate_schema_validators]
