@@ -682,6 +682,42 @@ class StreamEvent1(BaseModel):
     delta: str | None = None
 ```
 
+### `--name-allof-union-members-after-branches`
+
+| | |
+|---|---|
+| Option | `--name-allof-union-members-after-branches` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#4847](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4847) |
+
+**Affects:** an `allOf` that holds a `oneOf` or `anyOf`, which gives each branch a class combining it with the other parts of the allOf. These classes, the branch-only bases and the part the branches share are all numbered after the holder (`Event1` to `Event5`), and `--infer-union-variant-names` names the branch-only bases after their tags, not the classes of the union. With the option each class of the union takes the holder's name and the branch's tag (under `--infer-union-variant-names` or `--use-tag-as-union-variant-name`), the class of a `$ref` branch, else its position (`EventCreated`, `NoticeOpened`, `Event1`); a branch-only base takes that class's name and `Base` (`EventCreatedBase`) and the shared part the holder's name and `Base` (`EventBase`). A name another model holds is numbered, with `_` after a name that ends in a digit.
+
+Schema: `Event` is an `allOf` of `$ref: Envelope` and a `oneOf` of two inline objects tagged by `type: created` and `type: deleted`, with `--infer-union-variant-names`.
+
+Without the option (same as 0.89.0):
+
+```python
+class Event2(EventCreated, Event1):
+    pass
+
+
+class Event(RootModel[Event2 | Event3]):
+    root: Event2 | Event3
+```
+
+With the option:
+
+```python
+class EventCreated(EventCreatedBase, EventBase):
+    pass
+
+
+class Event(RootModel[EventCreated | EventDeleted]):
+    root: EventCreated | EventDeleted
+```
+
 ### `--read-schema-version-per-document`
 
 | | |

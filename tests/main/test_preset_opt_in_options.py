@@ -55,6 +55,7 @@ OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
     "--read-msgspec-union-bounds-exactly",
     "--naming-strategy",
     "definitions-first",
+    "--name-allof-union-members-after-branches",
     "--use-duplicate-name-suffix-for-every-collision",
     "--capitalise-numbered-enum-members",
     "--keep-first-character-of-path-keys",
@@ -114,6 +115,12 @@ CASES_20261104: tuple[pytest.ParameterSet, ...] = (
         "openapi",
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="naming-strategy-definitions-first",
+    ),
+    pytest.param(
+        OPEN_API_DATA_PATH / "allof_union_members.yaml",
+        "openapi",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="name-allof-union-members-after-branches",
     ),
     pytest.param(
         JSON_SCHEMA_DATA_PATH / "duplicate_name_suffix_every_collision.json",

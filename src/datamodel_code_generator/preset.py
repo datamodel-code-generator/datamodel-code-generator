@@ -841,6 +841,7 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         title="Model names taken from the schema",
         config=PresetConfig(
             naming_strategy=NamingStrategy.DefinitionsFirst,
+            name_allof_union_members_after_branches=True,
             use_duplicate_name_suffix_for_every_collision=True,
             capitalise_numbered_enum_members=True,
             keep_first_character_of_path_keys=True,
@@ -848,7 +849,8 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             singularize_last_word_of_item_names=True,
         ),
         description=(
-            "Give every definition its own name before an inline model that asks for it first, give the "
+            "Give every definition its own name before an inline model that asks for it first, name the union "
+            "members of an allOf after their branches, give the "
             "--duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize "
             "the number of a capitalized enum member, strip only a leading slash from a paths key, name a "
             "converted AsyncAPI payload that names no type after its message, and singularize only the last word "
@@ -1249,7 +1251,9 @@ def render_presets_markdown() -> str:
         (
             "The 20261104 presets also name models from the schema: `--naming-strategy definitions-first` gives "
             "every definition its own name before an inline model that asks for it first (the practical presets "
-            "take it instead of `primary-first`), `--use-duplicate-name-suffix-for-every-collision` "
+            "take it instead of `primary-first`), `--name-allof-union-members-after-branches` names the union members "
+            "of an allOf after their branches (`EventCreated`, `EventBase`), "
+            "`--use-duplicate-name-suffix-for-every-collision` "
             "gives the `--duplicate-name-suffix` suffix to every model renamed because its name is taken, "
             "`--capitalise-numbered-enum-members` capitalizes the number a capitalized enum member takes (`A_1`), "
             "`--keep-first-character-of-path-keys` strips only a leading slash from a paths key (`pets` names "

@@ -285,7 +285,7 @@ from datamodel_code_generator.parser._intersection import (
     warn_untaken_patterns,
 )
 from datamodel_code_generator.parser._intersection import json_values_equal as _json_literal_values_equal
-from datamodel_code_generator.parser._naming import Composed, composed_name
+from datamodel_code_generator.parser._naming import AllOfPart, Composed, composed_name
 from datamodel_code_generator.parser._null_facts import (
     NullFacts,
     NullMode,
@@ -5224,26 +5224,34 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         reference = self.model_resolver.add(path, name, class_name=True, loaded=True)
         self._record_schema_object(reference, obj)
         values = _all_of_values.all_of_value_variants(self, obj) if reads_values else []
-        all_of_data_type = self._parse_object_common_part(
-            name,
-            obj,
-            get_special_path("allOf", path),
-            ignore_duplicate_model=ignore_duplicate_model,
-            fields=fields,
-            base_classes=base_classes,
-            required=required,
+        all_of_data_type = self._claimed(
+            AllOfPart(0),
+            partial(
+                self._parse_object_common_part,
+                name,
+                obj,
+                get_special_path("allOf", path),
+                ignore_duplicate_model=ignore_duplicate_model,
+                fields=fields,
+                base_classes=base_classes,
+                required=required,
+            ),
         )
         assert all_of_data_type.reference is not None
         data_type = build_union(
             self.data_type,
             [
                 *(
-                    self._parse_all_of_union_model(
-                        name,
-                        obj,
-                        get_special_path(f"union_model-{index}", path),
-                        (*branches, all_of_data_type.reference),
-                        ignore_duplicate_model=ignore_duplicate_model,
+                    self._claimed(
+                        AllOfPart(index + 1, branches),
+                        partial(
+                            self._parse_all_of_union_model,
+                            name,
+                            obj,
+                            get_special_path(f"union_model-{index}", path),
+                            (*branches, all_of_data_type.reference),
+                            ignore_duplicate_model=ignore_duplicate_model,
+                        ),
                     )
                     for index, branches in enumerate(self._all_of_union_combinations(obj, union_parts))
                 ),

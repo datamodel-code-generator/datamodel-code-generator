@@ -435,15 +435,19 @@ _RESOLVER_NAMING_METHODS: Final = (
 """The methods of ``ModelResolver`` that name models, which a resolver class outside the package may override."""
 
 
-def _naming_rules_of(naming_strategy: NamingStrategy | None, resolver_class: type[ModelResolver]) -> NamingRules:
-    """Return the naming rules ``--naming-strategy`` turns on, for the models a resolver of ``resolver_class`` names.
+def _naming_rules_of(
+    naming_strategy: NamingStrategy | None, resolver_class: type[ModelResolver], *, allof_union_members: bool
+) -> NamingRules:
+    """Return the naming rules the options turn on, for the models a resolver of ``resolver_class`` names.
 
-    A resolver class outside the package that overrides how ``ModelResolver`` names models keeps the names it gives:
-    the rules stay off, with a warning that names the strategy.
+    They are ``--naming-strategy`` and ``--name-allof-union-members-after-branches`` (``allof_union_members``). A
+    resolver class outside the package that overrides how ``ModelResolver`` names models keeps the names it gives:
+    the rules stay off, with a warning that names the options.
     """
     rules = NamingRules(
         definitions_first=naming_strategy is NamingStrategy.DefinitionsFirst,
         enclosing_model=naming_strategy is NamingStrategy.EnclosingModel,
+        allof_union_members=allof_union_members,
     )
     if rules.legacy or not (
         overridden := [
@@ -454,9 +458,13 @@ def _naming_rules_of(naming_strategy: NamingStrategy | None, resolver_class: typ
         ]
     ):
         return rules
+    options = [
+        *((f"--naming-strategy {cast('NamingStrategy', naming_strategy).value}",) if rules.strategy else ()),
+        *(("--name-allof-union-members-after-branches",) if allof_union_members else ()),
+    ]
     warn(
-        f"--naming-strategy {cast('NamingStrategy', naming_strategy).value}: {resolver_class.__qualname__} overrides "
-        f"{', '.join(overridden)} of ModelResolver, so the models keep the names it gives",
+        f"{', '.join(options)}: {resolver_class.__qualname__} overrides {', '.join(overridden)} of ModelResolver, so "
+        "the models keep the names it gives",
         UserWarning,
         stacklevel=2,
     )
@@ -1277,7 +1285,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 else None
             ),
         )
-        self._naming_rules = _naming_rules_of(config.naming_strategy, type(self.model_resolver))
+        self._naming_rules = _naming_rules_of(
+            config.naming_strategy,
+            type(self.model_resolver),
+            allof_union_members=config.name_allof_union_members_after_branches,
+        )
         self.class_name: str | None = config.class_name
         self.allow_leading_underscore_class_name: bool = config.allow_leading_underscore_class_name
         self.wrap_string_literal: bool | None = config.wrap_string_literal

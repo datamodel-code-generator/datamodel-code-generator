@@ -100,6 +100,7 @@ openapi/allof_same_prefix_with_ref.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_scalar_roots.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_self_reference_base.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_single_ref_inline.yaml	yaml_fast_constructor/parity.txt
+openapi/allof_union_members.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_with_anyof_ref.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_with_description_only.yaml	yaml_fast_constructor/parity.txt
 openapi/allof_with_oneof_ref.yaml	yaml_fast_constructor/parity.txt

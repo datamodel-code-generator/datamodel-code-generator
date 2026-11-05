@@ -17876,3 +17876,142 @@ def test_main_openapi_naming_strategy_enclosing_model(
             invalid_json=json.dumps({"issue": {"id": "x"}}),
             expected_error_type="int_parsing",
         )
+
+
+@pytest.mark.cli_doc(
+    options=["--name-allof-union-members-after-branches"],
+    option_description="""Name the classes an allOf gives the branches of a oneOf or anyOf it holds after the branches.
+
+An allOf that holds a oneOf or anyOf gives each branch a class that combines it with the other parts of the allOf.
+These classes are numbered after the holder, `Event1` to `Event5` for two branches, and `--infer-union-variant-names`
+names the branch-only bases after their tags, not the classes of the union. With
+`--name-allof-union-members-after-branches` each class of the union takes the holder's name and the branch's tag,
+the class of a `$ref` branch, or its position (`EventCreated`, `NoticeOpened`, `Event1`), a branch-only base takes
+the class's name and `Base` (`EventCreatedBase`), and the part the branches share takes the holder's name and `Base`
+(`EventBase`).""",
+    input_schema="openapi/allof_union_members.yaml",
+    cli_args=["--name-allof-union-members-after-branches", "--infer-union-variant-names"],
+    golden_output="main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-infer].py",
+    comparison_output="main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-infer].py",
+    related_options=["--infer-union-variant-names", "--use-tag-as-union-variant-name", "--naming-strategy"],
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2"),
+        pytest.param("pydantic_v2.BaseModel", ["--infer-union-variant-names"], id="pydantic_v2-infer"),
+        pytest.param("pydantic_v2.BaseModel", ["--name-allof-union-members-after-branches"], id="pydantic_v2-members"),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--name-allof-union-members-after-branches", "--infer-union-variant-names"],
+            id="pydantic_v2-members-infer",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            [
+                "--name-allof-union-members-after-branches",
+                "--infer-union-variant-names",
+                "--naming-strategy",
+                "enclosing-model",
+            ],
+            id="pydantic_v2-members-enclosing-model",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            [
+                "--name-allof-union-members-after-branches",
+                "--infer-union-variant-names",
+                "--naming-strategy",
+                "full-path",
+            ],
+            id="pydantic_v2-members-full-path",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            [
+                "--name-allof-union-members-after-branches",
+                "--infer-union-variant-names",
+                "--naming-strategy",
+                "definitions-first",
+            ],
+            id="pydantic_v2-members-definitions-first",
+        ),
+        pytest.param(
+            "msgspec.Struct",
+            ["--name-allof-union-members-after-branches", "--infer-union-variant-names"],
+            id="msgspec-members-infer",
+            marks=pytest.mark.filterwarnings("ignore:msgspec cannot decode the union:UserWarning"),
+        ),
+        pytest.param(
+            "typing.TypedDict",
+            ["--name-allof-union-members-after-branches", "--infer-union-variant-names"],
+            id="typed_dict-members-infer",
+        ),
+        pytest.param(
+            "dataclasses.dataclass",
+            ["--name-allof-union-members-after-branches", "--infer-union-variant-names"],
+            id="dataclass-members-infer",
+        ),
+    ],
+)
+def test_main_openapi_name_allof_union_members_after_branches(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Name the union members of an allOf after their branches (#4847).
+
+    Without the option the members of ``Event`` are ``Event4`` and ``Event5``, its branch-only bases ``Event1`` and
+    ``Event2`` (``EventCreated`` and ``EventDeleted`` under ``--infer-union-variant-names``) and its shared part
+    ``Event3``; with it the members are ``Event1`` and ``Event2`` (``EventCreated`` and ``EventDeleted``), the bases
+    ``Event1Base`` and ``Event2Base`` and the shared part ``EventBase``. The members of ``Notice``, whose branches are
+    ``$ref`` targets, are ``NoticeOpened`` and ``NoticeClosed``.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "allof_union_members.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    if extra_args == ["--name-allof-union-members-after-branches", "--infer-union-variant-names"] and (
+        output_model_type == "pydantic_v2.BaseModel"
+    ):
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="name_allof_union_members_after_branches",
+            model_name="Event",
+            valid_json=json.dumps({"id": "1", "type": "created", "name": "x"}),
+            invalid_json=json.dumps({"type": "created"}),
+            expected_error_type="missing",
+        )
+
+
+def test_name_allof_union_members_after_branches_beside_a_resolver_that_names_models() -> None:
+    """A model resolver class that overrides how models are named keeps its names under the allOf naming rule.
+
+    The parser warns once that the option's names are not given, and the members of the allOf of ``Event`` keep the
+    names they are numbered under, as in 0.89.0.
+    """
+    from datamodel_code_generator.reference import ModelResolver
+
+    class NamingResolver(ModelResolver):
+        def default_class_name_generator(self, name: str) -> str:
+            return super().default_class_name_generator(name)
+
+    class NamingParser(OpenAPIParser):
+        _model_resolver_factory = staticmethod(NamingResolver)
+
+    with warnings.catch_warnings(record=True) as records:
+        warnings.simplefilter("always", UserWarning)
+        output = NamingParser(
+            OPEN_API_DATA_PATH / "allof_union_members.yaml",
+            name_allof_union_members_after_branches=True,
+            formatters=[Formatter.BUILTIN],
+        ).parse()
+    assert_output("".join(f"{record.message}\n" for record in records if record.category is UserWarning) + str(output))

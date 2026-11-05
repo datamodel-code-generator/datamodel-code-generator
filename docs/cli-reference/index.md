@@ -10,7 +10,7 @@ This documentation is auto-generated from test cases.
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 17 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 48 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 37 | Field naming and docstring behavior |
+| 🏷️ [Field Customization](field-customization.md) | 38 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 59 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 11 | OpenAPI-specific features |
@@ -266,6 +266,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 ### N {#n}
 
+- [`--name-allof-union-members-after-branches`](field-customization.md#name-allof-union-members-after-branches)
 - [`--name-converted-payloads-by-message`](model-customization.md#name-converted-payloads-by-message)
 - [`--naming-strategy`](model-customization.md#naming-strategy)
 - [`--no-alias`](field-customization.md#no-alias)

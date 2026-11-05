@@ -1161,6 +1161,9 @@ openapi/allof_scalar_roots.yaml::components.schemas.Title	payloads/native_numeri
 openapi/allof_self_reference_base.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_self_reference_base.yaml::components.schemas.Name	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_single_ref_inline.yaml::components.schemas.ACHClass	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/allof_union_members.yaml::components.schemas.Closed	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/allof_union_members.yaml::components.schemas.Envelope	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/allof_union_members.yaml::components.schemas.Opened	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_with_anyof_ref.yaml::components.schemas.NumberItem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_with_anyof_ref.yaml::components.schemas.TextItem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_with_description_only.yaml::components.schemas.MyModel	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3150,6 +3153,9 @@ openapi/allof_scalar_roots.yaml::components.schemas.Title	payloads/native_numeri
 openapi/allof_self_reference_base.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_self_reference_base.yaml::components.schemas.Name	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_single_ref_inline.yaml::components.schemas.ACHClass	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/allof_union_members.yaml::components.schemas.Closed	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/allof_union_members.yaml::components.schemas.Envelope	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/allof_union_members.yaml::components.schemas.Opened	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_with_anyof_ref.yaml::components.schemas.NumberItem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_with_anyof_ref.yaml::components.schemas.TextItem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_with_description_only.yaml::components.schemas.MyModel	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

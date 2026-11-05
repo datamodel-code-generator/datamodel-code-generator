@@ -393,7 +393,8 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(
         _C.FIELD,
         "--no-alias --use-serialization-alias --use-title-as-name --no-use-title-as-name --infer-union-variant-names",
-        "--use-tag-as-union-variant-name --use-schema-description --no-use-schema-description",
+        "--use-tag-as-union-variant-name --name-allof-union-members-after-branches",
+        "--no-name-allof-union-members-after-branches --use-schema-description --no-use-schema-description",
         "--use-field-description --no-use-field-description",
         "--use-field-description-example --no-use-field-description-example --use-attribute-docstrings",
         "--use-inline-field-description",
