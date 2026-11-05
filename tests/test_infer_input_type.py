@@ -118,6 +118,8 @@ def test_infer_input_type() -> None:  # noqa: PLR0912
             "field_validators_multi_fields_config.json",
             "list_only.json",
             "list_only.yaml",
+            "recursive_model_alias_kept.json",
+            "recursive_model_alias_two_users.json",
             "whitespace_only.yaml",
         )):
             continue

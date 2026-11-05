@@ -944,6 +944,14 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
+        title="Plain aliases of recursive models",
+        config=PresetConfig(use_plain_alias_for_recursive_models=True),
+        description=(
+            "In Pydantic output, write a type alias whose whole value is a model that names itself as a plain "
+            "TypeAlias, which every model that uses it builds."
+        ),
+    ),
+    PresetOptionGroup(
         title="SerializeAsAny for every subclass",
         config=PresetConfig(use_serialize_as_any_for_every_subclass=True),
         description=(
@@ -1286,7 +1294,10 @@ def render_presets_markdown() -> str:
             "`--keep-enum-literal-aliases`: under `--collapse-root-models` a named enum written as a `Literal` type "
             "alias stays named at its uses, and "
             "`--read-input-model-dataclass-fields-by-alias`: with `--input-model`, a field of a Pydantic dataclass "
-            "that has an alias keeps its Python type (`deque[int]`) like one without."
+            "that has an alias keeps its Python type (`deque[int]`) like one without, and "
+            "`--use-plain-alias-for-recursive-models`: in Pydantic output a type "
+            "alias whose whole value is a model that names itself is written as `Alias: TypeAlias = Node`, which "
+            "Pydantic builds for every model that uses it."
         ),
         "",
         (

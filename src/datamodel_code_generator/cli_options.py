@@ -427,6 +427,11 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(_C.TYPING, "--use-type-alias", group=_G.TYPE_ALIAS),
     **_opts(_C.TYPING, "--use-type-alias-type", group=_G.TYPE_ALIAS, implies=_implied("use_type_alias_type")),
     **_opts(_C.TYPING, "--use-root-model-type-alias", group=_G.TYPE_ALIAS),
+    **_opts(
+        _C.TYPING,
+        "--use-plain-alias-for-recursive-models --no-use-plain-alias-for-recursive-models",
+        group=_G.TYPE_ALIAS,
+    ),
     **_opts(_C.TYPING, "--strict-types", group=_G.TYPE_MAPPING),
     **_opts(
         _C.TYPING,

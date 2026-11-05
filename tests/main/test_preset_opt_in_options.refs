@@ -91,6 +91,8 @@ use-msgspec-meta-for-map-keys-practical	main/preset_opt_in_options/preset_sets_o
 use-msgspec-meta-for-map-keys-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-msgspec-meta-for-map-keys-standard].py	= main/jsonschema/msgspec_map_keys/msgspec_map_keys[meta].py
 use-one-model-per-ref-site-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-one-model-per-ref-site-practical].py
 use-one-model-per-ref-site-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-one-model-per-ref-site-standard].py
+use-plain-alias-for-recursive-models-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-plain-alias-for-recursive-models-practical].py
+use-plain-alias-for-recursive-models-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-plain-alias-for-recursive-models-standard].py
 use-serialize-as-any-for-every-subclass-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-serialize-as-any-for-every-subclass-practical].py
 use-serialize-as-any-for-every-subclass-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-serialize-as-any-for-every-subclass-standard].py
 use-single-dict-for-object-maps-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-single-dict-for-object-maps-practical].py

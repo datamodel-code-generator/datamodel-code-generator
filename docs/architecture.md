@@ -168,16 +168,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 227 | Shared generation options. |
-| `GenerateConfig` | 242 | Public `generate()` configuration. |
-| `ParserConfig` | 189 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 191 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 199 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 201 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 192 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 192 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 191 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 192 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 228 | Shared generation options. |
+| `GenerateConfig` | 243 | Public `generate()` configuration. |
+| `ParserConfig` | 190 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 192 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 200 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 202 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 193 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 193 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 192 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 193 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -765,6 +765,7 @@ entry.
 | MODULES | `apply_base_stand_in_imports` | global | transform | BASES, MODULE_IMPORTS | BASES | After every module is processed: replaces the bases that name a stand-in (a schema that a base names and the output types by an import) by that import, so that the passes of every module read the stand-in as a generated base whatever the module order. Runs when: a base names a stand-in. After `apply_base_class_type_overrides`: every module reads the stand-ins as the bases of models of other modules before imports replace them. After `name_inner_models_in_rules`: both add module imports once every module is processed. After `settle_kept_parent_roots`: both add module imports once every module is processed. |
 | MODULES | `settle_discriminated_unions` | global | transform | DISCRIMINATOR_TAGS | DEFAULTS, DISCRIMINATOR_TAGS, FIELD_SET, FIELD_TYPES, NULLABLE, REQUIRED | After every module is processed: writes no `discriminator=` for the union of a lone `$ref` variant that has no tag, which a union of any module may still write into it, nor for a lone variant that is no model (a scalar, `Any` or None, as a collapsed alias or an inline schema leaves it), nor for a union that takes a root model, or a type alias, with a default as a variant, also where `--collapse-root-models` inlines the union into the items of a list. Runs when: the output fields write `discriminator=`. |
 | MODULES | `type_users_of_dropped_root_models_by_any` | global | transform | BACKEND_CONFIG, FIELD_TYPES | BACKEND_CONFIG, FIELD_TYPES, MODELS_EXIST | After every module is processed: types every user of a root model whose root names itself, which deduplication dropped, by `Any` (fields, types, dict keys and typed additional properties), as no module writes it. Runs when: a root model that names itself was dropped, in output that nothing builds from its annotations. After `apply_field_type_overrides`: a field type override replaces a type before it is read. After `type_dict_keys_by_root_types`: reads the dict keys that root types typed. After `fix_constructor_field_ordering_early`: the constructor order reads no type it writes. After `settle_kept_parent_roots`: reads the types the holders of kept roots settled on. After `name_inner_models_in_rules`: both retype once every module is processed. After `settle_discriminated_unions`: both retype once every module is processed. |
+| MODULES | `write_plain_aliases_for_recursive_models` | global | transform | MODEL_KIND, STDERR | FIELD_TYPES, MODELS_EXIST, MODEL_KIND, MODULE_MEMBERSHIP | After every module is processed: writes each Pydantic type alias whose whole value is a class that names itself as a plain `TypeAlias` under --use-plain-alias-for-recursive-models, and warns about each one two or more classes use without it. Runs when: Pydantic output. After `write_rule_aliases_as_classes`: reads the aliases that stay aliases once those with rules are classes. After `name_inner_models_in_rules`: reads the alias values once the rules name their inner models. After `type_users_of_dropped_root_models_by_any`: reads the alias values once every user is typed. |
 | CROSS_MODULE | `tag_fields_of_tagged_bases` | global | transform | BASES, DISCRIMINATOR_TAGS, FIELD_SET, FIELD_TYPES, IMPORT_ALIASES, MODULE_IMPORTS | BASES, DISCRIMINATOR_TAGS, FIELD_SET, MODULE_IMPORTS, MODULE_MEMBERSHIP | Tags the structs that declare the tag field of a tagged base, or opts them out of the tag, and opts out the structs whose tag field a base keeps as a field, typing their tag field by its const again; a struct that reuse made an empty subclass of that base declares the fields of its base instead and keeps its tag, importing the models of other modules that those fields name. Runs when: msgspec. |
 | CROSS_MODULE | `flatten_narrowed_inherited_fields` | global | transform | BASES, DEFAULTS, FIELD_SET, FIELD_TYPES, IMPORT_ALIASES, MODULE_IMPORTS, REQUIRED | BASES, CONTAINERS, FIELD_NAMES, FIELD_SET, FIELD_TYPES, METADATA, MODULE_IMPORTS, MODULE_MEMBERSHIP, NULLABLE, REQUIRED | Makes a TypedDict whose key narrows a key of a generated base, as a type checker holds to the base's type, requiredness and ReadOnly, declare every key of its bases without them, bases first, importing the models of other modules that the copied keys name. Runs when: an output whose subclasses keep inherited field types (TypedDict). After `tag_fields_of_tagged_bases`: both make models of any module declare the fields of their bases and import what those fields name. |
 | CROSS_MODULE | `write_enum_member_tags_as_values` | global | transform | FIELD_TYPES | DISCRIMINATOR_TAGS, FIELD_TYPES | Writes the values of the enum members that tag a variant, where the output's Literal holds no member. Runs when: an output whose Literal holds no enum member (msgspec). After `tag_fields_of_tagged_bases`: the tags read a member literal as no literal until the structs are tagged. After `flatten_narrowed_inherited_fields`: writes the values of the tags that models copy from their bases with the other fields. |
@@ -866,6 +867,7 @@ Provisional reads, from the explicit edges:
 - `type_dict_keys_by_root_types` reads FIELD_TYPES before `type_users_of_dropped_root_models_by_any` writes it: reads the dict keys that root types typed.
 - `fix_constructor_field_ordering_early` reads BACKEND_CONFIG, FIELD_TYPES before `type_users_of_dropped_root_models_by_any` writes it: the constructor order reads no type it writes.
 - `settle_discriminated_unions` reads FIELD_TYPES before `type_users_of_dropped_root_models_by_any` writes it: both retype once every module is processed.
+- `write_rule_aliases_as_classes` reads MODEL_KIND before `write_plain_aliases_for_recursive_models` writes it: reads the aliases that stay aliases once those with rules are classes.
 - `tag_fields_of_tagged_bases` reads BASES, FIELD_SET, MODULE_IMPORTS before `flatten_narrowed_inherited_fields` writes it: both make models of any module declare the fields of their bases and import what those fields name.
 - `flatten_narrowed_inherited_fields` reads FIELD_TYPES before `write_enum_member_tags_as_values` writes it: writes the values of the tags that models copy from their bases with the other fields.
 - `tag_fields_of_tagged_bases` reads MODULE_IMPORTS before `import_removed_reuse_canonicals` writes it: repairs the imports of every module once the fields reused structs copy from their bases import theirs.

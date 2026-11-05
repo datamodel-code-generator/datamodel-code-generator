@@ -431,6 +431,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         nesting; without it each path that reaches the place
                         gets a model of its own (N(N-1)/2 site models for a
                         chain of N definitions), as in 0.89.0.
+  --use-plain-alias-for-recursive-models, --no-use-plain-alias-for-recursive-models
+                        Pydantic output only: write a type alias whose whole
+                        value is a model that names itself as `Alias:
+                        TypeAlias = Node`, which Pydantic builds for every
+                        model that uses it; without it the alias is
+                        `TypeAliasType("Alias", Node)` (or `type Alias =
+                        Node`) as in 0.89.0, which Pydantic 2 refuses once two
+                        models use it. The alias then has no entry of its own
+                        in `model_json_schema()` `$defs`
   --use-root-model-type-alias
                         Use type alias format for RootModel (e.g., Foo =
                         RootModel[Bar]) instead of class inheritance (Pydantic

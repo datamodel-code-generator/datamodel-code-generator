@@ -1352,6 +1352,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.skip_root_model = config.skip_root_model
         self.use_root_model_sequence_interface = config.use_root_model_sequence_interface
         self.use_type_alias = config.use_type_alias
+        self.use_plain_alias_for_recursive_models = config.use_plain_alias_for_recursive_models
         self.capitalise_enum_members = config.capitalise_enum_members
         self.keep_model_order = config.keep_model_order
         self.order_constructor_fields_by_final_names = (
