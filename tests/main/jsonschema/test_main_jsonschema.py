@@ -5721,27 +5721,31 @@ def test_json_pointer_decoding_api_and_cli(output_file: Path, strict_refs: bool,
         )
 
 
-@pytest.mark.cli_doc(
-    options=["--read-escaped-ref-pointers"],
-    option_description="""Read the escapes of a `$ref` JSON pointer as the characters they encode.
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="released"),
+        pytest.param(
+            ["--read-escaped-ref-pointers"],
+            id="read",
+            marks=pytest.mark.cli_doc(
+                options=["--read-escaped-ref-pointers"],
+                option_description="""Read the escapes of a `$ref` JSON pointer as the characters they encode.
 
 A pointer writes `/` in a name as `~1`, `~` as `~0`, and, in a URI fragment, any other character percent-encoded
 (`%20` for a space). Without this option a reference keeps the escaped text as the key of its target, so the definition
 it names, keyed by its name, gets a copy named after the escaped text (`Line20Item` beside `LineItem`, `Tax1rate`
 beside `TaxRate`), which the field takes. With it every spelling of a pointer names the one model of its target, keyed
 as the `api` scope keys it; a model a reference adds is named after the decoded name, and a `--model-name-map` key that
-names a path matches it in any spelling. A `/` written unescaped inside a name is a separator then, as JSON Pointer
-reads it, so such a pointer warns as a dangling reference, unless the name holds `://`, which is still read whole.""",
-    input_schema="jsonschema/escaped_ref_pointers.json",
-    cli_args=["--read-escaped-ref-pointers"],
-    golden_output="main/jsonschema/read_escaped_ref_pointers.py",
-    comparison_output="main/jsonschema/read_escaped_ref_pointers~main_read_escaped_ref_pointers[released].py",
-)
-@pytest.mark.parametrize(
-    "extra_args",
-    [
-        pytest.param([], id="released"),
-        pytest.param(["--read-escaped-ref-pointers"], id="read"),
+names a path matches it in any spelling, in the `api` scope too, where the first of the keys that spell one path renames
+it. A `/` written unescaped inside a name is a separator then, as JSON Pointer reads it, also after a `~1`, so such a
+pointer warns as a dangling reference, unless the name holds `://`, which is still read whole.""",
+                input_schema="jsonschema/escaped_ref_pointers.json",
+                cli_args=["--read-escaped-ref-pointers"],
+                golden_output="main/jsonschema/read_escaped_ref_pointers.py",
+                comparison_output="main/jsonschema/read_escaped_ref_pointers~main_read_escaped_ref_pointers[released].py",
+            ),
+        ),
         pytest.param(
             [
                 "--read-escaped-ref-pointers",
@@ -5823,6 +5827,79 @@ def test_main_read_escaped_ref_pointers_unescaped_slash(tmp_path: Path) -> None:
             extra_args=["--read-escaped-ref-pointers", "--disable-timestamp", "--target-python-version", "3.10"],
             force_exec_validation=True,
         )
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "warned", "not_warned"),
+    [
+        pytest.param([], (), ("Unresolved local $ref",), id="released"),
+        pytest.param(
+            ["--read-escaped-ref-pointers"],
+            (
+                "Unresolved local $ref '#/$defs/a~1b/c' in escaped_ref_pointer_split_name.json",
+                "Unresolved local $ref '#/$defs/a/b/c' in escaped_ref_pointer_split_name.json",
+                "'#/$defs/a~1b~1c' names the key the pointer splits",
+            ),
+            ("Unresolved local $ref '#/$defs/a~1b~1c'",),
+            id="read-escaped",
+        ),
+    ],
+)
+def test_main_read_escaped_ref_pointers_split_name(
+    output_file: Path, extra_args: list[str], warned: tuple[str, ...], not_warned: tuple[str, ...]
+) -> None:
+    """Read a `/` written unescaped after a `~1` as a separator under --read-escaped-ref-pointers.
+
+    Without the option `#/$defs/a~1b/c` and `#/$defs/a/b/c` find the definition `a/b/c` by joining the parts. With it
+    each names a member of `$defs` the document lacks, so each warns as a dangling reference that says how to write the
+    key, and only `#/$defs/a~1b~1c` names the definition.
+    """
+    with warnings.catch_warnings(record=True) as warning_records:
+        warnings.simplefilter("always", DanglingRefWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "escaped_ref_pointer_split_name.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        )
+    assert_warnings_contain(warning_records, *warned)
+    assert_warnings_do_not_contain(warning_records, *not_warned)
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="escaped_ref_pointer_split_name",
+        model_name="Holder",
+        valid_json='{"escaped": {"v": 1}}',
+        invalid_json='{"escaped": {"v": "one"}}',
+        expected_error_type="int_parsing",
+    )
+
+
+def test_main_read_escaped_ref_pointers_name_map_spellings(output_file: Path) -> None:
+    """Match every `--model-name-map` key that spells one path under --read-escaped-ref-pointers.
+
+    `#/$defs/Line%20Item` and `#/$defs/Line Item` name the one model of `Line Item`: both count as found, so neither is
+    reported as matching no model, and the first in the map renames it. A key that names a class, `NoteText`, matches
+    by the name as without the option.
+    """
+    with warnings.catch_warnings(record=True) as warning_records:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "escaped_ref_pointers.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            extra_args=[
+                *("--output-model-type", "pydantic_v2.BaseModel", "--read-escaped-ref-pointers"),
+                "--model-name-map",
+                (
+                    '{"#/$defs/Line%20Item": "LineEntry", "#/$defs/Line Item": "LineRow", "#/$defs/tax~1rate": "Rate", '
+                    '"NoteText": "Note"}'
+                ),
+                *("--formatters", "builtin", "--disable-timestamp"),
+            ],
+        )
+    assert_warnings_do_not_contain(warning_records, "matched no generated model")
 
 
 def test_main_read_escaped_ref_pointers_hash(output_file: Path) -> None:

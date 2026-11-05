@@ -83,6 +83,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import InputFileType
     from datamodel_code_generator.format import PythonVersion
     from datamodel_code_generator.parser._schema_graph import RefReading, ResourceRegistry, SchemaGraphBuilder
+    from datamodel_code_generator.parser._schema_reading import SlashNames
     from datamodel_code_generator.parser.base import Source
     from datamodel_code_generator.parser.schema_version import DocumentDialect
     from datamodel_code_generator.reference import ModelResolver
@@ -359,6 +360,10 @@ class SchemaDocumentsHost(Protocol):
     @property
     def _reads_schema_version_per_document(self) -> bool:
         """Whether --read-schema-version-per-document reads each schema in the version of its own document."""
+
+    @property
+    def _pointer_slash_names(self) -> SlashNames:
+        """How a JSON pointer reads a ``/`` unescaped inside a name (``SlashNames``)."""
 
     def _schema_features_for(self, root: dict[str, YamlValue]) -> JsonSchemaFeatures:
         """Get the schema features of a root document based on config or its detected version."""
@@ -709,7 +714,13 @@ def resolve_lenient_resource_ref(parser: SchemaDocumentsHost, reference: str, ba
 def lenient_pointer_exists(parser: SchemaDocumentsHost, document: str, reference: str) -> bool:
     """Return whether a local JSON pointer reference names a location in a lenient document."""
     fragment = reference.partition("#")[2]
-    return _fragment_value(parser._lenient_documents[document], fragment, or_missing=True) is not _MISSING_JSON_POINTER  # noqa: SLF001
+    value = _fragment_value(
+        parser._lenient_documents[document],  # noqa: SLF001
+        fragment,
+        or_missing=True,
+        names=parser._pointer_slash_names,  # noqa: SLF001
+    )
+    return value is not _MISSING_JSON_POINTER
 
 
 def loads_document(parser: SchemaDocumentsHost, absolute: str) -> bool:
@@ -1049,7 +1060,7 @@ def reserved_targets(
     graph = cast("SchemaGraphBuilder", parser._schema_graph)  # noqa: SLF001
     for key in sorted(parser.reserved_refs.get(tuple(path_parts)) or ()):
         if not loaded(key):
-            value = _fragment_value(tree, key.split("#", 1)[-1], or_missing=True)
+            value = _fragment_value(tree, key.split("#", 1)[-1], or_missing=True, names=parser._pointer_slash_names)  # noqa: SLF001
             yield ReservedTarget(document=document, key=key, node=graph.node(value))
 
 

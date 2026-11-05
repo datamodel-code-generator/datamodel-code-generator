@@ -75,6 +75,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator.parser._intersection import KeywordIntersection
     from datamodel_code_generator.parser._schema_graph import ResourceRegistry
+    from datamodel_code_generator.parser._schema_reading import SlashNames
     from datamodel_code_generator.types import DataType
 
 __all__ = [
@@ -287,6 +288,10 @@ class SchemaRefsHost(Protocol):
     @property
     def _reads_dynamic_anchors_in_document_order(self) -> bool:
         """Whether --read-dynamic-anchors-in-document-order resolves a $dynamicRef from its document as loaded."""
+
+    @property
+    def _pointer_slash_names(self) -> SlashNames:
+        """How a JSON pointer reads a ``/`` unescaped inside a name (``SlashNames``)."""
 
     @property
     def generate_schema_validators(self) -> bool:
@@ -566,7 +571,8 @@ def ref_file_document(parser: SchemaRefsHost, file_part: str, role: str | None =
 def read_ref_value(parser: SchemaRefsHost, resolved_ref: str) -> dict[str, YamlValue] | YamlValue:
     """Return the value of a loaded document at a reference key, with the references it holds as a schema."""
     file_part, _, fragment = resolved_ref.partition("#")
-    return parser._read_as_schema(_fragment_value(ref_file_document(parser, file_part), fragment))  # noqa: SLF001
+    value = _fragment_value(ref_file_document(parser, file_part), fragment, names=parser._pointer_slash_names)  # noqa: SLF001
+    return parser._read_as_schema(value)  # noqa: SLF001
 
 
 def read_as_schema(parser: SchemaRefsHost, raw: YamlValue) -> YamlValue:
@@ -589,7 +595,9 @@ def ref_reading(parser: SchemaRefsHost, root: Literal["root", "object"]) -> RefR
 def ref_schema_exists(parser: SchemaRefsHost, resolved_ref: str) -> bool:
     """Return whether a resolved JSON pointer identifies a source schema."""
     file_part, _, fragment = resolved_ref.partition("#")
-    return _fragment_value(ref_file_document(parser, file_part), fragment, or_missing=True) is not _MISSING_JSON_POINTER
+    document = ref_file_document(parser, file_part)
+    names = parser._pointer_slash_names  # noqa: SLF001
+    return _fragment_value(document, fragment, or_missing=True, names=names) is not _MISSING_JSON_POINTER
 
 
 def load_ref_schema_object(parser: SchemaRefsHost, ref: str) -> JsonSchemaObject:
@@ -758,7 +766,10 @@ def enclosing_unanchored_resource_ref(parser: SchemaRefsHost) -> str | None:
     ):
         return None
     raw = cached[1]
-    return _unanchored_resource_ref(raw, split_json_pointer(raw, parser._dynamic_scope_pointer))  # noqa: SLF001
+    return _unanchored_resource_ref(
+        raw,
+        split_json_pointer(raw, parser._dynamic_scope_pointer, names=parser._pointer_slash_names),  # noqa: SLF001
+    )
 
 
 def resolve_recursive_ref(parser: SchemaRefsHost, item: JsonSchemaObject, path: list[str]) -> str | None:
@@ -908,7 +919,7 @@ def dynamic_ref_edges(parser: SchemaRefsHost, resolved_ref: str) -> _DynamicEdge
         return parser._dynamic_ref_graph[node]  # noqa: SLF001
     file_part, _, fragment = resolved_ref.partition("#")
     document, raw = parser._prepared_ref_document(file_part)  # noqa: SLF001
-    schema = _fragment_value(raw, fragment, or_missing=True)
+    schema = _fragment_value(raw, fragment, or_missing=True, names=parser._pointer_slash_names)  # noqa: SLF001
     located = parser._graph.node(schema)  # noqa: SLF001
     node = parser._dynamic_ref_nodes[resolved_ref] = resolved_ref if located is None else located  # noqa: SLF001
     anchors: set[str] = set()
@@ -1153,7 +1164,8 @@ def parse_dynamic_specialization(parser: SchemaRefsHost, specialization: _Dynami
     """Parse a referenced schema again under the $dynamicAnchor bindings of its dynamic scope."""
     file_part, _, fragment = specialization.target.partition("#")
     with parser._ref_document_context(file_part) as (_, raw):  # noqa: SLF001
-        obj = parser._validate_schema_object(_fragment_value(raw, fragment), list(specialization.path))  # noqa: SLF001
+        value = _fragment_value(raw, fragment, names=parser._pointer_slash_names)  # noqa: SLF001
+        obj = parser._validate_schema_object(value, list(specialization.path))  # noqa: SLF001
         with parser._dynamic_scope_context(specialization.path, specialization.bindings, fragment):  # noqa: SLF001
             parser._parse_schema_obj(specialization.reference.name, obj, list(specialization.path))  # noqa: SLF001
 
@@ -1386,7 +1398,7 @@ def recursive_ref_target(parser: SchemaRefsHost, defining_ref: str, path: tuple[
     """
     file_part, _, pointer = defining_ref.partition("#")
     _, document = parser._prepared_ref_document(file_part)  # noqa: SLF001
-    parts = [*split_json_pointer(document, pointer), *map(str, path)]
+    parts = [*split_json_pointer(document, pointer, names=parser._pointer_slash_names), *map(str, path)]  # noqa: SLF001
     if (target := _unanchored_resource_ref(document, parts)) is None:
         anchors = document_recursive_anchors(parser, document, SchemaLocation(file_part, ()) if file_part else None)
         current_ref = _pointer_ref(parts)

@@ -15687,6 +15687,45 @@ def test_main_openapi_read_escaped_ref_pointers(output_file: Path, extra_args: l
     )
 
 
+@pytest.mark.parametrize(
+    ("extra_args", "warned", "not_warned"),
+    [
+        pytest.param(
+            [],
+            ("--model-name-map: 1 key matched no generated model: '#/components/schemas/Line Item'",),
+            (),
+            id="released",
+        ),
+        pytest.param(["--read-escaped-ref-pointers"], (), ("matched no generated model",), id="read"),
+    ],
+)
+def test_main_openapi_api_scope_name_map_spellings(
+    output_file: Path, extra_args: list[str], warned: tuple[str, ...], not_warned: tuple[str, ...]
+) -> None:
+    """Match a `--model-name-map` path key in any spelling in the api scope under --read-escaped-ref-pointers.
+
+    The api scope keys `Line Item` as `#/components/schemas/Line%20Item`. Without the option the key written
+    `#/components/schemas/Line Item` matches no model, as in 0.89.0; with it the key names the component in either
+    spelling and renames it.
+    """
+    with warnings.catch_warnings(record=True) as warning_records:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "escaped_ref_pointers.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                *("--output-model-type", "pydantic_v2.BaseModel", "--openapi-scopes", "schemas", "api"),
+                *extra_args,
+                "--model-name-map",
+                '{"#/components/schemas/Line Item": "LineEntry", "#/components/schemas/tax~1rate": "Rate"}',
+                *("--formatters", "builtin", "--disable-timestamp"),
+            ],
+        )
+    assert_warnings_contain(warning_records, *warned)
+    assert_warnings_do_not_contain(warning_records, *not_warned)
+
+
 def test_main_openapi_allof_array_ref_no_duplicate_model(output_file: Path) -> None:
     """Test allOf with array property referencing another schema (#2959).
 

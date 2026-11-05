@@ -688,6 +688,9 @@ request-body	main/openapi/main_openapi/anchor_refs_in_object_document_loaded_by_
 	main/openapi/main_openapi/anchor_refs_in_referenced_object_documents.py
 [test_main_openapi_api_scope_external_boolean_schema]
 	main/openapi/openapi_api_scope_external_boolean_schema.py
+[test_main_openapi_api_scope_name_map_spellings]
+read	main/openapi/main_openapi/api_scope_name_map_spellings[read].py
+released	main/openapi/main_openapi/api_scope_name_map_spellings[released].py
 [test_main_openapi_api_scope_parameter_type_aliases]
 dataclass.py-extra_args11-api-scope	main/openapi/api_scope_parameter_type_aliases/dataclass.py
 dataclass.py-extra_args11-use-type-alias	main/openapi/api_scope_parameter_type_aliases/dataclass.py

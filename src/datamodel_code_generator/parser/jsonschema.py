@@ -454,6 +454,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._types import JSONSchemaParserConfigDict
     from datamodel_code_generator.config import JSONSchemaParserConfig
     from datamodel_code_generator.parser._rw_split import _Site
+    from datamodel_code_generator.parser._schema_reading import SlashNames
     from datamodel_code_generator.parser.base import DocumentRoles
 
 JsonSchemaConstraintKey = Literal[
@@ -1286,6 +1287,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _reads_dynamic_anchors_in_document_order(self) -> bool:
         """Whether --read-dynamic-anchors-in-document-order resolves a $dynamicRef from its document as loaded."""
         return self.config.read_dynamic_anchors_in_document_order
+
+    @property
+    def _pointer_slash_names(self) -> SlashNames:
+        """How a JSON pointer reads a ``/`` unescaped inside a name: as a separator under --read-escaped-ref-pointers.
+
+        Row ``uri`` joins the parts only into a name that holds ``://``; without the option, row ``joined``, into any
+        key the object holds (``SlashNames``).
+        """
+        return "uri" if self.config.read_escaped_ref_pointers else "joined"
 
     @cached_property
     def _reads_schema_version_per_document(self) -> bool:
@@ -7708,7 +7718,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             object_paths: list[str] | None = None
             reference_paths: list[str] | None = None
             if object_path:
-                object_paths, reference_paths = _split_json_pointer(ref_body, object_path)
+                object_paths, reference_paths = _split_json_pointer(
+                    ref_body, object_path, names=self._pointer_slash_names
+                )
             self._parse_file(
                 ref_body,
                 self.model_resolver.add_ref(ref, resolved=True).name,
@@ -8609,7 +8621,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def parse_json_pointer(self, raw: dict[str, YamlValue], ref: str, path_parts: list[str]) -> None:
         """Parse a JSON pointer reference into a model."""
         path = ref.split("#", 1)[-1]
-        object_paths, reference_paths = _split_json_pointer(raw, path)
+        object_paths, reference_paths = _split_json_pointer(raw, path, names=self._pointer_slash_names)
         if not object_paths:  # pragma: no cover
             reference = self.model_resolver.add_ref(ref)
             self.parse_obj(reference.name, self._validate_schema_object(raw, [ref]), [ref])
@@ -8837,7 +8849,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             for target in self._reserved_targets(path_parts, raw, self._reserved_ref_settled):
                 reserved_path = target["key"]
                 reference = self.model_resolver.references[reserved_path]
-                object_paths, reference_paths = _split_json_pointer(raw, reserved_path.split("#", 1)[-1])
+                object_paths, reference_paths = _split_json_pointer(
+                    raw, reserved_path.split("#", 1)[-1], names=self._pointer_slash_names
+                )
                 if not object_paths:
                     self.parse_obj(reference.name, self._validate_schema_object(raw, [reserved_path]), [reserved_path])
                     continue
