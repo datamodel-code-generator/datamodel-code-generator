@@ -1,0 +1,46 @@
+{
+  "containers": [
+    "list",
+    2
+  ],
+  "sequences": [
+    "list",
+    2
+  ],
+  "queues": [
+    "list",
+    1
+  ],
+  "anything": [
+    "list",
+    2
+  ],
+  "measured": [
+    "list",
+    2
+  ],
+  "tagged": [
+    "set",
+    2
+  ],
+  "scalars": [
+    "set",
+    2
+  ],
+  "pairs": [
+    "set",
+    2
+  ],
+  "frozen": [
+    "set",
+    2
+  ],
+  "letters": [
+    "set",
+    2
+  ],
+  "dates": [
+    "set",
+    2
+  ]
+}

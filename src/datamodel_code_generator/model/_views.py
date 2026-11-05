@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
+    from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator.model._decisions.hashability import SetItemHash
 
 __all__ = ["DataTypeView", "FieldView", "ModelForm", "ModelView", "ReferenceView"]
@@ -30,7 +31,7 @@ class ReferenceView(Protocol):
     """The reference of a model: which model a type, a base or a reuse names."""
 
 
-class DataTypeView(Protocol):
+class DataTypeView(Protocol):  # noqa: PLR0904
     """A data type as the decision phase reads it."""
 
     @property
@@ -92,6 +93,10 @@ class DataTypeView(Protocol):
     @property
     def is_custom_type(self) -> bool:
         """Whether the type is a custom type the schema names."""
+
+    @property
+    def python_type(self) -> BoundPythonType | None:
+        """The Python type annotation that types it (``x-python-type``), with the imports that bind its names."""
 
     @property
     def literals(self) -> Sequence[bool | int | str]:

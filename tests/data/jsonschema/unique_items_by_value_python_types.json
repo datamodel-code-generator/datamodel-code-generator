@@ -1,0 +1,17 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "containers": {"type": "array", "uniqueItems": true, "items": {"x-python-type": "list[int] | dict[str, int]"}},
+    "sequences": {"type": "array", "uniqueItems": true, "items": {"x-python-type": "Optional[Sequence[int]]"}},
+    "queues": {"type": "array", "uniqueItems": true, "items": {"x-python-type": "collections.deque[int]"}},
+    "anything": {"type": "array", "uniqueItems": true, "items": {"x-python-type": "int | Any"}},
+    "measured": {"type": "array", "uniqueItems": true, "items": {"x-python-type": "int | Annotated[list[int], 1]"}},
+    "tagged": {"type": "array", "uniqueItems": true, "items": {"x-python-type": "Annotated[int, 1] | str"}},
+    "scalars": {"type": "array", "uniqueItems": true, "items": {"x-python-type": "int | str"}},
+    "pairs": {"type": "array", "uniqueItems": true, "items": {"x-python-type": "int | tuple[int, ...]"}},
+    "frozen": {"type": "array", "uniqueItems": true, "items": {"x-python-type": "int | frozenset[str]"}},
+    "letters": {"type": "array", "uniqueItems": true, "items": {"x-python-type": "Literal['a'] | int"}},
+    "dates": {"type": "array", "uniqueItems": true, "items": {"x-python-type": "datetime.date | None"}}
+  }
+}
