@@ -435,12 +435,10 @@ def normalize_external_ref(parser: SchemaDocumentsHost, ref: str) -> str:
         return ref
 
     ref_body = parser._get_ref_body(relative_path)  # noqa: SLF001
-    if parser.config.read_dynamic_anchors_in_document_order and (
-        location := duplicate_name_location(
-            parser,
-            document := parser._schema_resource_document([relative_path]),  # noqa: SLF001
-            parser._schema_resource_registry.plain_name_uri(document, "", f"#{object_path}"),  # noqa: SLF001
-        )
+    document = parser._schema_resource_document([relative_path])  # noqa: SLF001
+    if location := duplicate_name_location(
+        parser,
+        parser._schema_resource_registry.plain_name_uri(document, "", f"#{object_path}"),  # noqa: SLF001
     ):
         return keep_resolved_ref(ref, f"{relative_path}#{location.partition('#')[2]}")
     if (anchor_pointer := _find_json_schema_anchor_pointer(ref_body, object_path)) is not None:
@@ -615,28 +613,35 @@ def plain_name_ref(parser: SchemaDocumentsHost, ref: str, pointer: str) -> str:
     document = parser._schema_resource_document(list(parser.model_resolver.current_root))  # noqa: SLF001
     registry = parser._schema_resource_registry  # noqa: SLF001
     uri = registry.plain_name_uri(document, pointer, ref)
-    if (location := duplicate_name_location(parser, document, uri)) is None and (
+    if (location := duplicate_name_location(parser, uri)) is None and (
         parser.model_resolver.registered_id(ref) is not None or (location := registry.locations.get(uri)) is None
     ):
         return ref
     return keep_resolved_ref(ref, _document_location(location, document))
 
 
-def note_plain_name(parser: SchemaDocumentsHost, document: str, pointer: str, ref: str) -> None:
-    """Note a plain-name fragment written at ``pointer`` of a registered document (``duplicate_name_location``)."""
-    if _is_plain_name_fragment(ref):
-        uri = parser._schema_resource_registry.plain_name_uri(document, pointer, ref)  # noqa: SLF001
-        duplicate_name_location(parser, document, uri)
+def note_plain_name(parser: SchemaDocumentsHost, document: str, pointer: str, ref: str) -> str | None:
+    """Note a plain-name fragment written at ``pointer`` of a registered document (``duplicate_name_location``).
+
+    Return the first declaration of a name several schemas declare, under --read-dynamic-anchors-in-document-order.
+    """
+    if not _is_plain_name_fragment(ref):
+        return None
+    return duplicate_name_location(parser, parser._schema_resource_registry.plain_name_uri(document, pointer, ref))  # noqa: SLF001
 
 
-def duplicate_name_location(parser: SchemaDocumentsHost, document: str, uri: str) -> str | None:
+def duplicate_name_location(parser: SchemaDocumentsHost, uri: str) -> str | None:
     """Return the first declaration of a plain name several schemas of a document declare, under the option.
 
-    JSON Schema leaves a reference to such a name undefined (2020-12 Core 8.2.2 and 9.1.2): it warns once the schemas
-    are parsed. Under --read-dynamic-anchors-in-document-order it names the first declaration in document order;
-    without it, and for a name only one schema declares, the reader resolves it as before (None).
+    The document is the one that declares the name, where the registry locates its URI, whichever document the
+    reference is in. JSON Schema leaves a reference to such a name undefined (2020-12 Core 8.2.2 and 9.1.2): it warns
+    once the schemas are parsed. Under --read-dynamic-anchors-in-document-order it names the first declaration in
+    document order; without it, and for a name only one schema declares, the reader resolves it as before (None).
     """
-    if (locations := parser._schema_resource_registry.duplicate_names.get(document, {}).get(uri)) is None:  # noqa: SLF001
+    registry = parser._schema_resource_registry  # noqa: SLF001
+    if (declared := registry.locations.get(uri)) is None or (
+        locations := registry.duplicate_names.get(document := declared.partition("#")[0], {}).get(uri)
+    ) is None:
         return None
     name = uri.partition("#")[2]
     source = redact_url("/".join(parser._schema_resource_path_parts[document])) or parser._source_path_for_diagnostics()  # noqa: SLF001
@@ -659,8 +664,7 @@ def resolve_schema_resource_ref(
     absolute = urljoin(base, reference)
     resource, _, fragment = absolute.partition("#")
     if (
-        location := duplicate_name_location(parser, document, absolute)
-        or parser._schema_resource_registry.location(absolute)  # noqa: SLF001
+        location := duplicate_name_location(parser, absolute) or parser._schema_resource_registry.location(absolute)  # noqa: SLF001
     ) is not None:
         return _document_location(location, document)
     if (
@@ -685,7 +689,7 @@ def resolve_lenient_resource_ref(parser: SchemaDocumentsHost, reference: str, ba
     if _is_plain_name_fragment(reference):
         absolute = urljoin(base, reference)
         locations = parser._schema_resource_locations  # noqa: SLF001
-        location = duplicate_name_location(parser, document, absolute) or locations.get(absolute)
+        location = duplicate_name_location(parser, absolute) or locations.get(absolute)
         return reference if location is None else _document_location(location, document)
     if (location := parser._schema_resource_registry.location(urljoin(base, reference))) is None:  # noqa: SLF001
         return reference

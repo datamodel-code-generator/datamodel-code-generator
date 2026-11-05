@@ -1268,6 +1268,8 @@ tree-type-alias	main/openapi/dot_notation_collapse_reuse_models_tree//*.py
 	main/openapi/dot_notation_inheritance//*.py
 [test_main_openapi_dot_notation_root_package_inheritance]
 	main/openapi/dot_notation_root_package_inheritance//*.py
+[test_main_openapi_dynamic_anchor_of_held_document_in_document_order]
+	main/openapi/main_openapi/dynamic_anchor_of_held_document_in_document_order.py
 [test_main_openapi_dynamic_anchor_registered_after_its_reference]
 	main/openapi/main_openapi/dynamic_anchor_registered_after_its_reference.txt
 [test_main_openapi_dynamic_ref]
@@ -1278,6 +1280,9 @@ tree-type-alias	main/openapi/dot_notation_collapse_reuse_models_tree//*.py
 	main/openapi/dynamic_ref_external_generic.py
 [test_main_openapi_dynamic_ref_request_response]
 	main/openapi/main_openapi/dynamic_ref_request_response.py	= main/openapi/dynamic_ref.py
+[test_main_openapi_dynamic_ref_to_anchor_and_dynamic_anchor]
+read	main/openapi/main_openapi/dynamic_ref_to_anchor_and_dynamic_anchor[read].py
+released	main/openapi/main_openapi/dynamic_ref_to_anchor_and_dynamic_anchor[released].py
 [test_main_openapi_empty_dict_default]
 msgspec.Struct-msgspec_empty_dict_default.py	main/openapi/msgspec_empty_dict_default.py
 pydantic_v2.BaseModel-pydantic_v2_empty_dict_default.py	main/openapi/pydantic_v2_empty_dict_default.py

@@ -12267,6 +12267,73 @@ def test_main_openapi_read_dynamic_anchors_in_document_order(
     )
 
 
+@pytest.mark.parametrize(
+    ("extra_args", "invalid_json", "expected_error_type"),
+    [
+        pytest.param([], '{"dynamic": {"second": 2}}', "string_type", id="released"),
+        pytest.param(
+            ["--read-dynamic-anchors-in-document-order"], '{"dynamic": {"first": "one"}}', "int_parsing", id="read"
+        ),
+    ],
+)
+def test_main_openapi_dynamic_ref_to_anchor_and_dynamic_anchor(
+    output_file: Path, extra_args: list[str], invalid_json: str, expected_error_type: str
+) -> None:
+    """Resolve a `$dynamicRef` to a name an `$anchor` and a `$dynamicAnchor` declare as a `$ref` to it.
+
+    `First` declares `$anchor: T` and `Second` `$dynamicAnchor: T`, and nothing binds `T` in the dynamic scope of
+    `Holder`. Under the document-order option `#T` names `First`, the first declaration, from the `$dynamicRef` as from
+    the `$ref`; without it both name `Second`, as in 0.89.0.
+    """
+    with pytest.warns(SchemaResourceRefWarning, match=r"^The anchor 'T' is declared by more than one schema in "):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "dynamic_ref_anchor_and_dynamic_anchor.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                *("--output-model-type", "pydantic_v2.BaseModel"),
+                *extra_args,
+                *("--formatters", "builtin", "--disable-timestamp"),
+            ],
+        )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_dynamic_ref_to_anchor_and_dynamic_anchor",
+        model_name="Holder",
+        valid_json='{"dynamic": {"first": 1, "second": "a"}, "static": {"first": 1, "second": "a"}}',
+        invalid_json=invalid_json,
+        expected_error_type=expected_error_type,
+    )
+
+
+def test_main_openapi_dynamic_anchor_of_held_document_in_document_order(output_file: Path) -> None:
+    """Name the first `$dynamicAnchor` of a document as written, also in a document a reference holds as a parameter.
+
+    `parameter.yaml` is a Parameter Object, whose `schema` declares `$dynamicAnchor: T` before its component
+    `Component` does. The resources of the document are read with its component schemas first, but under the
+    document-order option the unbound `$dynamicRef` of `Holder` names the declaration written first, the `schema`.
+    """
+    with pytest.warns(SchemaResourceRefWarning, match=r"^The anchor 'T' is declared by more than one schema in "):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "dynamic_anchor_held_document" / "api.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                *("--output-model-type", "pydantic_v2.BaseModel", "--read-dynamic-anchors-in-document-order"),
+                *("--openapi-scopes", "schemas", "paths", "parameters"),
+                *("--formatters", "builtin", "--disable-timestamp"),
+            ],
+        )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_dynamic_anchor_of_held_document_in_document_order",
+        model_name="Holder",
+        valid_json='{"item": {"held": 1}}',
+        invalid_json='{"item": {"held": "one"}}',
+        expected_error_type="int_parsing",
+    )
+
+
 def test_main_openapi_all_of_request_body(output_file: Path) -> None:
     """A request body of the paths scope that is an `allOf` is parsed as the model of its parts."""
     run_main_and_assert(

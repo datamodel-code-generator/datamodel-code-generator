@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/defs.json",
+  "$defs": {
+    "First": {"$anchor": "T", "type": "object", "properties": {"first": {"type": "integer"}}, "required": ["first"]},
+    "Second": {"$anchor": "T", "type": "object", "properties": {"second": {"type": "string"}}, "required": ["second"]}
+  }
+}

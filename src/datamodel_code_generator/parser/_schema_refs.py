@@ -425,8 +425,11 @@ class SchemaRefsHost(Protocol):
     ) -> None:
         """Merge the constraints of ``items`` into ``base_dict``, intersecting them when ``intersect`` is set."""
 
-    def _note_plain_name(self, document: str, pointer: str, ref: str) -> None:
-        """Note a plain-name fragment written at ``pointer`` of a registered document, warning on a duplicate."""
+    def _note_plain_name(self, document: str, pointer: str, ref: str) -> str | None:
+        """Note a plain-name fragment written at ``pointer`` of a registered document, warning on a duplicate.
+
+        Return the first declaration of a name several schemas declare, under --read-dynamic-anchors-in-document-order.
+        """
 
     def _normalize_external_ref(self, ref: str) -> str:
         """Resolve an external anchor before falling back to legacy shorthand pointers."""
@@ -1179,7 +1182,8 @@ def dynamic_scope_target(parser: SchemaRefsHost, item: JsonSchemaObject, path: l
     `$recursiveAnchor` that encloses it, else `#` (``_resolve_recursive_ref``). A `$dynamicRef` names the
     `$dynamicAnchor` the dynamic scope binds its name to (``_bound_dynamic_anchor``), else the first
     `$dynamicAnchor` of its name in the document being parsed (``_resolve_dynamic_ref``; in document order under
-    --read-dynamic-anchors-in-document-order, ``document_dynamic_anchor``), else its target through its edge. In
+    --read-dynamic-anchors-in-document-order, ``document_dynamic_anchor``, where a name several schemas declare, an
+    `$anchor` among them, names the first declaration, as a `$ref` to it does), else its target through its edge. In
     code generation, the dynamic scope is the chain of schema resources that referenced the model being parsed;
     schemas reached under a different scope are parsed again for it.
     """
@@ -1187,11 +1191,11 @@ def dynamic_scope_target(parser: SchemaRefsHost, item: JsonSchemaObject, path: l
         return _DynamicTarget(parser._resolve_recursive_ref(item, path) or "#")  # noqa: SLF001
     if not (dynamic_ref := item.dynamicRef):
         return None
-    parser._note_plain_name(parser._current_dynamic_document(), parser._dynamic_scope_pointer, dynamic_ref)  # noqa: SLF001
+    first = parser._note_plain_name(parser._current_dynamic_document(), parser._dynamic_scope_pointer, dynamic_ref)  # noqa: SLF001
     if (location := bound_dynamic_anchor(parser, dynamic_ref)) is not None:
         return _DynamicTarget(location=location)
     if parser._reads_dynamic_anchors_in_document_order:  # noqa: SLF001
-        location = document_dynamic_anchor(parser, dynamic_ref)
+        location = first or document_dynamic_anchor(parser, dynamic_ref)
         return None if location is None else _DynamicTarget(location=location)
     if (anchor := resolve_dynamic_ref(parser, item)) is not None:
         return _DynamicTarget(anchor)

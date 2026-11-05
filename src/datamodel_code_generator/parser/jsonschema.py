@@ -7589,8 +7589,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return the reference a plain-name fragment of the document parsed now names, written at ``pointer``."""
         return _schema_documents.plain_name_ref(self, ref, pointer)
 
-    def _note_plain_name(self, document: str, pointer: str, ref: str) -> None:
-        """Note a plain-name fragment written at ``pointer`` of a registered document, warning on a duplicate."""
+    def _note_plain_name(self, document: str, pointer: str, ref: str) -> str | None:
+        """Note a plain-name fragment written at ``pointer`` of a registered document, warning on a duplicate.
+
+        Return the first declaration of a name several schemas declare, under --read-dynamic-anchors-in-document-order.
+        """
         return _schema_documents.note_plain_name(self, document, pointer, ref)
 
     def _resolve_local_ref_path(self, path: Path, ref: str) -> Path:

@@ -1799,6 +1799,38 @@ def test_main_jsonschema_external_anchor_declared_twice_in_document_order(output
 
 
 @pytest.mark.parametrize(
+    ("extra_args", "names"),
+    [
+        pytest.param([], "one", id="released"),
+        pytest.param(["--read-dynamic-anchors-in-document-order"], "the first", id="read"),
+    ],
+)
+def test_main_jsonschema_anchor_declared_twice_in_document_with_id(
+    tmp_path: Path, extra_args: list[str], names: str
+) -> None:
+    """Look up a name two schemas of another document declare in that document, from an embedded `$id` resource.
+
+    `https://example.com/defs.json#T` and `defs.json#T` are written in `Inner`, a resource of `root.json` that its
+    `$id` embeds, and name the `$anchor: T` that `First` and `Second` of `defs.json` both declare. Either way the
+    reference warns that the name is declared twice in `defs.json`; under the document-order option it names `First`,
+    the first declaration, where without it it names `Second`, as in 0.89.0.
+    """
+    with pytest.warns(SchemaResourceRefWarning) as warning_records:
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "external_anchor_declared_twice_by_id",
+            output_path=tmp_path / "model",
+            input_file_type="jsonschema",
+            extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+            force_exec_validation=True,
+        )
+    assert_warnings_contain(
+        warning_records,
+        "The anchor 'T' is declared by more than one schema in defs.json ('#/$defs/First', '#/$defs/Second'), so "
+        f"a reference to '#T' names {names} of them, which JSON Schema leaves undefined.",
+    )
+
+
+@pytest.mark.parametrize(
     ("input_name", "expected_file", "extra_args"),
     [
         pytest.param(
