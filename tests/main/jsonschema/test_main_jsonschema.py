@@ -5740,11 +5740,15 @@ def test_main_read_escaped_ref_pointers_unescaped_slash(tmp_path: Path) -> None:
     """Read a pointer that writes `/` unescaped inside a name as JSON Pointer does under --read-escaped-ref-pointers.
 
     The escaped `https:~1~1example.com~1schema.json` names the model of its definition. `#/definitions/user/created`
-    names no member, so it warns as a dangling reference; a pointer whose unescaped name holds `://` is still found
-    by the parts it is read in, as a model of its own at the pointer's key.
+    names no member, so it warns as a dangling reference that says how to write the key it splits; a pointer whose
+    unescaped name holds `://` is still found by the parts it is read in, as a model of its own at the pointer's key.
     """
     with pytest.warns(
-        DanglingRefWarning, match=r"^Unresolved local \$ref '#/definitions/user/created' in schema\.json"
+        DanglingRefWarning,
+        match=(
+            r"^Unresolved local \$ref '#/definitions/user/created' in schema\.json: JSON pointer was not found "
+            r"\(a '/' in a name is written '~1': '#/definitions/user~1created' names the key the pointer splits\)\. "
+        ),
     ):
         run_main_and_assert(
             input_path=JSON_SCHEMA_DATA_PATH / "external_ref_slash_key" / "schema.json",
@@ -5768,8 +5772,9 @@ def test_json_pointer_decoding_preserves_ordinary_references(output_file: Path) 
     )
 
 
-def test_main_json_pointer_through_scalar(output_file: Path) -> None:
-    """A pointer through a scalar, a null or a string names nothing, as a missing member does."""
+@pytest.mark.parametrize("extra_args", [[], ["--read-escaped-ref-pointers"]], ids=["released", "read-escaped"])
+def test_main_json_pointer_through_scalar(output_file: Path, extra_args: list[str]) -> None:
+    """A pointer through a scalar, a null or a string names nothing, as a missing member does, and splits no key."""
     with warnings.catch_warnings(record=True) as warning_records:
         warnings.simplefilter("always", DanglingRefWarning)
         run_main_and_assert(
@@ -5777,12 +5782,15 @@ def test_main_json_pointer_through_scalar(output_file: Path) -> None:
             output_path=output_file,
             input_file_type="jsonschema",
             assert_func=assert_file_content,
+            extra_args=extra_args,
         )
+    assert not [record for record in warning_records if "'~1'" in str(record.message)]
 
     assert_warnings_contain(warning_records, "#/x-ext/k/j", "#/x-ext/items/0/j", "#/x-ext/none/j", "#/x-ext/text/0")
 
 
-def test_main_json_pointer_empty_token(output_file: Path) -> None:
+@pytest.mark.parametrize("extra_args", [[], ["--read-escaped-ref-pointers"]], ids=["released", "read-escaped"])
+def test_main_json_pointer_empty_token(output_file: Path, extra_args: list[str]) -> None:
     """A pointer with an empty token names the member of the key `""`, or nothing, and never keeps the run looping."""
     with warnings.catch_warnings(record=True) as warning_records:
         warnings.simplefilter("always", DanglingRefWarning)
@@ -5791,6 +5799,7 @@ def test_main_json_pointer_empty_token(output_file: Path) -> None:
             output_path=output_file,
             input_file_type="jsonschema",
             assert_func=assert_file_content,
+            extra_args=extra_args,
         )
 
     assert_warnings_contain(warning_records, "#/definitions//k", "#/definitions//m")
