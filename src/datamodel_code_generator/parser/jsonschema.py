@@ -279,6 +279,7 @@ from datamodel_code_generator.parser._intersection import (
     warn_untaken_patterns,
 )
 from datamodel_code_generator.parser._intersection import json_values_equal as _json_literal_values_equal
+from datamodel_code_generator.parser._naming import composed_name
 from datamodel_code_generator.parser._null_facts import (
     NullFacts,
     NullMode,
@@ -4893,7 +4894,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             and merged_root.items.enum
         ):
             item_type = with_type_origin(
-                self._parse_all_of_root_value(f"{name}Item", merged_root.items, get_special_path("items", path)),
+                self._parse_all_of_root_value(
+                    composed_name(name, "item"), merged_root.items, get_special_path("items", path)
+                ),
                 merged_root.items.schema_location,
             )
             merged_root = merged_root.model_copy(update={"items": True})
@@ -5364,7 +5367,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return self.parse_item(name, value.schema, path, parent=value.parent)
         return JsonSchemaParser._parse_constrained_additional_properties_value_item(
             self,
-            constrained_name or (name if value.preserve_root_model else f"{name}AdditionalProperty"),
+            constrained_name or (name if value.preserve_root_model else composed_name(name, "additional-property")),
             value.schema,
             path,
             parent=parent,
@@ -6209,11 +6212,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             if type_ == "object" and (obj.propertyNames is not None or obj.patternProperties):
                 branch_schema = self._get_array_union_branch_schema(obj, type_)
                 branch_path = get_special_path("type-union-object", path)
+                object_name = composed_name(name, "object")
                 if obj.patternProperties:
-                    data_type = self.parse_item(f"{name}Object", branch_schema, branch_path)
+                    data_type = self.parse_item(object_name, branch_schema, branch_path)
                 else:
                     data_type = self._parse_root_type_with_context(
-                        f"{name}Object",
+                        object_name,
                         branch_schema,
                         branch_path,
                         data_model_root_type=self._nested_constrained_model_type,
@@ -6326,7 +6330,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         branch_path = get_special_path(f"array-union-{type_}", path)
         branch_name = self.model_resolver.add(
             branch_path,
-            f"{name}{type_.title()}",
+            composed_name(name, "type", word=type_),
             class_name=True,
         ).name
         return JsonSchemaParser._parse_root_type_with_context(
@@ -7313,7 +7317,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         else:
             enum_reference = self.model_resolver.add(
                 [*path, "Enum"],
-                f"{reference.name}Enum",
+                composed_name(reference.name, "enum"),
                 class_name=True,
                 singular_name=singular_name,
                 singular_name_suffix="Enum",

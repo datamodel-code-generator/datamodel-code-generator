@@ -47,6 +47,7 @@ from datamodel_code_generator._user_keys import ClassScope, class_key
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import OpenAPIAsDefinitions, OpenAPIVersion, VersionMode
 from datamodel_code_generator.parser import _union_tags
+from datamodel_code_generator.parser._naming import composed_name
 from datamodel_code_generator.parser._origins import with_type_origin
 from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row, SchemaSite
 from datamodel_code_generator.parser._schema_graph import keep_resolved_ref
@@ -1117,7 +1118,9 @@ class OpenAPIParser(JsonSchemaParser):
         """Parse response objects into data types by status code and content type."""
         data_types: defaultdict[str | int, dict[str, DataType]] = defaultdict(dict)
         for status_code, detail in responses.items():
-            response_name = f"{name}{str(status_code).capitalize()}" if self.use_status_code_in_response_name else name
+            response_name = (
+                composed_name(name, "status", word=str(status_code)) if self.use_status_code_in_response_name else name
+            )
 
             if isinstance(detail, ReferenceObject):
                 if not detail.ref:  # pragma: no cover
