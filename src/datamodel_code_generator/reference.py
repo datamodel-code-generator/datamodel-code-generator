@@ -1931,14 +1931,25 @@ class ModelResolver:  # noqa: PLR0904
         ``legacy-both-prefixes``: under both options the ``full-path`` prefix goes before the ``parent-prefixed`` one
         (#5666). A model without a parent reference keeps its name.
         """
-        parent_prefixed = self.parent_scoped_naming or self.naming_strategy == NamingStrategy.ParentPrefixed
-        full_path = self.naming_strategy in {NamingStrategy.FullPath, NamingStrategy.EnclosingModel}
-        if not (parent_prefixed or full_path) or not (parent_ref := self._find_parent_reference(path)):
+        if not self._prefixes_parents or not (parent_ref := self._find_parent_reference(path)):
             return name
-        if parent_prefixed:
-            name = f"{parent_ref.name}_{name}"
-        if full_path:
-            name = f"{parent_ref.name}{snake_to_upper_camel(name, target_python_version=self.target_python_version)}"
+        return self._prefixed_by(parent_ref.name, name)
+
+    @property
+    def _prefixes_parents(self) -> bool:
+        """Whether L1 prefixes a model with the name of its closest parent reference (``_parent_prefixed``)."""
+        return self.parent_scoped_naming or self.naming_strategy in {
+            NamingStrategy.ParentPrefixed,
+            NamingStrategy.FullPath,
+            NamingStrategy.EnclosingModel,
+        }
+
+    def _prefixed_by(self, parent_name: str, name: str) -> str:
+        """Return ``name`` with ``parent_name`` before it, as the rows of ``_parent_prefixed`` join them."""
+        if self.parent_scoped_naming or self.naming_strategy == NamingStrategy.ParentPrefixed:
+            name = f"{parent_name}_{name}"
+        if self.naming_strategy in {NamingStrategy.FullPath, NamingStrategy.EnclosingModel}:
+            name = f"{parent_name}{snake_to_upper_camel(name, target_python_version=self.target_python_version)}"
         return name
 
     @staticmethod

@@ -16,6 +16,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator.parser._naming import (
+    AllOfPart,
     Composed,
     NameClaim,
     NamingPlan,
@@ -103,7 +104,7 @@ def _claims(references: Sequence[Any], resolver: ModelResolver) -> list[NameClai
             continue
         owner = record.owner
         role: ClaimRole = "owned" if owner is not None else "definition" if record.definition else "root"
-        composed_from, word, position, local = None, "", 0, ""
+        composed_from, word, position, local, branches = None, "", 0, "", ()
         match record.claim_for(reference):
             case Composed() as claim:
                 role, composed_from, word = "composed", model_key_of(claim.base), claim.role
@@ -111,6 +112,9 @@ def _claims(references: Sequence[Any], resolver: ModelResolver) -> list[NameClai
                 role, position = "ordinal", claim.position
             case Tag() as claim:
                 role, local = "tagged", claim.text
+            case AllOfPart() as claim:
+                role = "allof-member" if claim.position else "allof-shared"
+                position, branches = claim.position, tuple(map(model_key_of, claim.branches))
         location = location_of(reference)
         request: NameRequest | None = reference.__dict__.get(NAME_REQUEST_KEY)
         module, dot, cls = reference.name.rpartition(".")
@@ -124,6 +128,7 @@ def _claims(references: Sequence[Any], resolver: ModelResolver) -> list[NameClai
                 word=word,
                 position=position,
                 local=local,
+                branches=branches,
                 document=documents.setdefault(None if location is None else location.document, len(documents)),
                 order=len(claims),
                 module=f"{module}{dot}",
@@ -185,6 +190,15 @@ class _ResolverNamer:
             target_python_version=self._resolver.target_python_version,
         )
         return self._class_name(claim, f"{owner}{local}", affixed=False)[1]
+
+    def camel(self, text: str) -> str:
+        return snake_to_upper_camel(text, target_python_version=self._resolver.target_python_version)
+
+    def prefixed_as_written(self, claim: NameClaim, owner: str) -> tuple[str, str] | None:
+        resolver = self._resolver
+        if not resolver._prefixes_parents or (request := self._requests.get(claim.key)) is None:  # noqa: SLF001
+            return None
+        return self._class_name(claim, resolver._prefixed_by(owner, request.original_name), affixed=True)  # noqa: SLF001
 
     def affixed(self, claim: NameClaim, cls: str) -> str:
         path = claim.path

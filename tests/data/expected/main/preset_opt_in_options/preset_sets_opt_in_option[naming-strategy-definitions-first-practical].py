@@ -71,40 +71,40 @@ class Charge(BaseModel):
     id: str | None = None
 
 
-class Event1(BaseModel):
+class Event1Base(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
     )
     created: str | None = None
 
 
-class Event2(BaseModel):
+class Event2Base(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
     )
     deleted: str | None = None
 
 
-class Event3(Holder):
+class EventBase(Holder):
     model_config = ConfigDict(
         populate_by_name=True,
     )
 
 
-class Event4(Event1, Event3):
+class Event1(Event1Base, EventBase):
     model_config = ConfigDict(
         populate_by_name=True,
     )
 
 
-class Event5(Event2, Event3):
+class Event2(Event2Base, EventBase):
     model_config = ConfigDict(
         populate_by_name=True,
     )
 
 
-class Event(RootModel[Event4 | Event5]):
-    root: Event4 | Event5
+class Event(RootModel[Event1 | Event2]):
+    root: Event1 | Event2
 
 
 class ApplicationFee(BaseModel):

@@ -1,0 +1,77 @@
+--name-allof-union-members-after-branches: test_name_allof_union_members_after_branches_beside_a_resolver_that_names_models.<locals>.NamingResolver overrides default_class_name_generator of ModelResolver, so the models keep the names it gives
+from __future__ import annotations
+
+from enum import Enum
+from typing import Optional, Union
+
+from pydantic import BaseModel, RootModel
+
+
+class Envelope(BaseModel):
+    id: str
+
+
+class Type(Enum):
+    created = 'created'
+
+
+class Event1(BaseModel):
+    type: Type
+    name: Optional[str] = None
+
+
+class Type1(Enum):
+    deleted = 'deleted'
+
+
+class Event2(BaseModel):
+    type: Type1
+    reason: Optional[str] = None
+
+
+class Event3(Envelope):
+    pass
+
+
+class Event4(Event1, Event3):
+    pass
+
+
+class Event5(Event2, Event3):
+    pass
+
+
+class Event(RootModel[Union[Event4, Event5]]):
+    root: Union[Event4, Event5]
+
+
+class State(Enum):
+    opened = 'opened'
+
+
+class Opened(BaseModel):
+    state: State
+
+
+class State1(Enum):
+    closed = 'closed'
+
+
+class Closed(BaseModel):
+    state: State1
+
+
+class Notice1(Envelope):
+    pass
+
+
+class Notice2(Opened, Notice1):
+    pass
+
+
+class Notice3(Closed, Notice1):
+    pass
+
+
+class Notice(RootModel[Union[Notice2, Notice3]]):
+    root: Union[Notice2, Notice3]

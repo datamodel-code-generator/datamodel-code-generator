@@ -2018,6 +2018,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "rename_submodules_hidden_by_classes",
         "use_schema_description",
         "use_title_as_name",
+        "name_allof_union_members_after_branches",
         "use_standard_primitive_types",
         "use_duplicate_name_suffix_for_every_collision",
         "name_converted_payloads_by_message",

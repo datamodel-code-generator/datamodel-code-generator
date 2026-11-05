@@ -37,6 +37,7 @@ _ResultT = TypeVar("_ResultT")
 
 __all__ = [
     "BUILD_RECORD_KEY",
+    "AllOfPart",
     "BuildFrame",
     "BuildRecord",
     "Claim",
@@ -128,7 +129,20 @@ class Tag:
     text: str
 
 
-Claim: TypeAlias = Composed | Ordinal | Tag
+@final
+@dataclass(frozen=True, slots=True, eq=False)
+class AllOfPart:
+    """The claim of a class an allOf builds for a oneOf or anyOf it holds: a union member, or the shared part.
+
+    A member has its ``position`` among the combinations of branches, from 1, and the ``branches`` (``Reference``) it
+    combines with the shared part; the shared part has position 0 and no branches.
+    """
+
+    position: int
+    branches: tuple[object, ...] = ()
+
+
+Claim: TypeAlias = Composed | Ordinal | Tag | AllOfPart
 """What the code that decides how a model is named claims for it, beside its owner and its own name."""
 
 
@@ -273,12 +287,15 @@ def build_record_of(reference: object) -> BuildRecord | None:
     return reference.__dict__.get(BUILD_RECORD_KEY)
 
 
-ClaimRole: TypeAlias = Literal["definition", "root", "owned", "composed", "ordinal", "tagged"]
+ClaimRole: TypeAlias = Literal[
+    "definition", "root", "owned", "composed", "ordinal", "tagged", "allof-member", "allof-shared"
+]
 """What a model is to the naming rules (``NameClaim.role``), read from its records once L1 has built every model.
 
 ``composed``: its name is composed from another model's (``Composed``); ``ordinal``: a union branch named as the
-union (``Ordinal``); ``tagged``: a union branch named after its tag (``Tag``); ``owned``: built by the builder of
-another model (``BuildRecord.owner``); ``definition``: built by
+union (``Ordinal``); ``tagged``: a union branch named after its tag (``Tag``); ``allof-member`` and ``allof-shared``:
+a union member and the shared part an allOf builds for a oneOf or anyOf it holds (``AllOfPart``); ``owned``: built by
+the builder of another model (``BuildRecord.owner``); ``definition``: built by
 no other model's builder from an entry of a definitions container of its document; ``root``: none of these, such as a
 document root or an operation model.
 """
@@ -305,6 +322,8 @@ class NameClaim:
     """The position of an ordinal claim (``Ordinal.position``), else 0."""
     local: str
     """The part of a tagged claim's name its tag gives (``Tag.text``), else ``""``."""
+    branches: tuple[ModelKey, ...]
+    """The branches an allOf member combines (``AllOfPart.branches``), else none."""
     document: int
     order: int
     module: str
@@ -342,15 +361,26 @@ class NamingRules:
     joined once with its own part (the name it asked for, its position as a union branch named as the union, or the
     word of a composed role), and a definition, a document root or an operation model takes its own name (#4855,
     #4845, #4826, #5666); a name another model takes first is numbered, with ``_`` where it ends in a digit.
+
+    ``allof_union_members`` (``--name-allof-union-members-after-branches``): the classes an allOf gives the branches
+    of a oneOf or anyOf it holds take the holder's name and the branch's part (its tag, the class of a ``$ref`` branch,
+    else its position), a branch-only base the class's name and ``Base``, and the shared part the holder's name and
+    ``Base`` (#4847); with ``definitions_first`` or alone it touches these classes only.
     """
 
     definitions_first: bool = False
     enclosing_model: bool = False
+    allof_union_members: bool = False
+
+    @property
+    def strategy(self) -> bool:
+        """Whether a ``--naming-strategy`` value plans the names."""
+        return self.definitions_first or self.enclosing_model
 
     @property
     def legacy(self) -> bool:
         """Whether no rule is on, so the plan names no model."""
-        return not (self.definitions_first or self.enclosing_model)
+        return not (self.strategy or self.allof_union_members)
 
 
 @final
@@ -426,6 +456,15 @@ class Namer(Protocol):
     def affixed(self, claim: NameClaim, cls: str) -> str:
         """Return ``cls`` with the class name affixes the model of ``claim`` takes."""
 
+    def camel(self, text: str) -> str:
+        """Return ``text`` in UpperCamelCase, as a full-path name joins a part."""
+
+    def prefixed_as_written(self, claim: NameClaim, owner: str) -> tuple[str, str] | None:
+        """Return the module and class L1 gives ``claim`` with ``owner`` as its parent's name, where L1 prefixes.
+
+        None where L1 prefixes no name or the claim asked for none.
+        """
+
 
 @final
 class _Allocation:
@@ -451,12 +490,15 @@ class _Allocation:
         return PlannedName(module, cls, base)
 
     def first_free(self, claim: NameClaim, base: str, module: str | None = None) -> str:
-        """Return the first free name of ``base`` numbered as the models are (``joined``, the duplicate suffix)."""
+        """Return the first free name of ``base`` numbered as the models are, with the duplicate suffix.
+
+        A base that ends in a digit is numbered with ``_`` (``StreamEvent1_1``), else joined (``Event1``).
+        """
         module = claim.module if module is None else module
         return first_free(
             base,
             lambda candidate: self.taken(module, candidate, claim.path),
-            "joined",
+            "underscore" if base[-1:].isdigit() else "joined",
             suffix=self._namer.suffix(claim.kind),
         )[0]
 
@@ -482,37 +524,116 @@ def _definitions_first(claims: Sequence[NameClaim]) -> dict[ModelKey, NameClaim]
     return touched
 
 
-def _closure(touched: Iterable[ModelKey], claims: Sequence[NameClaim], namer: Namer) -> dict[ModelKey, None]:
-    """Return ``touched`` and every claim composed from one of them, recursively, bases before what they compose.
+_Via: TypeAlias = tuple[Literal["composed", "prefixed"], ModelKey] | None
+"""How a claim of the closure is named from another one: composed from its base, prefixed with its owner's name."""
+_PREFIXED_ROLES: Final = frozenset({"owned", "tagged", "ordinal"})
+"""The roles whose name L1 prefixes with the name of the model above them, where it prefixes names."""
 
-    A claim is composed from its base where L1 named it so: its name is the one L1 composes from the base's name, or a
-    numbered one of it.
+
+def _closure(touched: Iterable[ModelKey], claims: Sequence[NameClaim], namer: Namer) -> dict[ModelKey, _Via]:
+    """Return ``touched`` and every claim named from one of them, recursively, before what is named from them.
+
+    A claim is named from another where L1 named it so: composed from its base, or prefixed with its owner's name
+    under ``full-path`` or ``parent-prefixed``; its name is the one L1 makes of the other's, or a numbered one of it.
+    Each claim maps to how it is named from the other one (``_Via``), a touched claim to None.
     """
     by_key = {claim.key: claim for claim in claims}
-    composed: dict[ModelKey, list[NameClaim]] = {}
+    children: dict[ModelKey, list[tuple[NameClaim, Literal["composed", "prefixed"]]]] = {}
     for claim in claims:
-        if claim.composed_from is not None and not claim.keyed:
-            composed.setdefault(claim.composed_from, []).append(claim)
-    closure = dict.fromkeys(touched)
+        if claim.keyed:
+            continue
+        if claim.composed_from is not None:
+            children.setdefault(claim.composed_from, []).append((claim, "composed"))
+        elif claim.owner is not None and claim.role in _PREFIXED_ROLES:
+            children.setdefault(claim.owner, []).append((claim, "prefixed"))
+    closure: dict[ModelKey, _Via] = dict.fromkeys(touched)
     pending = list(closure)
     while pending:
         base = by_key[pending.pop(0)]
-        for child in composed.get(base.key, ()):
-            module, cls = namer.composed(child, base.name)
+        for child, via in children.get(base.key, ()):
             if (
                 child.key not in closure
-                and module == child.module
-                and is_numbered(child.cls, cls, "joined", namer.suffix(child.kind))
+                and (name := _named_from(child, via, base.name, namer)) is not None
+                and name[0] == child.module
+                and is_numbered(child.cls, name[1], "joined", namer.suffix(child.kind))
             ):
-                closure[child.key] = None
+                closure[child.key] = via, base.key
                 pending.append(child.key)
     return closure
 
 
-def _enclosing_model(claims: Sequence[NameClaim], namer: Namer) -> dict[ModelKey, PlannedName]:
+def _named_from(
+    claim: NameClaim, via: Literal["composed", "prefixed"], name: str, namer: Namer
+) -> tuple[str, str] | None:
+    """Return the module and class L1 makes for ``claim`` from ``name``, its base's or its owner's (``_Via``)."""
+    return namer.composed(claim, name) if via == "composed" else namer.prefixed_as_written(claim, name)
+
+
+_AllOfParts: TypeAlias = dict[ModelKey, tuple[Literal["member", "base", "shared"], ModelKey]]
+"""The allOf classes the allOf rule names, in the order it names them, each with the claim it is named after."""
+
+
+def _allof_parts(claims: Sequence[NameClaim]) -> _AllOfParts:
+    """Return the classes an allOf builds for the oneOf or anyOf it holds: members, branch-only bases, shared parts.
+
+    A member and a shared part are named after their holder, the allOf's model and their owner; a branch-only base,
+    an inline branch the holder built that one member alone combines, after that member.
+    """
+    by_key = {claim.key: claim for claim in claims}
+    members = [claim for claim in claims if claim.role == "allof-member" and not claim.keyed and claim.owner]
+    uses = Counter(branch for member in members for branch in member.branches)
+    parts: _AllOfParts = {member.key: ("member", cast("ModelKey", member.owner)) for member in members}
+    for member in members:
+        for branch in member.branches:
+            if (
+                (claim := by_key.get(branch)) is not None
+                and not claim.keyed
+                and claim.owner == member.owner
+                and uses[branch] == 1
+                and branch not in parts
+            ):
+                parts[branch] = ("base", member.key)
+    parts.update(
+        (claim.key, ("shared", cast("ModelKey", claim.owner)))
+        for claim in claims
+        if claim.role == "allof-shared" and not claim.keyed and claim.owner
+    )
+    return parts
+
+
+def _allof_name(
+    claim: NameClaim,
+    part: tuple[Literal["member", "base", "shared"], ModelKey],
+    by_key: Mapping[ModelKey, NameClaim],
+    final: Callable[[NameClaim], tuple[str, str]],
+    namer: Namer,
+) -> tuple[str, str]:
+    """Return the module and the name, before numbering, the allOf rule gives the class of ``claim``.
+
+    A member takes its holder's name and, of each branch, its tag, the class of a branch its holder did not build (a
+    ``$ref`` target), else its own position; a base and a shared part take the name they are named after and ``Base``.
+    ``final`` gives the name a claim ends with, which the names compose from.
+    """
+    kind, of = part
+    module, name = final(by_key[of])
+    if kind != "member":
+        return module, f"{name}Base"
+    branch_parts = []
+    for branch in claim.branches:
+        branch_claim = by_key.get(branch, claim)
+        if branch_claim.owner != claim.owner:
+            branch_parts.append(final(branch_claim)[1])
+        else:
+            branch_parts.append(namer.camel(branch_claim.local) if branch_claim.role == "tagged" else "")
+    own = "".join(branch_parts) if branch_parts and all(branch_parts) else str(claim.position)
+    return module, f"{name}{own}"
+
+
+def _enclosing_model(claims: Sequence[NameClaim], namer: Namer, parts: _AllOfParts) -> dict[ModelKey, PlannedName]:
     """Return the names the enclosing-model rule gives: every claim, owners first, definitions before the others.
 
-    A keyed claim keeps its name, which children compose from as it is.
+    A keyed claim keeps its name, which children compose from as it is. The allOf ``parts`` take the names of the
+    allOf rule, made of the names before affixes.
     """
     by_key = {claim.key: claim for claim in claims}
     stems: dict[ModelKey, tuple[str, str]] = {claim.key: (claim.module, claim.cls) for claim in claims if claim.keyed}
@@ -520,6 +641,8 @@ def _enclosing_model(claims: Sequence[NameClaim], namer: Namer) -> dict[ModelKey
     names: dict[ModelKey, PlannedName] = {}
 
     def wanted(claim: NameClaim) -> tuple[str, str]:
+        if (part := parts.get(claim.key)) is not None:
+            return _allof_name(claim, part, by_key, final, namer)
         if claim.role == "composed" and (base := by_key.get(cast("ModelKey", claim.composed_from))) is not None:
             module, stem = final(base)
             return module, namer.composed(claim, stem, affixed=False)[1]
@@ -555,14 +678,21 @@ def plan_names(rules: NamingRules, claims: Sequence[NameClaim], namer: Namer) ->
     new name, and every other model keeps its name, which no planned name takes. Under ``definitions_first`` the first
     definition of a family takes the family's name, or the first free one where a model outside the plan holds it;
     each claim that held it takes the name the definition gave up where that is a numbered name of it, else the first
-    free one. Under ``enclosing_model`` every claim is named again (``_enclosing_model``).
+    free one; then the allOf parts, which the allOf rule names alone, take theirs. Under ``enclosing_model`` every
+    claim is named again (``_enclosing_model``).
     """
     by_key = {claim.key: claim for claim in claims}
+    parts = _allof_parts(claims) if rules.allof_union_members else {}
     if rules.enclosing_model:
-        return _planned(rules, _enclosing_model(claims, namer), by_key)
-    if not (touched := _definitions_first(claims)):
+        return _planned(rules, _enclosing_model(claims, namer, parts), by_key)
+    touched = {
+        key: first
+        for key, first in (_definitions_first(claims) if rules.definitions_first else {}).items()
+        if key not in parts
+    }
+    if not (touched or parts):
         return NamingPlan(rules)
-    closure = _closure(touched, claims, namer)
+    closure = _closure([*touched, *parts], claims, namer)
     allocation = _Allocation(namer, Counter(by_key[key].name for key in closure))
     names: dict[ModelKey, PlannedName] = {}
     for key, first in touched.items():
@@ -580,11 +710,20 @@ def plan_names(rules: NamingRules, claims: Sequence[NameClaim], namer: Namer) ->
                 else allocation.first_free(claim, first.base)
             )
             names[key] = allocation.give(claim.module, name, first.base)
-    for key in closure:
+
+    def final(claim: NameClaim) -> tuple[str, str]:
+        planned = names.get(claim.key)
+        return (claim.module, claim.cls) if planned is None else (planned.module, planned.cls)
+
+    for key, part in parts.items():
+        module, name = _allof_name(by_key[key], part, by_key, final, namer)
+        names[key] = allocation.give(module, allocation.first_free(by_key[key], name, module), name)
+    for key, via in closure.items():
         if key not in names:
             claim = by_key[key]
-            base = names[cast("ModelKey", claim.composed_from)]
-            _, cls = namer.composed(claim, f"{base.module}{base.cls}")
+            kind, other = cast("tuple[Literal['composed', 'prefixed'], ModelKey]", via)
+            base = names[other]
+            _, cls = cast("tuple[str, str]", _named_from(claim, kind, f"{base.module}{base.cls}", namer))
             names[key] = allocation.give(claim.module, allocation.first_free(claim, cls), cls)
     return _planned(rules, names, by_key)
 

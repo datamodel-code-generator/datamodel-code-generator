@@ -114,10 +114,12 @@
 - `--field-type-collision-strategy`: Rename type class instead of field when names collide (Pydantic v2 only).
 - `--infer-union-variant-names`: Name inline oneOf/anyOf branch models after the value of their tag field (`Pet`...
 - `--merge-shared-variant-tags`: Give a variant that discriminated unions tag differently every tag they give it.
+- `--name-allof-union-members-after-branches`: Name the classes an allOf gives the branches of a oneOf or anyOf ...
 - `--no-alias`: Disable Field alias generation for non-Python-safe property names.
 - `--no-capitalize-numbered-enum-members`
 - `--no-deserialize-default-values`: Keep serialized schema defaults instead of deserializing selected types.
 - `--no-merge-shared-variant-tags`
+- `--no-name-allof-union-members-after-branches`
 - `--no-omit-redundant-constraints`
 - `--no-read-length-keywords-by-type`
 - `--no-read-msgspec-union-bounds-exactly`

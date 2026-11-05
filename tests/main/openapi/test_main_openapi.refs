@@ -1540,6 +1540,17 @@ msgspec_tagged_unions_modules_variants_first	main/openapi/discriminator/msgspec_
 	main/openapi/msgspec_use_annotated_with_field_constraints.py
 [test_main_openapi_msgspec_use_union_operator]
 	main/openapi/msgspec_use_union_operator.py	= main/openapi/msgspec_nullable.py
+[test_main_openapi_name_allof_union_members_after_branches]
+dataclass-members-infer	main/openapi/main_openapi/name_allof_union_members_after_branches[dataclass-members-infer].py
+msgspec-members-infer	main/openapi/main_openapi/name_allof_union_members_after_branches[msgspec-members-infer].py
+pydantic_v2	main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2].py
+pydantic_v2-infer	main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-infer].py
+pydantic_v2-members	main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members].py
+pydantic_v2-members-definitions-first	main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-definitions-first].py
+pydantic_v2-members-enclosing-model	main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-enclosing-model].py
+pydantic_v2-members-full-path	main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-full-path].py	= main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-enclosing-model].py
+pydantic_v2-members-infer	main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-infer].py	= main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-definitions-first].py
+typed_dict-members-infer	main/openapi/main_openapi/name_allof_union_members_after_branches[typed_dict-members-infer].py
 [test_main_openapi_namespace_subns_ref]
 	main/openapi/namespace_subns_ref//*.py
 [test_main_openapi_naming_strategy_definitions_first]
@@ -2183,6 +2194,8 @@ pydantic_v2.BaseModel-with_field_constraints_pydantic_v2_use_standard_collection
 	main/openapi/with_strip_default_none.py
 [test_main_without_field_constraints]
 	main/openapi/without_field_constraints_pydantic_v2.py
+[test_name_allof_union_members_after_branches_beside_a_resolver_that_names_models]
+	main/openapi/main_openapi/name_allof_union_members_after_branches_beside_a_resolver_that_names_models.txt
 [test_numeric_union_preserves_nullable_warning]
 api	main/openapi/type_union_nullable.py
 cli	main/openapi/type_union_nullable.py

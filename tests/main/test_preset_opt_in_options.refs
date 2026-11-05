@@ -39,6 +39,8 @@ keep-reference-null-on-merged-models-practical	main/preset_opt_in_options/preset
 keep-reference-null-on-merged-models-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-reference-null-on-merged-models-standard].py
 merge-shared-variant-tags-practical	main/preset_opt_in_options/preset_sets_opt_in_option[merge-shared-variant-tags-practical].py
 merge-shared-variant-tags-standard	main/preset_opt_in_options/preset_sets_opt_in_option[merge-shared-variant-tags-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[merge-shared-variant-tags-practical].py
+name-allof-union-members-after-branches-practical	main/preset_opt_in_options/preset_sets_opt_in_option[name-allof-union-members-after-branches-practical].py
+name-allof-union-members-after-branches-standard	main/preset_opt_in_options/preset_sets_opt_in_option[name-allof-union-members-after-branches-standard].py
 name-converted-payloads-by-message-practical	main/preset_opt_in_options/preset_sets_opt_in_option[name-converted-payloads-by-message-practical].py
 name-converted-payloads-by-message-standard	main/preset_opt_in_options/preset_sets_opt_in_option[name-converted-payloads-by-message-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[name-converted-payloads-by-message-practical].py
 naming-strategy-definitions-first-practical	main/preset_opt_in_options/preset_sets_opt_in_option[naming-strategy-definitions-first-practical].py
