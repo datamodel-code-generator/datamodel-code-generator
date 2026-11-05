@@ -98,6 +98,8 @@ What other options should I use?
 - `--no-snake-case-field`
 - `--omit-redundant-constraints`: Do not write a constraint again beside a type that already enforces it.
 - `--original-field-name-delimiter`: Specify delimiter for original field names when using snake-case conversion.
+- `--read-length-keywords-by-type`: Read the string and the array keywords for their own kind only, as JSON Sche...
+- `--read-msgspec-union-bounds-exactly`: Decide the bounds of the int member of a msgspec union on the bounds th...
 - `--remove-special-field-name-prefix`: Remove the special prefix from field names.
 - `--serialization-aliases`: Apply custom Pydantic v2 serialization aliases via inline JSON or a JSON file path.
 - `--set-default-enum-member`: Use the legacy flag for deserializing enum defaults.
@@ -526,6 +528,23 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         value-enum-as-const an `enum` that admits its `const`
                         is read as that `const` instead of an Enum, except one
                         with `nullable: true` and a value other than null
+  --read-length-keywords-by-type
+                        Read minLength, maxLength and pattern for strings only
+                        and minItems, maxItems and uniqueItems for arrays
+                        only, as JSON Schema does, so a maxLength beside an
+                        array leaves the list unbounded and a maxItems beside
+                        a string leaves the string unbounded; without it a
+                        declared array writes minLength/maxLength and a
+                        declared string minItems/maxItems as their length
+                        bounds, as in 0.88.0
+  --read-msgspec-union-bounds-exactly
+                        msgspec.Struct output only: decide whether the int
+                        member of a union with a number member drops its Meta
+                        bounds on the bounds the schema writes, exactly;
+                        without it a number member's bound past 2**53 is read
+                        as the float it is written as, so the int member can
+                        keep a bound that rejects an integer the number member
+                        accepts, as in 0.88.0
   --read-unevaluated-properties
                         Read a schema-valued unevaluatedProperties as
                         additionalProperties where no applicator evaluates the

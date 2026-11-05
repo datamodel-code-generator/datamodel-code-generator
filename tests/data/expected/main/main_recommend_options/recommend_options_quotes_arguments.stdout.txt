@@ -69,7 +69,8 @@
     "titled_components": 0,
     "unions": 1,
     "unique_items": 0,
-    "unmodeled_pattern_properties": 0
+    "unmodeled_pattern_properties": 0,
+    "variants_with_differing_tags": 0
   },
   "facts": {
     "schema": "OpenAPI 3.1.0",

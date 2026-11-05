@@ -89,6 +89,7 @@ if TYPE_CHECKING:
 
     from typing_extensions import Self
 
+    from datamodel_code_generator._constraint_applicability import ConstraintOptions
     from datamodel_code_generator._reference_graph import GraphSnapshot, ReferenceGraph
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
@@ -1852,13 +1853,16 @@ class GenerationStore:  # noqa: PLR0904
         bump_field(field_)
 
     @deprecated("Use GenerationStore.builder().drop_union_member_constraints() instead.", category=None)
-    def drop_union_member_constraints(self, field_: DataModelFieldBase, *, refresh: Refresh = "now") -> None:
+    def drop_union_member_constraints(
+        self, field_: DataModelFieldBase, *, refresh: Refresh = "now", options: ConstraintOptions | None = None
+    ) -> None:
         """Run the field's ``unconstrain_union_members`` hook, which writes members into the union lists it holds.
 
         The hook replaces members inside the lists, so every holder of a list sees them. When the hook changed the
-        field, what reads its type is bumped and the new sites of the field's model are overridden.
+        field, what reads its type is bumped and the new sites of the field's model are overridden. ``options`` are the
+        constraint options the hook reads.
         """
-        if field_.unconstrain_union_members() is False:
+        if field_.unconstrain_union_members(options) is False:
             return
         self._state_model_sites("drop_union_member_constraints", field_.parent)
         _bump_field_tree(field_)
@@ -2557,9 +2561,11 @@ class GraphBuilder:
         """Drop the None a reference type restates of the model it names, which holds null itself."""
         self._store.drop_held_null(data_type)  # ty: ignore[deprecated]
 
-    def drop_union_member_constraints(self, field_: DataModelFieldBase, *, refresh: Refresh = "now") -> None:
+    def drop_union_member_constraints(
+        self, field_: DataModelFieldBase, *, refresh: Refresh = "now", options: ConstraintOptions | None = None
+    ) -> None:
         """Run the field's ``unconstrain_union_members`` hook, which writes members into the union lists it holds."""
-        self._store.drop_union_member_constraints(field_, refresh=refresh)  # ty: ignore[deprecated]
+        self._store.drop_union_member_constraints(field_, refresh=refresh, options=options)  # ty: ignore[deprecated]
 
     def inline_shared(self, root_type: DataType, site: DataType) -> DataType:
         """Return a copy of ``root_type`` for collapse to put at ``site``, sharing the children of ``root_type``."""

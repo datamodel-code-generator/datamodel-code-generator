@@ -39,6 +39,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._passes._state import ModuleModels, StructuredRun
     from datamodel_code_generator.parser._tag_plan import TagCapabilities
     from datamodel_code_generator.reference import ModelType, Reference
+    from datamodel_code_generator.types import DataTypeManager
 
 __all__ = [
     "FlattenHost",
@@ -68,6 +69,10 @@ class PlansHost(RecursionFactsHost, FlattenHost, ReuseOptionsHost, DataModelType
     _emitting_module_lists: list[tuple[str, list[DataModel]]]
     _emitting_module_names: dict[int, str]
     _generic_base_model: DataModel | None
+
+    @property
+    def data_type_manager(self) -> DataTypeManager:
+        """The type manager of the output model, whose constraint options the union members are read with."""
 
     @property
     def _base_stand_ins(self) -> _Clearable:
@@ -241,9 +246,10 @@ def find_possible_reuse_duplicates(parser: PlansHost, module_models: ModuleModel
 
 def unconstrain_union_members_in_modules(parser: PlansHost, run: StructuredRun[Any]) -> None:
     """Drop the constraints of union members, which tagged unions cannot carry."""
+    options = parser.data_type_manager.constraint_options
     for _, models in run.module_models:
         for field in (field for model in models for field in model.fields):
-            parser._graph_builder.drop_union_member_constraints(field, refresh="deferred")  # noqa: SLF001
+            parser._graph_builder.drop_union_member_constraints(field, refresh="deferred", options=options)  # noqa: SLF001
 
 
 def set_circular_root_model_paths(

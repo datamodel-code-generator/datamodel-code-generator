@@ -1,0 +1,6 @@
+valid: accepted
+valid: rejected
+valid: accepted
+invalid {"narrow": 1234567890123456768}: accepted
+invalid {"wide": 5}: rejected
+invalid {"small": 5}: accepted

@@ -92,6 +92,8 @@
 - `--no-snake-case-field`
 - `--omit-redundant-constraints`: Do not write a constraint again beside a type that already enforces it.
 - `--original-field-name-delimiter`: Specify delimiter for original field names when using snake-case conversion.
+- `--read-length-keywords-by-type`: Read the string and the array keywords for their own kind only, as JSON Sche...
+- `--read-msgspec-union-bounds-exactly`: Decide the bounds of the int member of a msgspec union on the bounds th...
 - `--remove-special-field-name-prefix`: Remove the special prefix from field names.
 - `--serialization-aliases`: Apply custom Pydantic v2 serialization aliases via inline JSON or a JSON file path.
 - `--set-default-enum-member`: Use the legacy flag for deserializing enum defaults.

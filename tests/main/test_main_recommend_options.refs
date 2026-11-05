@@ -108,6 +108,9 @@ swagger-definitions	main/main_recommend_options/recommend_options_for_schemas[sw
 swagger-json	main/main_recommend_options/recommend_options_for_schemas[swagger-json].stdout.txt
 typed-dict	main/main_recommend_options/recommend_options_for_schemas[typed-dict].stdout.txt
 union-edges	main/main_recommend_options/recommend_options_for_schemas[union-edges].stdout.txt
+unions-merge-shared-variant-tags	main/main_recommend_options/recommend_options_for_schemas[unions-merge-shared-variant-tags].stdout.txt
+unions-merge-shared-variant-tags-older-preset	main/main_recommend_options/recommend_options_for_schemas[unions-merge-shared-variant-tags-older-preset].stdout.txt
+unions-shared-variant-tags-msgspec	main/main_recommend_options/recommend_options_for_schemas[unions-shared-variant-tags-msgspec].stdout.txt
 validation-keywords	main/main_recommend_options/recommend_options_for_schemas[validation-keywords].stdout.txt
 validation-keywords-json	main/main_recommend_options/recommend_options_for_schemas[validation-keywords-json].stdout.txt
 validation-options-set	main/main_recommend_options/recommend_options_for_schemas[validation-options-set].stdout.txt

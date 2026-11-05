@@ -6,6 +6,7 @@ the next release to the 20261027 presets.
 
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING
 
 import pytest
@@ -47,7 +48,12 @@ OPT_IN_OPTIONS: tuple[str, ...] = (
 )
 """The options the 20261027 presets set beyond the 20261017 presets."""
 
-OPT_IN_OPTIONS_20261104: tuple[str, ...] = ("--merge-shared-variant-tags", "--use-encoded-str-for-constrained-base64")
+OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
+    "--merge-shared-variant-tags",
+    "--use-encoded-str-for-constrained-base64",
+    "--read-length-keywords-by-type",
+    "--read-msgspec-union-bounds-exactly",
+)
 """The options the 20261104 presets set beyond the 20261027 presets."""
 
 PRESET_RELEASES: dict[str, tuple[str, tuple[str, ...]]] = {
@@ -71,6 +77,19 @@ CASES_20261104: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="use-encoded-str-for-constrained-base64",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "length_keywords_by_type.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="read-length-keywords-by-type",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "msgspec_number_limits" / "union_integer_bounds.json",
+        "jsonschema",
+        ["--output-model-type", "msgspec.Struct"],
+        id="read-msgspec-union-bounds-exactly",
+        marks=pytest.mark.filterwarnings(r"ignore:msgspec decodes every integer as the int member:UserWarning"),
     ),
 )
 """The inputs each opt-in option of the 20261104 presets changes."""
@@ -258,7 +277,10 @@ def test_preset_sets_opt_in_option(
     family: str,
     tmp_path: Path,
 ) -> None:
-    """Generate with a dated preset and with the preset before it plus the options it adds: the output is the same."""
+    """Generate with a dated preset and with the preset before it plus the options it adds: the output is the same.
+
+    The py312 presets may write Python 3.12 syntax, which only Python 3.12 and later compile.
+    """
     previous, options = PRESET_RELEASES[release]
     preset_output = tmp_path / "preset"
     options_output = tmp_path / "options"
@@ -274,12 +296,14 @@ def test_preset_sets_opt_in_option(
         output_path=preset_output,
         input_file_type=input_file_type,
         extra_args=["--preset", f"{family}-py312-{release}", *common],
+        skip_code_validation=sys.version_info < (3, 12),
     )
     run_main_and_assert(
         input_path=input_path,
         output_path=options_output,
         input_file_type=input_file_type,
         extra_args=["--preset", f"{family}-py312-{previous}", *common, *options],
+        skip_code_validation=sys.version_info < (3, 12),
         **(
             {"expected_directory": preset_output}
             if input_path.is_dir()

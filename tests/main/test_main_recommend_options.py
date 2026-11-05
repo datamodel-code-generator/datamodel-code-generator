@@ -193,6 +193,17 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
         pytest.param("deployment.json", [], id="pattern-properties"),
         pytest.param("settings.json", [], id="draft-07-pattern-map"),
         pytest.param("enum_const.yaml", [], id="enums-read-as-their-const"),
+        pytest.param("shared_variant_tags.yaml", [], id="unions-merge-shared-variant-tags"),
+        pytest.param(
+            "shared_variant_tags.yaml",
+            ["--preset", "standard-py314-20261027"],
+            id="unions-merge-shared-variant-tags-older-preset",
+        ),
+        pytest.param(
+            "shared_variant_tags.yaml",
+            ["--output-model-type", "msgspec.Struct"],
+            id="unions-shared-variant-tags-msgspec",
+        ),
         pytest.param(
             "redundant_constraints.json",
             ["--preset", "standard-py314-20261017"],

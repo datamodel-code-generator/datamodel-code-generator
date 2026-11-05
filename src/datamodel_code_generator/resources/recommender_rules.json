@@ -349,6 +349,29 @@
       ]
     },
     {
+      "id": "unions.merge-shared-variant-tags",
+      "decision": "shared-variant-tags",
+      "applies_to": {
+        "output_model_types": [
+          "pydantic_v2.BaseModel",
+          "pydantic_v2.dataclass"
+        ]
+      },
+      "when": {
+        "signal": "variants_with_differing_tags",
+        "op": ">=",
+        "value": 1
+      },
+      "set": {
+        "merge_shared_variant_tags": true
+      },
+      "reason": "Discriminated unions tag {variants_with_differing_tags} variants differently, for example one by a mapping key and one by the schema name. A variant has one tag field, so without merged tags it keeps the tags of the first union, and the other union rejects every document that selects the variant by its own tag; merged, the variant takes every tag its unions give it.",
+      "evidence": [
+        "#5361: Cat listed by ByName (tag Cat) and ByKey (mapping key cat); without the option ByKey rejected {\"kind\": \"cat\"}, with it Cat takes Literal['Cat', 'cat'] and both unions decode their documents",
+        "#4666: a variant two discriminator mappings tag differently; with the option each union decodes its own tag"
+      ]
+    },
+    {
       "id": "validation.check-unique-items-and-pattern-properties",
       "decision": "schema-validators",
       "optional": "validation",
@@ -890,8 +913,9 @@
       "reason": "Selects the remote reference lock file."
     },
     "merge_shared_variant_tags": {
-      "not_recommended": "preset",
-      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
+      "rules": [
+        "unions.merge-shared-variant-tags"
+      ]
     },
     "model_extra_keys": {
       "not_recommended": "style",
@@ -1004,6 +1028,14 @@
       "rules": [
         "enums.read-as-their-const"
       ]
+    },
+    "read_length_keywords_by_type": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
+    },
+    "read_msgspec_union_bounds_exactly": {
+      "not_recommended": "preset",
+      "reason": "msgspec.Struct output only: set by the 20261104 presets; the recommendation starts from a preset."
     },
     "read_nullable_beside_type_list": {
       "not_recommended": "preset",

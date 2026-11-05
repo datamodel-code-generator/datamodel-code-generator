@@ -107,6 +107,7 @@ from datamodel_code_generator._constraint_applicability import (
     enforced_keywords,  # noqa: F401  # Preserve the established parser.jsonschema export.
     holds_number_format,  # noqa: F401  # Preserve the established parser.jsonschema export.
     keyword_kinds,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    length_keywords_by_type,
     literal_check,  # noqa: F401  # Preserve the established parser.jsonschema export.
     literal_enforces_every_keyword,  # noqa: F401  # Preserve the established parser.jsonschema export.
     property_consumed_keywords,
@@ -2006,7 +2007,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         format_ = obj.format or "default"
         types = self._get_type_with_mappings(type_, format_)
         keyword_order = constrained_type_keyword_order(
-            types.name, encoded_str=field_constraints and self.data_type_manager.encodes_constrained_base64
+            types.name,
+            encoded_str=field_constraints and self.data_type_manager.encodes_constrained_base64,
+            by_type=length_keywords_by_type(self.data_type_manager.constraint_options),
         )
         kwargs: dict[str, JsonSchemaDataTypeKwargValue] = {
             **_constraint_values(obj, keyword_order, as_numbers=True),

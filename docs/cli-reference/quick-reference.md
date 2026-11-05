@@ -102,6 +102,8 @@ datamodel-codegen [OPTIONS]
 | [`--no-deserialize-default-values`](field-customization.md#no-deserialize-default-values) | Keep serialized schema defaults instead of deserializing selected types. |
 | [`--omit-redundant-constraints`](field-customization.md#omit-redundant-constraints) | Do not write a constraint again beside a type that already enforces it. |
 | [`--original-field-name-delimiter`](field-customization.md#original-field-name-delimiter) | Specify delimiter for original field names when using snake-case conversion. |
+| [`--read-length-keywords-by-type`](field-customization.md#read-length-keywords-by-type) | Read the string and the array keywords for their own kind only, as JSON Schema d... |
+| [`--read-msgspec-union-bounds-exactly`](field-customization.md#read-msgspec-union-bounds-exactly) | Decide the bounds of the int member of a msgspec union on the bounds the schema ... |
 | [`--remove-special-field-name-prefix`](field-customization.md#remove-special-field-name-prefix) | Remove the special prefix from field names. |
 | [`--serialization-aliases`](field-customization.md#serialization-aliases) | Apply custom Pydantic v2 serialization aliases via inline JSON or a JSON file pa... |
 | [`--set-default-enum-member`](field-customization.md#set-default-enum-member) | Use the legacy flag for deserializing enum defaults. |
@@ -464,6 +466,8 @@ All options sorted alphabetically:
 - [`--preset`](base-options.md#preset) - Apply an immutable built-in option preset.
 - [`--profile`](utility-options.md#profile) - Use a named profile from pyproject.toml
 - [`--read-const-beside-enum`](typing-customization.md#read-const-beside-enum) - Read a `const` beside an `enum` as JSON Schema does.
+- [`--read-length-keywords-by-type`](field-customization.md#read-length-keywords-by-type) - Read the string and the array keywords for their own kind on...
+- [`--read-msgspec-union-bounds-exactly`](field-customization.md#read-msgspec-union-bounds-exactly) - Decide the bounds of the int member of a msgspec union on th...
 - [`--read-nullable-beside-type-list`](model-customization.md#read-nullable-beside-type-list) - Write the null that `nullable: true` declares beside a `type...
 - [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type) - Generate separate request and response models for readOnly/w...
 - [`--read-unevaluated-properties`](typing-customization.md#read-unevaluated-properties) - Read a schema-valued `unevaluatedProperties` as `additionalP...

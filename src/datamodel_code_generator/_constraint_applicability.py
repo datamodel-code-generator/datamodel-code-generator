@@ -26,9 +26,12 @@ Legacy rows, each named by the function that decides it:
 * ``legacy-anyurl-keeps-string-keywords`` (``declared_string_keywords_taken``; G03b removes it with the render-time
   drop): a type that names ``AnyUrl`` takes every keyword a declared string holds, and the Pydantic outputs leave out
   every constraint of a field whose type holds it outside a container when they write the field, with a warning.
-* ``legacy-msgspec-float-bounds`` (``integer_bound``): the check of a msgspec union reads the bound of a float member
-  as the float it is, so an integral bound past ``2**53`` is the integer of its binary value, where the schema models
-  read the decimal that is written.
+* ``legacy-msgspec-float-bounds`` (``union_bound_arithmetic``): without ``--read-msgspec-union-bounds-exactly`` the
+  check of a msgspec union reads the bound of a float member as the float it is, so an integral bound past ``2**53`` is
+  the integer of its binary value, where the schema models read the decimal that is written.
+* ``legacy-length-keywords-across-kinds`` (``declared_keywords``): without ``--read-length-keywords-by-type`` a
+  declared string also holds ``minItems`` and ``maxItems`` and a declared array ``minLength`` and ``maxLength``, which
+  are written as their length bounds.
 
 This module is a leaf (the standard library, ``typing_extensions``, ``enums`` and ``_requirements``): ``types.py``
 builds the public tables of ``DataTypeManager`` from it while it is imported, and the model package imports
@@ -104,6 +107,8 @@ __all__ = [
     "json_integer",
     "json_number",
     "keyword_kinds",
+    "kind_keywords",
+    "length_keywords_by_type",
     "length_reading",
     "listed_type_keywords",
     "literal_check",
@@ -114,6 +119,7 @@ __all__ = [
     "meta_keywords",
     "non_finite_written",
     "none_type_keywords",
+    "other_kind_keywords",
     "overridden_declared_constraints",
     "property_consumed_keywords",
     "render_drop",
@@ -124,6 +130,7 @@ __all__ = [
     "split_declared_keywords",
     "strict_decimal_multiple",
     "undeclared_keywords_taken",
+    "union_bound_arithmetic",
     "unlisted_type_keywords",
     "untaken_minimums",
     "untaken_values",
@@ -412,24 +419,56 @@ class DeclaredKinds:
     """The JSON kinds whose keywords the declared types of a schema hold.
 
     ``numbers`` tells that a declared type holds numbers (a number, an integer or a numeric string format), ``string``
-    and ``array`` that the schema declares a string or an array.
+    and ``array`` that the schema declares a string or an array, and ``typed`` that it declares a type at all.
     """
 
     numbers: bool = False
     string: bool = False
     array: bool = False
+    typed: bool = False
 
 
-def declared_keywords(kinds: DeclaredKinds) -> frozenset[str]:
+def kind_keywords(kinds: DeclaredKinds) -> frozenset[str]:
+    """Return the type-dependent keywords of the kinds a declared schema type holds, each group of its own kind only.
+
+    The groups are those of ``keyword_kinds``: the number keywords of a number, the string keywords of a string and
+    the array keywords of an array.
+    """
+    return frozenset().union(
+        NUMBER_KEYWORDS if kinds.numbers else NO_KEYWORDS,
+        STRING_KEYWORDS if kinds.string else NO_KEYWORDS,
+        ARRAY_KEYWORDS if kinds.array else NO_KEYWORDS,
+    )
+
+
+def declared_keywords(kinds: DeclaredKinds, *, by_type: bool = False) -> frozenset[str]:
     """Return the type-dependent keywords whose kind a declared schema type holds.
 
-    A declared string also holds ``minItems`` and ``maxItems`` and a declared array ``minLength`` and ``maxLength``,
-    which are written as their length bounds.
+    Under ``by_type`` (``length_keywords_by_type``) each kind holds its own keywords only (``kind_keywords``). Row
+    ``legacy-length-keywords-across-kinds``: otherwise a declared string also holds ``minItems`` and ``maxItems`` and a
+    declared array ``minLength`` and ``maxLength``, which are written as their length bounds.
     """
+    if by_type:
+        return kind_keywords(kinds)
     return frozenset().union(
         NUMBER_KEYWORDS if kinds.numbers else NO_KEYWORDS,
         _DECLARED_STRING_KEYWORDS if kinds.string else NO_KEYWORDS,
         SEQUENCE_KEYWORDS if kinds.array else NO_KEYWORDS,
+    )
+
+
+def other_kind_keywords(kinds: DeclaredKinds, *, by_type: bool) -> frozenset[str]:
+    """Return the string and array keywords a field leaves out whatever its emitted type takes.
+
+    Under ``by_type`` (``length_keywords_by_type``) those of a kind that a schema declaring a type does not declare:
+    they apply to no value the schema accepts, as ``maxLength`` beside an array, also where ``--type-overrides`` writes
+    the field as a ``str``. Otherwise, and for a schema that declares no type, the emitted type decides them.
+    """
+    if not (by_type and kinds.typed):
+        return NO_KEYWORDS
+    return frozenset().union(
+        NO_KEYWORDS if kinds.string else STRING_KEYWORDS,
+        NO_KEYWORDS if kinds.array else ARRAY_KEYWORDS,
     )
 
 
@@ -439,18 +478,22 @@ def length_reading(keyword: str) -> str:
 
 
 def split_declared_keywords(
-    kinds: DeclaredKinds, *, number_taken: frozenset[str] | None, string_taken: frozenset[str] | None
+    kinds: DeclaredKinds,
+    *,
+    number_taken: frozenset[str] | None,
+    string_taken: frozenset[str] | None,
+    by_type: bool = False,
 ) -> tuple[frozenset[str], frozenset[str]]:
     """Return the declared keywords a field writes, and those it leaves out, to warn about.
 
     The emitted type decides two kinds: a number keyword is written when a number value of the type meets it
     (``number_taken``), and a keyword that the declared string alone holds when the type takes the keyword it is
     written as (``string_taken``; ``length_reading``), as a ``date`` or a ``UUID`` takes neither. None tells that the
-    schema does not declare the kind; the keywords of a declared array stay.
+    schema does not declare the kind; the keywords of a declared array stay. ``by_type`` reads each kind's own
+    keywords (``declared_keywords``).
     """
-    string_alone = (
-        _DECLARED_STRING_KEYWORDS - (SEQUENCE_KEYWORDS if kinds.array else NO_KEYWORDS) if kinds.string else NO_KEYWORDS
-    )
+    across_kinds = _DECLARED_STRING_KEYWORDS - (SEQUENCE_KEYWORDS if kinds.array else NO_KEYWORDS)
+    string_alone = (STRING_KEYWORDS if by_type else across_kinds) if kinds.string else NO_KEYWORDS
     untaken = frozenset().union(
         NUMBER_KEYWORDS - number_taken if kinds.numbers and number_taken is not None else NO_KEYWORDS,
         (
@@ -459,7 +502,7 @@ def split_declared_keywords(
             else NO_KEYWORDS
         ),
     )
-    return declared_keywords(kinds) - untaken, untaken
+    return declared_keywords(kinds, by_type=by_type) - untaken, untaken
 
 
 def declared_string_keywords_taken(taken: frozenset[str], type_paths: Iterable[str]) -> frozenset[str]:
@@ -507,12 +550,17 @@ class ConstraintOptions:
     of a field form with ``multipleOf`` as a ``Decimal`` too, strict in every form (``decimal_field_form``,
     ``strict_decimal_multiple``). ``use_encoded_str_for_constrained_base64``
     (``--use-encoded-str-for-constrained-base64``) writes the constraints of a string decoded from base64 text in
-    front of its decoding in the field forms (``encoded_str_field_form``).
+    front of its decoding in the field forms (``encoded_str_field_form``). ``read_length_keywords_by_type``
+    (``--read-length-keywords-by-type``) reads the string and the array keywords for their own kind only
+    (``length_keywords_by_type``). ``read_msgspec_union_bounds_exactly`` (``--read-msgspec-union-bounds-exactly``)
+    reads the bounds the check of a msgspec union compares as the schema writes them (``union_bound_arithmetic``).
     """
 
     omit_redundant_constraints: bool = False
     use_decimal_in_field_forms: bool = False
     use_encoded_str_for_constrained_base64: bool = False
+    read_length_keywords_by_type: bool = False
+    read_msgspec_union_bounds_exactly: bool = False
 
 
 def _class_keywords(zero_bound_classes: Mapping[str, tuple[str, ...]], type_name: str | None) -> tuple[str, ...]:
@@ -626,6 +674,26 @@ def encoded_str_field_form(options: ConstraintOptions) -> bool:
     return options.use_encoded_str_for_constrained_base64
 
 
+def length_keywords_by_type(options: ConstraintOptions) -> bool:
+    """Return whether the string and the array keywords apply to their own kind only, as JSON Schema reads them.
+
+    They do under ``read_length_keywords_by_type``: ``minLength``, ``maxLength`` and ``pattern`` to strings and
+    ``minItems``, ``maxItems`` and ``uniqueItems`` to arrays; otherwise row ``legacy-length-keywords-across-kinds``
+    reads the lengths and the item counts across the two, as in 0.88.0.
+    """
+    return options.read_length_keywords_by_type
+
+
+def union_bound_arithmetic(options: ConstraintOptions) -> Literal["exact", "float"]:
+    """Return how the check of a msgspec union reads the bounds of its members (``integer_bound``).
+
+    ``exact`` under ``read_msgspec_union_bounds_exactly``: each bound is the number the schema writes, as the schema
+    models read it. Row ``legacy-msgspec-float-bounds``: otherwise ``float``, the ``Meta`` value, so the bound of a
+    float member past ``2**53`` is the integer of its binary value, as in 0.88.0.
+    """
+    return "exact" if options.read_msgspec_union_bounds_exactly else "float"
+
+
 RenderDrop: TypeAlias = Literal["self-reference-container", "strict-kwargs", "anyurl"]
 """Why a field writes none of its constraints when it is written."""
 
@@ -662,16 +730,19 @@ def holds_number_format(mapped_type: str) -> bool:
     return mapped_type in _NUMBER_STRING_FORMAT_TYPES
 
 
-def constrained_type_keyword_order(mapped_type: str, *, encoded_str: bool = False) -> tuple[str, ...]:
+def constrained_type_keyword_order(
+    mapped_type: str, *, encoded_str: bool = False, by_type: bool = False
+) -> tuple[str, ...]:
     """Return the keywords a ``con*`` type of the mapped type (a ``types.py:Types`` name) takes, in argument order.
 
     A string decoded from base64 text takes the string keywords where a field form writes them in front of its
-    decoding (``encoded_str``, ``encoded_str_field_form``).
+    decoding (``encoded_str``, ``encoded_str_field_form``). A string reads ``minItems`` and ``maxItems`` as its lengths
+    unless ``by_type`` (``length_keywords_by_type``; row ``legacy-length-keywords-across-kinds``).
     """
     if mapped_type in _NUMBER_TYPES:
         return NUMBER_KEYWORD_ORDER
     if mapped_type == "string":
-        return STRING_LENGTH_KEYWORD_ORDER
+        return STRING_KEYWORD_ORDER if by_type else STRING_LENGTH_KEYWORD_ORDER
     if mapped_type == "binary":
         return LENGTH_KEYWORD_ORDER
     return STRING_KEYWORD_ORDER if mapped_type == "byte" and encoded_str else ()
@@ -970,8 +1041,8 @@ def integer_bound(
     bound, one more or less for an exclusive one. ``exact`` reads the bound as the decimal it is written (``1e300`` is
     ``10**300``); ``float`` reads the float it is (``int(1e300)``).
 
-    Row ``legacy-msgspec-float-bounds``: the check of a msgspec union reads a bound ``float``, so an integral bound
-    past ``2**53`` is the integer of its binary value, where the schema models read it ``exact``.
+    The check of a msgspec union reads a bound as ``union_bound_arithmetic`` says (row ``legacy-msgspec-float-bounds``),
+    the schema models read it ``exact``.
     """
     if (row := _INTEGER_BOUNDS.get(keyword)) is None:
         return None

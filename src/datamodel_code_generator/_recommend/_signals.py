@@ -63,6 +63,7 @@ SignalName: TypeAlias = Literal[
     "inline_title_max_repeat",
     "unions",
     "discriminated_unions",
+    "variants_with_differing_tags",
     "inline_union_variants",
     "inline_object_union_variants",
     "inline_scalar_union_variants",
@@ -536,6 +537,8 @@ class _Walker:
         self.object_shapes: Counter[int] = Counter()
         self.enum_shapes: Counter[int] = Counter()
         self.references: defaultdict[str, set[str]] = defaultdict(set)
+        self.variant_tags: defaultdict[tuple[str, str], set[frozenset[str]]] = defaultdict(set)
+        self.component_keys = frozenset(refs.values())
         self.max_depth = 0
 
     def shape(self, node: object) -> int:
@@ -670,6 +673,29 @@ class _Walker:
                 is_object = _is_object(branch) or isinstance(branch.get("allOf"), list)
                 self.counts["inline_object_union_variants" if is_object else "inline_scalar_union_variants"] += 1
         self.count_tags([branch for branch in branches if "$ref" not in branch])
+        self.record_variant_tags(node, branches)
+
+    def record_variant_tags(self, node: Mapping[str, Any], branches: list[dict[str, Any]]) -> None:
+        """Record the tags a discriminated union gives each named variant it lists, by variant and tag property.
+
+        A variant takes the keys of the discriminator mapping that name it, or else its schema name.
+        """
+        discriminator = as_mapping(node.get("discriminator"))
+        if not isinstance(tag_property := discriminator.get("propertyName"), str):
+            return
+        mapped: defaultdict[str, set[str]] = defaultdict(set)
+        for tag, target in as_mapping(discriminator.get("mapping")).items():
+            if (variant := self.variant_key(target)) is not None:
+                mapped[variant].add(str(tag))
+        for branch in branches:
+            if (variant := self.variant_key(branch.get("$ref"))) is not None:
+                self.variant_tags[variant, tag_property].add(frozenset(mapped.get(variant) or {variant}))
+
+    def variant_key(self, target: object) -> str | None:
+        """Return the named schema a ``$ref`` or a discriminator mapping value names, a bare schema name too."""
+        if (tokens := _local_tokens(target)) is not None:
+            return self.refs.get(tokens)
+        return target if isinstance(target, str) and target in self.component_keys else None
 
     def count_tags(self, branches: list[dict[str, Any]]) -> None:
         """Count inline branches named by a distinct literal tag or a single required key, as generation names them."""
@@ -849,6 +875,9 @@ def measure_signals(
     counts["components"] = len(components)
     counts["all_enums"] = counts["inline_enums"] + counts["component_enums"]
     counts["max_inline_depth"] = walker.max_depth
+    counts["variants_with_differing_tags"] = len({
+        variant for (variant, _), tags in walker.variant_tags.items() if len(tags) > 1
+    })
     keys = {normalize_name(key) for key in components}
     shared_names = _count_names(counts, walker, keys)
     shared_titles = _count_titles(counts, titles, keys)

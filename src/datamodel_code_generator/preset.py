@@ -788,6 +788,22 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "constraints in front of the decoding, so Pydantic checks them on the base64 text."
         ),
     ),
+    PresetOptionGroup(
+        title="Length keywords read by type",
+        config=PresetConfig(read_length_keywords_by_type=True),
+        description=(
+            "Read minLength, maxLength and pattern for strings only and minItems, maxItems and uniqueItems for "
+            "arrays only, so a maxLength beside an array no longer limits how many items the list holds."
+        ),
+    ),
+    PresetOptionGroup(
+        title="msgspec union bounds read exactly",
+        config=PresetConfig(read_msgspec_union_bounds_exactly=True),
+        description=(
+            "Decide whether the int member of a msgspec union with a number member drops its bounds on the bounds "
+            "the schema writes, so a bound past 2**53 no longer rejects an integer the number member accepts."
+        ),
+    ),
 )
 
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
@@ -1051,7 +1067,12 @@ def render_presets_markdown() -> str:
             "every tag they give it, so each union decodes the documents it selects the variant by, and "
             "`--use-encoded-str-for-constrained-base64`: a format: byte string with a pattern or lengths is written "
             "as `Annotated[str, Field(...), EncodedStr(encoder=Base64Encoder)]`, so Pydantic checks them on the "
-            "base64 text instead of the decoded text."
+            "base64 text instead of the decoded text, and `--read-length-keywords-by-type`: `minLength` and "
+            "`maxLength` beside an array, and `minItems` and `maxItems` beside a string, are left out instead of "
+            "bounding the length of the other kind, as JSON Schema reads them, and "
+            "`--read-msgspec-union-bounds-exactly`: the int member of a msgspec union with a number member keeps its "
+            "bounds only when they admit every integer the number member's bounds, read as the schema writes them, "
+            "admit."
         ),
         "",
         "## Override Preset Options",
