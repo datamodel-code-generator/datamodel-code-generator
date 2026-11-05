@@ -5048,17 +5048,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         base_classes: list[Reference] = []
         required: list[str] = []
         union_parts: list[list[Reference]] = []
-        declared_property_names: set[str] = set()
-        pending_schemas = [obj]
-        while pending_schemas:
-            current_schema = pending_schemas.pop()
-            if current_schema.properties:
-                declared_property_names.update(current_schema.properties)
-            pending_schemas.extend(
-                item
-                for item in _inherited_schemas.all_of_members(self, current_schema)
-                if isinstance(item, JsonSchemaObject) and not item.ref
-            )
         self._parse_all_of_item(
             name,
             obj,
@@ -5067,7 +5056,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             base_classes,
             required,
             union_parts,
-            frozenset(declared_property_names),
+            self._all_of_declared_property_names(obj),
         )
         union_models = [model for part in union_parts for model in part]
         if not (fields or required or union_models) and (
@@ -5135,6 +5124,21 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             description=obj.description if self.use_schema_description else None,
         )
         return self.data_type(reference=reference)
+
+    def _all_of_declared_property_names(self, obj: JsonSchemaObject) -> frozenset[str]:
+        """Return the names of the properties that ``obj`` and its inline allOf members, at any depth, declare."""
+        declared_property_names: set[str] = set()
+        pending_schemas = [obj]
+        while pending_schemas:
+            current_schema = pending_schemas.pop()
+            if current_schema.properties:
+                declared_property_names.update(current_schema.properties)
+            pending_schemas.extend(
+                item
+                for item in _inherited_schemas.all_of_members(self, current_schema)
+                if isinstance(item, JsonSchemaObject) and not item.ref
+            )
+        return frozenset(declared_property_names)
 
     def _all_of_union_combinations(
         self, obj: JsonSchemaObject, union_parts: list[list[Reference]]

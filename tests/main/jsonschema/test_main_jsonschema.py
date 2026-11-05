@@ -38626,9 +38626,9 @@ under `--use-site-models-for-constrained-refs`, as they meet a `$ref` member of 
 An `allOf` whose members hold several `anyOf` or `oneOf` admits a value that meets one branch of each. Without the
 option their branches join one union, each with the other parts (and the inline branches of a later `anyOf` replace
 those of an earlier one); with it the `allOf` is one union variant per combination of one branch of each
-(`M6(M1, M3, M5)`, a class each branch appears in once), at most 128 per `allOf` (above that the branches join one union,
-with a warning). A `$ref` member that names an `allOf` over a union, which was a base that later passes drop, is read
-in its place, so its union joins those of the site (`Leaf4(Leaf1, Leaf3)`).""",
+(`M6(M1, M3, M5)`, a class each branch appears in once), at most 128 per `allOf` (above that the branches join one
+union, with a warning). A `$ref` member that names an `allOf` over a union, which was a base that later passes drop, is
+read in its place, so its union joins those of the site (`Leaf4(Leaf1, Leaf3)`).""",
     input_schema="jsonschema/schema_intersection/allof_beside_union.json",
     cli_args=["--distribute-allof-over-unions"],
     golden_output=(
