@@ -38,6 +38,7 @@ from datamodel_code_generator._source import (
 )
 from datamodel_code_generator._source import (
     _has_protobuf_declaration,
+    _is_json_document,
     _is_json_text,
     _is_protobuf_text,
     _is_xml_text,
@@ -3252,7 +3253,7 @@ def infer_input_type(text: str) -> InputFileType:  # noqa: PLR0911, PLR0912
             return InputFileType.Avro
         if is_schema(data):
             return InputFileType.JsonSchema
-        return InputFileType.Json
+        return InputFileType.Json if _is_json_document(text) else InputFileType.Yaml
     if _is_protobuf_text(text):
         return InputFileType.Protobuf
     if isinstance(data, list):
