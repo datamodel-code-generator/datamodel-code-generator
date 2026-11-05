@@ -293,6 +293,7 @@ SPECIAL_PATH_FORMAT: str = _shared.SPECIAL_PATH_FORMAT
 get_special_path = _shared.get_special_path
 PydanticFloors = _state.PydanticFloors
 pydantic_floors_recorded = _state.pydantic_floors_recorded
+settle_diagnostics_reported_once = _state.settle_diagnostics_reported_once
 
 ParserConfigT = TypeVar("ParserConfigT", bound="ParserConfig")
 _ModelT = TypeVar("_ModelT", bound="DataModel | None")
@@ -2845,7 +2846,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         collect_model_metadata: bool = False,  # noqa: FBT001, FBT002
     ) -> str | dict[tuple[str, ...], Result]:
         """Parse schema and generate code, returning single file or module dict."""
-        run_context = self._run_context
+        suppress_parse_warnings = self.run_context.suppress_parse_warnings
         run: _PipelineRun[ParseConfig, ModuleContext, Result] = _PipelineRun(
             _ParseArgs(
                 with_import,
@@ -2857,7 +2858,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 module_split_mode,
                 collect_model_metadata,
             ),
-            suppress_parse_warnings=run_context is not None and run_context.suppress_parse_warnings,
+            suppress_parse_warnings=suppress_parse_warnings,
+            suppress_settle_diagnostics=_state.settle_diagnostics_suppressed(suppress_parse_warnings),
             default_build_code_formatter=Parser._build_code_formatter,
             result_type=Result,
         )

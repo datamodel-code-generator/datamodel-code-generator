@@ -184,7 +184,7 @@ WARN_ABOUT_UNMATCHED_MODEL_NAME_KEYS = PassDecl(
     writes=_facts(RenderFact.STDERR),
     reads=_facts(RenderFact.CLASS_NAMES),
     after=(After("report_parse_diagnostics", "parse diagnostics are reported first"),),
-    condition="not a retry that suppresses parse warnings",
+    condition="no earlier parse of the generation run reported the settle diagnostics",
 )
 PREPARE_PARSE_CONFIG = PassDecl(
     "prepare_parse_config",

@@ -486,7 +486,7 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
             PassSpec(
                 "warn_about_unmatched_model_name_keys",
                 lambda self, _: settle.warn_about_unmatched_model_name_keys(self),
-                when=lambda _, run: not run.suppress_parse_warnings,
+                when=lambda _, run: not run.suppress_settle_diagnostics,
             ),
             PassSpec("prepare_parse_config", late(settle.prepare_run_parse_config)),
             PassSpec("sort_data_models", late(settle.sort_parsed_models)),

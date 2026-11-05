@@ -31,7 +31,11 @@ from datamodel_code_generator.parser._passes._shared import (
     definition_reads,
     with_dedupe_request_response_hint,
 )
-from datamodel_code_generator.parser._passes._state import ParseConfigView, RecursionFacts
+from datamodel_code_generator.parser._passes._state import (
+    ParseConfigView,
+    RecursionFacts,
+    mark_settle_diagnostics_reported,
+)
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser.generation import set_model_base_classes
 from datamodel_code_generator.python_literal import stable_repr
@@ -426,11 +430,12 @@ def settle_yielding_names(parser: SettleHost[Any], _run: SettleRun[Any]) -> None
 
 
 def report_parse_diagnostics(parser: SettleHost[Any], run: SettleRun[Any]) -> None:
-    """Report the parse diagnostics, without repeating them on a retry."""
-    if run.suppress_parse_warnings:
+    """Report the parse diagnostics once per generation run: a retry repeats none that an earlier parse reported."""
+    if run.suppress_settle_diagnostics:
         parser._run_with_suppressed_warnings(parser._report_parse_diagnostics)  # noqa: SLF001
     else:
         parser._report_parse_diagnostics()  # noqa: SLF001
+        mark_settle_diagnostics_reported()
 
 
 def prepare_run_parse_config(parser: SettleHost[ConfigT], run: SettleRun[ConfigT]) -> None:
