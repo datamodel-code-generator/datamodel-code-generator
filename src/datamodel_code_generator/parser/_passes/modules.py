@@ -996,7 +996,9 @@ def replace_merged_unique_list_to_set(parser: ModulesHost, models: list[DataMode
     They are the array of ``type: [array, string]``, which reads ``uniqueItems`` since 0.89.0, and the arrays that a
     member of an anyOf or oneOf, the items of an array or the values of a map declare unique. Deduplication and reuse
     compared them as lists, so a model merged into the field's model may declare no ``uniqueItems`` at the same place,
-    or declare it through a base: the array then keeps the list, which takes the values of both.
+    or declare it through a base: the array then keeps the list, which takes the values of both. An array in a union
+    beside another member of its kind, an array or a map, that keeps its lists keeps the list too, as a msgspec union
+    holds one of each.
     """
     if not parser.use_unique_items_as_set:
         return

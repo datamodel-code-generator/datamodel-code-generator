@@ -34,4 +34,6 @@ class Model(TypedDict):
     beside_any_of: NotRequired[list[BesideAnyOf | BesideAnyOf1]]
     arrays_of_sets: NotRequired[ArraysOfSets]
     nested_sets: NotRequired[list[list[NestedSet]]]
+    two_patterns: NotRequired[dict[str, list[int]]]
+    two_maps: NotRequired[dict[str, list[int]]]
     tuples: NotRequired[list[tuple[int, str]]]

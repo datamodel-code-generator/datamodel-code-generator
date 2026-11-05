@@ -39,4 +39,6 @@ class Model(BaseModel):
     beside_any_of: list[BesideAnyOf | BesideAnyOf1] | None = None
     arrays_of_sets: ArraysOfSets | None = None
     nested_sets: list[set[NestedSet]] | None = None
+    two_patterns: dict[constr(pattern=r'^a|^b'), list[int]] | None = None
+    two_maps: dict[str, list[int]] | None = None
     tuples: list[tuple[int, str]] | None = None

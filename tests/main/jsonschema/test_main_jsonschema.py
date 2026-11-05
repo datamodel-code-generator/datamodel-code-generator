@@ -8466,8 +8466,10 @@ def test_main_unique_items_as_set_nested_arrays(output_model: str, tmp_path: Pat
     The member of an anyOf, a oneOf and a nullable anyOf, the items of an array, the values of a map and of its pattern
     properties, a lone allOf member and an array beside which a nested anyOf declares the keyword, with a list default
     that becomes a set. The sets an array holds are decided first: an array of sets stays a list, as no set holds a
-    set. A tuple that the keyword declares unique stays a tuple with a warning, as at a field. Up to 0.89.0 only the
-    arrays of a field's own schema became sets, so the others kept the duplicates their schema rejects.
+    set. An array stays a list beside a member of its kind that keeps its lists, the values of two patterns or the
+    values of two maps, as a msgspec union holds one array-like member and one map. A tuple that the keyword declares
+    unique stays a tuple with a warning, as at a field. Up to 0.89.0 only the arrays of a field's own schema became
+    sets, so the others kept the duplicates their schema rejects.
     """
     integers = {"type": "array", "items": {"type": "integer"}, "uniqueItems": True}
     input_file = tmp_path / "nested_arrays.json"
@@ -8493,6 +8495,16 @@ def test_main_unique_items_as_set_nested_arrays(output_model: str, tmp_path: Pat
                 },
                 "arrays_of_sets": {"allOf": [{"type": "array", "uniqueItems": True, "items": integers}]},
                 "nested_sets": {"type": "array", "items": {"type": "array", "uniqueItems": True, "items": integers}},
+                "two_patterns": {
+                    "type": "object",
+                    "patternProperties": {"^a": integers, "^b": {"type": "array", "items": {"type": "integer"}}},
+                },
+                "two_maps": {
+                    "anyOf": [
+                        {"type": "object", "additionalProperties": integers},
+                        {"type": "object", "additionalProperties": {"type": "array", "items": {"type": "integer"}}},
+                    ]
+                },
                 "tuples": {
                     "type": "array",
                     "items": {
@@ -8533,14 +8545,15 @@ def test_main_unique_items_as_set_nested_arrays(output_model: str, tmp_path: Pat
             valid_json=(
                 '{"one_of": [1, 1], "nullable": [2, 2], "items": [[3, 3]], "values": {"k": [4, 4]},'
                 ' "patterns": {"a": [5, 5]}, "all_of": [6, 6], "beside_any_of": [["x", "x"], 7],'
-                ' "arrays_of_sets": [[8, 8], [8]]}'
+                ' "arrays_of_sets": [[8, 8], [8]], "two_patterns": {"b": [9, 9]}, "two_maps": {"k": [10, 10]}}'
             ),
             invalid_json='{"items": [1]}',
             expected_error_type="set_type",
             expected_repr=(
                 "Model(any_of={1, 2}, one_of={1}, nullable={2}, items=[{3}], values={'k': {4}}, patterns={'a': {5}}, "
                 "all_of=AllOf(root={6}), beside_any_of=[BesideAnyOf(root={'x'}), BesideAnyOf1(root=7)], "
-                "arrays_of_sets=ArraysOfSets(root=[{8}, {8}]), nested_sets=None, tuples=None)"
+                "arrays_of_sets=ArraysOfSets(root=[{8}, {8}]), nested_sets=None, "
+                "two_patterns={'b': [9, 9]}, two_maps={'k': [10, 10]}, tuples=None)"
             ),
         )
 

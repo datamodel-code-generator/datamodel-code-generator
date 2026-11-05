@@ -18,8 +18,11 @@ from typing_extensions import Protocol, final, override
 
 from datamodel_code_generator._constraint_applicability import TYPE_DEPENDENT_CONSTRAINTS_KEY
 from datamodel_code_generator._container_kinds import (
+    ARRAYS,
     CONTAINER_FLAGS,
     CONTAINERS,
+    MAPPINGS,
+    SETS,
     UNHASHABLE_CONTAINERS,
     WRITTEN_CONTAINERS,
     written_slot,
@@ -1327,7 +1330,9 @@ def unique_items_plan(
     of a schema keeps all of them as they are. ``merged`` are the fields of the same name of the models merged into the
     field's model (None for a model without one): a list of ``sources="merged"`` counts only where each of them declares
     ``uniqueItems`` at the same position of its type too, so a merge never makes a set of the array of a model that
-    does not declare it.
+    does not declare it. A list but those of the field's own schema (``_own_unique_arrays``) stays a list in a union
+    beside another member of its kind that keeps its lists (``_beside_its_kind``), which the set would split from a
+    member written alike, decided again until no such set is left.
     """
     return _unique_items_plan(field, keeps_tuples=keeps_tuples, sources=sources, merged=merged, aliases=frozenset())
 
@@ -1353,16 +1358,33 @@ def _unique_items_plan(
             tuples.update((id(array), array) for array in group if array.is_tuple)
         else:
             lists.update((id(array), array) for array in group if array.is_list)
-    sets: dict[int, DataType] = {}
     alias_sources: UniqueItemsSources = "field" if sources == "field" else "all"
-    for node in field.data_type.all_data_types:
-        if id(node) in lists and set_items_can_hash(
-            tuple(
-                _set_item_facts(item, sets, keeps_tuples=keeps_tuples, sources=alias_sources, aliases=aliases)
-                for item in node.data_types
-            )
+    own = _own_unique_arrays(field)
+    nodes = dict(_nodes_with_paths(field.data_type, ()))
+    kept: set[_Path] = set()
+    while True:
+        sets: dict[int, DataType] = {}
+        for path, node in nodes.items():
+            if (
+                id(node) in lists
+                and path not in kept
+                and set_items_can_hash(
+                    tuple(
+                        _set_item_facts(item, sets, keeps_tuples=keeps_tuples, sources=alias_sources, aliases=aliases)
+                        for item in node.data_types
+                    )
+                )
+            ):
+                sets[id(node)] = node
+        if not (
+            beside := {
+                path
+                for path, node in nodes.items()
+                if id(node) in sets and id(node) not in own and _beside_its_kind(path, nodes, sets)
+            }
         ):
-            sets[id(node)] = node
+            break
+        kept |= beside
     default = None
     if (own_level := [array for array in _unique_items_arrays(field.data_type) if id(array) in sets]) and isinstance(
         field.default, list
@@ -1373,6 +1395,45 @@ def _unique_items_plan(
             for array in own_level:
                 del sets[id(array)]
     return UniqueItemsPlan(tuple(sets.values()), default, tuple(tuples.values()))
+
+
+def _own_unique_arrays(field: DataModelFieldBase) -> set[int]:
+    """Return, by id, the arrays that the field's own schema declares unique, but those of a type list.
+
+    They are decided as every release since 0.52.0 decides them, so ``_beside_its_kind`` does not keep them lists.
+    """
+    return {id(array) for _, group in _declared_unique_arrays(field, "field") for array in group}
+
+
+def _beside_its_kind(path: _Path, nodes: Mapping[_Path, DataType], sets: Collection[int]) -> bool:
+    """Return whether the list at ``path``, as a set, sits in a union beside a member of its kind that keeps its lists.
+
+    ``nodes`` are the nodes of the field's type by their paths, ``sets`` the lists that become sets by id. The member
+    of the union is the list, or the node that holds it as its only member (``list[int] | list[str]``,
+    ``dict[str, list[int]] | dict[str, list[int]]``, the values of a map of two patterns); the other member is of its
+    kind where both are array-like or both are maps, and keeps its lists where it holds no set, one it is or one of
+    ``sets``. A msgspec union holds one member of each kind, so such a union either decodes because the output writes
+    its members alike as one, which the set would split, or never decodes; the list keeps the output either way.
+    """
+    while path and len(nodes[path[:-1]].data_types) == 1:
+        path = path[:-1]
+    if not path or (holder := nodes[path[:-1]]).is_tuple or (kind := _union_kind(member := nodes[path])) is None:
+        return False
+    return any(
+        other is not member
+        and _union_kind(other) == kind
+        and not any(id(nested) in sets or nested in SETS for _, nested in _nodes_with_paths(other, ()))
+        for other in holder.data_types
+    )
+
+
+def _union_kind(data_type: DataType) -> Literal["array", "map"] | None:
+    """Return whether a union member is array-like or a map, read through the nodes that hold one member only."""
+    while not (data_type in ARRAYS or data_type in MAPPINGS) and len(data_type.data_types) == 1:
+        data_type = data_type.data_types[0]
+    if data_type in ARRAYS:
+        return "array"
+    return "map" if data_type in MAPPINGS else None
 
 
 def _declared_unique_arrays(

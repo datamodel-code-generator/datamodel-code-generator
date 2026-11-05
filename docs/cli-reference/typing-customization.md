@@ -8491,7 +8491,9 @@ list types for JSON Schema arrays that have the uniqueItems constraint set
 to true, enforcing uniqueness at the type level: a property, a root model,
 the member of an anyOf or oneOf, the items of an array and the values of a
 map. An array whose items no set can hold, such as objects or arrays, stays
-a list.
+a list. So does a nested array in a union beside another member of its kind
+that keeps its lists, an array beside an array or a map beside a map, as a
+msgspec union holds one of each.
 
 !!! tip "Usage"
 

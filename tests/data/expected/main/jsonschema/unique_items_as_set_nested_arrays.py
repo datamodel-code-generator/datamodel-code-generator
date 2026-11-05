@@ -55,4 +55,6 @@ class Model(Struct):
     beside_any_of: list[BesideAnyOfItem] | UnsetType = UNSET
     arrays_of_sets: ArraysOfSets | UnsetType = UNSET
     nested_sets: list[NestedSet] | UnsetType = UNSET
+    two_patterns: dict[str, list[int]] | UnsetType = UNSET
+    two_maps: dict[str, list[int]] | UnsetType = UNSET
     tuples: list[Tuple] | UnsetType = UNSET
