@@ -1,1 +1,0 @@
-msgspec cannot decode the union Model.picked: its str-like members Picked, Picked1 include an Enum, while a msgspec union holds an Enum only as its one str-like member. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes beside str and other Literal values.
