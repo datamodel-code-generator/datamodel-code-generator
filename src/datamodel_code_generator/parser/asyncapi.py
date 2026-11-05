@@ -667,10 +667,11 @@ class AsyncAPIParser(OpenAPIParser):
         """Return the schemas of a trait or a list of traits of a message or an operation.
 
         A trait that is a new reference gives the schemas of its target; any other gives its headers, as
-        ``headers_name``, when a message trait may define them (at most one trait does), then its bindings, named
-        after ``name`` with the suffix ``Trait``.
+        ``headers_name``, when a message trait may define them (at most one trait of ``traits`` that is no reference
+        does, wherever the references stand), then its bindings, named after ``name`` with the suffix ``Trait``.
         """
         schemas: list[AsyncAPISchema] = []
+        inline_headers: list[AsyncAPISchema] = []
         for trait, trait_path in _iter_trait_items(traits, path):
             if (
                 followed := self._recurse_into_ref(
@@ -680,10 +681,11 @@ class AsyncAPIParser(OpenAPIParser):
                 schemas.extend(followed)
                 continue
             if "headers" in trait and headers_name is not None:
-                if any(schema.name == headers_name for schema in schemas):
+                if any(schema.name == headers_name for schema in inline_headers):
                     msg = f"Multiple AsyncAPI message traits define headers for {_path_to_string(path)}"
                     raise Error(msg)
-                schemas.extend(self._member_format_schemas(trait, "headers", headers_name, trait_path))
+                inline_headers = self._member_format_schemas(trait, "headers", headers_name, trait_path)
+                schemas.extend(inline_headers)
             schemas.extend(
                 _member_schemas(
                     trait,

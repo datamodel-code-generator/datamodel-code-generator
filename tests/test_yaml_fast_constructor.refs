@@ -28,6 +28,7 @@ asyncapi/single_value_enum_as_const/written_as_const/v2.yaml	yaml_fast_construct
 asyncapi/single_value_enum_as_const/written_as_const/v3.yaml	yaml_fast_constructor/parity.txt
 asyncapi/single_value_enum_as_const/xml_schema.yaml	yaml_fast_constructor/parity.txt
 asyncapi/stable-surface.yaml	yaml_fast_constructor/parity.txt
+asyncapi/trait_headers_inline_and_ref.yaml	yaml_fast_constructor/parity.txt
 asyncapi/unknown-version.yaml	yaml_fast_constructor/parity.txt
 asyncapi/user-events.yaml	yaml_fast_constructor/parity.txt
 asyncapi/xml-schema-format.yaml	yaml_fast_constructor/parity.txt

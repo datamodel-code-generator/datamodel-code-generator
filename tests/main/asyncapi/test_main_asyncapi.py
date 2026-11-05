@@ -568,3 +568,16 @@ def test_main_asyncapi_name_converted_payloads_by_message(output_file: Path, ext
             invalid_json="1",
             expected_error_type="string_type",
         )
+
+
+def test_main_asyncapi_trait_headers_inline_and_ref_in_either_order(output_file: Path) -> None:
+    """Read the headers of an inline trait beside a referenced one the same way in either order (#5884).
+
+    The referenced trait keeps its component model; the inline trait's headers are the message's headers.
+    """
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "trait_headers_inline_and_ref.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=PY310_TARGET_ARGS,
+    )
