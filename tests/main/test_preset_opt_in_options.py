@@ -67,6 +67,7 @@ OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
     "--rename-submodules-hidden-by-classes",
     "--use-serialize-as-any-for-every-subclass",
     "--read-escaped-ref-pointers",
+    "--read-dynamic-anchors-in-document-order",
 )
 """The options the 20261104 presets set beyond the 20261027 presets."""
 
@@ -188,6 +189,13 @@ CASES_20261104: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="read-escaped-ref-pointers",
+    ),
+    pytest.param(
+        OPEN_API_DATA_PATH / "dynamic_ref_anchor_parse_order.yaml",
+        "openapi",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="read-dynamic-anchors-in-document-order",
+        marks=pytest.mark.filterwarnings(r"ignore:The anchor 'T' is declared by more than one schema:UserWarning"),
     ),
 )
 """The inputs each opt-in option of the 20261104 presets changes."""

@@ -1700,6 +1700,9 @@ models	main/openapi/main_openapi/pointer_into_document_with_integer_top_level_ke
 	main/openapi/parameter_without_name.py
 [test_main_openapi_querystring_parameter_requires_32]
 	main/openapi/querystring_parameter_31.py
+[test_main_openapi_read_dynamic_anchors_in_document_order]
+read	main/openapi/main_openapi/read_dynamic_anchors_in_document_order[read].py
+released	main/openapi/main_openapi/read_dynamic_anchors_in_document_order[released].py
 [test_main_openapi_read_escaped_ref_pointers]
 read	main/openapi/main_openapi/read_escaped_ref_pointers[read].py
 released	main/openapi/main_openapi/read_escaped_ref_pointers[released].py

@@ -1568,6 +1568,15 @@ _toggle(
 )
 _toggle(
     base_options,
+    "--read-dynamic-anchors-in-document-order",
+    help="Resolve a plain-name $dynamicRef that its dynamic scope does not bind from the $dynamicAnchors its document "
+    "declares, the first in document order when several declare the name, and a $ref or $dynamicRef to a plain name "
+    "several schemas of a document declare to the first of them; without it the $dynamicRef takes the first anchor "
+    "the parse has met, so the answer depends on the order of the schemas, and the $ref the last declaration, as in "
+    "0.89.0.",
+)
+_toggle(
+    base_options,
     "--ignore-ref-siblings-by-schema-version",
     help="Read a $ref as its target alone where the schema version ignores the keywords beside it (JSON Schema "
     "draft 4, 6 and 7, OpenAPI 3.0, AsyncAPI 2), as those versions specify: a $ref with a sibling format: binary "

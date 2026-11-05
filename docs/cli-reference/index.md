@@ -8,7 +8,7 @@ This documentation is auto-generated from test cases.
 
 | Category | Options | Description |
 |----------|---------|-------------|
-| 📁 [Base Options](base-options.md) | 16 | Input/output configuration |
+| 📁 [Base Options](base-options.md) | 17 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 48 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 36 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 59 | Model generation behavior |
@@ -307,6 +307,7 @@ These links are generated from CLI option metadata and summarize options that im
 ### R {#r}
 
 - [`--read-const-beside-enum`](typing-customization.md#read-const-beside-enum)
+- [`--read-dynamic-anchors-in-document-order`](base-options.md#read-dynamic-anchors-in-document-order)
 - [`--read-escaped-ref-pointers`](base-options.md#read-escaped-ref-pointers)
 - [`--read-length-keywords-by-type`](field-customization.md#read-length-keywords-by-type)
 - [`--read-msgspec-union-bounds-exactly`](field-customization.md#read-msgspec-union-bounds-exactly)

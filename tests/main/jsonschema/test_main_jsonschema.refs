@@ -6108,6 +6108,8 @@ allof_mapping_ref_sibling_type	main/jsonschema/main_jsonschema/allof_mapping_wit
 	main/jsonschema/main_jsonschema/anchor_at_any_position.py
 [test_main_jsonschema_anchor_declared_twice]
 	main/jsonschema/main_jsonschema/anchor_declared_twice.py
+[test_main_jsonschema_anchor_declared_twice_in_document_order]
+	main/jsonschema/main_jsonschema/anchor_declared_twice_in_document_order.py
 [test_main_jsonschema_anchor_in_one_of]
 	main/jsonschema/main_jsonschema/anchor_in_one_of.py
 [test_main_jsonschema_anchor_of_a_document_loaded_by_reference]

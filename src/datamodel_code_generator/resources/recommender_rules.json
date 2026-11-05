@@ -1084,6 +1084,10 @@
         "enums.read-as-their-const"
       ]
     },
+    "read_dynamic_anchors_in_document_order": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "read_escaped_ref_pointers": {
       "not_recommended": "preset",
       "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
