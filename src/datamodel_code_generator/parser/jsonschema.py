@@ -3735,7 +3735,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _linearize_inherited_schema_refs(self, base_classes: list[Reference]) -> tuple[str, ...]:
         """Return raw inherited schemas in the same C3 order as generated models.
 
-        The parents of each schema are its allOf references in document order.
+        The parents of each schema are its allOf references, ordered descendants first like the bases of its class.
         """
         return _inherited_schemas.linearize_inherited_schema_refs(self, base_classes)
 

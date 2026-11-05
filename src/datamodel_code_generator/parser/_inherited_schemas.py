@@ -1905,7 +1905,7 @@ def sort_inherited_base_classes_for_mro(parser: InheritedSchemasHost, base_class
 def linearize_inherited_schema_refs(parser: InheritedSchemasHost, base_classes: list[Reference]) -> tuple[str, ...]:
     """Return raw inherited schemas in the same C3 order as generated models.
 
-    The parents of each schema are its allOf references in document order.
+    The parents of each schema are its allOf references, ordered descendants first like the bases of its class.
     """
     direct_refs = tuple(
         base.path
@@ -1917,10 +1917,14 @@ def linearize_inherited_schema_refs(parser: InheritedSchemasHost, base_classes: 
             linearize(
                 list(direct_refs),
                 lambda ref: ref,
-                lambda ref: [
-                    parser._ref_path(parent)  # noqa: SLF001
-                    for parent in iter_allof_refs(parser, parser._load_inherited_schema_object(ref))  # noqa: SLF001
-                ],
+                lambda ref: sort_descendants_first(
+                    [
+                        parser._ref_path(parent)  # noqa: SLF001
+                        for parent in iter_allof_refs(parser, parser._load_inherited_schema_object(ref))  # noqa: SLF001
+                    ],
+                    lambda path: path,
+                    partial(get_inherited_schema_ancestor_paths, parser),
+                ),
                 lambda ref: _schema_node(parser._load_inherited_schema_object(ref), ref),  # noqa: SLF001
             )
         )
