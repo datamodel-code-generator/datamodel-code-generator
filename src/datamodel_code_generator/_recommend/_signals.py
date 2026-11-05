@@ -7,6 +7,7 @@ import re
 from collections import Counter, defaultdict
 from copy import copy
 from dataclasses import dataclass
+from functools import partial
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, get_args
 
@@ -28,7 +29,13 @@ from datamodel_code_generator._document_reader import (
 )
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._json_pointer import join_pointer, reference_tokens
-from datamodel_code_generator._json_schema import DEFINITION_KEYS, SCHEMA_VALUE_SHAPES, declared_types, schema_positions
+from datamodel_code_generator._json_schema import (
+    DEFINITION_KEYS,
+    SCHEMA_VALUE_SHAPES,
+    declared_types,
+    json_nodes,
+    schema_positions,
+)
 from datamodel_code_generator._openapi_paths import (
     OPERATION_METHODS,
     holds_path_item,
@@ -253,6 +260,26 @@ def _resolve_local(document: Mapping[str, Any], ref: object) -> object:
 def _dereferenced(document: Mapping[str, Any], node: object) -> object:
     """Return the local object a ``$ref`` node points at, or the node itself when it has no ``$ref``."""
     return _resolve_local(document, node["$ref"]) if isinstance(node, dict) and "$ref" in node else node
+
+
+def _reference_targets(refs: Mapping[tuple[str, ...], str], node: object) -> list[str]:
+    """Return the named schemas that the local references inside a schema name, by the tokens of ``refs``."""
+    return [
+        target
+        for value in json_nodes(node)
+        if isinstance(value, dict)
+        and (tokens := _local_tokens(value.get("$ref"))) is not None
+        and (target := refs.get(tokens)) is not None
+    ]
+
+
+def _content(node: object) -> object:
+    """Return a hashable form of a schema's whole content, its documentation and extensions included."""
+    if isinstance(node, dict):
+        return frozenset((str(name), _content(value)) for name, value in node.items())
+    if isinstance(node, list):
+        return tuple(map(_content, node))
+    return type(node).__name__, repr(node)
 
 
 class _ConvertedDocument(dict[str, Any]):  # noqa: FURB189
@@ -575,6 +602,8 @@ class _Walker:
         self.component_keys = frozenset(refs.values())
         self.max_depth = 0
         self.converted_components: list[tuple[str, Any]] = []
+        self.converted_definitions: Mapping[str, Any] | None = None
+        self.converted_contents: set[object] = set()
 
     def shape(self, node: object) -> int:
         """Return an interned id of a schema's structure, ignoring documentation keywords."""
@@ -639,23 +668,28 @@ class _Walker:
             self.references[component].add(target)
         return True
 
-    def walk_named(self, key: str, node: object) -> None:
-        """Walk one named schema; the schema itself is the first parent model.
+    def walk_named(self, key: str, node: object) -> bool:
+        """Walk one named schema; the schema itself is the first parent model. Return whether it was walked.
 
         Subschemas reached without a property (array items, union branches, allOf parts) are named after the
-        schema itself, so they get an empty name and do not count as names shared with other parents.
+        schema itself, so they get an empty name and do not count as names shared with other parents. A named schema
+        of a converted document that generation merges into one walked before (``merges_converted``) is not walked.
         """
         if isinstance(node, _ConvertedDocument):
-            self.walk_converted(key, node)
-        elif isinstance(node, dict) and not self.count_reference(node, key):
+            return self.walk_converted(key, node)
+        if self.merges_converted(key, node):
+            return False
+        if isinstance(node, dict) and not self.count_reference(node, key):
             self.count_keywords(node)
             self.walk_children(node, parent=key, name="", depth=0, component=key)
+        return True
 
-    def walk_converted(self, key: str, document: _ConvertedDocument) -> None:
+    def walk_converted(self, key: str, document: _ConvertedDocument) -> bool:
         """Walk a converted document as generation parses it: its root as the named schema, then the schemas it uses.
 
         Its references are read in the document alone; the definitions walked are named schemas beside the components,
-        kept apart from those of the other documents and from components of the same name, as generation names them.
+        kept apart from those of the other documents and from components of the same name, as generation names them,
+        unless generation merges them (``merges_converted``). Return whether the root was walked.
         """
         definitions = definition_schemas(document)
         walker = copy(self)
@@ -663,9 +697,31 @@ class _Walker:
         walker.refs = _component_refs("jsonschema", definitions)
         walker.component_keys = frozenset(definitions)
         walker.references = defaultdict(set)
-        walker.walk_named(key, {name: value for name, value in document.items() if name not in DEFINITION_KEYS})
+        walker.converted_definitions = definitions
+        root = {name: value for name, value in document.items() if name not in DEFINITION_KEYS and name != "$schema"}
+        if not walker.walk_named(key, root):
+            return False
         self.converted_components.extend(_walk_components(walker, definitions, [key]).items())
         self.max_depth = max(self.max_depth, walker.max_depth)
+        return True
+
+    def merges_converted(self, key: str, node: object) -> bool:
+        """Return whether generation merges a named schema of a converted document into one walked before.
+
+        It does where the earlier one has the same name and content, and the schemas each references, read in its own
+        document, have the same names and contents: ``delete_duplicate_models`` merges equal models whose references
+        match, so the Avro schemas of two AsyncAPI documents that define a type alike give one class. A schema of no
+        converted document is never merged.
+        """
+        if (definitions := self.converted_definitions) is None:
+            return False
+        targets = partial(_reference_targets, self.refs)
+        names = reach(targets(node), lambda name: targets(definitions[name]))
+        content = (key, _content(node), frozenset((name, _content(definitions[name])) for name in names))
+        if content in self.converted_contents:
+            return True
+        self.converted_contents.add(content)
+        return False
 
     def record_name(self, name: str, parent: str, parents: defaultdict[str, set[str]]) -> None:
         """Record the parent of an inline model named after a property."""
@@ -882,8 +938,8 @@ def _walk_components(walker: _Walker, components: Mapping[str, Any], roots: Iter
     walked: dict[str, Any] = {}
 
     def visit(key: str) -> list[str]:
-        walked[key] = components[key]
-        walker.walk_named(key, components[key])
+        if walker.walk_named(key, node := components[key]):
+            walked[key] = node
         return sorted(walker.references[key] - walked.keys())
 
     reach(pending, visit)
