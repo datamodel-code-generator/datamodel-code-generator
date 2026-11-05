@@ -91,19 +91,19 @@ class EnumMap(RootModel[int]):
 
 
 class PointItem(RootModel[Point]):
-    root: Point = Field(..., ge=5)
+    root: Point
 
 
 class PointMap(RootModel[Point]):
-    root: Point = Field(..., ge=5)
+    root: Point
 
 
 class LetterItem(RootModel[Letter]):
-    root: Letter = Field(..., max_length=3)
+    root: Letter
 
 
 class LetterMap(RootModel[Letter]):
-    root: Letter = Field(..., max_length=3)
+    root: Letter
 
 
 class Model(BaseModel):

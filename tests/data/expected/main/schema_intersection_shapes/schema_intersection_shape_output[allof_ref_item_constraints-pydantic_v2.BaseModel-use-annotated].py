@@ -115,7 +115,7 @@ class StampItem(RootModel[Stamp]):
 
 
 class PointItem(RootModel[Point]):
-    root: Annotated[Point, Field(ge=5)]
+    root: Point
 
 
 class Model(BaseModel):

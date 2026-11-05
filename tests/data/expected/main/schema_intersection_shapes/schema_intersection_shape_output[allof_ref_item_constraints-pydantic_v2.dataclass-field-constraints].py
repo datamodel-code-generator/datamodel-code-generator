@@ -92,16 +92,16 @@ EnumItem = TypeAliasType("EnumItem", Annotated[Quantity, Field(..., le=10)])
 EnumMap = TypeAliasType("EnumMap", Annotated[Quantity, Field(..., le=10)])
 
 
-PointItem = TypeAliasType("PointItem", Annotated[Point, Field(..., ge=5)])
+PointItem = TypeAliasType("PointItem", Point)
 
 
-PointMap = TypeAliasType("PointMap", Annotated[Point, Field(..., ge=5)])
+PointMap = TypeAliasType("PointMap", Point)
 
 
-LetterItem = TypeAliasType("LetterItem", Annotated[Letter, Field(..., max_length=3)])
+LetterItem = TypeAliasType("LetterItem", Letter)
 
 
-LetterMap = TypeAliasType("LetterMap", Annotated[Letter, Field(..., max_length=3)])
+LetterMap = TypeAliasType("LetterMap", Letter)
 
 
 @dataclass

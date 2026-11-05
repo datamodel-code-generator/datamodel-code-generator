@@ -1,0 +1,2 @@
+Pydantic does not take ge on Point; PointItem is generated without this constraint.
+Pydantic does not take ge on Point; PointMap is generated without this constraint.

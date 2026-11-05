@@ -228,7 +228,7 @@ def _enforcing_leaves(data_type: DataType) -> Iterator[tuple[str | None, Sequenc
 def can_hold_array(data_type: DataType, *, models: bool) -> bool:
     """Return whether a value of the type, but ``None``, is an array itself: an array, a custom type or a union of them.
 
-    A model (a ``$ref``) is one too when ``models`` says so, whose field Pydantic cannot apply an item count to.
+    A model (a ``$ref``) is one too when ``models`` says so: the type the output writes for it decides the count.
     """
     return (
         data_type in ARRAYS

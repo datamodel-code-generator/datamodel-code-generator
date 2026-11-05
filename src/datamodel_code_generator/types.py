@@ -1755,6 +1755,18 @@ def _is_plain_none(data_type: DataType) -> bool:
     return data_type.type == NONE and not data_type.data_types
 
 
+def _value_members(data_type: DataType) -> Iterator[DataType]:
+    """Yield the types a value of a type validates as: each member of its union, through types that write only members.
+
+    The plain None of a union is left out.
+    """
+    if data_type._writes_nothing_of_its_own and data_type.data_types:  # noqa: SLF001
+        for member in data_type.data_types:
+            yield from _value_members(member)
+    elif not _is_plain_none(data_type):
+        yield data_type
+
+
 def _is_value_literal(data_type: DataType) -> bool:
     """Return whether a type is the ``Literal`` of the values of a const or an enum."""
     return bool(data_type.literals) and not data_type.type and data_type.import_ is None
@@ -1955,6 +1967,49 @@ class DataTypeManager(ABC):
         (``_constraint_keywords`` with ``model_of``).
         """
         return cls._constraint_keywords(data_type, target_version, model_of, seen)
+
+    @classmethod
+    def model_value_constraint_keywords(
+        cls,
+        data_type: DataType,
+        target_version: tuple[int, int],
+        model_of: Callable[[ReferenceView], ModelView | None],
+        seen: frozenset[int] = frozenset(),
+    ) -> frozenset[str] | None:
+        """Return the type-dependent keywords one value of a type takes where every value is the instance of a model.
+
+        A keyword none of them takes fails on every value of the type. Each member of the union the type is, other than
+        None, counts: one that names a type alias stands for its type, read the same way, and one that names another
+        model takes what ``member_constraint_keywords`` gives (an enum whose base is its value type what that type
+        takes; a root model, an object model, a dataclass or a plain enum none). The answer is None where a value is no
+        instance of a model, whose keywords the field assembly decided, or names a model ``model_of`` does not hold or
+        an alias that names itself again (``seen``).
+        """
+        keywords: set[str] = set()
+        if not (members := tuple(_value_members(data_type))):
+            return None
+        for member in members:
+            if (
+                (reference := member.reference) is None
+                or id(reference) in seen
+                or (model := model_of(reference)) is None
+            ):
+                return None
+            if model.form != "alias":
+                keywords.update(cls.member_constraint_keywords(member, target_version, model_of) or ())
+            elif (
+                not (fields := model.fields)
+                or (
+                    aliased := cls.model_value_constraint_keywords(
+                        cast("DataType", fields[0].data_type), target_version, model_of, seen | {id(reference)}
+                    )
+                )
+                is None
+            ):
+                return None
+            else:
+                keywords.update(aliased)
+        return frozenset(keywords)
 
     @classmethod
     def _constraint_keywords(  # noqa: PLR0911, PLR0913

@@ -247,7 +247,7 @@ OmitReason: TypeAlias = Literal[
 * ``self-reference-container``: the field names its own model outside a container, which takes no constraints.
 * ``strict-kwargs``: a strict type that carries its arguments writes the constraints itself.
 * ``untaken-by-type``: the type of the field, or of a part collapsing inlined into it, does not take the keyword
-  (recorded at L5); it warns.
+  (recorded at L5, or decided as the field is written: msgspec ``Meta``, and Pydantic beside a model); it warns.
 * ``override-type-does-not-take``: ``--type-overrides`` replaced the type and its arguments; it warns.
 * ``none-type``: a number constraint on a ``None`` type.
 * ``consumed-by-type``: the type expresses the keyword (``const`` as a ``Literal``, an integer ``multipleOf`` of 1).

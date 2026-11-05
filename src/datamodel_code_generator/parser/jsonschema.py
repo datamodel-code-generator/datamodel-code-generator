@@ -564,9 +564,10 @@ class _ConstraintSite:
     the field, with no item counts added to it, where an object property and the array builder leave them out (the
     tuple has them): row ``legacy-root-tuple-lengths``."""
     counts_beside_models: bool
-    """The item counts that ``contains`` and boolean ``items`` imply stay on a field whose type is a model, where
-    Pydantic raises ``Unable to apply constraint`` when the model validates an array; a root field writes none there,
-    as in 0.88.0: row ``legacy-property-counts-beside-models``."""
+    """The item counts that ``contains`` and boolean ``items`` imply stay on a field whose type is a model, for the
+    type the output writes to decide: a type alias of an array or a collapsed array takes them, a model whose value
+    takes none leaves them out with a warning (``DataTypeManager.model_value_constraint_keywords``, msgspec's
+    ``Meta``); a root field writes none there, as in 0.88.0: row ``legacy-property-counts-beside-models``."""
     records_by_option: bool
     """It records the keywords it leaves out and those its type decides only under ``--field-constraints`` (#4997,
     0.87.0), where a property records them once it assembled any: row ``legacy-root-records-by-option``."""

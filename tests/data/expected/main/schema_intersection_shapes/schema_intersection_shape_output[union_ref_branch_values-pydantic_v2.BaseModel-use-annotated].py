@@ -29,7 +29,7 @@ class AtLeast1(RootModel[str]):
 
 
 class AtLeast(RootModel[Quantity | AtLeast1]):
-    root: Annotated[Quantity | AtLeast1, Field(ge=5)]
+    root: Quantity | AtLeast1
 
 
 class Letters1(RootModel[int]):
@@ -37,7 +37,7 @@ class Letters1(RootModel[int]):
 
 
 class Letters(RootModel[Text | Letters1]):
-    root: Annotated[Text | Letters1, Field(pattern='^a+$')]
+    root: Text | Letters1
 
 
 class NonEmpty1(RootModel[int]):
@@ -45,7 +45,7 @@ class NonEmpty1(RootModel[int]):
 
 
 class NonEmpty(RootModel[Words | NonEmpty1]):
-    root: Annotated[Words | NonEmpty1, Field(min_length=1)]
+    root: Words | NonEmpty1
 
 
 class AtLeastInAllOf1(RootModel[str]):
@@ -65,7 +65,7 @@ class AtLeastTen1(RootModel[str]):
 
 
 class AtLeastTen(RootModel[Large | AtLeastTen1]):
-    root: Annotated[Large | AtLeastTen1, Field(ge=5)]
+    root: Large | AtLeastTen1
 
 
 class ShortLetters1(RootModel[int]):
@@ -73,7 +73,7 @@ class ShortLetters1(RootModel[int]):
 
 
 class ShortLetters(RootModel[Text | ShortLetters1]):
-    root: Annotated[Text | ShortLetters1, Field(max_length=8)]
+    root: Text | ShortLetters1
 
 
 class Model(BaseModel):
