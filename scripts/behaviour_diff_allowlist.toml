@@ -222,9 +222,9 @@ decision = "#6171"
 release_note = "an allOf of value parts that keeps the form it is written in writes the keywords of its parts on its root, so a lone allOf member's minItems, maxLength or bounds are no longer dropped"
 
 [[accepted]]
-input = "*reuse_scope_tree_root_key"
+input = "*reuse_scope_tree_root_key*"
 aspects = [ "constraints", "type", "probe" ]
-match = "^\\[(?:(?:constraints|type)\\] [ab]:(?:Settings|Limits)\\d*: .* -> .*(?:StringConstraints|Meta)\\(min_length=2,pattern='\\^k'\\).*|probe\\] [ab]:(?:Settings|Limits): accept -> reject)$"
+match = "^\\[(?:(?:constraints|type)\\] (?:[ab]:)?(?:Settings|Limits)\\d*: .* -> .*(?:StringConstraints|Meta)\\(min_length=2,pattern='\\^k'\\).*|probe\\] (?:[ab]:)?(?:Settings|Limits): accept -> reject)$"
 reason = "the allOf of a propertyNames schema that keeps the form it is written in dropped the minLength and pattern of its parts, so the map accepted keys the schema rejects; its keys write them now (schema-mismatch fix; the probe example key breaks them)"
 decision = "#6171"
 release_note = "an allOf of value parts that keeps the form it is written in writes the keywords of its parts on its root, so a lone allOf member's minItems, maxLength or bounds are no longer dropped"
