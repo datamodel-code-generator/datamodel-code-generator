@@ -74316,6 +74316,38 @@ class Link0(BaseModel):
 
 and `Link1.next` is `Next1` too: 4 site models.
 
+### `--use-unique-items-as-set-by-value`
+
+| | |
+|---|---|
+| Option | `--use-unique-items-as-set-by-value` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#4834](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4834), [#4936](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4936), [#6191](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6191) |
+
+**Affects:** output under `--use-unique-items-as-set`. Its sets are decided before `--collapse-root-models`, `--type-overrides` and the other modules, and a model that is a set item hashes by identity, so `[{"id": 1}, {"id": 1}]` parses to a set of two equal `Pet`s (#4936). Deduplication, `--reuse-model`, `--collapse-reuse-models` and `--reuse-scope tree` compare such arrays as the lists they still are, so a model whose array declares no `uniqueItems` merges into one whose array does, and its `["b", "a", "b"]` parses to `{"a", "b"}` (#4834); a root model of another module is collapsed into a list or a set as the order of the modules says (#6191). With the option a set is decided on the final item types and written only where every value of its items hashes by value: scalars, enums, tuples and frozen sets of them, and frozen models whose fields hash. An array of models that hash only by identity, of `Any` or of containers stays a list, and models whose arrays differ in `uniqueItems` stay apart.
+
+Schema: `Labels.names` declares `uniqueItems`, `History.names` does not, and `pets` is a `uniqueItems` array of `Pet` objects; with `--use-unique-items-as-set --reuse-model --collapse-reuse-models`.
+
+Without the option (same as 0.89.0):
+
+```python
+class Root(BaseModel):
+    labels: Labels | None = None
+    history: Labels | None = None
+    pets: set[Pet] | None = None
+```
+
+With the option:
+
+```python
+class Root(BaseModel):
+    labels: Labels | None = None
+    history: History | None = None
+    pets: list[Pet] | None = None
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.
@@ -76640,6 +76672,8 @@ is a new named row, never an anonymous `if`.
 | `legacy-anchor-parse-index` | a plain name the walk of the definitions registered with the model resolver (`parse_id`: an `$id` or `$anchor` at the positions of the reference pre-pass) names the schema registered last there, also where the registry names another one, such as the last declaration in document order of a name several schemas of a document declare | #5131 |
 | `legacy-first-read-dialect` | without `--read-schema-version-per-document`, the readings of a schema version are the run's: the `$ref`-sibling gate of the allOf, literal-narrowing and validator readers and the schema features (`schema_features`) are those of the document parsed at each one's first read, the gate detected as JSON Schema for every parser class (an OpenAPI or AsyncAPI document reads as draft 7 unless it holds `$defs`); whether siblings merge as parts is that of the input document being parsed, also for the schemas of a document a reference loads | keep |
 | `legacy-count-ref-member-as-written` | without `--read-schema-version-per-document`, the property-count validator reads `minProperties`/`maxProperties` beside an allOf `$ref` member in every schema version, where the other validator walkers read them only in a version that applies the keywords beside a `$ref` | keep |
+| `legacy-dedup-keys-without-unique-items` | without `--use-unique-items-as-set-by-value`, the dedup and reuse keys leave out which arrays declare `uniqueItems`, which they compare as the lists they still are | keep |
+| `legacy-unique-items-decided-before-collapse` | without `--use-unique-items-as-set-by-value`, `--use-unique-items-as-set` writes its sets in L5, before root models collapse, type overrides apply and the other modules are processed, and a set item model hashes by identity | keep |
 
 **Scope on schema objects, not parse paths.** When an option applies to part of a document, the walk that defines the
 part marks the schema objects in scope where the document is rewritten (L0), and L1 checks the mark on the object it
