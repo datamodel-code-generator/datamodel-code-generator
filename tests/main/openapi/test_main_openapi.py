@@ -12344,6 +12344,36 @@ def test_main_openapi_dynamic_anchor_of_held_document_in_document_order(output_f
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="released"), pytest.param(["--read-dynamic-anchors-in-document-order"], id="read")],
+)
+def test_main_openapi_dynamic_anchor_declared_once(output_file: Path, extra_args: list[str]) -> None:
+    """Resolve an unbound `$dynamicRef` to the one `$dynamicAnchor` of its name, with the document-order option or not.
+
+    Only `First` declares `$dynamicAnchor: T`, and nothing binds `T` in the dynamic scope of `Holder`, so under the
+    option the document as loaded names `First`, the anchor the parse meets without the option, too.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "dynamic_ref_anchor_declared_once.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel"),
+            *extra_args,
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_dynamic_anchor_declared_once",
+        model_name="Holder",
+        valid_json='{"item": {"first": 1}}',
+        invalid_json='{"item": {"first": "one"}}',
+        expected_error_type="int_parsing",
+    )
+
+
 def test_main_openapi_all_of_request_body(output_file: Path) -> None:
     """A request body of the paths scope that is an `allOf` is parsed as the model of its parts."""
     run_main_and_assert(

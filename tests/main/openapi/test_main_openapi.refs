@@ -1268,6 +1268,9 @@ tree-type-alias	main/openapi/dot_notation_collapse_reuse_models_tree//*.py
 	main/openapi/dot_notation_inheritance//*.py
 [test_main_openapi_dot_notation_root_package_inheritance]
 	main/openapi/dot_notation_root_package_inheritance//*.py
+[test_main_openapi_dynamic_anchor_declared_once]
+read	main/openapi/main_openapi/dynamic_anchor_declared_once[read].py
+released	main/openapi/main_openapi/dynamic_anchor_declared_once[released].py	= main/openapi/main_openapi/dynamic_anchor_declared_once[read].py
 [test_main_openapi_dynamic_anchor_of_held_document_in_document_order]
 	main/openapi/main_openapi/dynamic_anchor_of_held_document_in_document_order.py
 [test_main_openapi_dynamic_anchor_registered_after_its_reference]

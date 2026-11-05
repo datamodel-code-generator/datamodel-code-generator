@@ -302,6 +302,7 @@ openapi/dynamic_anchor_held_document/api.yaml	yaml_fast_constructor/parity.txt
 openapi/dynamic_anchor_held_document/parameter.yaml	yaml_fast_constructor/parity.txt
 openapi/dynamic_ref.yaml	yaml_fast_constructor/parity.txt
 openapi/dynamic_ref_anchor_and_dynamic_anchor.yaml	yaml_fast_constructor/parity.txt
+openapi/dynamic_ref_anchor_declared_once.yaml	yaml_fast_constructor/parity.txt
 openapi/dynamic_ref_anchor_parse_order.yaml	yaml_fast_constructor/parity.txt
 openapi/dynamic_ref_component_anchors/api.yaml	yaml_fast_constructor/parity.txt
 openapi/dynamic_ref_external_generic/api.yaml	yaml_fast_constructor/parity.txt
