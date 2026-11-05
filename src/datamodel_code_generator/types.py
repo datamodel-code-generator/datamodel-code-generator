@@ -1991,11 +1991,11 @@ class DataTypeManager(ABC):
         takes; a root model, an object model, a dataclass or a plain enum none), and the length keywords too where its
         instance has a length (``ModelView.has_length``, the sequence interface of a root model), which Pydantic checks
         by ``len()``. The answer is None where a value is no instance of a model, whose keywords the field assembly
-        decided, or names a model ``model_of`` does not hold or an alias that names itself again (``seen``).
+        decided, or names a model ``model_of`` does not hold or an alias that names itself again (``seen``). The values
+        of the aliases a member names are read from a stack of their own, so a long chain of aliases takes no call per
+        alias.
         """
         keywords: set[str] = set()
-        # The values of the aliases a member names are read from a stack of their own, so a long chain of aliases
-        # takes no call per alias.
         pending: list[tuple[DataType, frozenset[int]]] = [(data_type, seen)]
         while pending:
             current, current_seen = pending.pop()
