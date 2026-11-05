@@ -37,7 +37,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
       "recommended": {
         "arguments": [
           "--naming-strategy",
-          "full-path",
+          "enclosing-model",
           "--preset",
           "standard-py314-20261104"
         ],
@@ -66,7 +66,7 @@ wrote report.md, scores.json, calibration.json, rules.diff
       "recommended": {
         "arguments": [
           "--naming-strategy",
-          "full-path",
+          "enclosing-model",
           "--preset",
           "standard-py314-20261104"
         ],
@@ -136,9 +136,9 @@ A rule should fire on a schema when the grid's best configuration with its value
 |---|---|---|---|---|---|
 | titles.keys-when-titles-collide | title-source | - | - | - | pets, config |
 | titles.names-from-unique-titles | title-source | - | - | - | pets, config |
-| naming.qualify-shared-inline-names | naming-strategy | pets, config | - | config | - |
 | enums.inline-value-sets-as-literal | enum-shape | - | pets | config | - |
 
+- Not covered: naming.qualify-shared-inline-names (its values are not a grid value)
 - Not covered: enums.read-as-their-const (decision enum-const-reading has no grid axis)
 - Not covered: openapi.paths-bodies-as-definitions (decision paths-bodies-as-definitions has no grid axis)
 - Not covered: constraints.omit-redundant (decision redundant-constraints has no grid axis)
@@ -180,12 +180,12 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
 - settings.preset None -> standard-py314-20261104
 - config: new
 - legacy: not in this run
-- pets: best.arguments [--enum-field-as-literal all] -> [--naming-strategy full-path --enum-field-as-literal all]; best.median_length 11 -> 5; best.preset None -> standard-py314-20261104; best.problems 3 -> 0; recommended.arguments [] -> [--naming-strategy full-path --preset standard-py314-20261104]; recommended.median_length 12 -> 9; recommended.problems 5 -> 0; regret 2 -> 0; rules [enums.inline-value-sets-as-literal] -> [naming.qualify-shared-inline-names]
+- pets: best.arguments [--enum-field-as-literal all] -> [--naming-strategy full-path --enum-field-as-literal all]; best.median_length 11 -> 5; best.preset None -> standard-py314-20261104; best.problems 3 -> 0; recommended.arguments [] -> [--naming-strategy enclosing-model --preset standard-py314-20261104]; recommended.median_length 12 -> 9; recommended.problems 5 -> 0; regret 2 -> 0; rules [enums.inline-value-sets-as-literal] -> [naming.qualify-shared-inline-names]
 
 --- rules.diff
 --- a/src/datamodel_code_generator/resources/recommender_rules.json
 +++ b/src/datamodel_code_generator/resources/recommender_rules.json
-@@ -143,7 +143,7 @@
+@@ -134,7 +134,7 @@
            {
              "signal": "inline_enums",
              "op": ">=",
@@ -224,7 +224,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
         "recommended": {
           "arguments": [
             "--naming-strategy",
-            "full-path",
+            "enclosing-model",
             "--preset",
             "standard-py314-20261104"
           ],
@@ -253,7 +253,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
         "recommended": {
           "arguments": [
             "--naming-strategy",
-            "full-path",
+            "enclosing-model",
             "--preset",
             "standard-py314-20261104"
           ],
@@ -692,7 +692,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "--input-file-type",
           "jsonschema",
           "--naming-strategy",
-          "full-path",
+          "enclosing-model",
           "--output-model-type",
           "pydantic_v2.BaseModel",
           "--preset",
@@ -789,7 +789,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           {
             "arguments": [
               "--naming-strategy",
-              "full-path"
+              "enclosing-model"
             ],
             "caveats": [],
             "contested_reason": null,
@@ -800,10 +800,10 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
               "Stripe API description: the expandable ID string of charge no longer displaces the charge component (ChargeModel)",
               "SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and lost"
             ],
-            "reason": "Inline schemas under different parents share property names (names: 1, e.g. mode x2; inline names equal to a component name: 0). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; full-path names each inline model after its parent.",
+            "reason": "Inline schemas under different parents share property names (names: 1, e.g. mode x2; inline names equal to a component name: 0). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; enclosing-model names each inline model after the model it is built for, once, and leaves definitions their own names.",
             "rule": "naming.qualify-shared-inline-names",
             "set": {
-              "naming_strategy": "full-path"
+              "naming_strategy": "enclosing-model"
             },
             "trial": {
               "after": "recommended - root-name",
@@ -966,7 +966,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             {
               "arguments": [
                 "--naming-strategy",
-                "full-path",
+                "enclosing-model",
                 "--class-name",
                 "Config"
               ],
@@ -1000,7 +1000,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
               "selectable": true,
               "set": {
                 "class_name": "Config",
-                "naming_strategy": "full-path"
+                "naming_strategy": "enclosing-model"
               },
               "stability": null
             },
@@ -1045,7 +1045,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             {
               "arguments": [
                 "--naming-strategy",
-                "full-path"
+                "enclosing-model"
               ],
               "dropped_constraint_warnings": 0,
               "error": null,
@@ -1076,7 +1076,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
               "preset": "standard-py314-20261104",
               "selectable": true,
               "set": {
-                "naming_strategy": "full-path"
+                "naming_strategy": "enclosing-model"
               },
               "stability": null
             }
@@ -1416,7 +1416,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "--input-file-type",
           "openapi",
           "--naming-strategy",
-          "full-path",
+          "enclosing-model",
           "--output-model-type",
           "pydantic_v2.BaseModel",
           "--preset",
@@ -1466,7 +1466,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           {
             "arguments": [
               "--naming-strategy",
-              "full-path"
+              "enclosing-model"
             ],
             "caveats": [],
             "contested_reason": null,
@@ -1477,10 +1477,10 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
               "Stripe API description: the expandable ID string of charge no longer displaces the charge component (ChargeModel)",
               "SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and lost"
             ],
-            "reason": "Inline schemas under different parents share property names (names: 2, e.g. status x3, owner x2; inline names equal to a component name: 0). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; full-path names each inline model after its parent.",
+            "reason": "Inline schemas under different parents share property names (names: 2, e.g. status x3, owner x2; inline names equal to a component name: 0). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; enclosing-model names each inline model after the model it is built for, once, and leaves definitions their own names.",
             "rule": "naming.qualify-shared-inline-names",
             "set": {
-              "naming_strategy": "full-path"
+              "naming_strategy": "enclosing-model"
             },
             "trial": {
               "after": "recommended",
@@ -1667,7 +1667,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             {
               "arguments": [
                 "--naming-strategy",
-                "full-path"
+                "enclosing-model"
               ],
               "dropped_constraint_warnings": 0,
               "error": null,
@@ -1698,7 +1698,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
               "preset": "standard-py314-20261104",
               "selectable": true,
               "set": {
-                "naming_strategy": "full-path"
+                "naming_strategy": "enclosing-model"
               },
               "stability": {
                 "fingerprints_matched": 3,
@@ -1785,19 +1785,8 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "rule": "titles.names-from-unique-titles"
     },
     {
-      "covered": "yes",
+      "covered": "its values are not a grid value",
       "decision": "naming-strategy",
-      "disagrees": {
-        "calibration": [],
-        "holdout": [
-          "config"
-        ]
-      },
-      "fires": [
-        "pets",
-        "config"
-      ],
-      "neutral": [],
       "rule": "naming.qualify-shared-inline-names"
     },
     {
@@ -1915,7 +1904,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "recommended": {
         "arguments": [
           "--naming-strategy",
-          "full-path",
+          "enclosing-model",
           "--preset",
           "standard-py314-20261104"
         ],
@@ -1993,7 +1982,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "recommended": {
         "arguments": [
           "--naming-strategy",
-          "full-path",
+          "enclosing-model",
           "--preset",
           "standard-py314-20261104"
         ],

@@ -18,11 +18,14 @@ Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
 
 Start from  --preset standard-py314-20261104
 
-Add (1 option)
-  --naming-strategy full-path   [naming.qualify-shared-inline-names]
+Add  nothing on top of the preset
+
+Left out after the trial (the rules recommend these)
+  --naming-strategy enclosing-model   [naming.qualify-shared-inline-names]
       Inline schemas under different parents share property names (names: 1, e.g. dimensions x2;
       inline names equal to a component name: 0). Numbered names (Status, Status1) depend on parse
-      order and shift when the schema grows; full-path names each inline model after its parent.
+      order and shift when the schema grows; enclosing-model names each inline model after the model
+      it is built for, once, and leaves definitions their own names.
       measured: GitHub REST API description: numbered names 663 -> 53; locations renamed between two
       versions 17% -> 0.0%
       measured: Petstore: Status and Status1 became OrderStatus and PetStatus
@@ -30,11 +33,11 @@ Add (1 option)
       charge component (ChargeModel)
       measured: SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and
       lost
-      trial: preset -> recommended: classes 6 -> 6, problem names 2 -> 1; 3 of 6 classes matched by
+      trial: preset -> recommended: classes 6 -> 6, problem names 2 -> 2; 3 of 6 classes matched by
       schema location renamed (0 only renumbered), 0 removed, 0 added, e.g.
         Dimensions -> ProductDimensions   at $defs/Product > dimensions
         Dimensions1 -> VariantDimensions   at $defs/Variant > dimensions
-        Price -> ModelPrice   at (root) > price > oneOf 0
+        Price -> Model1   at (root) > price > oneOf 0
 
 Optional (policy; not in the command)
   --strict-types int float bool   [policy.strict-scalar-types]
@@ -51,27 +54,23 @@ Optional (policy; not in the command)
 Trial  3 candidates generated in memory without formatting; nothing written
   candidate    classes   problems  numbered  long  doubled  displaced  median  unconstrained
   current            6  2 (33.3%)         1     0        0          0       7              0
-  preset             6  2 (33.3%)         1     0        0          0       7              0
-  recommended        6  1 (16.7%)         0     0        0          0      10              0   selected
+  preset             6  2 (33.3%)         1     0        0          0       7              0   selected
+  recommended        6  2 (33.3%)         1     0        0          0       7              0
   current: the configuration as set, without the preset; never selected
   unconstrained: fields that dcg warns it generates without some of their constraints
 
-Changes from the current configuration (current -> recommended)
-  3 of 6 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added, e.g.
-    Dimensions -> ProductDimensions   at $defs/Product > dimensions
-    Dimensions1 -> VariantDimensions   at $defs/Variant > dimensions
-    Price -> ModelPrice   at (root) > price > oneOf 0
+Changes from the current configuration (current -> preset)
+  0 of 6 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added
 
 Notes
   - The rules were calibrated on the 20261017 presets.
 
 Command
-  datamodel-codegen --formatters builtin --input-file-type jsonschema --naming-strategy full-path --preset standard-py314-20261104 --target-python-version 3.14
+  datamodel-codegen --formatters builtin --input-file-type jsonschema --preset standard-py314-20261104 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
   formatters = ["builtin"]
   input-file-type = "jsonschema"
-  naming-strategy = "full-path"
   preset = "standard-py314-20261104"
   target-python-version = "3.14"

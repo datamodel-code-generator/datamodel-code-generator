@@ -17791,3 +17791,88 @@ def test_main_openapi_naming_strategy_definitions_first(
             invalid_json=json.dumps({"pkg": {"name": 1}}),
             expected_error_type="string_type",
         )
+
+
+@pytest.mark.cli_doc(
+    options=["--naming-strategy"],
+    option_description="""Prefix every nested model with the final name of the model it is built for, once.
+
+`full-path` prefixes a nested model with the name of the closest model registered above it when the model is named,
+so a model of an `allOf` property finds none (`Issue1`), a branch of a union without a name of its own takes the
+union's name and is prefixed with it again (`StreamEventStreamEvent`), and a definition parsed after the root model
+takes the root's name (`ModelCustomer`). With `--naming-strategy enclosing-model` a model built for another model
+takes that model's final name and its own part once: the property key (`IssueClosedIssue`), the tag of a union branch
+(`PetCat`), or the position of a branch without a name of its own (`StreamEvent1`); a definition, a document root and
+an operation model keep their own names (`Customer`). `--parent-scoped-naming` adds no second prefix.""",
+    input_schema="openapi/enclosing_model.yaml",
+    cli_args=["--naming-strategy", "enclosing-model"],
+    golden_output="main/openapi/main_openapi/naming_strategy_enclosing_model[pydantic_v2-enclosing-model].py",
+    comparison_output="main/openapi/main_openapi/naming_strategy_enclosing_model[pydantic_v2-full-path].py",
+    related_options=["--parent-scoped-naming", "--use-tag-as-union-variant-name"],
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", ["--naming-strategy", "full-path"], id="pydantic_v2-full-path"),
+        pytest.param(
+            "pydantic_v2.BaseModel", ["--naming-strategy", "enclosing-model"], id="pydantic_v2-enclosing-model"
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--naming-strategy", "enclosing-model", "--parent-scoped-naming"],
+            id="pydantic_v2-enclosing-model-parent-scoped",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--naming-strategy", "full-path", "--use-tag-as-union-variant-name"],
+            id="pydantic_v2-full-path-tags",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--naming-strategy", "enclosing-model", "--use-tag-as-union-variant-name"],
+            id="pydantic_v2-enclosing-model-tags",
+        ),
+        pytest.param(
+            "msgspec.Struct",
+            ["--naming-strategy", "enclosing-model", "--use-msgspec-tagged-unions"],
+            id="msgspec-enclosing-model",
+            marks=pytest.mark.filterwarnings("ignore:msgspec cannot decode the union StreamEvent:UserWarning"),
+        ),
+        pytest.param("typing.TypedDict", ["--naming-strategy", "enclosing-model"], id="typed_dict-enclosing-model"),
+        pytest.param("dataclasses.dataclass", ["--naming-strategy", "enclosing-model"], id="dataclass-enclosing-model"),
+    ],
+)
+def test_main_openapi_naming_strategy_enclosing_model(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Prefix every nested model with the final name of the model it is built for, once (#4845, #4826, #5666).
+
+    Under ``full-path`` the models of the ``allOf`` properties ``issue`` find no parent (``Issue1``, ``Issue2``), the
+    branches of ``StreamEvent`` are ``StreamEventStreamEvent`` and ``StreamEventStreamEvent1``, and the tagged
+    branches of ``Pet`` are ``PetPetCat`` and ``PetPetDog``; under ``enclosing-model`` they are ``IssueClosedIssue``
+    and ``IssueOpenedIssue``, ``StreamEvent1`` and ``StreamEvent2``, ``PetCat`` and ``PetDog``. ``Order`` >
+    ``other`` > ``item`` gives ``OrderOtherItem`` with or without ``--parent-scoped-naming``.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "enclosing_model.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    if extra_args == ["--naming-strategy", "enclosing-model"] and output_model_type == "pydantic_v2.BaseModel":
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="naming_strategy_enclosing_model",
+            model_name="IssueClosed",
+            valid_json=json.dumps({"issue": {"id": 1, "state": "closed"}, "label": {"name": "bug"}}),
+            invalid_json=json.dumps({"issue": {"id": "x"}}),
+            expected_error_type="int_parsing",
+        )

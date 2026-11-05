@@ -4432,15 +4432,17 @@ sit below the root model `Model`), and `Company` > `employee` > `home_address` g
 primary definition. `definitions-first` gives every definition (in `/definitions/`, `/$defs/` or
 `/components/schemas/` of any document) its own name before an inline model, a union branch or another definition
 that asked for it first, which takes the name the definition would have taken (`Item1`); a model whose name is made
-from a renamed model, such as the model of its extra properties, is renamed with it.
+from a renamed model, such as the model of its extra properties, is renamed with it. `enclosing-model` prefixes
+every nested model with the final name of the model it is built for, once, and a branch of a union without a name of
+its own with its position (`StreamEvent1`), while a definition keeps its own name (`Customer`, not `ModelCustomer`).
 
 Generated clients and servers (experimental) follow the same rules for their method, argument, module, and class
 names, with the resource or router group as the parent of a method and the method as the parent of an argument, but
 prefix only a name their scope already holds: `parent-prefixed` with its innermost enclosing scope, `full-path` with
-every enclosing scope; under `primary-first` and `definitions-first`, a primary name is one the root document
-declares.
+every enclosing scope (`enclosing-model` as `full-path`); under `primary-first` and `definitions-first`, a primary
+name is one the root document declares.
 
-**Related:** [`--duplicate-name-suffix`](#duplicate-name-suffix), [`--parent-scoped-naming`](#parent-scoped-naming), [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type)
+**Related:** [`--duplicate-name-suffix`](#duplicate-name-suffix), [`--parent-scoped-naming`](#parent-scoped-naming), [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type), [`--use-tag-as-union-variant-name`](field-customization.md#use-tag-as-union-variant-name)
 
 !!! tip "Usage"
 

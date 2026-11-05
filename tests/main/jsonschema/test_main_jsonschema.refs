@@ -8282,6 +8282,9 @@ pydantic_v2	main/jsonschema/main_jsonschema/main_naming_strategy_definitions_fir
 pydantic_v2-aliases	main/jsonschema/main_jsonschema/main_naming_strategy_definitions_first[pydantic_v2-aliases].py
 pydantic_v2-model-name-map	main/jsonschema/main_jsonschema/main_naming_strategy_definitions_first[pydantic_v2-model-name-map].py
 pydantic_v2-suffix	main/jsonschema/main_jsonschema/main_naming_strategy_definitions_first[pydantic_v2-suffix].py
+[test_main_naming_strategy_enclosing_model]
+enclosing-model	main/jsonschema/main_jsonschema/main_naming_strategy_enclosing_model[enclosing-model].py
+full-path	main/jsonschema/main_jsonschema/main_naming_strategy_enclosing_model[full-path].py
 [test_main_naming_strategy_full_path]
 	main/jsonschema/naming_strategy/full_path/output.py	= main/jsonschema/naming_strategy/parent_prefixed/output.py
 [test_main_naming_strategy_parent_prefixed]

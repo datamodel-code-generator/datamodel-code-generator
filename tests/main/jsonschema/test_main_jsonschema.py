@@ -25849,13 +25849,15 @@ sit below the root model `Model`), and `Company` > `employee` > `home_address` g
 primary definition. `definitions-first` gives every definition (in `/definitions/`, `/$defs/` or
 `/components/schemas/` of any document) its own name before an inline model, a union branch or another definition
 that asked for it first, which takes the name the definition would have taken (`Item1`); a model whose name is made
-from a renamed model, such as the model of its extra properties, is renamed with it.
+from a renamed model, such as the model of its extra properties, is renamed with it. `enclosing-model` prefixes
+every nested model with the final name of the model it is built for, once, and a branch of a union without a name of
+its own with its position (`StreamEvent1`), while a definition keeps its own name (`Customer`, not `ModelCustomer`).
 
 Generated clients and servers (experimental) follow the same rules for their method, argument, module, and class
 names, with the resource or router group as the parent of a method and the method as the parent of an argument, but
 prefix only a name their scope already holds: `parent-prefixed` with its innermost enclosing scope, `full-path` with
-every enclosing scope; under `primary-first` and `definitions-first`, a primary name is one the root document
-declares.""",
+every enclosing scope (`enclosing-model` as `full-path`); under `primary-first` and `definitions-first`, a primary
+name is one the root document declares.""",
     input_schema="jsonschema/naming_strategy/input.json",
     cli_args=["--naming-strategy", "parent-prefixed"],
     golden_output="main/jsonschema/naming_strategy/parent_prefixed/output.py",
@@ -40534,3 +40536,33 @@ def test_naming_strategy_definitions_first_beside_a_resolver_that_names_models()
             formatters=[Formatter.BUILTIN],
         ).parse()
     assert_output("".join(f"{record.message}\n" for record in records if record.category is UserWarning) + str(output))
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--naming-strategy", "full-path"], id="full-path"),
+        pytest.param(["--naming-strategy", "enclosing-model"], id="enclosing-model"),
+    ],
+)
+def test_main_naming_strategy_enclosing_model(output_file: Path, extra_args: list[str]) -> None:
+    """Keep the names of the definitions a root model holds no reference to under ``enclosing-model`` (#4855).
+
+    Under ``full-path`` a definition parsed after the root model takes the root's name (``ModelCustomer``,
+    ``ModelShippingAddress``, ``ModelShipping``); under ``enclosing-model`` a definition is built for no model and
+    keeps its own name, while the inline ``meta`` of the root is ``ModelMeta`` either way.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "enclosing_model.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )

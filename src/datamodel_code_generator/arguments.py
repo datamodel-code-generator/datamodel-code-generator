@@ -717,7 +717,11 @@ model_options.add_argument(
     "'definitions-first': Give every definition (in /definitions/, /$defs/ or /components/schemas/ of any document) "
     "its own name before an inline model, a variant or another definition that asked for it first, which takes the "
     "name the definition would have taken (Package1); unlike 'primary-first', which renames only models of other "
-    "files, as in 0.89.0.",
+    "files, as in 0.89.0. "
+    "'enclosing-model': Prefix every nested model with the final name of the model it is built for, once "
+    "(IssueClosedIssue for the allOf property issue of IssueClosed, StreamEvent1 for the first unnamed branch of the "
+    "union StreamEvent, PetCat for its branch tagged cat); a definition keeps its own name (Customer, not "
+    "ModelCustomer); unlike 'full-path', which prefixes with the closest model registered above, as in 0.89.0.",
     choices=_values(NamingStrategy),
     default=None,
 )

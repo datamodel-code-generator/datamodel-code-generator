@@ -20,12 +20,13 @@ from datamodel_code_generator.parser._naming import (
     NameClaim,
     NamingPlan,
     Ordinal,
+    Tag,
     build_record_of,
     composed_name,
     plan_names,
     rw_variant_name,
 )
-from datamodel_code_generator.reference import NAME_REQUEST_KEY, NameRequest, location_of
+from datamodel_code_generator.reference import NAME_REQUEST_KEY, NameRequest, location_of, snake_to_upper_camel
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -69,24 +70,23 @@ class NamingHost(Protocol):
 
 
 def _claimed_references(results: Sequence[DataModel]) -> list[Any]:
-    """Return the references of the models, then those of the bases their names compose from that are no model.
+    """Return the references of the models, then those of their owners and bases that are no model, recursively.
 
-    A read or write variant composes its name from its base model's, which the output leaves out where it writes the
-    variants alone, so the base's claim is read too.
+    A read or write variant composes its name from its base model's, and a model built for another one names itself
+    after its owner, which the output leaves out where it writes the variants alone, so their claims are read too.
     """
     references: list[Any] = [model.reference for model in results]
     seen = {model_key_of(reference) for reference in references}
     pending = list(references)
     while pending:
-        reference = pending.pop(0)
-        if (
-            (record := build_record_of(reference)) is not None
-            and isinstance(claim := record.claim_for(reference), Composed)
-            and (key := model_key_of(claim.base)) not in seen
-        ):
-            seen.add(key)
-            references.append(claim.base)
-            pending.append(claim.base)
+        if (record := build_record_of(reference := pending.pop(0))) is None:
+            continue
+        claim = record.claim_for(reference)
+        for other in (record.owner, claim.base if isinstance(claim, Composed) else None):
+            if other is not None and (key := model_key_of(other)) not in seen:
+                seen.add(key)
+                references.append(other)
+                pending.append(other)
     return references
 
 
@@ -103,12 +103,14 @@ def _claims(references: Sequence[Any], resolver: ModelResolver) -> list[NameClai
             continue
         owner = record.owner
         role: ClaimRole = "owned" if owner is not None else "definition" if record.definition else "root"
-        composed_from, word, position = None, "", 0
+        composed_from, word, position, local = None, "", 0, ""
         match record.claim_for(reference):
             case Composed() as claim:
                 role, composed_from, word = "composed", model_key_of(claim.base), claim.role
             case Ordinal() as claim:
                 role, position = "ordinal", claim.position
+            case Tag() as claim:
+                role, local = "tagged", claim.text
         location = location_of(reference)
         request: NameRequest | None = reference.__dict__.get(NAME_REQUEST_KEY)
         module, dot, cls = reference.name.rpartition(".")
@@ -121,6 +123,7 @@ def _claims(references: Sequence[Any], resolver: ModelResolver) -> list[NameClai
                 composed_from=composed_from,
                 word=word,
                 position=position,
+                local=local,
                 document=documents.setdefault(None if location is None else location.document, len(documents)),
                 order=len(claims),
                 module=f"{module}{dot}",
@@ -160,27 +163,55 @@ class _ResolverNamer:
     def suffix(self, kind: str) -> str | None:
         return self._resolver._duplicate_name_suffix(kind)  # noqa: SLF001
 
-    def composed(self, claim: NameClaim, base: str) -> tuple[str, str]:
+    def composed(self, claim: NameClaim, base: str, *, affixed: bool = True) -> tuple[str, str]:
         resolver = self._resolver
         if claim.word in {"Request", "Response"}:
-            name = resolver.get_class_name(
-                rw_variant_name(base, claim.word, resolver.class_name_suffix),
-                unique=False,
-                skip_affix=True,
-                preserve_name=True,
-            ).name
-        else:
-            request = self._requests[claim.key]
-            name = resolver.get_class_name(
-                composed_name(base, cast("ComposedRole", claim.word)),
+            return _split(
+                resolver.get_class_name(
+                    rw_variant_name(base, claim.word, resolver.class_name_suffix if affixed else ""),
+                    unique=False,
+                    skip_affix=True,
+                    preserve_name=True,
+                ).name
+            )
+        return self._class_name(claim, composed_name(base, cast("ComposedRole", claim.word)), affixed=affixed)
+
+    def own(self, claim: NameClaim) -> tuple[str, str]:
+        return self._class_name(claim, self._requests[claim.key].original_name, affixed=False)
+
+    def prefixed(self, claim: NameClaim, owner: str) -> str:
+        local = snake_to_upper_camel(
+            claim.local or self._requests[claim.key].original_name,
+            target_python_version=self._resolver.target_python_version,
+        )
+        return self._class_name(claim, f"{owner}{local}", affixed=False)[1]
+
+    def affixed(self, claim: NameClaim, cls: str) -> str:
+        path = claim.path
+        return self._resolver._apply_class_name_affix(  # noqa: SLF001
+            cls, model_type=claim.kind, is_root=path == "#" or (path.endswith("#") and "/" not in path.split("#")[-1])
+        )
+
+    def _class_name(self, claim: NameClaim, name: str, *, affixed: bool) -> tuple[str, str]:
+        """Return the module and class L1 makes of ``name`` for the model of ``claim``, as it asked for its own."""
+        request = self._requests[claim.key]
+        return _split(
+            self._resolver.get_class_name(
+                name,
                 unique=False,
                 singular_name=request.singular_name,
                 singular_name_suffix=request.singular_name_suffix,
                 model_type=request.model_type,
+                skip_affix=not affixed,
                 preserve_name=request.preserve_class_name,
             ).name
-        module, dot, cls = name.rpartition(".")
-        return f"{module}{dot}", cls
+        )
+
+
+def _split(name: str) -> tuple[str, str]:
+    """Return the module, with its dot, and the class of a dotted name."""
+    module, dot, cls = name.rpartition(".")
+    return f"{module}{dot}", cls
 
 
 def name_models(parser: NamingHost, _run: SettleRun[Any]) -> None:
@@ -207,10 +238,11 @@ def name_models(parser: NamingHost, _run: SettleRun[Any]) -> None:
         return
     renamed: set[str] = set()
     for model in results:
-        if (planned := plan.names.get(model_key_of(model.reference))) is not None and planned.cls != model.class_name:
-            renamed.update((model.reference.name, model.class_name))
-            parser._graph_builder.rename_model(model, class_name=planned.cls, scheme="plan")  # noqa: SLF001
-            renamed.update((model.reference.name, model.class_name))
+        if (planned := plan.names.get(model_key_of(model.reference))) is not None and (
+            name := f"{planned.module}{planned.cls}"
+        ) != model.reference.name:
+            renamed.update((model.reference.name, model.class_name, name, planned.cls))
+            parser._graph_builder.rename_model(model, reference_name=name, scheme="plan")  # noqa: SLF001
     resolver.refresh_reference_names()
     if (record := resolver.model_name_record) is not None:
         _record_planned_names(record, plan, resolver)

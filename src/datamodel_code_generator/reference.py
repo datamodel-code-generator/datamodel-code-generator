@@ -1926,12 +1926,13 @@ class ModelResolver:  # noqa: PLR0904
 
         Row ``parent-prefixed`` (``--parent-scoped-naming`` or ``--naming-strategy parent-prefixed``) joins the two
         names with ``_``; row ``full-path`` (``--naming-strategy full-path``) joins the parent's name and the name in
-        UpperCamelCase, so ``Order`` > ``properties`` > ``item`` becomes ``OrderItem``. Row ``legacy-both-prefixes``:
-        under both options the ``full-path`` prefix goes before the ``parent-prefixed`` one (#5666). A model without a
-        parent reference keeps its name.
+        UpperCamelCase, so ``Order`` > ``properties`` > ``item`` becomes ``OrderItem``, and so does
+        ``--naming-strategy enclosing-model``, whose naming plan names the models again after L1. Row
+        ``legacy-both-prefixes``: under both options the ``full-path`` prefix goes before the ``parent-prefixed`` one
+        (#5666). A model without a parent reference keeps its name.
         """
         parent_prefixed = self.parent_scoped_naming or self.naming_strategy == NamingStrategy.ParentPrefixed
-        full_path = self.naming_strategy == NamingStrategy.FullPath
+        full_path = self.naming_strategy in {NamingStrategy.FullPath, NamingStrategy.EnclosingModel}
         if not (parent_prefixed or full_path) or not (parent_ref := self._find_parent_reference(path)):
             return name
         if parent_prefixed:

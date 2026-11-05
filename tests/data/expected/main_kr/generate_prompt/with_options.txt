@@ -1100,7 +1100,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         title='Model'), and the class Model under --use-title-
                         as-name); without it the placeholder stays, as in
                         0.88.0
-  --naming-strategy {numbered,parent-prefixed,full-path,primary-first,definitions-first}
+  --naming-strategy {numbered,parent-prefixed,full-path,primary-first,definitions-first,enclosing-model}
                         Strategy for naming models and telling duplicate model
                         names apart. 'numbered' (default): Append numeric
                         suffix (Address, Address1, Address2). Simple but names
@@ -1122,7 +1122,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         definition that asked for it first, which takes the
                         name the definition would have taken (Package1);
                         unlike 'primary-first', which renames only models of
-                        other files, as in 0.89.0.
+                        other files, as in 0.89.0. 'enclosing-model': Prefix
+                        every nested model with the final name of the model it
+                        is built for, once (IssueClosedIssue for the allOf
+                        property issue of IssueClosed, StreamEvent1 for the
+                        first unnamed branch of the union StreamEvent, PetCat
+                        for its branch tagged cat); a definition keeps its own
+                        name (Customer, not ModelCustomer); unlike 'full-
+                        path', which prefixes with the closest model
+                        registered above, as in 0.89.0.
   --order-constructor-fields-by {final-names,written-defaults} [{final-names,written-defaults} ...]
                         Decide the order of constructor fields by each given
                         value. final-names: order the constructor fields of
