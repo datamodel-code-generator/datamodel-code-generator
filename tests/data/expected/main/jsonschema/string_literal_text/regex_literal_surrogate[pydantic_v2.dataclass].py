@@ -4,10 +4,10 @@
 
 from __future__ import annotations
 
-from pydantic import constr
+from pydantic import ConfigDict, constr
 from pydantic.dataclasses import dataclass
 
 
-@dataclass
+@dataclass(config=ConfigDict(regex_engine="python-re"))
 class Surrogate:
     surrogate: constr(pattern='^a\ud800b$') | None = None

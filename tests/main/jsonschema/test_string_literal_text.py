@@ -10,7 +10,12 @@ from jsonschema import Draft7Validator
 from jsonschema import ValidationError as SchemaValidationError
 
 from datamodel_code_generator.__main__ import Exit
-from tests.main.conftest import JSON_SCHEMA_DATA_PATH, assert_generated_model_json_validation, run_main_and_assert
+from tests.main.conftest import (
+    JSON_SCHEMA_DATA_PATH,
+    assert_generated_model_json_invalid,
+    assert_generated_model_json_validation,
+    run_main_and_assert,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -118,6 +123,58 @@ def test_regex_literal_surrogate(output_file: Path, output_type: str) -> None:
         extra_args=["--formatters", "builtin", "--output-model-type", output_type],
         force_exec_validation=True,
     )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel"], id="model"),
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel", "--use-type-alias"], id="model-type-alias"),
+        pytest.param(
+            ["--output-model-type", "pydantic_v2.BaseModel", "--use-type-alias", "--target-pydantic-version", "2"],
+            id="model-type-alias-target-2",
+            marks=pytest.mark.filterwarnings("ignore:The generated models need pydantic>=2.5:UserWarning"),
+        ),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass", "--use-type-alias"], id="dataclass-type-alias"),
+    ],
+)
+def test_regex_surrogate_engine(output_file: Path, extra_args: list[str]) -> None:
+    """Select Python's regex engine for a pattern with a lone surrogate, also one a type alias holds (#6320).
+
+    The default engine replaced the surrogate by U+FFFD, so the model took a value with three of them that the
+    schema rejects. An alias keeps the pattern a string, as no Pydantic builds a compiled one that holds a lone
+    surrogate, and the model that uses the alias selects the engine. The schema is written here, as a YAML parser
+    rejects the escape of a lone surrogate in a fixture file.
+    """
+    schema = {
+        "title": "Surrogate",
+        "type": "object",
+        "$defs": {
+            "Text": {"type": "string", "pattern": "^a\ud800b$"},
+            "Holder": {"type": "object", "properties": {"named": {"$ref": "#/$defs/Text"}}},
+        },
+        "properties": {"inline": {"type": "string", "pattern": "^a\ud800b$"}, "holder": {"$ref": "#/$defs/Holder"}},
+    }
+    (input_path := output_file.parent / "regex_surrogate_engine.json").write_text(json.dumps(schema), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", *extra_args],
+        force_exec_validation=True,
+    )
+    validator = Draft7Validator(schema)
+    replaced = "a\ufffd\ufffd\ufffdb"
+    for name, invalid in {"inline": {"inline": replaced}, "holder": {"holder": {"named": replaced}}}.items():
+        with pytest.raises(SchemaValidationError):
+            validator.validate(invalid)
+        assert_generated_model_json_invalid(
+            output_file,
+            module_name=f"regex_surrogate_engine_{name}",
+            model_name="Surrogate",
+            invalid_json=json.dumps(invalid),
+            expected_error_type="string_pattern_mismatch",
+        )
 
 
 @pytest.mark.parametrize("output_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"])

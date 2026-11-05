@@ -4,8 +4,11 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, constr
+from pydantic import BaseModel, ConfigDict, constr
 
 
 class Surrogate(BaseModel):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
     surrogate: constr(pattern='^a\ud800b$') | None = None

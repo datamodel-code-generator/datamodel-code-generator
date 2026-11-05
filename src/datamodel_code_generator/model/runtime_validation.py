@@ -4,16 +4,20 @@ from __future__ import annotations
 
 from copy import copy
 from dataclasses import dataclass, field
+from functools import partial
 from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeAlias, cast
 
 from typing_extensions import Sentinel
 
 from datamodel_code_generator._records import record
-from datamodel_code_generator._regex_syntax import needs_python_engine
+from datamodel_code_generator._regex_syntax import has_lone_surrogate, needs_python_engine
 from datamodel_code_generator._requirements import pydantic_target_meets
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.types import DataType
 
 
@@ -84,15 +88,33 @@ class PatternPropertiesRule:
         )
 
 
-def _needs_python_regex_engine(data_type: DataType, visited: set[int]) -> bool:
+def alias_keeps_string_pattern(pattern: str, target: TargetPydanticVersion | None) -> bool:
+    """Return whether a type alias keeps ``pattern`` a string, so that the models that use the alias select its engine.
+
+    A target that predates compiled patterns keeps every pattern a string, and no target compiles one that holds a
+    lone surrogate (``has_lone_surrogate``); a later target compiles every other pattern that needs Python's engine.
+    """
+    return not pydantic_target_meets("pydantic.compiled_pattern", target) or has_lone_surrogate(pattern)
+
+
+def _counts_every_pattern(_pattern: str) -> bool:
+    """Count every pattern: those outside the body of a type alias."""
+    return True
+
+
+def _needs_python_regex_engine(
+    data_type: DataType, visited: set[int], counts: Callable[[str], bool] = _counts_every_pattern
+) -> bool:
     """Return whether a pattern of ``data_type``, or a string pattern of an alias it names, needs ``python-re``.
 
-    An alias keeps string patterns on a target that predates compiled patterns; a later target compiles every
-    pattern that needs Python's engine.
+    ``counts`` selects the patterns that count: those an alias keeps strings (``alias_keeps_string_pattern``) inside
+    the body of an alias.
     """
     for nested in data_type.all_data_types:
-        if isinstance(pattern := (nested.kwargs or {}).get("pattern"), str) and needs_python_engine(
-            pattern, row="adapter"
+        if (
+            isinstance(pattern := (nested.kwargs or {}).get("pattern"), str)
+            and counts(pattern)
+            and needs_python_engine(pattern, row="adapter")
         ):
             return True
         if (
@@ -103,14 +125,14 @@ def _needs_python_regex_engine(data_type: DataType, visited: set[int]) -> bool:
             continue
         visited.add(id(source))
         alias = cast("_AliasModel", source)
-        if pydantic_target_meets("pydantic.compiled_pattern", alias.extra_template_data.get("target_pydantic_version")):
-            continue
+        kept = partial(alias_keeps_string_pattern, target=alias.extra_template_data.get("target_pydantic_version"))
         if any(
             (
                 isinstance(pattern := getattr(alias_field.constraints, "pattern", None), str)
+                and kept(pattern)
                 and needs_python_engine(pattern, row="adapter")
             )
-            or _needs_python_regex_engine(alias_field.data_type, visited)
+            or _needs_python_regex_engine(alias_field.data_type, visited, kept)
             for alias_field in alias.fields
         ):
             return True

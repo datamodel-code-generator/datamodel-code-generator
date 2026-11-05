@@ -22,6 +22,7 @@ __all__ = [
     "PatternConjunction",
     "conjoin_patterns",
     "control_escapes_keep_meaning",
+    "has_lone_surrogate",
     "has_lookaround",
     "is_portable_pattern",
     "literal_pattern_value",
@@ -37,6 +38,7 @@ EngineRow: TypeAlias = Literal["model", "adapter"]
 """What selects the ``python-re`` engine of a pattern: the config of a model, or a schema validator's adapter."""
 
 _LOOKAROUND_PATTERN: Final = r"\(\?<?[=!]"
+_LONE_SURROGATE: Final = r"[\ud800-\udfff]"
 
 
 _WHITE_SPACE_CHARACTERS = "\t-\r \x85\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000"
@@ -81,6 +83,15 @@ def _compiled(source: str) -> re.Pattern[str]:
 def has_lookaround(pattern: str) -> bool:
     """Return whether a pattern holds a lookahead or lookbehind."""
     return _compiled(_LOOKAROUND_PATTERN).search(pattern) is not None
+
+
+def has_lone_surrogate(pattern: str) -> bool:
+    """Return whether a pattern holds a lone surrogate, which only Python's ``re`` reads as written (#6320).
+
+    pydantic-core's default engine replaces it by U+FFFD on its way to Rust, and no Pydantic builds a ``Field`` with
+    a compiled pattern that holds one.
+    """
+    return _compiled(_LONE_SURROGATE).search(pattern) is not None
 
 
 def _exceeds(lower: str | None, upper: str | None) -> bool:
@@ -151,12 +162,17 @@ def needs_python_engine(pattern: str, *, row: EngineRow, compiled: bool = True) 
     pattern. Row ``model`` (the config of a model, or of the models that use a type alias, 0.84.0) reads a verbose
     pattern that starts with ``(?x)`` and keeps the default engine for any other one; ``compiled`` tells whether
     pydantic compiles the pattern (that of a string type), and a pattern it does not compile needs only a lookaround.
+    Both rows select it for a pattern that holds a lone surrogate (``has_lone_surrogate``).
     """
     if has_lookaround(pattern):
         return True
+    if row == "model" and not compiled:
+        return False
+    if has_lone_surrogate(pattern):
+        return True
     if row == "adapter":
         return (scan := scan_regex_syntax(pattern)) is None or scan[0]
-    return compiled and (scan := scan_regex_syntax(pattern, read_verbose=True)) is not None and scan[0]
+    return (scan := scan_regex_syntax(pattern, read_verbose=True)) is not None and scan[0]
 
 
 def control_escapes_keep_meaning(pattern: str) -> bool:
