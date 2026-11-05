@@ -9313,6 +9313,8 @@ extra-items	main/jsonschema/typed_dict_extra_items_py315.py
 	main/jsonschema/typed_dict_enum_literal_one.py
 [test_main_typed_dict_extra_items]
 	main/jsonschema/typed_dict_extra_items.py
+[test_main_typed_dict_extra_items_array_type_list]
+	main/jsonschema/typed_dict_extra_items_array_type_list.py
 [test_main_typed_dict_extra_items_imports]
 	main/jsonschema/typed_dict_extra_items_datetime.py
 [test_main_typed_dict_false_allof_extra_items]
