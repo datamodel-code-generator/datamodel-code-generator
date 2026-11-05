@@ -11,6 +11,12 @@
     },
     "through_own_union": {
       "$ref": "#/$defs/ThroughOwnUnion"
+    },
+    "loosened": {
+      "$ref": "#/$defs/Loosened"
+    },
+    "coded": {
+      "$ref": "#/$defs/Coded"
     }
   },
   "$defs": {
@@ -150,6 +156,50 @@
           "properties": {
             "extra": {
               "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "Loosened": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Narrowed"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mid": {
+              "type": "string",
+              "maxLength": 5
+            }
+          }
+        }
+      ]
+    },
+    "Code": {
+      "type": "string",
+      "maxLength": 3
+    },
+    "Coded": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Mid"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mid": {
+              "$ref": "#/$defs/Code"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mid": {
+              "type": "string",
+              "maxLength": 5
             }
           }
         }

@@ -4584,7 +4584,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         union_parts: list[list[Reference]],
         declared_property_names: frozenset[str],
         inherited_parent_refs: Iterable[Reference] = (),
+        *,
+        conjunctions: Mapping[str, JsonSchemaObject],
+        written: set[str],
     ) -> None:
+        """Parse the members of an allOf into its fields, base classes, required names and union parts.
+
+        A property of ``conjunctions`` is parsed once, as its conjunction, where a member first declares it
+        (``_inherited_schemas.with_conjoined_properties``); ``written`` holds those parsed so far.
+        """
         parent_refs = self._get_allof_parent_references(
             obj,
             inherited=inherited_parent_refs,
@@ -4619,7 +4627,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             else:
                 scope = self.model_resolver.class_scope("predicted", name, self.model_resolver.join_path(tuple(path)))
                 object_fields = _inherited_schemas.parse_fields_beside_parents(
-                    self, all_of_item, parent_refs, parent_properties, path, scope
+                    self,
+                    _inherited_schemas.with_conjoined_properties(all_of_item, conjunctions, written),
+                    parent_refs,
+                    parent_properties,
+                    path,
+                    scope,
                 )
                 if object_fields:
                     fields.extend(object_fields)
@@ -4643,6 +4656,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     union_parts,
                     declared_property_names,
                     parent_refs,
+                    conjunctions=conjunctions,
+                    written=written,
                 )
                 if all_of_item.anyOf or all_of_item.oneOf:
                     self.model_resolver.add(path, name, class_name=True, loaded=True)
@@ -5077,6 +5092,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             required,
             union_parts,
             self._all_of_declared_property_names(obj),
+            conjunctions=_inherited_schemas.read_through_property_conjunctions(self, obj),
+            written=set(),
         )
         union_models = [model for part in union_parts for model in part]
         if not (fields or required or union_models) and (

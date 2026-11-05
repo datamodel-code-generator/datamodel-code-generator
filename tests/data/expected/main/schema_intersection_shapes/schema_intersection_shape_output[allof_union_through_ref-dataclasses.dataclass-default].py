@@ -99,7 +99,22 @@ ThroughOwnUnion: TypeAlias = ThroughOwnUnion2 | ThroughOwnUnion3
 
 
 @dataclass
+class Loosened(Narrowed):
+    mid: str | None = None
+
+
+Code: TypeAlias = str
+
+
+@dataclass
+class Coded:
+    mid: Code | None = None
+
+
+@dataclass
 class Model:
     leaf: Leaf | None = None
     narrowed: Narrowed | None = None
     through_own_union: ThroughOwnUnion | None = None
+    loosened: Loosened | None = None
+    coded: Coded | None = None

@@ -170,7 +170,72 @@ ThroughOwnUnion: TypeAlias = ThroughOwnUnion4 | ThroughOwnUnion5
 
 
 @dataclass
+class Loosened1:
+    left: str
+    right: str | None = None
+
+
+@dataclass
+class Loosened2:
+    right: str
+    left: str | None = None
+
+
+@dataclass
+class Loosened3:
+    mid: str | None = None
+
+
+@dataclass
+class Loosened4(Loosened1, Loosened3):
+    left: str = field(kw_only=True)
+
+
+@dataclass
+class Loosened5(Loosened2, Loosened3):
+    right: str = field(kw_only=True)
+
+
+Loosened: TypeAlias = Loosened4 | Loosened5
+
+
+Code: TypeAlias = str
+
+
+@dataclass
+class Coded1:
+    left: str
+    right: str | None = None
+
+
+@dataclass
+class Coded2:
+    right: str
+    left: str | None = None
+
+
+@dataclass
+class Coded3:
+    mid: str | None = None
+
+
+@dataclass
+class Coded4(Coded1, Coded3):
+    left: str = field(kw_only=True)
+
+
+@dataclass
+class Coded5(Coded2, Coded3):
+    right: str = field(kw_only=True)
+
+
+Coded: TypeAlias = Coded4 | Coded5
+
+
+@dataclass
 class Model:
     leaf: Leaf | None = None
     narrowed: Narrowed | None = None
     through_own_union: ThroughOwnUnion | None = None
+    loosened: Loosened | None = None
+    coded: Coded | None = None

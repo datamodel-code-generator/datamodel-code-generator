@@ -8028,6 +8028,34 @@
             "c": "x"
           }
         ]
+      },
+      "loosened": {
+        "valid": [
+          {
+            "left": "l",
+            "mid": "abc"
+          }
+        ],
+        "invalid": [
+          {
+            "left": "l",
+            "mid": "abcd"
+          }
+        ]
+      },
+      "coded": {
+        "valid": [
+          {
+            "left": "l",
+            "mid": "abc"
+          }
+        ],
+        "invalid": [
+          {
+            "left": "l",
+            "mid": "abcd"
+          }
+        ]
       }
     }
   }

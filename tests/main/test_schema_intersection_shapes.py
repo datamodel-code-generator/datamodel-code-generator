@@ -287,8 +287,9 @@ def test_schema_intersection_shape_output_with_distribute_option(
     A ``$ref`` branch of an ``anyOf`` or ``oneOf`` takes the ``allOf`` members beside it as further bases, as an
     inline branch takes them, and the value keywords beside it where it names no object; an OpenAPI body with an
     ``allOf`` beside a union is that union. An ``allOf`` of several unions is the union of one model per combination
-    of their branches, also through a ``$ref`` member naming an ``allOf`` over a union, and the value branches of its
-    unions are read at a field, beside a ``$ref`` member that is the field's type and beside object branches.
+    of their branches, also through a ``$ref`` member naming an ``allOf`` over a union, whose properties that another
+    member declares too are one field, the intersection of the declarations, and the value branches of its unions are
+    read at a field, beside a ``$ref`` member that is the field's type and beside object branches.
     """
     _assert_shape_output(output_file, stem, backend, options, DISTRIBUTE_OPTION_ARGS)
 
@@ -369,7 +370,8 @@ def test_schema_intersection_shape_payloads_with_distribute_option(tmp_path: Pat
 
     A value a ``$ref`` branch admits but the ``allOf`` members or the value keywords beside the union reject, such
     as an object without the ``id`` the ``allOf`` requires or a number below the outer minimum, is rejected, and so
-    is a value that meets one union of an ``allOf`` but not another.
+    is a value that meets one union of an ``allOf`` but not another, or that a property declared both within a
+    ``$ref`` member read in place and beside it admits by one declaration only.
     """
     assert_output(_shape_payload_lines(tmp_path, stem, DISTRIBUTE_OPTION_ARGS))
 

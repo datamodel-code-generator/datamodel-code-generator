@@ -1,3 +1,4 @@
+Field name `mid` is duplicated on Coded
 msgspec cannot decode the union Parent: its Struct types Parent1, Parent2 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
 msgspec cannot decode the union Mid: its Struct types Mid4, Mid5 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
 msgspec cannot decode the union OwnUnion: its Struct types C, D are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.

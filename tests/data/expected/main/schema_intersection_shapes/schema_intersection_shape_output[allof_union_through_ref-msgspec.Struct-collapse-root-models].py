@@ -87,7 +87,17 @@ class ThroughOwnUnion3(Struct):
     extra: str | UnsetType = UNSET
 
 
+class Loosened(Narrowed):
+    mid: Annotated[str, Meta(max_length=3)] | UnsetType = UNSET
+
+
+class Coded(Struct):
+    mid: Annotated[str, Meta(max_length=3)] | UnsetType = UNSET
+
+
 class Model(Struct):
     leaf: Leaf | UnsetType = UNSET
     narrowed: Narrowed | UnsetType = UNSET
     through_own_union: ThroughOwnUnion2 | ThroughOwnUnion3 | UnsetType = UNSET
+    loosened: Loosened | UnsetType = UNSET
+    coded: Coded | UnsetType = UNSET

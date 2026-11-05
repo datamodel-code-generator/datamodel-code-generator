@@ -143,7 +143,62 @@ class ThroughOwnUnion5(ThroughOwnUnion2, ThroughOwnUnion3):
 ThroughOwnUnion: TypeAlias = ThroughOwnUnion4 | ThroughOwnUnion5
 
 
+class Loosened1(TypedDict):
+    left: str
+    right: NotRequired[str]
+
+
+class Loosened2(TypedDict):
+    left: NotRequired[str]
+    right: str
+
+
+class Loosened3(TypedDict):
+    mid: NotRequired[str]
+
+
+class Loosened4(Loosened1, Loosened3):
+    pass
+
+
+class Loosened5(Loosened2, Loosened3):
+    pass
+
+
+Loosened: TypeAlias = Loosened4 | Loosened5
+
+
+Code: TypeAlias = str
+
+
+class Coded1(TypedDict):
+    left: str
+    right: NotRequired[str]
+
+
+class Coded2(TypedDict):
+    left: NotRequired[str]
+    right: str
+
+
+class Coded3(TypedDict):
+    mid: NotRequired[str]
+
+
+class Coded4(Coded1, Coded3):
+    pass
+
+
+class Coded5(Coded2, Coded3):
+    pass
+
+
+Coded: TypeAlias = Coded4 | Coded5
+
+
 class Model(TypedDict):
     leaf: NotRequired[Leaf]
     narrowed: NotRequired[Narrowed]
     through_own_union: NotRequired[ThroughOwnUnion]
+    loosened: NotRequired[Loosened]
+    coded: NotRequired[Coded]
