@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TypeAlias
 
 
@@ -26,7 +26,7 @@ Shape: TypeAlias = Circle | str
 
 @dataclass
 class Root:
-    pets: list[Pet] | None = None
-    names: set[Name] | None = None
+    pets: list[Pet] | None = field(default_factory=list)
+    names: set[Name] | None = field(default_factory=lambda: {'a', 'b'})
     shapes: set[Shape] | None = None
     maybe_pets: set[Pet | None] | None = None

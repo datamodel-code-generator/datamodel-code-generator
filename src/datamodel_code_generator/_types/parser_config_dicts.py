@@ -169,6 +169,7 @@ class ParserConfigDict(TypedDict):
     collapse_root_models_name_strategy: NotRequired[CollapseRootModelsNameStrategy | None]
     collapse_shared_parent_wrappers: NotRequired[bool]
     keep_constrained_root_models_in_every_container: NotRequired[bool]
+    keep_enum_literal_aliases: NotRequired[bool]
     collapse_reuse_models: NotRequired[bool]
     skip_root_model: NotRequired[bool]
     use_root_model_sequence_interface: NotRequired[bool]

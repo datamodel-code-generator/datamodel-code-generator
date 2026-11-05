@@ -1268,6 +1268,9 @@ tree-type-alias	main/openapi/dot_notation_collapse_reuse_models_tree//*.py
 	main/openapi/dot_notation_inheritance//*.py
 [test_main_openapi_dot_notation_root_package_inheritance]
 	main/openapi/dot_notation_root_package_inheritance//*.py
+[test_main_openapi_dynamic_anchor_declared_once]
+read	main/openapi/main_openapi/dynamic_anchor_declared_once[read].py
+released	main/openapi/main_openapi/dynamic_anchor_declared_once[released].py	= main/openapi/main_openapi/dynamic_anchor_declared_once[read].py
 [test_main_openapi_dynamic_anchor_of_held_document_in_document_order]
 	main/openapi/main_openapi/dynamic_anchor_of_held_document_in_document_order.py
 [test_main_openapi_dynamic_anchor_registered_after_its_reference]
@@ -1550,7 +1553,12 @@ pydantic_v2-members-definitions-first	main/openapi/main_openapi/name_allof_union
 pydantic_v2-members-enclosing-model	main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-enclosing-model].py
 pydantic_v2-members-full-path	main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-full-path].py	= main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-enclosing-model].py
 pydantic_v2-members-infer	main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-infer].py	= main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-definitions-first].py
+pydantic_v2-members-suffix	main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-suffix].py
+pydantic_v2-members-suffix-mapped	main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-suffix-mapped].py
 typed_dict-members-infer	main/openapi/main_openapi/name_allof_union_members_after_branches[typed_dict-members-infer].py
+[test_main_openapi_name_allof_union_members_after_branches_nested]
+mapped-member	main/openapi/main_openapi/name_allof_union_members_after_branches_nested[mapped-member].py
+members	main/openapi/main_openapi/name_allof_union_members_after_branches_nested[members].py
 [test_main_openapi_namespace_subns_ref]
 	main/openapi/namespace_subns_ref//*.py
 [test_main_openapi_naming_strategy_definitions_first]
@@ -1559,6 +1567,7 @@ pydantic_v2	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic
 pydantic_v2-definitions-first	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2-definitions-first].py
 pydantic_v2-definitions-first-annotated	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2-definitions-first-annotated].py
 pydantic_v2-definitions-first-request-response	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2-definitions-first-request-response].py
+pydantic_v2-definitions-first-request-response-aliases	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2-definitions-first-request-response-aliases].py
 pydantic_v2-definitions-first-titles	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2-definitions-first-titles].py
 pydantic_v2-primary-first	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2-primary-first].py	= main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2].py
 typed_dict-definitions-first	main/openapi/main_openapi/naming_strategy_definitions_first[typed_dict-definitions-first].py
@@ -2058,6 +2067,8 @@ type_statement	main/openapi/main_openapi/typed_dict_functional_forward_reference
 [test_main_openapi_union_default_object]
 msgspec.Struct-msgspec_union_default_object.py	main/openapi/msgspec_union_default_object.py
 pydantic_v2.BaseModel-pydantic_v2_union_default_object.py	main/openapi/pydantic_v2_union_default_object.py
+[test_main_openapi_unique_items_as_set_nullable_alias_items]
+	main/openapi/main_openapi/unique_items_as_set_nullable_alias_items.py
 [test_main_openapi_unquoted_null]
 	main/openapi/unquoted_null.py
 [test_main_openapi_use_default_with_default_values_parameters]

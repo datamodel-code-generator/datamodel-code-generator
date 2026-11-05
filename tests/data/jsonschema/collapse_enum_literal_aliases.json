@@ -1,0 +1,34 @@
+{
+  "title": "Ticket",
+  "type": "object",
+  "required": [
+    "status",
+    "history"
+  ],
+  "properties": {
+    "status": {
+      "$ref": "#/$defs/Status"
+    },
+    "history": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Status"
+      }
+    },
+    "name": {
+      "$ref": "#/$defs/Name"
+    }
+  },
+  "$defs": {
+    "Status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "resolved"
+      ]
+    },
+    "Name": {
+      "type": "string"
+    }
+  }
+}

@@ -5665,6 +5665,12 @@ python-3.14	main/jsonschema/identifier_case_target_314.py
 msgspec	main/jsonschema/collapse_constrained_roots_in_containers.py
 pydantic	main/jsonschema/collapse_constrained_roots_in_containers.py	= main/jsonschema/collapse_constrained_roots_in_containers~main_collapse_constrained_roots_in_containers[pydantic].py
 without-option	main/jsonschema/collapse_constrained_roots_in_containers.py	= main/jsonschema/collapse_constrained_roots_in_containers~main_collapse_constrained_roots_in_containers[without-option].py
+[test_main_collapse_enum_literal_aliases]
+msgspec	main/jsonschema/collapse_enum_literal_aliases.py
+root-model	main/jsonschema/collapse_enum_literal_aliases.py	= main/jsonschema/collapse_enum_literal_aliases~main_collapse_enum_literal_aliases[root-model].py
+type-alias	main/jsonschema/collapse_enum_literal_aliases.py	= main/jsonschema/collapse_enum_literal_aliases~main_collapse_enum_literal_aliases[type-alias].py
+typed-dict	main/jsonschema/collapse_enum_literal_aliases.py	= main/jsonschema/collapse_enum_literal_aliases~main_collapse_enum_literal_aliases[typed-dict].py
+without-option	main/jsonschema/collapse_enum_literal_aliases.py	= main/jsonschema/collapse_enum_literal_aliases~main_collapse_enum_literal_aliases[without-option].py
 [test_main_combined_array]
 	main/jsonschema/combined_array.py
 [test_main_complicated_enum_default_member]
@@ -8276,6 +8282,8 @@ msgspec	main/jsonschema/msgspec_union_member_constraints/msgspec_warnings.txt
 no_use_annotated	main/jsonschema/msgspec_union_member_constraints/no_use_annotated.py
 no_use_annotated	main/jsonschema/msgspec_union_member_constraints/no_use_annotated_decoded.txt
 no_use_annotated	main/jsonschema/msgspec_union_member_constraints/no_use_annotated_warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+[test_main_name_allof_union_members_after_branches_of_a_root_in_a_fresh_process]
+	main/jsonschema/name_allof_union_members_after_branches_of_a_root_in_a_fresh_process.py
 [test_main_names_the_target_python_binds_are_written]
 	main/jsonschema/names_the_target_python_binds_are_written.py
 [test_main_naming_strategy_complex_duplicate_suffix]
@@ -9264,6 +9272,9 @@ extra-items	main/jsonschema/typed_dict_extra_items_py315.py
 [test_main_union_annotation_at_line_length]
 formatters0	main/jsonschema/union_annotation_at_line_length.py
 formatters1	main/jsonschema/union_annotation_at_line_length.py
+[test_main_unique_items_as_set_alias_items_merged]
+merged	main/jsonschema/unique_items_as_set_alias_items_merged.py
+sets	main/jsonschema/unique_items_as_set_alias_items_merged.py	= main/jsonschema/unique_items_as_set_alias_items_merged~main_unique_items_as_set_alias_items_merged[sets].py
 [test_main_unique_items_as_set_by_value]
 frozen-dataclass	main/jsonschema/unique_items_as_set_by_value.py	= main/jsonschema/unique_items_as_set_by_value~main_unique_items_as_set_by_value[frozen-dataclass].py
 frozen-pydantic	main/jsonschema/unique_items_as_set_by_value.py
@@ -9274,12 +9285,20 @@ without-option	main/jsonschema/unique_items_as_set_by_value.py	= main/jsonschema
 [test_main_unique_items_as_set_by_value_across_modules]
 option	main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_across_modules[option]/
 without-option	main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_across_modules[without-option]/
+[test_main_unique_items_as_set_by_value_class_hashes]
+custom-templates	main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_class_hashes[custom-templates].py
+frozen-dataclass	main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_class_hashes[frozen-dataclass].py
+unsafe-hash-dataclass	main/jsonschema/main_jsonschema/main_unique_items_as_set_by_value_class_hashes[unsafe-hash-dataclass].py
 [test_main_unique_items_as_set_collapsed_root_items]
 frozenset	main/jsonschema/unique_items_as_set_collapsed_root_items.py
 msgspec	main/jsonschema/unique_items_as_set_collapsed_root_items.py	= main/jsonschema/unique_items_as_set_collapsed_root_items~main_unique_items_as_set_collapsed_root_items[msgspec].py
+root-model-type-alias	main/jsonschema/unique_items_as_set_collapsed_root_items.py	= main/jsonschema/unique_items_as_set_collapsed_root_items~main_unique_items_as_set_collapsed_root_items[root-model-type-alias].py
 set	main/jsonschema/unique_items_as_set_collapsed_root_items.py	= main/jsonschema/unique_items_as_set_collapsed_root_items~main_unique_items_as_set_collapsed_root_items[set].py
+[test_main_unique_items_as_set_long_alias_chain]
+	main/jsonschema/main_jsonschema/main_unique_items_as_set_long_alias_chain.py
 [test_main_unique_items_as_set_model_items]
 dataclass	main/jsonschema/unique_items_as_set_model_items.py
+dataclass-eq-false-left-out	main/jsonschema/unique_items_as_set_model_items.py
 frozen-msgspec	main/jsonschema/unique_items_as_set_model_items.py	= main/jsonschema/unique_items_as_set_model_items~main_unique_items_as_set_model_items[frozen-msgspec].py
 frozen-pydantic-dataclass	main/jsonschema/unique_items_as_set_model_items.py	= main/jsonschema/unique_items_as_set_model_items~main_unique_items_as_set_model_items[frozen-pydantic-dataclass].py
 msgspec	main/jsonschema/unique_items_as_set_model_items.py	= main/jsonschema/unique_items_as_set_model_items~main_unique_items_as_set_model_items[msgspec].py
@@ -9310,6 +9329,9 @@ subclass	main/jsonschema/unique_items_as_set_type_list_merged.py	= main/jsonsche
 [test_main_unique_items_as_set_unhashable_items]
 msgspec.Struct	main/jsonschema/unique_items_as_set_unhashable_items.py
 pydantic_v2.BaseModel	main/jsonschema/unique_items_as_set_unhashable_items.py	= main/jsonschema/unique_items_as_set_unhashable_items~main_unique_items_as_set_unhashable_items[pydantic_v2.BaseModel].py
+[test_main_unique_items_as_set_union_items_sets]
+frozen-sets	main/jsonschema/unique_items_as_set_union_items_sets.py
+sets	main/jsonschema/unique_items_as_set_union_items_sets.py	= main/jsonschema/unique_items_as_set_union_items_sets~main_unique_items_as_set_union_items_sets[sets].py
 [test_main_url_jsonschema_relative_ref_without_fragment]
 	main/jsonschema/remote_relative_ref.py
 [test_main_url_with_relative_root_id_resolves_relative_refs]

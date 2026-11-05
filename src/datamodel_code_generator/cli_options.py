@@ -306,6 +306,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(
         _C.MODEL,
         "--keep-constrained-root-models-in-every-container --no-keep-constrained-root-models-in-every-container",
+        "--keep-enum-literal-aliases --no-keep-enum-literal-aliases",
         group=_G.ROOT_MODEL,
     ),
     **_opts(_C.MODEL, "--collapse-reuse-models --no-collapse-reuse-models", group=_G.MODEL_REUSE),

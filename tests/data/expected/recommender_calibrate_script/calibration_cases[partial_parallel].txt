@@ -707,7 +707,6 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "preset": "standard-py314-20261104"
         },
         "calibrated_presets": "20261017",
-        "consider": [],
         "context": {
           "output_model_type": "pydantic_v2.BaseModel",
           "target_python_version": "3.14"
@@ -738,7 +737,6 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
               "Config"
             ],
             "caveats": [],
-            "contested_reason": null,
             "decision": "root-name",
             "evidence": [
               "SchemaStore tsconfig schema: JSONSchemaForTheTypeScriptCompilerSConfigurationFile became TsConfig, names over 40 characters 6 -> 0",
@@ -792,7 +790,6 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
               "enclosing-model"
             ],
             "caveats": [],
-            "contested_reason": null,
             "decision": "naming-strategy",
             "evidence": [
               "GitHub REST API description: numbered names 663 -> 53; locations renamed between two versions 17% -> 0.0%",
@@ -1431,7 +1428,6 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "preset": "standard-py314-20261104"
         },
         "calibrated_presets": "20261017",
-        "consider": [],
         "context": {
           "output_model_type": "pydantic_v2.BaseModel",
           "target_python_version": "3.14"
@@ -1469,7 +1465,6 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
               "enclosing-model"
             ],
             "caveats": [],
-            "contested_reason": null,
             "decision": "naming-strategy",
             "evidence": [
               "GitHub REST API description: numbered names 663 -> 53; locations renamed between two versions 17% -> 0.0%",

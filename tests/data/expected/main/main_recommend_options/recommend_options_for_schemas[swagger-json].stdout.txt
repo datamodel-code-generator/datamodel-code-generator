@@ -25,7 +25,6 @@
   },
   "recommendations": [],
   "left_out": [],
-  "consider": [],
   "validation": [],
   "policy": [],
   "not_recommended": [],

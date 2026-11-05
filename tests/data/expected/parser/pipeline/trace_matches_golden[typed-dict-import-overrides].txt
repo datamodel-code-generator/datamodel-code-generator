@@ -32,6 +32,7 @@ set_reference_default_value_to_field
 reuse_model
 replace_merged_unique_list_to_set
 collapse_root_models
+replace_unhashable_unique_set_to_list
 set_default_enum_member
 sort_models
 change_field_name

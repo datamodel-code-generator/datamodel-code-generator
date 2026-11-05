@@ -33,6 +33,10 @@ class LiteralModel(RootModel[Literal['a', 'bb']]):
     root: Literal['a', 'bb']
 
 
+class Patterned(RootModel[str]):
+    root: str = Field(..., pattern='z$')
+
+
 class Model(BaseModel):
     text: Text | None = None
     split: Split | None = None
@@ -40,3 +44,4 @@ class Model(BaseModel):
     numbers: Numbers | None = None
     conflict: Conflict | None = None
     literal: LiteralModel | None = None
+    patterned: Patterned | None = None

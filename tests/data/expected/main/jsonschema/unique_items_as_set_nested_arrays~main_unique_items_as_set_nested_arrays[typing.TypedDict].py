@@ -37,3 +37,5 @@ class Model(TypedDict):
     two_patterns: NotRequired[dict[str, list[int]]]
     two_maps: NotRequired[dict[str, list[int]]]
     tuples: NotRequired[list[tuple[int, str]]]
+    items_default: NotRequired[list[list[int]]]
+    values_default: NotRequired[dict[str, list[int]]]

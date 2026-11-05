@@ -1026,6 +1026,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._kept_parent_roots: dict[int, _KeptParentRoot] = {}
         """Each root model that the ``parent`` strategy named its inner model after and kept for its later holders,
         by id, until ``settle_kept_parent_roots`` decides it once every module is processed."""
+        self._unique_set_defaults: dict[int, tuple[DataModelFieldBase, Any]] = {}
+        """The list default of each field whose default --use-unique-items-as-set wrote as a set, with the field, by
+        the field's id, which the field takes back where its sets turn back into lists after collapse."""
         self._emitting_module_names: dict[int, str] = {}
         self._emitting_module_lists: list[tuple[str, list[DataModel]]] = []
         self._collapsed_reuse_models: dict[int, list[DataModel]] = {}
@@ -1330,6 +1333,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.collapse_root_models_name_strategy = config.collapse_root_models_name_strategy
         self.collapse_shared_parent_wrappers = config.collapse_shared_parent_wrappers
         self.keep_constrained_root_models_in_every_container = config.keep_constrained_root_models_in_every_container
+        self.keep_enum_literal_aliases = config.keep_enum_literal_aliases
         self.collapse_reuse_models = config.collapse_reuse_models
         self.skip_root_model = config.skip_root_model
         self.use_root_model_sequence_interface = config.use_root_model_sequence_interface

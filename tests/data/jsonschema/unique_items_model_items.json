@@ -7,14 +7,19 @@
       "uniqueItems": true,
       "items": {
         "$ref": "#/$defs/Pet"
-      }
+      },
+      "default": []
     },
     "names": {
       "type": "array",
       "uniqueItems": true,
       "items": {
         "$ref": "#/$defs/Name"
-      }
+      },
+      "default": [
+        "b",
+        "a"
+      ]
     },
     "shapes": {
       "type": "array",

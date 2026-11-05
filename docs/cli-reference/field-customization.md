@@ -2640,10 +2640,10 @@ Name the classes an allOf gives the branches of a oneOf or anyOf it holds after 
 An allOf that holds a oneOf or anyOf gives each branch a class that combines it with the other parts of the allOf.
 These classes are numbered after the holder, `Event1` to `Event5` for two branches, and `--infer-union-variant-names`
 names the branch-only bases after their tags, not the classes of the union. With
-`--name-allof-union-members-after-branches` each class of the union takes the holder's name and the branch's tag,
-the class of a `$ref` branch, or its position (`EventCreated`, `NoticeOpened`, `Event1`), a branch-only base takes
-the class's name and `Base` (`EventCreatedBase`), and the part the branches share takes the holder's name and `Base`
-(`EventBase`).
+`--name-allof-union-members-after-branches` each class of the union takes the holder's name and the branch's tag
+(under `--infer-union-variant-names` or `--use-tag-as-union-variant-name`), the class of a `$ref` branch, or its
+position (`EventCreated`, `NoticeOpened`, `Event1`), a branch-only base takes the class's name and `Base`
+(`EventCreatedBase`), and the part the branches share takes the holder's name and `Base` (`EventBase`).
 
 **Related:** [`--infer-union-variant-names`](#infer-union-variant-names), [`--naming-strategy`](model-customization.md#naming-strategy), [`--use-tag-as-union-variant-name`](#use-tag-as-union-variant-name)
 

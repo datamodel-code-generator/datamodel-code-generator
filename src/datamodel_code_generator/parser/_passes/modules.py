@@ -70,6 +70,7 @@ from datamodel_code_generator.model.base import (
     inherited_root_field,
 )
 from datamodel_code_generator.model.enum import Enum, Member, _enum_class, enum_value_base, get_raw_enum_member_value
+from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._graph_ids import UNRESOLVED_MODEL_KEY, keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
 from datamodel_code_generator.parser._model_shapes import REUSE_MODEL
@@ -83,7 +84,7 @@ from datamodel_code_generator.parser._passes._import_binding import (
     reimport_references,
     set_reference_expressions,
 )
-from datamodel_code_generator.parser._passes._keys import _DERIVED_FROM_KEY
+from datamodel_code_generator.parser._passes._keys import _DERIVED_FROM_KEY, with_unique_items_set
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
 from datamodel_code_generator.parser._passes._shared import (
     _TYPE_DEPENDENT_CONSTRAINTS_KEY,
@@ -119,12 +120,14 @@ from datamodel_code_generator.parser._passes._shared import (
     _restore_inherited_field_names_for_unique_aliases,
     _rule_data_types,
     _runtime_validation_reference_keys,
+    aliases_first,
     compared_models,
     definition_reads,
     enum_site_override_import,
     generic_base_config,
     get_constructor_field_adjustment,
     get_inherited_constructor_info,
+    holds_own_unique_items_set,
     merge_duplicate,
     merged_models,
     module_members,
@@ -135,6 +138,7 @@ from datamodel_code_generator.parser._passes._shared import (
     site_display_name,
     subclass_duplicate,
     takes_hashable_value,
+    unhashable_unique_sets,
     unique_items_plan,
     without_stand_ins,
 )
@@ -175,7 +179,12 @@ from datamodel_code_generator.parser._tag_plan import (
     union_site,
 )
 from datamodel_code_generator.python_literal import runtime_expression_imports, stable_repr
-from datamodel_code_generator.reference import _ALIAS_RESOLUTION_CLASS_NAME_KEY, ModelResolver, schema_path_of
+from datamodel_code_generator.reference import (
+    _ALIAS_RESOLUTION_CLASS_NAME_KEY,
+    ModelResolver,
+    enum_literal_of,
+    schema_path_of,
+)
 from datamodel_code_generator.types import DataType, Types, _copy_data_type
 
 if TYPE_CHECKING:
@@ -232,6 +241,7 @@ __all__ = [
     "remove_overridden_models",
     "rename_fields_hiding_types",
     "replace_merged_unique_list_to_set",
+    "replace_unhashable_unique_set_to_list",
     "replace_unique_list_to_set",
     "restore_inherited_field_names_for_unique_aliases",
     "reuse_model",
@@ -382,6 +392,10 @@ class ModulesHost(
     def _create_set_from_list(self, data_type: DataType) -> DataType:
         """Return the set copy of a list type, which holds its items."""
 
+    @property
+    def _unique_set_defaults(self) -> dict[int, tuple[DataModelFieldBase, Any]]:
+        """The list default of each field whose default --use-unique-items-as-set wrote as a set, by the field's id."""
+
 
 class ReuseHost(RecursionFactsHost, DeduplicationHost, Protocol):
     """The options, run state and hooks of the parser that module-scope reuse reads and writes."""
@@ -451,6 +465,10 @@ class CollapseHost(
     @property
     def keep_constrained_root_models_in_every_container(self) -> bool:
         """Whether a constrained root model stays named inside every container of its holder."""
+
+    @property
+    def keep_enum_literal_aliases(self) -> bool:
+        """Whether a type alias of the Literal of an enum stays named under collapse."""
 
     @property
     def _const_narrowed_values(self) -> dict[int, tuple[DataType, _ConstNarrowing]]:
@@ -996,21 +1014,18 @@ def replace_unique_list_to_set(parser: ModulesHost, models: list[DataModel]) -> 
     """Write the uniqueItems arrays of each field's own schema that ``unique_items_plan`` decides as sets.
 
     A field typed as another container, such as a ``Sequence``, keeps its type and its default. The array of a type
-    list and the arrays a nested schema declares unique wait for reuse (``replace_merged_unique_list_to_set``). This is
-    row ``legacy-unique-items-decided-before-collapse``: under --use-unique-items-as-set-by-value every array stays a
-    list for the decision on the final types (``parser/_unique_sets.py``).
+    list and the arrays a nested schema declares unique wait for reuse (``replace_merged_unique_list_to_set``). The type
+    aliases are decided first, so the arrays of their holders read the sets their values hold (``aliases_first``). This
+    is row ``legacy-unique-items-decided-before-collapse``: under --use-unique-items-as-set-by-value every array stays a
+    list for the decision on the final types (``parser/_unique_sets.py``). The models the items name are read once
+    root models collapsed (``replace_unhashable_unique_set_to_list``).
     """
     if not parser.use_unique_items_as_set or parser.use_unique_items_as_set_by_value:
         return
-    for model in models:
+    for model in aliases_first(models):
         for model_field in model.fields:
             if (
-                plan := unique_items_plan(
-                    model_field,
-                    keeps_tuples=parser.use_tuple_for_closed_arrays,
-                    sources="field",
-                    generic_base_config=generic_base_config(parser),
-                )
+                plan := unique_items_plan(model_field, keeps_tuples=parser.use_tuple_for_closed_arrays, sources="field")
             ).sets:
                 _write_unique_sets(parser, model_field, plan)
 
@@ -1023,12 +1038,15 @@ def replace_merged_unique_list_to_set(parser: ModulesHost, models: list[DataMode
     compared them as lists, so a model merged into the field's model may declare no ``uniqueItems`` at the same place,
     or declare it through a base: the array then keeps the list, which takes the values of both. An array in a union
     beside another member of its kind, an array or a map, that keeps its lists keeps the list too, as a msgspec union
-    holds one of each. Under --use-unique-items-as-set-by-value the decision on the final types writes them
-    (``parser/_unique_sets.py``).
+    holds one of each. An array of the field's own schema that ``replace_unique_list_to_set`` kept a list, as its items
+    were lists then, is read again with them: it becomes a set where the sets they become hash, frozen sets under
+    --use-generic-container-types, and every model merged into its model declares it too. The type aliases are decided
+    first, as in ``replace_unique_list_to_set``, so a holder never reads a set its alias's value keeps a list. Under
+    --use-unique-items-as-set-by-value the decision on the final types writes them (``parser/_unique_sets.py``).
     """
     if not parser.use_unique_items_as_set or parser.use_unique_items_as_set_by_value:
         return
-    for model in models:
+    for model in aliases_first(models):
         merged = merged_models(parser, model)
         for model_field in model.fields:
             if (
@@ -1037,7 +1055,6 @@ def replace_merged_unique_list_to_set(parser: ModulesHost, models: list[DataMode
                     keeps_tuples=parser.use_tuple_for_closed_arrays,
                     sources="merged",
                     merged=[_field_named(other, model_field.name) for other in merged],
-                    generic_base_config=generic_base_config(parser),
                 )
             ).sets:
                 _write_unique_sets(parser, model_field, plan)
@@ -1053,18 +1070,70 @@ def _field_named(model: DataModel, name: str | None) -> DataModelFieldBase | Non
 
 
 def _write_unique_sets(parser: ModulesHost, model_field: DataModelFieldBase, plan: UniqueItemsPlan) -> None:
-    """Write the lists of a field's type that ``plan`` decides as sets, and the field's list default as its set."""
+    """Write the lists of a field's type that ``plan`` decides as sets, and the field's list default as its set.
+
+    Each set records that it is one (``with_unique_items_set``), and the field's list default is kept for
+    ``replace_unhashable_unique_set_to_list``.
+    """
     builder = parser._graph_builder  # noqa: SLF001
     field_type = model_field.data_type
     for list_type in plan.sets:
-        set_type = parser._create_set_from_list(list_type)  # noqa: SLF001
+        set_type = with_unique_items_set(parser._create_set_from_list(list_type))  # noqa: SLF001
         if list_type is field_type:
             field_type = set_type
         else:
             builder.swap_data_type(list_type, set_type, refresh="deferred")
     if plan.default is not None:
+        parser._unique_set_defaults[id(model_field)] = (model_field, model_field.default)  # noqa: SLF001
         builder.set_field_default(model_field, plan.default)
     builder.replace_field_type(model_field, field_type)
+
+
+def replace_unhashable_unique_set_to_list(parser: ModulesHost, models: list[DataModel]) -> None:
+    """Write back as lists the uniqueItems sets that cannot hold their items once root models collapsed.
+
+    ``replace_unique_list_to_set`` and ``replace_merged_unique_list_to_set`` write the sets before collapse, which may
+    still inline the model that the items of a set name, a RootModel written as an alias. Once it has, a set whose
+    items take no hashable value, read with the class of the models they name, or that sits beside a member of its
+    kind that such a set turned back into, is a list again (``unhashable_unique_sets``), asked for until none is left;
+    a field none of whose sets of its own level is left takes back its list default. The type aliases are decided
+    first, as in ``replace_unique_list_to_set``, so a holder reads the lists their values hold again.
+    """
+    if not parser.use_unique_items_as_set or parser.use_unique_items_as_set_by_value:
+        return
+    defaults = parser._unique_set_defaults  # noqa: SLF001
+    keeps_tuples = parser.use_tuple_for_closed_arrays
+    config = generic_base_config(parser)
+    for model in aliases_first(models):
+        for model_field in model.fields:
+            lists: set[tuple[int, ...]] = set()
+            while paths := unhashable_unique_sets(
+                model_field, keeps_tuples=keeps_tuples, generic_base_config=config, lists=lists
+            ):
+                _write_unique_lists(parser, model_field, paths)
+                lists.update(paths)
+            if id(model_field) in defaults and not holds_own_unique_items_set(model_field):
+                parser._graph_builder.set_field_default(model_field, defaults.pop(id(model_field))[1])  # noqa: SLF001
+
+
+def _write_unique_lists(parser: ModulesHost, model_field: DataModelFieldBase, paths: Iterable[tuple[int, ...]]) -> None:
+    """Write the sets at ``paths`` of a field's type, which --use-unique-items-as-set wrote, as the lists they were.
+
+    Collapse inlines a root type that shares its nodes with the root model's field and every other holder, so the
+    field gets a copy of its type tree, whose copies of the sets are then swapped for lists without the set record,
+    inner ones first; the nodes stay as the other fields see them.
+    """
+    builder = parser._graph_builder  # noqa: SLF001
+    copied = _copy_data_type(model_field.data_type)
+    builder.replace_field_type(model_field, copied)
+    for path in paths:
+        target = copied
+        for index in path:
+            target = target.data_types[index]
+        list_type = with_unique_items_set(target.model_copy(update={"is_set": False, "is_list": True}), wrote=False)
+        for item in list_type.data_types:
+            item.parent = list_type
+        builder.swap_data_type(target, list_type)
 
 
 def extract_inherited_enum(models: list[DataModel]) -> None:
@@ -1300,6 +1369,9 @@ def collapse_site_facts(
             keeps_tuples=parser.use_tuple_for_closed_arrays,
             generic_base_config=generic_base_config(parser),
         ),
+        enum_literal_alias=parser.keep_enum_literal_aliases
+        and isinstance(root_model, TypeAliasBase)
+        and enum_literal_of(root_data_type),
         needs_model_regex_engine=_site_needs_model_regex_engine(root_model),
         field_constraints=field_constraints,
         constrains_through_root_types=not field_constraints and _has_preservable_root_constraints(root_model),

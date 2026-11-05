@@ -27,7 +27,7 @@ Shape = TypeAliasType("Shape", Circle | str)
 
 
 class Root(BaseModel):
-    pets: set[Pet] | None = None
-    names: set[Name] | None = None
+    pets: set[Pet] | None = Field(set(), validate_default=True)
+    names: set[Name] | None = {'a', 'b'}
     shapes: set[Shape] | None = None
     maybe_pets: set[Pet | None] | None = None

@@ -179,7 +179,8 @@ class _ResolverNamer:
                     preserve_name=True,
                 ).name
             )
-        return self._class_name(claim, composed_name(base, cast("ComposedRole", claim.word)), affixed=affixed)
+        role: ComposedRole = cast("ComposedRole", claim.word)
+        return self._class_name(claim, composed_name(base, role), affixed=affixed)
 
     def own(self, claim: NameClaim) -> tuple[str, str]:
         return self._class_name(claim, self._requests[claim.key].original_name, affixed=False)
@@ -205,6 +206,13 @@ class _ResolverNamer:
         return self._resolver._apply_class_name_affix(  # noqa: SLF001
             cls, model_type=claim.kind, is_root=path == "#" or (path.endswith("#") and "/" not in path.split("#")[-1])
         )
+
+    def stem(self, claim: NameClaim, cls: str) -> str:
+        if claim.keyed:
+            return cls
+        resolver = self._resolver
+        stem = cls.removeprefix(resolver.class_name_prefix).removesuffix(resolver.class_name_suffix)
+        return stem if stem and self.affixed(claim, stem) == cls else cls
 
     def _class_name(self, claim: NameClaim, name: str, *, affixed: bool) -> tuple[str, str]:
         """Return the module and class L1 makes of ``name`` for the model of ``claim``, as it asked for its own."""
@@ -233,7 +241,8 @@ def name_models(parser: NamingHost, _run: SettleRun[Any]) -> None:
 
     With no naming rule on, the plan names no model: each keeps the name the L1 resolver and ``settle_yielding_names``
     gave it. A planned name renames the model (scheme ``plan``); where a key of the options read while models are
-    built names a renamed model, by the name it had or the one it takes, the parse is done again with the name of every
+    built names a renamed model, or a renamed base of read and write variants that the output writes alone, by the
+    name it had or the one it takes, the parse is done again with the name of every
     reference assigned at its creation (``planned_names_to_assign``), which settles the yielding names too. A run that
     records what it names for the class-name keys of ``--model-name-map`` records the planned names as the names its
     models are given and had at the settle, so the keys name the models of the output (``_record_planned_names``).
@@ -250,12 +259,18 @@ def name_models(parser: NamingHost, _run: SettleRun[Any]) -> None:
     )
     if not plan.names:
         return
-    renamed: set[str] = set()
+    renamed = {
+        name
+        for reference in references
+        if (planned := plan.names.get(model_key_of(reference))) is not None
+        and (planned_name := f"{planned.module}{planned.cls}") != reference.name
+        for name in (reference.name, reference.name.rpartition(".")[2], planned_name, planned.cls)
+    }
     for model in results:
         if (planned := plan.names.get(model_key_of(model.reference))) is not None and (
             name := f"{planned.module}{planned.cls}"
         ) != model.reference.name:
-            renamed.update((model.reference.name, model.class_name, name, planned.cls))
+            renamed.add(model.class_name)
             parser._graph_builder.rename_model(model, reference_name=name, scheme="plan")  # noqa: SLF001
     resolver.refresh_reference_names()
     if (record := resolver.model_name_record) is not None:

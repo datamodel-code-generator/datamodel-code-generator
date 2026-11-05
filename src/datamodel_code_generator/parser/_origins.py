@@ -10,15 +10,20 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from datamodel_code_generator.reference import FIELD_ORIGIN_KEY, TYPE_ORIGIN_KEY, UNIQUE_ITEMS_KEY, FieldOrigin
+from datamodel_code_generator.reference import (
+    ENUM_LITERAL_KEY,
+    FIELD_ORIGIN_KEY,
+    TYPE_ORIGIN_KEY,
+    UNIQUE_ITEMS_KEY,
+    FieldOrigin,
+)
 
 if TYPE_CHECKING:
     from datamodel_code_generator.model import DataModelFieldBase
-    from datamodel_code_generator.parser._schema_object import JsonSchemaObject
     from datamodel_code_generator.reference import FieldOriginKind, SchemaLocation
     from datamodel_code_generator.types import DataType
 
-__all__ = ["with_field_origin", "with_type_origin", "with_unique_items"]
+__all__ = ["with_enum_literal", "with_field_origin", "with_type_origin", "with_unique_items"]
 
 
 def with_field_origin(
@@ -47,8 +52,14 @@ def with_type_origin(data_type: DataType, location: SchemaLocation | None) -> Da
     return data_type
 
 
-def with_unique_items(data_type: DataType, schema: JsonSchemaObject) -> DataType:
-    """Record on ``data_type`` that ``schema``, which it is built from, declares ``uniqueItems: true``, if it does."""
-    if schema.uniqueItems is True:
+def with_enum_literal(data_type: DataType) -> DataType:
+    """Record on ``data_type`` that it is the ``Literal`` of the values of an ``enum``."""
+    data_type.__dict__[ENUM_LITERAL_KEY] = True
+    return data_type
+
+
+def with_unique_items(data_type: DataType, unique_items: bool | None) -> DataType:  # noqa: FBT001
+    """Record on ``data_type`` that the schema it is built from declares ``uniqueItems: true`` (``unique_items``)."""
+    if unique_items is True:
         data_type.__dict__[UNIQUE_ITEMS_KEY] = True
     return data_type

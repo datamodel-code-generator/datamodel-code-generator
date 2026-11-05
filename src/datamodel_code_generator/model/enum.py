@@ -182,8 +182,12 @@ class Enum(DataModel):
 
     @override
     def _class_hash(self, generic_base_config: Mapping[str, Any] | None) -> SetItemHash:
-        """Return ``value``: an Enum member is its one instance, so its hash agrees with equality."""
-        return "value"
+        """Return ``value``: an Enum member is its one instance, so its hash agrees with equality.
+
+        Class code, a custom base class or templates may give it a hash of its own, which hashes by identity as far as
+        the set rule knows, as for the other classes.
+        """
+        return self._compared_class_hash(frozen=True)
 
     def __init__(  # noqa: PLR0913
         self,

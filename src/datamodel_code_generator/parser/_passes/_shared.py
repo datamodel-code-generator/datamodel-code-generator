@@ -79,6 +79,7 @@ from datamodel_code_generator.parser._passes._keys import (
     _DERIVED_FROM_KEY,
     declares_raw_schema_default,
     declares_type_list_unique_items,
+    is_unique_items_set,
     raw_schema_default,
 )
 from datamodel_code_generator.parser._passes._state import RecursionFacts, _ModuleNames
@@ -1326,7 +1327,8 @@ _NO_UNIQUE_ITEMS: Final = UniqueItemsPlan()
 UniqueItemsSources: TypeAlias = Literal["field", "merged", "all"]
 """Which schemas declaring ``uniqueItems`` a plan reads: ``field`` the field's own schema, but that of a type list,
 which every release since 0.52.0 decides before reuse; ``merged`` the others, the type list's (0.89.0) and those of the
-nodes that record it, decided once deduplication and reuse merged models; ``all`` both."""
+nodes that record it, decided once deduplication and reuse merged models, with the lists of the field's own schema that
+``field`` kept, which the sets of the others may let hold their items; ``all`` both."""
 _Path: TypeAlias = tuple[int, ...]
 
 
@@ -1336,7 +1338,6 @@ def unique_items_plan(
     keeps_tuples: bool,
     sources: UniqueItemsSources = "all",
     merged: Sequence[DataModelFieldBase | None] = (),
-    generic_base_config: Mapping[str, Any] | None = None,
 ) -> UniqueItemsPlan:
     """Return the arrays of a field's type that --use-unique-items-as-set writes as sets.
 
@@ -1351,11 +1352,11 @@ def unique_items_plan(
     ``uniqueItems`` at the same position of its type too, so a merge never makes a set of the array of a model that
     does not declare it. A list but those of the field's own schema (``_own_unique_arrays``) stays a list in a union
     beside another member of its kind that keeps its lists (``_beside_its_kind``), which the set would split from a
-    member written alike, decided again until no such set is left. ``generic_base_config`` is the configuration of the
-    generic base class that the output's models inherit from (--use-generic-base-class), which a model item reads
-    (``DataModel._instances_never_hash``).
+    member written alike, decided again until no such set is left. A model item is read as a value that hashes,
+    whatever its class: collapse may still inline the model it names, and ``unhashable_unique_sets`` reads the class
+    once it has.
     """
-    return _unique_items_plan(field, _PlanReading(keeps_tuples, sources, generic_base_config), merged)
+    return _unique_items_plan(field, _PlanReading(keeps_tuples, sources, None, reads_classes=False), merged)
 
 
 @final
@@ -1366,6 +1367,8 @@ class _PlanReading:
     keeps_tuples: bool
     sources: UniqueItemsSources
     generic_base_config: Mapping[str, Any] | None
+    reads_classes: bool = True
+    """Whether a model item takes no hashable value where its class never hashes its instances."""
     aliases: frozenset[int] = frozenset()
     """The type aliases, by id, whose values the plan is read in."""
 
@@ -1379,16 +1382,57 @@ def _unique_items_plan(
     if merged:
         declared = [{path for path, _ in _declared_unique_arrays(other, "all")} if other else set() for other in merged]
         arrays = [(path, group) for path, group in arrays if all(path in paths for paths in declared)]
-    items = replace(reading, sources="field" if reading.sources == "field" else "all")
     return plan_unique_sets(
         field,
         [group for _, group in arrays],
         default=default if isinstance(default := field.default, list) else None,
         keeps_tuples=reading.keeps_tuples,
-        can_hold=lambda node, sets: set_items_can_hash(
-            tuple(_set_item_facts(item, sets, items) for item in node.data_types)
-        ),
+        can_hold=lambda node, sets: _items_can_hash(node, sets, reading),
     )
+
+
+def unhashable_unique_sets(
+    field: DataModelFieldBase,
+    *,
+    keeps_tuples: bool,
+    generic_base_config: Mapping[str, Any] | None,
+    lists: Collection[_Path] = (),
+) -> list[_Path]:
+    """Return the paths of the sets --use-unique-items-as-set wrote in a field's type that turn back into lists.
+
+    ``unique_items_plan`` decides them before collapse, which may still inline the model their items name, so it reads
+    a model item as a value that hashes. Once collapse has, a set (``is_unique_items_set``) is a list again where no
+    value of its items hashes as the plan reads them, now with the class of each model they name: a model whose class
+    never hashes its instances takes none (``DataModel._instances_never_hash``). So is a set but those of the field's
+    own schema that sits beside a member of its kind that keeps its lists, as the plan reads it (``_beside_its_kind``),
+    where that member holds one of ``lists``, the paths of the sets that turned back into lists before: the plan would
+    have kept it a list beside them. The sets are read as they are written, so a set that holds one of them as a frozen
+    set, or sits beside it, is asked for again once it is a list. ``generic_base_config`` is the configuration of the
+    generic base class that the output's models inherit from (--use-generic-base-class), which a model item reads.
+    """
+    if not any(map(is_unique_items_set, field.data_type.all_data_types)):
+        return []
+    reading = _PlanReading(keeps_tuples, "all", generic_base_config)
+    own = _own_unique_arrays(field, sets=True)
+    nodes = dict(_nodes_with_paths(field.data_type, ()))
+    return [
+        path
+        for path, node in nodes.items()
+        if is_unique_items_set(node)
+        and (
+            not _items_can_hash(node, (), reading) or (id(node) not in own and _beside_its_kind(path, nodes, (), lists))
+        )
+    ]
+
+
+def holds_own_unique_items_set(field: DataModelFieldBase) -> bool:
+    """Return whether a set --use-unique-items-as-set wrote is the field's type or a member of its union."""
+    return any(map(is_unique_items_set, _unique_items_arrays(field.data_type, sets=True)))
+
+
+def _items_can_hash(node: DataType, sets: Collection[int], reading: _PlanReading) -> bool:
+    """Return whether some value of the items of ``node`` hashes once the lists of ``sets`` (by id) are sets."""
+    return set_items_can_hash(tuple(_set_item_facts(item, sets, reading) for item in node.data_types))
 
 
 def plan_unique_sets(
@@ -1406,7 +1450,8 @@ def plan_unique_sets(
     but those of the field's own schema (``_own_unique_arrays``) stays a list in a union beside another member of its
     kind that keeps its lists (``_beside_its_kind``), decided again until no such set is left. The field's array
     ``default`` becomes the set of its values where a list of the field's own level becomes one and they hash;
-    otherwise those lists stay.
+    otherwise those lists stay. A list inside the field's type stays a list where the field's default holds an array
+    (``_arrays_a_default_holds``), which the default would hold as a list where the type promises a set.
     """
     lists: dict[int, DataType] = {}
     tuples: dict[int, DataType] = {}
@@ -1417,7 +1462,10 @@ def plan_unique_sets(
             lists.update((id(array), array) for array in group if array.is_list)
     own = _own_unique_arrays(field)
     nodes = dict(_nodes_with_paths(field.data_type, ()))
-    kept: set[_Path] = set()
+    own_level = {*map(id, _unique_items_arrays(field.data_type))}
+    kept = {
+        path for path in _arrays_a_default_holds(field.data_type, field.default, ()) if id(nodes[path]) not in own_level
+    }
     while True:
         sets: dict[int, DataType] = {}
         for path, node in nodes.items():
@@ -1444,15 +1492,38 @@ def plan_unique_sets(
     return UniqueItemsPlan(tuple(sets.values()), default_set, tuple(tuples.values()))
 
 
-def _own_unique_arrays(field: DataModelFieldBase) -> set[int]:
+def _arrays_a_default_holds(data_type: DataType, value: Any, path: _Path) -> Iterator[_Path]:
+    """Yield the paths of the array-like nodes of a type tree, at ``path``, where a default ``value`` holds an array.
+
+    The items of an array and the values of a map are read in every node the container holds, and a union in each of
+    its members, so every node that may take an array of the default is found.
+    """
+    if isinstance(value, (list, tuple)) and data_type in ARRAYS:
+        yield path
+        items: Iterable[Any] = value
+    elif isinstance(value, dict) and data_type in MAPPINGS:
+        items = value.values()
+    elif data_type not in CONTAINERS:
+        items = (value,)
+    else:
+        return
+    for item in items:
+        for index, nested in enumerate(data_type.data_types):
+            yield from _arrays_a_default_holds(nested, item, (*path, index))
+
+
+def _own_unique_arrays(field: DataModelFieldBase, *, sets: bool = False) -> set[int]:
     """Return, by id, the arrays that the field's own schema declares unique, but those of a type list.
 
     They are decided as every release since 0.52.0 decides them, so ``_beside_its_kind`` does not keep them lists.
+    With ``sets``, the sets --use-unique-items-as-set wrote from them are among them (``_unique_items_arrays``).
     """
-    return {id(array) for _, group in _declared_unique_arrays(field, "field") for array in group}
+    return {id(array) for _, group in _declared_unique_arrays(field, "field", sets=sets) for array in group}
 
 
-def _beside_its_kind(path: _Path, nodes: Mapping[_Path, DataType], sets: Collection[int]) -> bool:
+def _beside_its_kind(
+    path: _Path, nodes: Mapping[_Path, DataType], sets: Collection[int], lists: Collection[_Path] | None = None
+) -> bool:
     """Return whether the list at ``path``, as a set, sits in a union beside a member of its kind that keeps its lists.
 
     ``nodes`` are the nodes of the field's type by their paths, ``sets`` the lists that become sets by id. The member
@@ -1461,6 +1532,7 @@ def _beside_its_kind(path: _Path, nodes: Mapping[_Path, DataType], sets: Collect
     kind where both are array-like or both are maps, and keeps its lists where it holds no set, one it is or one of
     ``sets``. A msgspec union holds one member of each kind, so such a union either decodes because the output writes
     its members alike as one, which the set would split, or never decodes; the list keeps the output either way.
+    With ``lists``, the paths of the sets that turned back into lists, the other member counts only where it holds one.
     """
     while path and len(nodes[path[:-1]].data_types) == 1:
         path = path[:-1]
@@ -1470,7 +1542,8 @@ def _beside_its_kind(path: _Path, nodes: Mapping[_Path, DataType], sets: Collect
         other is not member
         and _union_kind(other) == kind
         and not any(id(nested) in sets or nested in SETS for _, nested in _nodes_with_paths(other, ()))
-        for other in holder.data_types
+        and (lists is None or any(at in lists for at, _ in _nodes_with_paths(other, (*path[:-1], index))))
+        for index, other in enumerate(holder.data_types)
     )
 
 
@@ -1484,29 +1557,33 @@ def _union_kind(data_type: DataType) -> Literal["array", "map"] | None:
 
 
 def _declared_unique_arrays(
-    field: DataModelFieldBase, sources: UniqueItemsSources
+    field: DataModelFieldBase, sources: UniqueItemsSources, *, sets: bool = False
 ) -> list[tuple[_Path, tuple[DataType, ...]]]:
     """Return the arrays that the schemas ``sources`` picks declare unique, by schema, each with its node's position.
 
     The position is the path of indexes from the field's type to the node built from the schema; the arrays of the
-    field's own schema but a type list's are the ``field`` source alone, so ``merged`` leaves them out wherever a node
-    records the keyword too.
+    field's own schema but a type list's are the ``field`` source, so ``merged`` leaves them out wherever a node
+    records the keyword too, and reads those of them that are still lists once more, as one schema at the field's
+    level: the lists the arrays of the other schemas become sets in may let them hold their items. With ``sets``, the
+    sets --use-unique-items-as-set wrote are among the arrays.
     """
     field_type = field.data_type
     own = _declares_unique_items(field)
     own_released = own and not declares_type_list_unique_items(field)
-    released = {*map(id, _unique_items_arrays(field_type))} if own_released else set()
+    released = {*map(id, _unique_items_arrays(field_type, sets=sets))} if own_released else set()
     found: list[tuple[_Path, tuple[DataType, ...]]] = []
     if sources != "merged" and own_released:
-        found.append(((), tuple(_unique_items_arrays(field_type))))
+        found.append(((), tuple(_unique_items_arrays(field_type, sets=sets))))
     if sources == "field":
         return found
-    if own and not own_released:
-        found.append(((), tuple(_unique_items_arrays(field_type))))
+    if own and (sources == "merged" or not own_released):
+        found.append(((), tuple(_unique_items_arrays(field_type, sets=sets))))
     for path, node in _nodes_with_paths(field_type, ()):
         if unique_items_of(node) and (
             group := tuple(
-                array for array in _unique_items_arrays(node) if sources == "all" or id(array) not in released
+                array
+                for array in _unique_items_arrays(node, sets=sets)
+                if sources == "all" or id(array) not in released
             )
         ):
             found.append((path, group))
@@ -1529,24 +1606,72 @@ def _nodes_with_paths(data_type: DataType, path: _Path) -> Iterator[tuple[_Path,
     yield path, data_type
 
 
-def _unique_items_arrays(data_type: DataType) -> Iterator[DataType]:
+def _unique_items_arrays(data_type: DataType, *, sets: bool = False) -> Iterator[DataType]:
     """Yield the lists and tuples that the ``uniqueItems`` of the schema of ``data_type`` declares unique.
 
     They are the type itself or the members of its union; the arrays a container holds are its items or its values,
-    which the keyword does not reach.
+    which the keyword does not reach. With ``sets``, the sets --use-unique-items-as-set wrote from such lists
+    (``is_unique_items_set``) are yielded too.
     """
-    if data_type.is_list or data_type.is_tuple:
+    if data_type.is_list or data_type.is_tuple or (sets and is_unique_items_set(data_type)):
         yield data_type
     elif data_type not in CONTAINERS:
         for nested in data_type.data_types:
-            yield from _unique_items_arrays(nested)
+            yield from _unique_items_arrays(nested, sets=sets)
 
 
 def takes_hashable_value(
     data_type: DataType, *, keeps_tuples: bool, generic_base_config: Mapping[str, Any] | None
 ) -> bool:
-    """Return whether some value of ``data_type`` hashes, read as ``unique_items_plan`` reads the items of an array."""
+    """Return whether some value of ``data_type`` hashes, as ``unhashable_unique_sets`` reads the items of a set."""
     return set_items_can_hash((_set_item_facts(data_type, (), _PlanReading(keeps_tuples, "all", generic_base_config)),))
+
+
+def aliases_first(models: Sequence[DataModel]) -> list[DataModel]:
+    """Return ``models`` with their type aliases first, each after the aliases of ``models`` that its value names.
+
+    A pass that writes the uniqueItems lists of the models as sets in this order decides an alias before the models
+    that name it, so they read the sets of its value as written (``_set_item_facts``); an alias that its own value
+    names, through other aliases or not, is read as any other model. The aliases are walked with a stack of their own,
+    so a chain of aliases of any length is ordered.
+    """
+    aliases = {id(model): model for model in models if isinstance(model, TypeAliasBase)}
+    ordered: dict[int, DataModel] = {}
+    visiting: set[int] = set()
+
+    def named(alias: DataModel) -> Iterator[DataModel]:
+        for field in alias.fields:
+            for nested in field.data_type.all_data_types:
+                if (reference := nested.reference) is not None and id(reference.source) in aliases:
+                    yield aliases[id(reference.source)]
+
+    for alias in aliases.values():
+        if id(alias) in visiting:
+            continue
+        visiting.add(id(alias))
+        stack: list[tuple[DataModel, Iterator[DataModel]]] = [(alias, named(alias))]
+        while stack:
+            current, pending = stack[-1]
+            if (target := next((other for other in pending if id(other) not in visiting), None)) is None:
+                stack.pop()
+                ordered[id(current)] = current
+            else:
+                visiting.add(id(target))
+                stack.append((target, named(target)))
+    return [*ordered.values(), *(model for model in models if id(model) not in aliases)]
+
+
+@final
+@record
+class _Combined:
+    """The facts of a tuple (``positions``) or a union of the ``count`` types read last (``_set_item_facts``)."""
+
+    positions: bool
+    count: int
+
+
+_ItemRead: TypeAlias = "tuple[DataType, Collection[int], _PlanReading]"
+"""A type to read, with the lists of the type that become sets by id and the reading."""
 
 
 def _set_item_facts(data_type: DataType, sets: Collection[int], reading: _PlanReading) -> SetItemFacts:
@@ -1554,9 +1679,37 @@ def _set_item_facts(data_type: DataType, sets: Collection[int], reading: _PlanRe
 
     ``sets`` holds the lists of the type that become sets, by id. A container is read as it is written: a set under
     --use-generic-container-types is a frozen set, whose values hash. The positions of a tuple of one repeated type are
-    that type. A type alias is read as its value, whose lists become sets as its own plan says; one that holds itself is
-    read as any other model the type names. A model takes no hashable value where its class never hashes its instances
-    (``DataModel._instances_never_hash``).
+    that type. A type alias is read as its value as it is written now, whose lists the passes write as sets before the
+    models that name the alias read it (``aliases_first``), and takes None where its value admits it, also where the
+    alias's field holds the None (``DataModel.holds_null``); one that holds itself is read as any other model the type
+    names. A model takes no hashable value where its class never hashes its instances
+    (``DataModel._instances_never_hash``) and the reading reads classes (``_PlanReading.reads_classes``). The types are
+    read with a stack of their own (``_set_item_step``), so a chain of aliases of any length is read.
+    """
+    facts: list[SetItemFacts] = []
+    pending: list[_ItemRead | _Combined] = [(data_type, sets, reading)]
+    while pending:
+        if isinstance(read := pending.pop(), _Combined):
+            start = len(facts) - read.count
+            parts = tuple(facts[start:])
+            del facts[start:]
+            facts.append(SetItemFacts(positions=parts) if read.positions else SetItemFacts(members=parts))
+        elif isinstance(step := _set_item_step(*read), SetItemFacts):
+            facts.append(step)
+        else:
+            combined, nested = step
+            if combined is not None:
+                pending.append(combined)
+            pending.extend(reversed(nested))
+    return facts[0]
+
+
+def _set_item_step(
+    data_type: DataType, sets: Collection[int], reading: _PlanReading
+) -> SetItemFacts | tuple[_Combined | None, list[_ItemRead]]:
+    """Return the facts of ``data_type`` (``_set_item_facts``), or the types they are made of and how they combine.
+
+    The value of a type alias is the one type its facts are; a tuple and a union combine theirs (``_Combined``).
     """
     if data_type.is_optional:
         return SetItemFacts(null=True)
@@ -1566,29 +1719,26 @@ def _set_item_facts(data_type: DataType, sets: Collection[int], reading: _PlanRe
         and id(alias) not in reading.aliases
         and alias.fields
     ):
-        value = alias.fields[0]
-        inside = replace(reading, aliases=reading.aliases | {id(alias)})
-        return _set_item_facts(value.data_type, {*map(id, _unique_items_plan(value, inside, ()).sets)}, inside)
+        value = (alias.fields[0].data_type, (), replace(reading, aliases=reading.aliases | {id(alias)}))
+        return SetItemFacts(null=True) if alias.holds_null else (None, [value])
     if (
-        reference is not None
+        reading.reads_classes
+        and reference is not None
         and isinstance(model := reference.source, DataModel)
         and model._instances_never_hash(reading.generic_base_config)  # noqa: SLF001
     ):
         return SetItemFacts(unhashable=True)
-
-    def read(nested: DataType) -> SetItemFacts:
-        return _set_item_facts(nested, sets, reading)
-
     if data_type.is_tuple:
         count = data_type.tuple_item_count
         positions = data_type.data_types if count is None else data_type.data_types[: min(count, 1)]
-        return SetItemFacts(positions=tuple(map(read, positions)))
+        return _Combined(positions=True, count=len(positions)), [(position, sets, reading) for position in positions]
     if id(data_type) in sets:
         slot: ContainerSlot | None = "set"
     else:
         slot = next((slot for slot in WRITTEN_CONTAINERS if getattr(data_type, CONTAINER_FLAGS[slot])), None)
     if slot is None:
-        return SetItemFacts(members=tuple(map(read, data_type.data_types)))
+        members = data_type.data_types
+        return _Combined(positions=False, count=len(members)), [(member, sets, reading) for member in members]
     return SetItemFacts(
         unhashable=written_slot(slot, generic=data_type.use_generic_container) in UNHASHABLE_CONTAINERS.slots
     )

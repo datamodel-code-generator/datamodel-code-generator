@@ -119,8 +119,6 @@ class Rule(_Data):
     optional: OptionalSection | None = None
     applies_to: AppliesTo = AppliesTo()
     when: Condition
-    contested_when: Condition | None = None
-    contested_reason: str = ""
     set: dict[str, Any] = Field(default_factory=dict)
     value_from: dict[str, Literal["pascal_case_input_stem"]] = Field(default_factory=dict)
     reason: str
@@ -167,11 +165,10 @@ class LoadedRules:
 
 @dataclass(frozen=True, slots=True)
 class Decision:
-    """A rule that fired, with the values it decides and whether the schema also argues against it."""
+    """A rule that fired, with the values it decides."""
 
     rule: Rule
     values: Mapping[str, OptionValue]
-    contested: bool
 
     @property
     def avoids(self) -> bool:
@@ -275,7 +272,6 @@ def decide(
             Decision(
                 rule=rule,
                 values={**rules.values[rule.id], **dict.fromkeys(rule.value_from, name)},
-                contested=rule.contested_when is not None and matches(rule.contested_when, signals.counts),
             )
         )
     return decisions

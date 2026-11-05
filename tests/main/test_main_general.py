@@ -2007,6 +2007,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "collapse_root_models",
         "collapse_shared_parent_wrappers",
         "keep_constrained_root_models_in_every_container",
+        "keep_enum_literal_aliases",
         "collapse_reuse_models",
         "singularize_last_word_of_item_names",
         "disable_timestamp",

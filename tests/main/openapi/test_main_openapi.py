@@ -3567,6 +3567,52 @@ def test_main_with_field_constraints(
         )
 
 
+def test_main_openapi_unique_items_as_set_nullable_alias_items(tmp_path: Path, output_file: Path) -> None:
+    """Write a uniqueItems array of nullable type aliases as a set, as 0.89.0 did, as their None can be a member.
+
+    ``X`` is an array and ``S`` a string with ``nullable: true``, whose None the alias's field holds; a set can hold
+    the None of ``X``, which takes no other value that hashes, and every value of ``S``.
+    """
+    input_file = tmp_path / "unique_items_nullable_alias_items.json"
+    input_file.write_text(
+        json.dumps({
+            "openapi": "3.0.3",
+            "info": {"title": "t", "version": "1"},
+            "paths": {},
+            "components": {
+                "schemas": {
+                    "X": {"type": "array", "nullable": True, "items": {"type": "integer"}},
+                    "S": {"type": "string", "nullable": True},
+                    "Holder": {
+                        "type": "object",
+                        "properties": {
+                            "xs": {"type": "array", "uniqueItems": True, "items": {"$ref": "#/components/schemas/X"}},
+                            "ss": {"type": "array", "uniqueItems": True, "items": {"$ref": "#/components/schemas/S"}},
+                        },
+                    },
+                }
+            },
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--use-type-alias", "--use-unique-items-as-set", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="unique_items_nullable_alias_items",
+        model_name="Holder",
+        valid_json='{"xs": [null, null], "ss": ["a", "a"]}',
+        invalid_json='{"ss": [1]}',
+        expected_error_type="string_type",
+        expected_repr="Holder(xs={None}, ss={'a'})",
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--field-constraints"],
     option_description="""Generate Field() with validation constraints from schema.
@@ -12344,6 +12390,36 @@ def test_main_openapi_dynamic_anchor_of_held_document_in_document_order(output_f
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="released"), pytest.param(["--read-dynamic-anchors-in-document-order"], id="read")],
+)
+def test_main_openapi_dynamic_anchor_declared_once(output_file: Path, extra_args: list[str]) -> None:
+    """Resolve an unbound `$dynamicRef` to the one `$dynamicAnchor` of its name, with the document-order option or not.
+
+    Only `First` declares `$dynamicAnchor: T`, and nothing binds `T` in the dynamic scope of `Holder`, so under the
+    option the document as loaded names `First`, the anchor the parse meets without the option, too.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "dynamic_ref_anchor_declared_once.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel"),
+            *extra_args,
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="openapi_dynamic_anchor_declared_once",
+        model_name="Holder",
+        valid_json='{"item": {"first": 1}}',
+        invalid_json='{"item": {"first": "one"}}',
+        expected_error_type="int_parsing",
+    )
+
+
 def test_main_openapi_all_of_request_body(output_file: Path) -> None:
     """A request body of the paths scope that is an `allOf` is parsed as the model of its parts."""
     run_main_and_assert(
@@ -17757,6 +17833,14 @@ model, such as the model of its extra properties or its request and response var
         ),
         pytest.param(
             "pydantic_v2.BaseModel",
+            [
+                *("--naming-strategy", "definitions-first", "--read-only-write-only-model-type", "request-response"),
+                *("--aliases", '{"Package.name": "label"}'),
+            ],
+            id="pydantic_v2-definitions-first-request-response-aliases",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
             ["--naming-strategy", "definitions-first", "--use-title-as-name"],
             id="pydantic_v2-definitions-first-titles",
         ),
@@ -17776,7 +17860,8 @@ def test_main_openapi_naming_strategy_definitions_first(
     the models of their extra properties and their request and response variants follow them. Under
     ``--use-annotated`` the constrained string branch of ``charge`` gives way to the component ``charge``
     (``Charge1``, ``Charge``) instead of the component taking ``ChargeModel``. Under ``--use-title-as-name`` the
-    model of the extra properties of the inline ``package`` takes its title, ``PackageExtra``, and keeps it.
+    model of the extra properties of the inline ``package`` takes its title, ``PackageExtra``, and keeps it. An alias
+    keyed by ``Package`` names the field of the component, whose request and response variants alone are written.
     """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "definitions_first.yaml",
@@ -17895,10 +17980,10 @@ def test_main_openapi_naming_strategy_enclosing_model(
 An allOf that holds a oneOf or anyOf gives each branch a class that combines it with the other parts of the allOf.
 These classes are numbered after the holder, `Event1` to `Event5` for two branches, and `--infer-union-variant-names`
 names the branch-only bases after their tags, not the classes of the union. With
-`--name-allof-union-members-after-branches` each class of the union takes the holder's name and the branch's tag,
-the class of a `$ref` branch, or its position (`EventCreated`, `NoticeOpened`, `Event1`), a branch-only base takes
-the class's name and `Base` (`EventCreatedBase`), and the part the branches share takes the holder's name and `Base`
-(`EventBase`).""",
+`--name-allof-union-members-after-branches` each class of the union takes the holder's name and the branch's tag
+(under `--infer-union-variant-names` or `--use-tag-as-union-variant-name`), the class of a `$ref` branch, or its
+position (`EventCreated`, `NoticeOpened`, `Event1`), a branch-only base takes the class's name and `Base`
+(`EventCreatedBase`), and the part the branches share takes the holder's name and `Base` (`EventBase`).""",
     input_schema="openapi/allof_union_members.yaml",
     cli_args=["--name-allof-union-members-after-branches", "--infer-union-variant-names"],
     golden_output="main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-infer].py",
@@ -17947,6 +18032,28 @@ the class's name and `Base` (`EventCreatedBase`), and the part the branches shar
             id="pydantic_v2-members-definitions-first",
         ),
         pytest.param(
+            "pydantic_v2.BaseModel",
+            [
+                "--name-allof-union-members-after-branches",
+                "--infer-union-variant-names",
+                "--class-name-suffix",
+                "Model",
+            ],
+            id="pydantic_v2-members-suffix",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            [
+                "--name-allof-union-members-after-branches",
+                "--infer-union-variant-names",
+                "--class-name-suffix",
+                "Model",
+                "--model-name-map",
+                '{"Notice": "ExternalModel"}',
+            ],
+            id="pydantic_v2-members-suffix-mapped",
+        ),
+        pytest.param(
             "msgspec.Struct",
             ["--name-allof-union-members-after-branches", "--infer-union-variant-names"],
             id="msgspec-members-infer",
@@ -17973,7 +18080,10 @@ def test_main_openapi_name_allof_union_members_after_branches(
     ``Event2`` (``EventCreated`` and ``EventDeleted`` under ``--infer-union-variant-names``) and its shared part
     ``Event3``; with it the members are ``Event1`` and ``Event2`` (``EventCreated`` and ``EventDeleted``), the bases
     ``Event1Base`` and ``Event2Base`` and the shared part ``EventBase``. The members of ``Notice``, whose branches are
-    ``$ref`` targets, are ``NoticeOpened`` and ``NoticeClosed``.
+    ``$ref`` targets, are ``NoticeOpened`` and ``NoticeClosed``. A ``--class-name-suffix`` ends each of these names
+    once, as it ends the others: ``EventCreatedModel``, ``EventBaseModel``, ``NoticeOpenedModel``. A name that
+    ``--model-name-map`` gives takes no suffix, so the names made of it keep it whole: ``ExternalModelOpenedModel``,
+    as under ``--naming-strategy enclosing-model``.
     """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "allof_union_members.yaml",
@@ -18000,6 +18110,79 @@ def test_main_openapi_name_allof_union_members_after_branches(
             invalid_json=json.dumps({"type": "created"}),
             expected_error_type="missing",
         )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="members"),
+        pytest.param(["--model-name-map", '{"Pair11": "Special"}'], id="mapped-member"),
+    ],
+)
+def test_main_openapi_name_allof_union_members_after_branches_nested(
+    tmp_path: Path, output_file: Path, extra_args: list[str]
+) -> None:
+    """Name each allOf part after the final name of the part it is named after, and count every member's branches.
+
+    The first branch of ``Event`` is an allOf that holds a oneOf, the branch-only base of ``Event1``, so it is
+    ``Event1Base``, and its members, their bases and its shared part are named after that name (``Event1Base1``,
+    ``Event1Base1Base``, ``Event1BaseBase``), as under ``--naming-strategy enclosing-model``. Under
+    ``--distribute-allof-over-unions`` each member of ``Pair`` combines a branch of each of its two oneOfs, so every
+    branch is combined twice and none is the base of one member, also where ``--model-name-map`` names a member.
+    """
+
+    def branches(*names: str) -> dict[str, Any]:
+        return {
+            "oneOf": [
+                {"type": "object", "required": [name], "properties": {name: {"type": "string"}}} for name in names
+            ]
+        }
+
+    envelope = {"type": "object", "required": ["id"], "properties": {"id": {"type": "string"}}}
+    input_file = tmp_path / "allof_union_members_nested.json"
+    input_file.write_text(
+        json.dumps({
+            "openapi": "3.1.0",
+            "info": {"title": "allOf union members nested", "version": "1"},
+            "paths": {},
+            "components": {
+                "schemas": {
+                    "Event": {
+                        "allOf": [
+                            envelope,
+                            {
+                                "oneOf": [
+                                    {
+                                        "allOf": [
+                                            {"type": "object", "properties": {"kind": {"type": "string"}}},
+                                            branches("p", "q"),
+                                        ]
+                                    },
+                                    *branches("b")["oneOf"],
+                                ]
+                            },
+                        ]
+                    },
+                    "Pair": {"allOf": [envelope, branches("a", "b"), branches("c", "d")]},
+                }
+            },
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--name-allof-union-members-after-branches",
+            "--distribute-allof-over-unions",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
 
 
 def test_name_allof_union_members_after_branches_beside_a_resolver_that_names_models() -> None:

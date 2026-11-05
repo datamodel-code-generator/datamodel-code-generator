@@ -370,6 +370,7 @@ FIELD_ORIGIN_KEY: Final = "_field_origin"
 TYPE_ORIGIN_KEY: Final = "_type_origin"
 BINARY_CONTENT_KEY: Final = "_binary_content"
 UNIQUE_ITEMS_KEY: Final = "_unique_items"
+ENUM_LITERAL_KEY: Final = "_enum_literal"
 
 
 @record
@@ -427,13 +428,22 @@ def unique_items_of(data_type: object) -> bool:
     return UNIQUE_ITEMS_KEY in data_type.__dict__
 
 
-_NODE_RECORDS: Final = (TYPE_ORIGIN_KEY, BINARY_CONTENT_KEY, UNIQUE_ITEMS_KEY)
+def enum_literal_of(data_type: object) -> bool:
+    """Return whether the parser built a type node as the ``Literal`` of the values of an ``enum`` (ENUM_LITERAL, L1).
+
+    The root type of a definition records it where the definition's enum is written as a ``Literal`` instead of an
+    Enum class, whatever the options; a copy of a node keeps it.
+    """
+    return ENUM_LITERAL_KEY in data_type.__dict__
+
+
+_NODE_RECORDS: Final = (TYPE_ORIGIN_KEY, BINARY_CONTENT_KEY, UNIQUE_ITEMS_KEY, ENUM_LITERAL_KEY)
 
 
 def keep_node_records(copy: object, source: object) -> None:
     """Give a copy of a type node the records the parser keeps on the node it copies.
 
-    They are TYPE_ORIGIN, BINARY_CONTENT and UNIQUE_ITEMS.
+    They are TYPE_ORIGIN, BINARY_CONTENT, UNIQUE_ITEMS and ENUM_LITERAL.
     """
     copy.__dict__.update((key, source.__dict__[key]) for key in _NODE_RECORDS if key in source.__dict__)
 

@@ -42,3 +42,5 @@ class Model(BaseModel):
     two_patterns: dict[constr(pattern=r'^a|^b'), list[int]] | None = None
     two_maps: dict[str, list[int]] | None = None
     tuples: list[tuple[int, str]] | None = None
+    items_default: list[list[int]] | None = [[1, 2]]
+    values_default: dict[str, list[int]] | None = {'k': [1]}

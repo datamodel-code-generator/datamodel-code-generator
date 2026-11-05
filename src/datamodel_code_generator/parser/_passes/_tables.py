@@ -253,6 +253,10 @@ MODULE_BODY: tuple[StepLike[PipelineHost, _ModuleState[Any]], ...] = (
         lambda self, s: modules.replace_merged_unique_list_to_set(self, s.model_list),
     ),
     PassSpec("collapse_root_models", late(modules.collapse_module_root_models)),
+    PassSpec(
+        "replace_unhashable_unique_set_to_list",
+        lambda self, s: modules.replace_unhashable_unique_set_to_list(self, s.model_list),
+    ),
     PassSpec("set_default_enum_member", lambda self, s: modules.set_default_enum_member(self, s.model_list)),
     PassSpec(
         "sort_models",

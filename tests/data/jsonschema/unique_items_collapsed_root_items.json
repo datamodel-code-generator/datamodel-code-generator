@@ -22,6 +22,12 @@
       "items": {
         "$ref": "#/$defs/Name"
       }
+    },
+    "pets": {
+      "$ref": "#/$defs/Pets"
+    },
+    "tag_sets": {
+      "$ref": "#/$defs/TagSets"
     }
   },
   "$defs": {
@@ -39,6 +45,31 @@
     },
     "Name": {
       "type": "string"
+    },
+    "Pet": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        }
+      }
+    },
+    "Pets": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Pet"
+      }
+    },
+    "TagSets": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Tags"
+      }
     }
   }
 }

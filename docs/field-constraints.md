@@ -236,7 +236,10 @@ An array that has no field of its own, the member of an `anyOf` or `oneOf`, the 
 map, writes its `minItems` and `maxItems` on a type alias of its own in Pydantic models and dataclasses, as the array
 member of a type list does: without `--field-constraints`, `{"anyOf": [{"type": "array", "minItems": 2}, {"type":
 "string"}]}` at a property `a` is `a: A | str` with `A = TypeAliasType("A", Annotated[list[Any], Field(min_length=2)])`;
-with it, `A` is a root model that holds them.
+with it, `A` is a root model that holds them. In Pydantic `BaseModel` output, the items of an array that declares
+`minItems` or `maxItems` itself are such a root model in either case, as before: the items of `{"type": "array",
+"minItems": 1, "items": {"type": "array", "minItems": 2}}` at a property `rows` are `Row` instances, whose list is
+`.root`, where dataclasses keep the alias form.
 
 A `typing` alias, an abstract collection, `Annotated[T, ...]`, `Final[T]` and `Literal` are read as for number
 keywords, so `typing.List[int]`, `collections.abc.Sequence[int]` and `Annotated[list[int], ...]` take the keywords of

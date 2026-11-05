@@ -21,6 +21,7 @@ This module imports only the standard library, ``typing_extensions`` and the mod
 from __future__ import annotations
 
 from collections import Counter
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from string import digits
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar, cast
@@ -31,12 +32,14 @@ from datamodel_code_generator._free_names import first_free, is_numbered
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping, Sequence
+    from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
+    from types import TracebackType
 
 _ResultT = TypeVar("_ResultT")
 
 __all__ = [
     "BUILD_RECORD_KEY",
+    "UNRECORDED",
     "AllOfPart",
     "BuildFrame",
     "BuildRecord",
@@ -49,6 +52,7 @@ __all__ = [
     "NamingFrames",
     "NamingPlan",
     "NamingRules",
+    "NamingScope",
     "Ordinal",
     "PlannedName",
     "Tag",
@@ -216,7 +220,7 @@ class NamingFrames:
 
     A model records the frames open when its schema location is recorded (``record``), so its owner and its claim are
     read once every frame has closed. A read or write variant stands for its base model in the frames, so it takes the
-    base's owner. A document is parsed with no frame open (``detach``), whatever parse reached it, so its models are
+    base's owner. A document is parsed with no frame open (``detached``), whatever parse reached it, so its models are
     roots.
     """
 
@@ -247,24 +251,14 @@ class NamingFrames:
         ):
             frame.model = reference
 
-    def claimed(self, claim: Claim, parse: Callable[[], _ResultT]) -> _ResultT:
-        """Return what ``parse`` returns, run in a frame that makes ``claim`` for the model it builds, if any."""
-        frame = self.open(claim)
-        try:
-            result = parse()
-        finally:
-            self.close()
-        self.built(frame, result)
-        return result
-
-    def detach(self) -> list[BuildFrame]:
-        """Close every frame for a document parse and return them, for ``attach`` once it ends."""
+    @contextmanager
+    def detached(self) -> Generator[None]:
+        """Close every frame for the ``with`` block of a document parse, and open them again once it ends."""
         stack, self._stack = self._stack, []
-        return stack
-
-    def attach(self, stack: list[BuildFrame]) -> None:
-        """Open again the frames ``detach`` closed."""
-        self._stack = stack
+        try:
+            yield
+        finally:
+            self._stack = stack
 
     def variant(self, reference: object, base: object, role: VariantRole) -> None:
         """Record that the model of ``reference`` is the ``role`` variant of the model of ``base``."""
@@ -280,6 +274,50 @@ class NamingFrames:
             definition,
             self._claims.get(key),
         )
+
+
+@final
+class NamingScope:
+    """The frame of a model builder, or of a naming decision with its claim, open while its ``with`` block runs.
+
+    ``built`` passes on what the block returns, noted as the model the frame built (``NamingFrames.built``). A block
+    is no call, so the frames add no level to the stack of a nested parse. ``UNRECORDED`` opens no frame, for a parse
+    that records none.
+    """
+
+    __slots__ = ("_claim", "_frame", "_frames")
+
+    def __init__(self, frames: NamingFrames | None = None, claim: Claim | None = None) -> None:
+        """Hold the frames to open a frame in, if any, and the claim the frame makes."""
+        self._frames = frames
+        self._claim = claim
+        self._frame: BuildFrame | None = None
+
+    def __enter__(self) -> NamingScope:
+        """Open the frame."""
+        if self._frames is not None:
+            self._frame = self._frames.open(self._claim)
+        return self
+
+    def __exit__(
+        self,
+        _exc_type: type[BaseException] | None,
+        _exc_value: BaseException | None,
+        _traceback: TracebackType | None,
+    ) -> None:
+        """Close the frame."""
+        if self._frames is not None:
+            self._frames.close()
+
+    def built(self, result: _ResultT) -> _ResultT:
+        """Return ``result``, noted as what the frame returned."""
+        if self._frame is not None:
+            NamingFrames.built(self._frame, result)
+        return result
+
+
+UNRECORDED: Final = NamingScope()
+"""The scope of a builder or a naming decision while L1 records no naming frames: it opens none."""
 
 
 def build_record_of(reference: object) -> BuildRecord | None:
@@ -456,6 +494,13 @@ class Namer(Protocol):
     def affixed(self, claim: NameClaim, cls: str) -> str:
         """Return ``cls`` with the class name affixes the model of ``claim`` takes."""
 
+    def stem(self, claim: NameClaim, cls: str) -> str:
+        """Return ``cls`` without the class name affixes the model of ``claim`` takes, where it is their form of one.
+
+        Any other class, such as one numbered after its affixes or one ``--model-name-map`` gives, which takes no
+        affixes, is its own stem.
+        """
+
     def camel(self, text: str) -> str:
         """Return ``text`` in UpperCamelCase, as a full-path name joins a part."""
 
@@ -577,11 +622,14 @@ def _allof_parts(claims: Sequence[NameClaim]) -> _AllOfParts:
     """Return the classes an allOf builds for the oneOf or anyOf it holds: members, branch-only bases, shared parts.
 
     A member and a shared part are named after their holder, the allOf's model and their owner; a branch-only base,
-    an inline branch the holder built that one member alone combines, after that member.
+    an inline branch the holder built that one member alone combines, after that member. A member that
+    ``--model-name-map`` names keeps its name but combines its branches too. Each part comes after the part it is
+    named after, such as a branch-only base that is itself the holder of an allOf before the members it holds.
     """
     by_key = {claim.key: claim for claim in claims}
-    members = [claim for claim in claims if claim.role == "allof-member" and not claim.keyed and claim.owner]
+    members = [claim for claim in claims if claim.role == "allof-member" and claim.owner is not None]
     uses = Counter(branch for member in members for branch in member.branches)
+    members = [member for member in members if not member.keyed]
     parts: _AllOfParts = {member.key: ("member", cast("ModelKey", member.owner)) for member in members}
     for member in members:
         for branch in member.branches:
@@ -594,11 +642,19 @@ def _allof_parts(claims: Sequence[NameClaim]) -> _AllOfParts:
             ):
                 parts[branch] = ("base", member.key)
     parts.update(
-        (claim.key, ("shared", cast("ModelKey", claim.owner)))
+        (claim.key, ("shared", claim.owner))
         for claim in claims
-        if claim.role == "allof-shared" and not claim.keyed and claim.owner
+        if claim.role == "allof-shared" and not claim.keyed and claim.owner is not None
     )
-    return parts
+    ordered: _AllOfParts = {}
+    for key in parts:
+        chain: list[ModelKey] = []
+        at = key
+        while at in parts and at not in ordered:
+            chain.append(at)
+            at = parts[at][1]
+        ordered.update((part, parts[part]) for part in reversed(chain))
+    return ordered
 
 
 def _allof_name(
@@ -678,7 +734,8 @@ def plan_names(rules: NamingRules, claims: Sequence[NameClaim], namer: Namer) ->
     new name, and every other model keeps its name, which no planned name takes. Under ``definitions_first`` the first
     definition of a family takes the family's name, or the first free one where a model outside the plan holds it;
     each claim that held it takes the name the definition gave up where that is a numbered name of it, else the first
-    free one; then the allOf parts, which the allOf rule names alone, take theirs. Under ``enclosing_model`` every
+    free one; then the allOf parts, which the allOf rule names alone, take theirs, made of the names before affixes
+    (``Namer.stem``) and given the affixes of their own classes. Under ``enclosing_model`` every
     claim is named again (``_enclosing_model``).
     """
     by_key = {claim.key: claim for claim in claims}
@@ -713,10 +770,12 @@ def plan_names(rules: NamingRules, claims: Sequence[NameClaim], namer: Namer) ->
 
     def final(claim: NameClaim) -> tuple[str, str]:
         planned = names.get(claim.key)
-        return (claim.module, claim.cls) if planned is None else (planned.module, planned.cls)
+        module, cls = (claim.module, claim.cls) if planned is None else (planned.module, planned.cls)
+        return module, namer.stem(claim, cls)
 
     for key, part in parts.items():
         module, name = _allof_name(by_key[key], part, by_key, final, namer)
+        name = namer.affixed(by_key[key], name)
         names[key] = allocation.give(module, allocation.first_free(by_key[key], name, module), name)
     for key, via in closure.items():
         if key not in names:

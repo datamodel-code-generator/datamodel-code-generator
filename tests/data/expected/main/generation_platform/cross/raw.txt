@@ -1,5 +1,6 @@
 models shared True
 client msgspec_Struct warning UserWarning: msgspec checks all bytes members of a union against the constraints of each of them, so max_length of one member would reject values another member accepts; PagesPostRequest is generated without this constraint.
+client msgspec_Struct warning UserWarning: msgspec checks all bytes members of a union against the constraints of each of them, so max_length of one member would reject values another member accepts; PagesPostResponse is generated without this constraint.
 # raw in-process sync, in-process async
 download_report
   > GET /reports

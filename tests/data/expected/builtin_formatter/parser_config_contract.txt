@@ -75,6 +75,8 @@ guarded import_overrides
 reviewed-safe infer_union_variant_names
 reviewed-safe intersect_allof_keywords
 reviewed-safe intersect_combined_schema_keywords
+reviewed-safe keep_constrained_root_models_in_every_container
+reviewed-safe keep_enum_literal_aliases
 reviewed-safe keep_enum_member_values
 reviewed-safe keep_field_defaults_off_branch_roots
 reviewed-safe keep_model_order
@@ -182,6 +184,7 @@ reviewed-safe use_typed_map_values_beside_other_types
 reviewed-safe use_typed_nullable_map_values
 reviewed-safe use_union_operator
 reviewed-safe use_unique_items_as_set
+reviewed-safe use_unique_items_as_set_by_value
 reviewed-safe validation
 guarded validators
 reviewed-safe wrap_string_literal

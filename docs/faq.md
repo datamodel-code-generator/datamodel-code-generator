@@ -1139,6 +1139,37 @@ class Holder(BaseModel):
     names: Sequence[Name] | None = None
 ```
 
+### `--keep-enum-literal-aliases`
+
+| | |
+|---|---|
+| Option | `--keep-enum-literal-aliases` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#4860](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4860) |
+
+**Affects:** `--collapse-root-models` in an output that writes an enum definition as a `Literal` type alias: TypedDict, and the other outputs under `--enum-field-as-literal all` (with `--use-type-alias` for Pydantic). Collapse inlines the alias, so every use repeats the `Literal` and the name of the enum is lost. With the option the alias stays named at its uses; a type alias holds the values of its type, so the uses accept the same values. A Pydantic `RootModel` class of the `Literal` still collapses, as keeping it would wrap the values its holders parse.
+
+Schema: `Status` is `{"type": "string", "enum": ["open", "resolved"]}` and `Ticket.status` references it, with `--output-model-type typing.TypedDict --collapse-root-models`.
+
+Without the option (same as 0.89.0):
+
+```python
+class Ticket(TypedDict):
+    status: Literal["open", "resolved"]
+```
+
+With the option:
+
+```python
+Status: TypeAlias = Literal["open", "resolved"]
+
+
+class Ticket(TypedDict):
+    status: Status
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.

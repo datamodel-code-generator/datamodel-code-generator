@@ -74,6 +74,7 @@ OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
     "--use-one-model-per-ref-site",
     "--use-unique-items-as-set-by-value",
     "--keep-constrained-root-models-in-every-container",
+    "--keep-enum-literal-aliases",
 )
 """The options the 20261104 presets set beyond the 20261027 presets."""
 
@@ -232,6 +233,12 @@ CASES_20261104: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--output-model-type", "pydantic_v2.BaseModel", "--collapse-root-models", "--field-constraints"],
         id="keep-constrained-root-models-in-every-container",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "collapse_enum_literal_aliases.json",
+        "jsonschema",
+        ["--output-model-type", "typing.TypedDict", "--collapse-root-models"],
+        id="keep-enum-literal-aliases",
     ),
 )
 """The inputs each opt-in option of the 20261104 presets changes."""

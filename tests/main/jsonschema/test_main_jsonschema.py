@@ -8384,6 +8384,160 @@ def test_main_unique_items_as_set_nested_merged(extra_args: list[str], expected_
     )
 
 
+@pytest.mark.parametrize(
+    ("extra_args", "expected_repr"),
+    [
+        pytest.param([], "Holder(xs=frozenset({frozenset({1, 2})}), b=None)", id="sets"),
+        pytest.param(["--reuse-model"], "Holder(xs=[[1, 2]], b=None)", id="merged"),
+    ],
+)
+def test_main_unique_items_as_set_alias_items_merged(
+    extra_args: list[str], expected_repr: str, tmp_path: Path, output_file: Path
+) -> None:
+    """Keep a uniqueItems array of a type alias a list where reuse keeps the lists of the alias's value.
+
+    Both arrays of the anyOf of ``A`` declare ``uniqueItems``, so they are frozen sets under
+    --use-generic-container-types, and so is the array of ``A`` beside a string in ``Holder.xs``. With --reuse-model,
+    ``B``, which declares no ``uniqueItems``, merges into ``A``, whose arrays keep their lists, so ``xs`` keeps its list
+    too, where it read the frozen sets ``A`` would hold without the merge and rejected every non-empty array.
+    """
+    unique = {"uniqueItems": True}
+    members = [{"type": "array", "items": {"type": kind}} for kind in ("integer", "string")]
+    input_file = tmp_path / "unique_items_alias_items_merged.json"
+    input_file.write_text(
+        json.dumps({
+            "$defs": {
+                "A": {"anyOf": [{**member, **unique} for member in members]},
+                "B": {"anyOf": members},
+                "Holder": {
+                    "type": "object",
+                    "properties": {
+                        "xs": {
+                            "anyOf": [{"type": "array", "items": {"$ref": "#/$defs/A"}, **unique}, {"type": "string"}]
+                        },
+                        "b": {"$ref": "#/$defs/B"},
+                    },
+                },
+            },
+            "$ref": "#/$defs/Holder",
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *("--use-unique-items-as-set", "--use-generic-container-types", "--use-type-alias", *extra_args),
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="unique_items_alias_items_merged",
+        model_name="Holder",
+        valid_json='{"xs": [[1, 2]]}',
+        invalid_json='{"xs": [1]}',
+        expected_error_type="frozen_set_type" if not extra_args else "list_type",
+        expected_repr=expected_repr,
+    )
+
+
+@pytest.mark.parametrize(
+    ("extra_args", "expected_repr"),
+    [
+        pytest.param([], "Holder(xs=[{1, 2}], ys=[{1, 2}])", id="sets"),
+        pytest.param(
+            ["--use-generic-container-types"],
+            "Holder(xs=frozenset({frozenset({1, 2})}), ys=frozenset({frozenset({1, 2})}))",
+            id="frozen-sets",
+        ),
+    ],
+)
+def test_main_unique_items_as_set_union_items_sets(
+    extra_args: list[str], expected_repr: str, tmp_path: Path, output_file: Path
+) -> None:
+    """Decide a uniqueItems array whose items are a union of uniqueItems arrays from the sets those arrays become.
+
+    The array member of ``xs`` and both arrays of its items' anyOf declare ``uniqueItems`` in nested schemas, so one
+    plan decides them, the arrays of the items first. Under --use-generic-container-types they become frozen sets,
+    which hash, so the array that holds them becomes a frozen set too; plain sets do not hash, so it keeps its list.
+    The array of ``ys`` is its field's own schema, decided before the nested arrays, while they are lists, so it is
+    decided again with them once they are sets.
+    """
+    unique = {"uniqueItems": True}
+    members = [{"type": "array", "items": {"type": kind}, **unique} for kind in ("integer", "string")]
+    input_file = tmp_path / "unique_items_union_items_sets.json"
+    input_file.write_text(
+        json.dumps({
+            "title": "Holder",
+            "type": "object",
+            "properties": {
+                "xs": {"anyOf": [{"type": "array", "items": {"anyOf": members}, **unique}, {"type": "string"}]},
+                "ys": {"type": "array", "items": {"anyOf": members}, **unique},
+            },
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=["--use-unique-items-as-set", *extra_args, "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="unique_items_union_items_sets",
+        model_name="Holder",
+        valid_json='{"xs": [[1, 2]], "ys": [[1, 2]]}',
+        invalid_json='{"xs": [[1.5]]}',
+        expected_error_type="int_from_float",
+        expected_repr=expected_repr,
+    )
+
+
+def test_main_unique_items_as_set_long_alias_chain(tmp_path: Path, output_file: Path) -> None:
+    """Decide the set of a uniqueItems array whose items name a chain of 1200 type aliases, as 0.89.0 generated it.
+
+    Each alias is a union of the next one and an integer, so the items take a value that hashes and the array is a
+    set. The aliases are ordered and read with stacks of their own, so the chain generates at the default recursion
+    limit, which reading them one call per alias exceeded.
+    """
+    length = 1200
+    definitions: dict[str, Any] = {
+        f"X{index}": {"anyOf": [{"$ref": f"#/$defs/X{index + 1}"}, {"type": "integer"}]} for index in range(length)
+    }
+    definitions[f"X{length}"] = {"type": "string"}
+    (input_file := tmp_path / "unique_items_alias_chain.json").write_text(
+        json.dumps({
+            "title": "Root",
+            "type": "object",
+            "properties": {"xs": {"type": "array", "uniqueItems": True, "items": {"$ref": "#/$defs/X0"}}},
+            "$defs": definitions,
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--use-type-alias",
+            "--use-unique-items-as-set",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        transform=lambda output: "".join(
+            line + "\n" for line in output.splitlines() if line.startswith(("X0 ", f"X{length} ", "    xs:"))
+        ),
+    )
+
+
 @pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct"])
 def test_main_unique_items_as_set_unhashable_items(output_model: str, tmp_path: Path, output_file: Path) -> None:
     """Keep a uniqueItems array a list where no value of its items hashes, or where its list default cannot be a set.
@@ -8490,9 +8644,17 @@ def test_main_unique_items_as_set_unhashable_items(output_model: str, tmp_path: 
             id="dataclass",
         ),
         pytest.param(
+            ["--output-model-type", "dataclasses.dataclass", "--dataclass-arguments", '{"eq": false}'],
+            "Root(pets=[Pet(id=1, name=None)], names={'a'}, shapes={'x'}, maybe_pets={None})",
+            id="dataclass-eq-false-left-out",
+        ),
+        pytest.param(
             ["--output-model-type", "typing.TypedDict"],
             "{'pets': [{'id': 1}], 'names': {'a'}, 'shapes': {'x'}, 'maybe_pets': {None}}",
             id="typed-dict",
+            marks=pytest.mark.skipif(
+                sys.version_info < (3, 12), reason="Pydantic validates typing.TypedDict from Python 3.12 on"
+            ),
         ),
         pytest.param(["--output-model-type", "msgspec.Struct"], None, id="msgspec"),
         pytest.param(
@@ -8553,16 +8715,22 @@ def test_main_unique_items_as_set_model_items(
     [
         pytest.param(
             [],
-            "Root(tags={Tags(root=['a'])}, objects={Object(root={'a': 1})}, names={'x'})",
+            "Root(tags={Tags(root=['a'])}, objects={Object(root={'a': 1})}, names={'x'}, pets={Pet(id=1)}, "
+            "tag_sets={Tags(root=['a'])})",
             id="set",
         ),
         pytest.param(
             ["--use-generic-container-types"],
             "Root(tags=frozenset({Tags(root=['a'])}), objects=frozenset({Object(root={'a': 1})}), "
-            "names=frozenset({'x'}))",
+            "names=frozenset({'x'}), pets=frozenset({Pet(id=1)}), tag_sets=frozenset({Tags(root=['a'])}))",
             id="frozenset",
         ),
         pytest.param(["--output-model-type", "msgspec.Struct"], None, id="msgspec"),
+        pytest.param(
+            ["--use-root-model-type-alias"],
+            "Root(tags=[['a']], objects=[{'a': 1}], names={'x'}, pets={Pet(id=1)}, tag_sets=[['a']])",
+            id="root-model-type-alias",
+        ),
     ],
 )
 def test_main_unique_items_as_set_collapsed_root_items(
@@ -8573,7 +8741,11 @@ def test_main_unique_items_as_set_collapsed_root_items(
     ``Tags`` (a list) and ``Object`` (a dict) stay named as without --collapse-root-models, so the set holds their
     instances, which hash by identity; ``Name`` (a string) is inlined. Up to 0.89.0 collapse inlined them all, and
     ``set[list[str]]`` and ``set[dict[str, int]]`` rejected every non-empty array. msgspec writes the root models as
-    aliases, whose arrays the set rule reads as their values, so they stay lists.
+    aliases, whose arrays the set rule reads as their values, so they stay lists, and so do the Structs of ``Pets``,
+    which never hash. A RootModel written as an alias (``--use-root-model-type-alias``) never hashes, so its set is
+    decided once collapse inlined it: ``Name`` gives the set of strings 0.89.0 wrote, and the lists and dicts of
+    ``Tags`` and ``Object``, also inside ``TagSets``, keep lists. ``Pets`` and ``TagSets`` are inlined at a field that
+    names them, which shares the nodes of their root types.
     """
     name = "unique_items_collapsed_root_items"
     run_main_and_assert(
@@ -8591,7 +8763,7 @@ def test_main_unique_items_as_set_collapsed_root_items(
         ],
         force_exec_validation=True,
     )
-    payload = '{"tags": [["a"]], "objects": [{"a": 1}], "names": ["x", "x"]}'
+    payload = '{"tags": [["a"]], "objects": [{"a": 1}], "names": ["x", "x"], "pets": [{"id": 1}], "tag_sets": [["a"]]}'
     if expected_repr is None:
         with _generated_model(output_file, name, "Root") as model:
             msgspec.json.decode(payload, type=model)
@@ -8761,6 +8933,92 @@ def test_main_unique_items_as_set_by_value_across_modules(extra_args: list[str],
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(
+            [
+                "--output-model-type",
+                "dataclasses.dataclass",
+                "--frozen-dataclasses",
+                "--use-generic-container-types",
+            ],
+            id="frozen-dataclass",
+        ),
+        pytest.param(
+            ["--output-model-type", "dataclasses.dataclass", "--dataclass-arguments", '{"unsafe_hash": true}'],
+            id="unsafe-hash-dataclass",
+        ),
+        pytest.param(
+            [
+                "--enable-faux-immutability",
+                "--custom-template-dir",
+                str(DATA_PATH / "templates_enum_member_fields"),
+            ],
+            id="custom-templates",
+        ),
+    ],
+)
+def test_main_unique_items_as_set_by_value_class_hashes(
+    extra_args: list[str], tmp_path: Path, output_file: Path
+) -> None:
+    """Read how the classes of the items hash as they are written under --use-unique-items-as-set-by-value.
+
+    ``Child`` declares ``x`` again as a string, which replaces the list of ``Base`` in its instances, so they hash by
+    value; ``Box`` takes a set from its default factory, which never hashes. ``unsafe_hash`` hashes a dataclass by the
+    values of its fields as ``frozen`` does, and custom templates may give an enum a hash of its own, so its members
+    are read as hashing by identity, as the classes of the templates are.
+    """
+    definitions = {
+        "Pet": {"type": "object", "properties": {"id": {"type": "integer"}}},
+        "Base": {
+            "type": "object",
+            "properties": {"x": {"type": "array", "items": {"type": "integer"}}, "y": {"type": "integer"}},
+        },
+        "Child": {"allOf": [{"$ref": "#/$defs/Base"}, {"type": "object", "properties": {"x": {"type": "string"}}}]},
+        "Box": {
+            "type": "object",
+            "properties": {
+                "levels": {
+                    "type": "array",
+                    "uniqueItems": True,
+                    "items": {"type": "integer"},
+                    "default_factory": "set",
+                }
+            },
+        },
+        "Color": {"type": "string", "enum": ["red", "green"]},
+    }
+    (input_file := tmp_path / "unique_items_by_value_class_hashes.json").write_text(
+        json.dumps({
+            "title": "Root",
+            "type": "object",
+            "properties": {
+                name: {"type": "array", "uniqueItems": True, "items": {"$ref": f"#/$defs/{item}"}}
+                for name, item in (("pets", "Pet"), ("children", "Child"), ("boxes", "Box"), ("colors", "Color"))
+            },
+            "$defs": definitions,
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *extra_args,
+            "--use-unique-items-as-set",
+            "--use-unique-items-as-set-by-value",
+            "--allof-merge-mode",
+            "none",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--keep-constrained-root-models-in-every-container"],
     option_description="""Keep constrained root models named in every container of a holder.
@@ -8840,6 +9098,83 @@ def test_main_collapse_constrained_roots_in_containers(extra_args: list[str], ou
     )
 
 
+@pytest.mark.cli_doc(
+    options=["--keep-enum-literal-aliases"],
+    option_description="""Keep a named enum written as a Literal type alias named under collapse.
+
+An output that writes an enum definition as a `Literal` type alias (TypedDict, or `--enum-field-as-literal all`) names
+it at its uses (`Status = Literal['open', 'resolved']`, `status: Status`), but `--collapse-root-models` inlines it, so
+every use repeats the `Literal` and the name of the enum is lost. With `--keep-enum-literal-aliases` the alias stays
+named; a type alias holds the values of its type, so its uses parse the same values. A Pydantic `RootModel` class of
+the `Literal` still collapses.""",
+    input_schema="jsonschema/collapse_enum_literal_aliases.json",
+    cli_args=["--output-model-type", "typing.TypedDict", "--collapse-root-models", "--keep-enum-literal-aliases"],
+    golden_output="main/jsonschema/collapse_enum_literal_aliases~main_collapse_enum_literal_aliases[typed-dict].py",
+    comparison_output=(
+        "main/jsonschema/collapse_enum_literal_aliases~main_collapse_enum_literal_aliases[without-option].py"
+    ),
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--output-model-type", "typing.TypedDict"], id="without-option"),
+        pytest.param(["--output-model-type", "typing.TypedDict", "--keep-enum-literal-aliases"], id="typed-dict"),
+        pytest.param(
+            ["--output-model-type", "msgspec.Struct", "--enum-field-as-literal", "all", "--keep-enum-literal-aliases"],
+            id="msgspec",
+        ),
+        pytest.param(
+            [
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--use-type-alias",
+                "--enum-field-as-literal",
+                "all",
+                "--keep-enum-literal-aliases",
+            ],
+            id="type-alias",
+        ),
+        pytest.param(
+            [
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--enum-field-as-literal",
+                "all",
+                "--keep-enum-literal-aliases",
+            ],
+            id="root-model",
+        ),
+    ],
+)
+def test_main_collapse_enum_literal_aliases(extra_args: list[str], output_file: Path) -> None:
+    """Keep the Literal type alias of an enum named at its uses under --collapse-root-models.
+
+    With --keep-enum-literal-aliases ``Status`` stays a named alias of its ``Literal``, while the alias of a plain
+    string, ``Name``, is inlined; a Pydantic ``RootModel`` class of the ``Literal`` collapses as without the option, as
+    keeping it would wrap the values its holders parse.
+    """
+    name = "collapse_enum_literal_aliases"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[*extra_args, "--collapse-root-models", "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    if "pydantic_v2.BaseModel" not in extra_args:
+        return
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=name,
+        model_name="Ticket",
+        valid_json='{"status": "open", "history": ["resolved"], "name": "x"}',
+        invalid_json='{"status": "closed", "history": []}',
+        expected_error_type="literal_error",
+        expected_repr="Ticket(status='open', history=['resolved'], name='x')",
+    )
+
+
 @pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct", "typing.TypedDict"])
 def test_main_unique_items_as_set_nested_arrays(output_model: str, tmp_path: Path, output_file: Path) -> None:
     """Write as a set every array whose own schema declares ``uniqueItems``, wherever the array is.
@@ -8850,7 +9185,8 @@ def test_main_unique_items_as_set_nested_arrays(output_model: str, tmp_path: Pat
     set. An array stays a list beside a member of its kind that keeps its lists, the values of two patterns or the
     values of two maps, as a msgspec union holds one array-like member and one map. A tuple that the keyword declares
     unique stays a tuple with a warning, as at a field. Up to 0.89.0 only the arrays of a field's own schema became
-    sets, so the others kept the duplicates their schema rejects.
+    sets, so the others kept the duplicates their schema rejects. An array stays a list where the field's default holds
+    an array, the items of ``items_default`` and the values of ``values_default``, as the default holds lists there.
     """
     integers = {"type": "array", "items": {"type": "integer"}, "uniqueItems": True}
     input_file = tmp_path / "nested_arrays.json"
@@ -8896,6 +9232,8 @@ def test_main_unique_items_as_set_nested_arrays(output_model: str, tmp_path: Pat
                         "uniqueItems": True,
                     },
                 },
+                "items_default": {"type": "array", "items": integers, "default": [[1, 2]]},
+                "values_default": {"type": "object", "additionalProperties": integers, "default": {"k": [1]}},
             },
         }),
         encoding="utf-8",
@@ -8934,7 +9272,8 @@ def test_main_unique_items_as_set_nested_arrays(output_model: str, tmp_path: Pat
                 "Model(any_of={1, 2}, one_of={1}, nullable={2}, items=[{3}], values={'k': {4}}, patterns={'a': {5}}, "
                 "all_of=AllOf(root={6}), beside_any_of=[BesideAnyOf(root={'x'}), BesideAnyOf1(root=7)], "
                 "arrays_of_sets=ArraysOfSets(root=[{8}, {8}]), nested_sets=None, "
-                "two_patterns={'b': [9, 9]}, two_maps={'k': [10, 10]}, tuples=None)"
+                "two_patterns={'b': [9, 9]}, two_maps={'k': [10, 10]}, tuples=None, items_default=[[1, 2]], "
+                "values_default={'k': [1]})"
             ),
         )
 
@@ -9015,7 +9354,9 @@ def test_main_all_of_value_site_keywords(
     A lone member, a type beside a keyword part and an array member write their bounds as the root field's constraints
     wherever the type does not enforce them itself; parts that no value meets and parts with an ``enum`` keep their
     output. Up to 0.88.0 the root took its constraints from the allOf site, which declares none, so ``Numbers`` dropped
-    its ``minItems`` without a warning, and under --field-constraints and in msgspec every type dropped its bounds.
+    its ``minItems`` without a warning, and under --field-constraints and in msgspec every type dropped its bounds. A
+    site whose own pattern meets the pattern of a part, ``patterned``, keeps its own as before, as the root writes no
+    lookaheads of two patterns.
     """
     input_file = tmp_path / "all_of_value_sites.json"
     input_file.write_text(
@@ -9029,6 +9370,7 @@ def test_main_all_of_value_site_keywords(
                 "numbers": {"allOf": [{"type": "array", "items": {"type": "integer"}, "minItems": 2}]},
                 "conflict": {"allOf": [{"type": "string", "maxLength": 3}, {"type": "string", "minLength": 5}]},
                 "literal": {"allOf": [{"type": "string", "enum": ["a", "bb"]}, {"maxLength": 1}]},
+                "patterned": {"allOf": [{"type": "string", "pattern": "^a"}], "pattern": "z$"},
             },
         }),
         encoding="utf-8",
@@ -9053,6 +9395,7 @@ def test_main_all_of_value_site_keywords(
                 ({"text": "abcd"}, "string_too_long"),
                 ({"split": "abcd"}, "string_too_long"),
                 ({"number": 4}, "less_than_equal"),
+                ({"patterned": "abc"}, "string_pattern_mismatch"),
             ],
         )
 
@@ -31293,6 +31636,42 @@ def test_main_nesting_within_recursion_limit(
             "jsonschema",
             "--output",
             str(output_file),
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        check=True,
+        capture_output=True,
+        cwd=tmp_path,
+        env={**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[3] / "src")},
+        text=True,
+        timeout=120,
+    )
+    assert_file_content(output_file)
+
+
+def test_main_name_allof_union_members_after_branches_of_a_root_in_a_fresh_process(
+    tmp_path: Path, output_file: Path
+) -> None:
+    """Name the union members of a document root's allOf after their branches in a process that built no model yet.
+
+    The root ``Event`` is the first model of the process, whose key is 0, and owns the members, the branch-only bases
+    and the shared part of its allOf, which are named after its branches all the same: ``EventCreated``,
+    ``EventCreatedBase``, ``EventBase``.
+    """
+    subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import sys; from datamodel_code_generator.__main__ import main; sys.exit(main(sys.argv[1:]))",
+            "--input",
+            str(JSON_SCHEMA_DATA_PATH / "allof_union_members_root.json"),
+            "--input-file-type",
+            "jsonschema",
+            "--output",
+            str(output_file),
+            "--name-allof-union-members-after-branches",
+            "--infer-union-variant-names",
             "--disable-timestamp",
             "--formatters",
             "builtin",

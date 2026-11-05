@@ -180,6 +180,7 @@ How do I convert enums to Literal types?
 - `--force-optional`: Force all fields to be Optional regardless of required status.
 - `--frozen-dataclasses`: Generate frozen dataclasses with optional keyword-only fields.
 - `--keep-constrained-root-models-in-every-container`: Keep constrained root models named in every container of ...
+- `--keep-enum-literal-aliases`: Keep a named enum written as a Literal type alias named under collapse.
 - `--keep-field-defaults-off-branch-roots`: Leave a property's default off the root models extracted from its `a...
 - `--keep-model-order`: Keep generated model order deterministic while respecting dependency constraints.
 - `--keep-reference-null-on-merged-models`: Keep the null a reference's schema admits when its model is merged.
@@ -194,6 +195,7 @@ How do I convert enums to Literal types?
 - `--no-collapse-root-models`
 - `--no-collapse-shared-parent-wrappers`
 - `--no-keep-constrained-root-models-in-every-container`
+- `--no-keep-enum-literal-aliases`
 - `--no-keep-field-defaults-off-branch-roots`
 - `--no-keep-reference-null-on-merged-models`
 - `--no-name-converted-payloads-by-message`
@@ -1107,6 +1109,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         there; without it such a root model is inlined into
                         those containers and its constraints are lost, as in
                         0.89.0
+  --keep-enum-literal-aliases, --no-keep-enum-literal-aliases
+                        Under --collapse-root-models, keep a named enum that
+                        the output writes as a `Literal` type alias named at
+                        its uses (`Status = Literal['open', 'resolved']`, `a:
+                        Status`); without it every use repeats the `Literal`,
+                        as in 0.89.0
   --keep-model-order    Keep generated models' order
   --keyword-only        Defined models as keyword only (for example
                         dataclass(kw_only=True)).
@@ -1120,12 +1128,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --name-allof-union-members-after-branches, --no-name-allof-union-members-after-branches
                         Name the classes an allOf gives the branches of a
                         oneOf or anyOf it holds after the branch: the holder
-                        and the branch's tag, its $ref class or its position
-                        (EventCreated, or Event1), the branch-only base after
-                        the class (EventCreatedBase) and the shared part after
-                        the holder (EventBase); without it every class is
-                        numbered after the holder (Event1 to Event5), as in
-                        0.89.0
+                        and the branch's tag (with --infer-union-variant-names
+                        or --use-tag-as-union-variant-name), its $ref class or
+                        its position (EventCreated, or Event1), the branch-
+                        only base after the class (EventCreatedBase) and the
+                        shared part after the holder (EventBase); without it
+                        every class is numbered after the holder (Event1 to
+                        Event5), as in 0.89.0
   --name-converted-payloads-by-message, --no-name-converted-payloads-by-message
                         AsyncAPI only: name a payload that an Avro or XML
                         Schema converter gives no name of its own, such as an

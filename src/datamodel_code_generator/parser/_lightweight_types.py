@@ -241,7 +241,7 @@ def build_lightweight_array_type(  # noqa: PLR0913, PLR0917
             is_tuple=is_homogeneous_tuple,
             tuple_item_count=tuple_item_count if is_homogeneous_tuple else None,
         ),
-        schema,
+        schema.uniqueItems,
     )
 
 
