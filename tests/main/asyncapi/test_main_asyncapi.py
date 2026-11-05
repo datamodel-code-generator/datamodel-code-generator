@@ -484,6 +484,41 @@ def test_main_asyncapi_invalid_schema_version(output_file: Path, capsys: pytest.
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--ignore-ref-siblings-by-schema-version"], id="first-read"),
+        pytest.param(
+            ["--ignore-ref-siblings-by-schema-version", "--read-schema-version-per-document"], id="per-document"
+        ),
+    ],
+)
+def test_main_asyncapi_read_schema_version_per_document_external_ref_siblings(
+    output_file: Path, extra_args: list[str]
+) -> None:
+    """Read a document an AsyncAPI 2 document references, which declares no version, as AsyncAPI 2.
+
+    AsyncAPI 2 ignores the keywords beside a ``$ref``, so ``Short`` is ``Text`` alone, without its ``maxLength``. With
+    ``--read-schema-version-per-document`` the referenced document takes the version of the AsyncAPI 2 document whose
+    reference loads it, as without it, where the document parsed decides.
+    """
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "ref_siblings_external_v2" / "api.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=[*PY310_TARGET_ARGS, *extra_args],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="asyncapi_read_schema_version_per_document_external_ref_siblings",
+        model_name="Note",
+        valid_json='"abcd"',
+        invalid_json="1",
+        expected_error_type="string_type",
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--name-converted-payloads-by-message"],
     option_description="""Name a converted payload that names no type of its own after its message.

@@ -710,6 +710,7 @@ jsonschema/read_only_write_only_redeclared_inherited_flag.json	payloads/native_n
 jsonschema/read_only_write_only_redeclared_inherited_flag_inline.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/read_only_write_only_root_document_inline_object.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/read_only_write_only_tuple_positions.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/recursive_anchor_external_defs/tree.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/recursive_ref.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/recursive_ref_in_defs.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/recursive_ref_no_anchor.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -1614,6 +1615,7 @@ openapi/input_diff/model_name_map_old.yaml::components.schemas.Pet	payloads/nati
 openapi/integer_bounds_beyond_int64.yaml::components.schemas.Seed	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/item_schema.yaml::components.schemas.Event	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/item_schema_31.yaml::components.schemas.Event	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/item_schema_external_32/root.yaml::paths./owners.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/lazy_resolved_models.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/lazy_resolved_models.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/map_keyword_bodies.yaml::paths./codes.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2662,6 +2664,7 @@ jsonschema/read_only_write_only_redeclared_inherited_flag.json	payloads/native_n
 jsonschema/read_only_write_only_redeclared_inherited_flag_inline.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/read_only_write_only_root_document_inline_object.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/read_only_write_only_tuple_positions.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/recursive_anchor_external_defs/tree.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/recursive_ref.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/recursive_ref_in_defs.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/recursive_ref_no_anchor.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3561,6 +3564,7 @@ openapi/input_diff/model_name_map_old.yaml::components.schemas.Pet	payloads/nati
 openapi/integer_bounds_beyond_int64.yaml::components.schemas.Seed	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/item_schema.yaml::components.schemas.Event	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/item_schema_31.yaml::components.schemas.Event	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/item_schema_external_32/root.yaml::paths./owners.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/lazy_resolved_models.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/lazy_resolved_models.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/map_keyword_bodies.yaml::paths./codes.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

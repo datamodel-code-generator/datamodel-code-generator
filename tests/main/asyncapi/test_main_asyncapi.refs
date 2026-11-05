@@ -43,6 +43,9 @@ typed-dict	main/asyncapi/output_model_types/order_events_typing_TypedDict.py
 	main/asyncapi/protobuf_schema_format.py
 [test_main_asyncapi_protobuf_schema_format_local_import]
 	main/asyncapi/protobuf_local_import.py
+[test_main_asyncapi_read_schema_version_per_document_external_ref_siblings]
+first-read	main/asyncapi/main_asyncapi/read_schema_version_per_document_external_ref_siblings[first-read].py
+per-document	main/asyncapi/main_asyncapi/read_schema_version_per_document_external_ref_siblings[per-document].py	= main/asyncapi/main_asyncapi/read_schema_version_per_document_external_ref_siblings[first-read].py
 [test_main_asyncapi_root_message_ref]
 	main/asyncapi/main_asyncapi/root_message_ref.py
 [test_main_asyncapi_schema_version]

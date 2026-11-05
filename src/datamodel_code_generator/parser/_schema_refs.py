@@ -261,9 +261,8 @@ class SchemaRefsHost(Protocol):
     def model_resolver(self) -> ModelResolver:
         """The resolver of references and class names."""
 
-    @property
-    def _document_schema_paths(self) -> list[tuple[str, list[str]]]:
-        """Get the schema paths for definitions and defs of the document being parsed."""
+    def _schema_paths_at(self, at: SchemaLocation | None) -> list[tuple[str, list[str]]]:
+        """Return the schema paths for definitions and defs of the document a location is in, None: the parsed one."""
 
     @property
     def _graph(self) -> SchemaGraphBuilder:
@@ -1218,7 +1217,7 @@ def recursive_ref_target(parser: SchemaRefsHost, defining_ref: str, path: tuple[
     _, document = parser._prepared_ref_document(file_part)  # noqa: SLF001
     parts = [*split_json_pointer(document, pointer), *map(str, path)]
     if (target := _unanchored_resource_ref(document, parts)) is None:
-        anchors = document_recursive_anchors(parser, document)
+        anchors = document_recursive_anchors(parser, document, SchemaLocation(file_part, ()) if file_part else None)
         current_ref = _pointer_ref(parts)
         target = _nearest_recursive_anchor(anchors, current_ref)
         if (target != "#" or "#" in anchors) and parser._declares_recursive_anchor():  # noqa: SLF001
@@ -1251,10 +1250,16 @@ def declares_recursive_anchor(parser: SchemaRefsHost) -> bool:
     return bool(parser._recursive_anchor_index.get(tuple(parser.model_resolver.current_root)))  # noqa: SLF001
 
 
-def document_recursive_anchors(parser: SchemaRefsHost, raw: dict[str, Any]) -> list[str]:
-    """Return the $recursiveAnchor references a document registers when parsed: its root and definitions."""
+def document_recursive_anchors(
+    parser: SchemaRefsHost, raw: dict[str, Any], location: SchemaLocation | None
+) -> list[str]:
+    """Return the $recursiveAnchor references a document registers when parsed: its root and definitions.
+
+    The definitions are those of the schema paths of the document at ``location`` (None: the document being parsed),
+    which under --read-schema-version-per-document are those of its own version (``_schema_paths_at``).
+    """
     anchors = ["#"] if raw.get("$recursiveAnchor") is True else []
-    for schema_path, split_schema_path in parser._document_schema_paths:  # noqa: SLF001
+    for schema_path, split_schema_path in parser._schema_paths_at(location):  # noqa: SLF001
         if definitions := cast("dict[str, YamlValue]", get_model_by_path(raw, split_schema_path)):
             entries = chain(
                 ((str(key), model, [schema_path, str(key)]) for key, model in definitions.items()),

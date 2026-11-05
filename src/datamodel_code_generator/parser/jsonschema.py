@@ -1186,12 +1186,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     @property
     def _document_schema_paths(self) -> list[tuple[str, list[str]]]:
-        """Return the schema paths of the document being parsed.
+        """Return the schema paths of the document being parsed (``_schema_paths_at``)."""
+        return self._schema_paths_at(None)
+
+    def _schema_paths_at(self, at: SchemaLocation | None) -> list[tuple[str, list[str]]]:
+        """Return the schema paths of the document a location is in, None: the document being parsed.
 
         They are those of its schema version under --read-schema-version-per-document, else ``schema_paths``, of the
         document parsed at the first read (row ``legacy-first-read-dialect``).
         """
-        if (dialect := self._dialect_at(None)) is None:
+        if (dialect := self._dialect_at(at)) is None:
             return self.schema_paths
         return self._schema_paths_of(dialect.features)
 
@@ -7612,6 +7616,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         resolve through an embedded `$id` are rewritten copy-on-write, and the prepared document is indexed.
         """
         return _schema_documents.prepare_schema_resources(self, raw, path_parts)
+
+    def _record_document_dialect(self, raw: dict[str, Any], path_parts: list[str]) -> None:
+        """Record the schema version a loaded document is read by (L0), which the documents it loads take by default."""
+        _schema_documents.record_document_dialect(self, raw, self._schema_resource_document(path_parts))
 
     def _index_document(self, raw: dict[str, Any], path_parts: list[str]) -> dict[str, Any]:
         """Return a loaded document as a tree whose JSON objects the schema graph locates (L0).

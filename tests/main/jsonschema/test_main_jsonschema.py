@@ -39420,6 +39420,41 @@ def test_main_jsonschema_read_schema_version_per_document_dynamic_scope(output_f
 
 @pytest.mark.parametrize(
     "extra_args",
+    [pytest.param([], id="first-read"), pytest.param(["--read-schema-version-per-document"], id="per-document")],
+)
+def test_main_jsonschema_read_schema_version_per_document_external_recursive_anchor(
+    output_file: Path, extra_args: list[str]
+) -> None:
+    """Find the ``$recursiveAnchor`` under ``$defs`` of a referenced 2019-09 document by its own version.
+
+    In strict version mode a draft-07 document holds its definitions under ``definitions`` only. The ``$ref`` with
+    siblings copies ``Tree`` of the 2019-09 document into ``T``, whose ``$recursiveRef`` names the anchored ``Tree``;
+    with the option the anchor is found under the ``$defs`` its document's version holds them in, so ``children`` are
+    trees. Without it ``children`` are ``Any``, as the draft-07 document's paths miss the anchor.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "recursive_anchor_external_defs" / "root.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *extra_args,
+            *("--schema-version-mode", "strict", "--disable-timestamp", "--formatters", "builtin"),
+        ],
+        force_exec_validation=True,
+    )
+    if extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="read_schema_version_per_document_external_recursive_anchor",
+            model_name="Root",
+            valid_json=json.dumps({"t": {"value": 1, "children": [{"value": 2}]}}),
+            invalid_json=json.dumps({"t": {"value": 1, "children": [{"value": "x"}]}}),
+            expected_error_type="int_parsing",
+        )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
     [pytest.param([], id="overlaid"), pytest.param(["--ignore-ref-siblings-by-schema-version"], id="ignored")],
 )
 def test_main_jsonschema_ignore_ref_siblings_by_schema_version(output_file: Path, extra_args: list[str]) -> None:

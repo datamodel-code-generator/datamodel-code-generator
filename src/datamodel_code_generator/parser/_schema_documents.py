@@ -724,6 +724,14 @@ def loaded_document_dialect(parser: SchemaDocumentsHost, raw: dict[str, Any], do
     return parser._read_dialect(raw, inherited=inherited)  # noqa: SLF001
 
 
+def record_document_dialect(parser: SchemaDocumentsHost, raw: dict[str, Any], document: str) -> None:
+    """Record the schema version a loaded document is read by (``loaded_document_dialect``, L0).
+
+    A document it loads that declares no version takes it from there (``loading_document_dialect``).
+    """
+    parser._document_dialects[document] = loaded_document_dialect(parser, raw, document)  # noqa: SLF001
+
+
 def loading_document_dialect(parser: SchemaDocumentsHost) -> DocumentDialect | None:
     """Return the version of the document whose reference loads a document, which it takes by default.
 
@@ -760,7 +768,7 @@ def prepare_schema_resources(parser: SchemaDocumentsHost, raw: dict[str, Any], p
     parser._schema_resource_path_parts.setdefault(document, path_parts)  # noqa: SLF001
     if (cached := parser._schema_resource_cache.get(document)) is not None and (raw is cached[0] or raw is cached[1]):  # noqa: SLF001
         return cached[1]
-    parser._document_dialects[document] = loaded_document_dialect(parser, raw, document)  # noqa: SLF001
+    record_document_dialect(parser, raw, document)
     registry = parser._schema_resource_registry  # noqa: SLF001
     registry.forget(document)
     parser._lenient_documents.pop(document, None)  # noqa: SLF001
