@@ -208,6 +208,8 @@ class _ResolverNamer:
         )
 
     def stem(self, claim: NameClaim, cls: str) -> str:
+        if claim.keyed:
+            return cls
         resolver = self._resolver
         stem = cls.removeprefix(resolver.class_name_prefix).removesuffix(resolver.class_name_suffix)
         return stem if stem and self.affixed(claim, stem) == cls else cls

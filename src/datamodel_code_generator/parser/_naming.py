@@ -497,7 +497,8 @@ class Namer(Protocol):
     def stem(self, claim: NameClaim, cls: str) -> str:
         """Return ``cls`` without the class name affixes the model of ``claim`` takes, where it is their form of one.
 
-        Any other class, such as one numbered after its affixes, is its own stem.
+        Any other class, such as one numbered after its affixes or one ``--model-name-map`` gives, which takes no
+        affixes, is its own stem.
         """
 
     def camel(self, text: str) -> str:
@@ -621,11 +622,14 @@ def _allof_parts(claims: Sequence[NameClaim]) -> _AllOfParts:
     """Return the classes an allOf builds for the oneOf or anyOf it holds: members, branch-only bases, shared parts.
 
     A member and a shared part are named after their holder, the allOf's model and their owner; a branch-only base,
-    an inline branch the holder built that one member alone combines, after that member.
+    an inline branch the holder built that one member alone combines, after that member. A member that
+    ``--model-name-map`` names keeps its name but combines its branches too. Each part comes after the part it is
+    named after, such as a branch-only base that is itself the holder of an allOf before the members it holds.
     """
     by_key = {claim.key: claim for claim in claims}
-    members = [claim for claim in claims if claim.role == "allof-member" and not claim.keyed and claim.owner]
+    members = [claim for claim in claims if claim.role == "allof-member" and claim.owner is not None]
     uses = Counter(branch for member in members for branch in member.branches)
+    members = [member for member in members if not member.keyed]
     parts: _AllOfParts = {member.key: ("member", cast("ModelKey", member.owner)) for member in members}
     for member in members:
         for branch in member.branches:
@@ -638,11 +642,19 @@ def _allof_parts(claims: Sequence[NameClaim]) -> _AllOfParts:
             ):
                 parts[branch] = ("base", member.key)
     parts.update(
-        (claim.key, ("shared", cast("ModelKey", claim.owner)))
+        (claim.key, ("shared", claim.owner))
         for claim in claims
-        if claim.role == "allof-shared" and not claim.keyed and claim.owner
+        if claim.role == "allof-shared" and not claim.keyed and claim.owner is not None
     )
-    return parts
+    ordered: _AllOfParts = {}
+    for key in parts:
+        chain: list[ModelKey] = []
+        at = key
+        while at in parts and at not in ordered:
+            chain.append(at)
+            at = parts[at][1]
+        ordered.update((part, parts[part]) for part in reversed(chain))
+    return ordered
 
 
 def _allof_name(

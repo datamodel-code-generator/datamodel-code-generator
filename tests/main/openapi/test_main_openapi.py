@@ -17934,10 +17934,10 @@ def test_main_openapi_naming_strategy_enclosing_model(
 An allOf that holds a oneOf or anyOf gives each branch a class that combines it with the other parts of the allOf.
 These classes are numbered after the holder, `Event1` to `Event5` for two branches, and `--infer-union-variant-names`
 names the branch-only bases after their tags, not the classes of the union. With
-`--name-allof-union-members-after-branches` each class of the union takes the holder's name and the branch's tag,
-the class of a `$ref` branch, or its position (`EventCreated`, `NoticeOpened`, `Event1`), a branch-only base takes
-the class's name and `Base` (`EventCreatedBase`), and the part the branches share takes the holder's name and `Base`
-(`EventBase`).""",
+`--name-allof-union-members-after-branches` each class of the union takes the holder's name and the branch's tag
+(under `--infer-union-variant-names` or `--use-tag-as-union-variant-name`), the class of a `$ref` branch, or its
+position (`EventCreated`, `NoticeOpened`, `Event1`), a branch-only base takes the class's name and `Base`
+(`EventCreatedBase`), and the part the branches share takes the holder's name and `Base` (`EventBase`).""",
     input_schema="openapi/allof_union_members.yaml",
     cli_args=["--name-allof-union-members-after-branches", "--infer-union-variant-names"],
     golden_output="main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-infer].py",
@@ -17996,6 +17996,18 @@ the class's name and `Base` (`EventCreatedBase`), and the part the branches shar
             id="pydantic_v2-members-suffix",
         ),
         pytest.param(
+            "pydantic_v2.BaseModel",
+            [
+                "--name-allof-union-members-after-branches",
+                "--infer-union-variant-names",
+                "--class-name-suffix",
+                "Model",
+                "--model-name-map",
+                '{"Notice": "ExternalModel"}',
+            ],
+            id="pydantic_v2-members-suffix-mapped",
+        ),
+        pytest.param(
             "msgspec.Struct",
             ["--name-allof-union-members-after-branches", "--infer-union-variant-names"],
             id="msgspec-members-infer",
@@ -18023,7 +18035,9 @@ def test_main_openapi_name_allof_union_members_after_branches(
     ``Event3``; with it the members are ``Event1`` and ``Event2`` (``EventCreated`` and ``EventDeleted``), the bases
     ``Event1Base`` and ``Event2Base`` and the shared part ``EventBase``. The members of ``Notice``, whose branches are
     ``$ref`` targets, are ``NoticeOpened`` and ``NoticeClosed``. A ``--class-name-suffix`` ends each of these names
-    once, as it ends the others: ``EventCreatedModel``, ``EventBaseModel``, ``NoticeOpenedModel``.
+    once, as it ends the others: ``EventCreatedModel``, ``EventBaseModel``, ``NoticeOpenedModel``. A name that
+    ``--model-name-map`` gives takes no suffix, so the names made of it keep it whole: ``ExternalModelOpenedModel``,
+    as under ``--naming-strategy enclosing-model``.
     """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "allof_union_members.yaml",
@@ -18050,6 +18064,79 @@ def test_main_openapi_name_allof_union_members_after_branches(
             invalid_json=json.dumps({"type": "created"}),
             expected_error_type="missing",
         )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="members"),
+        pytest.param(["--model-name-map", '{"Pair11": "Special"}'], id="mapped-member"),
+    ],
+)
+def test_main_openapi_name_allof_union_members_after_branches_nested(
+    tmp_path: Path, output_file: Path, extra_args: list[str]
+) -> None:
+    """Name each allOf part after the final name of the part it is named after, and count every member's branches.
+
+    The first branch of ``Event`` is an allOf that holds a oneOf, the branch-only base of ``Event1``, so it is
+    ``Event1Base``, and its members, their bases and its shared part are named after that name (``Event1Base1``,
+    ``Event1Base1Base``, ``Event1BaseBase``), as under ``--naming-strategy enclosing-model``. Under
+    ``--distribute-allof-over-unions`` each member of ``Pair`` combines a branch of each of its two oneOfs, so every
+    branch is combined twice and none is the base of one member, also where ``--model-name-map`` names a member.
+    """
+
+    def branches(*names: str) -> dict[str, Any]:
+        return {
+            "oneOf": [
+                {"type": "object", "required": [name], "properties": {name: {"type": "string"}}} for name in names
+            ]
+        }
+
+    envelope = {"type": "object", "required": ["id"], "properties": {"id": {"type": "string"}}}
+    input_file = tmp_path / "allof_union_members_nested.json"
+    input_file.write_text(
+        json.dumps({
+            "openapi": "3.1.0",
+            "info": {"title": "allOf union members nested", "version": "1"},
+            "paths": {},
+            "components": {
+                "schemas": {
+                    "Event": {
+                        "allOf": [
+                            envelope,
+                            {
+                                "oneOf": [
+                                    {
+                                        "allOf": [
+                                            {"type": "object", "properties": {"kind": {"type": "string"}}},
+                                            branches("p", "q"),
+                                        ]
+                                    },
+                                    *branches("b")["oneOf"],
+                                ]
+                            },
+                        ]
+                    },
+                    "Pair": {"allOf": [envelope, branches("a", "b"), branches("c", "d")]},
+                }
+            },
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--name-allof-union-members-after-branches",
+            "--distribute-allof-over-unions",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
 
 
 def test_name_allof_union_members_after_branches_beside_a_resolver_that_names_models() -> None:

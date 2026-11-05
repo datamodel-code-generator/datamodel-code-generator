@@ -692,9 +692,10 @@ _toggle(
     model_options,
     "--name-allof-union-members-after-branches",
     help="Name the classes an allOf gives the branches of a oneOf or anyOf it holds after the branch: the holder "
-    "and the branch's tag, its $ref class or its position (EventCreated, or Event1), the branch-only base after the "
-    "class (EventCreatedBase) and the shared part after the holder (EventBase); without it every class is numbered "
-    "after the holder (Event1 to Event5), as in 0.89.0",
+    "and the branch's tag (with --infer-union-variant-names or --use-tag-as-union-variant-name), its $ref class or "
+    "its position (EventCreated, or Event1), the branch-only base after the class (EventCreatedBase) and the shared "
+    "part after the holder (EventBase); without it every class is numbered after the holder (Event1 to Event5), as "
+    "in 0.89.0",
 )
 _flag(model_options, "--use-pendulum", help="use pendulum instead of datetime")
 _toggle(

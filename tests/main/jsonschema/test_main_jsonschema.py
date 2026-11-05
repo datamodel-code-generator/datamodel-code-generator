@@ -31514,6 +31514,42 @@ def test_main_nesting_within_recursion_limit(
     assert_file_content(output_file)
 
 
+def test_main_name_allof_union_members_after_branches_of_a_root_in_a_fresh_process(
+    tmp_path: Path, output_file: Path
+) -> None:
+    """Name the union members of a document root's allOf after their branches in a process that built no model yet.
+
+    The root ``Event`` is the first model of the process, whose key is 0, and owns the members, the branch-only bases
+    and the shared part of its allOf, which are named after its branches all the same: ``EventCreated``,
+    ``EventCreatedBase``, ``EventBase``.
+    """
+    subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import sys; from datamodel_code_generator.__main__ import main; sys.exit(main(sys.argv[1:]))",
+            "--input",
+            str(JSON_SCHEMA_DATA_PATH / "allof_union_members_root.json"),
+            "--input-file-type",
+            "jsonschema",
+            "--output",
+            str(output_file),
+            "--name-allof-union-members-after-branches",
+            "--infer-union-variant-names",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        check=True,
+        capture_output=True,
+        cwd=tmp_path,
+        env={**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[3] / "src")},
+        text=True,
+        timeout=120,
+    )
+    assert_file_content(output_file)
+
+
 def test_main_read_only_write_only_flag_diamonds(tmp_path: Path, output_file: Path) -> None:
     """Resolve a field's readOnly/writeOnly flag through references that meet again, reading each target once."""
     depth = 18
