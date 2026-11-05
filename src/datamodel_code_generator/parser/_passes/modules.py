@@ -118,7 +118,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _restore_inherited_field_names_for_unique_aliases,
     _rule_data_types,
     _runtime_validation_reference_keys,
-    _unique_items_tuple,
     compared_models,
     definition_reads,
     enum_site_override_import,
@@ -133,6 +132,7 @@ from datamodel_code_generator.parser._passes._shared import (
     run_unused_models,
     site_display_name,
     subclass_duplicate,
+    unique_items_plan,
     without_stand_ins,
 )
 from datamodel_code_generator.parser._passes._state import (
@@ -185,6 +185,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.parser._field_rows import FieldFacts, FieldRow
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
+    from datamodel_code_generator.parser._passes._shared import UniqueItemsPlan
     from datamodel_code_generator.parser._passes._state import (
         ModuleContextView,
         ModulePath,
@@ -370,8 +371,8 @@ class ModulesHost(
     def _apply_override_to_field(self, field: DataModelFieldBase, override_import: Import) -> None:
         """Replace a field's type by the type of a type override."""
 
-    def _create_set_from_list(self, data_type: DataType) -> DataType | None:
-        """Return a set copy of a list type, or the type after its nested lists became sets in place."""
+    def _create_set_from_list(self, data_type: DataType) -> DataType:
+        """Return the set copy of a list type, which holds its items."""
 
 
 class ReuseHost(RecursionFactsHost, DeduplicationHost, Protocol):
@@ -975,13 +976,13 @@ def record_decimal_alias_models(parser: ModulesHost, state: ModuleStateView) -> 
 
 
 def replace_unique_list_to_set(parser: ModulesHost, models: list[DataModel]) -> None:
-    """Write each uniqueItems array that is a list as a set, and its list default as a set, where a list became one.
+    """Write the uniqueItems arrays that ``unique_items_plan`` decides as sets, and the list default as its set.
 
     A field typed as another container, such as a ``Sequence``, keeps its type and its default. The array of a type
     list waits for reuse (``replace_type_list_unique_list_to_set``).
     """
-    for model, model_field in _unique_list_fields(parser, models, type_list=False):
-        _write_unique_set(parser, model, model_field)
+    for model_field, plan in _unique_list_fields(parser, models, type_list=False):
+        _write_unique_sets(parser, model_field, plan)
 
 
 def replace_type_list_unique_list_to_set(parser: ModulesHost, models: list[DataModel]) -> None:
@@ -991,25 +992,25 @@ def replace_type_list_unique_list_to_set(parser: ModulesHost, models: list[DataM
     the list 0.88.0 wrote, so a model merged into its model may declare no ``uniqueItems`` there, or declare it
     through a base: the field then keeps the list, which takes the values of both.
     """
-    for model, model_field in _unique_list_fields(parser, models, type_list=True):
-        if all(_declares_unique_items_at(merged, model_field.name) for merged in merged_models(parser, model)):
-            _write_unique_set(parser, model, model_field)
+    for model in models:
+        for model_field, plan in _unique_list_fields(parser, [model], type_list=True):
+            if all(_declares_unique_items_at(merged, model_field.name) for merged in merged_models(parser, model)):
+                _write_unique_sets(parser, model_field, plan)
 
 
 def _unique_list_fields(
     parser: ModulesHost, models: list[DataModel], *, type_list: bool
-) -> Iterator[tuple[DataModel, DataModelFieldBase]]:
-    """Yield the fields declaring uniqueItems that a set may take, of a type list or not as ``type_list`` says."""
+) -> Iterator[tuple[DataModelFieldBase, UniqueItemsPlan]]:
+    """Yield the fields of a type list or not, as ``type_list`` says, with the uniqueItems lists that become sets."""
     if not parser.use_unique_items_as_set:
         return
     for model in models:
         for model_field in model.fields:
             if (
-                _declares_unique_items(model_field)
-                and declares_type_list_unique_items(model_field) is type_list
-                and not (parser.use_tuple_for_closed_arrays and _unique_items_tuple(model_field.data_type) is not None)
+                declares_type_list_unique_items(model_field) is type_list
+                and (plan := unique_items_plan(model_field, keeps_tuples=parser.use_tuple_for_closed_arrays)).sets
             ):
-                yield model, model_field
+                yield model_field, plan
 
 
 def _declares_unique_items_at(model: DataModel, name: str | None) -> bool:
@@ -1021,22 +1022,19 @@ def _declares_unique_items_at(model: DataModel, name: str | None) -> bool:
     return found is not None and _declares_unique_items(found)
 
 
-def _write_unique_set(parser: ModulesHost, model: DataModel, model_field: DataModelFieldBase) -> None:
-    """Write a uniqueItems list of a field as a set, and its list default as a set.
-
-    A default whose items cannot hash keeps the field and its default as they are; the nested lists that became sets
-    in place change the imports of the model.
-    """
-    if (set_data_type := parser._create_set_from_list(model_field.data_type)) is None:  # noqa: SLF001
-        return
-    if isinstance(model_field.default, list):
-        try:
-            converted_default = set(model_field.default)
-        except TypeError:
-            parser._graph_builder.note_changed_models(model)  # noqa: SLF001
-            return
-        parser._graph_builder.set_field_default(model_field, converted_default)  # noqa: SLF001
-    parser._graph_builder.replace_field_type(model_field, set_data_type)  # noqa: SLF001
+def _write_unique_sets(parser: ModulesHost, model_field: DataModelFieldBase, plan: UniqueItemsPlan) -> None:
+    """Write the lists of a field's type that ``plan`` decides as sets, and the field's list default as its set."""
+    builder = parser._graph_builder  # noqa: SLF001
+    field_type = model_field.data_type
+    for list_type in plan.sets:
+        set_type = parser._create_set_from_list(list_type)  # noqa: SLF001
+        if list_type is field_type:
+            field_type = set_type
+        else:
+            builder.swap_data_type(list_type, set_type, refresh="deferred")
+    if plan.default is not None:
+        builder.set_field_default(model_field, plan.default)
+    builder.replace_field_type(model_field, field_type)
 
 
 def extract_inherited_enum(models: list[DataModel]) -> None:

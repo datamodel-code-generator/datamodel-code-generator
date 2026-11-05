@@ -8892,14 +8892,14 @@ nested-cli-builtin-template	main/jsonschema/root_sequence_final/nested.py
 nested-cli-builtin-template	main/jsonschema/root_sequence_final/nested.runtime.txt
 nested-cli-custom-template	main/jsonschema/root_sequence_final/nested.py
 nested-cli-custom-template	main/jsonschema/root_sequence_final/nested.runtime.txt
-nested_set-api-builtin-template	main/jsonschema/root_sequence_final/nested_set.py
-nested_set-api-builtin-template	main/jsonschema/root_sequence_final/nested_set.runtime.txt
-nested_set-api-custom-template	main/jsonschema/root_sequence_final/nested_set.py
-nested_set-api-custom-template	main/jsonschema/root_sequence_final/nested_set.runtime.txt
-nested_set-cli-builtin-template	main/jsonschema/root_sequence_final/nested_set.py
-nested_set-cli-builtin-template	main/jsonschema/root_sequence_final/nested_set.runtime.txt
-nested_set-cli-custom-template	main/jsonschema/root_sequence_final/nested_set.py
-nested_set-cli-custom-template	main/jsonschema/root_sequence_final/nested_set.runtime.txt
+nested_set-api-builtin-template	main/jsonschema/root_sequence_final/nested_set.py	= main/jsonschema/root_sequence_final/nested.py
+nested_set-api-builtin-template	main/jsonschema/root_sequence_final/nested_set.runtime.txt	= main/jsonschema/root_sequence_final/nested.runtime.txt
+nested_set-api-custom-template	main/jsonschema/root_sequence_final/nested_set.py	= main/jsonschema/root_sequence_final/nested.py
+nested_set-api-custom-template	main/jsonschema/root_sequence_final/nested_set.runtime.txt	= main/jsonschema/root_sequence_final/nested.runtime.txt
+nested_set-cli-builtin-template	main/jsonschema/root_sequence_final/nested_set.py	= main/jsonschema/root_sequence_final/nested.py
+nested_set-cli-builtin-template	main/jsonschema/root_sequence_final/nested_set.runtime.txt	= main/jsonschema/root_sequence_final/nested.runtime.txt
+nested_set-cli-custom-template	main/jsonschema/root_sequence_final/nested_set.py	= main/jsonschema/root_sequence_final/nested.py
+nested_set-cli-custom-template	main/jsonschema/root_sequence_final/nested_set.runtime.txt	= main/jsonschema/root_sequence_final/nested.runtime.txt
 reuse-api-builtin-template	main/jsonschema/root_sequence_final/nested.runtime.txt
 reuse-api-builtin-template	main/jsonschema/root_sequence_final/reuse.py
 reuse-api-custom-template	main/jsonschema/root_sequence_final/nested.runtime.txt
@@ -9265,6 +9265,9 @@ pydantic_v2.BaseModel	main/jsonschema/unique_items_as_set_type_list.py	= main/js
 [test_main_unique_items_as_set_type_list_merged]
 collapse	main/jsonschema/unique_items_as_set_type_list_merged.py
 subclass	main/jsonschema/unique_items_as_set_type_list_merged.py	= main/jsonschema/unique_items_as_set_type_list_merged~main_unique_items_as_set_type_list_merged[subclass].py
+[test_main_unique_items_as_set_unhashable_items]
+msgspec.Struct	main/jsonschema/unique_items_as_set_unhashable_items.py
+pydantic_v2.BaseModel	main/jsonschema/unique_items_as_set_unhashable_items.py	= main/jsonschema/unique_items_as_set_unhashable_items~main_unique_items_as_set_unhashable_items[pydantic_v2.BaseModel].py
 [test_main_url_jsonschema_relative_ref_without_fragment]
 	main/jsonschema/remote_relative_ref.py
 [test_main_url_with_relative_root_id_resolves_relative_refs]
