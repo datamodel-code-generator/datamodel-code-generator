@@ -2241,8 +2241,8 @@ that select the variant by a tag it does not keep, and a warning says so. With `
 field is a `Literal` of every tag the unions give it, so each union decodes the documents it selects the variant by; a
 union then also accepts the tags the other unions give the variant. A tag that the pattern of the tag field rejects is
 left out, as the schema rejects the documents it selects the variant by. A variant keeps the first union's tags where a
-union would then give two of its variants one tag, a nested one included, as crossing mappings do, and msgspec Structs,
-which take one tag, are unchanged.
+union listing it, or nesting a union that lists it, would then read one of its tags on another variant, as crossing
+mappings do, and msgspec Structs, which take one tag, are unchanged.
 
 !!! tip "Usage"
 

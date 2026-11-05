@@ -50,7 +50,7 @@ if TYPE_CHECKING:
         """The facts of a variant that ``variant_tags`` reads, each computed when it is asked for."""
 
         def merged_tags(self) -> Sequence[Any] | None:
-            """Return every tag the unions listing the variant give it, where they are merged, or None."""
+            """Return every tag the unions listing the variant give it, where it is read with them, or None."""
 
         def own_tag(self) -> Any:
             """Return the tag of the variant's own tag field (``field_tag``), or None."""
@@ -196,9 +196,10 @@ VariantTagRule: TypeAlias = Literal[
 """The rows of ``variant_tags``.
 
 * ``merged-shared-tags``: under ``--merge-shared-variant-tags``, every tag the discriminated unions listing the
-  variant give it, where they give it different tags and each of them keeps distinct tags with them
-  (``parser/_tag_plan.py:TagPlan.merged_variant_tags``), also for a nested variant, whose tag field a union listing it
-  writes as a ``Literal`` of them all, so a union nesting that union reads every one of them as its tags.
+  variant give it, where they give it different tags and no union listing it, or nesting a union that lists it, would
+  read one of them on another of its variants (``parser/_tag_plan.py:TagPlan.merged_variant_tags``), also for a nested
+  variant, whose tag field a union listing it writes as a ``Literal`` of them all, so a union nesting that union reads
+  every one of them as its tags.
 * ``own-field``: the variant's own tag field (``field_tag``).
 * ``reused-schema-field``: the tag field of the model that reuse replaced with the variant, an empty subclass whose
   base can carry the tag another union wrote.

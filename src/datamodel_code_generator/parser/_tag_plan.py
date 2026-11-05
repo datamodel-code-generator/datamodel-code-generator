@@ -24,7 +24,8 @@ loop replaces them:
 - ``legacy-tag-from-earlier-union``: a variant keeps the tags of the first union that tags it, and its own tag, and
   the tag a nested variant inherits, include a tag an earlier union wrote (:attr:`TagPlan.first_tags`); the tag the
   schema of an ancestor fixes does not (:attr:`TagPlan.union_written`). ``--merge-shared-variant-tags`` gives a
-  variant that unions tag differently every tag they give it instead (:meth:`TagPlan.merged_variant_tags`).
+  variant that unions tag differently every tag they give it instead (:meth:`TagPlan.merged_variant_tags`), which
+  reads each variant with every tag the unions give it, as it cannot tell which of them writes the tag field first.
 - ``legacy-inline-variants-at-first-ask``: which inline variants take the tag they inherit is decided once, at the
   first collapse or apply that asks, over the parsed models as they are then (:attr:`TagPlan.inline_variants`).
 - ``legacy-predicted-tag-names``: msgspec layout flattening at L4 reads a superset of the tag fields L5 writes
@@ -476,33 +477,143 @@ def _tag_field_patterns(variant: DataModel, tag_name: str, mode: TagFieldMatch) 
 @final
 @record(eq=False)
 class _ListedVariant:
-    """A variant a union lists, as ``TagPlan.merged_variant_tags`` reads it."""
+    """A variant a union lists that is no msgspec Struct, as ``TagPlan.merged_variant_tags`` reads it."""
 
     key: tuple[int, str]
     """The variant's id and the union's tag property."""
-    owner: int
-    """The variant, or the root model or the nested union it is reached through (``site_validity``)."""
     tags: tuple[DiscriminatorValue, ...]
-    """The tags the union gives the variant."""
-    merges: bool
-    """The union writes the variant's tag field, so its tags merge with those the other unions give it."""
+    """The tags the union gives the variant before any union writes a tag."""
+    admitted: tuple[DiscriminatorValue, ...]
+    """Those of ``tags`` that the patterns of the variant's tag fields admit."""
+    duplicate: tuple[int, str] | None
+    """The id and tag property of the duplicate collapsed reuse removed, where the union names it, else None."""
 
 
-def _clashing_variants(listed: Sequence[_ListedVariant], merged: MergedVariantTags) -> set[tuple[int, str]]:
-    """Return the variants of a union whose merged tags another of its variants also has.
+@final
+@record(eq=False)
+class _MergeSite:
+    """A union site as ``TagPlan.merged_variant_tags`` reads it, with the tags it gives the variants it lists."""
 
-    A variant takes its merged tags, else the tags the union gives it, a nested one included; the variants reached
-    through one root model or nested union may share a tag, as ``site_validity`` reads them.
+    site: UnionSite
+    names: SiteNames
+    mode: ValidityMode
+    inline_variants: InlineVariantTags
+    union_written: UnionWrittenTags
+    enum_member_tags: bool
+    listed: tuple[_ListedVariant, ...]
+
+    def tag_keys(self, read_tags: MergedVariantTags) -> SiteStatus | list[_VariantTagKeys]:
+        """Return the tag keys of the union's variants, each read with the tags ``read_tags`` holds for it, if any."""
+        field_ = self.site.field
+        return _site_tag_keys(
+            field_.data_type.data_types,
+            self.names,
+            self.site.mapping,
+            field_type=type(field_),
+            mode=self.mode,
+            inline_variants=self.inline_variants,
+            union_written=self.union_written,
+            enum_member_tags=self.enum_member_tags,
+            merged_tags=read_tags,
+        )
+
+
+def _listed_variants(  # noqa: PLR0913
+    site: UnionSite,
+    names: SiteNames,
+    mode: ValidityMode,
+    *,
+    inline_variants: InlineVariantTags,
+    union_written: UnionWrittenTags,
+    enum_member_tags: bool,
+    collapsed_users: CollapsedReuseUsers,
+) -> Iterator[_ListedVariant]:
+    """Yield the variants a union lists that are no msgspec Struct, with the tags it gives them before any write.
+
+    A variant that a type naming a duplicate collapsed reuse removed now names takes the tags given the duplicate.
     """
-    tags = [merged.get(variant.key, variant.tags) for variant in listed]
-    owners: defaultdict[object, set[int]] = defaultdict(set)
-    for variant, given in zip(listed, tags, strict=True):
-        for tag in given:
-            owners[tag_key(tag, "legacy-python-equality")].add(variant.owner)
-    return {
-        variant.key
-        for variant, given in zip(listed, tags, strict=True)
-        if variant.key in merged and any(len(owners[tag_key(tag, "legacy-python-equality")]) > 1 for tag in given)
+    tag_name = names.property_name if mode == "source-name" else names.field_name
+    for data_type, can_update_discriminator, _ in _iter_discriminator_data_types(site.field.data_type.data_types):
+        if (
+            not can_update_discriminator
+            or not data_type.reference
+            or not isinstance(variant := data_type.reference.source, DataModel)
+            or tag_capabilities(type(variant), type(site.field)).struct_tags
+        ):
+            continue
+        removed = collapsed_duplicate(collapsed_users, data_type)
+        tags = tuple(
+            tags_of_variant(
+                "variant",
+                variant if removed is None else removed,
+                tag_name,
+                site.mapping,
+                inline_variants=inline_variants,
+                mode=mode,
+                property_name=site.property_name,
+                union_written=union_written,
+                enum_member_tags=enum_member_tags,
+                merged_tags={},
+            )
+        )
+        patterns = _tag_field_patterns(variant, tag_name, mode)
+        yield _ListedVariant(
+            (id(variant), site.property_name),
+            tags,
+            tuple(tag for tag in tags if all(tag_satisfies_pattern(tag, pattern) for pattern in patterns)),
+            None if removed is None else (id(removed), site.property_name),
+        )
+
+
+def _listed_by_variant(sites: Iterable[_MergeSite]) -> dict[tuple[int, str], list[_ListedVariant]]:
+    """Return the listings of each variant by the unions of ``sites``, union by union in their order."""
+    listings: defaultdict[tuple[int, str], list[_ListedVariant]] = defaultdict(list)
+    for variant in chain.from_iterable(site.listed for site in sites):
+        listings[variant.key].append(variant)
+    return listings
+
+
+def _every_tag(tags: Iterable[tuple[DiscriminatorValue, ...]]) -> tuple[DiscriminatorValue, ...]:
+    """Return every tag of the lists once, by type and value, in the order they come."""
+    return tuple({tag_key(tag, "type-and-value"): tag for tag in chain.from_iterable(tags)}.values())
+
+
+def _merged_tags(sites: Sequence[_MergeSite]) -> dict[tuple[int, str], tuple[DiscriminatorValue, ...]]:
+    """Return every tag the unions read give each variant they tag differently, unless a union read would clash.
+
+    A union is read once each of its variants has tags, each variant read with every tag the unions read before give
+    it (``TagPlan.merged_variant_tags``). A variant one of whose tags a union read also reads on another of its
+    variants (``site_validity``) keeps one union's tags.
+    """
+    read: set[int] = set()
+    readable: list[_MergeSite] = []
+    by_variant: dict[tuple[int, str], list[_ListedVariant]] = {}
+    read_tags: dict[tuple[int, str], tuple[DiscriminatorValue, ...]] = {}
+    while added := {
+        index for index, site in enumerate(sites) if index not in read and not isinstance(site.tag_keys(read_tags), str)
+    }:
+        read |= added
+        readable = [site for index, site in enumerate(sites) if index in read]
+        by_variant = _listed_by_variant(readable)
+        read_tags = {key: _every_tag(variant.tags for variant in listed) for key, listed in by_variant.items()}
+    shared = {
+        key
+        for site in readable
+        if not isinstance(variants := site.tag_keys(read_tags), str)
+        for key in _shared_tag_variants(variants)
+    }
+    merged: dict[tuple[int, str], tuple[DiscriminatorValue, ...]] = {}
+    for key, listed in by_variant.items():
+        admitted = [variant.admitted for variant in listed]
+        if key not in shared and any(
+            not same_tags(tags, admitted[0], "legacy-python-equality") for tags in admitted[1:]
+        ):
+            merged[key] = _every_tag(admitted)
+    return merged | {
+        removed: merged[variant.key]
+        for site in readable
+        for variant in site.listed
+        if (removed := variant.duplicate) is not None and variant.key in merged
     }
 
 
@@ -522,8 +633,9 @@ def tags_of_variant(  # noqa: PLR0913
     """Return the tags of a variant (``variant_tags``) from its tag fields, its bases, the mapping and its schema path.
 
     ``union_written`` holds the variants whose tag fields for ``property_name`` a union wrote and ``merged_tags`` the
-    tags of the variants whose tags are merged (``TagPlan``); ``enum_member_tags`` tells that Enum members are written
-    as tags (``--use-enum-values-in-discriminator``).
+    tags a variant is read with ahead of its tag fields: those of the variants whose tags are merged (``TagPlan``), or
+    every tag the unions give it where ``TagPlan.merged_variant_tags`` reads it; ``enum_member_tags`` tells that Enum
+    members are written as tags (``--use-enum-values-in-discriminator``).
     """
     facts = _VariantTagFacts(
         variant,
@@ -558,7 +670,7 @@ class _VariantTagFacts:
     merged: MergedVariantTags
 
     def merged_tags(self) -> tuple[DiscriminatorValue, ...] | None:
-        """Return every tag the unions listing the variant give it, where they are merged."""
+        """Return the tags the variant is read with ahead of its tag fields (``tags_of_variant``), if any."""
         return self.merged.get((id(self.model), self.property_name))
 
     def own_tag(self) -> DiscriminatorValue | None:
@@ -670,6 +782,7 @@ class UnionView:
     union_written: UnionWrittenTags
     enum_member_tags: bool
     merged_tags: MergedVariantTags
+    """The tags a variant is read with ahead of its tag fields (``tags_of_variant``)."""
 
     def tags(
         self, source: VariantTagSource, variant: DataModel, mapping: dict[str, str] | None = None
@@ -754,7 +867,28 @@ def _written_enum_member_keys(
     return [*keys, *values_of_members] if tags.rule == "all-members" else keys
 
 
-def site_validity(  # noqa: PLR0913
+@final
+@record(eq=False)
+class _VariantTagKeys:
+    """A variant of a union with the keys of its tags, as ``site_validity`` compares them."""
+
+    key: tuple[int, str]
+    """The variant's id and the union's tag property."""
+    owner: int
+    """The variant, or the root model or the nested union it is reached through, whose variants may share a tag."""
+    keys: list[object]
+
+
+def _shared_tag_variants(variants: Sequence[_VariantTagKeys]) -> set[tuple[int, str]]:
+    """Return the variants of a union one of whose tag keys a variant of another owner also has."""
+    owners: defaultdict[object, set[int]] = defaultdict(set)
+    for variant in variants:
+        for key in variant.keys:
+            owners[key].add(variant.owner)
+    return {variant.key for variant in variants if any(len(owners[key]) > 1 for key in variant.keys)}
+
+
+def _site_tag_keys(  # noqa: PLR0913
     data_types: Sequence[DataType],
     names: SiteNames,
     mapping: dict[str, str],
@@ -765,19 +899,19 @@ def site_validity(  # noqa: PLR0913
     union_written: UnionWrittenTags,
     enum_member_tags: bool,
     merged_tags: MergedVariantTags,
-) -> SiteStatus:
-    """Return whether a union's variants let it be tagged (``tagged``), else why its discriminator is dropped.
+) -> SiteStatus | list[_VariantTagKeys]:
+    """Return the tag keys of each variant of a union, else why its discriminator is dropped (``site_validity``).
 
     Each variant is a model that takes a tag and has tags the backend reads as tags (or, with ``enum_member_tags``,
-    that members of the Enum typing its tag field write), and no two variants share one. The variants' tag fields are
-    found by the names ``mode`` gives (``ValidityMode``).
+    that members of the Enum typing its tag field write). The variants' tag fields are found by the names ``mode``
+    gives (``ValidityMode``).
     """
     if has_any_variant(data_types):  # pragma: no cover
         return "dropped-any"
     use_field_name = mode == "source-name"
     field_name = names.field_name
     tag_name = names.property_name if use_field_name else field_name
-    owners: dict[object, int] = {}
+    variants: list[_VariantTagKeys] = []
     for data_type, can_update_discriminator, owner in _iter_discriminator_data_types(data_types):
         if not data_type.reference and data_type.type == NONE:
             continue
@@ -816,11 +950,43 @@ def site_validity(  # noqa: PLR0913
         keys = [tag_key(value, "legacy-python-equality") for value in values]
         if enum_member_tags and can_update_discriminator and not capabilities.struct_tags:
             keys += _written_enum_member_keys(variant, field_name, tag_name, values, use_field_name=use_field_name)
-        for key in keys:
-            if (previous_owner := owners.get(key)) is not None and previous_owner != owner:
-                return "dropped-invalid"
-            owners[key] = owner
-    return "tagged"
+        variants.append(_VariantTagKeys((id(variant), names.property_name), owner, keys))
+    return variants
+
+
+def site_validity(  # noqa: PLR0913
+    data_types: Sequence[DataType],
+    names: SiteNames,
+    mapping: dict[str, str],
+    *,
+    field_type: type[DataModelFieldBase],
+    mode: ValidityMode,
+    inline_variants: InlineVariantTags,
+    union_written: UnionWrittenTags,
+    enum_member_tags: bool,
+    merged_tags: MergedVariantTags,
+) -> SiteStatus:
+    """Return whether a union's variants let it be tagged (``tagged``), else why its discriminator is dropped.
+
+    Each variant is a model that takes a tag and has tags the backend reads as tags (``_site_tag_keys``), and no two
+    variants share one but those reached through one root model or nested union.
+    """
+    if isinstance(
+        variants := _site_tag_keys(
+            data_types,
+            names,
+            mapping,
+            field_type=field_type,
+            mode=mode,
+            inline_variants=inline_variants,
+            union_written=union_written,
+            enum_member_tags=enum_member_tags,
+            merged_tags=merged_tags,
+        ),
+        str,
+    ):
+        return variants
+    return "dropped-invalid" if _shared_tag_variants(variants) else "tagged"
 
 
 def has_reused_variant(data_types: Iterable[DataType]) -> bool:
@@ -1438,96 +1604,37 @@ class TagPlan:
         gives it one tag and its schema name another, takes them all, so each union decodes the documents it selects
         the variant by, and also the tags the other unions give it. A union that names a duplicate collapsed reuse
         removed gives the kept model the tags it gives the duplicate. A tag that the pattern of the variant's tag field
-        rejects is left out, as the schema rejects the documents it selects the variant by. A variant keeps one union's
-        tags, as without the option, where a union listing it would then give it a tag of another of its variants, a
-        nested one included, as crossing mappings do. A msgspec Struct takes one tag, so its tags are never merged. The
-        decision reads the unions before any of them writes a tag, as ``inline_variant_tags`` does, and the unions it
-        reads are those that can be tagged.
+        rejects is left out, as the schema rejects the documents it selects the variant by. A msgspec Struct takes one
+        tag, so its tags are never merged.
+
+        The decision reads the unions before any of them writes a tag, as ``inline_variant_tags`` does. It reads a
+        union once each of its variants has tags: first the unions whose variants have them before any write, then,
+        round by round, those whose nested variants the unions read so far list, as those unions write their tag
+        fields. A variant is read with every tag the unions read give it, as which of them writes its tag field first
+        is not known yet. A variant keeps one union's tags, as without the option, where a union read, listing it or
+        nesting a union that lists it, would read one of them on another of its variants (``site_validity``), as
+        crossing mappings do.
         """
         if (decided := self.merged_variants) is not None:
             return decided
         inline_variants = self.inline_variant_tags(models, namer, enum_member_tags=enum_member_tags)
-        unions: list[list[_ListedVariant]] = []
-        patterns: dict[tuple[int, str], tuple[str, ...]] = {}
-        duplicates: dict[tuple[int, str], tuple[int, str]] = {}
+        sites: list[_MergeSite] = []
         for site in iter_union_sites(models):
-            field_ = site.field
             names = site_names(site.property_name, namer)
-            mode = site_mode(writes_argument=tag_capabilities(type(site.model), type(field_)).writes_argument)
-            if (
-                site_validity(
-                    field_.data_type.data_types,
-                    names,
-                    site.mapping,
-                    field_type=type(field_),
-                    mode=mode,
-                    inline_variants=inline_variants,
-                    union_written=self.union_written,
-                    enum_member_tags=enum_member_tags,
-                    merged_tags={},
-                )
-                != "tagged"
-            ):
-                continue
-            tag_name = names.property_name if mode == "source-name" else names.field_name
-            listed: list[_ListedVariant] = []
-            for data_type, can_update_discriminator, owner in _iter_discriminator_data_types(
-                field_.data_type.data_types
-            ):
-                if not data_type.reference or not isinstance(variant := data_type.reference.source, DataModel):
-                    continue
-                key = (id(variant), site.property_name)
-                tagged = variant
-                if merges := (
-                    can_update_discriminator and not tag_capabilities(type(variant), type(field_)).struct_tags
-                ):
-                    patterns.setdefault(key, _tag_field_patterns(variant, tag_name, mode))
-                    if (removed := collapsed_duplicate(collapsed_users, data_type)) is not None:
-                        tagged = removed
-                        duplicates[id(removed), site.property_name] = key
-                listed.append(
-                    _ListedVariant(
-                        key,
-                        owner,
-                        tuple(
-                            tags_of_variant(
-                                "variant" if can_update_discriminator else "nested",
-                                tagged,
-                                tag_name,
-                                site.mapping,
-                                inline_variants=inline_variants,
-                                mode=mode,
-                                property_name=site.property_name,
-                                union_written=self.union_written,
-                                enum_member_tags=enum_member_tags,
-                                merged_tags={},
-                            )
-                        ),
-                        merges=merges,
-                    )
-                )
-            unions.append(listed)
-        tags_by_variant: dict[tuple[int, str], list[tuple[DiscriminatorValue, ...]]] = defaultdict(list)
-        for variant in chain.from_iterable(unions):
-            if variant.merges:
-                tags_by_variant[variant.key].append(
-                    tuple(
-                        tag
-                        for tag in variant.tags
-                        if all(tag_satisfies_pattern(tag, pattern) for pattern in patterns[variant.key])
-                    )
-                )
-        merged = {
-            key: tuple({tag_key(tag, "type-and-value"): tag for tags in given for tag in tags}.values())
-            for key, given in tags_by_variant.items()
-            if any(not same_tags(tags, given[0], "legacy-python-equality") for tags in given[1:])
-        }
-        while clashing := set().union(*(_clashing_variants(listed, merged) for listed in unions)):
-            for key in clashing:
-                del merged[key]
-        self.merged_variants = merged = merged | {
-            removed: merged[kept] for removed, kept in duplicates.items() if kept in merged
-        }
+            mode = site_mode(writes_argument=tag_capabilities(type(site.model), type(site.field)).writes_argument)
+            listed = _listed_variants(
+                site,
+                names,
+                mode,
+                inline_variants=inline_variants,
+                union_written=self.union_written,
+                enum_member_tags=enum_member_tags,
+                collapsed_users=collapsed_users,
+            )
+            sites.append(
+                _MergeSite(site, names, mode, inline_variants, self.union_written, enum_member_tags, tuple(listed))
+            )
+        self.merged_variants = merged = _merged_tags(sites)
         return merged
 
     def record_reused_tag_field(self, field_: DataModelFieldBase, *, annotates_tag: bool) -> None:
