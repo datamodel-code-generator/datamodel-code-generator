@@ -156,6 +156,7 @@ MEMBER_KINDS_OPTION_SETS = {
         ("--use-specialized-enum", "--target-python-version", "3.11", "--use-msgspec-nullable-enum-alias"),
     ),
     "union_members": ("msgspec_union_member_kinds", ()),
+    "written_union_members": ("msgspec_union_written_member_kinds", ()),
 }
 
 
@@ -167,8 +168,10 @@ def test_msgspec_refused_member_kinds(output_file: Path, recwarn: pytest.Warning
     msgspec skips a list value, so the null member alone refuses ``Aliased`` and ``Listed``, which
     --use-msgspec-nullable-enum-alias writes without it, and ``IntegralFloat`` is
     an int-like Enum beside ``int``. A union holds one dict-like member (``dict`` or Struct types), one array-like and
-    one str-like member (``str`` and its Literal values, an Enum of str values, ``bytes``, ``timedelta``, ...). Each
-    field's type is decoded alone, so the warned fields are exactly the ones msgspec refuses.
+    one str-like member (``str`` and its Literal values, an Enum of str values, ``bytes``, ``timedelta``, ...); a member
+    an ``x-python-type`` annotation types counts as the classes the annotation writes, and the values of a map of
+    several types are a union too. Each field's type is decoded alone, so the warned fields are exactly the ones
+    msgspec refuses.
     """
     fixture, options = MEMBER_KINDS_OPTION_SETS[option_set]
     run_main_and_assert(
