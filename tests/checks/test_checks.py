@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+from itertools import count
 from typing import TYPE_CHECKING
 
 import pytest
@@ -119,6 +120,20 @@ def test_naming_check_reports_a_name_no_naming_call_gives() -> None:
         ),
     ):
         _RenamingParser(_RENAMED_DEFINITION, formatters=[Formatter.BUILTIN]).parse()
+
+
+def test_naming_check_replays_the_names_a_custom_generator_gave() -> None:
+    """A class name generator that counts its calls names each model once: the replay reads the names it gave."""
+    counter = count(1)
+    assert_output(
+        str(
+            JsonSchemaParser(
+                _RENAMED_DEFINITION,
+                custom_class_name_generator=lambda name: f"{name}{next(counter)}",
+                formatters=[Formatter.BUILTIN],
+            ).parse()
+        )
+    )
 
 
 def test_naming_check_turned_off(monkeypatch: pytest.MonkeyPatch) -> None:

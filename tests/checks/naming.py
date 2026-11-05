@@ -89,7 +89,25 @@ def start(parser: Any) -> None:
     """Start recording the naming calls of the parse of ``parser``, from a copy of its resolver as it is now."""
     if (naming_mode := mode(Area.NAMING)) is not None:
         resolver = parser.model_resolver
-        naming_mode.state[_LOG] = _Log(resolver, _copied_resolver(resolver), frozenset(resolver.exclude_names))
+        log = _Log(resolver, _copied_resolver(resolver), frozenset(resolver.exclude_names))
+        _replay_generated_names(log)
+        naming_mode.state[_LOG] = log
+
+
+def _replay_generated_names(log: _Log) -> None:
+    """Record the names the resolver's class name generator gives, and give them again, in order, on the replay.
+
+    A custom generator may keep state, such as a counter, so calling it again would name the replay otherwise.
+    """
+    generator = log.resolver.class_name_generator
+    given: list[str] = []
+
+    def generate(name: str) -> str:
+        given.append(class_name := generator(name))
+        return class_name
+
+    log.resolver.class_name_generator = generate
+    log.replay.class_name_generator = lambda _name: given.pop(0)
 
 
 def recorded(original: Callable[..., Any]) -> Callable[..., Any]:

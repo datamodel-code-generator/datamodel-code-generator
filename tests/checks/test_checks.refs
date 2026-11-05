@@ -10,5 +10,7 @@
 	checks/checks/checked_run_of_the_command_line.txt
 [test_checks_run_in_a_python_a_test_starts]
 	checks/checks/run_in_a_python_a_test_starts.txt
+[test_naming_check_replays_the_names_a_custom_generator_gave]
+	checks/checks/naming_check_replays_the_names_a_custom_generator_gave.txt
 [test_naming_check_turned_off]
 	checks/checks/naming_check_turned_off.txt
