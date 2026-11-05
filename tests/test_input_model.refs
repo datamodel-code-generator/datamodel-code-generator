@@ -20,6 +20,9 @@ variadic	main/input_model/model_with_callable_types.py
 	main/input_model/custom_generic_type_import.py
 [test_input_model_cwd_already_in_path]
 	main/input_model/multiple_with_pydantic_output.py
+[test_input_model_dataclass_fields_of_one_alias]
+option	input_model/dataclass_fields_of_one_alias[option].txt
+released	input_model/dataclass_fields_of_one_alias[released].txt	= input_model/dataclass_fields_of_one_alias[option].txt
 [test_input_model_dataclass_with_python_types]
 	main/input_model/dataclass_with_python_types.py
 [test_input_model_default_put_dict_import]

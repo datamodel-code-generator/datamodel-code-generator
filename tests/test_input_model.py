@@ -1075,6 +1075,37 @@ def test_input_model_read_dataclass_fields_by_alias(
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="released"), pytest.param(["--read-input-model-dataclass-fields-by-alias"], id="option")],
+)
+def test_input_model_dataclass_fields_of_one_alias(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, extra_args: list[str]
+) -> None:
+    """Type the property two fields of a Pydantic dataclass share by the last of them, whose schema Pydantic writes.
+
+    The input is the dataclass itself, whose schema marks no owner of a property, so ``shared`` is ``str`` under
+    ``--read-input-model-dataclass-fields-by-alias`` as without it, not the ``deque[int]`` of the first field.
+    """
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delitem(sys.modules, "dataclass_fields_of_one_alias", raising=False)
+    (tmp_path / "dataclass_fields_of_one_alias.py").write_text(
+        "from collections import deque\n\n"
+        "from pydantic import Field\n"
+        "from pydantic.dataclasses import dataclass\n\n\n"
+        "@dataclass\n"
+        "class Shared:\n"
+        "    first: deque[int] = Field(alias='shared')\n"
+        "    last: str = Field(alias='shared')\n",
+        encoding="utf-8",
+    )
+    run_input_model_and_assert(
+        input_model="dataclass_fields_of_one_alias:Shared",
+        output_path=tmp_path / "output.py",
+        extra_args=extra_args,
+    )
+
+
 # ============================================================================
 # --input-model-ref-strategy tests
 # ============================================================================
