@@ -106,6 +106,7 @@ class StructureHost(
 
     _uses_standard_generation_templates: bool
     _hidden_submodule_renames: tuple[tuple[ModulePath, str], ...]
+    _renamed_module_inputs: dict[Path, Path]
 
     @property
     def _configured_generation_types_are_builtin(self) -> bool:
@@ -978,6 +979,21 @@ def _module_segment_renamed(model: DataModel, index: int, segment: str) -> tuple
     return None, Path(*file_path.parts[:index], segment, *file_path.parts[index + 1 :])
 
 
+def _rename_module_segment(
+    parser: StructureHost, model: DataModel, index: int, segment: str, inputs: dict[Path, Path]
+) -> None:
+    """Put ``segment`` at ``index`` of the model's module path (``_module_segment_renamed``).
+
+    Where that renames the model's output file, ``inputs`` keeps the input file the new path stands for, through every
+    earlier rename of it.
+    """
+    reference_name, file_path = _module_segment_renamed(model, index, segment)
+    if file_path is not None:
+        source = cast("Path", model.file_path)
+        inputs[file_path] = inputs.get(source, source)
+    parser._graph_builder.rename_model(model, reference_name=reference_name, new_file_path=file_path)  # noqa: SLF001
+
+
 def _hidden_submodule_renames(
     classes: set[str], final_classes: AbstractSet[str] | None, submodules: set[str]
 ) -> dict[str, str]:
@@ -1011,7 +1027,9 @@ def rename_submodules_hidden_by_classes(parser: StructureHost, state: _Structure
     in the output disagree with its renames, the renames of that package read those names
     (``ImportCycleSeeds.package_classes``, which ``reject_class_named_like_submodule`` seeds at L7), and a new name
     is free of the names the classes have here too. The renames are recorded for that comparison
-    (``Parser._hidden_submodule_renames``), and the modules regroup as ``_group_models_by_module`` groups them.
+    (``Parser._hidden_submodule_renames``), and so is the input file of each renamed output file, which the header of
+    its module names (``Parser._renamed_module_inputs``); the modules regroup as ``_group_models_by_module`` groups
+    them.
     """
     live_models = [model for _, models in state.module_models for model in models]
     module_split_mode, target_python_version = state.module_split_mode, parser.target_python_version
@@ -1020,6 +1038,7 @@ def rename_submodules_hidden_by_classes(parser: StructureHost, state: _Structure
     class_models = without_stand_ins(parser, live_models)
     final_classes = dict(parser._import_cycle_seeds.package_classes)  # noqa: SLF001
     applied: list[tuple[ModulePath, str]] = []
+    inputs: dict[Path, Path] = {}
     renamed: list[DataModel] = []
     for depth in range(max(map(len, paths.values()), default=0)):
         for package in sorted({path[:depth] for path in paths.values() if len(path) > depth}):
@@ -1035,13 +1054,12 @@ def rename_submodules_hidden_by_classes(parser: StructureHost, state: _Structure
             for model in below:
                 if (segment := renames.get(paths[id(model)][depth])) is None:
                     continue
-                reference_name, file_path = _module_segment_renamed(model, depth, segment)
-                parser._graph_builder.rename_model(model, reference_name=reference_name, new_file_path=file_path)  # noqa: SLF001
+                _rename_module_segment(parser, model, depth, segment, inputs)
                 paths[id(model)], modules[id(model)] = (
                     (*key[:depth], segment, *key[depth + 1 :]) for key in (paths[id(model)], modules[id(model)])
                 )
                 renamed.append(model)
-    parser._hidden_submodule_renames = tuple(applied)  # noqa: SLF001
+    parser._hidden_submodule_renames, parser._renamed_module_inputs = tuple(applied), inputs  # noqa: SLF001
     if not renamed:
         return
     parser.model_resolver.refresh_reference_names()

@@ -7781,6 +7781,8 @@ renamed-dataclasses.dataclass	main/jsonschema/main_jsonschema/submodule_hidden_b
 renamed-dataclasses.dataclass	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-dataclasses.dataclass]/
 renamed-files	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-files].payloads.txt
 renamed-files	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-files]/
+renamed-files-nested	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-files-nested].payloads.txt
+renamed-files-nested	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-files-nested]/
 renamed-forwarded	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-forwarded].payloads.txt
 renamed-forwarded	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-forwarded]/
 renamed-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-msgspec.Struct].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-dataclasses.dataclass].payloads.txt

@@ -1,0 +1,1 @@
+{"title": "Order", "type": "object", "properties": {"warn": {"$ref": "pkg.json"}, "detail": {"$ref": "pkg/Warn.json"}}}

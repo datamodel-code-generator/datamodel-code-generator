@@ -4439,6 +4439,24 @@ class a later rename moves off its name keeps its name.""",
             id="renamed-files",
         ),
         pytest.param(
+            "submodule_named_like_renamed_package_class_files",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--rename-submodules-hidden-by-classes"],
+            [
+                (
+                    "api",
+                    "Order",
+                    [
+                        '{"detail": {"message": "m", "note": {"text": "t"}}, "warn": {"count": 1}}',
+                        '{"detail": {"note": 1}}',
+                    ],
+                ),
+                ("pkg", "Warn", ['{"count": 1, "level": "high"}', '{"level": 2}']),
+            ],
+            id="renamed-files-nested",
+        ),
+        pytest.param(
             "module_named_annotations.json",
             "pydantic_v2.BaseModel",
             "3.10",
@@ -4543,15 +4561,16 @@ def test_main_jsonschema_submodule_hidden_by_package(
     (#6105), the later import named both: the models of ``pkg/BaseModel.py`` and ``pkg/Literal.py`` are imported from
     their modules, the default enum member included. Where the ``__init__.py`` imports nothing from the submodule
     (#6067), importing ``pkg.Warn`` replaced the class: --rename-submodules-hidden-by-classes renames the submodule and
-    the modules below it (``pkg/Warn__/``, as ``pkg/Warn_.py`` holds another submodule), also where the file layout of
-    a directory input names it (``pkg/Warn.json``, ``pkg/Warn/deep.json``), and renames nothing where no class hides a
-    submodule. It renames by the final class names: where a later rename gives a class the name of a submodule
-    (``Warn_1`` of ``--field-type-collision-strategy rename-type``, ``Decimal1`` beside the import of
-    ``decimal.Decimal``, ``Warn`` of ``--collapse-root-models-name-strategy parent``) the run is parsed again and
-    renames that submodule (``pkg/Warn_1_.py``), and keeps a submodule whose class a later rename moves off its name
-    (``pkg/Warn.py`` beside ``Warn_1``); a class that an import cycle merge moves into ``pkg/_internal.py`` is still
-    bound by ``pkg/__init__.py``, so its submodule stays renamed. The models are decoded after the first module named is
-    imported, in one import of the package.
+    the modules below it (``pkg/Warn__/``, as ``pkg/Warn_.py`` holds another submodule), also where the file layout of a
+    directory input names it (``pkg/Warn.json``, ``pkg/Warn/deep.json``; the header of a renamed module names its input
+    file, ``pkg/Warn/Deep.json`` for ``pkg/Warn_/Deep_.py`` where the package and the module below it are both renamed),
+    and renames nothing where no class hides a submodule. It renames by the final class names: where a later rename
+    gives a class the name of a submodule (``Warn_1`` of ``--field-type-collision-strategy rename-type``, ``Decimal1``
+    beside the import of ``decimal.Decimal``, ``Warn`` of ``--collapse-root-models-name-strategy parent``) the run is
+    parsed again and renames that submodule (``pkg/Warn_1_.py``), and keeps a submodule whose class a later rename moves
+    off its name (``pkg/Warn.py`` beside ``Warn_1``); a class that an import cycle merge moves into ``pkg/_internal.py``
+    is still bound by ``pkg/__init__.py``, so its submodule stays renamed. The models are decoded after the first module
+    named is imported, in one import of the package.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / input_name,
