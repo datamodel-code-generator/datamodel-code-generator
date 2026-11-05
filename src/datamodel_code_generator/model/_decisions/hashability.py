@@ -152,9 +152,9 @@ def class_set_item_hash(*, dicts: bool, compares_by_value: bool, frozen: bool, o
 
     Instances that are dicts (a TypedDict) never hash; a class that compares its instances by value (a dataclass or
     msgspec Struct by default, a RootModel without the hash a Pydantic class takes as a set item) hashes them by value
-    where it is frozen and never otherwise, unless it may have a hash of its own (``unsafe_hash``, class code, a custom
-    base class or templates), which hashes by identity as far as the set rule knows, as does a class that does not
-    compare by value (``eq=False``).
+    where it is frozen, or hashes the values of its fields as a dataclass with ``unsafe_hash`` does, and never
+    otherwise, unless it may have a hash of its own (class code, a custom base class or templates), which hashes by
+    identity as far as the set rule knows, as does a class that does not compare by value (``eq=False``).
     """
     if dicts:
         return "never"

@@ -125,9 +125,11 @@ class _ByValue:
         return ValueHashItem(members=tuple(map(read, data_type.data_types)))
 
     def fields(self, model: ModelView) -> Iterator[FieldView]:
-        """Yield the fields of a model and of the live models it inherits from, each model once.
+        """Yield the fields of a model and of the live models it inherits from, each model once and each name once.
 
-        The members of an enum are no fields of its instances, which are the members themselves.
+        A name is the field of the first model that declares it, the model before its bases, as a field a model
+        declares again replaces the one it inherits in its instances. The members of an enum are no fields of its
+        instances, which are the members themselves.
         """
         seen: dict[int, ModelView] = {}
         found = {} if model.form == "enum" else {id(model): model}
@@ -136,8 +138,12 @@ class _ByValue:
             found = {
                 id(base): base for current in found.values() for base in self._bases(current) if id(base) not in seen
             }
+        names: set[str | None] = set()
         for current in seen.values():
-            yield from current.fields
+            for field in current.fields:
+                if field.name is None or field.name not in names:
+                    names.add(field.name)
+                    yield field
 
     def _bases(self, model: ModelView) -> Iterator[ModelView]:
         """Return the live models a model names as its bases."""
@@ -150,9 +156,14 @@ class _ByValue:
     def field_values_hash(self, field: FieldView, plan: UniqueItemsPlan) -> bool:
         """Return whether every value a field holds hashes, once its planned lists are sets.
 
-        An array default is a list or a set, which does not hash (a view reads a list as a tuple).
+        An array default is a list or a set, which does not hash (a view reads a list as a tuple), and so is the value
+        of each default factory a schema may name (``dict``, ``list`` and ``set``).
         """
-        if plan.default is not None or isinstance(default := field.default, (list, tuple)):
+        if (
+            plan.default is not None
+            or isinstance(default := field.default, (list, tuple))
+            or "default_factory" in field.extras
+        ):
             return False
         try:
             hash(default)

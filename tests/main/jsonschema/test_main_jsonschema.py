@@ -8928,6 +8928,92 @@ def test_main_unique_items_as_set_by_value_across_modules(extra_args: list[str],
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(
+            [
+                "--output-model-type",
+                "dataclasses.dataclass",
+                "--frozen-dataclasses",
+                "--use-generic-container-types",
+            ],
+            id="frozen-dataclass",
+        ),
+        pytest.param(
+            ["--output-model-type", "dataclasses.dataclass", "--dataclass-arguments", '{"unsafe_hash": true}'],
+            id="unsafe-hash-dataclass",
+        ),
+        pytest.param(
+            [
+                "--enable-faux-immutability",
+                "--custom-template-dir",
+                str(DATA_PATH / "templates_enum_member_fields"),
+            ],
+            id="custom-templates",
+        ),
+    ],
+)
+def test_main_unique_items_as_set_by_value_class_hashes(
+    extra_args: list[str], tmp_path: Path, output_file: Path
+) -> None:
+    """Read how the classes of the items hash as they are written under --use-unique-items-as-set-by-value.
+
+    ``Child`` declares ``x`` again as a string, which replaces the list of ``Base`` in its instances, so they hash by
+    value; ``Box`` takes a set from its default factory, which never hashes. ``unsafe_hash`` hashes a dataclass by the
+    values of its fields as ``frozen`` does, and custom templates may give an enum a hash of its own, so its members
+    are read as hashing by identity, as the classes of the templates are.
+    """
+    definitions = {
+        "Pet": {"type": "object", "properties": {"id": {"type": "integer"}}},
+        "Base": {
+            "type": "object",
+            "properties": {"x": {"type": "array", "items": {"type": "integer"}}, "y": {"type": "integer"}},
+        },
+        "Child": {"allOf": [{"$ref": "#/$defs/Base"}, {"type": "object", "properties": {"x": {"type": "string"}}}]},
+        "Box": {
+            "type": "object",
+            "properties": {
+                "levels": {
+                    "type": "array",
+                    "uniqueItems": True,
+                    "items": {"type": "integer"},
+                    "default_factory": "set",
+                }
+            },
+        },
+        "Color": {"type": "string", "enum": ["red", "green"]},
+    }
+    (input_file := tmp_path / "unique_items_by_value_class_hashes.json").write_text(
+        json.dumps({
+            "title": "Root",
+            "type": "object",
+            "properties": {
+                name: {"type": "array", "uniqueItems": True, "items": {"$ref": f"#/$defs/{item}"}}
+                for name, item in (("pets", "Pet"), ("children", "Child"), ("boxes", "Box"), ("colors", "Color"))
+            },
+            "$defs": definitions,
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *extra_args,
+            "--use-unique-items-as-set",
+            "--use-unique-items-as-set-by-value",
+            "--allof-merge-mode",
+            "none",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--keep-constrained-root-models-in-every-container"],
     option_description="""Keep constrained root models named in every container of a holder.

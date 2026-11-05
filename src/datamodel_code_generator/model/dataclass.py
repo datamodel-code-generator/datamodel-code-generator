@@ -242,15 +242,15 @@ class _DataclassReuseMixin:
     def _class_hash(self, generic_base_config: Mapping[str, Any] | None) -> SetItemHash:  # noqa: ARG002
         """Return how the dataclass hashes: by value where it compares by value (``eq``, the default) and is frozen.
 
-        One that compares by value without being frozen sets ``__hash__`` to None; ``unsafe_hash`` gives it a hash of
-        its own, and ``eq=False`` keeps the identity hash. Its decorator alone decides, whatever its bases.
+        ``unsafe_hash`` hashes the values of its fields as ``frozen`` does; one that compares by value without either
+        sets ``__hash__`` to None, and ``eq=False`` keeps the identity hash. Its decorator alone decides, whatever its
+        bases.
         """
         model = cast("DataModel", self)
         arguments = model.dataclass_arguments
         return model._compared_class_hash(  # noqa: SLF001
             compares_by_value=bool(arguments.get("eq", True)),
-            frozen=bool(arguments.get("frozen")),
-            own_hash=bool(arguments.get("unsafe_hash")),
+            frozen=bool(arguments.get("frozen")) or bool(arguments.get("unsafe_hash")),
         )
 
     def _derived_options(self) -> dict[str, Any]:
