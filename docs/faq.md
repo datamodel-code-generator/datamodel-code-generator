@@ -564,7 +564,7 @@ class PetsGetResponse(BaseModel):
 | Release | 0.90.0 |
 | Issue | [#5677](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5677) |
 
-**Affects:** an AsyncAPI payload in Avro or XML Schema that names no type of its own: an Avro `string`, array, map or union, or an XML Schema with several global elements. The converter gives it the placeholder title `Model`, so the field writes `Field(..., title='Model')` (also in `model_json_schema()`) and `--use-title-as-name` names the class `Model`. With the option the payload takes no title, as a JSON Schema payload, and is named after its message. A payload that names its type, such as an Avro record, keeps that name.
+**Affects:** an AsyncAPI payload in Avro or XML Schema that names no type of its own: an Avro `string`, array, map or union, or an XML Schema with several global elements. The converter gives it the placeholder title `Model`, so the root of a string, array or union payload writes `Field(..., title='Model')` (also in `model_json_schema()`) and `--use-title-as-name` names a string, array, map or XML Schema payload `Model`. With the option the payload takes no title, as a JSON Schema payload, and is named after its message. A payload that names its type, such as an Avro record, keeps that name.
 
 Schema: a message `Ping` with `schemaFormat: application/vnd.apache.avro;version=1.9.0` and `payload: string`.
 

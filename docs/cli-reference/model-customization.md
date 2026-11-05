@@ -4266,10 +4266,11 @@ Name a converted payload that names no type of its own after its message.
 
 An AsyncAPI payload in Avro or XML Schema is converted to JSON Schema first. A payload that names no type of its own,
 such as an Avro `string`, array, map or union, or an XML Schema with several global elements, takes the converter's
-placeholder title `Model`: the field writes `Field(..., title='Model')`, and under `--use-title-as-name` the class is
-named `Model`. With `--name-converted-payloads-by-message` such a payload takes no title, as a JSON Schema payload,
-so its class is named after its message (`PingPublishPayload`) under `--use-title-as-name` too. A payload that names
-its type, such as an Avro record, keeps that name.
+placeholder title `Model`: the root of a string, array or union payload writes `Field(..., title='Model')`, and under
+`--use-title-as-name` a string, array, map or XML Schema payload is named `Model`, `Model1`, .... With
+`--name-converted-payloads-by-message` such a payload takes no title, as a JSON Schema payload, so its class is named
+after its message (`PingPublishPayload`) under `--use-title-as-name` too. A payload that names its type, such as an Avro
+record, keeps that name.
 
 **Related:** [`--use-title-as-name`](field-customization.md#use-title-as-name)
 
