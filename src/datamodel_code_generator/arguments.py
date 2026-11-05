@@ -856,9 +856,11 @@ _toggle(
     "that names an `allOf` over a union, a `$ref` branch takes the `allOf` members beside its `anyOf` or `oneOf`, "
     "which an inline branch already takes, and the value keywords beside it where it names no object, and an OpenAPI "
     "request or response body with an `allOf` beside an `anyOf` or `oneOf` is that union as a schema of the "
-    "components is. Without it the branches of every `anyOf` and `oneOf` of an `allOf` join one union (the inline "
-    "branches of a second replacing those of the first), a `$ref` member naming an `allOf` over a union is dropped, "
-    "a `$ref` branch takes only the `properties` and `required` beside it and a body drops the union, as in 0.89.0",
+    "components is; the value branches of those unions are read at a field and beside object branches too. Without "
+    "it the branches of every `anyOf` and `oneOf` of an `allOf` join one union (the inline branches of a second "
+    "replacing those of the first), a `$ref` member naming an `allOf` over a union is dropped, a `$ref` branch takes "
+    "only the `properties` and `required` beside it, a body drops the union, and value branches are read only where "
+    "the `allOf` would be a model without fields, as in 0.89.0",
 )
 _flag(typing_options, "--field-constraints", help="Use field constraints and not con* annotations")
 _toggle(

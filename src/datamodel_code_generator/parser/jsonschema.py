@@ -5038,9 +5038,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         root_model_result = self._handle_allof_root_model_with_constraints(name, obj, path)
         if root_model_result is not None:
             return root_model_result
+        reads_values = "legacy-value-union-members-unread" not in self._legacy_intersection
         if (
-            not (ignore_duplicate_model and self._all_of_names_one_base(obj))
-            and (value_union := _all_of_values.all_of_value_union_site(self, obj)) is not None
+            not (ignore_duplicate_model and not reads_values and self._all_of_names_one_base(obj))
+            and (value_union := _all_of_values.all_of_value_union_site(self, obj, objects_admitted=reads_values))
+            is not None
         ):
             return self._parse_all_of_merged_root(name, value_union.with_schema_location(obj.schema_location), path)
 
@@ -5082,6 +5084,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             )
         reference = self.model_resolver.add(path, name, class_name=True, loaded=True)
         self._record_schema_object(reference, obj)
+        values = _all_of_values.all_of_value_variants(self, obj) if reads_values else []
         all_of_data_type = self._parse_object_common_part(
             name,
             obj,
@@ -5104,6 +5107,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         ignore_duplicate_model=ignore_duplicate_model,
                     )
                     for index, branches in enumerate(self._all_of_union_combinations(obj, union_parts))
+                ),
+                *(
+                    self.parse_any_of(
+                        name, self._schema_object({"anyOf": values}), get_special_path("union_values", path)
+                    )
+                    if values
+                    else ()
                 ),
                 *self._all_of_union_null(obj),
             ],
@@ -6057,6 +6067,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             root_model_name = self.model_resolver.add(
                 all_of_path, name, singular_name=singular_name, class_name=True
             ).name
+            if "legacy-value-union-members-unread" not in self._legacy_intersection and (
+                value_union := _all_of_values.all_of_value_union_site(self, item, objects_admitted=True)
+            ):
+                return self._parse_all_of_merged_root(
+                    root_model_name, value_union.with_schema_location(item.schema_location), all_of_path
+                )
             return self.parse_root_type(root_model_name, item, all_of_path)
         if len(item.allOf) == 1 and not item.properties:
             single_item = item.allOf[0]

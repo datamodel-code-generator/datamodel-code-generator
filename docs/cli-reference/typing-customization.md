@@ -1153,7 +1153,10 @@ option their branches join one union, each with the other parts (and the inline 
 those of an earlier one); with it the `allOf` is one union variant per combination of one branch of each
 (`M6(M1, M3, M5)`, a class each branch appears in once), at most 128 per `allOf` (above that the branches join one
 union, with a warning). A `$ref` member that names an `allOf` over a union, which was a base that later passes drop, is
-read in its place, so its union joins those of the site (`Leaf4(Leaf1, Leaf3)`).
+read in its place, so its union joins those of the site (`Leaf4(Leaf1, Leaf3)`). The value branches of these unions are
+read at a field (`RootModel[constr(min_length=2) | int]` where 0.89.0 writes `Any`), beside a `$ref` member that is
+the type of a field or an item, and beside object branches (`R3m3 | constr(min_length=2)`), as an `allOf` of value
+unions that would be a model without fields is read without the option.
 
 !!! tip "Usage"
 

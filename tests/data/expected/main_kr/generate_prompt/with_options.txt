@@ -566,13 +566,16 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         takes, and the value keywords beside it where it names
                         no object, and an OpenAPI request or response body
                         with an `allOf` beside an `anyOf` or `oneOf` is that
-                        union as a schema of the components is. Without it the
-                        branches of every `anyOf` and `oneOf` of an `allOf`
-                        join one union (the inline branches of a second
-                        replacing those of the first), a `$ref` member naming
-                        an `allOf` over a union is dropped, a `$ref` branch
-                        takes only the `properties` and `required` beside it
-                        and a body drops the union, as in 0.89.0
+                        union as a schema of the components is; the value
+                        branches of those unions are read at a field and
+                        beside object branches too. Without it the branches of
+                        every `anyOf` and `oneOf` of an `allOf` join one union
+                        (the inline branches of a second replacing those of
+                        the first), a `$ref` member naming an `allOf` over a
+                        union is dropped, a `$ref` branch takes only the
+                        `properties` and `required` beside it, a body drops
+                        the union, and value branches are read only where the
+                        `allOf` would be a model without fields, as in 0.89.0
   --enum-field-as-literal {all,one,none}
                         Parse enum field as literal. all: all enum field type
                         are Literal. one: field type is Literal when an enum
