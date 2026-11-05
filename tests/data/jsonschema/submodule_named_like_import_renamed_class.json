@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "pkg.Decimal": {"type": "object", "properties": {"m": {"type": "integer"}}},
+    "pkg.Other": {"type": "object", "properties": {"a": {"type": "string"}, "b": {"$ref": "#/$defs/pkg.Decimal"}}},
+    "pkg.Decimal1.Detail": {"type": "object", "properties": {"message": {"type": "string"}}},
+    "pkg.api.Order": {
+      "type": "object",
+      "properties": {"detail": {"$ref": "#/$defs/pkg.Decimal1.Detail"}, "other": {"$ref": "#/$defs/pkg.Other"}}
+    }
+  }
+}

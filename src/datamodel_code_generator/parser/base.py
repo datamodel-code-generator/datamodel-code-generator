@@ -1069,6 +1069,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.final_name_keys_to_assign: tuple[tuple[str, tuple[str, ...]], ...] = ()
         self.import_cycle_seeds_to_apply: ImportCycleSeeds | None = None
         self.fails_to_import = False
+        self.hidden_class_refusal: str | None = None
+        self._hidden_submodule_renames: tuple[tuple[ModulePath, str], ...] = ()
         self._written_imports: list[tuple[ModulePath, Imports]] = []
         self.typed_nullable_map_reference_ids: set[ModelKey] = set()
         self._literal_under_all_enum_reference_ids: set[ModelKey] = set()

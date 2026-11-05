@@ -54,6 +54,7 @@ from datamodel_code_generator.util import camel_to_snake
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
+    from collections.abc import Set as AbstractSet
 
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._model_keys import ModelKey
@@ -104,6 +105,7 @@ class StructureHost(
     """The options, run state and hooks of the parser that the structure passes read and write."""
 
     _uses_standard_generation_templates: bool
+    _hidden_submodule_renames: tuple[tuple[ModulePath, str], ...]
 
     @property
     def _configured_generation_types_are_builtin(self) -> bool:
@@ -976,14 +978,19 @@ def _module_segment_renamed(model: DataModel, index: int, segment: str) -> tuple
     return None, Path(*file_path.parts[:index], segment, *file_path.parts[index + 1 :])
 
 
-def _hidden_submodule_renames(classes: set[str], submodules: set[str]) -> dict[str, str]:
+def _hidden_submodule_renames(
+    classes: set[str], final_classes: AbstractSet[str] | None, submodules: set[str]
+) -> dict[str, str]:
     """Return the new name of each submodule a class of its package is named like: the first free ``padded`` name.
 
-    A name is free when no class, no submodule, no name given before and no keyword holds it.
+    The class names are ``final_classes``, the names an earlier attempt found the package to bind in its output, where
+    the run has them, else ``classes``. A name is free when no class by either names, no submodule, no name given
+    before and no keyword holds it.
     """
-    taken = classes | submodules
+    decided = classes if final_classes is None else final_classes
+    taken = {*classes, *decided, *submodules}
     renames: dict[str, str] = {}
-    for hidden in sorted(classes & submodules):
+    for hidden in sorted(decided & submodules):
         renames[hidden], _ = first_free(hidden, lambda name: name in taken or iskeyword(name), "padded", start=1)
         taken.add(renames[hidden])
     return renames
@@ -997,15 +1004,22 @@ def rename_submodules_hidden_by_classes(parser: StructureHost, state: _Structure
     modules below it, takes the first name of the ``padded`` sequence (``Warn_``) that no class of the package, no
     other submodule of it and no keyword holds; the class keeps its name. Packages are read from the shortest path on,
     so a renamed package's own submodules are found under its new name. A submodule is a segment of a module path
-    (``DataModel.module_path``), which ``--module-split-mode single`` extends by the class's own module. Class names are
-    final within each module here (``replace_duplicate_name_in_module``); the modules regroup as
-    ``_group_models_by_module`` groups them.
+    (``DataModel.module_path``), which ``--module-split-mode single`` extends by the class's own module. The class names
+    are those each module gives here (``replace_duplicate_name_in_module``); a later pass can still rename a class
+    (``--field-type-collision-strategy rename-type``, an import that shadows it, the ``parent`` strategy of
+    ``--collapse-root-models-name-strategy``). Where an earlier attempt of the run found that the names a package binds
+    in the output disagree with its renames, the renames of that package read those names
+    (``ImportCycleSeeds.package_classes``, which ``reject_class_named_like_submodule`` seeds at L7), and a new name
+    is free of the names the classes have here too. The renames are recorded for that comparison
+    (``Parser._hidden_submodule_renames``), and the modules regroup as ``_group_models_by_module`` groups them.
     """
     live_models = [model for _, models in state.module_models for model in models]
     module_split_mode, target_python_version = state.module_split_mode, parser.target_python_version
     modules = {id(model): _module_key(model, module_split_mode, target_python_version) for model in live_models}
     paths = {id(model): tuple(model.module_path) for model in live_models}
     class_models = without_stand_ins(parser, live_models)
+    final_classes = dict(parser._import_cycle_seeds.package_classes)  # noqa: SLF001
+    applied: list[tuple[ModulePath, str]] = []
     renamed: list[DataModel] = []
     for depth in range(max(map(len, paths.values()), default=0)):
         for package in sorted({path[:depth] for path in paths.values() if len(path) > depth}):
@@ -1014,8 +1028,10 @@ def rename_submodules_hidden_by_classes(parser: StructureHost, state: _Structure
             ]
             renames = _hidden_submodule_renames(
                 {model.class_name for model in class_models if modules[id(model)] == package},
+                final_classes.get(package),
                 {paths[id(model)][depth] for model in below},
             )
+            applied.extend((package, hidden) for hidden in renames)
             for model in below:
                 if (segment := renames.get(paths[id(model)][depth])) is None:
                     continue
@@ -1025,6 +1041,7 @@ def rename_submodules_hidden_by_classes(parser: StructureHost, state: _Structure
                     (*key[:depth], segment, *key[depth + 1 :]) for key in (paths[id(model)], modules[id(model)])
                 )
                 renamed.append(model)
+    parser._hidden_submodule_renames = tuple(applied)  # noqa: SLF001
     if not renamed:
         return
     parser.model_resolver.refresh_reference_names()

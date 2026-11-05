@@ -271,7 +271,10 @@ RENAME_SUBMODULES_HIDDEN_BY_CLASSES = PassDecl(
             "reads the class names and module paths of the repaired layout",
         ),
     ),
-    summary="Renames each submodule named like a class of its package, then regroups.",
+    summary=(
+        "Renames each submodule named like a class of its package, by the names an earlier attempt found the package "
+        "to bind in its output where the run has them, then regroups."
+    ),
     condition="rename_submodules_hidden_by_classes",
 )
 REUSE_MODEL_TREE_SCOPE = PassDecl(
@@ -1565,7 +1568,8 @@ RENDER_MODULES = PassDecl(
     writes=_facts(Fact.FIELD_TYPES),
     summary=(
         "L7: renders every module; writes the import of the Any an empty union renders as; seeds a parse again where "
-        "a module of a modular output fails to import."
+        "a module of a modular output fails to import, or where the names a package binds disagree with the renames of "
+        "its submodules."
     ),
 )
 

@@ -7764,10 +7764,18 @@ module-import-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by
 module-import-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[module-import-msgspec.Struct]/
 module-import-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[module-import-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[module-import-dataclasses.dataclass].payloads.txt
 module-import-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[module-import-pydantic_v2.BaseModel]/
+renamed-after-collapse-rename	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-after-collapse-rename].payloads.txt
+renamed-after-collapse-rename	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-after-collapse-rename]/
+renamed-after-import-rename	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-after-import-rename].payloads.txt
+renamed-after-import-rename	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-after-import-rename]/
+renamed-after-type-rename	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-after-type-rename].payloads.txt
+renamed-after-type-rename	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-after-type-rename]/
 renamed-dataclasses.dataclass	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-dataclasses.dataclass].payloads.txt
 renamed-dataclasses.dataclass	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-dataclasses.dataclass]/
 renamed-files	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-files].payloads.txt
 renamed-files	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-files]/
+renamed-forwarded	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-forwarded].payloads.txt
+renamed-forwarded	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-forwarded]/
 renamed-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-msgspec.Struct].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-dataclasses.dataclass].payloads.txt
 renamed-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-msgspec.Struct]/
 renamed-nothing	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-nothing].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-dataclasses.dataclass].payloads.txt

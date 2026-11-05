@@ -4181,7 +4181,10 @@ A dotted schema name such as `pkg.Warn.Detail` beside `pkg.Warn` writes the clas
 module `pkg/Warn.py`. Importing the module binds the name `Warn` of the package to the module in place of the class, so
 the models that name either fail to decode. With this option the module, and the modules below it, take the first
 free name with trailing underscores (`pkg/Warn_.py`, or `pkg/Warn__.py` beside a module `pkg/Warn_.py`), also where
-the directories of a directory input name it; the class keeps its name.""",
+the directories of a directory input name it; the class keeps its name. The class names are the final ones: where a
+later rename gives a class the name of a submodule (`--field-type-collision-strategy rename-type`, an import that
+shadows the class, `--collapse-root-models-name-strategy parent`), that submodule is renamed, and a submodule whose
+class a later rename moves off its name keeps its name.""",
     input_schema="jsonschema/submodule_named_like_package_class.json",
     cli_args=["--output-model-type", "pydantic_v2.BaseModel", "--rename-submodules-hidden-by-classes"],
     golden_output="main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-pydantic_v2.BaseModel]/",
@@ -4443,6 +4446,69 @@ the directories of a directory input name it; the class keeps its name.""",
             _ANNOTATIONS_DECODED,
             id="renamed-nothing",
         ),
+        pytest.param(
+            "submodule_named_like_renamed_type_class.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--rename-submodules-hidden-by-classes", "--field-type-collision-strategy", "rename-type"],
+            [
+                (
+                    "pkg.api",
+                    "Order",
+                    [
+                        '{"detail": {"message": "m"}, "note": {"text": "t"}, "report": {"Warn": {"count": 1}}}',
+                        '{"detail": {"message": 1}}',
+                    ],
+                ),
+                ("pkg", "Report", ['{"Warn": {"count": 2}}', '{"Warn": {"count": "x"}}']),
+            ],
+            id="renamed-after-type-rename",
+        ),
+        pytest.param(
+            "submodule_named_like_import_renamed_class.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--rename-submodules-hidden-by-classes", "--type-overrides", '{"Other.a": "decimal.Decimal"}'],
+            [
+                (
+                    "pkg.api",
+                    "Order",
+                    [
+                        '{"detail": {"message": "m"}, "other": {"a": "1.5", "b": {"m": 1}}}',
+                        '{"detail": {"message": 1}}',
+                    ],
+                ),
+                ("pkg", "Other", ['{"a": "2.5", "b": {"m": 2}}', '{"a": "x"}']),
+            ],
+            id="renamed-after-import-rename",
+        ),
+        pytest.param(
+            "submodule_named_like_collapsed_root_class.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            [
+                "--rename-submodules-hidden-by-classes",
+                "--collapse-root-models",
+                "--collapse-root-models-name-strategy",
+                "parent",
+            ],
+            [
+                ("pkg.api", "Order", ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']),
+                ("top", "User", ['{"w": {"n": 1}}', '{"w": {"n": "x"}}']),
+            ],
+            id="renamed-after-collapse-rename",
+        ),
+        pytest.param(
+            "submodule_named_like_forwarded_class.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--rename-submodules-hidden-by-classes"],
+            [
+                ("pkg.api", "Order", ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']),
+                ("pkg", "Warn", ['{"count": 1, "x": {"warn": {"count": 2}}}', '{"count": "x"}']),
+            ],
+            id="renamed-forwarded",
+        ),
     ],
 )
 def test_main_jsonschema_submodule_hidden_by_package(
@@ -4479,7 +4545,13 @@ def test_main_jsonschema_submodule_hidden_by_package(
     (#6067), importing ``pkg.Warn`` replaced the class: --rename-submodules-hidden-by-classes renames the submodule and
     the modules below it (``pkg/Warn__/``, as ``pkg/Warn_.py`` holds another submodule), also where the file layout of
     a directory input names it (``pkg/Warn.json``, ``pkg/Warn/deep.json``), and renames nothing where no class hides a
-    submodule. The models are decoded after the first module named is imported, in one import of the package.
+    submodule. It renames by the final class names: where a later rename gives a class the name of a submodule
+    (``Warn_1`` of ``--field-type-collision-strategy rename-type``, ``Decimal1`` beside the import of
+    ``decimal.Decimal``, ``Warn`` of ``--collapse-root-models-name-strategy parent``) the run is parsed again and
+    renames that submodule (``pkg/Warn_1_.py``), and keeps a submodule whose class a later rename moves off its name
+    (``pkg/Warn.py`` beside ``Warn_1``); a class that an import cycle merge moves into ``pkg/_internal.py`` is still
+    bound by ``pkg/__init__.py``, so its submodule stays renamed. The models are decoded after the first module named is
+    imported, in one import of the package.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / input_name,
@@ -38729,6 +38801,31 @@ def test_main_jsonschema_refuses_keyword_module(
             "the class 'Warn' in the root package beside the module 'Warn' (Warn.py)",
             id="root",
         ),
+        pytest.param(
+            "submodule_named_like_import_renamed_class",
+            ["--type-overrides", '{"Other.a": "decimal.Decimal"}'],
+            "the class 'Decimal1' in the package 'pkg' beside the module 'pkg.Decimal1' (pkg/Decimal1.py)",
+            id="import-renamed",
+        ),
+        pytest.param(
+            "submodule_named_like_collapsed_root_class",
+            ["--collapse-root-models", "--collapse-root-models-name-strategy", "parent"],
+            "the class 'Warn' in the package 'pkg' beside the module 'pkg.Warn' (pkg/Warn.py)",
+            id="collapse-renamed",
+        ),
+        pytest.param(
+            "shared_module_named_like_root_class",
+            [
+                "--rename-submodules-hidden-by-classes",
+                "--reuse-model",
+                "--reuse-scope",
+                "tree",
+                "--shared-module-name",
+                "Common",
+            ],
+            "the class 'Common' in the root package beside the module 'Common' (Common.py)",
+            id="shared-module",
+        ),
     ],
 )
 @pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"])
@@ -38745,8 +38842,18 @@ def test_main_jsonschema_refuses_class_named_like_submodule(
     Importing ``pkg.Warn`` binds ``Warn`` in ``pkg`` over the class, so the models that use the class failed to import
     or decode (#6067). The names are the models' and the files', so the run fails and names the class and the module;
     where the ``__init__.py`` loads the module before its classes are defined (it imports from it, or
-    ``--all-exports-scope`` re-exports a module of it) the output works and is written.
+    ``--all-exports-scope`` re-exports a module of it) the output works and is written. The class names are the final
+    ones, a later rename included (``Decimal1`` beside the import of ``decimal.Decimal``, the ``parent`` name of a
+    collapsed root model), and the refusal names --rename-submodules-hidden-by-classes, which renames such a module;
+    with it the run fails only for a module that the option does not rename, the shared module of tree-scope reuse.
     """
+    hint = (
+        "--rename-submodules-hidden-by-classes renames only the modules that the schema names and the input files "
+        "give: rename the class in the input or give the module another name (--shared-module-name)."
+        if "--rename-submodules-hidden-by-classes" in extra_args
+        else "Rename the class or the module in the input, or pass --rename-submodules-hidden-by-classes to rename the "
+        "module."
+    )
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / f"{input_name}.json",
         output_path=output_dir,
@@ -38761,7 +38868,10 @@ def test_main_jsonschema_refuses_class_named_like_submodule(
         ],
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr_contains=f"Cannot write {message}: importing the module binds its name in the package",
+        expected_stderr_contains=(
+            f"Cannot write {message}: importing the module binds its name in the package over the class, so the models "
+            f"that use the class fail to import or decode. {hint}"
+        ),
         output_should_not_exist=True,
     )
 

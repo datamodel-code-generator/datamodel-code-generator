@@ -2453,13 +2453,17 @@ def _parse_with_import_cycle_seeds(
     config: GenerateConfig,
     parsed: tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None],
     capture: GenerationCaptureSession[object] | None,
+    replaced: tuple[Any, ...] = (),
 ) -> tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]:
     """Parse again, with the same run settings, while a parse's output has a module that fails to import.
 
     The parse seeds what it found (``import_cycle_seeds_to_apply``), which only grows, so this ends. The last parse is
     kept where every module of its output imports; otherwise, or where a parse again fails, the first one is, so a
     layout only changes where that makes it import. The first parse reported the warnings, so the parses again report
-    none; the parses not kept are disposed once the kept one is bound, as they share loaded documents.
+    none; the parses not kept are disposed once the kept one is bound, as they share loaded documents. A kept parse
+    that holds the refusal of a class its package's submodule hides (``hidden_class_refusal``, which
+    --rename-submodules-hidden-by-classes keeps while it seeds a parse again) raises it once every parse is disposed,
+    the parsers that the caller replaces by this run (``replaced``) included.
     """
     attempts = [parsed]
     with contextlib.suppress(Exception):
@@ -2478,6 +2482,10 @@ def _parse_with_import_cycle_seeds(
                 )
             )
     kept = attempts[0] if attempts[-1][0].fails_to_import else attempts[-1]
+    if (refusal := kept[0].hidden_class_refusal) is not None:
+        for disposed in (*(attempt[0] for attempt in attempts), *replaced):
+            _dispose_capture_parser(disposed, capture, discard=True)
+        raise Error(refusal)
     for attempt in attempts:
         if attempt is not kept:
             _dispose_capture_parser(attempt[0], capture, discard=True)
@@ -2777,7 +2785,7 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
             else:
                 discarded_parser = parser
                 parser, results, data_model_types, defer_formatting, extra_template_data = (
-                    _parse_with_import_cycle_seeds(parse_again, config, untyped_parse, capture)
+                    _parse_with_import_cycle_seeds(parse_again, config, untyped_parse, capture, (discarded_parser,))
                 )
         model_metadata, model_identities = parser.model_metadata, parser.model_metadata_identities
         parser.record_dropped_constraints()
