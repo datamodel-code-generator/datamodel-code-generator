@@ -78,6 +78,16 @@ IntBranches = TypeAliasType(
 
 
 @dataclass
+class Siblings(P):
+    pass
+
+
+@dataclass
+class SiblingChild(Siblings):
+    extra: Any | None = None
+
+
+@dataclass
 class FalseBranch1(FalseBranch, P):
     pass
 
@@ -100,3 +110,4 @@ class Model:
     int_branches: IntBranches | None = None
     named: Named | None = None
     ordered: Ordered | None = None
+    sibling_child: SiblingChild | None = None

@@ -64,6 +64,14 @@ class NullOrObject(RootModel[NullOrObject1 | None]):
     root: NullOrObject1 | None
 
 
+class Siblings(P):
+    extra: conint(le=5) | None = None
+
+
+class SiblingChild(Siblings):
+    extra: conint(ge=1, le=5) | None = None
+
+
 class FalseBranch2(FalseBranch1, P):
     pass
 
@@ -78,3 +86,4 @@ class Model(BaseModel):
     int_branches: conint(ge=5) | conint(le=1) | None = None
     named: Named | None = None
     ordered: Ordered | None = None
+    sibling_child: SiblingChild | None = None

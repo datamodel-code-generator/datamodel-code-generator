@@ -50,6 +50,14 @@ NullOrObject: TypeAlias = NullOrObject1 | None
 IntBranches: TypeAlias = float | float | None
 
 
+class Siblings(P):
+    pass
+
+
+class SiblingChild(Siblings):
+    extra: NotRequired[Any]
+
+
 class FalseBranch2(FalseBranch1, P):
     pass
 
@@ -70,3 +78,4 @@ class Model(TypedDict):
     int_branches: NotRequired[IntBranches]
     named: NotRequired[Literal['a', 1, 'b'] | None]
     ordered: NotRequired[Ordered]
+    sibling_child: NotRequired[SiblingChild]

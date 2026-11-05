@@ -76,6 +76,14 @@ class IntBranches(RootModel[IntBranches1 | IntBranches2]):
     root: IntBranches1 | IntBranches2
 
 
+class Siblings(P):
+    extra: int | None = Field(None, le=5)
+
+
+class SiblingChild(Siblings):
+    extra: int | None = Field(None, ge=1, le=5)
+
+
 class FalseBranch2(FalseBranch1, P):
     pass
 
@@ -98,3 +106,4 @@ class Model(BaseModel):
     int_branches: IntBranches | None = None
     named: Named | None = None
     ordered: Ordered | None = None
+    sibling_child: SiblingChild | None = None

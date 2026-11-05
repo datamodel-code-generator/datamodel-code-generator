@@ -389,7 +389,7 @@ pydantic_v2.BaseModel --allof-merge-mode none drop_null 1 rejected
 pydantic_v2.BaseModel --allof-merge-mode none bounded_to_null null accepted
 pydantic_v2.BaseModel --allof-merge-mode none bounded_to_null "ab" rejected
 pydantic_v2.BaseModel --allof-merge-mode none to_object {"x": 1} accepted
-pydantic_v2.BaseModel --allof-merge-mode none to_object {"x": "a"} accepted
+pydantic_v2.BaseModel --allof-merge-mode none to_object {"x": "a"} rejected
 pydantic_v2.BaseModel --allof-merge-mode none to_object "s" rejected
 pydantic_v2.BaseModel --allof-merge-mode none ref_to_string "s" accepted
 pydantic_v2.BaseModel --allof-merge-mode none ref_to_string 1 rejected
@@ -397,7 +397,7 @@ pydantic_v2.BaseModel --allof-merge-mode none items_to_string ["a"] accepted
 pydantic_v2.BaseModel --allof-merge-mode none items_to_string [1] rejected
 pydantic_v2.BaseModel --allof-merge-mode none nested_to_string {"x": "a", "y": 1} accepted
 pydantic_v2.BaseModel --allof-merge-mode none nested_to_string {"x": 1} rejected
-pydantic_v2.BaseModel --allof-merge-mode none nested_to_string {"y": "s"} accepted
+pydantic_v2.BaseModel --allof-merge-mode none nested_to_string {"y": "s"} rejected
 pydantic_v2.BaseModel --allof-merge-mode none restated {"x": "a"} accepted
 pydantic_v2.BaseModel --allof-merge-mode none restated {"x": 1} rejected
 pydantic_v2.BaseModel --allof-merge-mode none add_items ["a"] accepted

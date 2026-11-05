@@ -66,6 +66,14 @@ class NullOrObject(RootModel[NullOrObject1 | None]):
     root: NullOrObject1 | None
 
 
+class Siblings(P):
+    pass
+
+
+class SiblingChild(Siblings):
+    extra: Any | None = None
+
+
 class FalseBranch1(FalseBranch, P):
     pass
 
@@ -80,3 +88,4 @@ class Model(BaseModel):
     int_branches: confloat(ge=5.0) | confloat(le=1.0) | None = None
     named: Named | None = None
     ordered: Ordered | None = None
+    sibling_child: SiblingChild | None = None

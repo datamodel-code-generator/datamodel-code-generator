@@ -125,6 +125,7 @@ EXTRA_RUNS: dict[str, tuple[tuple[DataModelType, tuple[str, ...]], ...]] = {
     "inherited_tuple_shape_oas31": (
         (DataModelType.PydanticV2BaseModel, ("--allof-merge-mode", "none")),
         (DataModelType.MsgspecStruct, ("--allof-merge-mode", "none")),
+        (DataModelType.PydanticV2BaseModel, ("--allof-merge-mode", "none", "--use-tuple-for-closed-arrays")),
     ),
     "ref_siblings": ((DataModelType.PydanticV2BaseModel, ("--generate-schema-validators",)),),
     "root_members": ((DataModelType.PydanticV2BaseModel, ("--generate-schema-validators",)),),

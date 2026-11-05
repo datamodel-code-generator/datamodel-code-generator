@@ -69,6 +69,14 @@ IntBranches2: TypeAlias = Annotated[int, Meta(le=1)]
 IntBranches: TypeAlias = int
 
 
+class Siblings(P):
+    extra: Annotated[int, Meta(le=5)] | UnsetType = UNSET
+
+
+class SiblingChild(Siblings):
+    extra: Annotated[int, Meta(ge=1, le=5)] | UnsetType = UNSET
+
+
 class FalseBranch2(Struct):
     q: str | UnsetType = UNSET
     x: int | UnsetType = UNSET
@@ -91,3 +99,4 @@ class Model(Struct):
     int_branches: IntBranches | UnsetType = UNSET
     named: Named | UnsetType = UNSET
     ordered: Ordered | UnsetType = UNSET
+    sibling_child: SiblingChild | UnsetType = UNSET

@@ -48,6 +48,8 @@ typing.TypedDict-subdirectory	main/openapi/external_ref_mapping_all_of/grandchil
 [test_external_ref_mapping_all_of_unmapped_extra_items]
 	main/openapi/external_ref_mapping_all_of/unmapped_extra_items.extra_items.txt
 	main/openapi/external_ref_mapping_all_of/unmapped_extra_items.py
+[test_python_import_all_of_alias_base]
+	main/openapi/external_ref_mapping_all_of/python_import_all_of_alias_base.py
 [test_python_import_all_of_base]
 dataclasses.dataclass	main/openapi/external_ref_mapping_all_of/python_import_all_of_base[dataclasses.dataclass].payloads.txt
 dataclasses.dataclass	main/openapi/external_ref_mapping_all_of/python_import_all_of_base[dataclasses.dataclass].py

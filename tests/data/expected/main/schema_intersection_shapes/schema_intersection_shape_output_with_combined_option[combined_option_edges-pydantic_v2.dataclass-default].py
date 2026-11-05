@@ -6,7 +6,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Annotated, Any
 
-from pydantic import Field
+from pydantic import Field, conint
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -75,6 +75,16 @@ IntBranches = TypeAliasType(
 
 
 @dataclass
+class Siblings(P):
+    extra: conint(le=5) | None = None
+
+
+@dataclass
+class SiblingChild(Siblings):
+    extra: conint(ge=1, le=5) | None = None
+
+
+@dataclass
 class FalseBranch2(FalseBranch1, P):
     pass
 
@@ -97,3 +107,4 @@ class Model:
     int_branches: IntBranches | None = None
     named: Named | None = None
     ordered: Ordered | None = None
+    sibling_child: SiblingChild | None = None

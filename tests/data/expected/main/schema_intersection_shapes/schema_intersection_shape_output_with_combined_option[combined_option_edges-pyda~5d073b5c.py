@@ -68,6 +68,14 @@ class IntBranches(RootModel[conint(ge=5) | conint(le=1)]):
     root: conint(ge=5) | conint(le=1)
 
 
+class Siblings(P):
+    extra: conint(le=5) | None = None
+
+
+class SiblingChild(Siblings):
+    extra: conint(ge=1, le=5) | None = None
+
+
 class FalseBranch1(FalseBranch, P):
     pass
 
@@ -90,3 +98,4 @@ class Model(BaseModel):
     int_branches: IntBranches | None = None
     named: Named | None = None
     ordered: Ordered | None = None
+    sibling_child: SiblingChild | None = None

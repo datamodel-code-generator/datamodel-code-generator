@@ -13,11 +13,20 @@ class Parent(Struct):
         UNSET
     )
     open: Annotated[list[Any], Meta(min_length=2)] | UnsetType = UNSET
+    contained: (
+        Annotated[list[str | int], Meta(max_length=2, min_length=2)] | UnsetType
+    ) = UNSET
 
 
 ClosedItem: TypeAlias = Annotated[str, Meta(max_length=3)]
 
 
+ContainedItem: TypeAlias = Annotated[str, Meta(max_length=3)]
+
+
 class Child(Parent):
     closed: Annotated[list[ClosedItem | int], Meta(max_length=2)] | UnsetType = UNSET
     open: list[Any] | UnsetType = UNSET
+    contained: Annotated[list[ContainedItem | int], Meta(max_length=2)] | UnsetType = (
+        UNSET
+    )

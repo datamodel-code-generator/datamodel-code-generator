@@ -1747,6 +1747,7 @@ openapi/pattern.yaml::components.schemas.info	payloads/native_numeric_empty_erro
 openapi/pattern_backreference.yaml::components.schemas.Doubled	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/pattern_backreference.yaml::components.schemas.Plain	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/pattern_lookaround.yaml::components.schemas.info	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/python_import_all_of/alias.yaml::components.schemas.Stem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/query_parameters.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/query_parameters.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/query_parameters.yaml::components.schemas.PetForm	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3697,6 +3698,7 @@ openapi/pattern.yaml::components.schemas.info	payloads/native_numeric_empty_erro
 openapi/pattern_backreference.yaml::components.schemas.Doubled	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/pattern_backreference.yaml::components.schemas.Plain	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/pattern_lookaround.yaml::components.schemas.info	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/python_import_all_of/alias.yaml::components.schemas.Stem	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/query_parameters.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/query_parameters.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/query_parameters.yaml::components.schemas.PetForm	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
