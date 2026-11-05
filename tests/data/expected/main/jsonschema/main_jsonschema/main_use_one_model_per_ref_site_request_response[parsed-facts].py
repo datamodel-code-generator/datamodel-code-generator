@@ -3,7 +3,10 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from pydantic import BaseModel, Field, RootModel
+from typing_extensions import TypeAliasType
 
 
 class ItemRequest(BaseModel):
@@ -131,13 +134,23 @@ class HolderResponse(BaseModel):
     count: int | None = None
 
 
+Row1Request = TypeAliasType(
+    "Row1Request", Annotated[list[ItemRequest], Field(min_length=1)]
+)
+
+
+Row1Response = TypeAliasType(
+    "Row1Response", Annotated[list[ItemResponse], Field(min_length=1)]
+)
+
+
 class WrappingRequest(BaseModel):
-    rows: list[list[ItemRequest]] | None = None
+    rows: list[Row1Request] | None = None
     listed: list[ItemsRequest] | None = None
 
 
 class WrappingResponse(BaseModel):
-    rows: list[list[ItemResponse]] | None = None
+    rows: list[Row1Response] | None = None
     listed: list[ItemsResponse] | None = None
 
 

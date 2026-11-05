@@ -124,9 +124,12 @@ class Extra:
     a: str
 
 
+GridItem = TypeAliasType("GridItem", Annotated[list[int], Field(min_length=2)])
+
+
 @dataclass
 class Nested:
-    grid: list[list[int]]
+    grid: list[GridItem]
     loose: dict[str, Any]
 
 
