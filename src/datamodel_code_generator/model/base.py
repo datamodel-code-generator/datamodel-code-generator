@@ -2497,15 +2497,16 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def _checked_dataclass_arguments(self, class_name: str) -> dict[str, bool]:
         """Return the decorator arguments the built-in template reads (``_safe_dataclass_arguments``).
 
-        Under ``--keep-false-dataclass-arguments`` the decorator writes every one of them, and the generation stops on
-        those it refuses (``_refused_dataclass_arguments``) instead of writing a module that fails to import.
+        The generation stops on those it writes (``written_dataclass_arguments``) that the decorator refuses
+        (``_refused_dataclass_arguments``), instead of writing a module that fails to import.
         """
         arguments = _safe_dataclass_arguments(self.dataclass_arguments)
-        if self.extra_template_data.get(_KEEP_FALSE_DATACLASS_ARGUMENTS_TEMPLATE_DATA_KEY) and (
-            refused := self._refused_dataclass_arguments(arguments)
-        ):
-            written = ", ".join(f"{name}={value}" for name, value in arguments.items())
-            msg = f"model {stable_repr(class_name)} cannot write @dataclass({written}): {'; '.join(refused)}"
+        written = _written_dataclass_arguments(
+            arguments, keep_false=bool(self.extra_template_data.get(_KEEP_FALSE_DATACLASS_ARGUMENTS_TEMPLATE_DATA_KEY))
+        )
+        if refused := self._refused_dataclass_arguments(written):
+            decorator = ", ".join(f"{name}={value}" for name, value in written.items())
+            msg = f"model {stable_repr(class_name)} cannot write @dataclass({decorator}): {'; '.join(refused)}"
             raise Error(msg)
         return arguments
 
