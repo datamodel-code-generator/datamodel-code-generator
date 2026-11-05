@@ -12138,6 +12138,39 @@ def test_main_jsonschema_combined_branch_enum_intersection(output_file: Path, ke
     )
 
 
+@pytest.mark.filterwarnings("error::UserWarning")
+def test_main_jsonschema_combined_nullable_without_type(output_file: Path) -> None:
+    """Read a branch or member that states ``nullable`` without a ``type`` as admitting every type (#6246).
+
+    ``nullable`` adds null to a declared ``type`` only, so under ``--intersect-combined-schema-keywords`` the ``oneOf``
+    branch ``{nullable: true}`` keeps the string branch of the ``anyOf`` beside it, and the ``anyOf`` member
+    ``{nullable: true}`` meets both ``oneOf`` branches without a warning that no value satisfies them.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "combined_nullable_without_type.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--intersect-combined-schema-keywords", "--disable-timestamp", "--formatters", "builtin"],
+    )
+    validator = Draft202012Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    valid = {"branchUntyped": "a", "memberUntyped": 1}
+    invalid = {"branchUntyped": 1}
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="combined_nullable_without_type",
+        model_name="Model",
+        valid_json=json.dumps(valid),
+        invalid_json=json.dumps(invalid),
+        expected_error_type="string_type",
+        expected_attribute_path=("branchUntyped",),
+        expected_attribute_value="a",
+    )
+
+
 @pytest.mark.skipif(
     black.__version__.split(".")[0] == "19",
     reason="Installed black doesn't support the old style",

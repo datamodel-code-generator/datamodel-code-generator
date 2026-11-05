@@ -846,9 +846,12 @@ def _excluded_null_members(
 
 
 def _declared_value_types(schema: JsonSchemaObject) -> tuple[str, ...]:
-    """Return the types a schema's ``type`` declares, with null where its ``nullable`` is true."""
+    """Return the types a schema's ``type`` declares, with null where its ``nullable`` is true.
+
+    ``nullable`` adds null to a declared ``type`` only, so a schema without one declares none and admits every type.
+    """
     types = declared_types(schema.type)
-    return (*types, "null") if schema.nullable is True and "null" not in types else types
+    return (*types, "null") if types and schema.nullable is True and "null" not in types else types
 
 
 def _types_exclude(types: Sequence[str], branch: JsonSchemaObject | bool) -> bool:  # noqa: FBT001

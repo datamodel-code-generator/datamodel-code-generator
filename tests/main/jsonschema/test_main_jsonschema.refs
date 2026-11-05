@@ -6337,6 +6337,8 @@ left_to_right-pydantic_v2.BaseModel-combine_any_of_object_left_to_right.py	main/
 [test_main_jsonschema_combined_branch_enum_intersection]
 any_of	main/jsonschema/combined_branch_enum_intersection/any_of.py
 one_of	main/jsonschema/combined_branch_enum_intersection/one_of.py
+[test_main_jsonschema_combined_nullable_without_type]
+	main/jsonschema/main_jsonschema/combined_nullable_without_type.py
 [test_main_jsonschema_complex_any_of]
 	main/jsonschema/complex_any_of.py
 [test_main_jsonschema_complex_one_of]
