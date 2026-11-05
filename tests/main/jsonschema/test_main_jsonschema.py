@@ -1765,6 +1765,39 @@ def test_main_jsonschema_anchor_declared_twice_in_document_order(output_file: Pa
     )
 
 
+def test_main_jsonschema_external_anchor_declared_twice_in_document_order(output_file: Path) -> None:
+    """Name the first declaration of a name two schemas of another file declare under the document-order option.
+
+    `defs.json#T` names `Primary`, the first `$anchor: T` of `defs.json`, as the local `#T` names `First`, and warns
+    as the local reference does; a name one schema declares (`defs.json#U`) names it as before.
+    """
+    with pytest.warns(SchemaResourceRefWarning) as warning_records:
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "external_anchor_declared_twice" / "root.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--read-dynamic-anchors-in-document-order",
+                "--disable-timestamp",
+            ],
+        )
+    assert_warnings_contain(
+        warning_records,
+        "The anchor 'T' is declared by more than one schema in defs.json ('#/$defs/Primary', '#/$defs/Secondary'), so "
+        "a reference to '#T' names the first of them, which JSON Schema leaves undefined.",
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="jsonschema_external_anchor_declared_twice_in_document_order",
+        model_name="Holder",
+        valid_json='{"local": {"first": 1}, "external": 2, "single": true}',
+        invalid_json='{"external": "two"}',
+        expected_error_type="int_parsing",
+    )
+
+
 @pytest.mark.parametrize(
     ("input_name", "expected_file", "extra_args"),
     [
