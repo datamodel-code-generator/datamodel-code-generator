@@ -288,6 +288,18 @@ class TypedDict(DataModel):
         self._set_internal_template_data("typed_dict_kwargs_suffix", f", {kwargs_str}")
 
     @property
+    @override
+    def additional_properties_type(self) -> DataType | None:
+        """The type that ``extra_items`` writes, or None where the class writes no ``extra_items``."""
+        return self._extra_items_source
+
+    @override
+    def _write_additional_properties_type(self, data_type: DataType) -> None:
+        """Write ``data_type`` as the type of ``extra_items``, whose imports replace those of the type it replaces."""
+        self.extra_template_data.pop("additionalPropertiesImports", None)
+        super()._write_additional_properties_type(data_type)
+
+    @property
     def _extra_items_source(self) -> DataType | None:
         """The data type that ``extra_items`` renders once class names are final, or None."""
         typed_dict_kwargs: dict[str, str] = self._internal_template_data.get("typed_dict_kwargs", {})

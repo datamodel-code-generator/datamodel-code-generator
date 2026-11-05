@@ -445,6 +445,10 @@ VIEW_OWNERS: dict[type[Any], str] = {
 """The class whose ``ATTRIBUTE_FACTS`` rows each view reads."""
 VIEW_ACCESSORS = {
     "DataTypeView.admits_none": "rendered nullability, which is final at B1 (model/_decisions/nullability.py)",
+    "ModelView.additional_properties_type": (
+        "the type of the additional properties that the parser stores for the settings of the class (TypedDict"
+        " extra_items), whose nodes are field types, final at B1"
+    ),
     "FieldView.union_sibling_constraints": "the constraints written beside a union (UNION_SIBLING_CONSTRAINTS_KEY)",
     "FieldView.written_constraints": "the CONSTRAINTS its call writes for its field type, final at B1",
     "ModelView.form": "the model kind, final at B1",

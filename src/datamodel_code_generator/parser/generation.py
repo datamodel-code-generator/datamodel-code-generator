@@ -192,6 +192,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "record_widened_values",
     "rename_field",
     "rename_model",
+    "replace_additional_properties_type",
     "replace_model",
     "require_field",
     "restore_required_inherited_field",
@@ -2103,6 +2104,18 @@ class GenerationStore:  # noqa: PLR0904
         model._builtin_name_bindings = bindings  # noqa: SLF001
         model.invalidate_render_caches()
 
+    @staticmethod
+    @deprecated("Use GenerationStore.builder().replace_additional_properties_type() instead.", category=None)
+    def replace_additional_properties_type(model: DataModel, data_type: DataType) -> None:
+        """Give a model ``data_type`` as the type of the additional properties its settings write (``extra_items``).
+
+        The model writes the setting again (``DataModel._write_additional_properties_type``); the generation index
+        holds no site of such a type.
+        """
+        model._write_additional_properties_type(data_type)  # noqa: SLF001
+        model.invalidate_render_caches()
+        bump_model(model)
+
     @deprecated("Use GenerationStore.builder().replace_nested_data_type() instead.", category=None)
     def replace_nested_data_type(
         self,
@@ -2739,6 +2752,10 @@ class GraphBuilder:
     def replace_data_type_ref(self, data_type: DataType, new_reference: Reference | None) -> None:
         """Set ``data_type.reference`` while preserving reverse reference links; its new site is redirected."""
         self._store.replace_data_type_ref(data_type, new_reference)  # ty: ignore[deprecated]
+
+    def replace_additional_properties_type(self, model: DataModel, data_type: DataType) -> None:
+        """Give a model ``data_type`` as the type of the additional properties its settings write (``extra_items``)."""
+        self._store.replace_additional_properties_type(model, data_type)  # ty: ignore[deprecated]
 
     def replace_field_type(
         self, field_: DataModelFieldBase, new_data_type: DataType, *, refresh: Refresh = "now"

@@ -250,5 +250,9 @@ class ModelView(Protocol):
     def has_length(self) -> bool:
         """Whether the instance of the model has a length: a root model written with the sequence interface."""
 
+    @property
+    def additional_properties_type(self) -> DataTypeView | None:
+        """The type of the additional properties the class settings write (TypedDict ``extra_items``), or None."""
+
     def set_item_hash(self, *, user_imports: bool) -> SetItemHash:
         """How the instances of the class hash as set items, by the class alone (``DataModel.set_item_hash``)."""

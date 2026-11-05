@@ -1300,7 +1300,43 @@ def names_left_by_replaced_roots(host: ReplacedRootsHost, models: list[DataModel
     }
 
 
-def _declares_unique_items(field: DataModelFieldBase) -> bool:
+class UniqueItemsHolder(Protocol):
+    """What a uniqueItems plan reads of a field: its type, the constraints of its own schema and its default."""
+
+    @property
+    def data_type(self) -> DataType:
+        """The type whose lists the plan writes as sets."""
+
+    @property
+    def constraints(self) -> Any:
+        """The constraints of the holder's own schema, whose ``uniqueItems`` declares the arrays of its own level."""
+
+    @property
+    def default(self) -> Any:
+        """The default, which becomes a set where a list of the holder's own level becomes one."""
+
+
+@final
+@record(eq=False, slots=False)
+class AdditionalPropertiesHolder:
+    """The type of a model's additional properties (TypedDict ``extra_items``) as a uniqueItems plan reads a field.
+
+    It is the field built from the additionalProperties schema: its own schema declares no keyword and it takes no
+    default, so the arrays its nodes record ``uniqueItems`` on are those of nested schemas, decided as the values of a
+    map are (``sources="merged"``). It keeps a ``__dict__``, as a field does, for the records the plans read there.
+    """
+
+    data_type: DataType
+    constraints: None = None
+    default: None = None
+
+
+def additional_properties_holder(model: Any) -> AdditionalPropertiesHolder | None:
+    """Return the type of the additional properties that the settings of ``model`` write, as a holder, or None."""
+    return None if (data_type := model.additional_properties_type) is None else AdditionalPropertiesHolder(data_type)
+
+
+def _declares_unique_items(field: UniqueItemsHolder) -> bool:
     """Return whether a field declares ``uniqueItems: true``."""
     match field.constraints:
         case ConstraintsBase(unique_items=True) | {"uniqueItems": True}:
@@ -1333,11 +1369,11 @@ _Path: TypeAlias = tuple[int, ...]
 
 
 def unique_items_plan(
-    field: DataModelFieldBase,
+    field: UniqueItemsHolder,
     *,
     keeps_tuples: bool,
     sources: UniqueItemsSources = "all",
-    merged: Sequence[DataModelFieldBase | None] = (),
+    merged: Sequence[UniqueItemsHolder | None] = (),
 ) -> UniqueItemsPlan:
     """Return the arrays of a field's type that --use-unique-items-as-set writes as sets.
 
@@ -1374,7 +1410,7 @@ class _PlanReading:
 
 
 def _unique_items_plan(
-    field: DataModelFieldBase, reading: _PlanReading, merged: Sequence[DataModelFieldBase | None]
+    field: UniqueItemsHolder, reading: _PlanReading, merged: Sequence[UniqueItemsHolder | None]
 ) -> UniqueItemsPlan:
     """Return ``unique_items_plan`` of a field as ``reading`` reads it."""
     if not (arrays := _declared_unique_arrays(field, reading.sources)):
@@ -1392,7 +1428,7 @@ def _unique_items_plan(
 
 
 def unhashable_unique_sets(
-    field: DataModelFieldBase,
+    field: UniqueItemsHolder,
     *,
     keeps_tuples: bool,
     generic_base_config: Mapping[str, Any] | None,
@@ -1436,7 +1472,7 @@ def _items_can_hash(node: DataType, sets: Collection[int], reading: _PlanReading
 
 
 def plan_unique_sets(
-    field: DataModelFieldBase,
+    field: UniqueItemsHolder,
     arrays: Iterable[tuple[DataType, ...]],
     *,
     default: Sequence[Any] | None,
@@ -1512,7 +1548,7 @@ def _arrays_a_default_holds(data_type: DataType, value: Any, path: _Path) -> Ite
             yield from _arrays_a_default_holds(nested, item, (*path, index))
 
 
-def _own_unique_arrays(field: DataModelFieldBase, *, sets: bool = False) -> set[int]:
+def _own_unique_arrays(field: UniqueItemsHolder, *, sets: bool = False) -> set[int]:
     """Return, by id, the arrays that the field's own schema declares unique, but those of a type list.
 
     They are decided as every release since 0.52.0 decides them, so ``_beside_its_kind`` does not keep them lists.
@@ -1593,7 +1629,7 @@ def _union_kind(data_type: DataType) -> Literal["array", "map"] | None:
 
 
 def _declared_unique_arrays(
-    field: DataModelFieldBase, sources: UniqueItemsSources, *, sets: bool = False
+    field: UniqueItemsHolder, sources: UniqueItemsSources, *, sets: bool = False
 ) -> list[tuple[_Path, tuple[DataType, ...]]]:
     """Return the arrays that the schemas ``sources`` picks declare unique, by schema, each with its node's position.
 
@@ -1630,9 +1666,13 @@ def unique_items_positions(model: DataModel) -> tuple[tuple[_Path, ...], ...]:
     """Return, field by field, the positions of the arrays whose schemas declare ``uniqueItems`` in the field's type.
 
     Two models that differ in them are no duplicates under --use-unique-items-as-set-by-value, which writes sets on the
-    final types only where a schema declares the keyword.
+    final types only where a schema declares the keyword. The type of the additional properties that the settings of
+    the model write (``additional_properties_holder``) comes last, read as a field.
     """
-    return tuple(tuple(path for path, _ in _declared_unique_arrays(field, "all")) for field in model.fields)
+    holders: Iterable[UniqueItemsHolder] = model.fields
+    if (holder := additional_properties_holder(model)) is not None:
+        holders = (*model.fields, holder)
+    return tuple(tuple(path for path, _ in _declared_unique_arrays(field, "all")) for field in holders)
 
 
 def _nodes_with_paths(data_type: DataType, path: _Path) -> Iterator[tuple[_Path, DataType]]:

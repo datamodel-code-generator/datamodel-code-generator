@@ -92,6 +92,12 @@ SEAMS: Final = (
     Seam(f"{_PACKAGE}.parser._phases", "_DecisionWriter", "mark_serialized_as_any", "parse.mark_serialized_as_any"),
     Seam(f"{_PACKAGE}.parser._phases", "_DecisionWriter", "write_sets", "parse.write_sets"),
     Seam(
+        f"{_PACKAGE}.parser._phases",
+        "_DecisionWriter",
+        "write_additional_properties_sets",
+        "parse.write_additional_properties_sets",
+    ),
+    Seam(
         f"{_PASSES}._shared",
         None,
         "get_inherited_constructor_info",
