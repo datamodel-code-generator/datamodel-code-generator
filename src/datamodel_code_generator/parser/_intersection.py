@@ -52,9 +52,9 @@ from __future__ import annotations
 from copy import copy
 from fractions import Fraction
 from functools import partial
-from itertools import chain, starmap
-from math import gcd, isfinite, isnan, lcm
-from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, final
+from itertools import chain, product, starmap
+from math import gcd, isfinite, isnan, lcm, prod
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar, final
 from warnings import warn
 
 from typing_extensions import Sentinel
@@ -75,6 +75,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 
 __all__ = [
+    "BRANCH_COMBINATION_LIMIT",
     "ENUM_METADATA_KEYWORDS",
     "INHERITED_SCHEMA_KEYWORDS",
     "INTERSECTED_KEYWORDS",
@@ -84,6 +85,7 @@ __all__ = [
     "KeywordIntersection",
     "all_of_member_row",
     "bounds_admit_no_value",
+    "branch_combinations",
     "common_types",
     "concatenating_row",
     "declared_positional_tail",
@@ -106,6 +108,9 @@ __all__ = [
     "warn_untaken_patterns",
 ]
 
+_T = TypeVar("_T")
+BRANCH_COMBINATION_LIMIT: Final = 128
+"""The most combinations of one branch of each ``anyOf`` and ``oneOf`` that a schema is read as the union of."""
 _LOWER_BOUNDS: Final = ("minimum", "exclusiveMinimum", "minLength", "minItems", "minProperties")
 _UPPER_BOUNDS: Final = ("maximum", "exclusiveMaximum", "maxLength", "maxItems", "maxProperties")
 _BOUNDS: Final = frozenset(_LOWER_BOUNDS + _UPPER_BOUNDS)
@@ -187,6 +192,13 @@ LEGACY_ROWS: Final[Mapping[str, Mapping[str, str]]] = {
     },
 }
 """The rows of the output of an earlier release where parts meet, by the option whose off state they are."""
+
+
+def branch_combinations(parts: Sequence[Sequence[_T]], limit: int) -> list[tuple[_T, ...]] | None:
+    """Return each combination of one item of every part, the first part varying slowest; None above ``limit``."""
+    if prod(map(len, parts)) > limit:
+        return None
+    return list(product(*parts))
 
 
 def kept_legacy_rows(enabled: Mapping[str, bool]) -> frozenset[str]:

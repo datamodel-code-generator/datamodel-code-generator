@@ -3835,13 +3835,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         A site whose parts no value meets in common gets None, and a warning unless ``legacy-all-of-site-form`` is kept:
         it keeps the form it is written in, and a form that cannot be generated takes its first part.
         """
-        if (parts := _all_of_values.all_of_value_parts(self, obj)) is None or len(parts) <= 1:
-            return parts
-        dumps = [part.model_dump(exclude_unset=True, by_alias=True) for part in parts]
-        row = {keyword: value for dump in dumps for keyword, value in dump.items()}
-        unsatisfiable = _intersect_dumps(
-            dumps, row, removes_enum_outside_type="legacy-enum-outside-type-kept" not in self._legacy_intersection
-        ).unsatisfiable
+        if (parts := _all_of_values.all_of_value_parts(self, obj)) is None:
+            return None
+        unsatisfiable = _all_of_values.unsatisfiable_value_keywords(self, parts)
         if "legacy-all-of-site-form" not in self._legacy_intersection:
             self._warn_unsatisfiable(
                 named_location(obj.schema_location, "allOf"),
@@ -4988,6 +4984,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         root_model_result = self._handle_allof_root_model_with_constraints(name, obj, path)
         if root_model_result is not None:
             return root_model_result
+        if (
+            not (ignore_duplicate_model and self._all_of_names_one_base(obj))
+            and (value_union := _all_of_values.all_of_value_union_site(self, obj)) is not None
+        ):
+            return self._parse_all_of_merged_root(name, value_union.with_schema_location(obj.schema_location), path)
 
         fields: list[DataModelFieldBase] = []
         base_classes: list[Reference] = []
@@ -5079,6 +5080,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             description=obj.description if self.use_schema_description else None,
         )
         return self.data_type(reference=reference)
+
+    def _all_of_names_one_base(self, obj: JsonSchemaObject) -> bool:
+        """Return whether an allOf site has one base class: one schema that its ``$ref`` members name, and no union.
+
+        The site of a field or an item is that class where the model holds nothing else (``_parse_object_common_part``
+        with ``ignore_duplicate_model``), which a schema validator rule of the site does not let it be.
+        """
+        bases = {
+            self._ref_path(ref)
+            for ref in _inherited_schemas.iter_allof_refs(self, obj)
+            if not ((target := self._load_ref_schema_object(ref)).anyOf or target.oneOf)
+        }
+        return len(bases) == 1 and not (self.generate_schema_validators and self._has_schema_validator_constraints(obj))
 
     def _all_of_union_null(self, obj: JsonSchemaObject) -> list[DataType]:
         """Return the None the union of an allOf member's variants takes: where every part of ``obj`` admits null.

@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 from functools import partial, reduce
 from itertools import chain
-from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, cast
 
 from typing_extensions import Protocol
 
@@ -31,7 +31,9 @@ from datamodel_code_generator._url_redaction import named_location
 from datamodel_code_generator.model._decisions.enum_kind import holds_inherited_member_value, holds_member_value
 from datamodel_code_generator.model.enum import Enum, enum_value_base
 from datamodel_code_generator.parser._intersection import (
+    BRANCH_COMBINATION_LIMIT,
     all_of_member_row,
+    branch_combinations,
     common_types,
     concatenating_row,
     declared_types,
@@ -86,11 +88,13 @@ __all__ = [
     "all_of_site_schema",
     "all_of_value_parts",
     "all_of_value_row",
+    "all_of_value_union_site",
     "allof_lightweight_items",
     "allof_requires_model_type",
     "array_all_of_site_schema",
     "collect_all_of_value_parts",
     "handle_allof_root_model_with_constraints",
+    "holds_union_member",
     "intersect_all_of_value_parts",
     "intersect_typed_value_parts",
     "intersects_value_parts",
@@ -118,6 +122,7 @@ __all__ = [
     "schema_requires_model_type",
     "schema_signature",
     "site_schema",
+    "unsatisfiable_value_keywords",
     "without_allof_keywords",
 ]
 
@@ -133,6 +138,9 @@ _ALL_OF_PARTS: Final = "its allOf members and its own keywords"
 """The parts the unsatisfiable warning names for an allOf site no value satisfies."""
 _ALL_OF_MEMBER_ANNOTATIONS: Final = frozenset({"description", "default", "examples", "deprecated"})
 """The annotations an allOf site takes from its members when it does not write them itself."""
+_COMBINATORS: Final = frozenset({"allOf", "anyOf", "oneOf"})
+_ValueConjunction: TypeAlias = tuple[tuple[JsonSchemaObject, ...], tuple[str, ...]]
+"""The value parts of one combination of branches, and the ``$ref`` its members and branches write themselves."""
 
 
 def _bare_ref_members(obj: JsonSchemaObject) -> list[str]:
@@ -1396,15 +1404,158 @@ def all_of_root_value_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> 
         return None
     if legacy and patterns_need_holder_engine(parser, intersection):
         return None
-    value: dict[str, Any] = intersection.model_dump(exclude_unset=True, by_alias=True)
+    refs = tuple(item.ref for item in obj.allOf if isinstance(item, JsonSchemaObject) and item.ref)
+    site = all_of_site_schema(parser, obj, parts, _value_or_reference(parser, intersection, refs), null_member=legacy)
+    if legacy:
+        site.__dict__[FIELDLESS_SITE_KEY] = True
+    return site
+
+
+def _value_or_reference(parser: AllOfValuesHost, intersection: JsonSchemaObject, refs: Sequence[str]) -> dict[str, Any]:
+    """Return the value of value parts: their one ``$ref`` where ``intersection`` enforces nothing beyond its schema."""
     if (
-        len(refs := [item.ref for item in obj.allOf if isinstance(item, JsonSchemaObject) and item.ref]) == 1
+        len(refs) == 1
         and (target_parts := reference_value_parts(parser, refs[0])) is not None
         and parser._enforced_value_keywords(intersection)  # noqa: SLF001
         == parser._enforced_value_keywords(intersect_typed_value_parts(parser, target_parts, None))  # noqa: SLF001
     ):
-        value = {"$ref": refs[0]}
-    site = all_of_site_schema(parser, obj, parts, value, null_member=legacy)
+        return {"$ref": refs[0]}
+    return intersection.model_dump(exclude_unset=True, by_alias=True)
+
+
+def unsatisfiable_value_keywords(parser: AllOfValuesHost, parts: Sequence[JsonSchemaObject]) -> tuple[str, ...]:
+    """Return the keywords of several value parts that have no value in common, none for a single part."""
+    if len(parts) <= 1:
+        return ()
+    dumps = [part.model_dump(exclude_unset=True, by_alias=True) for part in parts]
+    row = {keyword: value for dump in dumps for keyword, value in dump.items()}
+    return _intersect_dumps(
+        dumps,
+        row,
+        removes_enum_outside_type="legacy-enum-outside-type-kept" not in parser._legacy_intersection,  # noqa: SLF001
+    ).unsatisfiable
+
+
+def holds_union_member(parser: AllOfValuesHost, schema: JsonSchemaObject, seen: frozenset[str] = frozenset()) -> bool:
+    """Return whether an allOf member of ``schema`` holds an ``anyOf`` or ``oneOf``, also through its allOf members.
+
+    A ``$ref`` member holds what the schema it names holds; a reference the walk has passed holds nothing.
+    """
+    for member in schema.allOf:
+        target = member
+        while isinstance(target, JsonSchemaObject):
+            if target.anyOf or target.oneOf or holds_union_member(parser, target, seen):
+                return True
+            if not target.ref or (path := parser._ref_path(target.ref)) in seen:  # noqa: SLF001
+                break
+            seen |= {path}
+            target = parser._load_ref_schema_object(target.ref)  # noqa: SLF001
+    return False
+
+
+def _member_conjunctions(
+    parser: AllOfValuesHost,
+    item: JsonSchemaObject | bool,  # noqa: FBT001
+    where: str,
+) -> list[_ValueConjunction] | None:
+    """Return the conjunctions of value parts whose union an allOf member or a branch is (``_value_conjunctions``).
+
+    ``true`` is one conjunction without parts, ``false`` none. A ``$ref`` is the schema it names merged with its
+    siblings, which the conjunctions write as that reference; a circular one stays a reference, no value part.
+    """
+    if not isinstance(item, JsonSchemaObject):
+        return [((), ())] if item else []
+    refs: tuple[str, ...] = ()
+    if item.ref:
+        refs, item = (item.ref,), parser._merge_ref_with_schema(item, where)  # noqa: SLF001
+    if not (item.allOf or item.anyOf or item.oneOf):
+        return [((item,), refs)] if is_all_of_value_part(parser, item) else None
+    if (conjunctions := _value_conjunctions(parser, item, where)) is None:
+        return None
+    return [(parts, refs or inner) for parts, inner in conjunctions]
+
+
+def _value_conjunctions(
+    parser: AllOfValuesHost, schema: JsonSchemaObject, where: str
+) -> list[_ValueConjunction] | None:
+    """Return the conjunctions of value parts whose union ``schema`` is, one per combination of its branches.
+
+    Each allOf member, ``anyOf`` and ``oneOf`` of ``schema`` gives conjunctions of its own (a union those of its
+    branches), and the combinations take one of each in document order, the first varying slowest; the own keywords
+    are a part of each where they write a value keyword or an item schema, as ``collect_all_of_value_parts`` reads
+    them. None where a part is no schema of one value (``is_all_of_value_part``) or there are more combinations than
+    ``BRANCH_COMBINATION_LIMIT``.
+    """
+    if not is_all_of_value_part(
+        parser,
+        own := parser._schema_object(schema.model_dump(exclude=_COMBINATORS, exclude_unset=True, by_alias=True)),  # noqa: SLF001
+    ):
+        return None
+    slots: list[list[_ValueConjunction]] = []
+    for item in schema.allOf:
+        if (member := _member_conjunctions(parser, item, where)) is None:
+            return None
+        slots.append(member)
+    for branches in (schema.anyOf, schema.oneOf):
+        if branches:
+            union: list[_ValueConjunction] = []
+            for branch in branches:
+                if (choices := _member_conjunctions(parser, branch, where)) is None:
+                    return None
+                union.extend(choices)
+            slots.append(union)
+    if parser._schema_has_own_value_keywords(own) or any(  # noqa: SLF001
+        getattr(own, keyword) is not None for keyword in _ALL_OF_VALUE_ITEM_KEYWORDS
+    ):
+        slots.append([((own,), ())])
+    if (combinations := branch_combinations(slots, BRANCH_COMBINATION_LIMIT)) is None:
+        return None
+    return [
+        (
+            tuple(chain.from_iterable(parts for parts, _ in combination)),
+            tuple(chain.from_iterable(refs for _, refs in combination)),
+        )
+        for combination in combinations
+    ]
+
+
+def all_of_value_union_site(parser: AllOfValuesHost, obj: JsonSchemaObject) -> JsonSchemaObject | None:
+    """Return the schema of an allOf site whose ``anyOf`` and ``oneOf`` members hold values: a union of intersections.
+
+    Earlier releases wrote such a site as a model without fields, which rejects every value. The site is the union of
+    one intersection per combination of one branch of each ``anyOf`` and ``oneOf`` its members hold
+    (``holds_union_member``) with its other parts (``_value_conjunctions``), the combinations no value meets left out;
+    a combination's one ``$ref`` stays the type where the intersection enforces nothing beyond it. The site's own
+    annotations win, the parts of every combination fill in (``all_of_site_schema``). None where it keeps that model:
+    the site writes its own ``anyOf`` or ``oneOf``, a part is no schema of one value or is not intersected here
+    (``intersects_value_parts`` without literals), a combination admits an object, or none is left. Under
+    ``legacy-all-of-site-form`` it is read as ``all_of_root_value_schema`` reads a site there: not for an array site,
+    nor where a pattern needs a regex engine of the models that use its type, marked as a model without fields
+    (``FIELDLESS_SITE_KEY``) and admitting null as a JSON Schema null.
+    """
+    legacy = "legacy-all-of-site-form" in parser._legacy_intersection  # noqa: SLF001
+    if (obj.is_array and legacy) or obj.anyOf or obj.oneOf or not holds_union_member(parser, obj):
+        return None
+    if (conjunctions := _value_conjunctions(parser, obj, named_location(obj.schema_location, "allOf"))) is None:
+        return None
+    variants: list[dict[str, Any]] = []
+    for parts, refs in conjunctions:
+        if not intersects_value_parts(parser, parts, literals=False):
+            return None
+        if unsatisfiable_value_keywords(parser, parts):
+            continue
+        intersection = intersect_typed_value_parts(parser, list(parts), None)
+        if not _excludes_objects(intersection.type) or (legacy and patterns_need_holder_engine(parser, intersection)):
+            return None
+        variants.append(_value_or_reference(parser, intersection, refs))
+    if not variants:
+        return None
+    shared = [
+        part for part in conjunctions[0][0] if all(any(part is other for other in parts) for parts, _ in conjunctions)
+    ]
+    site = all_of_site_schema(
+        parser, obj, shared, variants[0] if len(variants) == 1 else {"anyOf": variants}, null_member=legacy
+    )
     if legacy:
         site.__dict__[FIELDLESS_SITE_KEY] = True
     return site

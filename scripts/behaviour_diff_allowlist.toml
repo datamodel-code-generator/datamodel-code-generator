@@ -21,3 +21,10 @@ match = "^\\[generation\\] : now fails: Cannot write the class '[^']+' in .+ bes
 reason = "a class written in a package beside a module of the same name was replaced by the module once anything imported it, so the models that reference the class failed to decode; generation stops with an error that asks to rename the class or the module instead of writing that output (owner decision: error by default, an opt-in rename comes as --rename-submodules-hidden-by-classes)"
 decision = "#6067"
 release_note = "generation stops with an error instead of writing a class in a package beside a module of the same name, which importing the module replaced, so the models that use the class failed to import or decode"
+
+[[accepted]]
+input = "tests/data/jsonschema/schema_intersection/allof_value_unions.json"
+aspects = [ "numbered-name-removed", "name-removed", "type", "kind", "constraints", "bases", "default", "required", "constructor-order" ]
+reason = "an allOf whose anyOf or oneOf members admit only values was written as a model without fields, which rejects every value the schema accepts in every output form; it is the union of the intersections of one branch of each with the other parts now (rejects-all fix, as #5406 did for an allOf of values), and the numbered classes such a site left, the default factory of its fields, the empty class --reuse-model merged others into and the names --collapse-root-models now inlines go with that model"
+decision = "#4495"
+release_note = "an allOf whose anyOf or oneOf members hold only values, such as allOf: [{anyOf: [{type: string}, {type: integer}]}, {minLength: 2}], is written as the union of the intersections, RootModel[constr(min_length=2) | int], instead of a model without fields that rejected every value; the numbered classes such a site left are no longer written"

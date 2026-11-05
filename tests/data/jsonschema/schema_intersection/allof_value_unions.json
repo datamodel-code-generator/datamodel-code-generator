@@ -1,0 +1,544 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "pair": {
+      "$ref": "#/$defs/Pair"
+    },
+    "bounded": {
+      "$ref": "#/$defs/Bounded"
+    },
+    "nullable": {
+      "$ref": "#/$defs/Nullable"
+    },
+    "common": {
+      "$ref": "#/$defs/Common"
+    },
+    "refs": {
+      "$ref": "#/$defs/Refs"
+    },
+    "ranges": {
+      "$ref": "#/$defs/Ranges"
+    },
+    "twice": {
+      "$ref": "#/$defs/Twice"
+    },
+    "beside": {
+      "$ref": "#/$defs/Beside"
+    },
+    "via_union": {
+      "$ref": "#/$defs/ViaUnion"
+    },
+    "via_all_of": {
+      "$ref": "#/$defs/ViaAllOf"
+    },
+    "any_branch": {
+      "$ref": "#/$defs/AnyBranch"
+    },
+    "dead": {
+      "$ref": "#/$defs/Dead"
+    },
+    "with_object": {
+      "$ref": "#/$defs/WithObject"
+    },
+    "with_enum": {
+      "$ref": "#/$defs/WithEnum"
+    },
+    "untyped": {
+      "$ref": "#/$defs/Untyped"
+    },
+    "many": {
+      "$ref": "#/$defs/Many"
+    },
+    "inline": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        {
+          "minLength": 2
+        }
+      ]
+    },
+    "one_base": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Quantity"
+        },
+        {
+          "anyOf": [
+            {
+              "maximum": 5
+            },
+            {
+              "minimum": 7
+            }
+          ]
+        }
+      ]
+    },
+    "two_bases": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Count"
+        },
+        {
+          "$ref": "#/$defs/Small"
+        },
+        {
+          "anyOf": [
+            {
+              "maximum": 5
+            },
+            {
+              "minimum": 7
+            }
+          ]
+        }
+      ]
+    },
+    "two_bases_items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Count"
+          },
+          {
+            "$ref": "#/$defs/Small"
+          },
+          {
+            "anyOf": [
+              {
+                "maximum": 5
+              },
+              {
+                "minimum": 7
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "via_union_field": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/TextOrCount"
+        },
+        {
+          "minLength": 2
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "Short": {
+      "type": "string",
+      "maxLength": 5
+    },
+    "Count": {
+      "type": "integer"
+    },
+    "Quantity": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "Small": {
+      "type": "integer",
+      "maximum": 100
+    },
+    "TextOrCount": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "UnionInAllOf": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        }
+      ]
+    },
+    "Pair": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        {
+          "minLength": 2
+        }
+      ]
+    },
+    "Bounded": {
+      "allOf": [
+        {
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 5
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        {
+          "minLength": 2,
+          "minimum": 0
+        }
+      ]
+    },
+    "Nullable": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        {
+          "minLength": 2
+        }
+      ]
+    },
+    "Common": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        }
+      ]
+    },
+    "Refs": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Short"
+            },
+            {
+              "$ref": "#/$defs/Count"
+            }
+          ]
+        },
+        {
+          "minLength": 2
+        }
+      ]
+    },
+    "Ranges": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Quantity"
+        },
+        {
+          "anyOf": [
+            {
+              "maximum": 5
+            },
+            {
+              "minimum": 7
+            }
+          ]
+        }
+      ]
+    },
+    "Twice": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Count"
+        },
+        {
+          "$ref": "#/$defs/Count"
+        },
+        {
+          "anyOf": [
+            {
+              "maximum": 5
+            },
+            {
+              "minimum": 7
+            }
+          ]
+        }
+      ]
+    },
+    "Beside": {
+      "description": "a text of two or more characters or a count",
+      "allOf": [
+        true,
+        {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "minLength": 2,
+          "description": "two or more"
+        }
+      ]
+    },
+    "ViaUnion": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/TextOrCount"
+        },
+        {
+          "minLength": 2
+        }
+      ]
+    },
+    "ViaAllOf": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/UnionInAllOf"
+        },
+        {
+          "minLength": 2
+        }
+      ]
+    },
+    "AnyBranch": {
+      "allOf": [
+        {
+          "anyOf": [
+            true,
+            {
+              "type": "integer"
+            },
+            false
+          ]
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "Dead": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "WithObject": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "minLength": 2
+        }
+      ]
+    },
+    "WithProperties": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "properties": {
+            "a": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "WithEnum": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "enum": [
+                "a",
+                "bb"
+              ]
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        {
+          "minLength": 2
+        }
+      ]
+    },
+    "Untyped": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "minLength": 1
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        }
+      ]
+    },
+    "Loop": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Loop"
+            }
+          ]
+        },
+        {
+          "minLength": 2
+        }
+      ]
+    },
+    "Many": {
+      "allOf": [
+        {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "integer",
+              "minimum": 2
+            },
+            {
+              "type": "integer",
+              "minimum": 3
+            },
+            {
+              "type": "integer",
+              "minimum": 4
+            },
+            {
+              "type": "integer",
+              "minimum": 5
+            },
+            {
+              "type": "integer",
+              "minimum": 6
+            }
+          ]
+        },
+        {
+          "anyOf": [
+            {
+              "maximum": 11
+            },
+            {
+              "maximum": 12
+            },
+            {
+              "maximum": 13
+            },
+            {
+              "maximum": 14
+            },
+            {
+              "maximum": 15
+            },
+            {
+              "maximum": 16
+            }
+          ]
+        },
+        {
+          "anyOf": [
+            {
+              "multipleOf": 1
+            },
+            {
+              "multipleOf": 2
+            },
+            {
+              "multipleOf": 3
+            },
+            {
+              "multipleOf": 4
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
