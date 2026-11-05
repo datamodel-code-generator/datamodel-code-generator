@@ -494,6 +494,79 @@ def _flat_literal_values(arguments: tuple[PythonTypeExpr, ...]) -> Iterator[Pyth
             yield argument
 
 
+def _annotation_metadata(expression: PythonTypeExpr) -> tuple[PythonTypeExpr, ...]:
+    """Return the metadata of an ``Annotated`` type, which no value of the type is read from; empty for other nodes.
+
+    The metadata are the last children of the node in the ``all`` row.
+    """
+    if isinstance(expression, PythonTypeSubscript) and python_type_expr_base_name(expression) == "Annotated":
+        return expression.arguments[1:]
+    return ()
+
+
+def _literal_values_held(expression: PythonTypeExpr) -> Iterator[PythonTypeExpr]:
+    """Yield the values of a ``Literal``, or those the ``Literal`` members of a union hold, nested ones included.
+
+    An ``Annotated`` type holds the values of the type it annotates.
+    """
+    if isinstance(expression, PythonTypeSubscript) and is_literal_python_type_expr(expression):
+        yield from _flat_literal_values(expression.arguments)
+    elif _annotation_metadata(expression):
+        yield from _literal_values_held(python_type_expr_arguments(expression)[0])
+    elif is_union_python_type_expr(expression):
+        for member in python_type_expr_arguments(expression):
+            yield from _literal_values_held(member)
+
+
+def _holds_bytes_and_str(expression: PythonTypeExpr) -> bool:
+    """Return whether a ``Literal``, or the ``Literal`` members of a union, hold both a bytes and a str value."""
+    types = {
+        type(value.value) for value in _literal_values_held(expression) if isinstance(value, PythonTypeLiteralValue)
+    }
+    return bytes in types and str in types
+
+
+def bytes_and_str_literal(expression: PythonTypeExpr) -> PythonTypeExpr | None:
+    """Return the first ``Literal`` of a type, or union of ``Literal`` members, that holds both bytes and str values.
+
+    The smallest one is returned: a ``Literal`` member that holds both, not its union, and a union, not the union it
+    is a member of. None means that no part of the type holds both; the metadata of an ``Annotated`` type are not
+    searched, as msgspec reads no value from them.
+    """
+    children = _children(expression, "all") or ()
+    for child in children[: len(children) - len(_annotation_metadata(expression))]:
+        if (found := bytes_and_str_literal(child)) is not None:
+            return found
+    return expression if _holds_bytes_and_str(expression) else None
+
+
+def literal_values_as_text(expression: PythonTypeExpr) -> PythonTypeExpr:
+    r"""Return a type with each bytes value of its ``Literal`` written as the text it spells in UTF-8.
+
+    A byte that UTF-8 does not read is written as its escape (``b'\xff'`` as ``'\\xff'``); the values of a nested
+    ``Literal`` are flattened, and a value equal to an earlier one of its ``Literal`` is dropped. The metadata of an
+    ``Annotated`` type stay as written.
+    """
+    if isinstance(expression, PythonTypeSubscript) and is_literal_python_type_expr(expression):
+        return PythonTypeSubscript(
+            expression.base,
+            tuple(
+                dict.fromkeys(
+                    PythonTypeLiteralValue(member.value.decode("utf-8", "backslashreplace"))
+                    if isinstance(member, PythonTypeLiteralValue) and isinstance(member.value, bytes)
+                    else member
+                    for member in _flat_literal_values(expression.arguments)
+                )
+            ),
+        )
+    if (children := _children(expression, "all")) is None:
+        return expression
+    held = len(children) - len(_annotation_metadata(expression))
+    return _with_children(
+        expression, "all", children, (*map(literal_values_as_text, children[:held]), *children[held:])
+    )
+
+
 def write_refused_literal_values(
     expression: PythonTypeExpr, refused: tuple[type, ...]
 ) -> tuple[PythonTypeExpr, tuple[PythonTypeLiteralValue, ...]]:
@@ -501,11 +574,17 @@ def write_refused_literal_values(
 
     A ``Literal`` of such values alone becomes the union of their types (``Literal[5.0]`` the type ``float``); one that
     holds other values keeps them (``Literal[1, 5.0]`` becomes ``Literal[1] | float``), and a nested ``Literal`` is
-    flattened. An expression that holds no such value is returned as it is.
+    flattened. An expression that holds no such value is returned as it is. A ``Literal``, or a union of ``Literal``
+    members, that holds str values beside refused bytes values stays as written: ``bytes`` beside them is a union that
+    the output refusing bytes (msgspec) refuses too, so the output refuses it where it writes it
+    (``bytes_and_str_literal``); in the metadata of an ``Annotated`` type, which hold no value of the type, it is
+    written like any other.
     """
     values: list[PythonTypeLiteralValue] = []
 
-    def write(node: PythonTypeExpr) -> PythonTypeExpr:
+    def write(node: PythonTypeExpr, *, held: bool = True) -> PythonTypeExpr:
+        if held and bytes in refused and _holds_bytes_and_str(node):
+            return node
         if isinstance(node, PythonTypeSubscript) and is_literal_python_type_expr(node):
             members = tuple(_flat_literal_values(node.arguments))
             written = [m for m in members if isinstance(m, PythonTypeLiteralValue) and type(m.value) in refused]
@@ -520,7 +599,13 @@ def write_refused_literal_values(
             return items[0] if len(items) == 1 else PythonTypeUnion(items)
         if (children := _children(node, "all")) is None:
             return node
-        return _with_children(node, "all", children, tuple(map(write, children)))
+        values_held = len(children) - len(_annotation_metadata(node)) if held else 0
+        return _with_children(
+            node,
+            "all",
+            children,
+            tuple(write(child, held=index < values_held) for index, child in enumerate(children)),
+        )
 
     return write(expression), tuple(values)
 
@@ -541,12 +626,14 @@ __all__ = [
     "PythonTypeSubscript",
     "PythonTypeTuple",
     "PythonTypeUnion",
+    "bytes_and_str_literal",
     "is_literal_python_type_expr",
     "is_union_python_type_expr",
     "iter_literal_members",
     "iter_python_type_expr_head_names",
     "iter_python_type_expr_names",
     "iter_python_type_expr_qualified_names",
+    "literal_values_as_text",
     "parse_python_type_annotation",
     "python_type_expr_arguments",
     "python_type_expr_base_name",
