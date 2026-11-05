@@ -114,6 +114,7 @@ __all__ = [
     "lexical_dynamic_anchor",
     "load_ref_schema_object",
     "location_ref",
+    "mark_conjunction_parts",
     "mark_reported_value_conflict",
     "merge_ref_with_schema",
     "outside_home",
@@ -1352,6 +1353,11 @@ def intersect_ref_siblings_schema(  # noqa: PLR0913
     if target_ref is not None:
         merged_schema.__dict__[_MERGED_REF_TARGET_KEY] = target_ref
     return merged_schema
+
+
+def mark_conjunction_parts(schema: JsonSchemaObject) -> None:
+    """Mark ``schema`` as parts of a conjunction the document writes, which a merge intersects in every dialect."""
+    schema.__dict__[_CONJUNCTION_PARTS_KEY] = True
 
 
 def mark_reported_value_conflict(

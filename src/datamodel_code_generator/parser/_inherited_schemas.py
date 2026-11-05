@@ -64,7 +64,7 @@ from datamodel_code_generator.parser._schema_reading import (
     _schema_dump,
     _without_contains_keywords,
 )
-from datamodel_code_generator.parser._schema_refs import _CONJUNCTION_PARTS_KEY
+from datamodel_code_generator.parser._schema_refs import mark_conjunction_parts
 from datamodel_code_generator.parser._value_keywords import get_effective_array_length
 from datamodel_code_generator.parser.base import (
     _DEFERRED_INHERITED_FIELD_KEY,
@@ -1793,7 +1793,7 @@ def _conjoined_declarations(
     )
     merged = parser._schema_object(intersection.keywords).with_schema_location(location)  # noqa: SLF001
     parser._mark_reported_value_conflict(merged, intersection.unsatisfiable)  # noqa: SLF001
-    merged.__dict__[_CONJUNCTION_PARTS_KEY] = True
+    mark_conjunction_parts(merged)
     return merged
 
 
