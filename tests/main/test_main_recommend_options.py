@@ -149,7 +149,7 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
         pytest.param(
             "service-config.json",
             ["--naming-strategy", "full-path"],
-            id="jsonschema-contested-option-set",
+            id="jsonschema-naming-strategy-set",
         ),
         pytest.param("order.json", [], id="root-name-taken"),
         pytest.param("events.yaml", [], id="asyncapi"),
@@ -747,7 +747,7 @@ def _rule_problems(data: dict[str, Any], placeholders: set[str], newest_release:
         *(
             f"rule {rule['id']} uses the unknown placeholder {{{name}}}"
             for rule in rules
-            for text in (rule["reason"], rule.get("contested_reason", ""), *rule.get("caveats", ()))
+            for text in (rule["reason"], *rule.get("caveats", ()))
             for _, name, _, _ in Formatter().parse(text)
             if name and name not in placeholders
         ),
@@ -919,7 +919,7 @@ def test_recommend_options_small_schema_default(tmp_path: Path, capsys: pytest.C
             [INPUT_PATH / "service-config.json"],
             ["--input", "service-config.json", "--target-python-version", "3.14"],
             ("full",),
-            id="contested-option",
+            id="left-out-option",
         ),
         pytest.param(
             [INPUT_PATH / "many_options.json"],

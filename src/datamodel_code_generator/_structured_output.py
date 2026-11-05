@@ -379,9 +379,6 @@ class RecommendOptionPayload(_Payload):
         description="The CLI arguments of the values; for not_recommended, the options the rule advises against."
     )
     reason: str
-    contested_reason: str | None = Field(
-        description="Why the schema also argues against the values; set only for consider entries."
-    )
     caveats: list[str]
     evidence: list[str]
     trial: RecommendOptionTrialPayload | None = Field(
@@ -432,7 +429,6 @@ class RecommendOptionsPayload(_Envelope):
     left_out: list[RecommendOptionPayload] = Field(
         description="Options the rules recommend that the candidate full mode selected does not take."
     )
-    consider: list[RecommendOptionPayload]
     validation: list[RecommendOptionPayload] = Field(
         description=(
             "Options for checks the schema declares that the models leave out by default; the user decides, and they "

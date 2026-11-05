@@ -15,7 +15,6 @@ give your schema, and prints:
 - the latest dated preset to start from,
 - the options to add on top of it, each with the rule that chose it, the reason with counts from your schema, caveats,
   the effect measured on public schemas, and the class names it changes in your schema (before -> after),
-- options worth considering when the schema has signals for and against them,
 - optional validation and policy options, such as `--strict-types`, which stay out of the command because they depend
   on what your project accepts,
 - the compared candidates and the class names that change from your current configuration,
@@ -211,7 +210,6 @@ The counts, presets and options come from your schema and the installed version.
 | Start from | The latest dated `standard` preset for your output model type and target Python version, and the rules it already satisfies. It is the `practical` preset only when you configured a practical preset, or when no option can set a value a rule needs on the standard preset (the notes then say which). |
 | Add | Options to add on top of the preset. Each names its rule in brackets, the reason, `caveat:` lines for known limits, `measured:` lines with the effect seen on public schemas, and a `trial:` line with the candidates without and with it, their class and problem-name counts, and up to three class names it changes in your schema. |
 | Left out after the trial | Options the rules recommend that the selected candidate does without, because your schema's class names score better without them. |
-| Consider | Options the schema has signals for and against (`against:`). Decide from your schema; they are in the command only when the candidate with them scores best. |
 | Optional (validation) | Options for checks the schema declares that the models leave out by default, such as `--generate-schema-validators` for `uniqueItems` and for `patternProperties` a typed map cannot express (beside declared properties, with several patterns, or with other keys allowed) with Pydantic v2 models. They are experimental or change runtime behaviour, so they are not in the command; validate sample data with the generated models first. |
 | Optional (policy) | Options that depend on what input your project accepts rather than on the schema, such as `--strict-types`, which rejects the strings and booleans Pydantic's lax mode coerces into numbers and booleans. They are never in the command. |
 | Not recommended | Options a rule argues against for this schema. |
@@ -249,9 +247,9 @@ datamodel-codegen --output-format-json-schema recommend-options
 ```
 
 The payload has `kind: "recommend-options"` and contains the `mode` that ran (`full` when candidates were compared),
-the `signals`, the starting preset under `baseline`, the `recommendations`, `left_out`, `consider`, `not_recommended`
-and `disagreements` entries (each with its `rule`, `set` config values, CLI `arguments`, and the `trial` candidates
-and class-name `changes` that measured it), the optional `validation` and `policy` entries (never in `arguments` or
+the `signals`, the starting preset under `baseline`, the `recommendations`, `left_out`, `not_recommended` and
+`disagreements` entries (each with its `rule`, `set` config values, CLI `arguments`, and the `trial` candidates and
+class-name `changes` that measured it), the optional `validation` and `policy` entries (never in `arguments` or
 `config`), the compared candidates under `trial` (each with its `metrics`, its `dropped_constraint_warnings`, and
 `stability` with `--diff-against`, plus the `ranking`, the `selected` label, the `migration` from the current
 configuration, and the `dropped` (candidates beyond the limit) and `remeasured` counts), `notes`, the full command as
@@ -306,7 +304,6 @@ class names each one gives your schema:
   from your configuration and never selected.
 - **preset**: the latest dated preset with your options.
 - **recommended**: the preset with the options the rules add.
-- **recommended + DECISION**: the recommendation with each option the schema also argues against (Consider).
 - **recommended - DECISION**: the recommendation without each option it adds.
 
 With a preset already configured, your configuration is the starting point and is labelled `current`. A

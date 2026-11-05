@@ -101,7 +101,6 @@
         "--use-title-as-name"
       ],
       "reason": "Inline union variants carry titles that no other schema uses (titled variants: 2, e.g. Card x1, Bank Account x1). Titles name them after what they are, instead of their parent property and a number.",
-      "contested_reason": null,
       "caveats": [],
       "evidence": [
         "Train Travel API: BookingPayment.source variants became Card and BankAccount instead of Source and Source1"
@@ -118,7 +117,6 @@
         "--use-tag-as-union-variant-name"
       ],
       "reason": "Inline oneOf/anyOf branches can be named after a tag or key (branches with a tag value no sibling shares: 2; objects with one required key: 0); otherwise they are named after their parent and a number.",
-      "contested_reason": null,
       "caveats": [],
       "evidence": [
         "OpenAI API description (59 tagged, 10 key branches): preset 797 -> 759 problem names (ThreadStreamEvent1 -> ThreadStreamEventThreadCreated)",
@@ -130,7 +128,6 @@
     }
   ],
   "left_out": [],
-  "consider": [],
   "validation": [],
   "policy": [],
   "not_recommended": [],

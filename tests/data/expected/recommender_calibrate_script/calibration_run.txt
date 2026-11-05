@@ -997,7 +997,6 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "preset": "standard-py310-20261104"
         },
         "calibrated_presets": "20261017",
-        "consider": [],
         "context": {
           "output_model_type": "pydantic_v2.BaseModel",
           "target_python_version": "3.10"
@@ -1028,7 +1027,6 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
               "Config"
             ],
             "caveats": [],
-            "contested_reason": null,
             "decision": "root-name",
             "evidence": [
               "SchemaStore tsconfig schema: JSONSchemaForTheTypeScriptCompilerSConfigurationFile became TsConfig, names over 40 characters 6 -> 0",
@@ -1082,7 +1080,6 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
               "enclosing-model"
             ],
             "caveats": [],
-            "contested_reason": null,
             "decision": "naming-strategy",
             "evidence": [
               "GitHub REST API description: numbered names 663 -> 53; locations renamed between two versions 17% -> 0.0%",
@@ -1721,7 +1718,6 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "preset": "standard-py310-20261104"
         },
         "calibrated_presets": "20261017",
-        "consider": [],
         "context": {
           "output_model_type": "pydantic_v2.BaseModel",
           "target_python_version": "3.10"
@@ -1759,7 +1755,6 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
               "enclosing-model"
             ],
             "caveats": [],
-            "contested_reason": null,
             "decision": "naming-strategy",
             "evidence": [
               "GitHub REST API description: numbered names 663 -> 53; locations renamed between two versions 17% -> 0.0%",
@@ -2353,7 +2348,6 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
           "preset": "standard-py310-20261104"
         },
         "calibrated_presets": "20261017",
-        "consider": [],
         "context": {
           "output_model_type": "pydantic_v2.BaseModel",
           "target_python_version": "3.10"
@@ -2392,7 +2386,6 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
               "bool"
             ],
             "caveats": [],
-            "contested_reason": null,
             "decision": "strict-types",
             "evidence": [
               "11 JSON documents for integer, number, boolean and string properties, 6 of them invalid: lax mode accepted 5 invalid ones; with int float bool, 0 accepted and 1 valid one rejected (5.0 as an integer); with float bool, 2 accepted (\"5\" and true as integers) and none rejected"
@@ -2416,7 +2409,6 @@ Schemas whose source repository's HEAD (git ls-remote) is not the newest pinned 
               "enclosing-model"
             ],
             "caveats": [],
-            "contested_reason": null,
             "decision": "naming-strategy",
             "evidence": [
               "GitHub REST API description: numbered names 663 -> 53; locations renamed between two versions 17% -> 0.0%",

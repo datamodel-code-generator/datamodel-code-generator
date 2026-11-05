@@ -7280,7 +7280,6 @@ give your schema, and prints:
 - the latest dated preset to start from,
 - the options to add on top of it, each with the rule that chose it, the reason with counts from your schema, caveats,
   the effect measured on public schemas, and the class names it changes in your schema (before -> after),
-- options worth considering when the schema has signals for and against them,
 - optional validation and policy options, such as `--strict-types`, which stay out of the command because they depend
   on what your project accepts,
 - the compared candidates and the class names that change from your current configuration,
@@ -7476,7 +7475,6 @@ The counts, presets and options come from your schema and the installed version.
 | Start from | The latest dated `standard` preset for your output model type and target Python version, and the rules it already satisfies. It is the `practical` preset only when you configured a practical preset, or when no option can set a value a rule needs on the standard preset (the notes then say which). |
 | Add | Options to add on top of the preset. Each names its rule in brackets, the reason, `caveat:` lines for known limits, `measured:` lines with the effect seen on public schemas, and a `trial:` line with the candidates without and with it, their class and problem-name counts, and up to three class names it changes in your schema. |
 | Left out after the trial | Options the rules recommend that the selected candidate does without, because your schema's class names score better without them. |
-| Consider | Options the schema has signals for and against (`against:`). Decide from your schema; they are in the command only when the candidate with them scores best. |
 | Optional (validation) | Options for checks the schema declares that the models leave out by default, such as `--generate-schema-validators` for `uniqueItems` and for `patternProperties` a typed map cannot express (beside declared properties, with several patterns, or with other keys allowed) with Pydantic v2 models. They are experimental or change runtime behaviour, so they are not in the command; validate sample data with the generated models first. |
 | Optional (policy) | Options that depend on what input your project accepts rather than on the schema, such as `--strict-types`, which rejects the strings and booleans Pydantic's lax mode coerces into numbers and booleans. They are never in the command. |
 | Not recommended | Options a rule argues against for this schema. |
@@ -7514,9 +7512,9 @@ datamodel-codegen --output-format-json-schema recommend-options
 ```
 
 The payload has `kind: "recommend-options"` and contains the `mode` that ran (`full` when candidates were compared),
-the `signals`, the starting preset under `baseline`, the `recommendations`, `left_out`, `consider`, `not_recommended`
-and `disagreements` entries (each with its `rule`, `set` config values, CLI `arguments`, and the `trial` candidates
-and class-name `changes` that measured it), the optional `validation` and `policy` entries (never in `arguments` or
+the `signals`, the starting preset under `baseline`, the `recommendations`, `left_out`, `not_recommended` and
+`disagreements` entries (each with its `rule`, `set` config values, CLI `arguments`, and the `trial` candidates and
+class-name `changes` that measured it), the optional `validation` and `policy` entries (never in `arguments` or
 `config`), the compared candidates under `trial` (each with its `metrics`, its `dropped_constraint_warnings`, and
 `stability` with `--diff-against`, plus the `ranking`, the `selected` label, the `migration` from the current
 configuration, and the `dropped` (candidates beyond the limit) and `remeasured` counts), `notes`, the full command as
@@ -7571,7 +7569,6 @@ class names each one gives your schema:
   from your configuration and never selected.
 - **preset**: the latest dated preset with your options.
 - **recommended**: the preset with the options the rules add.
-- **recommended + DECISION**: the recommendation with each option the schema also argues against (Consider).
 - **recommended - DECISION**: the recommendation without each option it adds.
 
 With a preset already configured, your configuration is the starting point and is labelled `current`. A
@@ -76841,7 +76838,7 @@ A table that `types.py` reads while it is imported is a top-level leaf instead, 
 | the config values that recommended options set together: each option's values in order, a later option's value of a field replacing an earlier one's | `_recommend/__init__.py:_merged_values` | `_recommend/__init__.py`: `_applied` (a candidate's generation config), `_trial_candidates` (the options a candidate adds), `_set_command` (the command and pyproject.toml keys of the recommendation) |
 | which classes of two generations of a trial are the same class: a key that one class holds on each side, the identity path of its model or the set of its field names (a class with fewer than two fields has none); a renamed pair is renumbered when the names differ in digits only | `_recommend/_metrics.py:_match` | `_recommend/_metrics.py`: `location_changes` (by identity path, with the keys only one side holds), `name_stability` (by field names) |
 | how the recommender names a trial candidate next to another configuration: that configuration's label (`current`, `preset`, `recommended` or the selected candidate), then `+` or `-` and the decision of the option the candidate adds or removes | `_recommend/__init__.py:_label` | `_recommend/__init__.py`: `_candidates` (the recommendation with or without one option), `_remeasure` (the selected candidate with or without one option) |
-| how the recommender fills a text with the signals of a schema: the counts and facts by name, an empty fact written as `none` | `_recommend/_rules.py:format_text` | `_recommend/_report.py`: the rule texts of an option (reason, contested reason, caveats) and the rows of the schema summary (`_signal_lines`); `_recommend/_report.py:_option_payload` (JSON) |
+| how the recommender fills a text with the signals of a schema: the counts and facts by name, an empty fact written as `none` | `_recommend/_rules.py:format_text` | `_recommend/_report.py`: the rule texts of an option (reason, caveats) and the rows of the schema summary (`_signal_lines`); `_recommend/_report.py:_option_payload` (JSON) |
 | how a text report of the command line wraps a paragraph: lines of at most 100 columns, never broken at a hyphen, the first line and the others each after its indent | `_message_text.py:wrapped_lines` | `_recommend/_report.py` (the rule texts, trial effects and footnotes, the changes of a migration, the notes), `_registry_render.py:_render_registry_table` (the notes of `--list-experimental`) |
 | the JSON text of a machine-readable output of the command line and of the JSON Schemas of its outputs and config: indented by two spaces, in the style each output was released with, row `ordered` (key order and non-ASCII text kept: the generation, check, batch, command and recommendation payloads, model metadata), `sorted` (sorted keys: the prompt payload and its schema, the remote lock) or `sorted-ascii` (sorted keys, non-ASCII text escaped: the registry and preset listings, the config schema); a document whose array is not held in memory (the jobs of a batch run, the resources of the remote lock) is written item by item in the same bytes | `_json_output.py`: `dump_json`, `schema_document` (`JSON_SCHEMA_DRAFT_2020_12`, re-exported by `model_metadata.py`), `write_streamed_json` | none: the callers pass their row; `scripts/build_model_metadata_schema.py` builds the static model metadata schema through `schema_document` |
 | the keys every structured JSON output of the command line starts with, before its `kind`: `version` 1 and `format` `json` | `_json_output.py:OUTPUT_HEAD` (typed by `OutputHead`, which `_Envelope` of `prompt.py` declares as payload fields) | none: the payload constructions unpack it (`_structured_output.py`: `generation_output_json`, `command_output_json`, `check_output_json`; `prompt.py:_generate_prompt_json`; `_recommend/_report.py:recommendation_payload`), and `__main__.py:_write_batch_json_spool` writes the head of the batch document from it through `write_streamed_json` |
@@ -77862,7 +77859,7 @@ sha256, as the newest version, and the version pinned before becomes the baselin
 is made by hand in a pull request.
 
 The grid scores only the decisions it lists (`[grid]` in the manifest, keyed by rule `decision`), and a rule is judged
-by its own `when`: `contested_when` and the order of rules within a decision are not modelled.
+by its own `when`: the order of rules within a decision is not modelled.
 
 ## Writing a recommender rule
 
@@ -77900,8 +77897,6 @@ the report is written by `_report.py`. This rule from the file (evidence shorten
 | `reason` | Yes | Why the option helps this schema. `{name}` placeholders are filled from the schema's signals. |
 | `caveats` | No | Texts printed as `caveat:` after the reason, with placeholders filled. |
 | `evidence` | Yes | Measurements printed as `measured:`, as written (no placeholders). |
-| `contested_when` | No | A condition that argues against the rule on this schema. |
-| `contested_reason` | No | Why, printed as `against:` with placeholders filled. |
 | `optional` | No | `validation` or `policy`: the rule's values are only listed in that section of the report. |
 
 How rules are decided:
@@ -77916,9 +77911,6 @@ How rules are decided:
   not set the field. Values the preset already gives are listed under "Start from"; a rule that only sets fields to
   `false` and that the preset already follows is listed under "Not recommended". When the user set a field to
   another value, the user's value is kept and the difference is listed under "Your configuration".
-- When `contested_when` also matches, the rule is listed under "Consider" with `contested_reason`. Quick mode keeps
-  it out of the command. Full mode compares the recommendation with it (`recommended + DECISION`), and when that
-  candidate is selected, its values join the command and the configuration.
 - An `optional` rule is listed under "Optional (validation; not in the command)" or "Optional (policy; not in the
   command)". Its values never join the command, the configuration, or the compared candidates.
 - A value no CLI option can express (`false` for a field without a `--no-` option) makes the recommender start from
@@ -77942,9 +77934,9 @@ datamodel-codegen --input schema.yaml --recommend-options quick --output-format 
 ```
 
 The payload's `signals` are the counts conditions read; `signals` and `facts` (example texts such as
-`inline_title_examples`, or `none` when empty) are the placeholders `reason`, `caveats` and `contested_reason` may
-use. Write a literal brace as `{{` or `}}`. A new signal goes into `SignalName` and is counted in `measure_signals()`;
-it then appears in every JSON report, so record the changed expected reports.
+`inline_title_examples`, or `none` when empty) are the placeholders `reason` and `caveats` may use. Write a literal
+brace as `{{` or `}}`. A new signal goes into `SignalName` and is counted in `measure_signals()`; it then appears in
+every JSON report, so record the changed expected reports.
 
 ### Validation
 
