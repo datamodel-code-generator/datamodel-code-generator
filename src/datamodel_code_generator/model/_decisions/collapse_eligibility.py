@@ -55,7 +55,9 @@ KeepRule: TypeAlias = Literal[
   constrains its root field, which the type of the holder would not carry.
 * ``constrained-map``: the root field constrains a dict or mapping.
 * ``constraints-beside-container``: under ``--field-constraints``, the root field has constraints (as ``Field()``
-  arguments or inside its type) and the holder's field type holds a dict, a union or a list.
+  arguments or inside its type) and the holder's field type holds a dict, a union or a list, or under
+  ``--keep-constrained-root-models-in-every-container`` any container (row ``legacy-collapse-beside-lists-and-dicts``
+  leaves out sets, frozen sets, sequences, mappings and tuples).
 * ``no-name-strategy``: the root type names another model and no ``--collapse-root-models-name-strategy`` says which
   name the site takes.
 * ``list-item``: the root type names no model, the site is the item of a list, and the parser does not collapse the
@@ -95,7 +97,7 @@ class CollapseSiteFacts:
     names_inner_models: bool = False
     """A ``--collapse-root-models-name-strategy`` is set."""
     holder_has_container: bool = False
-    """The holder's field type holds a dict, a union or a list."""
+    """The holder's field type holds a dict, a union or a list, or any container where the option asks so."""
     list_item: bool = False
     """The site is the item of a list."""
     collapses_list_items: bool = False

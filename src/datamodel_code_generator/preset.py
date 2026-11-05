@@ -928,6 +928,14 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
+        title="Constrained root models kept in every container",
+        config=PresetConfig(keep_constrained_root_models_in_every_container=True),
+        description=(
+            "Under --collapse-root-models with --field-constraints, keep a constrained root model named inside any "
+            "container of its holder, so a set, Sequence or Mapping keeps the constraints of its items."
+        ),
+    ),
+    PresetOptionGroup(
         title="SerializeAsAny for every subclass",
         config=PresetConfig(use_serialize_as_any_for_every_subclass=True),
         description=(
@@ -1256,7 +1264,9 @@ def render_presets_markdown() -> str:
             "order, and "
             "`--use-unique-items-as-set-by-value`: under `--use-unique-items-as-set` a set is decided on the final "
             "item types and written only where every value of its items hashes by value, and models whose arrays "
-            "differ in `uniqueItems` are not merged."
+            "differ in `uniqueItems` are not merged, and `--keep-constrained-root-models-in-every-container`: under "
+            "`--collapse-root-models` with `--field-constraints` a constrained root model stays named inside a set, "
+            "`Sequence` or `Mapping` of its holder, so their items keep its constraints."
         ),
         "",
         (

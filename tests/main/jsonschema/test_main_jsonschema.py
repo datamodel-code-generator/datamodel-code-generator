@@ -8761,6 +8761,85 @@ def test_main_unique_items_as_set_by_value_across_modules(extra_args: list[str],
     )
 
 
+@pytest.mark.cli_doc(
+    options=["--keep-constrained-root-models-in-every-container"],
+    option_description="""Keep constrained root models named in every container of a holder.
+
+Under `--collapse-root-models` with `--field-constraints`, a root model whose root field has constraints, such as an
+item schema with `minLength`, stays named beside a list, a dict or a union of its holder, as `Field()` arguments could
+not carry its constraints there, but is inlined into a set, a frozen set, a `Sequence` or a `Mapping`, where its
+constraints are lost, so the holder accepts items the schema rejects. With
+`--keep-constrained-root-models-in-every-container` it stays named inside any container.""",
+    input_schema="jsonschema/collapse_constrained_roots_in_containers.json",
+    cli_args=[
+        "--collapse-root-models",
+        "--field-constraints",
+        "--use-unique-items-as-set",
+        "--keep-constrained-root-models-in-every-container",
+    ],
+    golden_output=(
+        "main/jsonschema/collapse_constrained_roots_in_containers"
+        "~main_collapse_constrained_roots_in_containers[pydantic].py"
+    ),
+    comparison_output=(
+        "main/jsonschema/collapse_constrained_roots_in_containers"
+        "~main_collapse_constrained_roots_in_containers[without-option].py"
+    ),
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="without-option"),
+        pytest.param(["--keep-constrained-root-models-in-every-container"], id="pydantic"),
+        pytest.param(
+            ["--keep-constrained-root-models-in-every-container", "--output-model-type", "msgspec.Struct"], id="msgspec"
+        ),
+    ],
+)
+def test_main_collapse_constrained_roots_in_containers(extra_args: list[str], output_file: Path) -> None:
+    """Keep a constrained root model named in a Sequence, a Mapping, a frozen set and a set when root models collapse.
+
+    With --keep-constrained-root-models-in-every-container the items and values that ``minLength`` and ``minimum``
+    constrain keep their root models (msgspec: their ``Meta`` aliases) in every container, as beside the list, so an
+    empty name is rejected; without it they are inlined there and lose their constraints, as in 0.89.0.
+    """
+    name = "collapse_constrained_roots_in_containers"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *extra_args,
+            "--collapse-root-models",
+            "--field-constraints",
+            "--use-unique-items-as-set",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    if not extra_args:
+        return
+    valid = '{"names": ["a"], "counts": {"a": 0}, "fs": ["b"], "assignees": ["c"]}'
+    with _generated_model(output_file, name, "Holder") as model:
+        if "msgspec.Struct" in extra_args:
+            msgspec.json.decode(valid, type=model)
+            for invalid in ('{"names": [""]}', '{"counts": {"a": -1}}', '{"fs": [""]}', '{"assignees": [""]}'):
+                with pytest.raises(msgspec.ValidationError):
+                    msgspec.json.decode(invalid, type=model)
+            return
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=name,
+        model_name="Holder",
+        valid_json=valid,
+        invalid_json='{"names": [""]}',
+        expected_error_type="string_too_short",
+    )
+
+
 @pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct", "typing.TypedDict"])
 def test_main_unique_items_as_set_nested_arrays(output_model: str, tmp_path: Path, output_file: Path) -> None:
     """Write as a set every array whose own schema declares ``uniqueItems``, wherever the array is.

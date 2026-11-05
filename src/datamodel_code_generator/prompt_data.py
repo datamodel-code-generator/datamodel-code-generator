@@ -107,6 +107,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--input-model-ref-strategy": "Strategy for referenced types when using --input-model.",
     "--intersect-allof-keywords": "Combine the keywords of every part of an `allOf`, a `$ref` with siblings or an o...",
     "--intersect-combined-schema-keywords": "Combine the keywords beside an `anyOf` or `oneOf` with each branch, as...",
+    "--keep-constrained-root-models-in-every-container": "Keep constrained root models named in every container of ...",
     "--keep-enum-member-values": "Give an enum class a value base only when it keeps every member value.",
     "--keep-field-defaults-off-branch-roots": "Leave a property's default off the root models extracted from its `a...",
     "--keep-first-character-of-path-keys": "Strip only a leading slash from a paths key when naming its operation m...",

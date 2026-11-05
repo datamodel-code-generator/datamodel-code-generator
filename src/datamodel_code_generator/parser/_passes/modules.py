@@ -449,6 +449,10 @@ class CollapseHost(
         """Whether a closed array is written as a tuple."""
 
     @property
+    def keep_constrained_root_models_in_every_container(self) -> bool:
+        """Whether a constrained root model stays named inside every container of its holder."""
+
+    @property
     def _const_narrowed_values(self) -> dict[int, tuple[DataType, _ConstNarrowing]]:
         """The values typed by an enum that a const narrows, by data type id, with that const."""
 
@@ -1307,7 +1311,13 @@ def collapse_site_facts(
         holder_has_container=field_constraints
         and constrained_root
         and any(
-            member.is_union or member in CONTAINERS.without("legacy-collapse-beside-lists-and-dicts")
+            member.is_union
+            or member
+            in (
+                CONTAINERS
+                if parser.keep_constrained_root_models_in_every_container
+                else CONTAINERS.without("legacy-collapse-beside-lists-and-dicts")
+            )
             for member in model_field.data_type.all_data_types
         ),
         list_item=isinstance(parent := data_type.parent, DataType) and parent.is_list,
