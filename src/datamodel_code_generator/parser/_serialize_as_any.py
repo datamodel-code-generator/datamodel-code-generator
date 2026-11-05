@@ -35,27 +35,24 @@ class SerializeAsAnyWriter(DecisionWriter, Protocol):
 def _serialize_as_any_for_every_subclass(facts: FinalFacts, writer: SerializeAsAnyWriter) -> None:
     """Mark every live model by whether a live model below it in the class hierarchy declares fields of its own.
 
-    The subclasses are read from the bases of the live models, keyed by model key, so a model that reuse made a
-    subclass of its duplicate counts below that duplicate.
+    The bases are read from the live models, keyed by model key, so a model that reuse made a subclass of its
+    duplicate counts below that duplicate. Each live model that declares fields marks every model above it, walking
+    up the bases without recursion, so a hierarchy of any depth is read.
     """
-    subclasses: defaultdict[ModelKey, list[ModelView]] = defaultdict(list)
+    bases: defaultdict[ModelKey, list[ModelKey]] = defaultdict(list)
     for model in facts.live_models:
-        for base_class in model.base_classes:
-            if (reference := base_class.reference) is not None:
-                subclasses[model_key_of(reference)].append(model)
-    extended: dict[ModelKey, bool] = {}
-
-    def is_extended(key: ModelKey) -> bool:
-        if (known := extended.get(key)) is not None:
-            return known
-        extended[key] = False
-        extended[key] = any(
-            subclass.fields or is_extended(model_key_of(subclass.reference)) for subclass in subclasses[key]
+        bases[model_key_of(model.reference)].extend(
+            model_key_of(reference)
+            for base_class in model.base_classes
+            if (reference := base_class.reference) is not None
         )
-        return extended[key]
-
+    extended: set[ModelKey] = set()
+    reached = {base for model in facts.live_models if model.fields for base in bases[model_key_of(model.reference)]}
+    while reached:
+        extended |= reached
+        reached = {base for key in reached for base in bases[key]} - extended
     for model in facts.live_models:
-        writer.mark_serialized_as_any(model, is_extended(model_key_of(model.reference)))
+        writer.mark_serialized_as_any(model, model_key_of(model.reference) in extended)
 
 
 SERIALIZE_AS_ANY_FOR_EVERY_SUBCLASS = DecisionPass(
