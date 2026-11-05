@@ -1914,12 +1914,14 @@ class _FieldContext:
     preexisting_null: bool | None
 
 
-def _field_facts(
+def _field_facts(  # noqa: PLR0913
     field: DataModelFieldBase,
     type_value: TypeView,
     backend: BackendName,
     model_facts: BackendModelFacts | None,
     context: _FieldContext | None,
+    *,
+    explicit_name: bool,
 ) -> ModelFieldFacts:
     """Read a field's model and builtin backend facts from the final field and its render data."""
     emitted = not (backend == "msgspec" and field.extras.get("is_classvar") is True)
@@ -1956,6 +1958,7 @@ def _field_facts(
             or (context.preexisting_null is False and context.explicit_nullable and null_in_annotation)
         ),
         null_in_annotation,
+        explicit_name,
     )
 
 
@@ -2224,13 +2227,22 @@ class _Models:
         for model, symbol in zip(self.binder.models, symbols, strict=True):
             self.locations[symbol.id] = self.model_location(model)
         projector = self.binder.projector("neutral")
+        resolver, model_type = self.parser.model_resolver, self.parser.field_name_model_type
         for model, symbol in zip(self.binder.models, symbols, strict=True):
             if (backend := symbol.backend) is None or symbol.kind == "enum":
                 continue
             for field, slot in zip(model.fields, symbol.fields, strict=True):
                 if (projected := projector.project(field.data_type).value) is None:
                     continue
-                self.facts[slot] = _field_facts(field, projected, backend, symbol.facts, self.context(model, field)[3])
+                explicit = resolver.explicit_field_alias(field, model.reference, model_type)
+                self.facts[slot] = _field_facts(
+                    field,
+                    projected,
+                    backend,
+                    symbol.facts,
+                    self.context(model, field)[3],
+                    explicit_name=explicit is not None and explicit[0] == field.name,
+                )
 
     def context(
         self, model: DataModel, field: DataModelFieldBase

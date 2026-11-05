@@ -178,9 +178,8 @@ def scoped_key(key: str, *, row: ScopedKeyRow) -> tuple[tuple[str, str], ...]:
 
     ``class_field_key`` joins names that may hold a dot, so a key names one pair at each of its dots. Row ``every-dot``
     gives them all, none for a key without a dot (``model_level_type_override``); the class names the L1 rows key
-    (``ConstructionKeys``), the ``--aliases`` keys of a class after name allocation
-    (``Parser._apply_final_class_field_aliases``) and those of a wire name in the targets
-    (``_target_naming.py:TargetNames.aliased``) read it too. Row ``first-dot`` (``type_override_classes``) gives the
+    (``ConstructionKeys``) and the ``--aliases`` keys of a class after name allocation
+    (``Parser._apply_final_class_field_aliases``) read it too. Row ``first-dot`` (``type_override_classes``) gives the
     pair at the first dot, ``(key, "")`` for a key without one.
     """
     if row == "every-dot":

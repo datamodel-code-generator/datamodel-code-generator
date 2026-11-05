@@ -71,6 +71,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "names",
         "names-unpack",
         "naming",
+        "naming-other-class-aliases",
         "naming-snake",
         "naming-default",
         "naming-default-moved",

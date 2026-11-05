@@ -962,6 +962,12 @@
     "config": {"body_arguments": "both"},
     "modules": [["client", "resources", "item_store", "_sync.py"]]
   },
+  "naming-other-class-aliases": {
+    "input": "naming.yaml",
+    "model": {"aliases": {"Nothing.name": "name", "client.Nothing.name": "name", "NewItem.itemCount": "count"}},
+    "config": {"body_arguments": "both"},
+    "modules": [["client", "resources", "item_store", "_sync.py"]]
+  },
   "naming-snake": {
     "input": "naming.yaml",
     "model": {"snake_case_field": true},

@@ -250,6 +250,8 @@ naming-default-moved	main/generation_platform/client/naming-default-moved.txt
 naming-default-moved	main/generation_platform/client/packages/naming-default-moved/pydantic_v2_BaseModel//*.py
 naming-device-moved	main/generation_platform/client/naming-device-moved.txt
 naming-device-moved	main/generation_platform/client/packages/naming-device-moved/pydantic_v2_BaseModel//*.py
+naming-other-class-aliases	main/generation_platform/client/naming-other-class-aliases.txt
+naming-other-class-aliases	main/generation_platform/client/packages/naming-other-class-aliases/pydantic_v2_BaseModel//*.py	= main/generation_platform/client/packages/naming/pydantic_v2_BaseModel//*.py
 naming-snake	main/generation_platform/client/naming-snake.txt
 naming-snake	main/generation_platform/client/packages/naming-snake/pydantic_v2_BaseModel//*.py
 ndjson	main/generation_platform/client/ndjson.txt
