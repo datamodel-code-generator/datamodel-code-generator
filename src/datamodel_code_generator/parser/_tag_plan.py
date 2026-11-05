@@ -134,6 +134,7 @@ __all__ = [
     "UnionView",
     "UnionWrittenTags",
     "ValidityMode",
+    "VariantTagField",
     "VariantTags",
     "appended_takes_struct_tag",
     "collapsed_duplicate",
@@ -176,6 +177,9 @@ of the duplicate (``Parser._collapsed_reuse_users``)."""
 
 DiscriminatorTag: TypeAlias = "tuple[DataModel, DataModelFieldBase, DiscriminatorValue | None]"
 """A msgspec struct a union tags, its tag field and the tag."""
+
+VariantTagField: TypeAlias = "tuple[DataModel, DataModelFieldBase, Sequence[DiscriminatorValue]]"
+"""A variant a union tags, the tag field it holds and the tags the union gives it there."""
 
 FieldNamer: TypeAlias = Callable[[str, "Reference | None"], tuple[str, str | list[str] | None]]
 """The Python name and alias a property takes in the class of the reference, or in any class for None."""
@@ -1000,7 +1004,7 @@ def has_reused_variant(data_types: Iterable[DataType]) -> bool:
 
 def _iter_nested_discriminator_variants(
     data_types: Iterable[DataType], field_name: str, *, field_name_mode: ValidityMode
-) -> Iterator[tuple[DataType, DataModelFieldBase, Sequence[DiscriminatorValue]]]:
+) -> Iterator[tuple[DataType, VariantTagField]]:
     """Yield the variants that nested choices give a union, with their tag fields and tag values.
 
     Such a variant keeps the tag it declares or inherits, so the field giving it is its own one, else the inherited
@@ -1021,7 +1025,7 @@ def _iter_nested_discriminator_variants(
             ),
             1,
         ):
-            yield data_type, tag_field, (value,)
+            yield data_type, (source, tag_field, (value,))
 
 
 def _is_enum_tag(tag_field: DataModelFieldBase) -> bool:
@@ -1031,23 +1035,23 @@ def _is_enum_tag(tag_field: DataModelFieldBase) -> bool:
 
 def nested_variant_tags(
     data_types: Iterable[DataType], names: SiteNames, *, writes_argument: bool, enum_values: bool
-) -> tuple[list[DataType], list[tuple[DataModelFieldBase, Sequence[DiscriminatorValue]]]]:
+) -> tuple[list[DataType], list[VariantTagField]]:
     """Return the variants nested choices give a union whose tag fields L5 writes again, and the tag fields of the rest.
 
     A union that writes ``discriminator=`` reads an Enum-typed tag field as no ``Literal``, so such a variant has its
     tag field written like a listed variant, unless the tags are Enum values; the others keep their tag fields.
     """
     enum_tagged: list[DataType] = []
-    tag_fields: list[tuple[DataModelFieldBase, Sequence[DiscriminatorValue]]] = []
-    for data_type, tag_field, values in _iter_nested_discriminator_variants(
+    tag_fields: list[VariantTagField] = []
+    for data_type, variant_tag_field in _iter_nested_discriminator_variants(
         data_types,
         names.property_name if writes_argument else names.field_name,
         field_name_mode=site_mode(writes_argument=writes_argument),
     ):
-        if writes_argument and not enum_values and _is_enum_tag(tag_field):
+        if writes_argument and not enum_values and _is_enum_tag(variant_tag_field[1]):
             enum_tagged.append(data_type)
         else:
-            tag_fields.append((tag_field, values))
+            tag_fields.append(variant_tag_field)
     return enum_tagged, tag_fields
 
 

@@ -157,6 +157,7 @@ from datamodel_code_generator.parser._tag_plan import (
     TagPlanHost,
     UnionTagDecision,
     UnionView,
+    VariantTagField,
     appended_takes_struct_tag,
     collapsed_duplicate,
     field_namer,
@@ -944,25 +945,31 @@ def _discriminator_tag_constraints(field: DataModelFieldBase) -> tuple[Constrain
 
 def _drop_discriminator_tag_patterns(
     builder: GraphBuilder,
-    tag_fields: Iterable[tuple[DataModelFieldBase, Sequence[DiscriminatorValue]]],
+    tag_fields: Iterable[VariantTagField],
+    *,
+    union_name: str,
+    property_name: str,
 ) -> None:
     """Write the tags of a union without patterns where an output model writes constraints as ``Field()`` arguments.
 
     Pydantic checks a pattern on the tag's ``Literal`` by validating the value again as a ``str``, which hides the
-    ``Literal`` from the discriminator, and the ``Literal`` decides the tag anyway once every tag value satisfies the
-    pattern. A tag value outside its pattern leaves every pattern of the union, as the schema rejects that variant.
+    ``Literal`` from the discriminator, so the module does not import; the ``Literal`` decides a tag value inside its
+    pattern anyway. A tag value outside its pattern is warned about, as the schema accepts no variant with that tag.
     The other constraints stay.
     """
-    patterned = [
-        (field, found, tag_values)
-        for field, tag_values in tag_fields
-        if (found := _discriminator_tag_constraints(field)) is not None
-    ]
-    if not all(
-        tag_satisfies_pattern(value, pattern) for _, (_, _, pattern), tag_values in patterned for value in tag_values
-    ):
-        return
-    for field, (constraints, values, _), _ in patterned:
+    for variant, field, tag_values in tag_fields:
+        if (found := _discriminator_tag_constraints(field)) is None:
+            continue
+        constraints, values, pattern = found
+        for value in tag_values:
+            if not tag_satisfies_pattern(value, pattern):
+                warn_as_parser_base(
+                    f"Discriminator {stable_repr(property_name)} of {union_name} tags {variant.class_name} with "
+                    f"{stable_repr(value)}, which the pattern {stable_repr(pattern)} of its tag field rejects, so the "
+                    f"schema accepts no {variant.class_name} with that tag; the tag is written without the pattern.",
+                    UserWarning,
+                    stacklevel=2,
+                )
         builder.set_field_constraints(field, type(constraints).model_validate(values))
         field.invalidate_semantic_caches()
 
@@ -2051,7 +2058,7 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                 discriminator_field = decided.field
                 match decided:
                     case KeptTagField(form="kept-literal"):
-                        tag_fields.append((discriminator_field, (decided.tag,)))
+                        tag_fields.append((discriminator_model, discriminator_field, (decided.tag,)))
                         if not reused_variant:
                             plan.record_reused_tag_field(discriminator_field, annotates_tag=False)
                         if struct_tags:
@@ -2074,7 +2081,7 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                         )
                         builder.replace_field_type(discriminator_field, new_discriminator_data_type)
                         discriminator_field.data_type.parent = discriminator_field
-                        tag_fields.append((discriminator_field, discriminator_values))
+                        tag_fields.append((discriminator_model, discriminator_field, discriminator_values))
                         plan.record_reused_tag_field(discriminator_field, annotates_tag=annotates_new_tag)
                         literal_default = None
                         if tagged_unions and struct_tags:
@@ -2141,7 +2148,7 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                         discriminator_field,
                         mapped_struct_tag(discriminator_values, base_enum_source),
                     ))
-        _drop_discriminator_tag_patterns(builder, tag_fields)
+        _drop_discriminator_tag_patterns(builder, tag_fields, union_name=union_name, property_name=names.property_name)
         if not tags:
             continue
         tag_field = struct_tag_field(
@@ -2186,12 +2193,9 @@ def set_tag_literal_default(
     parser._graph_builder.apply_literal_default(discriminator_field, decision)  # noqa: SLF001
 
 
-def set_nested_discriminator_literal_defaults(
-    parser: DiscriminatorHost,
-    tag_fields: Iterable[tuple[DataModelFieldBase, Sequence[DiscriminatorValue]]],
-) -> None:
+def set_nested_discriminator_literal_defaults(parser: DiscriminatorHost, tag_fields: Iterable[VariantTagField]) -> None:
     """Keep the single-literal tags of variants that nested choices give a union valid like the direct ones."""
-    for tag_field, values in tag_fields:
+    for _, tag_field, values in tag_fields:
         if tag_field.data_type.literals == [*values]:
             set_tag_literal_default(parser, tag_field, values[0], "tag")
 
