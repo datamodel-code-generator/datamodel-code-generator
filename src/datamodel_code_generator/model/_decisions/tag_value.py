@@ -49,6 +49,9 @@ if TYPE_CHECKING:
     class VariantTagFacts(Protocol):
         """The facts of a variant that ``variant_tags`` reads, each computed when it is asked for."""
 
+        def merged_tags(self) -> Sequence[Any] | None:
+            """Return every tag the unions listing the variant give it, where they are merged, or None."""
+
         def own_tag(self) -> Any:
             """Return the tag of the variant's own tag field (``field_tag``), or None."""
 
@@ -180,6 +183,7 @@ VariantTagSource: TypeAlias = Literal["variant", "union", "nested"]
 """
 
 VariantTagRule: TypeAlias = Literal[
+    "merged-shared-tags",
     "own-field",
     "reused-schema-field",
     "inherited-field",
@@ -191,6 +195,9 @@ VariantTagRule: TypeAlias = Literal[
 ]
 """The rows of ``variant_tags``.
 
+* ``merged-shared-tags``: under ``--merge-shared-variant-tags``, every tag the discriminated unions listing the
+  variant give it, where they give it different tags and each of them keeps distinct tags with them
+  (``parser/_tag_plan.py:TagPlan.merged_variant_tags``); not for a nested variant.
 * ``own-field``: the variant's own tag field (``field_tag``).
 * ``reused-schema-field``: the tag field of the model that reuse replaced with the variant, an empty subclass whose
   base can carry the tag another union wrote.
@@ -390,10 +397,13 @@ def _value_tag(site: FieldTagSite, value: Any, rule: Literal["const", "one-membe
 def variant_tags(source: VariantTagSource, facts: VariantTagFacts, /) -> VariantTags:  # noqa: PLR0911
     """Return the tags of a variant (``VariantTagSource``, ``VariantTagRule``).
 
-    A variant takes its own tag, else that of the model it replaces; a nested one then the tag it inherits, if any.
+    A variant whose tags are merged takes them all. A variant takes its own tag, else that of the model it replaces;
+    a nested one then the tag it inherits, if any.
     Otherwise, and for ``union``, the tag the schema of an ancestor fixes decides, else the mapping keys, else the
     replaced model's tag, else the tag an inline variant inherits, else the path segment.
     """
+    if source != "nested" and (merged := facts.merged_tags()) is not None:
+        return VariantTags(tuple(merged), "merged-shared-tags")
     if source != "union":
         if (own := facts.own_tag()) is not None:
             return VariantTags((own,), "own-field")

@@ -53,6 +53,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_CONSTR,
     IMPORT_EMAIL_STR,
     IMPORT_ENCODED_BYTES,
+    IMPORT_ENCODED_STR,
     IMPORT_FIELD,
     IMPORT_FUTURE_DATE,
     IMPORT_FUTURE_DATETIME,
@@ -176,6 +177,7 @@ number_kwargs: tuple[str, ...] = _applicability.NUMBER_KEYWORD_ORDER
 string_kwargs: tuple[str, ...] = _applicability.STRING_LENGTH_KEYWORD_ORDER
 _ANNOTATED_STRING_IMPORTS = (IMPORT_ANNOTATED,)
 _ENCODED_BYTES_IMPORTS = (IMPORT_ANNOTATED, IMPORT_FIELD, IMPORT_ENCODED_BYTES, IMPORT_BASE64_ENCODER)
+_ENCODED_STR_IMPORTS = (IMPORT_ANNOTATED, IMPORT_FIELD, IMPORT_ENCODED_STR, IMPORT_BASE64_ENCODER)
 
 bytes_kwargs: tuple[str, ...] = _applicability.LENGTH_KEYWORD_ORDER
 _FLOAT_TYPES: frozenset[Types] = frozenset({Types.float, Types.double, Types.number, Types.time})
@@ -201,6 +203,7 @@ class DataTypeManager(_DataTypeManagerBase):
 
     PATTERN_KEY: ClassVar[str] = "pattern"
     HOSTNAME_REGEX: ClassVar[str] = HOSTNAME_REGEX
+    WRITES_ENCODED_STR: ClassVar[bool] = True
     CONSTRAINED_TYPE_CONSUMED_KEYS: ClassVar[dict[str, tuple[str, ...]]] = dict(
         _applicability.PYDANTIC_OUTPUT.zero_bound_classes
     )
@@ -475,6 +478,30 @@ class DataTypeManager(_DataTypeManagerBase):
             return self.data_type.from_import(IMPORT_CONBYTES, kwargs=data_type_kwargs)
         return self._unconstrained(types, StrictTypes.bytes)
 
+    def _encoded_str_type(self, kwargs: Mapping[str, Any]) -> DataType | None:
+        """Return a string decoded from base64 text with the string constraints of ``kwargs``, or None without any.
+
+        It writes them in front of the decoding ``EncodedStr``, so Pydantic checks them on the text.
+        """
+        if not (data_type_kwargs := self.transform_kwargs(dict(kwargs), _applicability.STRING_KEYWORD_ORDER)):
+            return None
+        if self.PATTERN_KEY in data_type_kwargs:
+            data_type_kwargs[self.PATTERN_KEY] = _get_regex_literal(data_type_kwargs[self.PATTERN_KEY])
+        from datamodel_code_generator.types import _create_context_data_type  # noqa: PLC0415
+
+        data_type = _create_context_data_type(
+            "PydanticV2EncodedStrDataType",
+            EncodedStrDataType,
+            self.python_version,
+            self.use_standard_collections,
+            self.use_generic_container_types,
+            self.use_union_operator,
+            self.treat_dot_as_module,
+            self.use_serialize_as_any,
+        ).from_import(IMPORT_ENCODED_STR, kwargs=data_type_kwargs)
+        data_type._set_runtime_expression_imports(_ENCODED_STR_IMPORTS)  # noqa: SLF001
+        return data_type
+
     @override
     def _non_finite_multiple_of(self, types: Types, kwargs: Mapping[str, Any]) -> float | None:
         """Return the infinity or NaN that a number type would write its ``multipleOf`` as, which Pydantic refuses.
@@ -542,6 +569,12 @@ class DataTypeManager(_DataTypeManagerBase):
         if self._non_finite_multiple_of(types, kwargs) is not None:
             kwargs = {key: value for key, value in kwargs.items() if key != "multipleOf"}
         if field_constraints:
+            if (
+                types == Types.byte
+                and self.encodes_constrained_base64
+                and (encoded := self._encoded_str_type(kwargs)) is not None
+            ):
+                return encoded
             if _applicability.decimal_field_form(
                 options := self.constraint_options,
                 decimal_for_multiple_of=self.use_decimal_for_multiple_of,
@@ -642,34 +675,54 @@ class _RuntimeAnnotatedDataType(PydanticV2DataType):
         yield from self.runtime_expression_imports
 
 
-class EncodedBytesDataType(_RuntimeAnnotatedDataType):
-    """Bytes written as base64 text, with the lengths that Pydantic checks on that text before it decodes it.
+class EncodedTextDataType(_RuntimeAnnotatedDataType):
+    """A value written as base64 text, with the constraints that Pydantic checks on that text before it decodes it.
 
-    JSON Schema counts ``minLength`` and ``maxLength`` on the base64 text, while Pydantic checks a ``Field()`` length
-    of ``Base64Bytes`` on the decoded bytes in some forms, so the lengths stay in front of the decoding
-    ``EncodedBytes``. Pydantic checks them so from 2.10 on.
+    JSON Schema checks ``pattern``, ``minLength`` and ``maxLength`` on the base64 text, while Pydantic checks the
+    ``Field()`` constraints of ``Base64Bytes`` and ``Base64Str`` on the decoded value in some forms, so the constraints
+    stay in front of the decoding ``encoder`` that writes the ``encoded_base`` type. Pydantic checks them so from 2.10
+    on.
     """
 
-    annotated_bytes: ClassVar[bool] = True
+    encoded_base: ClassVar[str]
+    """The type the decoding writes, which a constrained scalar of the type constrains."""
+    encoder: ClassVar[str]
 
     @property
     @override
     def _consumed_constraints(self) -> frozenset[str]:
-        """The lengths the type writes in front of its decoding, which it enforces itself."""
-        return _applicability.base64_bytes_consumed_keywords(self.kwargs or {})
+        """The constraints the type writes in front of its decoding, which it enforces itself."""
+        return _applicability.base64_text_consumed_keywords(self.kwargs or {})
 
     @property
     @override
     def type_hint(self) -> str:
-        """Render the lengths and the base64 decoding inside an Annotated subscript."""
+        """Render the constraints and the base64 decoding inside an Annotated subscript."""
         keywords = (
             keyword_argument(name, represent_python_value(value)) for name, value in (self.kwargs or {}).items()
         )
         return subscript_text(
             self._binding("Annotated"),
             (
-                "bytes",
+                self.encoded_base,
                 call_text(self._binding("Field"), keywords),
-                f"{self._binding('EncodedBytes')}(encoder={self._binding('Base64Encoder')})",
+                f"{self._binding(self.encoder)}(encoder={self._binding('Base64Encoder')})",
             ),
         )
+
+
+class EncodedBytesDataType(EncodedTextDataType):
+    """Bytes written as base64 text, with the lengths in front of the decoding ``EncodedBytes``."""
+
+    encoded_base: ClassVar[str] = "bytes"
+    encoder: ClassVar[str] = "EncodedBytes"
+
+
+class EncodedStrDataType(EncodedTextDataType):
+    """A string written as base64 text, with its pattern and lengths in front of the decoding ``EncodedStr``.
+
+    Written under ``--use-encoded-str-for-constrained-base64`` in place of ``Annotated[Base64Str, Field(...)]``.
+    """
+
+    encoded_base: ClassVar[str] = "str"
+    encoder: ClassVar[str] = "EncodedStr"

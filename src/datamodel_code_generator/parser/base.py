@@ -973,6 +973,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         )
         self.data_type_manager.omit_redundant_constraints = config.omit_redundant_constraints
         self.data_type_manager.use_decimal_in_field_forms = config.use_decimal_in_field_forms
+        self.data_type_manager.use_encoded_str_for_constrained_base64 = config.use_encoded_str_for_constrained_base64
         self.data_model_type: type[DataModel] = config.data_model_type
         self.data_model_root_type: type[DataModel] = config.data_model_root_type
         self.pydantic_v2_root_model_type: type[DataModel] | None = _get_field_dependency_ordering_model_type(
@@ -1236,6 +1237,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         )
         self.use_one_literal_as_default = config.use_one_literal_as_default
         self.use_enum_values_in_discriminator = config.use_enum_values_in_discriminator
+        self.merge_shared_variant_tags = config.merge_shared_variant_tags
         self.use_msgspec_tagged_unions = config.use_msgspec_tagged_unions
         self.tag_msgspec_by_payload_name = config.tag_msgspec_by_payload_name
         self.use_msgspec_nullable_enum_alias = config.use_msgspec_nullable_enum_alias

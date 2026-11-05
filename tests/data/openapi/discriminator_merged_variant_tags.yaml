@@ -1,0 +1,150 @@
+openapi: 3.0.3
+info:
+  title: Variants Shared by Discriminated Unions
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        byName:
+          $ref: '#/components/schemas/ByName'
+        byKey:
+          $ref: '#/components/schemas/ByKey'
+        stock:
+          $ref: '#/components/schemas/Stock'
+        herd:
+          $ref: '#/components/schemas/Herd'
+        pet:
+          $ref: '#/components/schemas/Pet'
+        animal:
+          $ref: '#/components/schemas/Animal'
+        forward:
+          $ref: '#/components/schemas/Forward'
+        backward:
+          $ref: '#/components/schemas/Backward'
+        mixed:
+          $ref: '#/components/schemas/Mixed'
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        meow: {type: string}
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        bark: {type: string}
+    ByName:
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: kind
+    ByKey:
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: kind
+        mapping:
+          cat: '#/components/schemas/Cat'
+          dog: '#/components/schemas/Dog'
+    Cow:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        moo: {type: string}
+    Pig:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        oink: {type: string}
+    Stock:
+      oneOf:
+        - $ref: '#/components/schemas/Cow'
+        - $ref: '#/components/schemas/Pig'
+      discriminator:
+        propertyName: kind
+        mapping:
+          cow: '#/components/schemas/Cow'
+          pig: '#/components/schemas/Pig'
+    Herd:
+      oneOf:
+        - $ref: '#/components/schemas/Cow'
+        - $ref: '#/components/schemas/Pig'
+      discriminator:
+        propertyName: kind
+    Fox:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        den: {type: string}
+    Owl:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        nest: {type: string}
+    Pet:
+      oneOf:
+        - $ref: '#/components/schemas/Fox'
+        - $ref: '#/components/schemas/Owl'
+      discriminator:
+        propertyName: kind
+        mapping:
+          fox: '#/components/schemas/Fox'
+          owl: '#/components/schemas/Owl'
+    Animal:
+      oneOf:
+        - $ref: '#/components/schemas/Fox'
+        - $ref: '#/components/schemas/Owl'
+      discriminator:
+        propertyName: kind
+        mapping:
+          vulpine: '#/components/schemas/Fox'
+          avian: '#/components/schemas/Owl'
+    Red:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        hue: {type: integer}
+    Blue:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        depth: {type: integer}
+    Forward:
+      oneOf:
+        - $ref: '#/components/schemas/Red'
+        - $ref: '#/components/schemas/Blue'
+      discriminator:
+        propertyName: kind
+        mapping:
+          a: '#/components/schemas/Red'
+          b: '#/components/schemas/Blue'
+    Backward:
+      oneOf:
+        - $ref: '#/components/schemas/Red'
+        - $ref: '#/components/schemas/Blue'
+      discriminator:
+        propertyName: kind
+        mapping:
+          b: '#/components/schemas/Red'
+          a: '#/components/schemas/Blue'
+    Name:
+      type: string
+    Mixed:
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Name'
+      discriminator:
+        propertyName: kind

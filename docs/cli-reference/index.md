@@ -9,8 +9,8 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 13 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 45 | Type annotation and import behavior |
-| 🏷️ [Field Customization](field-customization.md) | 32 | Field naming and docstring behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 46 | Type annotation and import behavior |
+| 🏷️ [Field Customization](field-customization.md) | 33 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 53 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 29 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 10 | OpenAPI-specific features |
@@ -27,7 +27,7 @@ Use these pages when you know the workflow area but not the exact option name.
 |-------|---------|--------|
 | [Model Customization](topics/model-customization.md) | 24 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 22 | Custom Templates, Generated Output, Imports, Output Formatting |
-| [Typing Customization](topics/typing-customization.md) | 29 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
+| [Typing Customization](topics/typing-customization.md) | 30 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 9 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
 
 ## 🔗 Option Relationships
@@ -251,6 +251,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 ### M {#m}
 
+- [`--merge-shared-variant-tags`](field-customization.md#merge-shared-variant-tags)
 - [`--model-extra-keys`](model-customization.md#model-extra-keys)
 - [`--model-extra-keys-without-x-prefix`](model-customization.md#model-extra-keys-without-x-prefix)
 - [`--model-name-map`](model-customization.md#model-name-map)
@@ -361,6 +362,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-default-factory-for-optional-nested-models`](model-customization.md#use-default-factory-for-optional-nested-models)
 - [`--use-default-kwarg`](model-customization.md#use-default-kwarg)
 - [`--use-double-quotes`](template-customization.md#use-double-quotes)
+- [`--use-encoded-str-for-constrained-base64`](typing-customization.md#use-encoded-str-for-constrained-base64)
 - [`--use-enum-values-in-discriminator`](field-customization.md#use-enum-values-in-discriminator)
 - [`--use-exact-imports`](template-customization.md#use-exact-imports)
 - [`--use-field-description`](field-customization.md#use-field-description)

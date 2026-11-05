@@ -1,0 +1,9 @@
+Pydantic before 2.10 does not check max_length on base64 text, so BranchString checks it only on Pydantic 2.10 or later.
+Pydantic before 2.10 does not check max_length on base64 text, so EncodedStrForConstrainedBase64.nullable checks it only on Pydantic 2.10 or later.
+Pydantic before 2.10 does not check max_length on base64 text, so Item checks it only on Pydantic 2.10 or later.
+Pydantic before 2.10 does not check max_length on base64 text, so Member checks it only on Pydantic 2.10 or later.
+Pydantic before 2.10 does not check max_length on base64 text, so Short checks it only on Pydantic 2.10 or later.
+Pydantic before 2.10 does not check max_length, min_length on base64 text, so EncodedStrForConstrainedBase64.lengths checks them only on Pydantic 2.10 or later.
+Pydantic before 2.10 does not check min_length on base64 text, so EncodedStrForConstrainedBase64.required checks it only on Pydantic 2.10 or later.
+Pydantic before 2.10 does not check pattern on base64 text, so EncodedStrForConstrainedBase64.pattern checks it only on Pydantic 2.10 or later.
+Pydantic before 2.10 does not check pattern on base64 text, so ValuesAdditionalProperty checks it only on Pydantic 2.10 or later.

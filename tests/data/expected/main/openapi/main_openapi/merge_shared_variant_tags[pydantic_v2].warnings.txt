@@ -1,0 +1,8 @@
+Cat is a variant of discriminated unions that map 'kind' to different tags: it keeps 'Cat' from ByName, so these unions cannot decode it: ByKey ('cat').
+Dog is a variant of discriminated unions that map 'kind' to different tags: it keeps 'Dog' from ByName, so these unions cannot decode it: ByKey ('dog').
+Cow is a variant of discriminated unions that map 'kind' to different tags: it keeps 'cow' from Stock, so these unions cannot decode it: Herd ('Cow').
+Pig is a variant of discriminated unions that map 'kind' to different tags: it keeps 'pig' from Stock, so these unions cannot decode it: Herd ('Pig').
+Fox is a variant of discriminated unions that map 'kind' to different tags: it keeps 'fox' from Pet, so these unions cannot decode it: Animal ('vulpine').
+Owl is a variant of discriminated unions that map 'kind' to different tags: it keeps 'owl' from Pet, so these unions cannot decode it: Animal ('avian').
+Red is a variant of discriminated unions that map 'kind' to different tags: it keeps 'a' from Forward, so these unions cannot decode it: Backward ('b').
+Blue is a variant of discriminated unions that map 'kind' to different tags: it keeps 'b' from Forward, so these unions cannot decode it: Backward ('a').

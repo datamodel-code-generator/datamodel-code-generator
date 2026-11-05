@@ -86,7 +86,7 @@ __all__ = [
     "OutputKeywords",
     "RenderDrop",
     "all_of_root_keyword_kinds",
-    "base64_bytes_consumed_keywords",
+    "base64_text_consumed_keywords",
     "constrained_type_keyword_order",
     "decimal_field_form",
     "declared_keywords",
@@ -219,11 +219,13 @@ _BASE64_BYTES_KEYWORDS: Final[frozenset[str]] = LENGTH_KEYWORDS
 """The keywords bytes decoded from base64 text take: the lengths, but no ``pattern``, which Pydantic cannot check on
 the text: it refuses one in ``Field()`` beside ``Base64Bytes`` at import and checks one beside ``EncodedBytes`` on the
 decoded value."""
-_BASE64_BYTES_LENGTH_ARGUMENTS: Final[Mapping[str, str]] = MappingProxyType({
+_BASE64_TEXT_ARGUMENTS: Final[Mapping[str, str]] = MappingProxyType({
+    "pattern": "pattern",
     "min_length": "minLength",
     "max_length": "maxLength",
 })
-"""The ``Field()`` arguments of the lengths that bytes decoded from base64 text write in front of the decoding."""
+"""The ``Field()`` arguments of the constraints that a value decoded from base64 text writes in front of the decoding:
+the lengths of bytes, and also the ``pattern`` of a string."""
 
 TAG_LITERAL_UNTAKEN_KEYWORD: Final = "pattern"
 """The keyword a discriminator tag's ``Literal`` leaves out in an output model that writes ``Field()`` arguments, once
@@ -292,7 +294,7 @@ _PYDANTIC_TYPE_KEYWORDS: Final[Mapping[str, frozenset[str]]] = MappingProxyType(
     **dict.fromkeys(
         (f"pydantic.{name}" for name in ("constr", "StrictStr", "StrictBytes", "EmailStr")), STRING_KEYWORDS
     ),
-    "pydantic.Base64Str": _BASE64_DECODED_KEYWORDS,
+    **dict.fromkeys(("pydantic.Base64Str", "pydantic.EncodedStr"), _BASE64_DECODED_KEYWORDS),
     **dict.fromkeys(("pydantic.Base64Bytes", "pydantic.EncodedBytes"), _BASE64_BYTES_KEYWORDS),
     **dict.fromkeys((f"pydantic.{name}" for name in ("conbytes", "SecretStr")), LENGTH_KEYWORDS),
 })
@@ -503,11 +505,14 @@ class ConstraintOptions:
     enforces itself (``enforced_keywords``, ``literal_enforces_every_keyword``, ``writes_beside_literal``,
     ``field_form_zero_bound``). ``use_decimal_in_field_forms`` (``--use-decimal-in-field-forms``) writes the number
     of a field form with ``multipleOf`` as a ``Decimal`` too, strict in every form (``decimal_field_form``,
-    ``strict_decimal_multiple``).
+    ``strict_decimal_multiple``). ``use_encoded_str_for_constrained_base64``
+    (``--use-encoded-str-for-constrained-base64``) writes the constraints of a string decoded from base64 text in
+    front of its decoding in the field forms (``encoded_str_field_form``).
     """
 
     omit_redundant_constraints: bool = False
     use_decimal_in_field_forms: bool = False
+    use_encoded_str_for_constrained_base64: bool = False
 
 
 def _class_keywords(zero_bound_classes: Mapping[str, tuple[str, ...]], type_name: str | None) -> tuple[str, ...]:
@@ -611,6 +616,16 @@ def strict_decimal_multiple(options: ConstraintOptions, *, strict: bool) -> bool
     return strict and options.use_decimal_in_field_forms
 
 
+def encoded_str_field_form(options: ConstraintOptions) -> bool:
+    """Return whether a field form writes a string decoded from base64 text with its constraints in front of decoding.
+
+    It does under ``use_encoded_str_for_constrained_base64``, so Pydantic checks them on the text, as the schema does;
+    otherwise ``Annotated[Base64Str, Field(...)]`` and ``Base64Str | None = Field(...)`` check them on the decoded
+    text, as in 0.88.0.
+    """
+    return options.use_encoded_str_for_constrained_base64
+
+
 RenderDrop: TypeAlias = Literal["self-reference-container", "strict-kwargs", "anyurl"]
 """Why a field writes none of its constraints when it is written."""
 
@@ -634,12 +649,12 @@ def none_type_keywords(*, none_type: bool) -> frozenset[str]:
     return NUMBER_FIELD_KEYWORDS if none_type else NO_KEYWORDS
 
 
-def base64_bytes_consumed_keywords(arguments: Mapping[str, object]) -> frozenset[str]:
-    """Return the lengths that bytes decoded from base64 text write inside their own annotation, by its arguments.
+def base64_text_consumed_keywords(arguments: Mapping[str, object]) -> frozenset[str]:
+    """Return the keywords that a value decoded from base64 text writes inside its own annotation, by its arguments.
 
     The type consumes them, so a field of the type leaves them out of its own constraints.
     """
-    return frozenset(keyword for argument, keyword in _BASE64_BYTES_LENGTH_ARGUMENTS.items() if argument in arguments)
+    return frozenset(keyword for argument, keyword in _BASE64_TEXT_ARGUMENTS.items() if argument in arguments)
 
 
 def holds_number_format(mapped_type: str) -> bool:
@@ -647,15 +662,19 @@ def holds_number_format(mapped_type: str) -> bool:
     return mapped_type in _NUMBER_STRING_FORMAT_TYPES
 
 
-def constrained_type_keyword_order(mapped_type: str) -> tuple[str, ...]:
-    """Return the keywords a ``con*`` type of the mapped type (a ``types.py:Types`` name) takes, in argument order."""
+def constrained_type_keyword_order(mapped_type: str, *, encoded_str: bool = False) -> tuple[str, ...]:
+    """Return the keywords a ``con*`` type of the mapped type (a ``types.py:Types`` name) takes, in argument order.
+
+    A string decoded from base64 text takes the string keywords where a field form writes them in front of its
+    decoding (``encoded_str``, ``encoded_str_field_form``).
+    """
     if mapped_type in _NUMBER_TYPES:
         return NUMBER_KEYWORD_ORDER
     if mapped_type == "string":
         return STRING_LENGTH_KEYWORD_ORDER
     if mapped_type == "binary":
         return LENGTH_KEYWORD_ORDER
-    return ()
+    return STRING_KEYWORD_ORDER if mapped_type == "byte" and encoded_str else ()
 
 
 def all_of_root_keyword_kinds(schema_type: str, mapped_type: str) -> frozenset[str] | None:

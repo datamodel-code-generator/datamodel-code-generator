@@ -1,0 +1,2 @@
+Red is a variant of discriminated unions that map 'kind' to different tags: it keeps 'a' from Forward, so these unions cannot decode it: Backward ('b').
+Blue is a variant of discriminated unions that map 'kind' to different tags: it keeps 'b' from Forward, so these unions cannot decode it: Backward ('a').

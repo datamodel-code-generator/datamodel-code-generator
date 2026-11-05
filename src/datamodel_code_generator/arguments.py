@@ -851,11 +851,28 @@ _flag(
     "(--field-constraints, --use-annotated), with the constraints in Field(), and make the Decimal strict under "
     "--strict-types float (Pydantic only)",
 )
+_flag(
+    typing_options,
+    "--use-encoded-str-for-constrained-base64",
+    help="Write a format: byte string with pattern, minLength or maxLength in the field forms (--field-constraints, "
+    "--use-annotated) as Annotated[str, Field(...), EncodedStr(encoder=Base64Encoder)], so Pydantic 2.10 or later "
+    "checks the constraints on the base64 text, as the schema does; without it Annotated[Base64Str, Field(...)] and "
+    "an optional Base64Str with Field(...) check them on the decoded text, as in 0.88.0 (Pydantic v2 only)",
+)
 _flag(typing_options, "--use-one-literal-as-default", help="Use one literal as default value for one literal field")
 _flag(
     typing_options,
     "--use-enum-values-in-discriminator",
     help="Use enum member literals in discriminator fields instead of string literals",
+)
+_flag(
+    typing_options,
+    "--merge-shared-variant-tags",
+    help="Give a variant that several discriminated unions tag differently (for example one by a mapping key, one by "
+    "the schema name) every tag they give it, so each union decodes the documents its discriminator selects; such a "
+    "union also accepts the tags the other unions give the variant. A variant keeps the tag of the first union, as "
+    "without the option (as in 0.88.0), where a union listing it would then give two of its variants one tag, and "
+    "msgspec Structs, which take one tag, keep it too.",
 )
 _toggle(
     typing_options,

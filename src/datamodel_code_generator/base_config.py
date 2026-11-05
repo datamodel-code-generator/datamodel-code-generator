@@ -335,6 +335,7 @@ class BaseGenerateConfig(BaseModel):
     ignore_enum_constraints: bool = False
     use_one_literal_as_default: bool = False
     use_enum_values_in_discriminator: bool = False
+    merge_shared_variant_tags: bool = False
     use_msgspec_tagged_unions: bool = False
     tag_msgspec_by_payload_name: bool = False
     use_msgspec_nullable_enum_alias: bool = False
@@ -415,6 +416,7 @@ class BaseGenerateConfig(BaseModel):
     use_non_positive_negative_number_constrained_types: bool = False
     use_decimal_for_multiple_of: bool = False
     use_decimal_in_field_forms: bool = False
+    use_encoded_str_for_constrained_base64: bool = False
     omit_redundant_constraints: bool = False
     use_site_models_for_constrained_refs: bool = False
     original_field_name_delimiter: str | None = None

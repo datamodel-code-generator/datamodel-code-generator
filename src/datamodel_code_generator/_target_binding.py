@@ -997,12 +997,12 @@ def _ordered_union(
 def _constraint_base(data_type: DataType, *, encoded: bool = False) -> str | None:
     """Return the name of the scalar a constrained scalar constrains, as the model generator reads it, or None.
 
-    With ``encoded``, bytes decoded from base64 text with lengths constrain bytes.
+    With ``encoded``, a value decoded from base64 text with constraints constrains the type its decoding writes.
     """
     if getattr(data_type, "annotated_string", False):
         return "str"
-    if encoded and getattr(data_type, "annotated_bytes", False):
-        return "bytes"
+    if encoded and (base := getattr(data_type, "encoded_base", None)):
+        return base
     return None if (import_ := data_type.import_) is None else _ANNOTATED_CONSTRAINT_BASES.get(_identity(import_))
 
 
