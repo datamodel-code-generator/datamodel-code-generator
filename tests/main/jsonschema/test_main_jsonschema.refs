@@ -8131,6 +8131,8 @@ literal_constraints_undecided-literal	main/jsonschema/main_jsonschema/main_liter
 	main/jsonschema/path_absolute_root_id_refs//*.py
 [test_main_long_ref_alias_chain]
 	main/jsonschema/long_ref_alias_chain.py
+[test_main_long_ref_sibling_chain_with_schema_validators_one_model_per_site]
+	main/jsonschema/main_jsonschema/main_long_ref_sibling_chain_with_schema_validators_one_model_per_site.py
 [test_main_lookaround_anyof_nullable_pydantic_v2]
 	main/jsonschema/lookaround_anyof_nullable_pydantic_v2.py
 [test_main_lookaround_anyof_nullable_pydantic_v2_dataclass]
@@ -8726,6 +8728,8 @@ openapi	main/jsonschema/ref_fragment_opened_by_an_encoded_slash.py	= main/jsonsc
 	main/jsonschema/ref_nullable_import_fast_path.py
 [test_main_ref_sibling_chain_with_one_model_per_site]
 	main/jsonschema/main_jsonschema/main_ref_sibling_chain_with_one_model_per_site.py
+[test_main_ref_sibling_chain_with_schema_validators_one_model_per_site]
+	main/jsonschema/ref_sibling_chain_with_schema_validators_one_model_per_site.py
 [test_main_refreshes_modified_custom_template_between_calls]
 	main/jsonschema/custom_template_refresh/first.py
 	main/jsonschema/custom_template_refresh/second.py

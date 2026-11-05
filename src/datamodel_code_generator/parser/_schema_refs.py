@@ -200,6 +200,7 @@ class _RefSite(NamedTuple):
     """The field site, its schema merged with the target, at the path of the site's model."""
     root: tuple[str, ...]
     base_path: Path | None
+    base_url: str | None
     dynamic: tuple[str | None, tuple[str, ...], str, dict[str, str]]
     """The document, path, pointer and bindings of the dynamic scope (``_dynamic_scope_context``)."""
     raw_obj: dict[str, YamlValue]
@@ -1118,6 +1119,7 @@ def ref_site_reference(parser: SchemaRefsHost, site: SchemaSite[JsonSchemaObject
                 replace(site, path=path, scope=None),
                 tuple(resolver.current_root),
                 resolver.current_base_path,
+                resolver.base_url,
                 (
                     parser._dynamic_document,  # noqa: SLF001
                     parser._dynamic_scope_path,  # noqa: SLF001
@@ -1143,6 +1145,7 @@ def parse_ref_sites(parser: SchemaRefsHost) -> None:
             with (
                 resolver.current_root_context(pending.root),
                 resolver.current_base_path_context(pending.base_path),
+                resolver.base_url_context(pending.base_url),
                 parser._dynamic_scope_context(path, bindings, pointer, document),  # noqa: SLF001
                 context_variable(partial(setattr, parser, "raw_obj"), parser.raw_obj, pending.raw_obj),
             ):

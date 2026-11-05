@@ -138,7 +138,10 @@ def descend(value: YamlValue, tokens: Iterable[str], row: MemberRow, missing: Ya
 
 
 class MergedRefSiteRecursionError(RecursionError):
-    """A recursion limit exceeded while a `$ref` with sibling keywords is parsed in place of the schema it names."""
+    """A recursion limit exceeded while a chain of `$ref`s with sibling keywords is parsed in place, one in another.
+
+    --use-one-model-per-ref-site parses such a chain without nesting.
+    """
 
 
 @contextmanager

@@ -331,10 +331,12 @@ An object `$ref` with sibling keywords is parsed as its target merged with them 
 `ref-site` of the field table, `JsonSchemaParser._build_field_ref_site`), at each path that reaches it (row
 `legacy-merged-site-per-path`); under `--use-one-model-per-ref-site` each site, the object that holds the `$ref` with
 the `$dynamicAnchor` bindings of its dynamic scope, gets one model (`parser/_schema_refs.py:ref_site_reference`, a
-parser-owned table like the dynamic specializations), which every copy of it a merge leaves unchanged shares, parsed
-from a worklist after the model that met it (`parse_ref_sites`, drained after each `_parse_schema_obj` and around the
-targets a parse reserves), so a chain of such sites nests no parse per hop. A recursion limit that merged sites exceed
-in place names the option (`_document_reader.py:MergedRefSiteRecursionError`, `nesting_limit`).
+parser-owned table like the dynamic specializations; a site with schema validators takes row `validated-ref-site`,
+before `schema-validator-object`), which every copy of it a merge leaves unchanged shares, parsed from a worklist after
+the model that met it, in the context it was met in (`parse_ref_sites`, drained after each `_parse_schema_obj` and
+around the targets a parse reserves), so a chain of such sites nests no parse per hop. A recursion limit exceeded in a
+site that another site holds, parsed in place, names the option where it would remove that nesting: without it and
+unless request and response models are split (`_document_reader.py:MergedRefSiteRecursionError`, `nesting_limit`).
 A plain-name `$dynamicRef` that the dynamic-scope rule leaves to its edge reserves its target as a `$ref` does
 (`resolve_ref_callback`). A plain name that more than one schema of a document declares
 (`DocumentResources.duplicate_names`), which JSON Schema leaves undefined, warns where a reference uses it

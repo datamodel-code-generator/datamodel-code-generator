@@ -611,6 +611,14 @@ class _MapValue:
     preserve_root_model: bool = False
 
 
+class _RefSiteRecursionError(RecursionError):
+    """A recursion limit exceeded in the parse in place of one `$ref` with sibling keywords, which no other one holds.
+
+    The `$ref` site that holds it turns it into ``MergedRefSiteRecursionError``: only a chain of such sites nests a
+    parse per hop, which --use-one-model-per-ref-site removes.
+    """
+
+
 _ValidatedT = TypeVar("_ValidatedT")
 
 
@@ -6252,16 +6260,36 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         Under --use-one-model-per-ref-site the site gets one model, which every copy of it shares
         (``_schema_refs.ref_site_reference``). Without it, row ``legacy-merged-site-per-path``, and for a copy a merge
         changed, each path that reaches the site parses a model of its own in place, one nested parse per hop of a
-        chain, so a recursion limit it exceeds names the option (``MergedRefSiteRecursionError``).
+        chain. A recursion limit exceeded in a site that another site holds names the option
+        (``MergedRefSiteRecursionError``), where the option would parse the chain without nesting: without it and
+        unless request and response models are split, as the option then parses a site where it is first met too.
         """
-        if self.config.use_one_model_per_ref_site and (reference := _schema_refs.ref_site_reference(self, site)):
-            return self._join_object_type_array(site, self.data_type(reference=reference))
+        if self.config.use_one_model_per_ref_site:
+            if reference := _schema_refs.ref_site_reference(self, site):
+                return self._join_object_type_array(site, self.data_type(reference=reference))
+            return self._parse_object_item(site)
+        if self.read_only_write_only_model_type == ReadOnlyWriteOnlyModelType.RequestResponse:
+            return self._parse_object_item(site)
         try:
             return self._parse_object_item(site)
         except MergedRefSiteRecursionError:
             raise
-        except RecursionError as error:
+        except _RefSiteRecursionError as error:
             raise MergedRefSiteRecursionError(*error.args) from error
+        except RecursionError as error:
+            raise _RefSiteRecursionError(*error.args) from error
+
+    def _field_validated_ref_site_applies(self, site: _Site) -> bool:
+        """Return whether, under --use-one-model-per-ref-site, a `$ref` site's object carries schema validators.
+
+        Such a site is built as the object model of its validators (row ``schema-validator-object``) without the
+        option, which builds the same model; with it the site gets its one model as any other site does.
+        """
+        return bool(
+            self.config.use_one_model_per_ref_site
+            and _schema_validator_object_applies(self, site)
+            and self._field_ref_site_applies(site)
+        )
 
     def _field_enum_applies(self, site: _Site) -> bool:
         return bool(site.obj.enum and not self.ignore_enum_constraints)
@@ -6317,6 +6345,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 _field_discriminated_union_item_applies,
                 _parse_root_type_site,
             ),
+            Row("validated-ref-site", _field_validated_ref_site_applies, _build_field_ref_site),
             Row(
                 "schema-validator-object",
                 _schema_validator_object_applies,

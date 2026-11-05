@@ -30389,26 +30389,115 @@ def _ref_sibling_chain(tmp_path: Path, length: int) -> Path:
     return input_path
 
 
+@pytest.mark.parametrize(
+    ("extra_args", "hint"),
+    [
+        pytest.param(
+            [],
+            " A chain of $refs with sibling keywords is parsed one nested model per hop; --use-one-model-per-ref-site "
+            "parses it without nesting.",
+            id="released",
+        ),
+        pytest.param(["--read-only-write-only-model-type", "request-response"], "", id="request-response"),
+        pytest.param(
+            ["--read-only-write-only-model-type", "request-response", "--use-one-model-per-ref-site"],
+            "",
+            id="request-response-site",
+        ),
+    ],
+)
 def test_main_ref_sibling_nesting_too_deep(
-    tmp_path: Path, output_file: Path, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path, output_file: Path, capsys: pytest.CaptureFixture[str], extra_args: list[str], hint: str
 ) -> None:
     """Stop with an error, not a partial result, when merged $ref siblings nest deeper than the parse can follow.
 
-    The error names --use-one-model-per-ref-site, which parses such a chain without nesting.
+    The error names --use-one-model-per-ref-site, which parses such a chain without nesting, where it does: where
+    request and response models are split, the option parses each site where it is first met too, so it names nothing.
     """
     run_main_and_assert(
         input_path=_ref_sibling_chain(tmp_path, 200),
         output_path=output_file,
         input_file_type="jsonschema",
-        extra_args=["--disable-timestamp", "--formatters", "builtin"],
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr_contains=(
+        expected_stderr=(
             "Schema nesting is too deep to generate: parsing the nested schemas exceeded the Python recursion limit "
-            f"({sys.getrecursionlimit()}). A chain of $refs with sibling keywords is parsed one nested model per hop; "
-            "--use-one-model-per-ref-site parses it without nesting."
+            f"({sys.getrecursionlimit()}).{hint}\n"
         ),
         output_should_not_exist=True,
+    )
+
+
+def _validated_ref_sibling_chain(tmp_path: Path, length: int) -> Path:
+    """Write a chain of `length` objects whose `next` references the next one beside `required` and `minProperties`."""
+    links: dict[str, Any] = {
+        f"D{index}": {
+            "type": "object",
+            "properties": {
+                "v": {"type": "integer"},
+                "next": {"$ref": f"#/x-links/D{index + 1}", "required": ["v"], "minProperties": 2},
+            },
+        }
+        for index in range(length)
+    }
+    links[f"D{length}"] = {"type": "object", "properties": {"v": {"type": "integer"}}}
+    (input_path := tmp_path / "validated_chain.json").write_text(
+        json.dumps({
+            "title": "Chain",
+            "type": "object",
+            "properties": {"next": {"$ref": "#/x-links/D0", "required": ["v"], "minProperties": 2}},
+            "x-links": links,
+        }),
+        encoding="utf-8",
+    )
+    return input_path
+
+
+_VALIDATED_SITE_ARGS = (
+    *("--disable-timestamp", "--formatters", "builtin", "--output-model-type", "pydantic_v2.BaseModel"),
+    *("--use-one-model-per-ref-site", "--generate-schema-validators"),
+)
+
+
+def test_main_ref_sibling_chain_with_schema_validators_one_model_per_site(tmp_path: Path, output_file: Path) -> None:
+    """Give each `$ref` site whose object carries schema validators one model under --use-one-model-per-ref-site.
+
+    Each `next` of the chain adds `minProperties` beside its `$ref`, so `--generate-schema-validators` builds its object
+    as the model of its validators; with the option each site still gets one model, which keeps the rule, and the
+    copies of the site share it.
+    """
+    run_main_and_assert(
+        input_path=_validated_ref_sibling_chain(tmp_path, 2),
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=list(_VALIDATED_SITE_ARGS),
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="validated_ref_sibling_chain",
+        model_name="Chain",
+        valid_json='{"next": {"v": 1, "next": {"v": 2, "next": {"v": 3, "w": 4}}}}',
+        invalid_json='{"next": {"v": 1, "next": {"v": 2, "next": {"v": 3}}}}',
+        expected_error_type="value_error",
+    )
+
+
+def test_main_long_ref_sibling_chain_with_schema_validators_one_model_per_site(
+    tmp_path: Path, output_file: Path
+) -> None:
+    """Generate a chain of 200 `$ref` sites with schema validators at the default limit under the option.
+
+    The 201 links, the 201 sites and the root, besides the base of the validators: 404 classes, where the site models
+    grow as N(N-1)/2 without the option.
+    """
+    run_main_and_assert(
+        input_path=_validated_ref_sibling_chain(tmp_path, 200),
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=list(_VALIDATED_SITE_ARGS),
+        transform=lambda output: f"{output.count(chr(10) + 'class ')} classes\n",
     )
 
 
