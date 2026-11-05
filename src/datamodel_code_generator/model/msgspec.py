@@ -342,19 +342,26 @@ def _takes_default(data_type: DataType, default: object, seen: frozenset[int] = 
     """Return whether ``msgspec.convert`` takes a default for a type, by the JSON kind of the default at every level.
 
     A Struct takes an object that holds the Struct's tag where it holds its tag field; a type alias, what the type it
-    names takes besides itself (``seen`` holds the aliases followed since the last value read); a union, what one of
-    its members takes; an array type, an array whose items its item types take; a mapping, an object whose values its
-    value types take; a Literal, its values; str, int, float, bool and None, values of their JSON kind. An optional
-    type takes None too, and any other type any value.
+    names takes besides itself (``seen`` holds the aliases followed since the last value read), and None where it
+    writes None; a union, what one of its members takes; an array type, an array whose items its item types take; a
+    mapping, an object whose values its value types take; a Literal, its values; str, int, float, bool and None, values
+    of their JSON kind. An optional type takes None too, and any other type any value.
     """
     if default is None and data_type.is_optional:
         return True
     if (reference := data_type.reference) is not None:
         if isinstance(source := reference.source, TypeAliasBase):
             return (
-                bool(source.fields)
+                bool(fields := source.fields)
                 and id(source) not in seen
-                and _takes_default(source.fields[0].data_type, default, seen | {id(source)})
+                and (
+                    (
+                        default is None
+                        and isinstance(alias := fields[0], DataModelField)
+                        and alias._field_has_top_level_none()  # noqa: SLF001
+                    )
+                    or _takes_default(fields[0].data_type, default, seen | {id(source)})
+                )
             )
         return not isinstance(source, Struct) or (
             isinstance(default, dict)

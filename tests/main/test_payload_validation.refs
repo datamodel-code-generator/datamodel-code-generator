@@ -1690,6 +1690,7 @@ openapi/msgspec_enum_values_in_discriminator_modules/b.json::components.schemas.
 openapi/msgspec_inline_const.yaml::components.schemas.Model	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_mixed_operation_enum.yaml::components.schemas.Model	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_mixed_operation_enum.yaml::paths./value.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/msgspec_nullable_alias_item_default.yaml::components.schemas.PodSpec	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_nullable_enum.yaml::components.schemas.Level	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_nullable_enum.yaml::components.schemas.LevelDefault	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_nullable_enum.yaml::components.schemas.LevelNullable	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3695,6 +3696,7 @@ openapi/msgspec_enum_values_in_discriminator_modules/b.json::components.schemas.
 openapi/msgspec_inline_const.yaml::components.schemas.Model	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_mixed_operation_enum.yaml::components.schemas.Model	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_mixed_operation_enum.yaml::paths./value.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/msgspec_nullable_alias_item_default.yaml::components.schemas.PodSpec	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_nullable_enum.yaml::components.schemas.Level	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_nullable_enum.yaml::components.schemas.LevelDefault	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_nullable_enum.yaml::components.schemas.LevelNullable	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

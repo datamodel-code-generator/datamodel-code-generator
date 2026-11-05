@@ -33,6 +33,9 @@ True-api	main/graphql/msgspec_scalar_alias_defaults_True.py
 True-api	main/graphql/msgspec_scalar_alias_defaults_runtime.txt	?
 True-cli	main/graphql/msgspec_scalar_alias_defaults_True.py
 True-cli	main/graphql/msgspec_scalar_alias_defaults_runtime.txt	?
+[test_msgspec_nullable_alias_item_union_default]
+	main/jsonschema/msgspec_alias_defaults/msgspec_nullable_alias_item_union_default.py
+	main/jsonschema/msgspec_alias_defaults/msgspec_nullable_alias_item_union_default.txt
 [test_msgspec_recursive_alias_default]
 	main/jsonschema/msgspec_alias_defaults_recursive.py
 [test_msgspec_union_member_defaults]
