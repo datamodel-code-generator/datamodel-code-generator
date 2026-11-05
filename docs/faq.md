@@ -1107,6 +1107,38 @@ class Root(BaseModel):
     pets: list[Pet] | None = None
 ```
 
+### `--keep-constrained-root-models-in-every-container`
+
+| | |
+|---|---|
+| Option | `--keep-constrained-root-models-in-every-container` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#5819](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5819), [#4827](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4827) |
+
+**Affects:** `--collapse-root-models` with `--field-constraints` (or `--use-annotated`). A root model whose root field has constraints, such as an item schema with `minLength` or a map value with `minimum`, stays named beside a list, a dict or a union of its holder, as `Field()` arguments cannot carry its constraints there, but is inlined into a set, a frozen set, a `Sequence` or a `Mapping`, where its constraints are lost: `Sequence[str]` accepts `[""]` (#5819), and a `uniqueItems` array under `--use-unique-items-as-set` accepts empty strings (#4827). With the option such a root model stays named inside any container. With `--use-unique-items-as-set-by-value` too, the uniqueItems array of such a root model, which hashes by identity, is a list.
+
+Schema: `names` is an array of strings with `minLength: 1` written as `Sequence[str]` (`x-python-type`), with `--collapse-root-models --field-constraints`.
+
+Without the option (same as 0.89.0):
+
+```python
+class Holder(BaseModel):
+    names: Sequence[str] | None = None
+```
+
+With the option:
+
+```python
+class Name(RootModel[str]):
+    root: str = Field(..., min_length=1)
+
+
+class Holder(BaseModel):
+    names: Sequence[Name] | None = None
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.
