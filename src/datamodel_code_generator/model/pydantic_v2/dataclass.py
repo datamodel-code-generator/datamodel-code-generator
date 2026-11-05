@@ -266,11 +266,12 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
 
     @override
     def _bases_without_inherited_config(self) -> list[BaseClassDataType]:
-        """Return the bases after the first: a dataclass takes the config of its first base only.
+        """Return the bases after the first, or every base where the dataclass has a config of its own.
 
-        It builds the fields of the other bases with its own config.
+        A dataclass takes the config of its first base only where it has none of its own (``_applied_config_items``),
+        and builds the fields of every base with the config it applies.
         """
-        return self.base_classes[1:]
+        return self.base_classes if self._rendered_config_items() else self.base_classes[1:]
 
     def _applied_config_items(self, visiting: frozenset[int] = frozenset()) -> dict[str, str]:
         """Return the config items Pydantic applies: the dataclass's own, else all of its first dataclass base's.
