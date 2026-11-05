@@ -99,6 +99,7 @@ from datamodel_code_generator.model._decisions.assignment import (
 from datamodel_code_generator.model._decisions.hashability import (
     HashClassFacts,
     dict_key_takes_root_type,
+    instances_never_hash,
     keeps_builtin_hash,
 )
 from datamodel_code_generator.model._decisions.literal_default import const_type, decide_literal_default
@@ -3220,6 +3221,28 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def enable_identity_hash(self) -> None:
         """Retain the legacy identity hash for a set item without a usable native hash."""
         self._append_internal_template_data("class_body_lines", "__hash__ = object.__hash__")
+
+    def _instances_never_hash(self, generic_base_config: Mapping[str, Any] | None) -> bool:  # noqa: ARG002, PLR6301
+        """Return whether the instances of the class never hash (``instances_never_hash``), so that no set holds one.
+
+        A class hashes its instances here: a Pydantic class takes the identity hash as a set item, an Enum hashes its
+        members; a backend whose classes compare by value without a hash says so. ``generic_base_config`` is the
+        configuration of the generic base class the output's models inherit from (--use-generic-base-class), if any.
+        """
+        return False
+
+    def _class_never_hashes(self, *, dicts: bool = False, frozen: bool = False, own_hash: bool = False) -> bool:
+        """Return ``instances_never_hash`` for a class that compares by value unless it holds dicts.
+
+        Class code, a custom base class or custom templates may give the class a hash of its own.
+        """
+        facts = self._hash_class_facts()
+        return instances_never_hash(
+            dicts=dicts,
+            compares_by_value=True,
+            frozen=frozen,
+            own_hash=own_hash or facts.user_class_code or facts.custom_base_class or facts.custom_template_dir,
+        )
 
     def _hash_class_facts(self) -> HashClassFacts:
         """Read the facts of the class that hashability reads; only a backend's own class keeps a builtin hash."""

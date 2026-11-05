@@ -107,6 +107,9 @@ class GraphSnapshot(Enum):
     SET_ITEM_HASH = "set item hash"
     """L6: the set item models and the generated models they inherit from, whose classes decide which set item models
     keep their builtin hash."""
+    SET_ITEM_CLASSES = "set item classes"
+    """On demand: a msgspec struct that the items of a uniqueItems array name and the generated structs it inherits
+    from, whose options decide whether its instances can hash at all."""
     DICT_KEY_ROOT_TYPES = "dict key root types"
     """On demand: a root model that a dict key names and the generated models it inherits from, whose configuration
     decides whether its instances can be dict keys."""

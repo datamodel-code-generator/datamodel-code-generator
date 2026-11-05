@@ -77,6 +77,11 @@ class TypedDict(DataModel):
     _PYTHON_CHECKS_BASES: ClassVar[bool] = False
     _BASE_FIELDS: ClassVar[MemberRule] = "nearest"
 
+    @override
+    def _instances_never_hash(self, generic_base_config: Mapping[str, Any] | None) -> bool:
+        """Return True: the instances are dicts, which never hash."""
+        return self._class_never_hashes(dicts=True)
+
     @classmethod
     @override
     def store_additional_properties_type(

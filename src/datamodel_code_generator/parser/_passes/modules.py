@@ -94,6 +94,7 @@ from datamodel_code_generator.parser._passes._shared import (
     DeduplicationHost,
     DiscriminatorValue,
     GenerationStoreHost,
+    GenericBaseHost,
     GraphBuilderHost,
     MergedDuplicatesHost,
     ModuleScopeView,
@@ -120,6 +121,7 @@ from datamodel_code_generator.parser._passes._shared import (
     compared_models,
     definition_reads,
     enum_site_override_import,
+    generic_base_config,
     get_constructor_field_adjustment,
     get_inherited_constructor_info,
     merge_duplicate,
@@ -266,6 +268,7 @@ def renames_colliding_types(parser: CollisionRenameHost) -> bool:
 
 class ModulesHost(
     CollisionRenameHost,
+    GenericBaseHost,
     ConstructorInfoHost,
     ReplacedRootsHost,
     TypeOverrideHost,
@@ -985,7 +988,12 @@ def replace_unique_list_to_set(parser: ModulesHost, models: list[DataModel]) -> 
     for model in models:
         for model_field in model.fields:
             if (
-                plan := unique_items_plan(model_field, keeps_tuples=parser.use_tuple_for_closed_arrays, sources="field")
+                plan := unique_items_plan(
+                    model_field,
+                    keeps_tuples=parser.use_tuple_for_closed_arrays,
+                    sources="field",
+                    generic_base_config=generic_base_config(parser),
+                )
             ).sets:
                 _write_unique_sets(parser, model_field, plan)
 
@@ -1011,6 +1019,7 @@ def replace_merged_unique_list_to_set(parser: ModulesHost, models: list[DataMode
                     keeps_tuples=parser.use_tuple_for_closed_arrays,
                     sources="merged",
                     merged=[_field_named(other, model_field.name) for other in merged],
+                    generic_base_config=generic_base_config(parser),
                 )
             ).sets:
                 _write_unique_sets(parser, model_field, plan)

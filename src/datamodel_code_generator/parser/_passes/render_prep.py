@@ -373,17 +373,29 @@ def _iter_cycle_containers(
 
 
 def collect_set_item_references(models: list[DataModel]) -> list[Reference]:
-    """Collect the references of all types used as set/frozenset items."""
-    return [
-        nested.reference
+    """Collect the references of all types used as set/frozenset items.
+
+    A type alias among them is read as its value too, whose models are the set's items.
+    """
+    references: list[Reference] = []
+    pending = [
+        item_type
         for model in models
         for field in model.fields
         for data_type in field.data_type.all_data_types
         if data_type in SETS
         for item_type in data_type.data_types
-        for nested in item_type.all_data_types
-        if nested.reference
     ]
+    aliases: set[int] = set()
+    while pending:
+        for nested in pending.pop().all_data_types:
+            if (reference := nested.reference) is None:
+                continue
+            references.append(reference)
+            if isinstance(alias := reference.source, TypeAliasBase) and id(alias) not in aliases:
+                aliases.add(id(alias))
+                pending.extend(field.data_type for field in alias.fields)
+    return references
 
 
 def mark_set_item_models_hashable(parser: RenderPrepHost, models: list[DataModel]) -> None:

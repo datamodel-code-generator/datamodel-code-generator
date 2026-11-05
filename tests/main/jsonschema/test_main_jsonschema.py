@@ -8459,6 +8459,95 @@ def test_main_unique_items_as_set_unhashable_items(output_model: str, tmp_path: 
         )
 
 
+@pytest.mark.parametrize(
+    ("extra_args", "expected_repr"),
+    [
+        pytest.param(
+            ["--output-model-type", "pydantic_v2.BaseModel", "--use-type-alias"],
+            "Root(pets={Pet(id=1, name=None)}, names={'a'}, shapes={Circle(r=1)}, maybe_pets={None})",
+            id="type-alias",
+        ),
+        pytest.param(
+            ["--output-model-type", "pydantic_v2.BaseModel", "--use-root-model-type-alias"],
+            "Root(pets={Pet(id=1, name=None)}, names=[RootModel[Annotated[str, StringConstraints]](root='a'), "
+            "RootModel[Annotated[str, StringConstraints]](root='a')], shapes=[RootModel[Union[Circle, str]]"
+            "(root=Circle(r=1))], maybe_pets={None})",
+            id="root-model-type-alias",
+        ),
+        pytest.param(
+            ["--output-model-type", "pydantic_v2.dataclass"],
+            "Root(pets=[Pet(id=1, name=None)], names={'a'}, shapes={'x'}, maybe_pets={None})",
+            id="pydantic-dataclass",
+        ),
+        pytest.param(
+            ["--output-model-type", "pydantic_v2.dataclass", "--frozen-dataclasses"],
+            "Root(pets={Pet(id=1, name=None)}, names={'a'}, shapes={'x'}, maybe_pets={None})",
+            id="frozen-pydantic-dataclass",
+        ),
+        pytest.param(
+            ["--output-model-type", "dataclasses.dataclass"],
+            "Root(pets=[Pet(id=1, name=None)], names={'a'}, shapes={'x'}, maybe_pets={None})",
+            id="dataclass",
+        ),
+        pytest.param(
+            ["--output-model-type", "typing.TypedDict"],
+            "{'pets': [{'id': 1}], 'names': {'a'}, 'shapes': {'x'}, 'maybe_pets': {None}}",
+            id="typed-dict",
+        ),
+        pytest.param(["--output-model-type", "msgspec.Struct"], None, id="msgspec"),
+        pytest.param(
+            ["--output-model-type", "msgspec.Struct", "--enable-faux-immutability", "--use-generic-base-class"],
+            None,
+            id="frozen-msgspec",
+        ),
+    ],
+)
+def test_main_unique_items_as_set_model_items(
+    extra_args: list[str], expected_repr: str | None, output_file: Path
+) -> None:
+    """Keep a uniqueItems array of models a list where the class of the models never hashes its instances.
+
+    A TypedDict holds dicts, and a dataclass, a Pydantic dataclass and a msgspec Struct compare by value, so none of
+    their instances hash unless the class is frozen (``--frozen-dataclasses``, a generic base class that
+    ``--enable-faux-immutability`` freezes); a RootModel written as an alias (``Name = RootModel[...]``) has no class
+    body for the hash a Pydantic class takes as a set item. Up to 0.89.0 such an array was a set, which rejected every
+    non-empty array (msgspec could not decode it). A union with None keeps the set, and the models of a type alias's
+    value take the hash of a set item, as a model named by the set does.
+    """
+    name = "unique_items_model_items"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[*extra_args, "--use-unique-items-as-set", "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    shapes = '[{"r": 1}]' if "pydantic_v2.BaseModel" in extra_args else '["x", "x"]'
+    payload = f'{{"pets": [{{"id": 1}}], "names": ["a", "a"], "shapes": {shapes}, "maybe_pets": [null]}}'
+    if expected_repr is None:
+        with _generated_model(output_file, name, "Root") as model:
+            msgspec.json.decode(payload, type=model)
+        return
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=name,
+        model_name="Root",
+        valid_json=payload,
+        invalid_json='{"pets": [1]}',
+        expected_error_type=next(
+            error
+            for backend, error in (
+                ("BaseModel", "model_type"),
+                ("dataclass", "dataclass_type"),
+                ("TypedDict", "dict_type"),
+            )
+            if backend in extra_args[1]
+        ),
+        expected_repr=expected_repr,
+    )
+
+
 @pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct", "typing.TypedDict"])
 def test_main_unique_items_as_set_nested_arrays(output_model: str, tmp_path: Path, output_file: Path) -> None:
     """Write as a set every array whose own schema declares ``uniqueItems``, wherever the array is.

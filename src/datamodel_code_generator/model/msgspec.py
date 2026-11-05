@@ -746,6 +746,31 @@ class Struct(DataModel):
         return struct_discriminator_tag(*self._tag_options(), class_name=self.class_name)
 
     @override
+    def _instances_never_hash(self, generic_base_config: Mapping[str, Any] | None) -> bool:
+        """Return whether the struct compares by value (``eq`` on, the default) without being frozen.
+
+        Each option is the one of the first struct of the chain (the struct and the generated structs it inherits from,
+        as a walk of the reference graph meets them, then the generic base class all of them inherit from) that sets
+        it.
+        """
+        walk = walk_graph(GraphSnapshot.SET_ITEM_CLASSES, EdgeKind.BASE, (self,), _model_key_of_model, _struct_bases)
+        chain = [walk.node_of[key] for key in walk.graph.preorder(walk.starts[0], EdgeKind.BASE)]
+        options = [_user_struct_options(struct) for struct in chain]
+        if generic_base_config is not None and self.SUPPORTS_GENERIC_BASE_CLASS:
+            options.append({key: str(value) for key, value in self._mapped_struct_options(generic_base_config)})
+
+        def first(name: str, *, default: bool) -> bool:
+            return next(
+                (value in {True, "True"} for option in options if (value := option.get(name)) is not None), default
+            )
+
+        frozen = first("frozen", default=False)
+        return first("eq", default=True) and all(
+            struct._class_never_hashes(frozen=frozen)  # noqa: SLF001
+            for struct in chain
+        )
+
+    @override
     def has_keyword_only_definition(self) -> bool:
         """Return whether msgspec's class declaration already enables keyword-only fields."""
         if self._internal_template_data["base_class_kwargs"].get("kw_only") == "True":
@@ -756,6 +781,13 @@ class Struct(DataModel):
     def enable_model_keyword_only(self) -> None:
         """Enable msgspec's class-level keyword-only option."""
         self.add_base_class_kwarg("kw_only", "True")
+
+    @classmethod
+    def _mapped_struct_options(cls, config: Mapping[str, Any]) -> Iterator[tuple[str, Any]]:
+        """Yield the struct options that the configuration of the generic base class maps to (``CONFIG_MAPPING``)."""
+        for item in config.items():
+            if (mapped := cls.CONFIG_MAPPING.get(item)) is not None:
+                yield mapped
 
     @classmethod
     @override
@@ -785,11 +817,7 @@ class Struct(DataModel):
 
         base_model.base_classes = [BaseClassDataType(type=cls.BASE_CLASS_ALIAS)]
 
-        for key, value in config.items():
-            mapping_result = cls.CONFIG_MAPPING.get((key, value))
-            if mapping_result is None:
-                continue
-            mapped_key, mapped_value = mapping_result
+        for mapped_key, mapped_value in cls._mapped_struct_options(config):
             base_model.add_base_class_kwarg(mapped_key, str(mapped_value))
 
         base_model._additional_imports.append(
