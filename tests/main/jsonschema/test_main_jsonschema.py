@@ -5817,8 +5817,7 @@ def test_main_json_pointer_through_scalar(output_file: Path, extra_args: list[st
             assert_func=assert_file_content,
             extra_args=extra_args,
         )
-    assert not [record for record in warning_records if "'~1'" in str(record.message)]
-
+    assert_warnings_do_not_contain(warning_records, "'~1'")
     assert_warnings_contain(warning_records, "#/x-ext/k/j", "#/x-ext/items/0/j", "#/x-ext/none/j", "#/x-ext/text/0")
 
 
