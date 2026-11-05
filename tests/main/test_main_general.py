@@ -3834,6 +3834,42 @@ def test_main_rejects_additional_import_injection_in_extra_template_data(
             "class_decorators must be a Python import path composed of identifiers: '@\\nmypkg.deco'",
             id="class-decorators-line-break-before-path",
         ),
+        pytest.param(
+            "--base-class",
+            ".Base",
+            "base_class must be a Python import path composed of identifiers: '.Base'",
+            id="base-class-relative-without-module",
+        ),
+        pytest.param(
+            "--base-class",
+            "...",
+            "base_class must be a Python import path composed of identifiers: '...'",
+            id="base-class-only-dots",
+        ),
+        pytest.param(
+            "--base-class-map",
+            '{"Person": ".mypkg..Base"}',
+            "base_class_map must be a Python import path composed of identifiers: '.mypkg..Base'",
+            id="base-class-map-relative-empty-part",
+        ),
+        pytest.param(
+            "--type-overrides",
+            '{"Person.firstName": "..mypkg.1x"}',
+            "type_overrides must be a Python import path composed of identifiers: '..mypkg.1x'",
+            id="type-overrides-relative-non-identifier",
+        ),
+        pytest.param(
+            "--class-decorators",
+            "@..mypkg.deco",
+            "class_decorators must be a Python import path composed of identifiers: '..mypkg.deco'",
+            id="class-decorators-relative",
+        ),
+        pytest.param(
+            "--additional-imports",
+            "..mypkg.thing",
+            "additional_imports must be a Python import path composed of identifiers: '..mypkg.thing'",
+            id="additional-imports-relative",
+        ),
     ],
 )
 def test_main_refuses_named_path_with_non_identifier_part(
@@ -3843,7 +3879,9 @@ def test_main_refuses_named_path_with_non_identifier_part(
 
     ``mypkg.1x`` wrote ``from mypkg import 1x`` or ``@mypkg.1x``, which does not parse. A decorator's path is its tokens
     before the arguments of its call, without comments and the whitespace around a dot; a decorator that does not
-    tokenize there, or that a line break outside its parentheses splits, is refused as a whole.
+    tokenize there, or that a line break outside its parentheses splits, is refused as a whole. A relative path names a
+    module after its dots (#6224): ``.Base`` wrote ``import Base``, and a decorator or an additional import cannot be
+    relative.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "person.json",
@@ -3854,6 +3892,33 @@ def test_main_refuses_named_path_with_non_identifier_part(
         capsys=capsys,
         expected_stderr_contains=message,
         output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize("output_model_type", ["msgspec.Struct", "pydantic_v2.BaseModel"])
+def test_main_relative_base_class_and_type_override_paths(output_dir: Path, output_model_type: str) -> None:
+    """Import a relative ``--base-class``, ``--base-class-map`` and ``--type-overrides`` path as given (#6224).
+
+    Each module writes the relative module after ``from`` as 0.88.0 did, so models generated into a subpackage can
+    inherit a base class of a package above it; spaces around a relative type override are no part of its path.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "dot_notation_inheritance.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--base-class",
+            "...base.BaseClass",
+            "--base-class-map",
+            '{"v0.Properties": ["...base.BaseClass", "..mixins.Hooks"]}',
+            "--type-overrides",
+            '{"Animal.species": " ..types.Species "}',
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
     )
 
 

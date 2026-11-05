@@ -72,16 +72,17 @@ else:
     PresetNameValue: TypeAlias = str
 
 
-def _import_paths(field: str, paths: Iterable[object], target: PythonVersion) -> list[str]:
+def _import_paths(field: str, paths: Iterable[object], target: PythonVersion, *, relative: bool = False) -> list[str]:
     """Return the import paths a setting gives as plain strings, raising its error for one that is not identifiers.
 
-    Each path is read by ``validators._validate_python_import_path``: names of the target Python joined by dots.
+    Each path is read by ``validators._validate_python_import_path``: names of the target Python joined by dots, after
+    the dots of a relative import with ``relative``.
     """
     from datamodel_code_generator import Error  # noqa: PLC0415
     from datamodel_code_generator.validators import _validate_python_import_path  # noqa: PLC0415
 
     try:
-        return [_validate_python_import_path(path, target) for path in paths]
+        return [_validate_python_import_path(path, target, relative=relative) for path in paths]
     except ValueError as exc:
         msg = f"{field} {exc}"
         raise Error(msg) from None
@@ -135,11 +136,21 @@ _NAMED_PATHS: Final[dict[str, Callable[[Any], Iterable[str]]]] = {
 }
 """The paths each setting that names Python objects by path names; a value or entry of only whitespace names none."""
 
+_RELATIVE_NAMED_PATHS: Final = frozenset({"base_class", "base_class_map", "type_overrides"})
+"""The settings of ``_NAMED_PATHS`` whose paths the output imports, so a path may be relative (``...base.BaseClass``).
+
+Its module is written after ``from`` as given, as 0.88.0 wrote it; a decorator path is written as an expression, which
+no dots can start.
+"""
+
 
 def _check_named_paths(field: str, value: Any, target: PythonVersion) -> None:
-    """Refuse a value of a setting ``_NAMED_PATHS`` lists that names a path other than target names joined by dots."""
+    """Refuse a value of a setting ``_NAMED_PATHS`` lists that names a path other than target names joined by dots.
+
+    A setting ``_RELATIVE_NAMED_PATHS`` lists may start a path with the dots of a relative import.
+    """
     if value:
-        _import_paths(field, _NAMED_PATHS[field](value), target)
+        _import_paths(field, _NAMED_PATHS[field](value), target, relative=field in _RELATIVE_NAMED_PATHS)
 
 
 def validate_named_paths(value: Any, info: ValidationInfo) -> Any:
