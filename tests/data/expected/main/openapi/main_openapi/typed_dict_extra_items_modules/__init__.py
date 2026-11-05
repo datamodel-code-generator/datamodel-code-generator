@@ -8,5 +8,5 @@ from typing_extensions import NotRequired, TypedDict
 from . import b
 
 
-class Root(TypedDict, extra_items='b.Bar'):
+class Root(TypedDict, extra_items=b.Bar):
     name: NotRequired[str]

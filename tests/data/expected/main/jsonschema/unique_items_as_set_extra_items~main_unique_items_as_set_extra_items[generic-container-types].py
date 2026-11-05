@@ -49,9 +49,9 @@ class Model(TypedDict):
     plain: NotRequired[Plain]
 
 
-class Colors(TypedDict, extra_items='frozenset[Color]'):
+class Colors(TypedDict, extra_items=frozenset[Color]):
     label: NotRequired[str]
 
 
-class Items(TypedDict, extra_items='Sequence[Item]'):
+class Items(TypedDict, extra_items=Sequence[Item]):
     label: NotRequired[str]

@@ -17844,6 +17844,21 @@ def test_main_jsonschema_import_cycle_map_key_alias_collapsed(output_dir: Path, 
     )
 
 
+def test_main_jsonschema_import_cycle_map_key_alias_extra_items(output_dir: Path) -> None:
+    """Merge the modules of a map alias cycle where a TypedDict's ``extra_items`` names the alias, as its field does.
+
+    ``extra_items`` names the alias declared before the class, so it is written unquoted (#6378) and read as the
+    module runs, as the definitions the import check reads are.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "import_cycle_map_key_alias_extra_items",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "typing.TypedDict", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+
+
 def test_main_jsonschema_property_names_anyof_ref(output_file: Path) -> None:
     """Test propertyNames with anyOf containing $refs uses union of enum types as dict key."""
     run_main_and_assert(
@@ -18543,6 +18558,50 @@ def test_main_typed_dict_allof_constraint_extra_items(output_file: Path) -> None
         )
 
 
+def test_main_typed_dict_extra_items_names_model_declared_before(tmp_path: Path, output_file: Path) -> None:
+    """Write unquoted a TypedDict's ``extra_items`` that names a model declared before it, which Pydantic resolves.
+
+    ``extra_items=list[Item]`` names ``Item``, declared above ``Items``. Up to 0.89.0 it was the string
+    ``'list[Item]'``, which Pydantic cannot resolve in the class keywords, so ``TypeAdapter(Items)`` raised
+    ``class-not-fully-defined`` (#6378); a model declared later or the class itself stays quoted.
+    """
+    input_file = tmp_path / "extra_items_model_declared_before.json"
+    input_file.write_text(
+        json.dumps({
+            "title": "Items",
+            "type": "object",
+            "properties": {"n": {"type": "string"}},
+            "additionalProperties": {"type": "array", "items": {"$ref": "#/$defs/Item"}},
+            "$defs": {"Item": {"type": "object", "properties": {"a": {"type": "string"}}}},
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            "typing.TypedDict",
+            "--use-closed-typed-dict",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="extra_items_model_declared_before",
+        model_name="Items",
+        valid_json='{"n": "x", "k": [{"a": "b"}]}',
+        invalid_json='{"k": [{"a": 1}]}',
+        expected_error_type="string_type",
+        expected_repr="{'n': 'x', 'k': [{'a': 'b'}]}",
+    )
+
+
 @pytest.mark.skipif(
     black.__version__.split(".")[0] == "22",
     reason="Installed black doesn't support Python version 3.10",
@@ -18556,7 +18615,7 @@ def test_main_typed_dict_nested_allof_extra_items(output_file: Path) -> None:
         "from typing_extensions import NotRequired, TypedDict\n\n\n"
         "class BaseExtra(TypedDict):\n"
         "    id: NotRequired[int]\n\n\n"
-        "class Payload(TypedDict, extra_items='BaseExtra'):\n"
+        "class Payload(TypedDict, extra_items=BaseExtra):\n"
         "    name: NotRequired[str]\n"
     )
     _run_jsonschema_dict(

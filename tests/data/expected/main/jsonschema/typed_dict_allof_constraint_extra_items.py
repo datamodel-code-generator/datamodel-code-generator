@@ -11,5 +11,5 @@ from typing_extensions import NotRequired, TypedDict
 BaseExtra: TypeAlias = str
 
 
-class AllOfConstraintExtraItems(TypedDict, extra_items='BaseExtra'):
+class AllOfConstraintExtraItems(TypedDict, extra_items=BaseExtra):
     name: NotRequired[str]

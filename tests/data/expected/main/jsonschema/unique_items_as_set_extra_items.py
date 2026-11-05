@@ -48,9 +48,9 @@ class Model(TypedDict):
     plain: NotRequired[Plain]
 
 
-class Colors(TypedDict, extra_items='set[Color]'):
+class Colors(TypedDict, extra_items=set[Color]):
     label: NotRequired[str]
 
 
-class Items(TypedDict, extra_items='list[Item]'):
+class Items(TypedDict, extra_items=list[Item]):
     label: NotRequired[str]

@@ -309,22 +309,32 @@ class TypedDict(DataModel):
         return cast("DataType | None", additional_props_type.source)
 
     @override
-    def _name_final_classes(self) -> None:
+    def _name_final_classes(self, *, binds_named_classes: bool = False) -> None:
         """Render ``extra_items`` again from the data type it was built from, as field types render.
 
-        It is a string while it names generated classes, which may be declared later.
+        The class statement evaluates it as it runs, so it is a string while it names a generated class that is not
+        bound by then (``binds_named_classes``), such as the class itself or one its module declares later.
         """
         if (source := self._extra_items_source) is None:
             return
         typed_dict_kwargs: dict[str, str] = self._internal_template_data["typed_dict_kwargs"]
         type_hint = source.type_hint
-        extra_items = stable_repr(type_hint) if len(self.additional_properties_reference_classes) else type_hint
+        quotes = not binds_named_classes and len(self.additional_properties_reference_classes)
+        extra_items = stable_repr(type_hint) if quotes else type_hint
         self._set_typed_dict_kwargs({**typed_dict_kwargs, "extra_items": extra_items})
 
     @override
     def _setting_data_types(self) -> Iterator[DataType]:
         """Yield the data types of ``extra_items``, which names models as field types do."""
         if (source := self._extra_items_source) is not None:
+            yield from source.all_data_types
+
+    @override
+    def _setting_data_types_read_at_definition(self) -> Iterator[DataType]:
+        """Yield the data types of ``extra_items`` where it is written as the type itself, not as a string."""
+        if (source := self._extra_items_source) is not None and self._internal_template_data["typed_dict_kwargs"][
+            "extra_items"
+        ] == source.type_hint:
             yield from source.all_data_types
 
     @property

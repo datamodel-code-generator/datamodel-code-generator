@@ -1,0 +1,1 @@
+{"$schema": "https://json-schema.org/draft/2020-12/schema", "title": "A", "type": "object", "properties": {"m": {"$ref": "#/$defs/Counts"}}, "additionalProperties": {"$ref": "#/$defs/Counts"}, "$defs": {"Counts": {"type": "object", "propertyNames": {"$ref": "keys.json#/$defs/Key"}, "additionalProperties": {"type": "integer"}}}}

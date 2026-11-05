@@ -31,11 +31,11 @@ class Holder(TypedDict):
     inner: NotRequired[Inner]
 
 
-class OpenRequest(TypedDict, extra_items='ItemRequest'):
+class OpenRequest(TypedDict, extra_items=ItemRequest):
     name: NotRequired[str]
 
 
-class OpenResponse(TypedDict, extra_items='ItemResponse'):
+class OpenResponse(TypedDict, extra_items=ItemResponse):
     name: NotRequired[str]
 
 

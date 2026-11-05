@@ -47,14 +47,14 @@ class Alias1Response(TypedDict):
     name: NotRequired[str]
 
 
-class HolderRequest(TypedDict, extra_items='ItemRequest'):
+class HolderRequest(TypedDict, extra_items=ItemRequest):
     map: NotRequired[dict[str, MapRequest]]
     alias: NotRequired[dict[str, Alias1Request]]
     count: NotRequired[int]
     free: NotRequired[Any]
 
 
-class HolderResponse(TypedDict, extra_items='ItemResponse'):
+class HolderResponse(TypedDict, extra_items=ItemResponse):
     map: NotRequired[dict[str, MapResponse]]
     alias: NotRequired[dict[str, Alias1Response]]
     count: NotRequired[int]
