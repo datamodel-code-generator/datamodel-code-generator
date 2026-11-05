@@ -49,6 +49,7 @@ from datamodel_code_generator.enums import OpenAPIAsDefinitions, OpenAPIVersion,
 from datamodel_code_generator.parser import _union_tags
 from datamodel_code_generator.parser._naming import composed_name
 from datamodel_code_generator.parser._origins import with_type_origin
+from datamodel_code_generator.parser._rw_split import update_field_refs_for_variant
 from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row, SchemaSite
 from datamodel_code_generator.parser._schema_graph import keep_resolved_ref
 from datamodel_code_generator.parser._schema_object import _has_map_key_keywords, _located_model_schema
@@ -75,6 +76,7 @@ from datamodel_code_generator.reference import (
     FIELD_ORIGIN_KEY,
     SCHEMA_LOCATION_KEY,
     FieldNameResolver,
+    _source_path,
     is_url,
     snake_to_upper_camel,
 )
@@ -1178,7 +1180,8 @@ class OpenAPIParser(JsonSchemaParser):
         """Parse all operation parameters into a data model located at the operation object.
 
         A parameter whose content lists several media types is the union of their types, without the schema's
-        constraints.
+        constraints. Under ``--read-only-write-only-model-type request-response`` the model names the Request variants
+        of the models its parameters use, as a request sends them.
         """
         fields: list[DataModelFieldBase] = []
         field_schemas: list[tuple[JsonSchemaObject, list[str]]] = []
@@ -1265,6 +1268,7 @@ class OpenAPIParser(JsonSchemaParser):
             if self._types_nullable_map_values:
                 for field_schema, schema_path in field_schemas:
                     self.parse_ref(field_schema, schema_path)
+            update_field_refs_for_variant(self, fields, "Request")
             # Using _create_data_model from parent class JsonSchemaParser
             # This method automatically adds frozen=True for DataClass types
             model = self._create_data_model(
@@ -1398,7 +1402,8 @@ class OpenAPIParser(JsonSchemaParser):
         """Load the models parameter models use that nothing else loaded, following only the references types use.
 
         Without --use-typed-nullable-map-values, parameter schemas load no references, as in 0.83.0, which failed
-        when a parameter used a model nothing else loaded.
+        when a parameter used a model nothing else loaded. A read/write variant is loaded with the schema it is a
+        variant of.
         """
         roots = {"/".join(root): root for _, root in self._parameter_models}
         attempted: set[str] = set()
@@ -1407,7 +1412,7 @@ class OpenAPIParser(JsonSchemaParser):
             self._loads_only_used_references = True
             try:
                 with self.model_resolver.current_base_path_context(Path()):
-                    for path in sorted(missing):
+                    for path in sorted({_source_path(path) for path in missing}):
                         if (root := roots.get(path.split("#", 1)[0])) is None:
                             self.resolve_ref(path)
                         else:
