@@ -1,0 +1,14 @@
+{
+  "structBesideCounts": {
+    "a": "int"
+  },
+  "itemsBesideCounts": [
+    "list",
+    {
+      "name": "str"
+    }
+  ],
+  "aliasBesideCounts": {
+    "name": "str"
+  }
+}

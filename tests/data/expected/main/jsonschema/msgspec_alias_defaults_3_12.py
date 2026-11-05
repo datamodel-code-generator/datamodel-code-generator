@@ -86,6 +86,8 @@ class AliasDefaults(Struct):
     empty_direct_list: list[Item] | UnsetType = field(default_factory=list)
     number: Number | UnsetType = 9
     numbers: Numbers | UnsetType = field(default_factory=lambda: [1, 2])
-    mapping: ItemMap | UnsetType = field(default_factory=lambda: {'item': {'id': 10}})
+    mapping: ItemMap | UnsetType = field(
+        default_factory=lambda: convert({'item': {'id': 10}}, type=ItemMap)
+    )
     empty_mapping: ItemMap | UnsetType = field(default_factory=dict)
     choices: Choices | UnsetType = field(default_factory=lambda: ['a'])

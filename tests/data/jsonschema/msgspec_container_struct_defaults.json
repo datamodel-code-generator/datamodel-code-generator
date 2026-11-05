@@ -1,0 +1,65 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "structMap": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/PodSpec"},
+      "default": {"a": {"name": "x"}}
+    },
+    "nestedLists": {
+      "type": "array",
+      "items": {"type": "array", "items": {"$ref": "#/$defs/PodSpec"}},
+      "default": [[{"name": "y"}]]
+    },
+    "structOrStringItems": {
+      "type": "array",
+      "items": {"anyOf": [{"$ref": "#/$defs/PodSpec"}, {"type": "string"}]},
+      "default": [{"name": "z"}, "s"]
+    },
+    "listMap": {
+      "type": "object",
+      "additionalProperties": {"type": "array", "items": {"$ref": "#/$defs/PodSpec"}},
+      "default": {"b": [{"name": "w"}]}
+    },
+    "mapList": {
+      "type": "array",
+      "items": {"type": "object", "additionalProperties": {"$ref": "#/$defs/PodSpec"}},
+      "default": [{"c": {"name": "v"}}]
+    },
+    "aliasMap": {"$ref": "#/$defs/PodMap", "default": {"d": {"name": "u"}}},
+    "emptyAliasMap": {"$ref": "#/$defs/PodMap", "default": {}},
+    "pair": {
+      "type": "array",
+      "prefixItems": [{"$ref": "#/$defs/PodSpec"}, {"type": "integer"}],
+      "minItems": 2,
+      "maxItems": 2,
+      "default": [{"name": "t"}, 1]
+    },
+    "structMapOrString": {
+      "anyOf": [{"type": "object", "additionalProperties": {"$ref": "#/$defs/PodSpec"}}, {"type": "string"}],
+      "default": {"e": {"name": "r"}}
+    },
+    "nestedListsOrString": {
+      "anyOf": [{"type": "array", "items": {"type": "array", "items": {"$ref": "#/$defs/PodSpec"}}}, {"type": "string"}],
+      "default": [[{"name": "q"}]]
+    },
+    "enumOrStructItems": {
+      "type": "array",
+      "items": {"anyOf": [{"$ref": "#/$defs/Color"}, {"$ref": "#/$defs/PodSpec"}]},
+      "default": ["red", {"name": "p"}]
+    },
+    "counts": {"type": "object", "additionalProperties": {"type": "integer"}, "default": {"f": 1}},
+    "numberLists": {"type": "array", "items": {"type": "array", "items": {"type": "integer"}}, "default": [[1]]},
+    "PodSpec": {
+      "type": "array",
+      "items": {"type": "array", "items": {"$ref": "#/$defs/PodSpec"}},
+      "default": [[{"name": "o"}]]
+    }
+  },
+  "$defs": {
+    "PodSpec": {"type": "object", "properties": {"name": {"type": "string"}}},
+    "PodMap": {"type": "object", "additionalProperties": {"$ref": "#/$defs/PodSpec"}},
+    "Color": {"type": "string", "enum": ["red", "blue"]}
+  }
+}

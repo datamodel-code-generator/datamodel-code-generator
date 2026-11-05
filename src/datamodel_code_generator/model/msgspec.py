@@ -213,9 +213,10 @@ def _renamed_field_name_refused(name: str) -> bool:
 class _StructConversion:
     """The default factory that converts a default holding Structs: ``lambda: convert({...},  type=Model)``.
 
-    ``of_list`` converts to a list of ``target``; ``container`` is the list type whose hint names ``target``. Its text
-    names the models as the module finally names them. A default that holds an object for a Struct msgspec reads from
-    an array is converted from attributes (``from_attributes``, ``_attribute_default``).
+    ``of_list`` converts to a list of ``target``; ``container`` is the type, holding ``target``, that it converts to as
+    its hint writes it, a quoted reference named directly. Its text names the models as the module finally names them.
+    A default that holds an object for a Struct msgspec reads from an array is converted from attributes
+    (``from_attributes``, ``_attribute_default``).
     """
 
     method: str
@@ -240,13 +241,15 @@ class _StructConversion:
     @override
     def __str__(self) -> str:
         """Return the factory as the field's call writes it."""
-        name = _default_factory_type_name(self.target)
         if self.of_list:
-            type_text = subscript_text("list", (name,))
+            type_text = subscript_text("list", (_default_factory_type_name(self.target),))
         elif self.container is not None:
-            type_text = self.container.type_hint.replace(self.target.alias or name, name)
+            type_text = self.container.type_hint
+            for nested in self.container.all_data_types:
+                if nested._is_quoted_reference:  # noqa: SLF001
+                    type_text = type_text.replace(cast("str", nested.alias), _default_factory_type_name(nested))
         else:
-            type_text = name
+            type_text = _default_factory_type_name(self.target)
         converted = self._converted
         options = "" if converted is self.default else ", from_attributes=True"
         return f"lambda: {self.method}({represent_python_value(converted)},  type={type_text}{options})"
@@ -488,6 +491,29 @@ def _reads_arrays(struct: Struct) -> bool:
     ancestry = reach((struct,), lambda current: reversed(_struct_bases(current)), key=id)
     options = (_user_struct_options(current).get("array_like") for current in ancestry)
     return next((value in {True, "True"} for value in options if value is not None), False)
+
+
+def _names_structs(data_type: DataType, aliases: frozenset[int], *, containers: bool = True) -> bool:
+    """Return whether a default converts to a type: whether it names a Struct, also through the type aliases it names.
+
+    A type that holds a union of a mapping beside other members converts to none: msgspec takes no Struct beside a
+    mapping, and the default stays the value, as beside a dict member of the field's union. ``aliases`` holds the
+    aliases, by id, whose values are read already. Without ``containers`` the items and values of arrays and mappings
+    are left out, as an empty default holds none.
+    """
+    pending, followed, found = [data_type], set(aliases), False
+    while pending:
+        if (reference := (current := pending.pop()).reference) is not None:
+            if isinstance(source := reference.source, Struct):
+                found = True
+            elif isinstance(source, TypeAliasBase) and source.fields and id(source) not in followed:
+                followed.add(id(source))
+                pending.append(source.fields[0].data_type)
+        elif containers or not (current in ARRAYS or current in MAPPINGS):
+            if len(members := current.data_types) > 1 and any(member in MAPPINGS for member in members):
+                return False
+            pending.extend(members)
+    return found
 
 
 def _is_instance_field(field: DataModelFieldBase) -> bool:
@@ -1934,43 +1960,73 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         return self._meta_call() is not None
 
     def _get_default_as_struct_model(self) -> _StructConversion | None:
-        """Convert default value to Struct model using msgspec convert."""
+        """Return the factory that converts the default to the Structs of the field's type, or None.
+
+        A field of several types converts it to one member (``_union_default_as_struct_model``), a field typed as a list
+        itself by its items (``_list_items_conversion``) and any other field to its one member (``_member_conversion``).
+        """
         if self._uses_empty_builtin_container_factory():
             return None
         members = self._non_none_members(self.data_type)
         if self.data_type.is_union or len(members) > 1:
             return self._union_default_as_struct_model(members)
+        if self.data_type.is_list:
+            return self._list_items_conversion()
+        return next(map(self._member_conversion, members), None)
 
-        data_types = self.data_type.data_types or (self.data_type,)
-        if self.data_type.is_list and (item_type := data_types[0]).is_list:
+    def _list_items_conversion(self) -> _StructConversion | None:
+        """Convert the default of a field typed as a list itself to the list, as its hint writes it.
+
+        An item that is a Struct, or a type alias whose value names Structs, also at the end of nested lists, converts
+        it; otherwise it converts as to an array that names Structs (``_written_conversion``).
+        """
+        items = self.data_type.data_types
+        if items and (item_type := items[0]).is_list:
             while item_type.is_list and len(item_type.data_types) == 1:
                 item_type = item_type.data_types[0]
             if item_type.reference and isinstance(item_type.reference.source, Struct):
-                data_types = (item_type,)
-
-        for data_type in data_types:
-            # TODO: Check nested data_types
-            if data_type.is_dict:
-                # TODO: Parse dict model for default
-                continue
-            if data_type.is_list and len(data_type.data_types) == 1:
-                data_type_child = data_type.data_types[0]
-                if (
-                    data_type_child.reference
-                    and (isinstance(data_type_child.reference.source, (Struct, TypeAliasBase)))
-                    and isinstance(self.default, list)
-                ):
-                    return self._list_conversion(data_type, data_type_child)
-            elif data_type.reference and (
-                isinstance(data_type.reference.source, Struct)
-                or (
-                    isinstance(data_type.reference.source, TypeAliasBase)
-                    and self._type_alias_needs_struct_conversion(data_type.reference.source)
-                )
+                items = [item_type]
+        for item in items:
+            if (reference := item.reference) and (
+                isinstance(source := reference.source, Struct)
+                or (isinstance(source, TypeAliasBase) and self._type_alias_needs_struct_conversion(source))
             ):
-                return _StructConversion(
-                    self._PARSE_METHOD, self.default, data_type, self.data_type if self.data_type.is_list else None
-                )
+                return _StructConversion(self._PARSE_METHOD, self.default, item, self.data_type)
+        return self._written_conversion(self.data_type)
+
+    def _member_conversion(self, member: DataType) -> _StructConversion | None:
+        """Return the factory that converts the default to one member of the field's type, or None.
+
+        A list of one Struct or type alias converts a list default to ``list[Item]`` (``_list_conversion``), a Struct
+        or a type alias whose value names Structs to its name, and any other array or mapping as its hint writes it
+        (``_written_conversion``).
+        """
+        if member.is_list and len(member.data_types) == 1:
+            if (
+                (child := member.data_types[0]).reference
+                and isinstance(child.reference.source, (Struct, TypeAliasBase))
+                and isinstance(self.default, list)
+            ):
+                return self._list_conversion(member, child)
+        elif (reference := member.reference) is not None:
+            if isinstance(source := reference.source, Struct) or (
+                isinstance(source, TypeAliasBase) and self._type_alias_needs_struct_conversion(source)
+            ):
+                return _StructConversion(self._PARSE_METHOD, self.default, member)
+            return None
+        return self._written_conversion(member)
+
+    def _written_conversion(self, data_type: DataType) -> _StructConversion | None:
+        """Convert the default to an array or a mapping that names Structs, as its hint writes it, where it fits it.
+
+        The default fits it as ``_takes_default`` reads it; an empty default names no Struct inside it.
+        """
+        if (
+            (data_type in ARRAYS or data_type in MAPPINGS)
+            and _takes_default(data_type, default := self.default)
+            and _names_structs(data_type, frozenset(), containers=bool(default))
+        ):
+            return _StructConversion(self._PARSE_METHOD, default, data_type, data_type)
         return None
 
     def _union_default_as_struct_model(self, members: Sequence[DataType]) -> _StructConversion | None:
@@ -1978,25 +2034,18 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
 
         ``members`` are the members the field's type writes (``_non_none_members``), a container of several types being
         one. A member takes the default as ``_takes_default`` reads it as JSON, else, where none does, from attributes,
-        and names Structs when it is a Struct, a type alias of one, or a list of a Struct or a type alias. An object
-        default beside a dict member stays the value.
+        and converts it as ``_member_conversion`` does. An object default beside a dict member converts only to a
+        dict member.
         """
-        if isinstance(default := self.default, dict) and any(member.is_dict for member in members):
-            return None
+        beside_dict = isinstance(default := self.default, dict) and any(member.is_dict for member in members)
         for attributes in (False, True):
             for member in members:
-                if not _takes_default(member, default, attributes=attributes):
-                    continue
-                if member.is_list and len(member.data_types) == 1:
-                    if (child := member.data_types[0]).reference and isinstance(
-                        child.reference.source, (Struct, TypeAliasBase)
-                    ):
-                        return self._list_conversion(member, child)
-                elif (reference := member.reference) and (
-                    isinstance(source := reference.source, Struct)
-                    or (isinstance(source, TypeAliasBase) and self._type_alias_needs_struct_conversion(source))
+                if (
+                    (member.is_dict or not beside_dict)
+                    and _takes_default(member, default, attributes=attributes)
+                    and (conversion := self._member_conversion(member)) is not None
                 ):
-                    return _StructConversion(self._PARSE_METHOD, default, member)
+                    return conversion
         return None
 
     def _list_conversion(self, data_type: DataType, item: DataType) -> _StructConversion:
@@ -2010,36 +2059,13 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         return _StructConversion(self._PARSE_METHOD, self.default, item, of_list=True)
 
     def _type_alias_needs_struct_conversion(self, source: TypeAliasBase) -> bool:
-        """Follow alias targets without changing direct defaults or empty factories."""
-        if (
-            not source.fields
-            or not isinstance(self.default, (dict, list))
-            or (isinstance(self.default, list) and not self.default)
-        ):
-            return False
+        """Return whether an array or object default converts to a type alias whose value names Structs.
 
-        pending = [source.fields[0].data_type]
-        visited = {id(source)}
-        has_struct = False
-        while pending:
-            data_type = pending.pop()
-            if data_type.is_dict:
-                # Mapping defaults remain outside the existing Struct conversion support.
-                return False
-            if data_type.reference:
-                referenced_model = data_type.reference.source
-                if isinstance(referenced_model, Struct):
-                    has_struct = True
-                elif (
-                    isinstance(referenced_model, TypeAliasBase)
-                    and referenced_model.fields
-                    and id(referenced_model) not in visited
-                ):
-                    visited.add(id(referenced_model))
-                    pending.append(referenced_model.fields[0].data_type)
-            else:
-                pending.extend(data_type.data_types)
-        return has_struct
+        An empty array converts to none, and an empty object to one whose value names a Struct outside its containers.
+        """
+        if not source.fields or not isinstance(default := self.default, (dict, list)) or default == []:
+            return False
+        return _names_structs(source.fields[0].data_type, frozenset({id(source)}), containers=bool(default))
 
     def _uses_empty_builtin_container_factory(self) -> bool:
         """Return whether an empty collection can use its zero-cost builtin factory."""
