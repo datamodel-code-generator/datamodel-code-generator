@@ -9380,6 +9380,11 @@ pydantic-dataclass	main/jsonschema/unique_items_as_set_model_items.py	= main/jso
 root-model-type-alias	main/jsonschema/unique_items_as_set_model_items.py	= main/jsonschema/unique_items_as_set_model_items~main_unique_items_as_set_model_items[root-model-type-alias].py
 type-alias	main/jsonschema/unique_items_as_set_model_items.py	= main/jsonschema/unique_items_as_set_model_items~main_unique_items_as_set_model_items[type-alias].py
 typed-dict	main/jsonschema/unique_items_as_set_model_items.py	= main/jsonschema/unique_items_as_set_model_items~main_unique_items_as_set_model_items[typed-dict].py
+[test_main_unique_items_as_set_msgspec_alias_beside_arrays]
+by-value	main/jsonschema/main_jsonschema/main_unique_items_as_set_msgspec_alias_beside_arrays[by-value].py
+by-value	main/jsonschema/main_jsonschema/main_unique_items_as_set_msgspec_alias_beside_arrays[by-value].txt
+without-option	main/jsonschema/main_jsonschema/main_unique_items_as_set_msgspec_alias_beside_arrays[without-option].py	= main/jsonschema/main_jsonschema/main_unique_items_as_set_msgspec_alias_beside_arrays[by-value].py
+without-option	main/jsonschema/main_jsonschema/main_unique_items_as_set_msgspec_alias_beside_arrays[without-option].txt	= main/jsonschema/main_jsonschema/main_unique_items_as_set_msgspec_alias_beside_arrays[by-value].txt
 [test_main_unique_items_as_set_nested_arrays]
 msgspec.Struct	main/jsonschema/unique_items_as_set_nested_arrays.py
 pydantic_v2.BaseModel	main/jsonschema/unique_items_as_set_nested_arrays.py	= main/jsonschema/unique_items_as_set_nested_arrays~main_unique_items_as_set_nested_arrays[pydantic_v2.BaseModel].py

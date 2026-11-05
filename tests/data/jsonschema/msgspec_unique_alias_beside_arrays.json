@@ -1,0 +1,40 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "holder": {"$ref": "#/$defs/Holder"},
+    "refused": {"$ref": "#/$defs/Refused"}
+  },
+  "$defs": {
+    "Holder": {
+      "type": "object",
+      "properties": {
+        "besideList": {
+          "anyOf": [
+            {"type": "array", "items": {"type": "integer"}, "uniqueItems": true},
+            {"type": "array", "items": {"type": "integer"}}
+          ]
+        },
+        "besideString": {
+          "anyOf": [{"type": "array", "items": {"type": "integer"}, "uniqueItems": true}, {"type": "string"}]
+        },
+        "pet": {"$ref": "#/$defs/Pet"}
+      }
+    },
+    "Refused": {
+      "type": "object",
+      "properties": {
+        "sharedBesideList": {"anyOf": [{"$ref": "#/$defs/Tags"}, {"type": "array", "items": {"type": "string"}}]},
+        "shared": {"$ref": "#/$defs/Tags"},
+        "besideUniqueList": {
+          "anyOf": [
+            {"type": "array", "items": {"type": "integer"}, "uniqueItems": true},
+            {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+          ]
+        }
+      }
+    },
+    "Pet": {"type": "object", "properties": {"name": {"type": "string"}}},
+    "Tags": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+  }
+}

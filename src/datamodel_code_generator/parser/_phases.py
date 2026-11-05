@@ -81,6 +81,8 @@ class DecisionOptions:
     """--use-tuple-for-closed-arrays writes a closed array as a tuple, which keeps its positions."""
     user_imports: bool = False
     """--additional-imports may shadow the builtin annotations that hashability reads."""
+    decodes_value_unions: bool = True
+    """The output decodes a union of any value types; msgspec decodes one member of each kind only."""
 
 
 @final

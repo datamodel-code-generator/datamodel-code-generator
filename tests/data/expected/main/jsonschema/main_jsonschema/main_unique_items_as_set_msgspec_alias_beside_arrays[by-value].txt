@@ -1,0 +1,5 @@
+{
+  "besideList": "list",
+  "besideString": "set",
+  "pet": "Pet"
+}
