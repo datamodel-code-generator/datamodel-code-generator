@@ -919,9 +919,9 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         title="One model per reference site",
         config=PresetConfig(use_one_model_per_ref_site=True),
         description=(
-            "Give an object $ref with sibling keywords one model per place it is written, which every copy of that "
-            "place shares, so a chain of N such references gives N-1 models instead of N(N+1)/2, parsed without "
-            "nesting."
+            "Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy "
+            "of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed "
+            "without nesting."
         ),
     ),
     PresetOptionGroup(

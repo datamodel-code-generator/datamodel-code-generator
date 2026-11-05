@@ -770,11 +770,11 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Use one literal as default value for one literal field
   --use-one-model-per-ref-site, --no-use-one-model-per-ref-site
                         Give an object $ref with sibling keywords one model
-                        per place it is written, which every copy of that
-                        place shares, and parse such chains without nesting;
-                        without it each path that reaches the place gets a
-                        model of its own (N(N+1)/2 models for a chain of N),
-                        as in 0.89.0.
+                        per place it is written, which every unchanged copy of
+                        that place shares, and parse such chains without
+                        nesting; without it each path that reaches the place
+                        gets a model of its own (N(N-1)/2 site models for a
+                        chain of N definitions), as in 0.89.0.
   --use-root-model-type-alias
                         Use type alias format for RootModel (e.g., Foo =
                         RootModel[Bar]) instead of class inheritance (Pydantic

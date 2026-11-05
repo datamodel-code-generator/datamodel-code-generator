@@ -894,9 +894,9 @@ _toggle(
 _toggle(
     typing_options,
     "--use-one-model-per-ref-site",
-    help="Give an object $ref with sibling keywords one model per place it is written, which every copy of that place "
-    "shares, and parse such chains without nesting; without it each path that reaches the place gets a model of its "
-    "own (N(N+1)/2 models for a chain of N), as in 0.89.0.",
+    help="Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of "
+    "that place shares, and parse such chains without nesting; without it each path that reaches the place gets a "
+    "model of its own (N(N-1)/2 site models for a chain of N definitions), as in 0.89.0.",
 )
 _deprecated_flag(typing_options, "--set-default-enum-member")
 typing_options.add_argument(

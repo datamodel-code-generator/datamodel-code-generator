@@ -5123,11 +5123,13 @@ Give an object `$ref` with sibling keywords one model per place it is written.
 
 A `$ref` beside other keywords is parsed as its target merged with them. Without this option the merged object is
 parsed at the path that reaches it, and the copy of each such `$ref` its target holds is parsed again below it, so a
-chain of N definitions whose `next` is a `$ref` to the next one beside `required` gives N(N+1)/2 models (`Next`,
-`Next1`, ... that validate the same documents), one nested parse per hop, which stops with "Schema nesting is too deep"
-for a long chain. With it each place such a `$ref` is written, with the `$dynamicAnchor` bindings of its dynamic scope,
-gets one model, which every unchanged copy of the place shares, parsed from a worklist without nesting: N-1 models
-beside the N definitions. The field that holds the `$ref` keeps its own required, default and alias.
+chain of N definitions whose `next` is a `$ref` to the next one beside `required` gives N(N-1)/2 site models (`Next`,
+`Next1`, ..., where the copies of one place, such as `Next1` and `Next4`, validate the same documents), one nested
+parse per hop, which stops with "Schema nesting is too deep" for a long chain. With it each place such a `$ref` is
+written, with the `$dynamicAnchor` bindings of its dynamic scope, gets one model, which every unchanged copy of the
+place shares, parsed from a worklist without nesting: N-1 site models beside the N definitions. The field that holds
+the `$ref` keeps its own required, default and alias. Where `--read-only-write-only-model-type request-response`
+splits the models, the model of a place is parsed where it is first met, so a chain still nests one parse per hop.
 
 !!! tip "Usage"
 

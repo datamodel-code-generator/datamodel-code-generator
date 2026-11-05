@@ -8543,7 +8543,7 @@
         "title": "Dynamic anchors read in document order"
       },
       {
-        "description": "Give an object $ref with sibling keywords one model per place it is written, which every copy of that place shares, so a chain of N such references gives N-1 models instead of N(N+1)/2, parsed without nesting.",
+        "description": "Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting.",
         "options": [
           "--use-one-model-per-ref-site"
         ],
@@ -8900,7 +8900,7 @@
         "title": "Dynamic anchors read in document order"
       },
       {
-        "description": "Give an object $ref with sibling keywords one model per place it is written, which every copy of that place shares, so a chain of N such references gives N-1 models instead of N(N+1)/2, parsed without nesting.",
+        "description": "Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting.",
         "options": [
           "--use-one-model-per-ref-site"
         ],
@@ -9257,7 +9257,7 @@
         "title": "Dynamic anchors read in document order"
       },
       {
-        "description": "Give an object $ref with sibling keywords one model per place it is written, which every copy of that place shares, so a chain of N such references gives N-1 models instead of N(N+1)/2, parsed without nesting.",
+        "description": "Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting.",
         "options": [
           "--use-one-model-per-ref-site"
         ],
@@ -9614,7 +9614,7 @@
         "title": "Dynamic anchors read in document order"
       },
       {
-        "description": "Give an object $ref with sibling keywords one model per place it is written, which every copy of that place shares, so a chain of N such references gives N-1 models instead of N(N+1)/2, parsed without nesting.",
+        "description": "Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting.",
         "options": [
           "--use-one-model-per-ref-site"
         ],
@@ -9971,7 +9971,7 @@
         "title": "Dynamic anchors read in document order"
       },
       {
-        "description": "Give an object $ref with sibling keywords one model per place it is written, which every copy of that place shares, so a chain of N such references gives N-1 models instead of N(N+1)/2, parsed without nesting.",
+        "description": "Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting.",
         "options": [
           "--use-one-model-per-ref-site"
         ],
@@ -10328,7 +10328,7 @@
         "title": "Dynamic anchors read in document order"
       },
       {
-        "description": "Give an object $ref with sibling keywords one model per place it is written, which every copy of that place shares, so a chain of N such references gives N-1 models instead of N(N+1)/2, parsed without nesting.",
+        "description": "Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting.",
         "options": [
           "--use-one-model-per-ref-site"
         ],
@@ -10678,7 +10678,7 @@
         "title": "Dynamic anchors read in document order"
       },
       {
-        "description": "Give an object $ref with sibling keywords one model per place it is written, which every copy of that place shares, so a chain of N such references gives N-1 models instead of N(N+1)/2, parsed without nesting.",
+        "description": "Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting.",
         "options": [
           "--use-one-model-per-ref-site"
         ],
@@ -11065,7 +11065,7 @@
         "title": "Dynamic anchors read in document order"
       },
       {
-        "description": "Give an object $ref with sibling keywords one model per place it is written, which every copy of that place shares, so a chain of N such references gives N-1 models instead of N(N+1)/2, parsed without nesting.",
+        "description": "Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting.",
         "options": [
           "--use-one-model-per-ref-site"
         ],
@@ -11452,7 +11452,7 @@
         "title": "Dynamic anchors read in document order"
       },
       {
-        "description": "Give an object $ref with sibling keywords one model per place it is written, which every copy of that place shares, so a chain of N such references gives N-1 models instead of N(N+1)/2, parsed without nesting.",
+        "description": "Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting.",
         "options": [
           "--use-one-model-per-ref-site"
         ],
@@ -11839,7 +11839,7 @@
         "title": "Dynamic anchors read in document order"
       },
       {
-        "description": "Give an object $ref with sibling keywords one model per place it is written, which every copy of that place shares, so a chain of N such references gives N-1 models instead of N(N+1)/2, parsed without nesting.",
+        "description": "Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting.",
         "options": [
           "--use-one-model-per-ref-site"
         ],
@@ -12226,7 +12226,7 @@
         "title": "Dynamic anchors read in document order"
       },
       {
-        "description": "Give an object $ref with sibling keywords one model per place it is written, which every copy of that place shares, so a chain of N such references gives N-1 models instead of N(N+1)/2, parsed without nesting.",
+        "description": "Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting.",
         "options": [
           "--use-one-model-per-ref-site"
         ],
@@ -12613,7 +12613,7 @@
         "title": "Dynamic anchors read in document order"
       },
       {
-        "description": "Give an object $ref with sibling keywords one model per place it is written, which every copy of that place shares, so a chain of N such references gives N-1 models instead of N(N+1)/2, parsed without nesting.",
+        "description": "Give an object $ref with sibling keywords one model per place it is written, which every unchanged copy of that place shares, so a chain of N definitions gives N-1 site models instead of N(N-1)/2, parsed without nesting.",
         "options": [
           "--use-one-model-per-ref-site"
         ],
