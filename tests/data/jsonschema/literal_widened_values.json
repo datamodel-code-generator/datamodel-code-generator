@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "floats": {"type": "number", "enum": [1.5, 2.5]},
+    "mixed": {"type": "number", "enum": [1, 1.5]},
+    "single": {"type": "number", "enum": [2.5]},
+    "nullable": {"type": ["number", "null"], "enum": [0.5, null]},
+    "items": {"type": "array", "items": {"type": "number", "enum": [3, 3.5]}},
+    "objects": {"enum": [[1, 2], {"a": 1}]},
+    "one_bool": {"enum": [true]},
+    "both_bools": {"enum": [true, false]},
+    "ints": {"type": "integer", "enum": [1, 2]},
+    "const_float": {"const": 1.5},
+    "const_bool": {"const": true},
+    "const_consts": {"anyOf": [{"const": 4.5}, {"const": "x"}]},
+    "named": {"$ref": "#/$defs/Ratio"}
+  },
+  "$defs": {
+    "Ratio": {"type": "number", "enum": [0.25, 0.75]}
+  }
+}

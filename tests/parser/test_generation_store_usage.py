@@ -330,6 +330,7 @@ def test_checker_uses_generation_store_api_surface() -> None:
             "override_type_import",
             "record_dropped_multiple_of",
             "record_values_as_written",
+            "record_widened_values",
             "redirect_model_reference_users",
             "redirect_reference_users",
             "register_model",

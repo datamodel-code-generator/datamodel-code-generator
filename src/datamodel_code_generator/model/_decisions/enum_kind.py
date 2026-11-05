@@ -40,6 +40,7 @@ __all__ = [
     "json_type",
     "keeps_member_value",
     "literal_value_kind",
+    "values_no_literal_holds",
 ]
 
 EnumOrigin: TypeAlias = Literal["schema", "graphql", "merged"]
@@ -348,6 +349,23 @@ def is_literal_kind(kind: LiteralValueKind, /, *, bool_literals: bool = True) ->
     values given as discriminator tags read this.
     """
     return kind in {"int", "str"} or (bool_literals and kind == "bool")
+
+
+def values_no_literal_holds(values: Iterable[object], /, *, bool_literals: bool) -> tuple[object, ...]:
+    """Return the values of an enum or a const that its type admits others beside, as no ``Literal`` holds them.
+
+    The type of such a value (``is_literal_kind``) is written in its place: a float, a list or an object value admits
+    any other of its type, and a bool where the output writes no bool literals, unless both bools are values. ``None``
+    is no such value.
+    """
+    listed = (*values,)
+    both_bools = any(value is True for value in listed) and any(value is False for value in listed)
+    return tuple(
+        value
+        for value in listed
+        if (kind := literal_value_kind(value)) != "none"
+        and not is_literal_kind(kind, bool_literals=bool_literals or both_bools)
+    )
 
 
 def is_tag_kind(kind: LiteralValueKind, /) -> bool:

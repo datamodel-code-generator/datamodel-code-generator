@@ -1,0 +1,5 @@
+a Literal of the output model cannot hold the values 1.5 and 2.5, so they are written as their types, which admit other values; Floats is generated without this constraint.
+a Literal of the output model cannot hold the value 1.5, so it is written as its type, which admits other values; Numbers is generated without this constraint.
+a Literal of the output model cannot hold the value True, so it is written as its type, which admits other values; Aliased is generated without this constraint.
+a Literal of the output model cannot hold the value ['a'], so it is written as its type, which admits other values; Listed is generated without this constraint.
+a Literal of the output model cannot hold the values ['a'] and ['b'], so they are written as their types, which admit other values; ListOnly is generated without this constraint.
