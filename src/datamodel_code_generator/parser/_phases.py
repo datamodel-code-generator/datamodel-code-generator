@@ -177,7 +177,7 @@ class _DecisionWriter:
         self._changed[id(model)] = cast("DataModel", model)
 
     def write_sets(
-        self, model: ModelView, field: FieldView, lists: Sequence[DataTypeView], default: set[Any] | None
+        self, model: ModelView, field: FieldView, lists: Sequence[DataTypeView], default: object | None
     ) -> None:
         """Write each of ``lists``, types of ``field`` of ``model``, as a set, and ``default`` (``UniqueSetsWriter``).
 
