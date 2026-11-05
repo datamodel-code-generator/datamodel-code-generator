@@ -741,6 +741,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Name inline oneOf/anyOf branch models after the value
                         of their tag field (Pet + type: "cat" -> PetCat)
                         instead of Pet1, Pet2
+  --keep-constrained-root-models-in-every-container, --no-keep-constrained-root-models-in-every-container
+                        Under --collapse-root-models with --field-constraints,
+                        keep a root model whose root field has constraints
+                        named inside any container of its holder, a set,
+                        frozen set, Sequence or Mapping as well as a list,
+                        dict or union, as `Field()` could not carry them
+                        there; without it such a root model is inlined into
+                        those containers and its constraints are lost, as in
+                        0.89.0
   --keep-model-order    Keep generated models' order
   --keyword-only        Defined models as keyword only (for example
                         dataclass(kw_only=True)).

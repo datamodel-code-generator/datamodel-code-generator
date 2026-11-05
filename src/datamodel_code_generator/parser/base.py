@@ -1329,6 +1329,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.collapse_root_models = config.collapse_root_models
         self.collapse_root_models_name_strategy = config.collapse_root_models_name_strategy
         self.collapse_shared_parent_wrappers = config.collapse_shared_parent_wrappers
+        self.keep_constrained_root_models_in_every_container = config.keep_constrained_root_models_in_every_container
         self.collapse_reuse_models = config.collapse_reuse_models
         self.skip_root_model = config.skip_root_model
         self.use_root_model_sequence_interface = config.use_root_model_sequence_interface

@@ -5661,6 +5661,10 @@ python-3.14	main/jsonschema/identifier_case_target_314.py
 	main/jsonschema/class_name_suffix/output.py
 [test_main_class_name_suffix_with_class_name]
 	main/jsonschema/class_name_suffix_with_class_name/output.py
+[test_main_collapse_constrained_roots_in_containers]
+msgspec	main/jsonschema/collapse_constrained_roots_in_containers.py
+pydantic	main/jsonschema/collapse_constrained_roots_in_containers.py	= main/jsonschema/collapse_constrained_roots_in_containers~main_collapse_constrained_roots_in_containers[pydantic].py
+without-option	main/jsonschema/collapse_constrained_roots_in_containers.py	= main/jsonschema/collapse_constrained_roots_in_containers~main_collapse_constrained_roots_in_containers[without-option].py
 [test_main_combined_array]
 	main/jsonschema/combined_array.py
 [test_main_complicated_enum_default_member]

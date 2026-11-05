@@ -29,6 +29,8 @@ intersect-allof-keywords-practical	main/preset_opt_in_options/preset_sets_opt_in
 intersect-allof-keywords-standard	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-allof-keywords-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[intersect-allof-keywords-practical].py
 intersect-combined-schema-keywords-practical	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-combined-schema-keywords-practical].py
 intersect-combined-schema-keywords-standard	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-combined-schema-keywords-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[intersect-combined-schema-keywords-practical].py
+keep-constrained-root-models-in-every-container-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-root-models-in-every-container-practical].py
+keep-constrained-root-models-in-every-container-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-root-models-in-every-container-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-root-models-in-every-container-practical].py
 keep-enum-member-values-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-enum-member-values-practical].py
 keep-enum-member-values-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-enum-member-values-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-enum-member-values-practical].py
 keep-field-defaults-off-branch-roots-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-field-defaults-off-branch-roots-practical].py

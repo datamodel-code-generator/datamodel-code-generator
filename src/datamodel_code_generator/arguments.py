@@ -480,6 +480,14 @@ _toggle(
 )
 _toggle(
     model_options,
+    "--keep-constrained-root-models-in-every-container",
+    help="Under --collapse-root-models with --field-constraints, keep a root model whose root field has constraints "
+    "named inside any container of its holder, a set, frozen set, Sequence or Mapping as well as a list, dict or "
+    "union, as `Field()` could not carry them there; without it such a root model is inlined into those "
+    "containers and its constraints are lost, as in 0.89.0",
+)
+_toggle(
+    model_options,
     "--collapse-reuse-models",
     help="When used with --reuse-model, collapse duplicate models by replacing references instead of creating "
     "empty inheritance subclasses. This eliminates 'class Foo(Bar): pass' patterns",
