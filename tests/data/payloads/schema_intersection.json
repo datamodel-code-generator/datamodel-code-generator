@@ -7801,5 +7801,190 @@
         ]
       }
     }
+  },
+  "allof_union_parts": {
+    "model": "Model",
+    "fields": {
+      "inline": {
+        "valid": [
+          {
+            "a": "x",
+            "c": "y"
+          }
+        ],
+        "invalid": [
+          {
+            "c": "y"
+          },
+          {
+            "a": "x"
+          }
+        ]
+      },
+      "refs": {
+        "valid": [
+          {
+            "a": "x",
+            "c": "y"
+          }
+        ],
+        "invalid": [
+          {
+            "c": "y"
+          },
+          {
+            "a": "x"
+          }
+        ]
+      },
+      "roots": {
+        "valid": [
+          {
+            "b": "x",
+            "d": "y"
+          }
+        ],
+        "invalid": [
+          {
+            "b": "x"
+          }
+        ]
+      },
+      "same": {
+        "valid": [
+          {
+            "a": "x"
+          },
+          {
+            "a": "x",
+            "b": "y"
+          }
+        ],
+        "invalid": [
+          {
+            "c": "x"
+          }
+        ]
+      },
+      "hierarchy": {
+        "valid": [
+          {
+            "a": "x"
+          },
+          {
+            "name": "n",
+            "meow": true
+          }
+        ],
+        "invalid": [
+          "x"
+        ]
+      },
+      "withvalue": {
+        "valid": [
+          {
+            "a": "p",
+            "c": "q",
+            "x": 1
+          }
+        ],
+        "invalid": [
+          {
+            "a": "p",
+            "c": "q"
+          },
+          "s"
+        ]
+      },
+      "nulls": {
+        "valid": [
+          {
+            "a": "x",
+            "c": "y"
+          }
+        ],
+        "invalid": [
+          {
+            "a": "x"
+          }
+        ]
+      },
+      "field": {
+        "valid": [
+          {
+            "a": "x",
+            "c": "y"
+          }
+        ],
+        "invalid": [
+          {
+            "c": "y"
+          }
+        ]
+      },
+      "many": {
+        "valid": [
+          {
+            "p0": "a",
+            "q0": "b",
+            "r0": "c"
+          }
+        ],
+        "invalid": [
+          {
+            "p0": "a"
+          }
+        ]
+      }
+    }
+  },
+  "allof_union_through_ref": {
+    "model": "Model",
+    "fields": {
+      "leaf": {
+        "valid": [
+          {
+            "left": "l"
+          },
+          {
+            "right": "r",
+            "leaf": "x"
+          }
+        ],
+        "invalid": [
+          {},
+          {
+            "left": 1
+          }
+        ]
+      },
+      "narrowed": {
+        "valid": [
+          {
+            "left": "l",
+            "mid": "abc"
+          }
+        ],
+        "invalid": [
+          {
+            "left": "l",
+            "mid": "abcd"
+          }
+        ]
+      },
+      "through_own_union": {
+        "valid": [
+          {
+            "id": "i",
+            "c": "x"
+          }
+        ],
+        "invalid": [
+          {
+            "c": "x"
+          }
+        ]
+      }
+    }
   }
 }

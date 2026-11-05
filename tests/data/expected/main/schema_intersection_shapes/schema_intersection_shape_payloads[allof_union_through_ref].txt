@@ -1,0 +1,96 @@
+pydantic_v2.BaseModel default leaf {"left": "l"} accepted
+pydantic_v2.BaseModel default leaf {"right": "r", "leaf": "x"} accepted
+pydantic_v2.BaseModel default leaf {} accepted
+pydantic_v2.BaseModel default leaf {"left": 1} accepted
+pydantic_v2.BaseModel default narrowed {"left": "l", "mid": "abc"} accepted
+pydantic_v2.BaseModel default narrowed {"left": "l", "mid": "abcd"} rejected
+pydantic_v2.BaseModel default through_own_union {"id": "i", "c": "x"} accepted
+pydantic_v2.BaseModel default through_own_union {"c": "x"} accepted
+pydantic_v2.dataclass default leaf {"left": "l"} accepted
+pydantic_v2.dataclass default leaf {"right": "r", "leaf": "x"} accepted
+pydantic_v2.dataclass default leaf {} accepted
+pydantic_v2.dataclass default leaf {"left": 1} accepted
+pydantic_v2.dataclass default narrowed {"left": "l", "mid": "abc"} accepted
+pydantic_v2.dataclass default narrowed {"left": "l", "mid": "abcd"} rejected
+pydantic_v2.dataclass default through_own_union {"id": "i", "c": "x"} accepted
+pydantic_v2.dataclass default through_own_union {"c": "x"} accepted
+msgspec.Struct default leaf {"left": "l"} import error
+msgspec.Struct default leaf {"right": "r", "leaf": "x"} import error
+msgspec.Struct default leaf {} import error
+msgspec.Struct default leaf {"left": 1} import error
+msgspec.Struct default narrowed {"left": "l", "mid": "abc"} import error
+msgspec.Struct default narrowed {"left": "l", "mid": "abcd"} import error
+msgspec.Struct default through_own_union {"id": "i", "c": "x"} import error
+msgspec.Struct default through_own_union {"c": "x"} import error
+pydantic_v2.BaseModel --field-constraints leaf {"left": "l"} accepted
+pydantic_v2.BaseModel --field-constraints leaf {"right": "r", "leaf": "x"} accepted
+pydantic_v2.BaseModel --field-constraints leaf {} accepted
+pydantic_v2.BaseModel --field-constraints leaf {"left": 1} accepted
+pydantic_v2.BaseModel --field-constraints narrowed {"left": "l", "mid": "abc"} accepted
+pydantic_v2.BaseModel --field-constraints narrowed {"left": "l", "mid": "abcd"} rejected
+pydantic_v2.BaseModel --field-constraints through_own_union {"id": "i", "c": "x"} accepted
+pydantic_v2.BaseModel --field-constraints through_own_union {"c": "x"} accepted
+pydantic_v2.BaseModel --use-annotated leaf {"left": "l"} accepted
+pydantic_v2.BaseModel --use-annotated leaf {"right": "r", "leaf": "x"} accepted
+pydantic_v2.BaseModel --use-annotated leaf {} accepted
+pydantic_v2.BaseModel --use-annotated leaf {"left": 1} accepted
+pydantic_v2.BaseModel --use-annotated narrowed {"left": "l", "mid": "abc"} accepted
+pydantic_v2.BaseModel --use-annotated narrowed {"left": "l", "mid": "abcd"} rejected
+pydantic_v2.BaseModel --use-annotated through_own_union {"id": "i", "c": "x"} accepted
+pydantic_v2.BaseModel --use-annotated through_own_union {"c": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models leaf {"left": "l"} accepted
+pydantic_v2.BaseModel --collapse-root-models leaf {"right": "r", "leaf": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models leaf {} accepted
+pydantic_v2.BaseModel --collapse-root-models leaf {"left": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models narrowed {"left": "l", "mid": "abc"} accepted
+pydantic_v2.BaseModel --collapse-root-models narrowed {"left": "l", "mid": "abcd"} rejected
+pydantic_v2.BaseModel --collapse-root-models through_own_union {"id": "i", "c": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models through_own_union {"c": "x"} accepted
+msgspec.Struct --collapse-root-models leaf {"left": "l"} import error
+msgspec.Struct --collapse-root-models leaf {"right": "r", "leaf": "x"} import error
+msgspec.Struct --collapse-root-models leaf {} import error
+msgspec.Struct --collapse-root-models leaf {"left": 1} import error
+msgspec.Struct --collapse-root-models narrowed {"left": "l", "mid": "abc"} import error
+msgspec.Struct --collapse-root-models narrowed {"left": "l", "mid": "abcd"} import error
+msgspec.Struct --collapse-root-models through_own_union {"id": "i", "c": "x"} import error
+msgspec.Struct --collapse-root-models through_own_union {"c": "x"} import error
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs leaf {"left": "l"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs leaf {"right": "r", "leaf": "x"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs leaf {} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs leaf {"left": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs narrowed {"left": "l", "mid": "abc"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs narrowed {"left": "l", "mid": "abcd"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs through_own_union {"id": "i", "c": "x"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs through_own_union {"c": "x"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs leaf {"left": "l"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs leaf {"right": "r", "leaf": "x"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs leaf {} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs leaf {"left": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs narrowed {"left": "l", "mid": "abc"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs narrowed {"left": "l", "mid": "abcd"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs through_own_union {"id": "i", "c": "x"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs through_own_union {"c": "x"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs leaf {"left": "l"} import error
+msgspec.Struct --use-site-models-for-constrained-refs leaf {"right": "r", "leaf": "x"} import error
+msgspec.Struct --use-site-models-for-constrained-refs leaf {} import error
+msgspec.Struct --use-site-models-for-constrained-refs leaf {"left": 1} import error
+msgspec.Struct --use-site-models-for-constrained-refs narrowed {"left": "l", "mid": "abc"} import error
+msgspec.Struct --use-site-models-for-constrained-refs narrowed {"left": "l", "mid": "abcd"} import error
+msgspec.Struct --use-site-models-for-constrained-refs through_own_union {"id": "i", "c": "x"} import error
+msgspec.Struct --use-site-models-for-constrained-refs through_own_union {"c": "x"} import error
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs leaf {"left": "l"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs leaf {"right": "r", "leaf": "x"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs leaf {} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs leaf {"left": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs narrowed {"left": "l", "mid": "abc"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs narrowed {"left": "l", "mid": "abcd"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs through_own_union {"id": "i", "c": "x"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs through_own_union {"c": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs leaf {"left": "l"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs leaf {"right": "r", "leaf": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs leaf {} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs leaf {"left": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs narrowed {"left": "l", "mid": "abc"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs narrowed {"left": "l", "mid": "abcd"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs through_own_union {"id": "i", "c": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs through_own_union {"c": "x"} accepted

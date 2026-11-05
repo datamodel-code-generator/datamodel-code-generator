@@ -8501,7 +8501,7 @@
         "title": "Combined schema keywords intersected"
       },
       {
-        "description": "Read a $ref branch of an anyOf or oneOf with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
+        "description": "Give an allOf one union variant per combination of the branches of the anyOf and oneOf it holds, also through a $ref member, read a $ref branch with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
         "options": [
           "--distribute-allof-over-unions"
         ],
@@ -8837,7 +8837,7 @@
         "title": "Combined schema keywords intersected"
       },
       {
-        "description": "Read a $ref branch of an anyOf or oneOf with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
+        "description": "Give an allOf one union variant per combination of the branches of the anyOf and oneOf it holds, also through a $ref member, read a $ref branch with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
         "options": [
           "--distribute-allof-over-unions"
         ],
@@ -9173,7 +9173,7 @@
         "title": "Combined schema keywords intersected"
       },
       {
-        "description": "Read a $ref branch of an anyOf or oneOf with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
+        "description": "Give an allOf one union variant per combination of the branches of the anyOf and oneOf it holds, also through a $ref member, read a $ref branch with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
         "options": [
           "--distribute-allof-over-unions"
         ],
@@ -9509,7 +9509,7 @@
         "title": "Combined schema keywords intersected"
       },
       {
-        "description": "Read a $ref branch of an anyOf or oneOf with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
+        "description": "Give an allOf one union variant per combination of the branches of the anyOf and oneOf it holds, also through a $ref member, read a $ref branch with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
         "options": [
           "--distribute-allof-over-unions"
         ],
@@ -9845,7 +9845,7 @@
         "title": "Combined schema keywords intersected"
       },
       {
-        "description": "Read a $ref branch of an anyOf or oneOf with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
+        "description": "Give an allOf one union variant per combination of the branches of the anyOf and oneOf it holds, also through a $ref member, read a $ref branch with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
         "options": [
           "--distribute-allof-over-unions"
         ],
@@ -10181,7 +10181,7 @@
         "title": "Combined schema keywords intersected"
       },
       {
-        "description": "Read a $ref branch of an anyOf or oneOf with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
+        "description": "Give an allOf one union variant per combination of the branches of the anyOf and oneOf it holds, also through a $ref member, read a $ref branch with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
         "options": [
           "--distribute-allof-over-unions"
         ],
@@ -10510,7 +10510,7 @@
         "title": "Combined schema keywords intersected"
       },
       {
-        "description": "Read a $ref branch of an anyOf or oneOf with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
+        "description": "Give an allOf one union variant per combination of the branches of the anyOf and oneOf it holds, also through a $ref member, read a $ref branch with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
         "options": [
           "--distribute-allof-over-unions"
         ],
@@ -10876,7 +10876,7 @@
         "title": "Combined schema keywords intersected"
       },
       {
-        "description": "Read a $ref branch of an anyOf or oneOf with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
+        "description": "Give an allOf one union variant per combination of the branches of the anyOf and oneOf it holds, also through a $ref member, read a $ref branch with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
         "options": [
           "--distribute-allof-over-unions"
         ],
@@ -11242,7 +11242,7 @@
         "title": "Combined schema keywords intersected"
       },
       {
-        "description": "Read a $ref branch of an anyOf or oneOf with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
+        "description": "Give an allOf one union variant per combination of the branches of the anyOf and oneOf it holds, also through a $ref member, read a $ref branch with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
         "options": [
           "--distribute-allof-over-unions"
         ],
@@ -11608,7 +11608,7 @@
         "title": "Combined schema keywords intersected"
       },
       {
-        "description": "Read a $ref branch of an anyOf or oneOf with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
+        "description": "Give an allOf one union variant per combination of the branches of the anyOf and oneOf it holds, also through a $ref member, read a $ref branch with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
         "options": [
           "--distribute-allof-over-unions"
         ],
@@ -11974,7 +11974,7 @@
         "title": "Combined schema keywords intersected"
       },
       {
-        "description": "Read a $ref branch of an anyOf or oneOf with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
+        "description": "Give an allOf one union variant per combination of the branches of the anyOf and oneOf it holds, also through a $ref member, read a $ref branch with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
         "options": [
           "--distribute-allof-over-unions"
         ],
@@ -12340,7 +12340,7 @@
         "title": "Combined schema keywords intersected"
       },
       {
-        "description": "Read a $ref branch of an anyOf or oneOf with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
+        "description": "Give an allOf one union variant per combination of the branches of the anyOf and oneOf it holds, also through a $ref member, read a $ref branch with the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them.",
         "options": [
           "--distribute-allof-over-unions"
         ],

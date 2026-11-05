@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "leaf": {
+      "$ref": "#/$defs/Leaf"
+    },
+    "narrowed": {
+      "$ref": "#/$defs/Narrowed"
+    },
+    "through_own_union": {
+      "$ref": "#/$defs/ThroughOwnUnion"
+    }
+  },
+  "$defs": {
+    "Parent": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "left"
+          ],
+          "properties": {
+            "left": {
+              "type": "string"
+            },
+            "right": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "right"
+          ],
+          "properties": {
+            "left": {
+              "type": "string"
+            },
+            "right": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "Mid": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Parent"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mid": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "Leaf": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Mid"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "leaf": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "Narrowed": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Mid"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mid": {
+              "type": "string",
+              "maxLength": 3
+            }
+          }
+        }
+      ]
+    },
+    "Base": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      }
+    },
+    "C": {
+      "type": "object",
+      "required": [
+        "c"
+      ],
+      "properties": {
+        "c": {
+          "type": "string"
+        }
+      }
+    },
+    "D": {
+      "type": "object",
+      "required": [
+        "d"
+      ],
+      "properties": {
+        "d": {
+          "type": "string"
+        }
+      }
+    },
+    "OwnUnion": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        }
+      ],
+      "anyOf": [
+        {
+          "$ref": "#/$defs/C"
+        },
+        {
+          "$ref": "#/$defs/D"
+        }
+      ]
+    },
+    "ThroughOwnUnion": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/OwnUnion"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "extra": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

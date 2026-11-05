@@ -38611,7 +38611,7 @@ def test_main_jsonschema_intersect_combined_schema_keywords(output_file: Path, e
 
 @pytest.mark.cli_doc(
     options=["--distribute-allof-over-unions"],
-    option_description="""Read an `allOf` with the `anyOf` and `oneOf` beside it, as JSON Schema validates them.
+    option_description="""Read an `allOf` with the `anyOf` and `oneOf` it holds or sits beside, as JSON Schema does.
 
 A schema with an `allOf` beside an `anyOf` or `oneOf` admits a value that every `allOf` member and one branch admit.
 An inline branch is parsed with the `allOf` merged in, but a `$ref` branch takes only the `properties` and `required`
@@ -38621,7 +38621,14 @@ beside it, so `{allOf: [Base], oneOf: [Cat, Dog]}` writes `Cat | Dog` and drops 
 response body is that union too (without the option it is parsed by its `allOf` and the union is dropped). A `$ref`
 branch that names no object takes the value keywords beside the union, as an inline branch does, so `minimum: 5`
 beside `anyOf: [{$ref: Quantity}, {type: string}]` rejects `3`. An `allOf` member's value keywords meet such a branch
-under `--use-site-models-for-constrained-refs`, as they meet a `$ref` member of an `allOf` there.""",
+under `--use-site-models-for-constrained-refs`, as they meet a `$ref` member of an `allOf` there.
+
+An `allOf` whose members hold several `anyOf` or `oneOf` admits a value that meets one branch of each. Without the
+option their branches join one union, each with the other parts (and the inline branches of a later `anyOf` replace
+those of an earlier one); with it the `allOf` is one union variant per combination of one branch of each
+(`M6(M1, M3, M5)`, a class each branch appears in once), at most 128 per `allOf` (above that the branches join one
+union, with a warning). A `$ref` member that names an `allOf` over a union, which was a base that later passes drop, is
+read in its place, so its union joins those of the site (`Leaf4(Leaf1, Leaf3)`).""",
     input_schema="jsonschema/schema_intersection/allof_beside_union.json",
     cli_args=["--distribute-allof-over-unions"],
     golden_output=(
@@ -38645,6 +38652,34 @@ def test_main_jsonschema_distribute_allof_over_unions(output_file: Path, extra_a
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "schema_intersection" / "allof_beside_union.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_name", "extra_args"),
+    [
+        pytest.param("leaf.json", ["--distribute-allof-over-unions"], id="with-option-leaf.json"),
+        pytest.param("leaf.json", [], id="without-option-leaf.json"),
+        pytest.param("loop.json", ["--distribute-allof-over-unions"], id="with-option-loop.json"),
+    ],
+)
+def test_main_jsonschema_distribute_allof_over_unions_through_ref(
+    output_file: Path, input_name: str, extra_args: list[str]
+) -> None:
+    """Read an allOf member that names an allOf over a union in place of the member with the option.
+
+    Without --distribute-allof-over-unions such a member is a base, which later passes drop as a root model (#5305):
+    ``Leaf`` keeps only its own property. With it ``Leaf`` is the union of ``Parent``'s variants with the properties
+    of ``Mid`` and ``Leaf``, across the three documents; a member naming a schema already read in place adds
+    nothing, so ``Loop`` and ``Back``, each an allOf over the other, end (without the option their models fail to
+    import).
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "allof_union_through_ref_files" / input_name,
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp"],

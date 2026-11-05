@@ -7,7 +7,7 @@
 | [`--allof-class-hierarchy`](#allof-class-hierarchy) | Controls how allOf schemas are represented in the generated ... |
 | [`--allof-merge-mode`](#allof-merge-mode) | Merge constraints from root model references in allOf schema... |
 | [`--disable-future-imports`](#disable-future-imports) | Prevent automatic addition of __future__ imports in generate... |
-| [`--distribute-allof-over-unions`](#distribute-allof-over-unions) | Read an `allOf` with the `anyOf` and `oneOf` beside it, as J... |
+| [`--distribute-allof-over-unions`](#distribute-allof-over-unions) | Read an `allOf` with the `anyOf` and `oneOf` it holds or sit... |
 | [`--enum-field-as-literal`](#enum-field-as-literal) | Convert all enum fields to Literal types instead of Enum cla... |
 | [`--enum-field-as-literal-map`](#enum-field-as-literal-map) | Override enum/literal generation per-field via JSON mapping. |
 | [`--filter-literal-values`](#filter-literal-values) | Keep only the values of a `const` or an `enum` that meet the... |
@@ -1136,7 +1136,7 @@ postponed evaluation of annotations (PEP 563).
 
 ## `--distribute-allof-over-unions` {#distribute-allof-over-unions}
 
-Read an `allOf` with the `anyOf` and `oneOf` beside it, as JSON Schema validates them.
+Read an `allOf` with the `anyOf` and `oneOf` it holds or sits beside, as JSON Schema does.
 
 A schema with an `allOf` beside an `anyOf` or `oneOf` admits a value that every `allOf` member and one branch admit.
 An inline branch is parsed with the `allOf` merged in, but a `$ref` branch takes only the `properties` and `required`
@@ -1147,6 +1147,13 @@ response body is that union too (without the option it is parsed by its `allOf` 
 branch that names no object takes the value keywords beside the union, as an inline branch does, so `minimum: 5`
 beside `anyOf: [{$ref: Quantity}, {type: string}]` rejects `3`. An `allOf` member's value keywords meet such a branch
 under `--use-site-models-for-constrained-refs`, as they meet a `$ref` member of an `allOf` there.
+
+An `allOf` whose members hold several `anyOf` or `oneOf` admits a value that meets one branch of each. Without the
+option their branches join one union, each with the other parts (and the inline branches of a later `anyOf` replace
+those of an earlier one); with it the `allOf` is one union variant per combination of one branch of each
+(`M6(M1, M3, M5)`, a class each branch appears in once), at most 128 per `allOf` (above that the branches join one
+union, with a warning). A `$ref` member that names an `allOf` over a union, which was a base that later passes drop, is
+read in its place, so its union joins those of the site (`Leaf4(Leaf1, Leaf3)`).
 
 !!! tip "Usage"
 

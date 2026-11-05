@@ -59,7 +59,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--disable-future-imports": "Prevent automatic addition of __future__ imports in generated code.",
     "--disable-timestamp": "Disable timestamp in generated file header for reproducible output.",
     "--disable-warnings": "Suppress warning messages during code generation.",
-    "--distribute-allof-over-unions": "Read an `allOf` with the `anyOf` and `oneOf` beside it, as JSON Schema valid...",
+    "--distribute-allof-over-unions": "Read an `allOf` with the `anyOf` and `oneOf` it holds or sits beside, as JSO...",
     "--duplicate-name-suffix": "Customize suffix for duplicate model names.",
     "--emit-model-metadata": "Write a separate JSON map from the final generated models, modules, fields, and type ...",
     "--empty-enum-field-name": "Name for empty string enum field values.",

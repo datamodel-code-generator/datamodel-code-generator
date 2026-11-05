@@ -1,0 +1,33 @@
+{
+  "title": "Parent",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "left"
+      ],
+      "properties": {
+        "left": {
+          "type": "string"
+        },
+        "right": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "right"
+      ],
+      "properties": {
+        "left": {
+          "type": "string"
+        },
+        "right": {
+          "type": "string"
+        }
+      }
+    }
+  ]
+}

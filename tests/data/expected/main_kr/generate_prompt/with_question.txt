@@ -35,7 +35,7 @@ How do I convert enums to Literal types?
 - `--allof-class-hierarchy`: Controls how allOf schemas are represented in the generated class hierarchy.
 - `--allof-merge-mode`: Merge constraints from root model references in allOf schemas.
 - `--disable-future-imports`: Prevent automatic addition of __future__ imports in generated code.
-- `--distribute-allof-over-unions`: Read an `allOf` with the `anyOf` and `oneOf` beside it, as JSON Schema valid...
+- `--distribute-allof-over-unions`: Read an `allOf` with the `anyOf` and `oneOf` it holds or sits beside, as JSO...
 - `--enum-field-as-literal`: Convert all enum fields to Literal types instead of Enum classes.
 - `--enum-field-as-literal-map`: Override enum/literal generation per-field via JSON mapping.
 - `--filter-literal-values`: Keep only the values of a `const` or an `enum` that meet the constraints beside them.
@@ -554,16 +554,23 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --disable-future-imports
                         Disable __future__ imports
   --distribute-allof-over-unions, --no-distribute-allof-over-unions
-                        Read an `allOf` with the `anyOf` and `oneOf` beside it
-                        as JSON Schema validates them: a `$ref` branch of an
-                        `anyOf` or `oneOf` takes the `allOf` members beside
-                        it, which an inline branch already takes, and the
-                        value keywords beside it where it names no object, and
-                        an OpenAPI request or response body with an `allOf`
-                        beside an `anyOf` or `oneOf` is that union as a schema
-                        of the components is. Without it a `$ref` branch takes
-                        only the `properties` and `required` beside it and a
-                        body drops the union, as in 0.89.0
+                        Read an `allOf` with the `anyOf` and `oneOf` it holds
+                        or sits beside as JSON Schema validates them: an
+                        `allOf` of several is one union variant per
+                        combination of one branch of each, also through a
+                        `$ref` member that names an `allOf` over a union, a
+                        `$ref` branch takes the `allOf` members beside its
+                        `anyOf` or `oneOf`, which an inline branch already
+                        takes, and the value keywords beside it where it names
+                        no object, and an OpenAPI request or response body
+                        with an `allOf` beside an `anyOf` or `oneOf` is that
+                        union as a schema of the components is. Without it the
+                        branches of every `anyOf` and `oneOf` of an `allOf`
+                        join one union (the inline branches of a second
+                        replacing those of the first), a `$ref` member naming
+                        an `allOf` over a union is dropped, a `$ref` branch
+                        takes only the `properties` and `required` beside it
+                        and a body drops the union, as in 0.89.0
   --enum-field-as-literal {all,one,none}
                         Parse enum field as literal. all: all enum field type
                         are Literal. one: field type is Literal when an enum
