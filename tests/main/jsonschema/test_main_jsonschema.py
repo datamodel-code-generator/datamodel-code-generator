@@ -8644,6 +8644,11 @@ def test_main_unique_items_as_set_unhashable_items(output_model: str, tmp_path: 
             id="dataclass",
         ),
         pytest.param(
+            ["--output-model-type", "dataclasses.dataclass", "--dataclass-arguments", '{"eq": false}'],
+            "Root(pets=[Pet(id=1, name=None)], names={'a'}, shapes={'x'}, maybe_pets={None})",
+            id="dataclass-eq-false-left-out",
+        ),
+        pytest.param(
             ["--output-model-type", "typing.TypedDict"],
             "{'pets': [{'id': 1}], 'names': {'a'}, 'shapes': {'x'}, 'maybe_pets': {None}}",
             id="typed-dict",

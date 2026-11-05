@@ -9298,6 +9298,7 @@ set	main/jsonschema/unique_items_as_set_collapsed_root_items.py	= main/jsonschem
 	main/jsonschema/main_jsonschema/main_unique_items_as_set_long_alias_chain.py
 [test_main_unique_items_as_set_model_items]
 dataclass	main/jsonschema/unique_items_as_set_model_items.py
+dataclass-eq-false-left-out	main/jsonschema/unique_items_as_set_model_items.py
 frozen-msgspec	main/jsonschema/unique_items_as_set_model_items.py	= main/jsonschema/unique_items_as_set_model_items~main_unique_items_as_set_model_items[frozen-msgspec].py
 frozen-pydantic-dataclass	main/jsonschema/unique_items_as_set_model_items.py	= main/jsonschema/unique_items_as_set_model_items~main_unique_items_as_set_model_items[frozen-pydantic-dataclass].py
 msgspec	main/jsonschema/unique_items_as_set_model_items.py	= main/jsonschema/unique_items_as_set_model_items~main_unique_items_as_set_model_items[msgspec].py
