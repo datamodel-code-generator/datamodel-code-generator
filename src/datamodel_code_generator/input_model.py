@@ -25,6 +25,7 @@ from collections.abc import (
     Set as AbstractSet,
 )
 from contextlib import contextmanager, nullcontext
+from contextvars import ContextVar
 from copy import deepcopy
 from dataclasses import is_dataclass
 from enum import Enum as PyEnum
@@ -36,6 +37,7 @@ from pydantic import BaseModel
 from typing_extensions import Self, Sentinel, TypeIs
 
 from datamodel_code_generator._all_or_none import all_or_none
+from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._input_model_transport import PythonTypeExpressionCollector
@@ -153,15 +155,21 @@ def _cwd_import_scope(cwd_entry: str) -> Generator[None]:
         restore_entry(sys.path_importer_cache, cwd_entry, importer_cache_entry)
 
 
-def _load_model_schema_isolated(
+_READ_DATACLASS_FIELDS_BY_ALIAS: ContextVar[bool] = ContextVar("_READ_DATACLASS_FIELDS_BY_ALIAS", default=False)
+"""Whether a load reads the fields of a Pydantic dataclass, as a model's, by the names of their properties."""
+
+
+def _load_model_schema_isolated(  # ruff: ignore[too-many-arguments]
     input_models: list[str],
     input_file_type: InputFileType,
     ref_strategy: InputModelRefStrategy | None,
     output_model_type: DataModelType | None,
     expression_collector: PythonTypeExpressionCollector | None = None,
+    *,
+    read_dataclass_fields_by_alias: bool = False,
 ) -> dict[str, object]:
     """Load a schema while restoring cwd-local import state afterwards."""
-    with PROCESS_STATE_LOCK:
+    with PROCESS_STATE_LOCK, context_values({_READ_DATACLASS_FIELDS_BY_ALIAS: read_dataclass_fields_by_alias}):
         cwd_entry = str(Path.cwd())
         with nullcontext() if cwd_entry in sys.path else _cwd_import_scope(cwd_entry):
             return _load_model_schema(
@@ -932,8 +940,13 @@ def _add_python_type_to_model_properties(
     expression_collector: PythonTypeExpressionCollector | None,
     generic_names: dict[type, str] | None,
 ) -> None:
-    """Supplement one definition using the fields of its actual Python model."""
-    if model_fields := getattr(model, "model_fields", None):
+    """Supplement one definition using the fields of its actual Python model.
+
+    A Pydantic dataclass is read by its annotations, keyed by field name, unless the load reads its fields by alias.
+    """
+    if (model_fields := getattr(model, "model_fields", None)) or (
+        _READ_DATACLASS_FIELDS_BY_ALIAS.get() and (model_fields := getattr(model, "__pydantic_fields__", None))
+    ):
         _add_python_type_to_properties(properties, model_fields, expression_collector, generic_names)
         return
     for field_name, field_type in _get_type_hints_safe(model).items():
@@ -1530,12 +1543,21 @@ def load_model_schema(
     input_file_type: InputFileType,
     ref_strategy: InputModelRefStrategy | None = None,
     output_model_type: DataModelType | None = None,
+    *,
+    read_dataclass_fields_by_alias: bool = False,
 ) -> dict[str, object]:
     """Load and merge schemas from 'module.path:ObjectName' import paths with inheritance support.
 
     Several import paths merge into one schema whose anyOf references every root model.
+    ``read_dataclass_fields_by_alias`` gives an aliased field of a Pydantic dataclass its Python type too.
     """
-    return _load_model_schema_isolated(input_models, input_file_type, ref_strategy, output_model_type)
+    return _load_model_schema_isolated(
+        input_models,
+        input_file_type,
+        ref_strategy,
+        output_model_type,
+        read_dataclass_fields_by_alias=read_dataclass_fields_by_alias,
+    )
 
 
 def _load_model_schema_with_python_type_expressions(
@@ -1543,6 +1565,8 @@ def _load_model_schema_with_python_type_expressions(
     input_file_type: InputFileType,
     ref_strategy: InputModelRefStrategy | None = None,
     output_model_type: DataModelType | None = None,
+    *,
+    read_dataclass_fields_by_alias: bool = False,
 ) -> LoadedInputModelSchema:
     """Load the CLI-only schema transport without rendering runtime expressions."""
     expression_collector = PythonTypeExpressionCollector()
@@ -1552,6 +1576,7 @@ def _load_model_schema_with_python_type_expressions(
         ref_strategy,
         output_model_type,
         expression_collector,
+        read_dataclass_fields_by_alias=read_dataclass_fields_by_alias,
     )
     return expression_collector.loaded_schema(schema)
 

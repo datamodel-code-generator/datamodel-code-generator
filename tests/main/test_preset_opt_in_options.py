@@ -75,6 +75,7 @@ OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
     "--use-unique-items-as-set-by-value",
     "--keep-constrained-root-models-in-every-container",
     "--keep-enum-literal-aliases",
+    "--read-input-model-dataclass-fields-by-alias",
 )
 """The options the 20261104 presets set beyond the 20261027 presets."""
 
