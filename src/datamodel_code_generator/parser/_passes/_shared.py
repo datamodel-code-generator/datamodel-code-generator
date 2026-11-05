@@ -18,8 +18,11 @@ from typing_extensions import Protocol, final, override
 
 from datamodel_code_generator._constraint_applicability import TYPE_DEPENDENT_CONSTRAINTS_KEY
 from datamodel_code_generator._container_kinds import (
+    ARRAYS,
     CONTAINER_FLAGS,
     CONTAINERS,
+    MAPPINGS,
+    SETS,
     UNHASHABLE_CONTAINERS,
     WRITTEN_CONTAINERS,
     written_slot,
@@ -74,6 +77,7 @@ from datamodel_code_generator.parser._passes._keys import (
     _DEFERRED_INHERITED_TYPE_KEY,
     _DERIVED_FROM_KEY,
     declares_raw_schema_default,
+    declares_type_list_unique_items,
     raw_schema_default,
 )
 from datamodel_code_generator.parser._passes._state import RecursionFacts, _ModuleNames
@@ -84,6 +88,7 @@ from datamodel_code_generator.reference import (
     _source_path,
     _special_path,
     schema_path_of,
+    unique_items_of,
 )
 from datamodel_code_generator.types import DataType, DefaultValueRecipe, union_members
 
@@ -1300,42 +1305,172 @@ class UniqueItemsPlan:
 
 _NO_UNIQUE_ITEMS: Final = UniqueItemsPlan()
 
+UniqueItemsSources: TypeAlias = Literal["field", "merged", "all"]
+"""Which schemas declaring ``uniqueItems`` a plan reads: ``field`` the field's own schema, but that of a type list,
+which every release since 0.52.0 decides before reuse; ``merged`` the others, the type list's (0.89.0) and those of the
+nodes that record it, decided once deduplication and reuse merged models; ``all`` both."""
+_Path: TypeAlias = tuple[int, ...]
 
-def unique_items_plan(field: DataModelFieldBase, *, keeps_tuples: bool) -> UniqueItemsPlan:
+
+def unique_items_plan(
+    field: DataModelFieldBase,
+    *,
+    keeps_tuples: bool,
+    sources: UniqueItemsSources = "all",
+    merged: Sequence[DataModelFieldBase | None] = (),
+) -> UniqueItemsPlan:
     """Return the arrays of a field's type that --use-unique-items-as-set writes as sets.
 
-    The field's own schema declares ``uniqueItems`` for its type, which is the array or a union with the array among
-    its members (``_unique_items_arrays``). A list among them becomes a set where some value its items take hashes
-    (``set_items_can_hash``) and the field's list default, if it has one, can be a set. Under
-    --use-tuple-for-closed-arrays (``keeps_tuples``), a tuple among them keeps every one of them as it is.
+    A schema that declares ``uniqueItems`` declares it for the arrays of the type built from it, the type itself or the
+    members of its union (``_unique_items_arrays``): the field's own schema for the field's type, and the schema of
+    each node that records it (``reference.unique_items_of``), such as a member of an anyOf, the items of an array or
+    the values of a map; ``sources`` picks among them. A list among them becomes a set where some value its items take
+    hashes, read after the lists those items hold (``set_items_can_hash``), and, at the field's own level, where the
+    field's list default can be a set. Under --use-tuple-for-closed-arrays (``keeps_tuples``), a tuple among the arrays
+    of a schema keeps all of them as they are. ``merged`` are the fields of the same name of the models merged into the
+    field's model (None for a model without one): a list of ``sources="merged"`` counts only where each of them declares
+    ``uniqueItems`` at the same position of its type too, so a merge never makes a set of the array of a model that
+    does not declare it. A list but those of the field's own schema (``_own_unique_arrays``) stays a list in a union
+    beside another member of its kind that keeps its lists (``_beside_its_kind``), which the set would split from a
+    member written alike, decided again until no such set is left.
     """
-    return _unique_items_plan(field, keeps_tuples=keeps_tuples, aliases=frozenset())
+    return _unique_items_plan(field, keeps_tuples=keeps_tuples, sources=sources, merged=merged, aliases=frozenset())
 
 
-def _unique_items_plan(field: DataModelFieldBase, *, keeps_tuples: bool, aliases: frozenset[int]) -> UniqueItemsPlan:
+def _unique_items_plan(
+    field: DataModelFieldBase,
+    *,
+    keeps_tuples: bool,
+    sources: UniqueItemsSources,
+    merged: Sequence[DataModelFieldBase | None],
+    aliases: frozenset[int],
+) -> UniqueItemsPlan:
     """Return ``unique_items_plan`` of a field read inside the type aliases ``aliases``, by id."""
-    if not _declares_unique_items(field):
+    if not (arrays := _declared_unique_arrays(field, sources)):
         return _NO_UNIQUE_ITEMS
-    arrays = tuple(_unique_items_arrays(field.data_type))
-    if keeps_tuples and (tuples := tuple(array for array in arrays if array.is_tuple)):
-        return UniqueItemsPlan(tuples=tuples)
-    sets = tuple(
-        array
-        for array in arrays
-        if array.is_list
-        and set_items_can_hash(
-            tuple(
-                _set_item_facts(item, frozenset(), keeps_tuples=keeps_tuples, aliases=aliases)
-                for item in array.data_types
-            )
-        )
+    if merged:
+        declared = [{path for path, _ in _declared_unique_arrays(other, "all")} if other else set() for other in merged]
+        arrays = [(path, group) for path, group in arrays if all(path in paths for paths in declared)]
+    lists: dict[int, DataType] = {}
+    tuples: dict[int, DataType] = {}
+    for _, group in arrays:
+        if keeps_tuples and any(array.is_tuple for array in group):
+            tuples.update((id(array), array) for array in group if array.is_tuple)
+        else:
+            lists.update((id(array), array) for array in group if array.is_list)
+    alias_sources: UniqueItemsSources = "field" if sources == "field" else "all"
+    own = _own_unique_arrays(field)
+    nodes = dict(_nodes_with_paths(field.data_type, ()))
+    kept: set[_Path] = set()
+    while True:
+        sets: dict[int, DataType] = {}
+        for path, node in nodes.items():
+            if (
+                id(node) in lists
+                and path not in kept
+                and set_items_can_hash(
+                    tuple(
+                        _set_item_facts(item, sets, keeps_tuples=keeps_tuples, sources=alias_sources, aliases=aliases)
+                        for item in node.data_types
+                    )
+                )
+            ):
+                sets[id(node)] = node
+        if not (
+            beside := {
+                path
+                for path, node in nodes.items()
+                if id(node) in sets and id(node) not in own and _beside_its_kind(path, nodes, sets)
+            }
+        ):
+            break
+        kept |= beside
+    default = None
+    if (own_level := [array for array in _unique_items_arrays(field.data_type) if id(array) in sets]) and isinstance(
+        field.default, list
+    ):
+        try:
+            default = set(field.default)
+        except TypeError:
+            for array in own_level:
+                del sets[id(array)]
+    return UniqueItemsPlan(tuple(sets.values()), default, tuple(tuples.values()))
+
+
+def _own_unique_arrays(field: DataModelFieldBase) -> set[int]:
+    """Return, by id, the arrays that the field's own schema declares unique, but those of a type list.
+
+    They are decided as every release since 0.52.0 decides them, so ``_beside_its_kind`` does not keep them lists.
+    """
+    return {id(array) for _, group in _declared_unique_arrays(field, "field") for array in group}
+
+
+def _beside_its_kind(path: _Path, nodes: Mapping[_Path, DataType], sets: Collection[int]) -> bool:
+    """Return whether the list at ``path``, as a set, sits in a union beside a member of its kind that keeps its lists.
+
+    ``nodes`` are the nodes of the field's type by their paths, ``sets`` the lists that become sets by id. The member
+    of the union is the list, or the node that holds it as its only member (``list[int] | list[str]``,
+    ``dict[str, list[int]] | dict[str, list[int]]``, the values of a map of two patterns); the other member is of its
+    kind where both are array-like or both are maps, and keeps its lists where it holds no set, one it is or one of
+    ``sets``. A msgspec union holds one member of each kind, so such a union either decodes because the output writes
+    its members alike as one, which the set would split, or never decodes; the list keeps the output either way.
+    """
+    while path and len(nodes[path[:-1]].data_types) == 1:
+        path = path[:-1]
+    if not path or (holder := nodes[path[:-1]]).is_tuple or (kind := _union_kind(member := nodes[path])) is None:
+        return False
+    return any(
+        other is not member
+        and _union_kind(other) == kind
+        and not any(id(nested) in sets or nested in SETS for _, nested in _nodes_with_paths(other, ()))
+        for other in holder.data_types
     )
-    if not sets or not isinstance(default := field.default, list):
-        return UniqueItemsPlan(sets)
-    try:
-        return UniqueItemsPlan(sets, set(default))
-    except TypeError:
-        return _NO_UNIQUE_ITEMS
+
+
+def _union_kind(data_type: DataType) -> Literal["array", "map"] | None:
+    """Return whether a union member is array-like or a map, read through the nodes that hold one member only."""
+    while not (data_type in ARRAYS or data_type in MAPPINGS) and len(data_type.data_types) == 1:
+        data_type = data_type.data_types[0]
+    if data_type in ARRAYS:
+        return "array"
+    return "map" if data_type in MAPPINGS else None
+
+
+def _declared_unique_arrays(
+    field: DataModelFieldBase, sources: UniqueItemsSources
+) -> list[tuple[_Path, tuple[DataType, ...]]]:
+    """Return the arrays that the schemas ``sources`` picks declare unique, by schema, each with its node's position.
+
+    The position is the path of indexes from the field's type to the node built from the schema; the arrays of the
+    field's own schema but a type list's are the ``field`` source alone, so ``merged`` leaves them out wherever a node
+    records the keyword too.
+    """
+    field_type = field.data_type
+    own = _declares_unique_items(field)
+    own_released = own and not declares_type_list_unique_items(field)
+    released = {*map(id, _unique_items_arrays(field_type))} if own_released else set()
+    found: list[tuple[_Path, tuple[DataType, ...]]] = []
+    if sources != "merged" and own_released:
+        found.append(((), tuple(_unique_items_arrays(field_type))))
+    if sources == "field":
+        return found
+    if own and not own_released:
+        found.append(((), tuple(_unique_items_arrays(field_type))))
+    for path, node in _nodes_with_paths(field_type, ()):
+        if unique_items_of(node) and (
+            group := tuple(
+                array for array in _unique_items_arrays(node) if sources == "all" or id(array) not in released
+            )
+        ):
+            found.append((path, group))
+    return found
+
+
+def _nodes_with_paths(data_type: DataType, path: _Path) -> Iterator[tuple[_Path, DataType]]:
+    """Yield the nodes of a type tree, each after the nodes it holds, with its path of indexes from the root."""
+    for index, nested in enumerate(data_type.data_types):
+        yield from _nodes_with_paths(nested, (*path, index))
+    yield path, data_type
 
 
 def _unique_items_arrays(data_type: DataType) -> Iterator[DataType]:
@@ -1352,7 +1487,12 @@ def _unique_items_arrays(data_type: DataType) -> Iterator[DataType]:
 
 
 def _set_item_facts(
-    data_type: DataType, sets: Collection[int], *, keeps_tuples: bool, aliases: frozenset[int]
+    data_type: DataType,
+    sets: Collection[int],
+    *,
+    keeps_tuples: bool,
+    sources: UniqueItemsSources,
+    aliases: frozenset[int],
 ) -> SetItemFacts:
     """Return the facts of an item type of an array that ``set_items_can_hash`` reads.
 
@@ -1371,11 +1511,13 @@ def _set_item_facts(
     ):
         aliases |= {id(alias)}
         value = alias.fields[0]
-        alias_sets = {*map(id, _unique_items_plan(value, keeps_tuples=keeps_tuples, aliases=aliases).sets)}
-        return _set_item_facts(value.data_type, alias_sets, keeps_tuples=keeps_tuples, aliases=aliases)
+        alias_plan = _unique_items_plan(value, keeps_tuples=keeps_tuples, sources=sources, merged=(), aliases=aliases)
+        return _set_item_facts(
+            value.data_type, {*map(id, alias_plan.sets)}, keeps_tuples=keeps_tuples, sources=sources, aliases=aliases
+        )
 
     def read(nested: DataType) -> SetItemFacts:
-        return _set_item_facts(nested, sets, keeps_tuples=keeps_tuples, aliases=aliases)
+        return _set_item_facts(nested, sets, keeps_tuples=keeps_tuples, sources=sources, aliases=aliases)
 
     if data_type.is_tuple:
         count = data_type.tuple_item_count

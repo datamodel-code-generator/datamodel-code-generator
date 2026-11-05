@@ -369,6 +369,7 @@ def schema_path_of(reference: Reference) -> str:
 FIELD_ORIGIN_KEY: Final = "_field_origin"
 TYPE_ORIGIN_KEY: Final = "_type_origin"
 BINARY_CONTENT_KEY: Final = "_binary_content"
+UNIQUE_ITEMS_KEY: Final = "_unique_items"
 
 
 @record
@@ -416,11 +417,24 @@ def binary_content_of(data_type: object) -> bool:
     return BINARY_CONTENT_KEY in data_type.__dict__
 
 
-_NODE_RECORDS: Final = (TYPE_ORIGIN_KEY, BINARY_CONTENT_KEY)
+def unique_items_of(data_type: object) -> bool:
+    """Return whether the schema the parser built a type node from declares ``uniqueItems: true`` (UNIQUE_ITEMS, L1).
+
+    ``parse_item`` records it on the node it returns for a subschema whose schema, as the site reads it, declares the
+    keyword, and the array builders on the array they build for such a schema, whatever the options; a copy of a node
+    keeps it. The arrays the keyword declares unique are the node itself or the members of its union.
+    """
+    return UNIQUE_ITEMS_KEY in data_type.__dict__
+
+
+_NODE_RECORDS: Final = (TYPE_ORIGIN_KEY, BINARY_CONTENT_KEY, UNIQUE_ITEMS_KEY)
 
 
 def keep_node_records(copy: object, source: object) -> None:
-    """Give a copy of a type node the records the parser keeps on the node it copies (TYPE_ORIGIN, BINARY_CONTENT)."""
+    """Give a copy of a type node the records the parser keeps on the node it copies.
+
+    They are TYPE_ORIGIN, BINARY_CONTENT and UNIQUE_ITEMS.
+    """
     copy.__dict__.update((key, source.__dict__[key]) for key in _NODE_RECORDS if key in source.__dict__)
 
 

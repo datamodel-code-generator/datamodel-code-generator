@@ -124,7 +124,7 @@ CHECKED_MODELS: Final[dict[str, Callable[[Any, Any], Sequence[Any]]]] = {
     "mark_unused_models_start": _model_list,
     "set_reference_default_value_to_field": _model_list,
     "reuse_model": _model_list,
-    "replace_type_list_unique_list_to_set": _model_list,
+    "replace_merged_unique_list_to_set": _model_list,
     "collapse_root_models": _model_list,
     "set_default_enum_member": _model_list,
     "sort_models": _model_list,

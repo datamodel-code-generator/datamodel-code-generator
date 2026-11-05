@@ -249,8 +249,8 @@ MODULE_BODY: tuple[StepLike[PipelineHost, _ModuleState[Any]], ...] = (
     ),
     PassSpec("reuse_model", lambda self, s: modules.reuse_model(self, s.model_list, s.require_update_action_models)),
     PassSpec(
-        "replace_type_list_unique_list_to_set",
-        lambda self, s: modules.replace_type_list_unique_list_to_set(self, s.model_list),
+        "replace_merged_unique_list_to_set",
+        lambda self, s: modules.replace_merged_unique_list_to_set(self, s.model_list),
     ),
     PassSpec("collapse_root_models", late(modules.collapse_module_root_models)),
     PassSpec("set_default_enum_member", lambda self, s: modules.set_default_enum_member(self, s.model_list)),

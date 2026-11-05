@@ -19,6 +19,7 @@ from datamodel_code_generator.parser._origins import with_field_origin, with_typ
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import _merges_ref_siblings, _object_map_other_types
 from datamodel_code_generator.parser.base import get_special_path
+from datamodel_code_generator.reference import unique_items_of
 from datamodel_code_generator.types import ANY, Types, build_union
 
 if TYPE_CHECKING:
@@ -264,12 +265,30 @@ def _nullable_map_value_schema(obj: JsonSchemaObject, *, beside_other_types: boo
     )
 
 
-def _pattern_value_groups(patterns: list[str], value_types: list[DataType]) -> dict[str, tuple[list[str], DataType]]:
-    """Group the patterns of row ``legacy-map-union-of-dicts`` by the rendered hint of their value types."""
-    groups: dict[str, tuple[list[str], DataType]] = {}
+def _pattern_value_groups(
+    patterns: list[str], value_types: list[DataType]
+) -> dict[str, tuple[list[str], list[DataType]]]:
+    """Group the patterns of row ``legacy-map-union-of-dicts`` by the rendered hint of their value types.
+
+    A group keeps the value type of its first pattern and that of each later pattern whose schemas declare
+    ``uniqueItems`` at other nodes, which are written alike as one; --use-unique-items-as-set then writes an array as a
+    set where every value of the group declares it.
+    """
+    groups: dict[str, tuple[list[str], list[DataType]]] = {}
     for pattern, value_type in zip(patterns, value_types, strict=True):
-        groups.setdefault(value_type.type_hint, ([], value_type))[0].append(pattern)
+        group_patterns, group_values = groups.setdefault(value_type.type_hint, ([], []))
+        group_patterns.append(pattern)
+        if _unique_items_paths(value_type) not in map(_unique_items_paths, group_values):
+            group_values.append(value_type)
     return groups
+
+
+def _unique_items_paths(data_type: DataType, path: tuple[int, ...] = ()) -> frozenset[tuple[int, ...]]:
+    """Return the paths of indexes to the nodes of a type tree that record ``uniqueItems`` (``unique_items_of``)."""
+    paths = {path} if unique_items_of(data_type) else set()
+    for index, nested in enumerate(data_type.data_types):
+        paths |= _unique_items_paths(nested, (*path, index))
+    return frozenset(paths)
 
 
 def _is_plain_any(data_type: DataType) -> bool:
@@ -477,8 +496,8 @@ def parse_pattern_properties(
         return build_union(
             parser.data_type,
             [
-                pattern_map_type(parser, group_patterns, [value_type], property_names, joins_patterns=True)
-                for group_patterns, value_type in groups.values()
+                pattern_map_type(parser, group_patterns, group_values, property_names, joins_patterns=True)
+                for group_patterns, group_values in groups.values()
             ],
         )
     return pattern_map_type(parser, patterns, value_types, property_names, joins_patterns=True)

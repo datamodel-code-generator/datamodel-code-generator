@@ -68,3 +68,67 @@ match = "^\\[type\\] Item:values: Union\\[None, (?:msgspec\\.UnsetType, )?set\\[
 reason = "with --use-unique-items-as-set (the practical presets), a uniqueItems array of objects with a list default was set[dict[str, object]] = [{...}], whose type rejects its own default and every non-empty array; it stays a list (crash-class fix)"
 decision = "#6190"
 release_note = "with --use-unique-items-as-set, a uniqueItems array whose items can never be set members (objects, arrays, a tuple holding an array) stays a list instead of a set that rejects every non-empty array, and a list default that cannot be a set keeps its list"
+
+[[accepted]]
+input = "*mapping_schema_validators*"
+aspects = [ "type" ]
+match = "^\\[type\\] Nested:nested: Union\\[(?:None, )?dict\\[str, list\\[object\\]\\](?:, msgspec\\.UnsetType)?\\] -> Union\\[(?:None, )?dict\\[str, set\\[object\\]\\](?:, msgspec\\.UnsetType)?\\]$"
+reason = "with --use-unique-items-as-set (the practical presets), the values of a map whose own schema declares uniqueItems were lists, which keep the duplicates the schema rejects; every array whose own schema declares uniqueItems is a set now, as the property of the same array is (owner decision: default under the option)"
+decision = "#6163"
+release_note = "with --use-unique-items-as-set, every array whose own schema declares uniqueItems is written as a set, also the member of an anyOf or oneOf, the items of an array, the values of a map and a lone allOf member, where a model merged into its model declares it too"
+
+[[accepted]]
+input = "*unique_items_allof_mapping*"
+aspects = [ "type" ]
+match = "^\\[type\\] Base: dict\\[str, list\\[int\\]\\] -> dict\\[str, set\\[int\\]\\]$"
+reason = "with --use-unique-items-as-set (the practical presets), the values of a map whose own schema declares uniqueItems were lists; they are sets now, as the property of the same array is (owner decision: default under the option)"
+decision = "#6163"
+release_note = "with --use-unique-items-as-set, every array whose own schema declares uniqueItems is written as a set, also the member of an anyOf or oneOf, the items of an array, the values of a map and a lone allOf member, where a model merged into its model declares it too"
+
+[[accepted]]
+input = "*unique_items_nested_merged*"
+aspects = [ "type" ]
+match = "^\\[type\\] (?:Labels|Tags):values: Union\\[(?:None, )?dict\\[str, list\\[int\\]\\](?:, msgspec\\.UnsetType)?\\] -> Union\\[(?:None, )?dict\\[str, set\\[int\\]\\](?:, msgspec\\.UnsetType)?\\]$"
+reason = "with --use-unique-items-as-set (the practical presets), map values whose own schema declares uniqueItems were lists; they are sets now where every model merged into their model declares the keyword at that place too, and stay lists where a merged model does not (owner decision: default under the option, with the merge rule of type lists)"
+decision = "#6163"
+release_note = "with --use-unique-items-as-set, every array whose own schema declares uniqueItems is written as a set, also the member of an anyOf or oneOf, the items of an array, the values of a map and a lone allOf member, where a model merged into its model declares it too"
+
+[[accepted]]
+input = "*unique_items_schema_validators*"
+aspects = [ "type" ]
+match = "^\\[type\\] UniqueItemsPayload:mapping: Union\\[None, dict\\[str, list\\[object\\]\\]\\] -> Union\\[None, dict\\[str, set\\[object\\]\\]\\]$"
+reason = "with --use-unique-items-as-set (the practical presets), the values of a map whose own schema declares uniqueItems were lists; they are sets now (owner decision: default under the option)"
+decision = "#6163"
+release_note = "with --use-unique-items-as-set, every array whose own schema declares uniqueItems is written as a set, also the member of an anyOf or oneOf, the items of an array, the values of a map and a lone allOf member, where a model merged into its model declares it too"
+
+[[accepted]]
+input = "*unique_items_union_enum_root*"
+aspects = [ "type" ]
+match = "^\\[type\\] UniqueItemsUnionEnumRoot: Union\\[UniqueItemsUnionEnumRoot1, dict\\[str, list\\[int\\]\\]\\] -> Union\\[UniqueItemsUnionEnumRoot1, dict\\[str, set\\[int\\]\\]\\]$"
+reason = "with --use-unique-items-as-set (the practical presets), the values of a map member of a union whose own schema declares uniqueItems were lists; they are sets now (owner decision: default under the option)"
+decision = "#6163"
+release_note = "with --use-unique-items-as-set, every array whose own schema declares uniqueItems is written as a set, also the member of an anyOf or oneOf, the items of an array, the values of a map and a lone allOf member, where a model merged into its model declares it too"
+
+[[accepted]]
+input = "*unique_items_union_mapping_shapes*"
+aspects = [ "type" ]
+match = "^\\[type\\] UniqueItemsUnionMappingShapes:mapping_(?:impossible_branch|enum_scalar|enum_literal): .*dict\\[str, list\\[int\\]\\].* -> .*dict\\[str, set\\[int\\]\\].*$"
+reason = "with --use-unique-items-as-set (the practical presets), the values of a map member of a union whose own schema declares uniqueItems were lists; they are sets now, beside the list an enum value of another member gives (owner decision: default under the option)"
+decision = "#6163"
+release_note = "with --use-unique-items-as-set, every array whose own schema declares uniqueItems is written as a set, also the member of an anyOf or oneOf, the items of an array, the values of a map and a lone allOf member, where a model merged into its model declares it too"
+
+[[accepted]]
+input = "*unique_items_union_ref_mapping_root*"
+aspects = [ "type" ]
+match = "^\\[type\\] UniqueItemsUnionRefMappingRoot: dict\\[str, list\\[int\\]\\] -> dict\\[str, set\\[int\\]\\]$"
+reason = "with --use-unique-items-as-set (the practical presets), the values of a map whose own schema declares uniqueItems were lists; they are sets now (owner decision: default under the option)"
+decision = "#6163"
+release_note = "with --use-unique-items-as-set, every array whose own schema declares uniqueItems is written as a set, also the member of an anyOf or oneOf, the items of an array, the values of a map and a lone allOf member, where a model merged into its model declares it too"
+
+[[accepted]]
+input = "*allof_with_required_inherited_*"
+aspects = [ "type" ]
+match = "^\\[type\\] (?:Projected)?(?:Entity|EdgeCases):allof_(?:with_unique|unique_items): (?:Union\\[(?:None, )?)?list\\[str\\](?:, msgspec\\.UnsetType)?\\]? -> (?:Union\\[(?:None|msgspec\\.UnsetType), )?set\\[str\\]\\]?$"
+reason = "with --use-unique-items-as-set (the practical presets), the array of a lone allOf member that declares uniqueItems was a list; it is a set now, as a property of the same array is (owner decision: default under the option)"
+decision = "#6163"
+release_note = "with --use-unique-items-as-set, every array whose own schema declares uniqueItems is written as a set, also the member of an anyOf or oneOf, the items of an array, the values of a map and a lone allOf member, where a model merged into its model declares it too"

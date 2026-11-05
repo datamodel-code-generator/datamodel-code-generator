@@ -468,15 +468,17 @@ REUSE_MODEL = PassDecl(
     ),
     summary="Replaces duplicates of the module by empty subclasses, or removes them and redirects their users.",
 )
-REPLACE_TYPE_LIST_UNIQUE_LIST_TO_SET = PassDecl(
-    "replace_type_list_unique_list_to_set",
+REPLACE_MERGED_UNIQUE_LIST_TO_SET = PassDecl(
+    "replace_merged_unique_list_to_set",
     Phase.MODULES,
     Scope.MODULE,
     PassKind.TRANSFORM,
     reads=_facts(Fact.CONSTRAINTS, Fact.DEFAULTS, Fact.FIELD_TYPES, Fact.MODELS_EXIST, Fact.BASES),
     writes=_facts(Fact.CONTAINERS, Fact.FIELD_TYPES, Fact.DEFAULTS),
-    after=(After("reuse_model", "converts the array of a type list once every merge into its model is known"),),
-    summary="Writes the uniqueItems array of a type list as a set where every model merged into its model declares it.",
+    after=(
+        After("reuse_model", "converts the arrays reuse compares as lists once every merge into its model is known"),
+    ),
+    summary="Writes the other uniqueItems arrays as sets where every model merged into the model declares them.",
 )
 COLLAPSE_ROOT_MODELS = PassDecl(
     "collapse_root_models",
@@ -498,7 +500,7 @@ COLLAPSE_ROOT_MODELS = PassDecl(
     ),
     after=(
         After("reuse_model", "inlines the root models that reuse keeps"),
-        After("replace_type_list_unique_list_to_set", "inlines root models into the sets of type lists"),
+        After("replace_merged_unique_list_to_set", "inlines root models into the sets written after reuse"),
     ),
     summary="Inlines the root models the module references.",
     condition="collapse_root_models",
@@ -512,7 +514,7 @@ SET_DEFAULT_ENUM_MEMBER = PassDecl(
     writes=_facts(Fact.DEFAULTS),
     after=(
         After("collapse_root_models", "writes enum members as defaults of the types collapse inlined"),
-        After("replace_type_list_unique_list_to_set", "writes enum members as defaults of the sets of type lists"),
+        After("replace_merged_unique_list_to_set", "writes enum members as defaults of the sets written after reuse"),
     ),
 )
 SORT_MODELS = PassDecl(

@@ -8335,6 +8335,55 @@ def test_main_unique_items_as_set_type_list_merged(
     )
 
 
+@pytest.mark.parametrize(
+    ("extra_args", "expected_repr"),
+    [
+        pytest.param(
+            ["--reuse-model"],
+            "Root(labels=Labels(member=[2, 1, 2], items=[{1, 2}], values={'k': [2, 1, 2]}), "
+            "history=History(member=[2, 1, 2], items=[{1, 2}], values={'k': [2, 1, 2]}), "
+            "tags=Tags(member={1, 2}, items=[{1, 2}], values={'k': {1, 2}}), "
+            "marks=Marks(member={1, 2}, items=[{1, 2}], values={'k': {1, 2}}))",
+            id="subclass",
+        ),
+        pytest.param(
+            ["--reuse-model", "--collapse-reuse-models"],
+            "Root(labels=Labels(member=[2, 1, 2], items=[{1, 2}], values={'k': [2, 1, 2]}), "
+            "history=Labels(member=[2, 1, 2], items=[{1, 2}], values={'k': [2, 1, 2]}), "
+            "tags=Tags(member={1, 2}, items=[{1, 2}], values={'k': {1, 2}}), "
+            "marks=Tags(member={1, 2}, items=[{1, 2}], values={'k': {1, 2}}))",
+            id="collapse",
+        ),
+    ],
+)
+def test_main_unique_items_as_set_nested_merged(extra_args: list[str], expected_repr: str, output_file: Path) -> None:
+    """Keep a nested uniqueItems array a list where reuse merges into its model one that does not declare it there.
+
+    ``History`` declares ``uniqueItems`` on the items of ``items`` as ``Labels`` does, but not on the array member of
+    ``member`` nor on the values of ``values``; it merges into ``Labels``, so only ``items`` holds sets and the other
+    arrays keep the duplicates ``History`` admits. ``Marks`` declares every one as ``Tags`` does, so all are sets.
+    """
+    name = "unique_items_nested_merged"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=["--use-unique-items-as-set", *extra_args, "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    model = '{"member": [2, 1, 2], "items": [[2, 1, 2]], "values": {"k": [2, 1, 2]}}'
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=name,
+        model_name="Root",
+        valid_json=f'{{"labels": {model}, "history": {model}, "tags": {model}, "marks": {model}}}',
+        invalid_json='{"tags": {"member": "text"}}',
+        expected_error_type="set_type",
+        expected_repr=expected_repr,
+    )
+
+
 @pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct"])
 def test_main_unique_items_as_set_unhashable_items(output_model: str, tmp_path: Path, output_file: Path) -> None:
     """Keep a uniqueItems array a list where no value of its items hashes, or where its list default cannot be a set.
@@ -8406,6 +8455,105 @@ def test_main_unique_items_as_set_unhashable_items(output_model: str, tmp_path: 
             expected_repr=(
                 "Model(objects=[{'a': 1}], arrays=[[1], [2]], pairs=[(1, [2])], scalar_pairs={(1, 'a')}, mixed=None, "
                 "nullable_arrays=None, any_default=[[1], [2]], numbers={1, 2})"
+            ),
+        )
+
+
+@pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct", "typing.TypedDict"])
+def test_main_unique_items_as_set_nested_arrays(output_model: str, tmp_path: Path, output_file: Path) -> None:
+    """Write as a set every array whose own schema declares ``uniqueItems``, wherever the array is.
+
+    The member of an anyOf, a oneOf and a nullable anyOf, the items of an array, the values of a map and of its pattern
+    properties, a lone allOf member and an array beside which a nested anyOf declares the keyword, with a list default
+    that becomes a set. The sets an array holds are decided first: an array of sets stays a list, as no set holds a
+    set. An array stays a list beside a member of its kind that keeps its lists, the values of two patterns or the
+    values of two maps, as a msgspec union holds one array-like member and one map. A tuple that the keyword declares
+    unique stays a tuple with a warning, as at a field. Up to 0.89.0 only the arrays of a field's own schema became
+    sets, so the others kept the duplicates their schema rejects.
+    """
+    integers = {"type": "array", "items": {"type": "integer"}, "uniqueItems": True}
+    input_file = tmp_path / "nested_arrays.json"
+    input_file.write_text(
+        json.dumps({
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "Model",
+            "type": "object",
+            "properties": {
+                "any_of": {"anyOf": [integers, {"type": "string"}], "default": [1, 2]},
+                "one_of": {"oneOf": [integers, {"type": "string"}]},
+                "nullable": {"anyOf": [integers, {"type": "null"}]},
+                "items": {"type": "array", "items": integers},
+                "values": {"type": "object", "additionalProperties": integers},
+                "patterns": {"type": "object", "patternProperties": {"^a": integers}},
+                "all_of": {"allOf": [integers]},
+                "beside_any_of": {
+                    "type": "array",
+                    "items": {
+                        "uniqueItems": True,
+                        "anyOf": [{"type": "array", "items": {"type": "string"}}, {"type": "integer"}],
+                    },
+                },
+                "arrays_of_sets": {"allOf": [{"type": "array", "uniqueItems": True, "items": integers}]},
+                "nested_sets": {"type": "array", "items": {"type": "array", "uniqueItems": True, "items": integers}},
+                "two_patterns": {
+                    "type": "object",
+                    "patternProperties": {"^a": integers, "^b": {"type": "array", "items": {"type": "integer"}}},
+                },
+                "two_maps": {
+                    "anyOf": [
+                        {"type": "object", "additionalProperties": integers},
+                        {"type": "object", "additionalProperties": {"type": "array", "items": {"type": "integer"}}},
+                    ]
+                },
+                "tuples": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "prefixItems": [{"type": "integer"}, {"type": "string"}],
+                        "items": False,
+                        "minItems": 2,
+                        "uniqueItems": True,
+                    },
+                },
+            },
+        }),
+        encoding="utf-8",
+    )
+    with pytest.warns(
+        UserWarning, match=r"which would lose the positions of tuple\[int, str\]; (Model\.tuples|Tuple) is generated"
+    ):
+        run_main_and_assert(
+            input_path=input_file,
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            extra_args=[
+                "--output-model-type",
+                output_model,
+                "--use-unique-items-as-set",
+                "--use-tuple-for-closed-arrays",
+                "--formatters",
+                "builtin",
+            ],
+            force_exec_validation=True,
+        )
+    if output_model == "pydantic_v2.BaseModel":
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="unique_items_as_set_nested_arrays",
+            model_name="Model",
+            valid_json=(
+                '{"one_of": [1, 1], "nullable": [2, 2], "items": [[3, 3]], "values": {"k": [4, 4]},'
+                ' "patterns": {"a": [5, 5]}, "all_of": [6, 6], "beside_any_of": [["x", "x"], 7],'
+                ' "arrays_of_sets": [[8, 8], [8]], "two_patterns": {"b": [9, 9]}, "two_maps": {"k": [10, 10]}}'
+            ),
+            invalid_json='{"items": [1]}',
+            expected_error_type="set_type",
+            expected_repr=(
+                "Model(any_of={1, 2}, one_of={1}, nullable={2}, items=[{3}], values={'k': {4}}, patterns={'a': {5}}, "
+                "all_of=AllOf(root={6}), beside_any_of=[BesideAnyOf(root={'x'}), BesideAnyOf1(root=7)], "
+                "arrays_of_sets=ArraysOfSets(root=[{8}, {8}]), nested_sets=None, "
+                "two_patterns={'b': [9, 9]}, two_maps={'k': [10, 10]}, tuples=None)"
             ),
         )
 
