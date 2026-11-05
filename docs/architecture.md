@@ -1629,6 +1629,7 @@ is a new named row, never an anonymous `if`.
 | `legacy-count-ref-member-as-written` | without `--read-schema-version-per-document`, the property-count validator reads `minProperties`/`maxProperties` beside an allOf `$ref` member in every schema version, where the other validator walkers read them only in a version that applies the keywords beside a `$ref` | keep |
 | `legacy-dedup-keys-without-unique-items` | without `--use-unique-items-as-set-by-value`, the dedup and reuse keys leave out which arrays declare `uniqueItems`, which they compare as the lists they still are | keep |
 | `legacy-unique-items-decided-before-collapse` | without `--use-unique-items-as-set-by-value`, `--use-unique-items-as-set` writes its sets in L5, before root models collapse, type overrides apply and the other modules are processed, and a set item model hashes by identity | keep |
+| `legacy-collapse-enum-literal-aliases` | without `--keep-enum-literal-aliases`, collapse inlines the `Literal` type alias of an enum definition at its uses | keep |
 
 **Scope on schema objects, not parse paths.** When an option applies to part of a document, the walk that defines the
 part marks the schema objects in scope where the document is rewritten (L0), and L1 checks the mark on the object it

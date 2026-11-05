@@ -74699,6 +74699,37 @@ class Holder(BaseModel):
     names: Sequence[Name] | None = None
 ```
 
+### `--keep-enum-literal-aliases`
+
+| | |
+|---|---|
+| Option | `--keep-enum-literal-aliases` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#4860](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4860) |
+
+**Affects:** `--collapse-root-models` in an output that writes an enum definition as a `Literal` type alias: TypedDict, and the other outputs under `--enum-field-as-literal all` (with `--use-type-alias` for Pydantic). Collapse inlines the alias, so every use repeats the `Literal` and the name of the enum is lost. With the option the alias stays named at its uses; a type alias holds the values of its type, so the uses accept the same values. A Pydantic `RootModel` class of the `Literal` still collapses, as keeping it would wrap the values its holders parse.
+
+Schema: `Status` is `{"type": "string", "enum": ["open", "resolved"]}` and `Ticket.status` references it, with `--output-model-type typing.TypedDict --collapse-root-models`.
+
+Without the option (same as 0.89.0):
+
+```python
+class Ticket(TypedDict):
+    status: Literal["open", "resolved"]
+```
+
+With the option:
+
+```python
+Status: TypeAlias = Literal["open", "resolved"]
+
+
+class Ticket(TypedDict):
+    status: Status
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.
@@ -77025,6 +77056,7 @@ is a new named row, never an anonymous `if`.
 | `legacy-count-ref-member-as-written` | without `--read-schema-version-per-document`, the property-count validator reads `minProperties`/`maxProperties` beside an allOf `$ref` member in every schema version, where the other validator walkers read them only in a version that applies the keywords beside a `$ref` | keep |
 | `legacy-dedup-keys-without-unique-items` | without `--use-unique-items-as-set-by-value`, the dedup and reuse keys leave out which arrays declare `uniqueItems`, which they compare as the lists they still are | keep |
 | `legacy-unique-items-decided-before-collapse` | without `--use-unique-items-as-set-by-value`, `--use-unique-items-as-set` writes its sets in L5, before root models collapse, type overrides apply and the other modules are processed, and a set item model hashes by identity | keep |
+| `legacy-collapse-enum-literal-aliases` | without `--keep-enum-literal-aliases`, collapse inlines the `Literal` type alias of an enum definition at its uses | keep |
 
 **Scope on schema objects, not parse paths.** When an option applies to part of a document, the walk that defines the
 part marks the schema objects in scope where the document is rewritten (L0), and L1 checks the mark on the object it
