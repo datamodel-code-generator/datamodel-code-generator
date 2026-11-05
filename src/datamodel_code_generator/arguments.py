@@ -848,6 +848,15 @@ _toggle(
     "alias, the null branch of an `allOf` member's `anyOf` or `oneOf`, and no `enum` value that the merged `type` "
     "rejects. Without it these keep the output of 0.88.0",
 )
+_toggle(
+    typing_options,
+    "--distribute-allof-over-unions",
+    help="Read an `allOf` with the `anyOf` and `oneOf` beside it as JSON Schema validates them: a `$ref` branch of an "
+    "`anyOf` or `oneOf` takes the `allOf` members beside it, which an inline branch already takes, and the value "
+    "keywords beside it where it names no object, and an OpenAPI request or response body with an `allOf` beside an "
+    "`anyOf` or `oneOf` is that union as a schema of the components is. Without it a `$ref` branch takes only the "
+    "`properties` and `required` beside it and a body drops the union, as in 0.89.0",
+)
 _flag(typing_options, "--field-constraints", help="Use field constraints and not con* annotations")
 _toggle(
     typing_options,

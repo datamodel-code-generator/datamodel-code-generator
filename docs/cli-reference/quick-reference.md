@@ -39,6 +39,7 @@ datamodel-codegen [OPTIONS]
 | [`--allof-class-hierarchy`](typing-customization.md#allof-class-hierarchy) | Controls how allOf schemas are represented in the generated class hierarchy. `--... |
 | [`--allof-merge-mode`](typing-customization.md#allof-merge-mode) | Merge constraints from root model references in allOf schemas. |
 | [`--disable-future-imports`](typing-customization.md#disable-future-imports) | Prevent automatic addition of __future__ imports in generated code. |
+| [`--distribute-allof-over-unions`](typing-customization.md#distribute-allof-over-unions) | Read an `allOf` with the `anyOf` and `oneOf` beside it, as JSON Schema validates... |
 | [`--enum-field-as-literal`](typing-customization.md#enum-field-as-literal) | Convert all enum fields to Literal types instead of Enum classes. |
 | [`--enum-field-as-literal-map`](typing-customization.md#enum-field-as-literal-map) | Override enum/literal generation per-field via JSON mapping. |
 | [`--filter-literal-values`](typing-customization.md#filter-literal-values) | Keep only the values of a `const` or an `enum` that meet the constraints beside ... |
@@ -386,6 +387,7 @@ All options sorted alphabetically:
 - [`--disable-future-imports`](typing-customization.md#disable-future-imports) - Prevent automatic addition of __future__ imports in generate...
 - [`--disable-timestamp`](template-customization.md#disable-timestamp) - Disable timestamp in generated file header for reproducible ...
 - [`--disable-warnings`](general-options.md#disable-warnings) - Suppress warning messages during code generation.
+- [`--distribute-allof-over-unions`](typing-customization.md#distribute-allof-over-unions) - Read an `allOf` with the `anyOf` and `oneOf` beside it, as J...
 - [`--duplicate-name-suffix`](model-customization.md#duplicate-name-suffix) - Customize suffix for duplicate model names.
 - [`--emit-model-metadata`](base-options.md#emit-model-metadata) - Write a separate JSON map from the final generated models, m...
 - [`--empty-enum-field-name`](field-customization.md#empty-enum-field-name) - Name for empty string enum field values.

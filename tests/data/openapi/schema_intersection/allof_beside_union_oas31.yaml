@@ -1,0 +1,70 @@
+openapi: 3.1.0
+info:
+  title: allOf beside a union
+  version: "1"
+paths:
+  /pets:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/Base'
+              oneOf:
+                - $ref: '#/components/schemas/Cat'
+                - $ref: '#/components/schemas/Dog'
+      responses:
+        '200':
+          description: The pet with its owner.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Base'
+                anyOf:
+                  - $ref: '#/components/schemas/Cat'
+                  - type: object
+                    required: [owner]
+                    properties:
+                      owner:
+                        type: string
+components:
+  schemas:
+    Base:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+    Cat:
+      type: object
+      required: [petType, meow]
+      properties:
+        petType:
+          type: string
+          enum: [cat]
+        meow:
+          type: boolean
+    Dog:
+      type: object
+      required: [petType, bark]
+      properties:
+        petType:
+          type: string
+          enum: [dog]
+        bark:
+          type: boolean
+    Pet:
+      allOf:
+        - $ref: '#/components/schemas/Base'
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: petType
+    Holder:
+      type: object
+      properties:
+        pet:
+          $ref: '#/components/schemas/Pet'

@@ -1,0 +1,219 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "pet": {
+      "$ref": "#/$defs/Pet"
+    },
+    "pet_inline_member": {
+      "$ref": "#/$defs/PetInlineMember"
+    },
+    "pet_mixed": {
+      "$ref": "#/$defs/PetMixed"
+    },
+    "pet_inline": {
+      "$ref": "#/$defs/PetInline"
+    },
+    "pet_props": {
+      "$ref": "#/$defs/PetProps"
+    },
+    "pet_field": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        }
+      ],
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Cat"
+        },
+        {
+          "$ref": "#/$defs/Dog"
+        }
+      ]
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Base"
+          }
+        ],
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Cat"
+          },
+          {
+            "$ref": "#/$defs/Dog"
+          }
+        ]
+      }
+    },
+    "values": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/Base"
+          }
+        ],
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Cat"
+          },
+          {
+            "$ref": "#/$defs/Dog"
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      }
+    },
+    "Cat": {
+      "type": "object",
+      "required": [
+        "meow"
+      ],
+      "properties": {
+        "meow": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Dog": {
+      "type": "object",
+      "required": [
+        "bark"
+      ],
+      "properties": {
+        "bark": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Pet": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        }
+      ],
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Cat"
+        },
+        {
+          "$ref": "#/$defs/Dog"
+        }
+      ]
+    },
+    "PetInlineMember": {
+      "allOf": [
+        {
+          "type": "object",
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          }
+        }
+      ],
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Cat"
+        },
+        {
+          "$ref": "#/$defs/Dog"
+        }
+      ]
+    },
+    "PetMixed": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        }
+      ],
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Cat"
+        },
+        {
+          "type": "object",
+          "required": [
+            "bark"
+          ],
+          "properties": {
+            "bark": {
+              "type": "boolean"
+            }
+          }
+        }
+      ]
+    },
+    "PetInline": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        }
+      ],
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "meow"
+          ],
+          "properties": {
+            "meow": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "bark"
+          ],
+          "properties": {
+            "bark": {
+              "type": "boolean"
+            }
+          }
+        }
+      ]
+    },
+    "PetProps": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Cat"
+        },
+        {
+          "$ref": "#/$defs/Dog"
+        }
+      ]
+    }
+  }
+}

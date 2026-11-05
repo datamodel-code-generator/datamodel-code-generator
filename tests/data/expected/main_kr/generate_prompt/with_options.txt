@@ -37,6 +37,7 @@ What other options should I use?
 - `--allof-class-hierarchy`: Controls how allOf schemas are represented in the generated class hierarchy.
 - `--allof-merge-mode`: Merge constraints from root model references in allOf schemas.
 - `--disable-future-imports`: Prevent automatic addition of __future__ imports in generated code.
+- `--distribute-allof-over-unions`: Read an `allOf` with the `anyOf` and `oneOf` beside it, as JSON Schema valid...
 - `--enum-field-as-literal`: Convert all enum fields to Literal types instead of Enum classes.
 - `--enum-field-as-literal-map`: Override enum/literal generation per-field via JSON mapping.
 - `--filter-literal-values`: Keep only the values of a `const` or an `enum` that meet the constraints beside them.
@@ -45,6 +46,7 @@ What other options should I use?
 - `--intersect-allof-keywords`: Combine the keywords of every part of an `allOf`, a `$ref` with siblings or an o...
 - `--intersect-combined-schema-keywords`: Combine the keywords beside an `anyOf` or `oneOf` with each branch, as...
 - `--keep-enum-member-values`: Give an enum class a value base only when it keeps every member value.
+- `--no-distribute-allof-over-unions`
 - `--no-filter-literal-values`
 - `--no-intersect-allof-keywords`
 - `--no-intersect-combined-schema-keywords`
@@ -553,6 +555,17 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         map > customBasePath (in schema) > base-class.
   --disable-future-imports
                         Disable __future__ imports
+  --distribute-allof-over-unions, --no-distribute-allof-over-unions
+                        Read an `allOf` with the `anyOf` and `oneOf` beside it
+                        as JSON Schema validates them: a `$ref` branch of an
+                        `anyOf` or `oneOf` takes the `allOf` members beside
+                        it, which an inline branch already takes, and the
+                        value keywords beside it where it names no object, and
+                        an OpenAPI request or response body with an `allOf`
+                        beside an `anyOf` or `oneOf` is that union as a schema
+                        of the components is. Without it a `$ref` branch takes
+                        only the `properties` and `required` beside it and a
+                        body drops the union, as in 0.89.0
   --enum-field-as-literal {all,one,none}
                         Parse enum field as literal. all: all enum field type
                         are Literal. one: field type is Literal when an enum

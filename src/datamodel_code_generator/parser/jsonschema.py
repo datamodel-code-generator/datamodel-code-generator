@@ -628,6 +628,11 @@ def _one_of_any_of_applies(parser: JsonSchemaParser, site: _Site) -> bool:  # no
     return bool(site.obj.oneOf or site.obj.anyOf)
 
 
+def _all_of_beside_one_of_applies(parser: JsonSchemaParser, site: _Site) -> bool:  # noqa: ARG001
+    """Return whether the schema of a site has allOf beside oneOf or anyOf: the union, each branch with the allOf."""
+    return bool(site.obj.allOf and (site.obj.oneOf or site.obj.anyOf))
+
+
 def _ref_applies(parser: JsonSchemaParser, site: _Site) -> bool:  # noqa: ARG001
     """Return whether the schema of a site has a ``$ref``."""
     return bool(site.obj.ref)
@@ -2313,10 +2318,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     @cached_property
     def _legacy_intersection(self) -> frozenset[str]:
-        """The rows of ``parser/_intersection.py:LEGACY_ROWS`` kept: those of each intersect option that is off."""
+        """The rows of ``parser/_intersection.py:LEGACY_ROWS`` kept: those of each of its options that is off."""
         options = {
             "intersect_allof_keywords": self.intersects_allof_keywords,
             "intersect_combined_schema_keywords": self.intersects_combined_schema_keywords,
+            "distribute_allof_over_unions": self.config.distribute_allof_over_unions,
         }
         return kept_legacy_rows({**options, **implied_options(options)})
 
@@ -3931,6 +3937,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if _merges_ref_siblings(target_attribute):
                     member = self._merge_ref_with_schema(target_attribute)
                     _inherited_schemas.preserve_inherited_materialized_type_shape(self, target_attribute, member)
+                if member.ref and (beside := self._value_ref_branch_with_site(base_object, member)) is not None:
+                    member = beside
                 if member.ref:
                     combined_schemas.append(member)
                     refs.append(ref_index)
@@ -3958,6 +3966,23 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 )
             )
         return combined_schemas, refs
+
+    def _value_ref_branch_with_site(self, outer: dict[str, Any], branch: JsonSchemaObject) -> JsonSchemaObject | None:
+        """Return a ``$ref`` branch read with the keywords beside its ``anyOf`` or ``oneOf``, where they are its parts.
+
+        They are where the site writes value keywords and the branch names no object model, in every dialect: they
+        are parts of the conjunction, not keywords beside the ``$ref`` in the document. The branch is then the schema
+        it names merged with them, as a ``$ref`` merges its siblings, which ``_combined_schema_members`` reads as an
+        inline branch. None under ``legacy-ref-branch-without-site-parts``, and where the merge keeps the reference.
+        """
+        if (
+            "legacy-ref-branch-without-site-parts" in self._legacy_intersection
+            or not self._schema_has_own_value_keywords(site := self._schema_object(outer))
+            or self._schema_requires_model_type(branch, resolve_ref=True)
+        ):
+            return None
+        merged = self._merge_ref_with_schema(site.model_copy(update={"ref": branch.ref}))
+        return None if merged.ref else merged
 
     def _combined_branch_row(
         self, outer: dict[str, Any], branch: dict[str, Any], where: str, keyword: str
@@ -4012,14 +4037,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         common_path_keyword = f"{target_attribute_name}Common"
         return [
             with_type_origin(
-                self._parse_object_common_part(
+                self._parse_ref_branch_model(
                     name,
                     obj.with_schema_location(combined_schemas[i].schema_location),
                     [*get_special_path(common_path_keyword, path), str(i)],
-                    ignore_duplicate_model=True,
-                    fields=[],
-                    base_classes=[d.reference],
-                    required=[],
+                    combined_schemas[i],
+                    d.reference,
                 ),
                 combined_schemas[i].schema_location,
             )
@@ -4027,6 +4050,27 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             else d
             for i, d in enumerate(parsed_schemas)
         ]
+
+    def _parse_ref_branch_model(
+        self, name: str, obj: JsonSchemaObject, path: list[str], branch: JsonSchemaObject, reference: Reference
+    ) -> DataType:
+        """Parse the model of a ``$ref`` branch of ``obj``'s ``anyOf`` or ``oneOf``: the branch with the site's parts.
+
+        It is the class of the branch with the ``properties`` and ``required`` of the site, and, unless
+        ``legacy-ref-branch-without-site-parts`` is kept, the ``allOf`` members beside the union as further bases, as
+        an inline branch merged with the site takes them: the ``allOf`` of the branch and those members with the
+        site's other keywords (``parse_all_of``). A branch the site adds nothing to is the branch's own class.
+        """
+        if obj.allOf and "legacy-ref-branch-without-site-parts" not in self._legacy_intersection:
+            return self.parse_all_of(
+                name,
+                obj.model_copy(update={"allOf": [branch, *obj.allOf], "anyOf": [], "oneOf": []}),
+                path,
+                ignore_duplicate_model=True,
+            )
+        return self._parse_object_common_part(
+            name, obj, path, ignore_duplicate_model=True, fields=[], base_classes=[reference], required=[]
+        )
 
     def parse_any_of(self, name: str, obj: JsonSchemaObject, path: list[str]) -> list[DataType]:
         """Parse anyOf schema into a list of data types."""
@@ -8272,9 +8316,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _build_definition_array(self, site: _Site) -> object:
         return self.parse_array(site.name, site.obj, site.path)
 
-    def _definition_all_of_beside_one_of_applies(self, site: _Site) -> bool:  # noqa: PLR6301
-        return bool(site.obj.allOf and (site.obj.oneOf or site.obj.anyOf))
-
     def _definition_enum_applies(self, site: _Site) -> bool:
         return bool(
             site.obj.enum
@@ -8304,7 +8345,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             Row("array", _array_applies, _then_parse_refs(_build_definition_array)),
             Row(
                 "all-of-beside-one-of",
-                _definition_all_of_beside_one_of_applies,
+                _all_of_beside_one_of_applies,
                 _then_parse_refs(_parse_root_type_site),
             ),
             Row("all-of", _all_of_applies, _then_parse_refs(_parse_all_of_site)),

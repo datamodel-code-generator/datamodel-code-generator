@@ -130,6 +130,10 @@ EXTRA_RUNS: dict[str, tuple[tuple[DataModelType, tuple[str, ...]], ...]] = {
     "ref_siblings": ((DataModelType.PydanticV2BaseModel, ("--generate-schema-validators",)),),
     "root_members": ((DataModelType.PydanticV2BaseModel, ("--generate-schema-validators",)),),
     "unsat_root_literals": ((DataModelType.PydanticV2BaseModel, ("--generate-schema-validators",)),),
+    "allof_beside_union_oas31": (
+        (DataModelType.PydanticV2BaseModel, ("--openapi-scopes", "schemas", "paths")),
+        (DataModelType.PydanticV2BaseModel, ("--read-only-write-only-model-type", "all")),
+    ),
 }
 VALIDATING_BACKENDS = {
     DataModelType.PydanticV2BaseModel,
@@ -178,6 +182,10 @@ COMBINED_DOCUMENTS: tuple[str, ...] = (
     "combined_option_edges_draft07",
 )
 """The documents whose output --intersect-combined-schema-keywords changes, pinned with ``COMBINED_OPTION_ARGS`` too."""
+DISTRIBUTE_OPTION_ARGS: tuple[str, ...] = ("--distribute-allof-over-unions",)
+"""The option that reads an ``allOf`` with the ``anyOf`` and ``oneOf`` beside it, alone: it needs no other option."""
+DISTRIBUTE_DOCUMENTS: tuple[str, ...] = ("allof_beside_union", "allof_beside_union_oas31", "union_ref_branch_values")
+"""The documents whose output --distribute-allof-over-unions changes, pinned with ``DISTRIBUTE_OPTION_ARGS`` too."""
 
 
 def _payload_params(stems: Iterable[str]) -> list[pytest.ParameterSet]:
@@ -262,6 +270,19 @@ def test_schema_intersection_shape_output_with_combined_option(
     _assert_shape_output(output_file, stem, backend, options, COMBINED_OPTION_ARGS)
 
 
+@pytest.mark.parametrize(("stem", "backend", "options"), _run_params(DISTRIBUTE_DOCUMENTS))
+def test_schema_intersection_shape_output_with_distribute_option(
+    output_file: Path, stem: str, backend: DataModelType, options: tuple[str, ...]
+) -> None:
+    """Pin the code written with --distribute-allof-over-unions for the shapes it changes.
+
+    A ``$ref`` branch of an ``anyOf`` or ``oneOf`` takes the ``allOf`` members beside it as further bases, as an
+    inline branch takes them, and the value keywords beside it where it names no object; an OpenAPI body with an
+    ``allOf`` beside a union is that union.
+    """
+    _assert_shape_output(output_file, stem, backend, options, DISTRIBUTE_OPTION_ARGS)
+
+
 def _assert_shape_output(
     output_file: Path, stem: str, backend: DataModelType, options: tuple[str, ...], option_args: tuple[str, ...]
 ) -> None:
@@ -329,6 +350,17 @@ def test_schema_intersection_shape_payloads_with_combined_option(tmp_path: Path,
     minimum, and an ``enum`` value outside the merged ``type`` are rejected.
     """
     assert_output(_shape_payload_lines(tmp_path, stem, COMBINED_OPTION_ARGS))
+
+
+@EXPERIMENTAL_MISSING_IMPORT_WARNING
+@pytest.mark.parametrize("stem", _payload_params(DISTRIBUTE_DOCUMENTS))
+def test_schema_intersection_shape_payloads_with_distribute_option(tmp_path: Path, stem: str) -> None:
+    """Record what each model generated with --distribute-allof-over-unions accepts.
+
+    A value a ``$ref`` branch admits but the ``allOf`` members or the value keywords beside the union reject, such
+    as an object without the ``id`` the ``allOf`` requires or a number below the outer minimum, is rejected.
+    """
+    assert_output(_shape_payload_lines(tmp_path, stem, DISTRIBUTE_OPTION_ARGS))
 
 
 @EXPERIMENTAL_MISSING_IMPORT_WARNING

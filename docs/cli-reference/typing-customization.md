@@ -7,6 +7,7 @@
 | [`--allof-class-hierarchy`](#allof-class-hierarchy) | Controls how allOf schemas are represented in the generated ... |
 | [`--allof-merge-mode`](#allof-merge-mode) | Merge constraints from root model references in allOf schema... |
 | [`--disable-future-imports`](#disable-future-imports) | Prevent automatic addition of __future__ imports in generate... |
+| [`--distribute-allof-over-unions`](#distribute-allof-over-unions) | Read an `allOf` with the `anyOf` and `oneOf` beside it, as J... |
 | [`--enum-field-as-literal`](#enum-field-as-literal) | Convert all enum fields to Literal types instead of Enum cla... |
 | [`--enum-field-as-literal-map`](#enum-field-as-literal-map) | Override enum/literal generation per-field via JSON mapping. |
 | [`--filter-literal-values`](#filter-literal-values) | Keep only the values of a `const` or an `enum` that meet the... |
@@ -1130,6 +1131,458 @@ postponed evaluation of annotations (PEP 563).
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--distribute-allof-over-unions` {#distribute-allof-over-unions}
+
+Read an `allOf` with the `anyOf` and `oneOf` beside it, as JSON Schema validates them.
+
+A schema with an `allOf` beside an `anyOf` or `oneOf` admits a value that every `allOf` member and one branch admit.
+An inline branch is parsed with the `allOf` merged in, but a `$ref` branch takes only the `properties` and `required`
+beside it, so `{allOf: [Base], oneOf: [Cat, Dog]}` writes `Cat | Dog` and drops `Base`. With
+`--distribute-allof-over-unions` such a branch gets a class whose bases are the branch and the `allOf` members
+(`Pet1(Cat, Base)`), at a definition, a property, an array item and a map value alike, and an OpenAPI request or
+response body is that union too (without the option it is parsed by its `allOf` and the union is dropped). A `$ref`
+branch that names no object takes the value keywords beside the union, as an inline branch does, so `minimum: 5`
+beside `anyOf: [{$ref: Quantity}, {type: string}]` rejects `3`. An `allOf` member's value keywords meet such a branch
+under `--use-site-models-for-constrained-refs`, as they meet a `$ref` member of an `allOf` there.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input allof_beside_union.json --distribute-allof-over-unions # (1)!
+    ```
+
+    1. :material-arrow-left: `--distribute-allof-over-unions` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Model",
+      "type": "object",
+      "properties": {
+        "pet": {
+          "$ref": "#/$defs/Pet"
+        },
+        "pet_inline_member": {
+          "$ref": "#/$defs/PetInlineMember"
+        },
+        "pet_mixed": {
+          "$ref": "#/$defs/PetMixed"
+        },
+        "pet_inline": {
+          "$ref": "#/$defs/PetInline"
+        },
+        "pet_props": {
+          "$ref": "#/$defs/PetProps"
+        },
+        "pet_field": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base"
+            }
+          ],
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Cat"
+            },
+            {
+              "$ref": "#/$defs/Dog"
+            }
+          ]
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/Base"
+              }
+            ],
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Cat"
+              },
+              {
+                "$ref": "#/$defs/Dog"
+              }
+            ]
+          }
+        },
+        "values": {
+          "type": "object",
+          "additionalProperties": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/Base"
+              }
+            ],
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Cat"
+              },
+              {
+                "$ref": "#/$defs/Dog"
+              }
+            ]
+          }
+        }
+      },
+      "$defs": {
+        "Base": {
+          "type": "object",
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          }
+        },
+        "Cat": {
+          "type": "object",
+          "required": [
+            "meow"
+          ],
+          "properties": {
+            "meow": {
+              "type": "boolean"
+            }
+          }
+        },
+        "Dog": {
+          "type": "object",
+          "required": [
+            "bark"
+          ],
+          "properties": {
+            "bark": {
+              "type": "boolean"
+            }
+          }
+        },
+        "Pet": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base"
+            }
+          ],
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Cat"
+            },
+            {
+              "$ref": "#/$defs/Dog"
+            }
+          ]
+        },
+        "PetInlineMember": {
+          "allOf": [
+            {
+              "type": "object",
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                }
+              }
+            }
+          ],
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Cat"
+            },
+            {
+              "$ref": "#/$defs/Dog"
+            }
+          ]
+        },
+        "PetMixed": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base"
+            }
+          ],
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Cat"
+            },
+            {
+              "type": "object",
+              "required": [
+                "bark"
+              ],
+              "properties": {
+                "bark": {
+                  "type": "boolean"
+                }
+              }
+            }
+          ]
+        },
+        "PetInline": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base"
+            }
+          ],
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "meow"
+              ],
+              "properties": {
+                "meow": {
+                  "type": "boolean"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "bark"
+              ],
+              "properties": {
+                "bark": {
+                  "type": "boolean"
+                }
+              }
+            }
+          ]
+        },
+        "PetProps": {
+          "type": "object",
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Cat"
+            },
+            {
+              "$ref": "#/$defs/Dog"
+            }
+          ]
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  allof_beside_union.json
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, RootModel
+
+
+        class Base(BaseModel):
+            id: str
+
+
+        class Cat(BaseModel):
+            meow: bool
+
+
+        class Dog(BaseModel):
+            bark: bool
+
+
+        class Pet1(Cat, Base):
+            pass
+
+
+        class Pet2(Dog, Base):
+            pass
+
+
+        class Pet(RootModel[Pet1 | Pet2]):
+            root: Pet1 | Pet2
+
+
+        class PetInlineMember1(Cat):
+            id: str
+
+
+        class PetInlineMember2(Dog):
+            id: str
+
+
+        class PetInlineMember(RootModel[PetInlineMember1 | PetInlineMember2]):
+            root: PetInlineMember1 | PetInlineMember2
+
+
+        class PetMixed1(Base):
+            bark: bool
+
+
+        class PetMixed2(Cat, Base):
+            pass
+
+
+        class PetMixed(RootModel[PetMixed2 | PetMixed1]):
+            root: PetMixed2 | PetMixed1
+
+
+        class PetInline1(Base):
+            meow: bool
+
+
+        class PetInline2(Base):
+            bark: bool
+
+
+        class PetInline(RootModel[PetInline1 | PetInline2]):
+            root: PetInline1 | PetInline2
+
+
+        class PetProps1(Cat):
+            id: str
+
+
+        class PetProps2(Dog):
+            id: str
+
+
+        class PetProps(RootModel[PetProps1 | PetProps2]):
+            root: PetProps1 | PetProps2
+
+
+        class PetField(Cat, Base):
+            pass
+
+
+        class PetField1(Dog, Base):
+            pass
+
+
+        class Items(Cat, Base):
+            pass
+
+
+        class Items1(Dog, Base):
+            pass
+
+
+        class Values(Cat, Base):
+            pass
+
+
+        class Values1(Dog, Base):
+            pass
+
+
+        class Model(BaseModel):
+            pet: Pet | None = None
+            pet_inline_member: PetInlineMember | None = None
+            pet_mixed: PetMixed | None = None
+            pet_inline: PetInline | None = None
+            pet_props: PetProps | None = None
+            pet_field: PetField | PetField1 | None = None
+            items: list[Items | Items1] | None = None
+            values: dict[str, Values | Values1] | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  allof_beside_union.json
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, RootModel
+
+
+        class Base(BaseModel):
+            id: str
+
+
+        class Cat(BaseModel):
+            meow: bool
+
+
+        class Dog(BaseModel):
+            bark: bool
+
+
+        class Pet(RootModel[Cat | Dog]):
+            root: Cat | Dog
+
+
+        class PetInlineMember(RootModel[Cat | Dog]):
+            root: Cat | Dog
+
+
+        class PetMixed1(Base):
+            bark: bool
+
+
+        class PetMixed(RootModel[Cat | PetMixed1]):
+            root: Cat | PetMixed1
+
+
+        class PetInline1(Base):
+            meow: bool
+
+
+        class PetInline2(Base):
+            bark: bool
+
+
+        class PetInline(RootModel[PetInline1 | PetInline2]):
+            root: PetInline1 | PetInline2
+
+
+        class PetProps1(Cat):
+            id: str
+
+
+        class PetProps2(Dog):
+            id: str
+
+
+        class PetProps(RootModel[PetProps1 | PetProps2]):
+            root: PetProps1 | PetProps2
+
+
+        class Model(BaseModel):
+            pet: Pet | None = None
+            pet_inline_member: PetInlineMember | None = None
+            pet_mixed: PetMixed | None = None
+            pet_inline: PetInline | None = None
+            pet_props: PetProps | None = None
+            pet_field: Cat | Dog | None = None
+            items: list[Cat | Dog] | None = None
+            values: dict[str, Cat | Dog] | None = None
+        ```
+
+        <!-- fmt: on -->
 
 ---
 

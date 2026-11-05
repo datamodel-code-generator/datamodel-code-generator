@@ -716,6 +716,42 @@ class Bound(RootModel[conint(ge=5)]):
     root: conint(ge=5)
 ```
 
+### `--distribute-allof-over-unions`
+
+| | |
+|---|---|
+| Option | `--distribute-allof-over-unions` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#4820](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4820), [#5416](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5416) |
+
+**Affects:** a schema with an `allOf` beside an `anyOf` or `oneOf`, which admits a value that every `allOf` member and one branch admit. An inline branch is parsed with the `allOf` merged in, but a `$ref` branch takes only the `properties` and `required` beside it, so the `allOf` is dropped and the model accepts data without the properties it requires; an OpenAPI request or response body with an `allOf` beside the union is parsed by its `allOf` and drops the union. With the option a `$ref` branch gets a class whose bases are the branch and the `allOf` members, at a definition, a property, an array item and a map value alike, a body is that union as the same schema in `components` is, and a `$ref` branch that names no object takes the value keywords beside the union (`minimum`, `pattern`, `minItems` ...), as an inline branch does. The new classes are numbered after the site (`Pet1`, `Pet2`), so a later inline branch of the same union or value branch of the site can take another number (`R` becomes `R1`). An `allOf` member's own value keywords meet a `$ref` branch that names no object under `--use-site-models-for-constrained-refs`, as they meet a `$ref` member of an `allOf` there.
+
+Schema: `Pet` is `{"allOf": [{"$ref": "#/$defs/Base"}], "oneOf": [{"$ref": "#/$defs/Cat"}, {"$ref": "#/$defs/Dog"}]}`, where `Base` requires `id`.
+
+Without the option (same as 0.89.0), `Pet` accepts `{"meow": true}`:
+
+```python
+class Pet(RootModel[Cat | Dog]):
+    root: Cat | Dog
+```
+
+With the option:
+
+```python
+class Pet1(Cat, Base):
+    pass
+
+
+class Pet2(Dog, Base):
+    pass
+
+
+class Pet(RootModel[Pet1 | Pet2]):
+    root: Pet1 | Pet2
+```
+
 ### `--keep-reference-null-on-merged-models`
 
 | | |
