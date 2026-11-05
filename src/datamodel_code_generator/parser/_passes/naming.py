@@ -179,7 +179,8 @@ class _ResolverNamer:
                     preserve_name=True,
                 ).name
             )
-        return self._class_name(claim, composed_name(base, cast("ComposedRole", claim.word)), affixed=affixed)
+        role: ComposedRole = cast("ComposedRole", claim.word)
+        return self._class_name(claim, composed_name(base, role), affixed=affixed)
 
     def own(self, claim: NameClaim) -> tuple[str, str]:
         return self._class_name(claim, self._requests[claim.key].original_name, affixed=False)

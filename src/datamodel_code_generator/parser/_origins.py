@@ -20,7 +20,6 @@ from datamodel_code_generator.reference import (
 
 if TYPE_CHECKING:
     from datamodel_code_generator.model import DataModelFieldBase
-    from datamodel_code_generator.parser._schema_object import JsonSchemaObject
     from datamodel_code_generator.reference import FieldOriginKind, SchemaLocation
     from datamodel_code_generator.types import DataType
 
@@ -59,8 +58,8 @@ def with_enum_literal(data_type: DataType) -> DataType:
     return data_type
 
 
-def with_unique_items(data_type: DataType, schema: JsonSchemaObject) -> DataType:
-    """Record on ``data_type`` that ``schema``, which it is built from, declares ``uniqueItems: true``, if it does."""
-    if schema.uniqueItems is True:
+def with_unique_items(data_type: DataType, unique_items: bool | None) -> DataType:  # noqa: FBT001
+    """Record on ``data_type`` that the schema it is built from declares ``uniqueItems: true`` (``unique_items``)."""
+    if unique_items is True:
         data_type.__dict__[UNIQUE_ITEMS_KEY] = True
     return data_type
