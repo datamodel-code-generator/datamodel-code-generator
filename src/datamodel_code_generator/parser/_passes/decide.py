@@ -12,6 +12,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator.parser._passes._shared import (
     GenerationStoreHost,
+    ReplacedRootsHost,
     TargetPythonVersionHost,
     run_unused_models,
 )
@@ -28,7 +29,7 @@ if TYPE_CHECKING:
 __all__ = ["DecideHost", "decide"]
 
 
-class DecideHost(GenerationStoreHost, TargetPythonVersionHost, Protocol):
+class DecideHost(ReplacedRootsHost, GenerationStoreHost, TargetPythonVersionHost, Protocol):
     """The decision registry, the generation store and the type manager of the parser that the decision phase reads."""
 
     @property
@@ -52,7 +53,7 @@ def decide(parser: DecideHost, runner: Runner, run: FinishRun[Any, Any, Any]) ->
     """Seal the facts final at B1 and run the decisions of the registry on them in its order, when it holds any."""
     if not (decisions := tuple(d for d in parser._DECISION_PASSES if d.when is None or d.when(parser))):  # noqa: SLF001
         return
-    unused = run_unused_models(run)
+    unused = run_unused_models(parser, run)
     modules = [(ctx.module_key, unused.written(ctx.models)) for ctx in run.contexts]
     keywords = parser.data_type_manager.member_constraint_keywords
     version = parser.target_python_version.version_key

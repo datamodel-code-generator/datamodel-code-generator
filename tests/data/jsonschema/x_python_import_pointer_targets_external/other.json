@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "components": {
+    "Empty": {"type": "object"},
+    "Options": {"type": "object", "x-python-import": {"module": "collections", "name": "OrderedDict"}},
+    "Count": {"type": "integer", "minimum": 0}
+  }
+}

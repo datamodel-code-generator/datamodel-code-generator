@@ -298,6 +298,7 @@ assign_forward_reference_fields
 assign_forward_reference_fields
 assign_forward_reference_fields
 fix_constructor_field_ordering
+settle_module_unused_models
 unbind_hidden_type_fields
 update_type_aliases
 collect_live_models

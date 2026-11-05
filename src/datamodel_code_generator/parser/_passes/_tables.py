@@ -668,6 +668,11 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
                     render_prep.InheritedFieldCopies(run.contexts, run.internal_modules, run.model_path_to_module_name),
                 ),
             ),
+            PassSpec(
+                "settle_module_unused_models",
+                lambda self, run: render_prep.settle_module_unused_models(self, self._prepared_modules, run),
+                when=lambda _, run: bool(run.unused_models),
+            ),
             ForEachModule(
                 "prepare_module_rendering",
                 lambda self, _: self._prepared_modules,

@@ -1408,6 +1408,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """The import of the class each stand-in model stands for, by model key: a schema that a base names and the
         output types by an import (``--external-ref-mapping``, ``x-python-import``) is parsed into a model that is
         never written, which the passes read as the generated base until that import replaces the base."""
+        self._python_import_target_paths: set[str] = set()
+        """The paths of the models parsed for schemas whose ``x-python-import`` types their uses, which the passes
+        leave out where no model names them as a base (#5533)."""
         self._declared_class_stand_ins: set[ModelKey] = set()
         """The stand-ins of schemas whose ``x-python-import`` declares the class: that class is the base whatever the
         schema describes, so the stand-in is never dropped as a generated root model is."""

@@ -44,6 +44,7 @@ __all__ = [
     "REPLACE_MERGED_UNIQUE_LIST_TO_SET",
     "REPLACE_UNHASHABLE_UNIQUE_SET_TO_LIST",
     "SCOPE_NAMES",
+    "SETTLE_MODULE_UNUSED_MODELS",
     "SET_VALIDATE_DEFAULT_ON_FIELDS",
     "TYPE_USERS_OF_DROPPED_ROOT_MODELS_BY_ANY",
     "UNBIND_HIDDEN_TYPE_FIELDS",
@@ -668,9 +669,12 @@ REMOVE_OVERRIDDEN_MODELS = PassDecl(
     Phase.MODULES,
     Scope.MODULE,
     PassKind.TRANSFORM,
-    reads=_facts(Fact.TYPE_OVERRIDES, RenderFact.CLASS_NAMES),
+    reads=_facts(Fact.TYPE_OVERRIDES, Fact.BASES, RenderFact.CLASS_NAMES),
     writes=_facts(Fact.MODELS_EXIST),
-    summary="Keeps the models that a model-level --type-overrides replaces out of the module.",
+    summary=(
+        "Keeps the models that a model-level --type-overrides replaces, the stand-ins and the models of "
+        "x-python-import schemas that no model names (#5533) out of the module."
+    ),
 )
 APPLY_FIELD_TYPE_OVERRIDES = PassDecl(
     "apply_field_type_overrides",
@@ -1094,6 +1098,14 @@ FIX_CONSTRUCTOR_FIELD_ORDERING = PassDecl(
         "Orders constructor fields so that fields without a default come first, reading the fields of bases, each "
         "model after its bases; an inherited field that bases put after a default gets a keyword-only copy."
     ),
+)
+SETTLE_MODULE_UNUSED_MODELS = PassDecl(
+    "settle_module_unused_models",
+    Phase.RENDER_PREPARATION,
+    Scope.GLOBAL,
+    PassKind.BOOKKEEPING,
+    summary="Keeps live the unused models that removal leaves written in a merged module (#5905).",
+    condition="a module leaves models unused",
 )
 UNBIND_HIDDEN_TYPE_FIELDS = PassDecl(
     "unbind_hidden_type_fields",

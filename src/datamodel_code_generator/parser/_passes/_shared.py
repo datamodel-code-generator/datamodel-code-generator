@@ -114,7 +114,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
     from datamodel_code_generator.parser._model_shapes import BaseDedup, ModelShapes, ReuseGroups, ShapeRow
     from datamodel_code_generator.parser._null_facts import NullRule
-    from datamodel_code_generator.parser._passes._state import ModuleContextView, ModulePath, _FinalizeState
+    from datamodel_code_generator.parser._passes._state import ModuleContextView, ModulePath
     from datamodel_code_generator.parser.generation import GenerationStore, GraphBuilder
     from datamodel_code_generator.reference import ModelResolver, Reference
     from datamodel_code_generator.types import DataTypeManager, DefaultValueDescriptor
@@ -2124,23 +2124,32 @@ class UnusedModels:
 
 
 class UnusedModelsHolder(Protocol):
-    """A run, or the state of its finalization, that holds the unused models of the run."""
+    """A run, or the state of its finalization, that holds the unused models of the run and the modules they leave."""
+
+    @property
+    def contexts(self) -> Sequence[ModuleContextView]:
+        """The output modules, each with the model list it writes."""
 
     @property
     def unused_models(self) -> list[DataModel]:
         """The models no module writes."""
 
+    @property
+    def model_to_module_models(self) -> dict[DataModel, tuple[ModulePath, list[DataModel]]]:
+        """The module and the model list the module structure recorded for each model."""
 
-def run_unused_models(run: UnusedModelsHolder) -> UnusedModels:
+
+def run_unused_models(host: ReplacedRootsHost, run: UnusedModelsHolder) -> UnusedModels:
     """Return the models that the passes between the module loop and unused-model removal leave out.
 
-    They leave out every unused model of the run, also one that removal leaves written in a merged module.
+    They leave out exactly the models that removal takes out of a model list a module writes; one that removal leaves
+    written in a merged module (``unused_model_lists``) still takes the passes.
     """
-    return UnusedModels(run.unused_models)
+    return UnusedModels(model for model, _, _, written in unused_model_lists(host, run) if written)
 
 
 def unused_model_lists(
-    host: ReplacedRootsHost, state: _FinalizeState[Any]
+    host: ReplacedRootsHost, state: UnusedModelsHolder
 ) -> Iterator[tuple[DataModel, ModulePath, list[DataModel], bool]]:
     """Yield each unused model with the module and the model list it leaves, and whether its module writes that list.
 
