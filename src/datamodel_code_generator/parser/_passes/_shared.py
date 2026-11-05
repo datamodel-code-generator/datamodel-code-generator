@@ -1509,6 +1509,13 @@ def _unique_items_arrays(data_type: DataType) -> Iterator[DataType]:
             yield from _unique_items_arrays(nested)
 
 
+def takes_hashable_value(
+    data_type: DataType, *, keeps_tuples: bool, generic_base_config: Mapping[str, Any] | None
+) -> bool:
+    """Return whether some value of ``data_type`` hashes, read as ``unique_items_plan`` reads the items of an array."""
+    return set_items_can_hash((_set_item_facts(data_type, (), _PlanReading(keeps_tuples, "all", generic_base_config)),))
+
+
 def _set_item_facts(data_type: DataType, sets: Collection[int], reading: _PlanReading) -> SetItemFacts:
     """Return the facts of an item type of an array that ``set_items_can_hash`` reads.
 

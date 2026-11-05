@@ -30,6 +30,7 @@ KeepRule: TypeAlias = Literal[
     "type-override",
     "circular",
     "runtime-object-validation",
+    "unhashable-set-item",
     "fieldless-site-regex-engine",
     "constraints-in-type",
     "constrained-map",
@@ -44,6 +45,9 @@ KeepRule: TypeAlias = Literal[
   the override, as they do without collapse.
 * ``circular``: the root model is circular (L4 ``set_circular_root_model_paths``) and cannot be fully inlined.
 * ``runtime-object-validation``: the root model owns runtime object rules, which would be lost with it.
+* ``unhashable-set-item``: the site is the item of a set or frozen set and no value of the root type hashes (a list, a
+  dict), so the set would reject every item once the root type is inlined, while the root model is a class whose
+  instances hash (the identity hash of a Pydantic set item); a root model written as an alias is its type anyway.
 * ``fieldless-site-regex-engine``: the root model is the model of a site that earlier releases wrote as a model
   without fields (``FIELDLESS_SITE_KEY``) and its pattern needs a regex engine in the config of the model that holds
   it: inlined, that engine would apply to the other patterns of its holder.
@@ -74,6 +78,9 @@ class CollapseSiteFacts:
     """A model-level ``--type-overrides`` key names the root model (``_user_keys.model_type_override``)."""
     circular: bool = False
     runtime_object_validation: bool = False
+    unhashable_set_item: bool = False
+    """The site is the item of a set or frozen set, no value of the root type hashes and the root model is a class
+    whose instances hash."""
     needs_model_regex_engine: bool = False
     """The root model is a fieldless site whose pattern needs a regex engine in its holder's config."""
     field_constraints: bool = False
@@ -105,6 +112,8 @@ def keeps_root_model_named(facts: CollapseSiteFacts, /) -> KeepRule | None:  # n
         return "circular"
     if facts.runtime_object_validation:
         return "runtime-object-validation"
+    if facts.unhashable_set_item:
+        return "unhashable-set-item"
     if facts.needs_model_regex_engine:
         return "fieldless-site-regex-engine"
     if not facts.field_constraints and facts.constrains_through_root_types:
