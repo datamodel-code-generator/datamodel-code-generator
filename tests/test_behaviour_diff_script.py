@@ -485,6 +485,15 @@ CLASSIFY_CASES = {
         "payload:jsonschema/property_names_root_model_keys.json",
         [],
     ),
+    "listed_input_accepted": (
+        Side(generated=True, signature=KEY_MAP_BEFORE | {"payloads": PAYLOADS}),
+        Side(
+            generated=True,
+            signature=KEY_MAP_AFTER | {"payloads": {**PAYLOADS, "values": {**PAYLOADS["values"], "v1": "c3"}}},
+        ),
+        "payload:jsonschema/property_names_root_model_keys.json",
+        [{**PROPERTY_NAMES_ENTRY, "input": ["tests/data/a.json", "payload:*property_names*"]}],
+    ),
     "parsed_value_accepted": (
         Side(generated=True, signature=KEY_MAP_BEFORE | {"payloads": PAYLOADS}),
         Side(
@@ -545,6 +554,18 @@ REPORT_CASES = {
     "pr_covered_unused": ("pr", [REPORT_ENTRY], "tests/data/a.json", "1/1"),
     "pr_covers_no_cell": ("pr", [REPORT_ENTRY], "tests/data/a.yaml", "1/1"),
     "nightly_covered_unused": ("nightly", [REPORT_ENTRY], "tests/data/a.json", "1/1"),
+    "nightly_listed_unused": (
+        "nightly",
+        [{**REPORT_ENTRY, "input": ["tests/data/b.json", "tests/data/a.json"]}],
+        "tests/data/a.json",
+        "1/1",
+    ),
+    "release_listed_covers_no_cell": (
+        "release",
+        [{**REPORT_ENTRY, "input": ["tests/data/b.json"]}],
+        "tests/data/a.json",
+        "1/1",
+    ),
     "release_covered_unused": ("release", [REPORT_ENTRY], "tests/data/a.json", "1/1"),
     "release_covers_no_cell": ("release", [REPORT_ENTRY], "tests/data/a.yaml", "1/1"),
     "release_shard_covers_no_cell": ("release", [REPORT_ENTRY], "tests/data/a.yaml", "1/2"),
