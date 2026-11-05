@@ -1643,7 +1643,7 @@ def _format_typed_dict_call(call: ast.Call, indent: str, source: str) -> str:
     argument_lines: list[str] = []
     for argument in call.args:
         if isinstance(argument, ast.Dict):
-            formatted_dict = _format_dict_literal(argument, continuation_indent, source)
+            formatted_dict = _format_dict_literal(argument, continuation_indent, source, preserve_trailing_comma=True)
             argument_lines.extend(_nested_lines(formatted_dict, continuation_indent, ","))
         else:
             argument_lines.append(f"{continuation_indent}{_source_segment(source, argument)},")

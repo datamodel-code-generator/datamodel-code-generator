@@ -37,7 +37,7 @@ class InheritedInitDefaultChild(InitBase):
 RequiredAliasBase = TypedDict(
     'RequiredAliasBase',
     {
-        'aliased-value': str
+        'aliased-value': str,
     },
 )
 

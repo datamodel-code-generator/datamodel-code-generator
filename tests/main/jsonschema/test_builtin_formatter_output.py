@@ -230,3 +230,21 @@ def test_empty_tuple_annotation_over_the_line_length_is_split_at_its_brackets(ou
         expected_attribute_path=("anEmptyTupleFieldWhoseAnnotationRunsOverTheLineLengthxxxxxxxxxxxxxxxxxxxxxx",),
         expected_attribute_value=(),
     )
+
+
+@pytest.mark.parametrize("formatters", [["black", "isort"], ["builtin"]], ids=["black", "builtin"])
+def test_one_key_functional_typed_dict_keeps_its_trailing_comma(output_file: Path, formatters: list[str]) -> None:
+    """Keep the trailing comma of the one key of a functional ``TypedDict``, as black does (#6319).
+
+    The template writes a comma after each key, which black keeps as a magic trailing comma; the builtin formatter
+    dropped it when the dict had one key.
+    """
+    (input_path := output_file.parent / "one_key_functional.json").write_text(
+        json.dumps({"type": "object", "properties": {"a-b": {}}}), encoding="utf-8"
+    )
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "typing.TypedDict", "--formatters", *formatters],
+    )
