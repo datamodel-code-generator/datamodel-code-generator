@@ -1,0 +1,12 @@
+{
+  "$defs": {
+    "A": {"type": "object", "properties": {"a": {"type": "integer"}}},
+    "B": {"type": "object", "properties": {"tags": {"type": "object", "properties": {"t": {"type": "string"}}}}}
+  },
+  "type": "object",
+  "properties": {
+    "x": {"$ref": "#/$defs/A"},
+    "b": {"$ref": "#/$defs/B"},
+    "labels": {"type": "object", "additionalProperties": {"type": "object", "properties": {"l": {"type": "string"}}}}
+  }
+}
