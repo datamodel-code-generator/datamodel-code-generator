@@ -1636,6 +1636,14 @@ REJECT_ALIAS_CYCLES_WITHOUT_SCHEMA = PassDecl(
     ),
     condition="output that Pydantic builds or msgspec decodes",
 )
+REJECT_LONE_SURROGATES_PYDANTIC_READS = PassDecl(
+    "reject_lone_surrogates_pydantic_reads",
+    Phase.IMPORTS,
+    Scope.GLOBAL,
+    PassKind.CHECK,
+    reads=_facts(Fact.MODEL_KIND, Fact.FIELD_SET, Fact.FIELD_ALIASES, Fact.FIELD_TYPES, Fact.DEFAULTS),
+    condition="output that Pydantic builds",
+)
 WARN_ABOUT_DROPPED_CONSTRAINTS = PassDecl(
     "warn_about_dropped_constraints",
     Phase.IMPORTS,

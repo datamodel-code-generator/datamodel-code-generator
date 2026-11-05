@@ -1,10 +1,11 @@
-"""How the generator's messages write English: lists, counts, install hints and the lines of a paragraph.
+"""How the generator's messages write English: lists, counts, install hints, paragraphs and printable text.
 
 A message lists items with a conjunction (``english_list``), names the first items of a longer list and how many more
 there are (``listed_with_more``), writes a word or a counted noun in its form for a number (``for_count``,
 ``counted``), names an extra of the generator or the pip command that installs it (``extra_requirement``,
-``install_command``), and a text report wraps a paragraph into lines (``wrapped_lines``). The module imports only the
-standard library, so every layer can import it.
+``install_command``), a text report wraps a paragraph into lines (``wrapped_lines``), and a message writes text that may
+hold a lone surrogate, such as a schema location, as a stream can print it (``printable_text``). The module imports
+only the standard library, so every layer can import it.
 """
 
 from __future__ import annotations
@@ -25,6 +26,7 @@ __all__ = [
     "for_count",
     "install_command",
     "listed_with_more",
+    "printable_text",
     "wrapped_lines",
 ]
 
@@ -95,3 +97,8 @@ def wrapped_lines(text: str, indent: str, subsequent_indent: str | None = None) 
     """
     subsequent = indent if subsequent_indent is None else subsequent_indent
     return wrap(text, width=_REPORT_WIDTH, initial_indent=indent, subsequent_indent=subsequent, break_on_hyphens=False)
+
+
+def printable_text(text: str) -> str:
+    r"""Return ``text`` with each lone surrogate written as its escape (``\ud800``), which no UTF-8 stream can print."""
+    return text if text.isascii() else text.encode("utf-8", "backslashreplace").decode("utf-8")

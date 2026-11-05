@@ -725,6 +725,11 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
                 when=lambda self, _: imports.alias_loop_failure(self.data_model_type) is not None,
             ),
             PassSpec(
+                "reject_lone_surrogates_pydantic_reads",
+                lambda self, run: imports.reject_lone_surrogates_pydantic_reads(self, run.contexts),
+                when=lambda self, _: self.data_model_type._READ_BY_PYDANTIC,  # noqa: SLF001
+            ),
+            PassSpec(
                 "warn_about_dropped_constraints",
                 lambda self, run: imports.warn_about_dropped_constraints(self, run.contexts),
             ),

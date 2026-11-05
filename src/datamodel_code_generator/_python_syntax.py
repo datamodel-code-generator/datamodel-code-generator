@@ -13,8 +13,9 @@ docstring and of a comment: the escapes a triple-quoted docstring needs, its one
 endings a comment block keeps; templates read the public functions as filters through ``model.base``, which keeps
 their names. A lone surrogate, which a UTF-8 module cannot hold, is escaped in a literal, which keeps its value, and
 replaced by U+FFFD in a docstring and a comment, which hold text only (Python 3.13 and later compile no docstring that
-holds one, however it is escaped). Every reader of text that ends its lines as Python's universal newlines do (CRLF and
-a lone CR read as LF), source text and comments alike, reads it through ``normalize_newlines``.
+holds one, however it is escaped); ``holds_lone_surrogate`` tells where a library that reads text as UTF-8 meets one.
+Every reader of text that ends its lines as Python's universal newlines do (CRLF and a lone CR read as LF), source
+text and comments alike, reads it through ``normalize_newlines``.
 """
 
 from __future__ import annotations
@@ -54,6 +55,9 @@ _SURROGATE_REPLACEMENTS: Final = dict.fromkeys(_SURROGATES, "\ufffd")
 
 RAW_SINGLE_QUOTED_ESCAPES = str.maketrans(QUOTE_AND_CONTROL_ESCAPES)
 """The escapes of the text of a raw single-quoted literal (a Pydantic pattern), as ``str.translate`` reads them."""
+
+_LONE_SURROGATE: Final = re.compile(r"[\ud800-\udfff]")
+"""A lone surrogate (``_SURROGATES``)."""
 
 _RAW_LITERAL_TEXT: Final = re.compile(r"(?:[^\\'\x00\ud800-\udfff]|\\[^\x00\ud800-\udfff])*")
 """The escaped text a raw single-quoted literal holds: each character is a plain one or follows a backslash."""
@@ -128,6 +132,11 @@ def aliased(name: str, alias: str, /) -> str:
 def normalize_newlines(text: str) -> str:
     """Return ``text`` with every CRLF and lone CR as LF, as Python's universal newlines read a file."""
     return text.replace("\r\n", "\n").replace("\r", "\n") if "\r" in text else text
+
+
+def holds_lone_surrogate(text: str, /) -> bool:
+    """Return whether ``text`` holds a lone surrogate, which UTF-8 cannot encode, so no library reading UTF-8 holds."""
+    return not text.isascii() and _LONE_SURROGATE.search(text) is not None
 
 
 def _without_surrogates(text: str) -> str:

@@ -19,6 +19,8 @@ inline-docstrings-dataclasses.dataclass	main/jsonschema/string_literal_text/lone
 inline-docstrings-msgspec.Struct	main/jsonschema/string_literal_text/lone_surrogate_docstring_text[inline-docstrings-msgspec.Struct].py
 inline-docstrings-pydantic_v2.BaseModel	main/jsonschema/string_literal_text/lone_surrogate_docstring_text[inline-docstrings-pydantic_v2.BaseModel].py
 inline-docstrings-typing.TypedDict	main/jsonschema/string_literal_text/lone_surrogate_docstring_text[inline-docstrings-typing.TypedDict].py
+[test_lone_surrogate_enum_unused_by_pydantic]
+	main/jsonschema/string_literal_text/lone_surrogate_enum_unused_by_pydantic.py
 [test_lone_surrogate_literal_text]
 dataclasses.dataclass	main/jsonschema/string_literal_text/lone_surrogate_literal_text[dataclasses.dataclass].py
 msgspec.Struct	main/jsonschema/string_literal_text/lone_surrogate_literal_text[msgspec.Struct].py
