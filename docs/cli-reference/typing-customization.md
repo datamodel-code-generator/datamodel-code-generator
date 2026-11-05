@@ -52,6 +52,7 @@
 | [`--use-typed-nullable-map-values`](#use-typed-nullable-map-values) | Type the values of nullable maps as their schemas say instea... |
 | [`--use-union-operator`](#use-union-operator) | Use | operator for Union types (PEP 604). |
 | [`--use-unique-items-as-set`](#use-unique-items-as-set) | Generate set types for arrays with uniqueItems constraint. |
+| [`--use-unique-items-as-set-by-value`](#use-unique-items-as-set-by-value) | Write a uniqueItems set only where its final items hash by v... |
 
 ---
 
@@ -8834,5 +8835,433 @@ msgspec union holds one of each.
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--use-unique-items-as-set-by-value` {#use-unique-items-as-set-by-value}
+
+Write a uniqueItems set only where its final items hash by value.
+
+Under `--use-unique-items-as-set`, the arrays whose schemas declare `uniqueItems` become sets before root models
+collapse, type overrides apply and the other modules are processed, and a model that is a set item hashes by identity,
+so two equal items are both kept. Deduplication and `--reuse-model` also compare such arrays as the lists they still
+are, so a model whose array declares no `uniqueItems` can merge into one whose array does, and a list the schema allows
+to repeat then drops its duplicates. With `--use-unique-items-as-set-by-value` the sets are decided on the final item
+types: a set is written only where every value of its items hashes by value (scalars, enums, tuples and frozen sets of
+them, frozen models whose fields hash), so an array of models that hash only by identity, of `Any` or of containers
+stays a list, and models whose arrays differ in `uniqueItems` are kept apart.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input unique_items_by_value.json --use-unique-items-as-set --reuse-model --collapse-reuse-models --collapse-root-models --use-unique-items-as-set-by-value # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-unique-items-as-set-by-value` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "title": "Root",
+      "type": "object",
+      "properties": {
+        "labels": {
+          "$ref": "#/$defs/Labels"
+        },
+        "history": {
+          "$ref": "#/$defs/History"
+        },
+        "pets": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Pet"
+          }
+        },
+        "colors": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Color"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Tags"
+          }
+        },
+        "anything": {
+          "type": "array",
+          "uniqueItems": true
+        },
+        "numbers": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "integer"
+          },
+          "default": [
+            1,
+            2
+          ]
+        },
+        "first": {
+          "type": "object",
+          "properties": {
+            "entry": {
+              "title": "Entry",
+              "type": "object",
+              "properties": {
+                "tags": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "second": {
+          "type": "object",
+          "properties": {
+            "entry": {
+              "title": "Entry",
+              "type": "object",
+              "properties": {
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "codes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "settings": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Settings"
+          }
+        },
+        "pairs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "items": false,
+            "minItems": 2
+          }
+        },
+        "limits": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Limits"
+          }
+        },
+        "points": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Point"
+          }
+        }
+      },
+      "$defs": {
+        "Labels": {
+          "type": "object",
+          "properties": {
+            "names": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "History": {
+          "type": "object",
+          "properties": {
+            "names": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "Pet": {
+          "type": "object",
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "type": "integer"
+            },
+            "nicknames": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "Color": {
+          "type": "string",
+          "enum": [
+            "red",
+            "blue"
+          ]
+        },
+        "Tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "Settings": {
+          "type": "object",
+          "properties": {
+            "options": {
+              "type": "object",
+              "default": {}
+            }
+          }
+        },
+        "Limits": {
+          "type": "object",
+          "properties": {
+            "levels": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "integer"
+              },
+              "default": [
+                1
+              ]
+            }
+          }
+        },
+        "Point": {
+          "type": "object",
+          "required": [
+            "x",
+            "y"
+          ],
+          "properties": {
+            "x": {
+              "type": "integer"
+            },
+            "y": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "required": [
+        "codes"
+      ]
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  unique_items_by_value.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import Any
+
+        from pydantic import BaseModel, Field, RootModel
+
+
+        class Entry(BaseModel):
+            tags: set[str] | None = None
+
+
+        class First(BaseModel):
+            entry: Entry | None = Field(None, title='Entry')
+
+
+        class Entry1(BaseModel):
+            tags: list[str] | None = None
+
+
+        class Second(BaseModel):
+            entry: Entry1 | None = Field(None, title='Entry')
+
+
+        class Pair(RootModel[list[int | str]]):
+            root: list[int | str] = Field(..., max_length=2, min_length=2)
+
+
+        class Labels(BaseModel):
+            names: set[str] | None = None
+
+
+        class History(BaseModel):
+            names: list[str] | None = None
+
+
+        class Pet(BaseModel):
+            id: int
+            nicknames: set[str] | None = None
+
+
+        class Color(Enum):
+            red = 'red'
+            blue = 'blue'
+
+
+        class Settings(BaseModel):
+            options: dict[str, Any] | None = {}
+
+
+        class Limits(BaseModel):
+            levels: set[int] | None = {1}
+
+
+        class Point(BaseModel):
+            x: int
+            y: int
+
+
+        class Root(BaseModel):
+            labels: Labels | None = None
+            history: History | None = None
+            pets: list[Pet] | None = None
+            colors: set[Color] | None = None
+            tags: list[list[str]] | None = None
+            anything: list[Any] | None = None
+            numbers: set[int] | None = {1, 2}
+            first: First | None = None
+            second: Second | None = None
+            codes: set[str]
+            settings: list[Settings] | None = None
+            pairs: list[Pair] | None = None
+            limits: list[Limits] | None = None
+            points: list[Point] | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  unique_items_by_value.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import Any
+
+        from pydantic import BaseModel, Field, RootModel
+
+
+        class Entry(BaseModel):
+            tags: set[str] | None = None
+
+
+        class First(BaseModel):
+            entry: Entry | None = Field(None, title='Entry')
+
+
+        class Pair(RootModel[list[int | str]]):
+            __hash__ = object.__hash__
+            root: list[int | str] = Field(..., max_length=2, min_length=2)
+
+
+        class Labels(BaseModel):
+            names: set[str] | None = None
+
+
+        class Pet(BaseModel):
+            __hash__ = object.__hash__
+            id: int
+            nicknames: set[str] | None = None
+
+
+        class Color(Enum):
+            red = 'red'
+            blue = 'blue'
+
+
+        class Tags(RootModel[list[str]]):
+            __hash__ = object.__hash__
+            root: list[str]
+
+
+        class Settings(BaseModel):
+            __hash__ = object.__hash__
+            options: dict[str, Any] | None = {}
+
+
+        class Limits(BaseModel):
+            __hash__ = object.__hash__
+            levels: set[int] | None = {1}
+
+
+        class Point(BaseModel):
+            __hash__ = object.__hash__
+            x: int
+            y: int
+
+
+        class Root(BaseModel):
+            labels: Labels | None = None
+            history: Labels | None = None
+            pets: set[Pet] | None = None
+            colors: set[Color] | None = None
+            tags: set[Tags] | None = None
+            anything: set[Any] | None = None
+            numbers: set[int] | None = {1, 2}
+            first: First | None = None
+            second: First | None = None
+            codes: set[str]
+            settings: set[Settings] | None = None
+            pairs: set[Pair] | None = None
+            limits: set[Limits] | None = None
+            points: set[Point] | None = None
+        ```
+
+        <!-- fmt: on -->
 
 ---

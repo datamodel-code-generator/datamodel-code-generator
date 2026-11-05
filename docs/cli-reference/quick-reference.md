@@ -86,6 +86,7 @@ datamodel-codegen [OPTIONS]
 | [`--use-typed-nullable-map-values`](typing-customization.md#use-typed-nullable-map-values) | Type the values of nullable maps as their schemas say instead of Any. |
 | [`--use-union-operator`](typing-customization.md#use-union-operator) | Use | operator for Union types (PEP 604). |
 | [`--use-unique-items-as-set`](typing-customization.md#use-unique-items-as-set) | Generate set types for arrays with uniqueItems constraint. |
+| [`--use-unique-items-as-set-by-value`](typing-customization.md#use-unique-items-as-set-by-value) | Write a uniqueItems set only where its final items hash by value. |
 
 ### 🏷️ Field Customization
 
@@ -600,6 +601,7 @@ All options sorted alphabetically:
 - [`--use-typed-nullable-map-values`](typing-customization.md#use-typed-nullable-map-values) - Type the values of nullable maps as their schemas say instea...
 - [`--use-union-operator`](typing-customization.md#use-union-operator) - Use | operator for Union types (PEP 604).
 - [`--use-unique-items-as-set`](typing-customization.md#use-unique-items-as-set) - Generate set types for arrays with uniqueItems constraint.
+- [`--use-unique-items-as-set-by-value`](typing-customization.md#use-unique-items-as-set-by-value) - Write a uniqueItems set only where its final items hash by v...
 - [`--validation`](openapi-only-options.md#validation) - Enable validation constraints (deprecated, use --field-const...
 - [`--validators`](template-customization.md#validators) - Add custom field validators to generated Pydantic v2 models.
 - [`--version`](utility-options.md#version) - Show program version and exit
