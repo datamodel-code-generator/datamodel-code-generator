@@ -38,10 +38,10 @@ from datamodel_code_generator._source import (
 )
 from datamodel_code_generator._source import (
     _has_protobuf_declaration,
-    _is_json_document,
     _is_json_text,
     _is_protobuf_text,
     _is_xml_text,
+    _load_json_document,
     enable_parsed_source_cache,
     load_data,
     load_data_from_path,
@@ -3236,15 +3236,16 @@ def infer_input_type(text: str) -> InputFileType:  # noqa: PLR0911, PLR0912
 
     protobuf_declaration = _has_protobuf_declaration(text)
 
-    try:
-        data = load_yaml(text)
-    except get_yaml_parse_errors() as exc:
-        if not _is_json_text(text) and _looks_like_csv_text(text):
-            return InputFileType.CSV
-        if protobuf_declaration:
-            return InputFileType.Protobuf
-        msg = _infer_input_type_error_message(parse_error=exc)
-        raise Error(msg) from exc
+    if not (is_json_document := (data := _load_json_document(text)) is not None):
+        try:
+            data = load_yaml(text)
+        except get_yaml_parse_errors() as exc:
+            if not _is_json_text(text) and _looks_like_csv_text(text):
+                return InputFileType.CSV
+            if protobuf_declaration:
+                return InputFileType.Protobuf
+            msg = _infer_input_type_error_message(parse_error=exc)
+            raise Error(msg) from exc
     if isinstance(data, dict):
         if is_asyncapi(data):
             return InputFileType.AsyncAPI
@@ -3256,7 +3257,7 @@ def infer_input_type(text: str) -> InputFileType:  # noqa: PLR0911, PLR0912
             return InputFileType.Avro
         if is_schema(data):
             return InputFileType.JsonSchema
-        return InputFileType.Json if _is_json_document(text) else InputFileType.Yaml
+        return InputFileType.Json if is_json_document else InputFileType.Yaml
     if _is_protobuf_text(text):
         return InputFileType.Protobuf
     if isinstance(data, list):

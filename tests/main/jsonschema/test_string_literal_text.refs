@@ -30,6 +30,7 @@ msgspec.Struct	main/jsonschema/string_literal_text/lone_surrogate_literal_text[m
 typing.TypedDict	main/jsonschema/string_literal_text/lone_surrogate_literal_text[typing.TypedDict].py
 [test_lone_surrogate_reference]
 jsonschema	main/jsonschema/string_literal_text/lone_surrogate_reference[jsonschema].py
+jsonschema-inferred	main/jsonschema/string_literal_text/lone_surrogate_reference[jsonschema-inferred].py	= main/jsonschema/string_literal_text/lone_surrogate_reference[jsonschema].py
 jsonschema-missing-target	main/jsonschema/string_literal_text/lone_surrogate_reference[jsonschema-missing-target].py
 openapi	main/jsonschema/string_literal_text/lone_surrogate_reference[openapi].py
 [test_lone_surrogate_typed_dict_key_text]
