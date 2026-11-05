@@ -190,6 +190,7 @@ DISTRIBUTE_DOCUMENTS: tuple[str, ...] = (
     "union_ref_branch_values",
     "allof_union_parts",
     "allof_union_through_ref",
+    "allof_value_unions",
 )
 """The documents whose output --distribute-allof-over-unions changes, pinned with ``DISTRIBUTE_OPTION_ARGS`` too."""
 
@@ -285,7 +286,8 @@ def test_schema_intersection_shape_output_with_distribute_option(
     A ``$ref`` branch of an ``anyOf`` or ``oneOf`` takes the ``allOf`` members beside it as further bases, as an
     inline branch takes them, and the value keywords beside it where it names no object; an OpenAPI body with an
     ``allOf`` beside a union is that union. An ``allOf`` of several unions is the union of one model per combination
-    of their branches, also through a ``$ref`` member naming an ``allOf`` over a union.
+    of their branches, also through a ``$ref`` member naming an ``allOf`` over a union, and the value branches of its
+    unions are read at a field, beside a ``$ref`` member that is the field's type and beside object branches.
     """
     _assert_shape_output(output_file, stem, backend, options, DISTRIBUTE_OPTION_ARGS)
 

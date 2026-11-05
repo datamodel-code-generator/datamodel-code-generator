@@ -868,8 +868,9 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         config=PresetConfig(distribute_allof_over_unions=True),
         description=(
             "Give an allOf one union variant per combination of the branches of the anyOf and oneOf it holds, also "
-            "through a $ref member, read a $ref branch with the allOf members and the value keywords beside it, and an "
-            "OpenAPI body with an allOf beside an anyOf or oneOf as that union, as JSON Schema validates them."
+            "through a $ref member and for their value branches, read a $ref branch with the allOf members and the "
+            "value keywords beside it, and an OpenAPI body with an allOf beside an anyOf or oneOf as that union, as "
+            "JSON Schema validates them."
         ),
     ),
     PresetOptionGroup(
@@ -1182,7 +1183,8 @@ def render_presets_markdown() -> str:
             "nested properties name by name and by the type it narrows, an allOf member reads its $ref siblings, "
             "$ref aliases and null branches, and no enum value that the merged type rejects is kept, as JSON Schema "
             "validates them, and `--distribute-allof-over-unions`: an allOf of several anyOf and oneOf is one union "
-            "variant per combination of their branches, also through a $ref member, a $ref branch of an anyOf or oneOf "
+            "variant per combination of their branches, also through a $ref member and for value branches at a field "
+            "and beside object branches, a $ref branch of an anyOf or oneOf "
             "takes the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an "
             "anyOf or oneOf is that union, and `--keep-reference-null-on-merged-models`: a reference whose schema "
             "admits null keeps "

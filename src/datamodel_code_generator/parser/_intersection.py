@@ -208,6 +208,11 @@ LEGACY_ROWS: Final[Mapping[str, Mapping[str, str]]] = {
             "an allOf member naming an allOf that holds an anyOf or oneOf is a base, which later passes drop as a "
             "root model"
         ),
+        "legacy-value-union-members-unread": (
+            "the value branches of an allOf's anyOf and oneOf are read only where every combination admits no object "
+            "and the site writes a model: a field writes Any, a field of one $ref member that type, and an allOf of "
+            "object branches leaves them out"
+        ),
     },
 }
 """The rows of the output of an earlier release where parts meet, by the option whose off state they are."""
