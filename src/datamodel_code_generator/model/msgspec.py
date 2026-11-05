@@ -968,6 +968,10 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         return data_type
 
     def _unset_union_data_type(self) -> DataType:
+        """Return the union of the field's type with ``UnsetType``, and None where the field writes it.
+
+        The None is left out where the type without its own None still writes one: that of the nullable model it names.
+        """
         if self._data_type_renders_none(self.data_type):
             return self._ordered_union_data_type([], null=True, unset=True)
 
@@ -978,6 +982,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             base_data_type := self._annotated_base_data_type()
         ) and not self._data_type_renders_none(base_data_type):
             data_types = [base_data_type]
+            has_none = has_none and not base_data_type.admits_none
         else:
             data_types = []
         return self._ordered_union_data_type(data_types, null=has_none, unset=True)

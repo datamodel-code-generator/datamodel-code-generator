@@ -28,7 +28,7 @@ class Bar(Struct):
 
 
 class Foo(Struct):
-    item: Item | None | None | UnsetType = UNSET
+    item: Item | None | UnsetType = UNSET
 
 
 class Work(Struct):

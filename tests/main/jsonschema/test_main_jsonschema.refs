@@ -7177,6 +7177,13 @@ pydantic-v2-schema-validators	main/jsonschema/main_jsonschema/module_import_name
 [test_main_jsonschema_msgspec_enum_value_base_kept]
 	main/jsonschema/main_jsonschema/msgspec_enum_value_base_kept.decoded.txt
 	main/jsonschema/main_jsonschema/msgspec_enum_value_base_kept.py
+[test_main_jsonschema_msgspec_nullable_object_property]
+annotated	main/jsonschema/main_jsonschema/msgspec_nullable_object_property[annotated].py
+annotated	main/jsonschema/main_jsonschema/msgspec_nullable_object_property[annotated].txt
+default	main/jsonschema/main_jsonschema/msgspec_nullable_object_property[default].py	= main/jsonschema/main_jsonschema/msgspec_nullable_object_property[annotated].py
+default	main/jsonschema/main_jsonschema/msgspec_nullable_object_property[default].txt	= main/jsonschema/main_jsonschema/msgspec_nullable_object_property[annotated].txt
+strict-nullable	main/jsonschema/main_jsonschema/msgspec_nullable_object_property[strict-nullable].py	= main/jsonschema/main_jsonschema/msgspec_nullable_object_property[annotated].py
+strict-nullable	main/jsonschema/main_jsonschema/msgspec_nullable_object_property[strict-nullable].txt	= main/jsonschema/main_jsonschema/msgspec_nullable_object_property[annotated].txt
 [test_main_jsonschema_msgspec_unset_fastpath]
 dataclass	main/jsonschema/output_model_types/msgspec_unset_fastpath_dataclasses_dataclass.py
 msgspec	main/jsonschema/output_model_types/msgspec_unset_fastpath_msgspec_Struct.py

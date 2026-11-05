@@ -59,7 +59,7 @@ class M(Struct):
     nested: list[list[int] | Nested] | UnsetType = UNSET
     map: dict[str, list[int] | Map] | UnsetType = UNSET
     any_of: list[int] | AnyOf | str | UnsetType = UNSET
-    null_or_array: list[int] | NullOrArray | None | None | UnsetType = UNSET
+    null_or_array: list[int] | NullOrArray | None | UnsetType = UNSET
     member_items: list[Any] | MemberItems | UnsetType = UNSET
     annotation_only: list[int] | AnnotationOnly | UnsetType = UNSET
     ref_only: list[Any] | RefOnly | UnsetType = UNSET
