@@ -125,6 +125,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "type-spellings-reuse",
         "merged-nullable-reference",
         "merged-nullable-forms",
+        "merged-nullable-kept",
         "type-spellings-cycle",
         "type-spellings-bound",
         "helpers",

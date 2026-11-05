@@ -262,7 +262,15 @@ class MergedDuplicatesHost(Protocol):
         """The duplicates merged into a model, removed or made empty subclasses of it, by the id of that model."""
 
 
-class CollapsedReuseHost(GenerationStoreHost, MergedDuplicatesHost, Protocol):
+class MergedReferenceNullHost(GraphBuilderHost, Protocol):
+    """The builder that merges a model into an equal one, with the option that keeps the null its users named."""
+
+    @property
+    def keep_reference_null_on_merged_models(self) -> bool:
+        """Whether a reference keeps the null of the schema it names after its model is merged into an equal one."""
+
+
+class CollapsedReuseHost(GenerationStoreHost, MergedReferenceNullHost, MergedDuplicatesHost, Protocol):
     """The duplicates collapsed reuse removed and the users it redirected, with the builder that redirects them."""
 
     @property
@@ -496,7 +504,8 @@ def merge_duplicate(
 ) -> list[DataType]:
     """Hand every user of a duplicate that leaves the output to the equal canonical model, and retire the duplicate.
 
-    Every user, in any module, names the canonical model and records the null of the schema it named (``merged``).
+    Every user, in any module, names the canonical model and records the null of the schema it named (``merged``),
+    which it keeps under ``--keep-reference-null-on-merged-models``.
     With ``keeps_duplicate_tags``, for a duplicate that reuse removes instead of making it a subclass, a discriminated
     union that named the duplicate keeps mapping it to the tags of its own schema, which are compared with the tags of
     the canonical model. The children of the duplicate take their bases once each, told apart as the user of ``row``
@@ -505,7 +514,9 @@ def merge_duplicate(
     """
     builder = host._graph_builder  # noqa: SLF001
     host._merged_duplicates.setdefault(id(canonical), []).append(duplicate)  # noqa: SLF001
-    users = builder.redirect_reference_users(duplicate.reference, canonical.reference, merged=True)
+    users = builder.redirect_reference_users(
+        duplicate.reference, canonical.reference, merged=True, keeps_named=host.keep_reference_null_on_merged_models
+    )
     if keeps_duplicate_tags:
         collapsed_users = host._collapsed_reuse_users  # noqa: SLF001
         for user in users:
@@ -1059,7 +1070,9 @@ def require_update_action(
     )
 
 
-class ReuseSubclassHost(GenerationStoreHost, MergedDuplicatesHost, RecursionFactsHost, Protocol):
+class ReuseSubclassHost(
+    GenerationStoreHost, MergedReferenceNullHost, MergedDuplicatesHost, RecursionFactsHost, Protocol
+):
     """The builder that replaces a reuse duplicate by a subclass, and the recursion facts the subclass may join."""
 
 
@@ -1077,14 +1090,17 @@ def subclass_duplicate(
 ) -> DataModel | None:
     """Replace a duplicate in ``models`` and in the store by an empty subclass of the equal canonical model.
 
-    The subclass keeps the duplicate's name; the users that ``users`` own name it, and the canonical model records the
+    The subclass keeps the duplicate's name; the users that ``users`` own name it and record the null of the schema
+    they named, which they keep under ``--keep-reference-null-on-merged-models``, and the canonical model records the
     duplicate (``merged_models``). Return the subclass when the canonical model needs a reference update action, which
     the caller adds once with ``require_update_action``.
     """
     builder = host._graph_builder  # noqa: SLF001
     host._merged_duplicates.setdefault(id(canonical), []).append(duplicate)  # noqa: SLF001
     inherited = duplicate.create_reuse_model(canonical.reference)
-    builder.redirect_model_reference_users(duplicate, users, inherited.reference)
+    builder.redirect_model_reference_users(
+        duplicate, users, inherited.reference, keeps_named=host.keep_reference_null_on_merged_models
+    )
     replace_model_in_list(models, duplicate, inherited)
     builder.replace_model(duplicate, inherited)
     settle_python_bases(host, inherited.reference)

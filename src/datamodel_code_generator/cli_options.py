@@ -305,8 +305,8 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(
         _C.MODEL,
         "--allow-population-by-field-name --no-allow-population-by-field-name --enable-faux-immutability",
-        "--use-subclass-enum --force-optional --strict-nullable --omit-redundant-reference-null --use-default",
-        "--use-default-kwarg",
+        "--use-subclass-enum --force-optional --strict-nullable --omit-redundant-reference-null",
+        "--keep-reference-null-on-merged-models --use-default --use-default-kwarg",
     ),
     **_opts(
         _C.MODEL,

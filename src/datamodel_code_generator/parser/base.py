@@ -1080,6 +1080,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.use_specialized_enum: bool = config.use_specialized_enum
         self.strict_nullable: bool = config.strict_nullable
         self.omit_redundant_reference_null: bool = config.omit_redundant_reference_null
+        self.keep_reference_null_on_merged_models: bool = config.keep_reference_null_on_merged_models
         self.use_generic_container_types: bool = config.use_generic_container_types
         self.use_union_operator: bool = config.use_union_operator
         self.enable_faux_immutability: bool = config.enable_faux_immutability

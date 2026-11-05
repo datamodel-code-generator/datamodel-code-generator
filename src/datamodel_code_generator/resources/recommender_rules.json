@@ -935,6 +935,10 @@
       "not_recommended": "style",
       "reason": "Keeps the schema order of models in the output."
     },
+    "keep_reference_null_on_merged_models": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "keyword_only": {
       "not_recommended": "style",
       "reason": "Keyword-only model constructors; an API choice of the project."

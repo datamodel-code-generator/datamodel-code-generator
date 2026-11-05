@@ -216,6 +216,8 @@ merged-nullable-forms	main/generation_platform/client/packages/merged-nullable-f
 merged-nullable-forms	main/generation_platform/client/packages/merged-nullable-forms/pydantic_v2_BaseModel//*.py
 merged-nullable-forms	main/generation_platform/client/packages/merged-nullable-forms/pydantic_v2_dataclass//*.py
 merged-nullable-forms	main/generation_platform/client/packages/merged-nullable-forms/typing_TypedDict//*.py
+merged-nullable-kept	main/generation_platform/client/merged-nullable-kept.txt
+merged-nullable-kept	main/generation_platform/client/packages/merged-nullable-kept/pydantic_v2_BaseModel//*.py
 merged-nullable-reference	main/generation_platform/client/merged-nullable-reference.txt
 merged-nullable-reference	main/generation_platform/client/packages/merged-nullable-reference/dataclasses_dataclass//*.py
 merged-nullable-reference	main/generation_platform/client/packages/merged-nullable-reference/msgspec_Struct//*.py

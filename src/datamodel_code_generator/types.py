@@ -1054,8 +1054,9 @@ class DataType(_BaseModel):  # noqa: PLR0904
         null keeps rejecting it after merging that model into an equal one that admits null
         (``GenerationStore.redirect_reference_users``).
         """
+        null = self._type_null
         return _nullability_core().reference_null(
-            named=self._type_null.named, names_nullable=self._names_nullable_target()
+            named=null.named, names_nullable=self._names_nullable_target(), keeps_named=null.keeps_named
         )
 
     @property

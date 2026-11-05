@@ -301,18 +301,22 @@ class RecordingGenerationStore(GenerationStore):
         self.redirects: list[tuple[Reference, Reference, bool]] = []
 
     def redirect_reference_users(
-        self, old_reference: Reference, new_reference: Reference, *, merged: bool = False
+        self, old_reference: Reference, new_reference: Reference, *, merged: bool = False, keeps_named: bool = False
     ) -> list[DataType]:
         """Record a global redirect, and whether it merges a model, then redirect every user and return them."""
         self.redirects.append((old_reference, new_reference, merged))
-        return super().redirect_reference_users(old_reference, new_reference, merged=merged)  # ty: ignore[deprecated]
+        return super().redirect_reference_users(  # ty: ignore[deprecated]
+            old_reference, new_reference, merged=merged, keeps_named=keeps_named
+        )
 
     def redirect_model_reference_users(
-        self, model: DataModel, models: list[DataModel], new_reference: Reference
+        self, model: DataModel, models: list[DataModel], new_reference: Reference, *, keeps_named: bool = False
     ) -> None:
         """Record a redirect scoped to some models, which merges a model, then redirect their users."""
         self.redirects.append((model.reference, new_reference, True))
-        super().redirect_model_reference_users(model, models, new_reference)  # ty: ignore[deprecated]
+        super().redirect_model_reference_users(  # ty: ignore[deprecated]
+            model, models, new_reference, keeps_named=keeps_named
+        )
 
 
 @dataclass(slots=True)
@@ -1123,10 +1127,19 @@ class _Binder:
 
         Each merge that pointed the schema's model at an equal one recorded the null the use admitted right before it
         (``GenerationStore.redirect_reference_users``), so a schema that rejects null keeps rejecting it in a merged
-        nullable model (``nullability.reference_null``, #5410).
+        nullable model (``nullability.reference_null``, #5410), and under ``--keep-reference-null-on-merged-models`` a
+        schema that admits null keeps admitting it in a merged model that rejects null.
         """
         found, named = self._final(reference, direction)
-        return found is not None and reference_null(named=named, names_nullable=reference_names_nullable(found))
+        return found is not None and self._reference_null(found, named=named)
+
+    def _reference_null(self, reference: Reference, *, named: bool | None) -> bool:
+        """Return whether a use that recorded ``named`` admits null where it names ``reference``."""
+        return reference_null(
+            named=named,
+            names_nullable=reference_names_nullable(reference),
+            keeps_named=self.parser.keep_reference_null_on_merged_models,
+        )
 
     def _final(self, reference: Reference, direction: Direction) -> tuple[Reference | None, bool | None]:
         key = id(reference), direction
@@ -1150,7 +1163,7 @@ class _Binder:
             if current is not reference and self.emitted(current.source):
                 terminals[id(current)] = current, named
                 continue
-            null = reference_null(named=named, names_nullable=reference_names_nullable(current))
+            null = self._reference_null(current, named=named)
             pending.extend((new, null if merged else named) for new, merged in self.redirects.get(id(current), ()))
         return next(iter(terminals.values())) if len(terminals) == 1 else (None, None)
 

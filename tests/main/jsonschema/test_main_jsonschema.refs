@@ -7032,6 +7032,13 @@ pydantic_v2.BaseModel-default	main/jsonschema/main_jsonschema/items_array_additi
 	main/jsonschema/items_false_array.py
 [test_main_jsonschema_json_pointer_array]
 	main/jsonschema/json_pointer_array.py
+[test_main_jsonschema_keep_reference_null_on_merged_models]
+dataclass-kept	main/jsonschema/main_jsonschema/keep_reference_null_on_merged_models[dataclass-kept].py
+msgspec-kept	main/jsonschema/main_jsonschema/keep_reference_null_on_merged_models[msgspec-kept].py
+pydantic_v2	main/jsonschema/main_jsonschema/keep_reference_null_on_merged_models[pydantic_v2].py
+pydantic_v2-kept	main/jsonschema/main_jsonschema/keep_reference_null_on_merged_models[pydantic_v2-kept].py
+typed_dict-collapse-kept	main/jsonschema/main_jsonschema/keep_reference_null_on_merged_models[typed_dict-collapse-kept].py
+typed_dict-kept	main/jsonschema/main_jsonschema/keep_reference_null_on_merged_models[typed_dict-kept].py
 [test_main_jsonschema_keyword_only_msgspec]
 	main/jsonschema/discriminator_literals_msgspec_keyword_only.py
 [test_main_jsonschema_keyword_only_msgspec_with_extra_data]

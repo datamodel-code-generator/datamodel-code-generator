@@ -364,6 +364,7 @@ class BaseGenerateConfig(BaseModel):
     use_specialized_enum: bool = True
     strict_nullable: bool = False
     omit_redundant_reference_null: bool = False
+    keep_reference_null_on_merged_models: bool = False
     use_generic_container_types: bool = False
     enable_faux_immutability: bool = False
     disable_appending_item_suffix: bool = False

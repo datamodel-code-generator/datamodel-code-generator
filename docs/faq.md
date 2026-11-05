@@ -716,6 +716,40 @@ class Bound(RootModel[conint(ge=5)]):
     root: conint(ge=5)
 ```
 
+### `--keep-reference-null-on-merged-models`
+
+| | |
+|---|---|
+| Option | `--keep-reference-null-on-merged-models` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.89.0 |
+| Issue | [#4816](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4816), [#5163](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5163), [#5411](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5411) |
+
+**Affects:** a field, item or member whose schema admits null (`type: [object, "null"]`, or `nullable: true` under `--strict-nullable`) and names a model that is merged into an equal model that rejects null: by the deduplication of equal models of one name, `--reuse-model` (which makes it a subclass of the equal model, or removes it under `--collapse-reuse-models`) or `--reuse-scope tree`. Without the option the reference takes the null of the model it names after the merge, so it loses its `| None` where the field writes none of its own (a required field under `--strict-nullable`, a required `$ref`, a `NotRequired` TypedDict key, a msgspec list item) and rejects the null its schema admits. With the option it keeps the null of the schema it names, and a model that differs from another only by that null stays apart under `--reuse-model`. A reference whose schema rejects null keeps rejecting it either way.
+
+Schema: `Work` is `{"type": "object", "properties": {"street": {"type": "string"}}}`, `Home` the same with `"type": ["object", "null"]`, and `Person` requires `home` (`$ref` to `Home`) and `work` (`$ref` to `Work`), with `--reuse-model`.
+
+Without the option (same as 0.88.0), `Person` rejects `{"home": null, "work": {}}`:
+
+```python
+class Home(Work):
+    pass
+
+
+class Person(BaseModel):
+    home: Home
+    work: Work
+```
+
+With the option:
+
+```python
+class Person(BaseModel):
+    home: Home | None
+    work: Work
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.
