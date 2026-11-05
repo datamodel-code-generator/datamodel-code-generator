@@ -58,9 +58,32 @@ AtLeastInAllOf2: TypeAlias = Annotated[int, Meta(ge=5)]
 AtLeastInAllOf: TypeAlias = AtLeastInAllOf2 | AtLeastInAllOf1
 
 
+Large: TypeAlias = Annotated[int, Meta(ge=10)]
+
+
+AtLeastTen1: TypeAlias = Annotated[int, Meta(ge=10)]
+
+
+AtLeastTen2: TypeAlias = str
+
+
+AtLeastTen: TypeAlias = AtLeastTen1 | AtLeastTen2
+
+
+ShortLetters1: TypeAlias = Annotated[str, Meta(max_length=3)]
+
+
+ShortLetters2: TypeAlias = int
+
+
+ShortLetters: TypeAlias = ShortLetters1 | ShortLetters2
+
+
 class Model(Struct):
     at_least: AtLeast | UnsetType = UNSET
     letters: Letters | UnsetType = UNSET
     non_empty: NonEmpty | UnsetType = UNSET
     at_least_in_all_of: AtLeastInAllOf | UnsetType = UNSET
     at_least_field: AtLeastField | AtLeastField1 | UnsetType = UNSET
+    at_least_ten: AtLeastTen | UnsetType = UNSET
+    short_letters: ShortLetters | UnsetType = UNSET

@@ -188,6 +188,7 @@ DISTRIBUTE_DOCUMENTS: tuple[str, ...] = (
     "allof_beside_union",
     "allof_beside_union_oas31",
     "union_ref_branch_values",
+    "union_ref_branch_values_draft07",
     "allof_union_parts",
     "allof_union_through_ref",
     "allof_value_unions",

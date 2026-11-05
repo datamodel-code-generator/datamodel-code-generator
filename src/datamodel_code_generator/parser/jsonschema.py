@@ -375,6 +375,7 @@ from datamodel_code_generator.parser._schema_reading import (
     unescaped_slash_pointer,
 )
 from datamodel_code_generator.parser._schema_refs import (
+    _CONJUNCTION_PARTS_KEY,
     _MERGED_REF_TARGET_KEY,
     _REPORTED_VALUE_CONFLICT_KEY,
     _DynamicEdges,
@@ -1353,10 +1354,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return whether the keywords beside the ``$ref`` of ``schema`` are parts of it.
 
         They are in a dialect that reads them so, and in every dialect where an inherited property override wrote
-        them beside the inherited ``$ref`` (marked ``_INHERITED_OVERRIDE_KEY``), since an override is an allOf part.
+        them beside the inherited ``$ref`` (marked ``_INHERITED_OVERRIDE_KEY``), since an override is an allOf part, or
+        where they are parts of a conjunction the document writes around it (marked ``_CONJUNCTION_PARTS_KEY``).
         """
         return (
-            self._ref_siblings_apply_to(schema, legacy="parsed-document") or _INHERITED_OVERRIDE_KEY in schema.__dict__
+            self._ref_siblings_apply_to(schema, legacy="parsed-document")
+            or _INHERITED_OVERRIDE_KEY in schema.__dict__
+            or _CONJUNCTION_PARTS_KEY in schema.__dict__
         )
 
     @property
@@ -3985,8 +3989,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         They are where the site writes value keywords and the branch names no object model, in every dialect: they
         are parts of the conjunction, not keywords beside the ``$ref`` in the document. The branch is then the schema
-        it names merged with them, as a ``$ref`` merges its siblings, which ``_combined_schema_members`` reads as an
-        inline branch. None under ``legacy-ref-branch-without-site-parts``, and where the merge keeps the reference.
+        it names merged with them as their intersection (``_CONJUNCTION_PARTS_KEY``), so a keyword of both keeps the
+        tighter value, which ``_combined_schema_members`` reads as an inline branch. None under
+        ``legacy-ref-branch-without-site-parts``, and where the merge keeps the reference.
         """
         if (
             "legacy-ref-branch-without-site-parts" in self._legacy_intersection
@@ -3994,7 +3999,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             or self._schema_requires_model_type(branch, resolve_ref=True)
         ):
             return None
-        merged = self._merge_ref_with_schema(site.model_copy(update={"ref": branch.ref}))
+        conjunction = site.model_copy(update={"ref": branch.ref})
+        conjunction.__dict__[_CONJUNCTION_PARTS_KEY] = True
+        merged = self._merge_ref_with_schema(conjunction)
         return None if merged.ref else merged
 
     def _combined_branch_row(

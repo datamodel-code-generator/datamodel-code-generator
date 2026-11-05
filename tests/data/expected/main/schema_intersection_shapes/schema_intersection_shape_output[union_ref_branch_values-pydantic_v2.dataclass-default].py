@@ -45,6 +45,21 @@ AtLeastInAllOf1 = TypeAliasType("AtLeastInAllOf1", str)
 AtLeastInAllOf = TypeAliasType("AtLeastInAllOf", Quantity | AtLeastInAllOf1)
 
 
+Large = TypeAliasType("Large", Annotated[int, Field(ge=10)])
+
+
+AtLeastTen1 = TypeAliasType("AtLeastTen1", str)
+
+
+AtLeastTen = TypeAliasType("AtLeastTen", Large | AtLeastTen1)
+
+
+ShortLetters1 = TypeAliasType("ShortLetters1", int)
+
+
+ShortLetters = TypeAliasType("ShortLetters", Text | ShortLetters1)
+
+
 @dataclass
 class Model:
     at_least: AtLeast | None = None
@@ -52,3 +67,5 @@ class Model:
     non_empty: NonEmpty | None = None
     at_least_in_all_of: AtLeastInAllOf | None = None
     at_least_field: Quantity | AtLeastField | None = None
+    at_least_ten: AtLeastTen | None = None
+    short_letters: ShortLetters | None = None

@@ -1,3 +1,5 @@
 msgspec.Meta does not take ge on AtLeast1 | AtLeast2; AtLeast is generated without this constraint.
 msgspec.Meta does not take pattern on Letters1 | Letters2; Letters is generated without this constraint.
 msgspec.Meta does not take min_length on NonEmpty1 | NonEmpty2; NonEmpty is generated without this constraint.
+msgspec.Meta does not take ge on AtLeastTen1 | AtLeastTen2; AtLeastTen is generated without this constraint.
+msgspec.Meta does not take max_length on ShortLetters1 | ShortLetters2; ShortLetters is generated without this constraint.

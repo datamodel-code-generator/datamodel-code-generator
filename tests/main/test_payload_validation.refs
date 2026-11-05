@@ -843,6 +843,7 @@ jsonschema/schema_intersection/inherited_overrides.json	payloads/native_numeric_
 jsonschema/schema_intersection/ref_siblings.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_intersection/ref_siblings_draft07.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_intersection/root_members.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/schema_intersection/union_ref_branch_values_draft07.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_intersection/unsat_enum_extend.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_intersection/unsat_forms.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_intersection/unsat_two_enum_refs.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2824,6 +2825,7 @@ jsonschema/schema_intersection/inherited_overrides.json	payloads/native_numeric_
 jsonschema/schema_intersection/ref_siblings.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_intersection/ref_siblings_draft07.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_intersection/root_members.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/schema_intersection/union_ref_branch_values_draft07.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_intersection/unsat_enum_extend.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_intersection/unsat_forms.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/schema_intersection/unsat_two_enum_refs.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

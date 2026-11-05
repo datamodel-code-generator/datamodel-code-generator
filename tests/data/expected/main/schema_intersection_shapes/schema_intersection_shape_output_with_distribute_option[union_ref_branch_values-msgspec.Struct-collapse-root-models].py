@@ -28,9 +28,20 @@ Letters1: TypeAlias = Annotated[str, Meta(max_length=3, pattern='^a+$')]
 NonEmpty1: TypeAlias = Annotated[list[str], Meta(min_length=1)]
 
 
+Large: TypeAlias = Annotated[int, Meta(ge=10)]
+
+
+AtLeastTen1: TypeAlias = Annotated[int, Meta(ge=10)]
+
+
+ShortLetters1: TypeAlias = Annotated[str, Meta(max_length=3)]
+
+
 class Model(Struct):
     at_least: AtLeast1 | str | UnsetType = UNSET
     letters: Letters1 | int | UnsetType = UNSET
     non_empty: NonEmpty1 | int | UnsetType = UNSET
     at_least_in_all_of: Quantity | str | UnsetType = UNSET
     at_least_field: AtLeastField | str | UnsetType = UNSET
+    at_least_ten: AtLeastTen1 | str | UnsetType = UNSET
+    short_letters: ShortLetters1 | int | UnsetType = UNSET

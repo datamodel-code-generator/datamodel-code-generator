@@ -13,9 +13,14 @@ Quantity: TypeAlias = Annotated[int, Meta(ge=1)]
 Text: TypeAlias = Annotated[str, Meta(max_length=3)]
 
 
+Large: TypeAlias = Annotated[int, Meta(ge=10)]
+
+
 class Model(Struct):
     at_least: Quantity | str | UnsetType = UNSET
     letters: Text | int | UnsetType = UNSET
     non_empty: list[str] | int | UnsetType = UNSET
     at_least_in_all_of: Quantity | str | UnsetType = UNSET
     at_least_field: Quantity | str | UnsetType = UNSET
+    at_least_ten: Large | str | UnsetType = UNSET
+    short_letters: Text | int | UnsetType = UNSET

@@ -139,6 +139,10 @@ __all__ = [
 ]
 
 _MERGED_REF_TARGET_KEY = "_merged_ref_target"
+_CONJUNCTION_PARTS_KEY = "_conjunction_parts"
+"""Marks a schema whose keywords beside its ``$ref`` are parts of a conjunction the document writes around it, such as
+the value keywords beside an ``anyOf`` read into its ``$ref`` branch: they meet the referenced schema as their
+intersection in every dialect, also under ``legacy-merge-row`` (``merge_ref_with_schema``)."""
 _REPORTED_VALUE_CONFLICT_KEY = "_reported_value_conflict"
 _VALUE_CONFLICT_KEYWORDS = frozenset({"enum", "const"})
 _ValidatedT = TypeVar("_ValidatedT")
@@ -1257,21 +1261,29 @@ def ref_target_dump(parser: SchemaRefsHost, ref: str, resolved_ref: str) -> tupl
     return deepcopy(cached[0]), cached[1]
 
 
-def intersect_ref_siblings(
-    parser: SchemaRefsHost, target: dict[str, Any], siblings: dict[str, Any], where: str, *, siblings_are_parts: bool
+def intersect_ref_siblings(  # noqa: PLR0913
+    parser: SchemaRefsHost,
+    target: dict[str, Any],
+    siblings: dict[str, Any],
+    where: str,
+    *,
+    siblings_are_parts: bool,
+    conjunction: bool = False,
 ) -> tuple[dict[str, Any], tuple[str, ...]]:
     """Merge the dump of a referenced schema with the sibling keywords of its $ref into their intersection.
 
     The earlier merge (``concatenating_row``: lists concatenated, a sibling's value winning) stays wherever it
     enforces what the intersection enforces; ``intersect_keywords`` replaces the keywords where it does not. A
     keyword whose parts have no value in common keeps the earlier merge's value, with a warning. Returns the merged
-    keywords and the keywords with no value in common. Under ``legacy-merge-row`` the earlier merge alone.
+    keywords and the keywords with no value in common. Under ``legacy-merge-row`` the earlier merge alone, unless the
+    siblings are parts of a ``conjunction`` the document writes around the $ref (``_CONJUNCTION_PARTS_KEY``).
     """
+    legacy_rows = parser._legacy_intersection  # noqa: SLF001
     intersection = _intersect_dumps(
         [target, siblings],
         concatenating_row(target, siblings),
         ref_siblings_are_parts=siblings_are_parts,
-        legacy_rows=parser._legacy_intersection,  # noqa: SLF001
+        legacy_rows=legacy_rows - {"legacy-merge-row"} if conjunction else legacy_rows,
         removes_enum_outside_type="legacy-enum-outside-type-kept" not in parser._legacy_intersection,  # noqa: SLF001
     )
     parser._warn_intersection(where, intersection)  # noqa: SLF001
@@ -1292,10 +1304,16 @@ def intersect_ref_siblings_schema(  # noqa: PLR0913
 
     A ``holder`` of the ``$ref`` that has a ``contains`` of its own does not replace the referenced one: both apply,
     so the item bounds the referenced contains keywords imply intersect with the holder's. The schema keeps the
-    reference ``target_ref`` it ends at, when given, for the dynamic scope of its anchors.
+    reference ``target_ref`` it ends at, when given, for the dynamic scope of its anchors. A ``holder`` marked
+    ``_CONJUNCTION_PARTS_KEY`` is the intersection also under ``legacy-merge-row``.
     """
     merged, unsatisfiable = intersect_ref_siblings(
-        parser, target, siblings, where, siblings_are_parts=siblings_are_parts
+        parser,
+        target,
+        siblings,
+        where,
+        siblings_are_parts=siblings_are_parts,
+        conjunction=holder is not None and _CONJUNCTION_PARTS_KEY in holder.__dict__,
     )
     merged.pop("$ref", None)
     if (

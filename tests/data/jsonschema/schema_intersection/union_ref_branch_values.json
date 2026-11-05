@@ -25,6 +25,12 @@
           "type": "string"
         }
       ]
+    },
+    "at_least_ten": {
+      "$ref": "#/$defs/AtLeastTen"
+    },
+    "short_letters": {
+      "$ref": "#/$defs/ShortLetters"
     }
   },
   "$defs": {
@@ -87,6 +93,32 @@
         },
         {
           "type": "string"
+        }
+      ]
+    },
+    "Large": {
+      "type": "integer",
+      "minimum": 10
+    },
+    "AtLeastTen": {
+      "minimum": 5,
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Large"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "ShortLetters": {
+      "maxLength": 8,
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Text"
+        },
+        {
+          "type": "integer"
         }
       ]
     }

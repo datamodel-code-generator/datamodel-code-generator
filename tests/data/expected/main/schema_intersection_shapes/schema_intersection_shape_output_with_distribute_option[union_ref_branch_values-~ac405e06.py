@@ -70,9 +70,39 @@ class AtLeastInAllOf(RootModel[Quantity | AtLeastInAllOf1]):
     root: Quantity | AtLeastInAllOf1
 
 
+class Large(RootModel[int]):
+    root: int = Field(..., ge=10)
+
+
+class AtLeastTen1(RootModel[int]):
+    root: int = Field(..., ge=10)
+
+
+class AtLeastTen2(RootModel[str]):
+    root: str
+
+
+class AtLeastTen(RootModel[AtLeastTen1 | AtLeastTen2]):
+    root: AtLeastTen1 | AtLeastTen2 = Field(..., ge=5)
+
+
+class ShortLetters1(RootModel[str]):
+    root: str = Field(..., max_length=3)
+
+
+class ShortLetters2(RootModel[int]):
+    root: int
+
+
+class ShortLetters(RootModel[ShortLetters1 | ShortLetters2]):
+    root: ShortLetters1 | ShortLetters2 = Field(..., max_length=8)
+
+
 class Model(BaseModel):
     at_least: AtLeast | None = None
     letters: Letters | None = None
     non_empty: NonEmpty | None = None
     at_least_in_all_of: AtLeastInAllOf | None = None
     at_least_field: AtLeastField | AtLeastField1 | None = None
+    at_least_ten: AtLeastTen | None = None
+    short_letters: ShortLetters | None = None
