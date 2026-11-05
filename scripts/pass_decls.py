@@ -1671,5 +1671,30 @@ DECISION_DECLS: Final[dict[str, PassDecl]] = {
         after=(After("omit_held_null", "marks the models whose referencing types the None omission rewrote"),),
         condition="--use-serialize-as-any-for-every-subclass",
     ),
+    "write_unique_items_as_sets": PassDecl(
+        "write_unique_items_as_sets",
+        Phase.DECIDE,
+        Scope.GLOBAL,
+        PassKind.TRANSFORM,
+        reads=frozenset({
+            Fact.FIELD_TYPES,
+            Fact.CONSTRAINTS,
+            Fact.DEFAULTS,
+            Fact.MODEL_KIND,
+            Fact.BASES,
+            Fact.FIELD_SET,
+            Fact.METADATA,
+        }),
+        writes=frozenset({Fact.CONTAINERS, Fact.FIELD_TYPES, Fact.DEFAULTS}),
+        summary=(
+            "Writes each uniqueItems list as a set where every value of its final items hashes by value, and its list"
+            " default as a set."
+        ),
+        after=(
+            After("omit_held_null", "reads the item types after the None omission rewrote them"),
+            After("omit_untaken_union_constraints", "reads the constraints the union decision wrote"),
+        ),
+        condition="--use-unique-items-as-set-by-value",
+    ),
 }
 """The declaration of each decision of the decision registries (``parser/_phases.py``), by the name its spec gives."""

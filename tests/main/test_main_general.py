@@ -2048,6 +2048,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "keep_enum_member_values",
         "use_union_operator",
         "use_unique_items_as_set",
+        "use_unique_items_as_set_by_value",
         "use_tuple_for_fixed_items",
         "use_tuple_for_closed_arrays",
         "use_closed_typed_dict",

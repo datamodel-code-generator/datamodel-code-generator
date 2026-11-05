@@ -8607,6 +8607,160 @@ def test_main_unique_items_as_set_collapsed_root_items(
     )
 
 
+@pytest.mark.cli_doc(
+    options=["--use-unique-items-as-set-by-value"],
+    option_description="""Write a uniqueItems set only where its final items hash by value.
+
+Under `--use-unique-items-as-set`, the arrays whose schemas declare `uniqueItems` become sets before root models
+collapse, type overrides apply and the other modules are processed, and a model that is a set item hashes by identity,
+so two equal items are both kept. Deduplication and `--reuse-model` also compare such arrays as the lists they still
+are, so a model whose array declares no `uniqueItems` can merge into one whose array does, and a list the schema allows
+to repeat then drops its duplicates. With `--use-unique-items-as-set-by-value` the sets are decided on the final item
+types: a set is written only where every value of its items hashes by value (scalars, enums, tuples and frozen sets of
+them, frozen models whose fields hash), so an array of models that hash only by identity, of `Any` or of containers
+stays a list, and models whose arrays differ in `uniqueItems` are kept apart.""",
+    input_schema="jsonschema/unique_items_by_value.json",
+    cli_args=[
+        "--use-unique-items-as-set",
+        "--reuse-model",
+        "--collapse-reuse-models",
+        "--collapse-root-models",
+        "--use-unique-items-as-set-by-value",
+    ],
+    golden_output="main/jsonschema/unique_items_as_set_by_value~main_unique_items_as_set_by_value[pydantic].py",
+    comparison_output=(
+        "main/jsonschema/unique_items_as_set_by_value~main_unique_items_as_set_by_value[without-option].py"
+    ),
+)
+@pytest.mark.parametrize(
+    ("extra_args", "expected_repr"),
+    [
+        pytest.param(["--collapse-root-models"], None, id="without-option"),
+        pytest.param(
+            ["--collapse-root-models", "--use-unique-items-as-set-by-value"],
+            "Root(labels=Labels(names={'a'}), history=History(names=['b', 'a', 'b']), pets=[Pet(id=1, nicknames=None), "
+            "Pet(id=1, nicknames=None)], colors={<Color.red: 'red'>}, tags=[['x'], ['x']], anything=[1, 1], "
+            "numbers={3}, first=First(entry=Entry(tags={'a'})), second=Second(entry=Entry1(tags=['a', 'a'])), "
+            "codes={'c'}, settings=[Settings(options={})], pairs=[Pair(root=[1, 'a']), Pair(root=[1, 'a'])], "
+            "limits=[Limits(levels={1})], points=[Point(x=1, y=1), Point(x=1, y=1)])",
+            id="pydantic",
+        ),
+        pytest.param(
+            ["--use-unique-items-as-set-by-value", "--output-model-type", "msgspec.Struct"], None, id="msgspec"
+        ),
+        pytest.param(
+            ["--collapse-root-models", "--use-unique-items-as-set-by-value", "--enable-faux-immutability"],
+            None,
+            id="frozen-pydantic",
+        ),
+        pytest.param(
+            [
+                "--use-unique-items-as-set-by-value",
+                "--output-model-type",
+                "dataclasses.dataclass",
+                "--dataclass-arguments",
+                '{"eq": false}',
+            ],
+            None,
+            id="identity-dataclass",
+        ),
+        pytest.param(
+            [
+                "--collapse-root-models",
+                "--use-unique-items-as-set-by-value",
+                "--output-model-type",
+                "dataclasses.dataclass",
+                "--frozen-dataclasses",
+                "--use-generic-container-types",
+                "--use-tuple-for-closed-arrays",
+            ],
+            "Root(codes=frozenset({'c'}), labels=Labels(names=frozenset({'a'})), "
+            "history=History(names=['b', 'a', 'b']), pets=frozenset({Pet(id=1, nicknames=None)}), "
+            "colors=frozenset({<Color.red: 'red'>}), "
+            "tags=[['x'], ['x']], anything=[1, 1], numbers=frozenset({3}), "
+            "first=First(entry=Entry(tags=frozenset({'a'}))), second=Second(entry=Entry1(tags=['a', 'a'])), "
+            "settings=[Settings(options={})], pairs=frozenset({(1, 'a')}), limits=[Limits(levels={1})], "
+            "points=frozenset({Point(x=1, y=1)}))",
+            id="frozen-dataclass",
+        ),
+    ],
+)
+def test_main_unique_items_as_set_by_value(extra_args: list[str], expected_repr: str | None, output_file: Path) -> None:
+    """Write a uniqueItems array as a set on its final items, only where every value of them hashes by value.
+
+    With --use-unique-items-as-set-by-value, ``History`` and the second ``Entry``, which declare no ``uniqueItems``,
+    stay apart from ``Labels`` and the first ``Entry``, which do, under --collapse-reuse-models and same-name
+    deduplication (#4834), so their duplicates are kept; ``Pet``, which hashes only by identity, the inlined list root
+    ``Tags`` and items of any type stay lists (#4936), while enums, scalars and a frozen dataclass whose fields hash
+    (a frozen set under --use-generic-container-types) are sets. Without it, the arrays are decided before reuse and
+    collapse, as in 0.89.0.
+    """
+    name = "unique_items_by_value"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *extra_args,
+            "--use-unique-items-as-set",
+            "--reuse-model",
+            "--collapse-reuse-models",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    payload = (
+        '{"labels": {"names": ["a", "a"]}, "history": {"names": ["b", "a", "b"]}, "pets": [{"id": 1}, {"id": 1}], '
+        '"colors": ["red", "red"], "tags": [["x"], ["x"]], "anything": [1, 1], "numbers": [3, 3], '
+        '"first": {"entry": {"tags": ["a", "a"]}}, "second": {"entry": {"tags": ["a", "a"]}}, "codes": ["c", "c"], '
+        '"settings": [{}], "pairs": [[1, "a"], [1, "a"]], "limits": [{}], '
+        '"points": [{"x": 1, "y": 1}, {"x": 1, "y": 1}]}'
+    )
+    if expected_repr is None:
+        if "msgspec.Struct" in extra_args:
+            with _generated_model(output_file, name, "Root") as model:
+                msgspec.json.decode(payload, type=model)
+        return
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=name,
+        model_name="Root",
+        valid_json=payload,
+        invalid_json='{"codes": [], "colors": ["green"]}',
+        expected_error_type="enum",
+        expected_repr=expected_repr,
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="without-option"), pytest.param(["--use-unique-items-as-set-by-value"], id="option")],
+)
+def test_main_unique_items_as_set_by_value_across_modules(extra_args: list[str], output_dir: Path) -> None:
+    """Decide the set of a uniqueItems root model of another module once every module is processed.
+
+    ``a.Tags`` declares ``uniqueItems`` and ``b.Holder`` inlines it under --collapse-root-models. Without
+    --use-unique-items-as-set-by-value the set is written while module ``a`` is processed, after ``b`` inlined the
+    list, so ``Holder.tags`` stays a list (#6191); with it ``Holder.tags`` is a set.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "unique_items_by_value_modules.json",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            *extra_args,
+            "--use-unique-items-as-set",
+            "--collapse-root-models",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+
+
 @pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct", "typing.TypedDict"])
 def test_main_unique_items_as_set_nested_arrays(output_model: str, tmp_path: Path, output_file: Path) -> None:
     """Write as a set every array whose own schema declares ``uniqueItems``, wherever the array is.

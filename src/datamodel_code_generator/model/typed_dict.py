@@ -46,6 +46,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._mro import MemberRule
     from datamodel_code_generator.imports import Imports
+    from datamodel_code_generator.model._decisions.hashability import SetItemHash
     from datamodel_code_generator.reference import Reference
     from datamodel_code_generator.types import DataType
 
@@ -78,9 +79,9 @@ class TypedDict(DataModel):
     _BASE_FIELDS: ClassVar[MemberRule] = "nearest"
 
     @override
-    def _instances_never_hash(self, generic_base_config: Mapping[str, Any] | None) -> bool:
-        """Return True: the instances are dicts, which never hash."""
-        return self._class_never_hashes(dicts=True)
+    def _class_hash(self, generic_base_config: Mapping[str, Any] | None) -> SetItemHash:
+        """Return ``never``: the instances are dicts, which never hash."""
+        return self._compared_class_hash(dicts=True)
 
     @classmethod
     @override

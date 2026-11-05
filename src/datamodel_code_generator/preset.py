@@ -920,6 +920,14 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
+        title="Unique items as sets by value",
+        config=PresetConfig(use_unique_items_as_set_by_value=True),
+        description=(
+            "Under --use-unique-items-as-set, decide each set on the final item types and write one only where every "
+            "value of its items hashes by value, and keep apart models whose arrays differ in uniqueItems."
+        ),
+    ),
+    PresetOptionGroup(
         title="SerializeAsAny for every subclass",
         config=PresetConfig(use_serialize_as_any_for_every_subclass=True),
         description=(
@@ -1245,7 +1253,10 @@ def render_presets_markdown() -> str:
             "`SerializeAsAny` when any subclass of its model in the output adds fields, and "
             "`--read-dynamic-anchors-in-document-order`: a plain-name `$dynamicRef` its dynamic scope does not bind, "
             "and a reference to a plain name several schemas declare, resolve to the first declaration in document "
-            "order."
+            "order, and "
+            "`--use-unique-items-as-set-by-value`: under `--use-unique-items-as-set` a set is decided on the final "
+            "item types and written only where every value of its items hashes by value, and models whose arrays "
+            "differ in `uniqueItems` are not merged."
         ),
         "",
         (

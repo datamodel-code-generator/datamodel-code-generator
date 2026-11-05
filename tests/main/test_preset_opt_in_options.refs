@@ -95,3 +95,5 @@ use-tuple-for-closed-arrays-practical	main/preset_opt_in_options/preset_sets_opt
 use-tuple-for-closed-arrays-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-tuple-for-closed-arrays-standard].py
 use-typed-map-values-beside-other-types-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-typed-map-values-beside-other-types-practical].py
 use-typed-map-values-beside-other-types-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-typed-map-values-beside-other-types-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-typed-map-values-beside-other-types-practical].py
+use-unique-items-as-set-by-value-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-unique-items-as-set-by-value-practical].py
+use-unique-items-as-set-by-value-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-unique-items-as-set-by-value-standard].py

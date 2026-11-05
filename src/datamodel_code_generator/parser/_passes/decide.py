@@ -15,10 +15,11 @@ from datamodel_code_generator.parser._passes._shared import (
     TargetPythonVersionHost,
     run_unused_models,
 )
-from datamodel_code_generator.parser._phases import _DecisionWriter
+from datamodel_code_generator.parser._phases import DecisionOptions, _DecisionWriter
 from datamodel_code_generator.types import _copy_data_type
 
 if TYPE_CHECKING:
+    from datamodel_code_generator.config import ParserConfig
     from datamodel_code_generator.parser._passes._state import FinishRun
     from datamodel_code_generator.parser._phases import DecisionPass
     from datamodel_code_generator.parser._pipeline import Runner
@@ -38,6 +39,14 @@ class DecideHost(GenerationStoreHost, TargetPythonVersionHost, Protocol):
     def data_type_manager(self) -> DataTypeManager:
         """The type manager of the output model."""
 
+    @property
+    def use_tuple_for_closed_arrays(self) -> bool:
+        """Whether a closed array is written as a tuple."""
+
+    @property
+    def config(self) -> ParserConfig:
+        """The configuration of the parser."""
+
 
 def decide(parser: DecideHost, runner: Runner, run: FinishRun[Any, Any, Any]) -> None:
     """Seal the facts final at B1 and run the decisions of the registry on them in its order, when it holds any."""
@@ -48,7 +57,11 @@ def decide(parser: DecideHost, runner: Runner, run: FinishRun[Any, Any, Any]) ->
     keywords = parser.data_type_manager.member_constraint_keywords
     version = parser.target_python_version.version_key
     facts = parser.generation_store.seal_facts(
-        modules, lambda data_type, model_of: keywords(data_type, version, model_of)
+        modules,
+        lambda data_type, model_of: keywords(data_type, version, model_of),
+        DecisionOptions(
+            keeps_tuples=parser.use_tuple_for_closed_arrays, user_imports=bool(parser.config.additional_imports)
+        ),
     )
     writer = _DecisionWriter(parser._graph_builder, _copy_data_type)  # noqa: SLF001
     for decision in decisions:

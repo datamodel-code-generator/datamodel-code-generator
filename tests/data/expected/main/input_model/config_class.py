@@ -284,6 +284,7 @@ class BaseGenerateConfig(TypedDict):
     name_allof_union_members_after_branches: NotRequired[bool]
     use_operation_id_as_name: NotRequired[bool]
     use_unique_items_as_set: NotRequired[bool]
+    use_unique_items_as_set_by_value: NotRequired[bool]
     use_tuple_for_fixed_items: NotRequired[bool]
     use_tuple_for_closed_arrays: NotRequired[bool]
     use_tuple_for_fixed_length_arrays: NotRequired[bool]

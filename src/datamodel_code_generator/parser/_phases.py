@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model.base import DataModel
 
 __all__ = [
+    "DecisionOptions",
     "DecisionOutcome",
     "DecisionPass",
     "DecisionSpec",
@@ -64,6 +65,23 @@ class DecisionStore(Protocol):
     def mark_serialized_as_any(self, model: Any, wrapped: bool) -> None:  # noqa: FBT001
         """Record whether a type naming the model is wrapped in ``SerializeAsAny``."""
 
+    def swap_data_type(self, data_type: Any, new_data_type: Any, *, refresh: Any = "now") -> None:
+        """Put ``new_data_type`` where ``data_type`` is in its parent."""
+
+    def set_field_default(self, field_: Any, default: Any) -> None:
+        """Write a field's default."""
+
+
+@final
+@record
+class DecisionOptions:
+    """The options of the parse that decisions read beside the models."""
+
+    keeps_tuples: bool = False
+    """--use-tuple-for-closed-arrays writes a closed array as a tuple, which keeps its positions."""
+    user_imports: bool = False
+    """--additional-imports may shadow the builtin annotations that hashability reads."""
+
 
 @final
 @record
@@ -88,6 +106,7 @@ class FinalFacts:
     modules: tuple[ModuleFacts, ...]
     live_models: tuple[ModelView, ...]
     member_keywords: Callable[[DataTypeView, Callable[[ReferenceView], ModelView | None]], frozenset[str] | None]
+    options: DecisionOptions = DecisionOptions()
 
 
 @final
@@ -153,6 +172,29 @@ class _DecisionWriter:
     def mark_serialized_as_any(self, model: ModelView, wrapped: bool) -> None:  # noqa: FBT001
         """Record whether a type naming ``model`` is wrapped in ``SerializeAsAny`` (``SerializeAsAnyWriter``)."""
         self._store.mark_serialized_as_any(model, wrapped)
+        self._changed[id(model)] = cast("DataModel", model)
+
+    def write_sets(
+        self, model: ModelView, field: FieldView, lists: Sequence[DataTypeView], default: set[Any] | None
+    ) -> None:
+        """Write each of ``lists``, types of ``field`` of ``model``, as a set, and ``default`` (``UniqueSetsWriter``).
+
+        Fields share type nodes, so the field gets a copy of its type tree, whose copies of the lists are then swapped
+        for sets, inner ones first; the nodes stay as the other fields see them.
+        """
+        planned = {id(data_type) for data_type in lists}
+        original: Any = field.data_type
+        copied = self._copy(original)
+        self._store.replace_field_type(field, copied)
+        for source, target in zip(original.all_data_types, copied.all_data_types, strict=True):
+            if id(source) not in planned:
+                continue
+            set_type = target.model_copy(update={"is_list": False, "is_set": True})
+            for item in set_type.data_types:
+                item.parent = set_type
+            self._store.swap_data_type(target, set_type)
+        if default is not None:
+            self._store.set_field_default(field, default)
         self._changed[id(model)] = cast("DataModel", model)
 
     def outcome(self, live_models: Iterable[DataModel]) -> DecisionOutcome:

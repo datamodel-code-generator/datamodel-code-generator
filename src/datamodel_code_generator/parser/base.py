@@ -209,6 +209,7 @@ from datamodel_code_generator.parser._passes._shared import (
     normalize_default_value_constraints,
     placeholder_identity,  # noqa: F401  # Preserve the established parser.base export.
     register_runtime_expression,
+    unique_items_positions,
 )
 from datamodel_code_generator.parser._passes._state import (
     ForwarderMap,
@@ -237,6 +238,7 @@ from datamodel_code_generator.parser._serialize_as_any import SERIALIZE_AS_ANY_F
 from datamodel_code_generator.parser._stdout_repair import _TOP_LEVEL_FUTURE_IMPORT_PATTERN
 from datamodel_code_generator.parser._tag_plan import TagCapabilities, TagPlan, tag_capabilities
 from datamodel_code_generator.parser._union_constraints import OMIT_UNTAKEN_UNION_CONSTRAINTS
+from datamodel_code_generator.parser._unique_sets import WRITE_UNIQUE_ITEMS_AS_SETS
 from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.schema_version import SchemaFeaturesT
 from datamodel_code_generator.python_literal import stable_repr
@@ -571,6 +573,11 @@ class _ModelShapeSource:
 
     target_python_version: PythonVersion
     naming_plan: NamingPlan
+    unique_items: bool = False
+    """Under --use-unique-items-as-set-by-value, the keys hold the positions of the arrays whose schemas declare
+    ``uniqueItems`` (``unique_items_positions``), as the decision on the final types writes sets there; without it
+    (row ``legacy-dedup-keys-without-unique-items``) they hold the rendering alone, in which such an array is the list
+    it still is, as 0.89.0 compared them."""
 
     def own_class_name(self, model: DataModel) -> str | None:
         """Return the class name the model shares with its duplicates, or None for the name it renders under.
@@ -579,15 +586,19 @@ class _ModelShapeSource:
         """
         return self.naming_plan.base_of(model)
 
-    def render(self, model: DataModel, class_name: str | None) -> tuple[str, Hashable, tuple[Hashable, ...]]:  # noqa: PLR6301
+    def render(self, model: DataModel, class_name: str | None) -> tuple[str, Hashable, tuple[Hashable, ...]]:
         """Return the model rendered under a class name, its imports and its values as written, uncached."""
         rendered, imports, *written = model._fresh_dedup_key(class_name)  # noqa: SLF001
-        return rendered, imports, tuple(written)
+        return rendered, imports, (*written, *self._unique_items(model))
 
-    def dedup_key(self, model: DataModel, slot: KeySlot) -> tuple[Any, ...]:  # noqa: PLR6301
+    def dedup_key(self, model: DataModel, slot: KeySlot) -> tuple[Any, ...]:
         """Return the dedup key the memo keeps for the model in a slot, rendering and keeping it for an empty slot."""
         class_name, use_default = slot
-        return model.get_dedup_key(class_name, use_default=use_default)
+        return (*model.get_dedup_key(class_name, use_default=use_default), *self._unique_items(model))
+
+    def _unique_items(self, model: DataModel) -> tuple[Hashable, ...]:
+        """Return what the keys add to the rendering: the uniqueItems positions of the fields, if they hold any."""
+        return (("unique-items", unique_items_positions(model)),) if self.unique_items else ()
 
     def forget_dedup_keys(self, model: DataModel) -> None:  # noqa: PLR6301
         """Drop the dedup keys the parse's memo keeps for the model."""
@@ -675,6 +686,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         OMIT_HELD_NULL,
         SERIALIZE_AS_ANY_FOR_EVERY_SUBCLASS,
         OMIT_UNTAKEN_UNION_CONSTRAINTS,
+        WRITE_UNIQUE_ITEMS_AS_SETS,
     )
     """The decisions of the decision phase, in registration order; ``parser/_phases.py`` says how they run."""
     _http_fetch_session: _HTTPFetchSession | None = None
@@ -1185,6 +1197,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.infer_union_variant_names: bool = config.infer_union_variant_names or self.use_tag_as_union_variant_name
         self.use_operation_id_as_name: bool = config.use_operation_id_as_name
         self.use_unique_items_as_set: bool = config.use_unique_items_as_set
+        self.use_unique_items_as_set_by_value: bool = config.use_unique_items_as_set_by_value
         self.use_tuple_for_fixed_items: bool = config.use_tuple_for_fixed_items
         self.use_tuple_for_closed_arrays: bool = config.use_tuple_for_closed_arrays
         self.use_tuple_for_fixed_length_arrays: bool = config.use_tuple_for_fixed_length_arrays
@@ -1715,6 +1728,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Return the keys of one comparison pass of the dedup or reuse user of a row."""
         return ModelShapes(
             row, _ModelShapeSource(self.target_python_version, self._naming_plan), self._tag_plan.reuse_snapshot
+            row,
+            _ModelShapeSource(
+                self.target_python_version,
+                unique_items=self.use_unique_items_as_set and self.use_unique_items_as_set_by_value,
+            ),
+            self._tag_plan.reuse_snapshot,
         )
 
     def _create_discriminator_data_type(
