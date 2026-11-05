@@ -717,12 +717,19 @@ typed-dict-extra-items	main/template_data/builtin_typed_dict.py
 	main/template_data/custom_template.py
 [test_main_named_paths_keep_what_follows_a_path]
 	main/main_general/main_named_paths_keep_what_follows_a_path.py
+[test_main_named_pipe_csv_input_is_read_up_to_its_first_row]
+	main/named_pipe_csv_input_is_read_up_to_its_first_row.py	= main/named_pipe_input_is_read_once~main_named_pipe_input_is_read_once[csv].py
 [test_main_named_pipe_input_is_read_once]
 auto-json	main/named_pipe_input_is_read_once.py
 auto-jsonschema	main/named_pipe_input_is_read_once.py	= main/jsonschema/simple_string.py
 csv	main/named_pipe_input_is_read_once.py	= main/named_pipe_input_is_read_once~main_named_pipe_input_is_read_once[csv].py
 jsonschema	main/named_pipe_input_is_read_once.py	= main/jsonschema/simple_string.py
 mcp-tools	main/named_pipe_input_is_read_once.py	= main/named_pipe_input_is_read_once~main_named_pipe_input_is_read_once[mcp-tools].py
+protobuf	main/named_pipe_input_is_read_once.py	= main/named_pipe_input_is_read_once~main_named_pipe_input_is_read_once[protobuf].py
+xmlschema	main/named_pipe_input_is_read_once.py	= main/named_pipe_input_is_read_once~main_named_pipe_input_is_read_once[xmlschema].py
+[test_main_named_pipe_input_resolves_references_beside_it]
+auto	main/named_pipe_input_resolves_references_beside_it.py
+jsonschema	main/named_pipe_input_resolves_references_beside_it.py
 [test_main_rejects_additional_import_injection]
 	main/additional_imports_invalid.txt
 [test_main_rejects_additional_import_injection_in_extra_template_data]

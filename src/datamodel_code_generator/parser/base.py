@@ -1636,11 +1636,14 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             return ((path, None) for path in files)
         return input_filter.iter_files(files, self.encoding)
 
+    def _prefetched_data(self, path: Path) -> bytes | None:
+        """Return the bytes generation read from ``path`` before parsing, which a pipe yields to one read only."""
+        prefetched_source = self.run_context.prefetched_source
+        return prefetched_source[1] if prefetched_source is not None and path == prefetched_source[0] else None
+
     def _source_from_path(self, path: Path, *, data: bytes | None = None) -> Source:
         try:
-            prefetched_source = self.run_context.prefetched_source
-            if data is None and prefetched_source is not None and path == prefetched_source[0]:
-                data = prefetched_source[1]
+            data = self._prefetched_data(path) if data is None else data
             if self._use_parsed_source_cache:
                 return Source.from_cached_path(
                     path, self.base_path, self.encoding, keep_text=self.validation, data=data

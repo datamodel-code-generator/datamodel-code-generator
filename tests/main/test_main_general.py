@@ -2163,6 +2163,7 @@ def test_space_and_special_characters_dict_stdin(monkeypatch: pytest.MonkeyPatch
 
 
 @pytest.mark.skipif(os.name == "nt", reason="named pipes need os.mkfifo")
+@pytest.mark.timeout(30)
 @pytest.mark.parametrize(
     ("source", "input_file_type"),
     [
@@ -2171,6 +2172,8 @@ def test_space_and_special_characters_dict_stdin(monkeypatch: pytest.MonkeyPatch
         pytest.param(DATA_PATH / "json" / "pet.json", None, id="auto-json"),
         pytest.param(DATA_PATH / "csv" / "simple.csv", "csv", id="csv"),
         pytest.param(DATA_PATH / "mcp_tools" / "tools_list.json", "mcp-tools", id="mcp-tools"),
+        pytest.param(DATA_PATH / "xmlschema" / "allof_root_type.xsd", "xmlschema", id="xmlschema"),
+        pytest.param(DATA_PATH / "protobuf" / "common.proto", "protobuf", id="protobuf"),
     ],
 )
 def test_main_named_pipe_input_is_read_once(
@@ -2196,6 +2199,65 @@ def test_main_named_pipe_input_is_read_once(
         extra_args=["--disable-timestamp"],
         assert_func=assert_file_content,
     )
+    writer.join()
+
+
+@pytest.mark.skipif(os.name == "nt", reason="named pipes need os.mkfifo")
+@pytest.mark.timeout(30)
+@pytest.mark.parametrize("input_file_type", [None, "jsonschema"], ids=["auto", "jsonschema"])
+def test_main_named_pipe_input_resolves_references_beside_it(
+    input_file_type: InputFileTypeLiteral | None,
+    tmp_path: Path,
+    output_file: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A named pipe input resolves its relative references beside the pipe, whether its type is detected or given."""
+    monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
+    schemas = tmp_path / "schemas"
+    schemas.mkdir()
+    shutil.copy(JSON_SCHEMA_DATA_PATH / "external_definitions.json", schemas)
+    pipe = schemas / "external_definitions_root.json"
+    os.mkfifo(pipe)
+    writer = Thread(target=pipe.write_bytes, args=((JSON_SCHEMA_DATA_PATH / pipe.name).read_bytes(),), daemon=True)
+    writer.start()
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=pipe,
+        output_path=output_file,
+        input_file_type=input_file_type,
+        extra_args=["--disable-timestamp"],
+        assert_func=assert_file_content,
+    )
+    writer.join()
+
+
+@pytest.mark.skipif(os.name == "nt", reason="named pipes need os.mkfifo")
+@pytest.mark.timeout(30)
+def test_main_named_pipe_csv_input_is_read_up_to_its_first_row(
+    tmp_path: Path, output_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A CSV named pipe is read up to its first row, so generation ends while its writer still holds the pipe open."""
+    monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
+    pipe = tmp_path / "simple.csv"
+    os.mkfifo(pipe)
+    generated = Event()
+
+    def write_and_hold() -> None:
+        with pipe.open("wb") as stream:
+            stream.write((DATA_PATH / "csv" / "simple.csv").read_bytes())
+            stream.flush()
+            generated.wait(30)
+
+    writer = Thread(target=write_and_hold, daemon=True)
+    writer.start()
+    run_main_and_assert(
+        input_path=pipe,
+        output_path=output_file,
+        input_file_type="csv",
+        extra_args=["--disable-timestamp"],
+        assert_func=assert_file_content,
+    )
+    generated.set()
     writer.join()
 
 
