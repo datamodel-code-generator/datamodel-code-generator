@@ -610,6 +610,64 @@ class ActionsCache(BaseModel):
     id: int | None = None
 ```
 
+### `--read-schema-version-per-document`
+
+| | |
+|---|---|
+| Option | `--read-schema-version-per-document` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.89.0 |
+| Issue | [#5380](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5380), [#5699](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5699), [#5700](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5700) |
+
+**Affects:** a run that reads documents of different schema versions (a directory of draft-07 and 2020-12 files, a 2020-12 document that references a draft-07 one), an OpenAPI 3.1 or later or AsyncAPI 3 document with keywords beside a `$ref`, and a `minProperties` or `maxProperties` beside an allOf `$ref` of a draft 4 to 7 document under `--generate-schema-validators`. Without the option the version of the document parsed first decides, for every document, whether the keywords beside a `$ref` apply and which features of its version are read, and the schema validators read an OpenAPI or AsyncAPI document as draft 7. With the option each document is read by the version it declares (`$schema`, `openapi`, `asyncapi`); a referenced document that declares none takes the version of the document whose reference loads it. Two same-named definitions of a document and of a document it references can get each other's class names (`Score`, `ScoreModel`) when the option makes them differ. An explicit `--schema-version` reads every document by that version, with or without the option.
+
+Schema: a 2020-12 `Root` whose `score` is `{"allOf": [{"$ref": "#/$defs/Positive", "maximum": 10}]}` and whose `legacy` references the same definition in a draft-07 document.
+
+Without the option (same as 0.88.0), `legacy` rejects 11, which draft 7 accepts:
+
+```python
+class Root(BaseModel):
+    legacy: Score | None = None
+    score: Score | None = None
+```
+
+With the option:
+
+```python
+class Root(BaseModel):
+    legacy: ScoreModel | None = None
+    score: Score | None = None
+```
+
+### `--ignore-ref-siblings-by-schema-version`
+
+| | |
+|---|---|
+| Option | `--ignore-ref-siblings-by-schema-version` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.89.0 |
+| Issue | [#5845](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5845), [#5958](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5958) |
+
+**Affects:** a `$ref` with keywords beside it in a version that ignores them: JSON Schema draft 4, 6 and 7, OpenAPI 3.0 and AsyncAPI 2. Without the option those keywords overlay the referenced schema: a sibling `format: binary` types the field `bytes`, a sibling `maxLength` constrains it, and a sibling `uniqueItems` makes it a set under `--use-unique-items-as-set`. With the option the field is typed by the referenced schema alone; annotations beside the `$ref` (`description`, `default`, `title`) and extensions are left out too. Versions that apply the keywords beside a `$ref` read them as before; the version is the one `--read-schema-version-per-document` reads, else that of the document being parsed.
+
+Schema: an OpenAPI 3.0 `Holder` whose `data` is `{"$ref": "#/components/schemas/Text", "format": "binary"}`, with `Text` a string.
+
+Without the option (same as 0.88.0):
+
+```python
+class Holder(BaseModel):
+    data: bytes | None = None
+```
+
+With the option:
+
+```python
+class Holder(BaseModel):
+    data: Text | None = None
+```
+
 ## Opt-in behaviour changes in 0.87.0
 
 This section lists every change in generated behaviour that is available as an option or as a dated preset, with the schema shapes it affects, a before/after example and the release it appeared in.

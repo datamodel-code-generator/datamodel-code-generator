@@ -38963,3 +38963,169 @@ def test_main_jsonschema_discriminator_inherited_schema_tag_msgspec(output_file:
             extra_args=["--output-model-type", "msgspec.Struct", "--disable-timestamp", "--formatters", "builtin"],
             force_exec_validation=True,
         )
+
+
+@pytest.mark.cli_doc(
+    options=["--read-schema-version-per-document"],
+    option_description="""Read each document by the schema version it declares.
+
+Without the option the schema version of the document parsed first decides, for every document of a run, whether the
+keywords beside a `$ref` apply and which features of its version are read (`const`, `prefixItems`, `$id`, `$defs`).
+With `--read-schema-version-per-document` each document is read by the version its `$schema`, `openapi` or `asyncapi`
+field declares; a referenced document that declares none takes the version of the document whose reference loads it,
+and an input document that declares none is read as it is on its own. Here the draft-07 document ignores the `maximum`
+beside its allOf `$ref`, as draft 7 says, and the 2020-12 root keeps it. An OpenAPI 3.1 document reads the keywords
+beside a `$ref` as JSON Schema 2020-12 does, and the property-count rule of `--generate-schema-validators` leaves out a
+`minProperties` beside an allOf `$ref` of a draft-07 document. An explicit `--schema-version` reads every document by
+that version, with or without the option.""",
+    input_schema="jsonschema/schema_version_per_document_refs/root.json",
+    cli_args=["--read-schema-version-per-document"],
+    golden_output="main/jsonschema/main_jsonschema/read_schema_version_per_document[per-document].py",
+    comparison_output="main/jsonschema/main_jsonschema/read_schema_version_per_document[first-read].py",
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="first-read"), pytest.param(["--read-schema-version-per-document"], id="per-document")],
+)
+def test_main_jsonschema_read_schema_version_per_document(output_file: Path, extra_args: list[str]) -> None:
+    """Read a referenced draft-07 document by draft 7 and its 2020-12 root by 2020-12 with the option.
+
+    Without it the root's version applies to both: ``legacy`` keeps the ``maximum`` that its draft-07 document writes
+    beside an allOf ``$ref``, which draft 7 ignores; with it ``legacy`` accepts 11 and ``score`` rejects it.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "schema_version_per_document_refs" / "root.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    if extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="read_schema_version_per_document",
+            model_name="Root",
+            valid_json=json.dumps({"legacy": 11, "score": 10}),
+            invalid_json=json.dumps({"score": 11}),
+            expected_error_type="less_than_equal",
+        )
+
+
+@pytest.mark.parametrize(
+    ("input_name", "extra_args"),
+    [
+        pytest.param("schema_version_per_document", [], id="first-read"),
+        pytest.param("schema_version_per_document", ["--read-schema-version-per-document"], id="per-document"),
+        pytest.param(
+            "single_value_enum_as_const/mixed_drafts",
+            ["--use-single-value-enum-as-const", "--read-schema-version-per-document"],
+            id="single-value-enum-as-const",
+        ),
+    ],
+)
+def test_main_jsonschema_read_schema_version_per_document_directory(
+    output_dir: Path, input_name: str, extra_args: list[str]
+) -> None:
+    """Read each document of a directory by its own schema version with the option (#5380).
+
+    The draft-07 document is parsed first; without the option its draft decides for the 2020-12 document too, so ``Wd``
+    loses the ``maximum`` beside its allOf ``$ref`` and accepts 11. With it each module equals the output of its
+    document read alone, and a 2020-12 document of a directory with a draft-04 one reads its one-value enums as const.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+    )
+    if extra_args == ["--read-schema-version-per-document"]:
+        assert_generated_model_json_validation(
+            output_dir / "b_2020_12.py",
+            module_name="read_schema_version_per_document_directory",
+            model_name="Current",
+            valid_json=json.dumps({"wd": 10}),
+            invalid_json=json.dumps({"wd": 11}),
+            expected_error_type="less_than_equal",
+        )
+
+
+def test_main_jsonschema_read_schema_version_per_document_explicit_version(tmp_path: Path) -> None:
+    """Read every document by an explicit --schema-version, with or without --read-schema-version-per-document."""
+    common = ["--schema-version", "2020-12", "--disable-timestamp", "--formatters", "builtin"]
+    expected = tmp_path / "expected"
+    output = tmp_path / "output"
+    expected.mkdir()
+    output.mkdir()
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "schema_version_per_document",
+        output_path=expected,
+        input_file_type="jsonschema",
+        extra_args=common,
+    )
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "schema_version_per_document",
+        output_path=output,
+        input_file_type="jsonschema",
+        extra_args=[*common, "--read-schema-version-per-document"],
+        expected_directory=expected,
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="first-read"), pytest.param(["--read-schema-version-per-document"], id="per-document")],
+)
+def test_main_jsonschema_read_schema_version_per_document_property_count(
+    output_file: Path, extra_args: list[str]
+) -> None:
+    """Leave out a ``minProperties`` beside an allOf ``$ref`` of a draft-07 document from the count rule (#5700).
+
+    Draft 7 ignores every keyword beside a ``$ref``; without the option the property-count rule reads it as written
+    and ``Holder(a='x')`` is rejected.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "ref_sibling_property_count_draft07.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--generate-schema-validators", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    if extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="read_schema_version_per_document_property_count",
+            model_name="Holder",
+            valid_json=json.dumps({"a": "x"}),
+            invalid_json=json.dumps({"a": 1}),
+            expected_error_type="string_type",
+        )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="overlaid"), pytest.param(["--ignore-ref-siblings-by-schema-version"], id="ignored")],
+)
+def test_main_jsonschema_ignore_ref_siblings_by_schema_version(output_file: Path, extra_args: list[str]) -> None:
+    """Keep a ``$ref`` of a draft-07 document a list with a sibling ``uniqueItems`` under the option (#5958).
+
+    Draft 7 ignores every keyword beside a ``$ref``; without the option ``--use-unique-items-as-set`` makes ``tags`` a
+    set, so ``["a", "a"]`` parses to ``{"a"}``.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "ref_siblings_ignored_draft07.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--use-unique-items-as-set", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    if extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="ignore_ref_siblings_by_schema_version_draft07",
+            model_name="Holder",
+            valid_json=json.dumps({"tags": ["a", "a"]}),
+            invalid_json=json.dumps({"tags": [1]}),
+            expected_error_type="string_type",
+            expected_attribute_path=("tags", "root"),
+            expected_attribute_value=["a", "a"],
+        )

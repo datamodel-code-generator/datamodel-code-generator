@@ -13,12 +13,14 @@
 - `--encoding`: Specify character encoding for input and output files.
 - `--external-ref-mapping`: Map external `$ref` files to Python packages.
 - `--http-backend`: Select the HTTP client backend for remote schemas.
+- `--ignore-ref-siblings-by-schema-version`: Read a `$ref` as its target alone where the schema version ignores ...
 - `--input`: Specify the input schema file path.
 - `--input-file-type`: Specify the input file type for code generation.
 - `--input-model`: Import a Python type or dict schema from a module or Python file.
 - `--input-model-ref-strategy`: Strategy for referenced types when using --input-model.
 - `--output`: Specify the destination path for generated Python code.
 - `--preset`: Apply an immutable built-in option preset.
+- `--read-schema-version-per-document`: Read each document by the schema version it declares.
 - `--schema-version`: Schema version to use for parsing.
 - `--schema-version-mode`: Schema version validation mode.
 - `--url`: Fetch a schema from a URL with custom HTTP headers.
@@ -367,6 +369,20 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --http-timeout HTTP_TIMEOUT
                         Timeout in seconds for HTTP requests to remote hosts
                         (default: 30)
+  --ignore-ref-siblings-by-schema-version
+                        Read a $ref as its target alone where the schema
+                        version ignores the keywords beside it (JSON Schema
+                        draft 4, 6 and 7, OpenAPI 3.0, AsyncAPI 2), as those
+                        versions specify: a $ref with a sibling format: binary
+                        takes the referenced type instead of bytes, a sibling
+                        uniqueItems makes no set, and a sibling description or
+                        default is left out too. Versions that apply the
+                        keywords beside a $ref (2019-09 and later, OpenAPI 3.1
+                        and later, AsyncAPI 3) read them as before. Without it
+                        the keywords beside such a $ref overlay its target, as
+                        in 0.88.0. The version is the one --read-schema-
+                        version-per-document reads, else that of the document
+                        parsed.
   --input INPUT         Input file/directory (default: stdin)
   --input-file-type {auto,openapi,asyncapi,jsonschema,mcp-tools,xmlschema,protobuf,avro,json,yaml,dict,csv,graphql}
                         Input file type (default: auto). Use 'jsonschema',
@@ -408,6 +424,22 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Apply an immutable built-in option preset. Preset
                         names include the target Python version so generated
                         syntax is pinned.
+  --read-schema-version-per-document
+                        Read each document by the schema version it declares
+                        ($schema, or the openapi or asyncapi field); a
+                        referenced document that declares none takes the
+                        version of the document whose reference loads it. The
+                        keywords beside a $ref and the features of the version
+                        (const, prefixItems, $id, $defs) then apply as each
+                        document's version says: a 2020-12 file of a directory
+                        read after a draft-07 one keeps the maximum beside an
+                        allOf $ref, an OpenAPI 3.1 document reads $ref
+                        siblings as JSON Schema 2020-12 does, and a draft-07
+                        document sets no property-count rule for a
+                        minProperties beside an allOf $ref. Without it the
+                        version of the document parsed first applies to every
+                        document, as in 0.88.0. No effect with an explicit
+                        --schema-version.
   --schema-version SCHEMA_VERSION
                         Schema version. Valid values depend on input type:
                         JsonSchema: auto, draft-04, draft-06, draft-07,

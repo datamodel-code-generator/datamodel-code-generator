@@ -147,6 +147,7 @@ A rule should fire on a schema when the grid's best configuration with its value
 - Not covered: dotted-keys.flat-when-namespaces-cycle (decision dotted-keys has no grid axis)
 - Not covered: unions.name-variants-after-tags (decision union-variant-names has no grid axis)
 - Not covered: unions.merge-shared-variant-tags (decision shared-variant-tags has no grid axis)
+- Not covered: versions.read-per-document (decision schema-version-scope has no grid axis)
 - Optional, not calibrated: validation.check-unique-items-and-pattern-properties (listed for the user to decide, never in the command)
 - Optional, not calibrated: policy.strict-scalar-types (listed for the user to decide, never in the command)
 
@@ -875,7 +876,9 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "operations": 0,
           "parent_copy_union_branches": 0,
           "pattern_properties": 0,
+          "property_counts_beside_ignored_ref": 0,
           "redundant_constraints": 0,
+          "ref_siblings_read_as_draft_07": 0,
           "root_is_object": 1,
           "root_title_words": 2,
           "shared_inline_enum_names": 1,
@@ -1550,7 +1553,9 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "operations": 0,
           "parent_copy_union_branches": 0,
           "pattern_properties": 0,
+          "property_counts_beside_ignored_ref": 0,
           "redundant_constraints": 0,
+          "ref_siblings_read_as_draft_07": 0,
           "root_is_object": 0,
           "root_title_words": 0,
           "shared_inline_enum_names": 1,
@@ -1859,6 +1864,11 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "covered": "optional, not calibrated",
       "decision": "strict-types",
       "rule": "policy.strict-scalar-types"
+    },
+    {
+      "covered": "decision schema-version-scope has no grid axis",
+      "decision": "schema-version-scope",
+      "rule": "versions.read-per-document"
     }
   ],
   "schemas": [

@@ -69,6 +69,7 @@ reviewed-safe http_local_ref_path
 reviewed-safe http_query_parameters
 reviewed-safe http_timeout
 reviewed-safe ignore_enum_constraints
+reviewed-safe ignore_ref_siblings_by_schema_version
 guarded import_overrides
 reviewed-safe infer_union_variant_names
 reviewed-safe intersect_allof_keywords
@@ -94,6 +95,7 @@ reviewed-safe read_length_keywords_by_type
 reviewed-safe read_msgspec_union_bounds_exactly
 reviewed-safe read_nullable_beside_type_list
 reviewed-safe read_only_write_only_model_type
+reviewed-safe read_schema_version_per_document
 reviewed-safe read_unevaluated_properties
 reviewed-safe remote_text_cache
 reviewed-safe remove_special_field_name_prefix

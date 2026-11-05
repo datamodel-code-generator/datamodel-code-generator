@@ -262,8 +262,8 @@ class SchemaRefsHost(Protocol):
         """The resolver of references and class names."""
 
     @property
-    def schema_paths(self) -> list[tuple[str, list[str]]]:
-        """Get schema paths for definitions and defs."""
+    def _document_schema_paths(self) -> list[tuple[str, list[str]]]:
+        """Get the schema paths for definitions and defs of the document being parsed."""
 
     @property
     def _graph(self) -> SchemaGraphBuilder:
@@ -1253,7 +1253,7 @@ def declares_recursive_anchor(parser: SchemaRefsHost) -> bool:
 def document_recursive_anchors(parser: SchemaRefsHost, raw: dict[str, Any]) -> list[str]:
     """Return the $recursiveAnchor references a document registers when parsed: its root and definitions."""
     anchors = ["#"] if raw.get("$recursiveAnchor") is True else []
-    for schema_path, split_schema_path in parser.schema_paths:
+    for schema_path, split_schema_path in parser._document_schema_paths:  # noqa: SLF001
         if definitions := cast("dict[str, YamlValue]", get_model_by_path(raw, split_schema_path)):
             entries = chain(
                 ((str(key), model, [schema_path, str(key)]) for key, model in definitions.items()),

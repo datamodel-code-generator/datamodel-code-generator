@@ -231,6 +231,8 @@ class BaseGenerateConfig(TypedDict):
     use_one_literal_as_default: NotRequired[bool]
     use_enum_values_in_discriminator: NotRequired[bool]
     merge_shared_variant_tags: NotRequired[bool]
+    read_schema_version_per_document: NotRequired[bool]
+    ignore_ref_siblings_by_schema_version: NotRequired[bool]
     use_msgspec_tagged_unions: NotRequired[bool]
     tag_msgspec_by_payload_name: NotRequired[bool]
     use_msgspec_nullable_enum_alias: NotRequired[bool]

@@ -432,6 +432,33 @@
       "evidence": [
         "11 JSON documents for integer, number, boolean and string properties, 6 of them invalid: lax mode accepted 5 invalid ones; with int float bool, 0 accepted and 1 valid one rejected (5.0 as an integer); with float bool, 2 accepted (\"5\" and true as integers) and none rejected"
       ]
+    },
+    {
+      "id": "versions.read-per-document",
+      "decision": "schema-version-scope",
+      "when": {
+        "any": [
+          {
+            "signal": "ref_siblings_read_as_draft_07",
+            "op": ">=",
+            "value": 1
+          },
+          {
+            "signal": "property_counts_beside_ignored_ref",
+            "op": ">=",
+            "value": 1
+          }
+        ]
+      },
+      "set": {
+        "read_schema_version_per_document": true
+      },
+      "reason": "The keywords beside a $ref apply in the version the document declares otherwise than the parse reads them (validation keywords beside a $ref of an OpenAPI 3.1 or AsyncAPI 3 document, read as draft 7, which ignores them: {ref_siblings_read_as_draft_07}; minProperties or maxProperties beside an allOf $ref in a version that ignores them, which --generate-schema-validators checks: {property_counts_beside_ignored_ref}). Read in the version each document declares, they apply or are left out as that version says.",
+      "evidence": [
+        "OpenAPI 3.1 uniqueItems beside a $ref (#5699): with --generate-schema-validators Holder(tags=['a', 'a']) is rejected, as the same schema in JSON Schema 2020-12 is",
+        "Draft-07 minProperties beside an allOf $ref (#5700): with --generate-schema-validators Holder(a='x') is accepted, as draft 7 ignores the keyword",
+        "Directory of draft-07 and 2020-12 documents (#5380): each module equals the output of its document read alone, so Wd keeps le=10 beside its allOf $ref"
+      ]
     }
   ],
   "options": {
@@ -839,6 +866,10 @@
       "not_recommended": "command",
       "reason": "Ignores pyproject.toml configuration."
     },
+    "ignore_ref_siblings_by_schema_version": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "import_overrides": {
       "not_recommended": "style",
       "reason": "Imports symbols from the project's modules."
@@ -1056,6 +1087,11 @@
     "read_only_write_only_model_type": {
       "not_recommended": "style",
       "reason": "Whether request and response models are split; the project decides which models it needs."
+    },
+    "read_schema_version_per_document": {
+      "rules": [
+        "versions.read-per-document"
+      ]
     },
     "recommend_options": {
       "not_recommended": "command",

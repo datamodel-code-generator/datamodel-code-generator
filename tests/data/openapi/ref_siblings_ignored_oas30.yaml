@@ -1,0 +1,19 @@
+openapi: 3.0.3
+info:
+  title: Keywords beside a Reference Object
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Text:
+      type: string
+    Holder:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Text'
+          format: binary
+        note:
+          $ref: '#/components/schemas/Text'
+          description: A note
+          maxLength: 3

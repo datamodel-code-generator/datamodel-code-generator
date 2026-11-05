@@ -6975,6 +6975,9 @@ default	main/jsonschema/main_jsonschema/hyphenated_directory_reference[default]/
 	main/jsonschema/id_stdin.py
 [test_main_jsonschema_ids]
 	main/jsonschema/ids//*.py
+[test_main_jsonschema_ignore_ref_siblings_by_schema_version]
+ignored	main/jsonschema/main_jsonschema/ignore_ref_siblings_by_schema_version[ignored].py
+overlaid	main/jsonschema/main_jsonschema/ignore_ref_siblings_by_schema_version[overlaid].py
 [test_main_jsonschema_import_cycle_map_key_alias]
 dataclasses.dataclass	main/jsonschema/main_jsonschema/import_cycle_map_key_alias[dataclasses.dataclass]/
 msgspec.Struct	main/jsonschema/main_jsonschema/import_cycle_map_key_alias[msgspec.Struct]/
@@ -7418,6 +7421,18 @@ use-annotated	main/jsonschema/main_jsonschema/property_names_root_model_keys[use
 [test_main_jsonschema_read_only_write_only_external_directory]
 all	main/jsonschema/main_jsonschema/read_only_write_only_external_directory[all].py
 request-response	main/jsonschema/main_jsonschema/read_only_write_only_external_directory[request-response].py
+[test_main_jsonschema_read_schema_version_per_document]
+first-read	main/jsonschema/main_jsonschema/read_schema_version_per_document[first-read].py
+per-document	main/jsonschema/main_jsonschema/read_schema_version_per_document[per-document].py
+[test_main_jsonschema_read_schema_version_per_document_directory]
+first-read	main/jsonschema/main_jsonschema/read_schema_version_per_document_directory[first-read]/
+per-document	main/jsonschema/main_jsonschema/read_schema_version_per_document_directory[per-document]/
+single-value-enum-as-const	main/jsonschema/main_jsonschema/read_schema_version_per_document_directory[single-value-enum-as-const]/
+[test_main_jsonschema_read_schema_version_per_document_explicit_version]
+	main/jsonschema/main_jsonschema/read_schema_version_per_document_explicit_version/
+[test_main_jsonschema_read_schema_version_per_document_property_count]
+first-read	main/jsonschema/main_jsonschema/read_schema_version_per_document_property_count[first-read].py
+per-document	main/jsonschema/main_jsonschema/read_schema_version_per_document_property_count[per-document].py
 [test_main_jsonschema_recursive_array]
 	main/jsonschema/recursive_array.py
 [test_main_jsonschema_recursive_fixed_length_array_keeps_tuple_shape]

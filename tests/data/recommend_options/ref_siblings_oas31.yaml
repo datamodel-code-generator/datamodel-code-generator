@@ -1,0 +1,18 @@
+openapi: 3.1.0
+info:
+  title: Keywords beside a $ref
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Labels:
+      type: array
+      items:
+        type: string
+    Note:
+      type: object
+      properties:
+        labels:
+          $ref: '#/components/schemas/Labels'
+          description: Each label once.
+          uniqueItems: true

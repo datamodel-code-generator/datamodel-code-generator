@@ -24,6 +24,7 @@ from __future__ import annotations
 import json
 from copy import copy
 from dataclasses import replace
+from functools import partial
 from itertools import chain
 from operator import is_not
 from pathlib import Path
@@ -82,6 +83,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.format import PythonVersion
     from datamodel_code_generator.parser._schema_graph import RefReading, ResourceRegistry, SchemaGraphBuilder
     from datamodel_code_generator.parser.base import Source
+    from datamodel_code_generator.parser.schema_version import DocumentDialect
     from datamodel_code_generator.reference import ModelResolver
 
 __all__ = [
@@ -89,6 +91,7 @@ __all__ = [
     "add_id_callback",
     "cache_source_ref_body",
     "document_as_written",
+    "document_id_field",
     "get_context_source_path_parts",
     "get_ref_body_from_local_http_path",
     "has_schema_affecting_keywords",
@@ -105,6 +108,8 @@ __all__ = [
     "load_ref_data_from_local_http_file",
     "load_ref_data_from_text",
     "load_source_dict",
+    "loaded_document_dialect",
+    "loading_document_dialect",
     "loads_document",
     "mount_converted_schema",
     "normalize_external_ref",
@@ -213,6 +218,7 @@ class SchemaDocumentsHost(Protocol):
     reserved_refs: defaultdict[tuple[str, ...], set[str]]
     source: str | Path | list[Path] | ParseResult | dict[str, YamlValue]
     _cache_local_sources: bool
+    _document_dialects: dict[str, DocumentDialect]
     _document_roles: dict[str, dict[str, None]]
     _documents_as_written: dict[int, tuple[dict[str, YamlValue], dict[str, YamlValue]]]
     _has_embedded_schema_resources: bool
@@ -339,6 +345,13 @@ class SchemaDocumentsHost(Protocol):
     def _resolve_schema_resource_ref(self, reference: str, base: str, document: str, *, nested_scope: bool) -> str:
         """Resolve registered resources before considering a physical document fetch."""
 
+    def _read_dialect(self, raw: dict[str, Any], *, inherited: DocumentDialect | None = None) -> DocumentDialect:
+        """Return the dialect a document of the parser's kind is read by (``parser/jsonschema.py``)."""
+
+    @property
+    def _reads_schema_version_per_document(self) -> bool:
+        """Whether --read-schema-version-per-document reads each schema in the version of its own document."""
+
     def _schema_features_for(self, root: dict[str, YamlValue]) -> JsonSchemaFeatures:
         """Get the schema features of a root document based on config or its detected version."""
 
@@ -352,7 +365,7 @@ class SchemaDocumentsHost(Protocol):
         """Identify one physical schema document without changing its public reference names."""
 
     def _schema_resource_identifier(
-        self, schema: dict[str, Any], id_field: str | None, *, is_root: bool
+        self, schema: dict[str, Any], id_field: str | None, *, is_root: bool, document: str
     ) -> tuple[str | None, object]:
         """Inherit draft identifiers while preserving fallbacks for roots and unknown dialects."""
 
@@ -415,13 +428,19 @@ def read_document(
 ) -> dict[str, YamlValue]:
     """Return a document as read, with each single-value enum as const under --use-single-value-enum-as-const.
 
-    A document parsed where const is no keyword is kept as written: under the draft-04 schema features the
-    parser already uses, or else those of its root document. The document as written is kept beside a rewritten
-    one for the targets that serve it.
+    A document read where const is no keyword is kept as written: under --read-schema-version-per-document in the
+    version of the document (an input document, without ``root``, read by itself, another one by its own version or
+    that of the document that loads it); without the option (row ``legacy-first-read-dialect``) under the draft-04
+    schema features the parser already uses, or else those of its root document. The document as written is kept
+    beside a rewritten one for the targets that serve it.
     """
     if not parser.use_single_value_enum_as_const:
         return document
-    features = parser.__dict__.get("schema_features") or parser._schema_features_for(root or document)  # noqa: SLF001
+    if parser._reads_schema_version_per_document:  # noqa: SLF001
+        inherited = None if root is None else loading_document_dialect(parser)
+        features = parser._read_dialect(document, inherited=inherited).features  # noqa: SLF001
+    else:
+        features = parser.__dict__.get("schema_features") or parser._schema_features_for(root or document)  # noqa: SLF001
     if not features.const_support:
         return document
     read = cast("dict[str, YamlValue]", _single_value_enum_as_const(document, parser._named_entry_maps))  # noqa: SLF001
@@ -523,16 +542,31 @@ def iter_schema_resource_children(
 
 
 def schema_resource_identifier(
-    parser: SchemaDocumentsHost, schema: dict[str, Any], id_field: str | None, *, is_root: bool
+    parser: SchemaDocumentsHost, schema: dict[str, Any], id_field: str | None, *, is_root: bool, document: str
 ) -> tuple[str | None, object]:
-    """Inherit draft identifiers while preserving fallbacks for roots and unknown dialects."""
+    """Inherit draft identifiers while preserving fallbacks for roots and unknown dialects.
+
+    A schema below no `$schema` reads the identifier keyword of the version its document is read by under
+    --read-schema-version-per-document, else that of ``schema_features`` (row ``legacy-first-read-dialect``).
+    """
     if "$schema" in schema and getattr(parser.config, "jsonschema_version", None) in {None, JsonSchemaVersion.Auto}:
         version = _detect_declared_jsonschema_version(schema)
         id_field = JsonSchemaFeatures.from_version(version).id_field if version is not None else None
-    identifier = schema.get(id_field or parser.schema_features.id_field)
+    identifier = schema.get(id_field or document_id_field(parser, document))
     if not identifier and (is_root or id_field is None):
         identifier = schema.get("$id") or schema.get("id")
     return id_field, identifier
+
+
+def document_id_field(parser: SchemaDocumentsHost, document: str) -> str:
+    """Return the identifier keyword a loaded document reads below no `$schema`.
+
+    It is that of the version the document is read by under --read-schema-version-per-document, else that of
+    ``schema_features`` (row ``legacy-first-read-dialect``).
+    """
+    if parser._reads_schema_version_per_document:  # noqa: SLF001
+        return parser._document_dialects[document].features.id_field  # noqa: SLF001
+    return parser.schema_features.id_field
 
 
 def resolve_schema_resource_ref(
@@ -619,7 +653,7 @@ def rewrite_schema_resource_refs(  # noqa: PLR0913, PLR0917
     A reference is resolved with its pointer opened by ``/`` (``pointer_ref_spelling``), which the walk of the
     schema graph writes in place of an opening ``%2F`` either way.
     """
-    id_field, identifier = parser._schema_resource_identifier(schema, id_field, is_root=is_root)  # noqa: SLF001
+    id_field, identifier = parser._schema_resource_identifier(schema, id_field, is_root=is_root, document=document)  # noqa: SLF001
     if isinstance(identifier, str):
         base = urljoin(base, identifier).split("#", 1)[0]
     result = schema
@@ -664,16 +698,35 @@ def implicit_schema_resources(
     yield from {path: schema for role in roles for path, schema in held_schemas(raw, role)}.items()
 
 
+def loaded_document_dialect(parser: SchemaDocumentsHost, raw: dict[str, Any], document: str) -> DocumentDialect:
+    """Return the schema version a loaded document is read by (L0).
+
+    An input document is read by itself. Any other document that declares no version keeps the version an earlier
+    load gave it, else takes that of the document being parsed when a reference loads it.
+    """
+    inherited = None
+    if raw is not parser.raw_obj and document not in parser.model_resolver.after_load_files:
+        inherited = parser._document_dialects.get(document) or loading_document_dialect(parser)  # noqa: SLF001
+    return parser._read_dialect(raw, inherited=inherited)  # noqa: SLF001
+
+
+def loading_document_dialect(parser: SchemaDocumentsHost) -> DocumentDialect | None:
+    """Return the version of the document being parsed, which a document its references load takes by default."""
+    return parser._document_dialects.get(parser._schema_resource_document(list(parser.model_resolver.current_root)))  # noqa: SLF001
+
+
 def prepare_schema_resources(parser: SchemaDocumentsHost, raw: dict[str, Any], path_parts: list[str]) -> dict[str, Any]:
     """Add a loaded document to the schema graph once, instead of rescanning it on each reference (L0).
 
-    The graph walk finds the document's resources and fills the registry dicts from them; then `$ref`s that
-    resolve through an embedded `$id` are rewritten copy-on-write, and the prepared document is indexed.
+    The schema version the document is read by is recorded (``loaded_document_dialect``); the graph walk finds the
+    document's resources and fills the registry dicts from them; then `$ref`s that resolve through an embedded `$id`
+    are rewritten copy-on-write, and the prepared document is indexed.
     """
     document = parser._schema_resource_document(path_parts)  # noqa: SLF001
     parser._schema_resource_path_parts.setdefault(document, path_parts)  # noqa: SLF001
     if (cached := parser._schema_resource_cache.get(document)) is not None and (raw is cached[0] or raw is cached[1]):  # noqa: SLF001
         return cached[1]
+    parser._document_dialects[document] = loaded_document_dialect(parser, raw, document)  # noqa: SLF001
     registry = parser._schema_resource_registry  # noqa: SLF001
     registry.forget(document)
     parser._lenient_documents.pop(document, None)  # noqa: SLF001
@@ -692,7 +745,7 @@ def prepare_schema_resources(parser: SchemaDocumentsHost, raw: dict[str, Any], p
         base=base,
         id_field=id_field,
         children=parser._iter_schema_resource_children,  # noqa: SLF001
-        identifier=parser._schema_resource_identifier,  # noqa: SLF001
+        identifier=partial(parser._schema_resource_identifier, document=document),  # noqa: SLF001
     )
     registry.register(resources)
     if resources.implicit_resources:

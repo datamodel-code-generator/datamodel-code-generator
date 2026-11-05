@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Legacy",
+  "type": "object",
+  "properties": {
+    "level": {
+      "$ref": "#/definitions/Level"
+    }
+  },
+  "definitions": {
+    "Q": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "Level": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Q",
+          "maximum": 5
+        }
+      ]
+    }
+  }
+}

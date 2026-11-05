@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "Positive": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "Score": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/Positive",
+          "maximum": 10
+        }
+      ]
+    }
+  }
+}

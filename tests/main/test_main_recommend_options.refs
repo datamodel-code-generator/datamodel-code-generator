@@ -98,8 +98,10 @@ paths-scope-32-operations	main/main_recommend_options/recommend_options_for_sche
 paths-scope-integer-schema-key	main/main_recommend_options/recommend_options_for_schemas[paths-scope-integer-schema-key].stdout.txt
 pattern-properties	main/main_recommend_options/recommend_options_for_schemas[pattern-properties].stdout.txt
 preset-value	main/main_recommend_options/recommend_options_for_schemas[preset-value].stdout.txt
+property-counts-beside-ignored-ref	main/main_recommend_options/recommend_options_for_schemas[property-counts-beside-ignored-ref].stdout.txt
 redundant-constraint-on-root	main/main_recommend_options/recommend_options_for_schemas[redundant-constraint-on-root].stdout.txt
 redundant-constraints	main/main_recommend_options/recommend_options_for_schemas[redundant-constraints].stdout.txt
+ref-siblings-read-as-draft-07	main/main_recommend_options/recommend_options_for_schemas[ref-siblings-read-as-draft-07].stdout.txt
 referenced-holders	main/main_recommend_options/recommend_options_for_schemas[referenced-holders].stdout.txt
 referenced-holders-api-scope	main/main_recommend_options/recommend_options_for_schemas[referenced-holders-api-scope].stdout.txt
 root-name-taken	main/main_recommend_options/recommend_options_for_schemas[root-name-taken].stdout.txt

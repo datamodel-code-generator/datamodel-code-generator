@@ -204,6 +204,8 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
             ["--output-model-type", "msgspec.Struct"],
             id="unions-shared-variant-tags-msgspec",
         ),
+        pytest.param("ref_siblings_oas31.yaml", ["--output-format", "json"], id="ref-siblings-read-as-draft-07"),
+        pytest.param("property_counts_draft07.json", [], id="property-counts-beside-ignored-ref"),
         pytest.param(
             "redundant_constraints.json",
             ["--preset", "standard-py314-20261017"],

@@ -37,6 +37,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
     from collections.abc import Set as AbstractSet
 
+    from datamodel_code_generator.parser.schema_version import SchemaKind
+
 SignalName: TypeAlias = Literal[
     "components",
     "operations",
@@ -93,6 +95,8 @@ SignalName: TypeAlias = Literal[
     "formats",
     "integer_range_formats",
     "decimal_formats",
+    "ref_siblings_read_as_draft_07",
+    "property_counts_beside_ignored_ref",
 ]
 FactName: TypeAlias = Literal[
     "schema",
@@ -104,15 +108,23 @@ FactName: TypeAlias = Literal[
     "scopes",
     "format_examples",
 ]
-SchemaKind: TypeAlias = Literal["openapi", "jsonschema", "asyncapi"]
 SIGNAL_NAMES: frozenset[str] = frozenset(get_args(SignalName))
 
 _SCHEMA_MAP_KEYWORDS = schema_positions("applicator", shapes=("map",), without=("dependencies",))
 _LITERAL_CHECKED_KEYWORDS = NUMBER_KEYWORDS | LENGTH_KEYWORDS
 _SUBSCHEMA_KEYWORDS = schema_positions("applicator", shapes=SCHEMA_VALUE_SHAPES, without=("extends",))
 _SHAPE_IGNORED_KEYWORDS = frozenset({"description", "title", "example", "examples", "$comment"})
+_REF_ANNOTATION_KEYWORDS = _SHAPE_IGNORED_KEYWORDS | {
+    "$ref",
+    "summary",
+    "default",
+    "deprecated",
+    "readOnly",
+    "writeOnly",
+}
 _CONSTRAINT_ONLY_KEYWORDS = frozenset({"type", "properties", "required", "description", "title", "$comment"})
 _COERCIBLE_TYPES = frozenset({"integer", "number", "boolean"})
+_PROPERTY_COUNTS = frozenset({"minProperties", "maxProperties"})
 _INTEGER_RANGE_FORMATS = ("int32", "int64")
 _NORMALIZE = re.compile(r"[^a-z0-9]")
 _EXAMPLE_LIMIT = 4
@@ -487,37 +499,35 @@ class _Dialect:
 
     ``ref_siblings`` is whether keywords beside ``$ref`` apply, ``nullable_keyword`` whether ``nullable`` is the
     document's keyword for null (OpenAPI 3.0 and AsyncAPI 2), ``openapi_32`` whether a path item may hold a ``query``
-    operation and ``additionalOperations`` (OpenAPI 3.2).
+    operation and ``additionalOperations`` (OpenAPI 3.2). ``ref_siblings_as_json_schema`` is whether keywords beside
+    ``$ref`` apply where the document is read as JSON Schema, as the allOf and validator readers read every document
+    without --read-schema-version-per-document.
     """
 
     data_formats: Mapping[str, Mapping[str, Any]]
     ref_siblings: bool
     nullable_keyword: bool
     openapi_32: bool
+    ref_siblings_as_json_schema: bool
 
 
 def _dialect(document: Mapping[str, Any], kind: SchemaKind) -> _Dialect:
     """Return how generation reads a document, from its declared or detected version, as the parsers decide it."""
-    from datamodel_code_generator.enums import _ref_siblings_apply  # noqa: PLC0415
     from datamodel_code_generator.parser.schema_version import (  # noqa: PLC0415
         OpenAPISchemaFeatures,
-        detect_asyncapi_version,
-        detect_jsonschema_version,
-        detect_openapi_version,
+        document_dialect,
         get_data_formats,
     )
 
-    data_formats = get_data_formats(is_openapi=True)
-    if kind == "jsonschema":
-        version = detect_jsonschema_version(dict(document))
-        ref_siblings = _ref_siblings_apply(version)
-        return _Dialect(data_formats, ref_siblings=ref_siblings, nullable_keyword=False, openapi_32=False)
-    features = (
-        OpenAPISchemaFeatures.from_openapi_version(detect_openapi_version(dict(document)))
-        if kind == "openapi"
-        else OpenAPISchemaFeatures.from_asyncapi_version(detect_asyncapi_version(dict(document)))
+    features = document_dialect(dict(document), kind).features
+    spec = features if isinstance(features, OpenAPISchemaFeatures) else OpenAPISchemaFeatures()
+    return _Dialect(
+        get_data_formats(is_openapi=True),
+        features.ref_sibling_keywords,
+        spec.nullable_keyword,
+        spec.media_item_schema,
+        document_dialect(dict(document), "jsonschema").features.ref_sibling_keywords,
     )
-    return _Dialect(data_formats, features.ref_sibling_keywords, features.nullable_keyword, features.media_item_schema)
 
 
 class _Walker:
@@ -591,6 +601,9 @@ class _Walker:
             return False
         if self.dialect.ref_siblings:
             self.count_validation_keywords(node)
+            self.counts["ref_siblings_read_as_draft_07"] += not self.dialect.ref_siblings_as_json_schema and any(
+                str(keyword) not in _REF_ANNOTATION_KEYWORDS and not str(keyword).startswith("x-") for keyword in node
+            )
         return True
 
     def record_reference(self, node: Mapping[str, Any], component: str) -> bool:
@@ -642,6 +655,11 @@ class _Walker:
 
     def walk_children(self, node: Mapping[str, Any], *, parent: str, name: str, depth: int, component: str) -> None:
         """Walk the subschemas of one schema object."""
+        if not self.dialect.ref_siblings and isinstance(members := node.get("allOf"), list):
+            self.counts["property_counts_beside_ignored_ref"] += sum(
+                isinstance(member, dict) and "$ref" in member and not member.keys().isdisjoint(_PROPERTY_COUNTS)
+                for member in members
+            )
         for keyword in _SCHEMA_MAP_KEYWORDS:
             for member_name, member in as_mapping(node.get(keyword)).items():
                 self.walk(

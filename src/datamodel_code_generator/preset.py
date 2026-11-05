@@ -820,6 +820,24 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "of an item model's name."
         ),
     ),
+    PresetOptionGroup(
+        title="Schema version read per document",
+        config=PresetConfig(read_schema_version_per_document=True),
+        description=(
+            "Read each document by the schema version it declares, or the version of the document that references "
+            "it, so the keywords beside a $ref and the version's features apply as that version says in every "
+            "document of a run, and an OpenAPI 3.1 or later document reads them as JSON Schema 2020-12 does."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Ignored $ref siblings left out",
+        config=PresetConfig(ignore_ref_siblings_by_schema_version=True),
+        description=(
+            "Read a $ref as its target alone where the schema version ignores the keywords beside it (JSON Schema "
+            "draft 4, 6 and 7, OpenAPI 3.0, AsyncAPI 2), so a sibling format: binary or uniqueItems no longer changes "
+            "the type of a field."
+        ),
+    ),
 )
 
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
@@ -1088,7 +1106,11 @@ def render_presets_markdown() -> str:
             "bounding the length of the other kind, as JSON Schema reads them, and "
             "`--read-msgspec-union-bounds-exactly`: the int member of a msgspec union with a number member keeps its "
             "bounds only when they admit every integer the number member's bounds, read as the schema writes them, "
-            "admit."
+            "admit, and `--read-schema-version-per-document`: each document is read by the schema version it "
+            "declares, or that of the document that references it, so the keywords beside a `$ref` and the version's "
+            "features apply as that version says in every document of a run, and "
+            "`--ignore-ref-siblings-by-schema-version`: a `$ref` in a version that ignores the keywords beside it, "
+            "such as draft 7 or OpenAPI 3.0, is read as its target alone."
         ),
         "",
         (

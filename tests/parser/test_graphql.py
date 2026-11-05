@@ -246,5 +246,6 @@ def test_graphql_schema_features() -> None:
             anchor=True,
             recursive_ref=True,
             dynamic_ref=True,
+            ref_sibling_keywords=True,
         )
     )

@@ -304,6 +304,8 @@ class ParserConfig(BaseModel):
     use_one_literal_as_default: bool = False
     use_enum_values_in_discriminator: bool = False
     merge_shared_variant_tags: bool = False
+    read_schema_version_per_document: bool = False
+    ignore_ref_siblings_by_schema_version: bool = False
     use_msgspec_tagged_unions: bool = False
     tag_msgspec_by_payload_name: bool = False
     use_msgspec_nullable_enum_alias: bool = False
