@@ -925,6 +925,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "naming-parent-prefixed": ("naming-parent-prefixed", ("pydantic_v2.BaseModel",), naming_parent_prefixed),
     "naming-full-path": ("naming-full-path", ("pydantic_v2.BaseModel",), naming_full_path),
     "naming-primary-first": ("naming-primary-first", ("pydantic_v2.BaseModel",), naming_primary_first),
+    "naming-definitions-first": ("naming-definitions-first", ("pydantic_v2.BaseModel",), naming_primary_first),
     "hooks": ("pets", ("pydantic_v2.BaseModel",), hooks),
     "webhook-contracts": ("pets-protocols", BACKENDS, webhook_contracts),
     "webhook-errors": ("pets-protocols", ("pydantic_v2.BaseModel",), webhook_errors),

@@ -1136,6 +1136,7 @@ class ModelResolver:  # noqa: PLR0904
         self._found_model_name_keys: set[str] = set()
         self._released_model_names: set[str] = set()
         self.assigned_yielding_names: Mapping[str, tuple[str, str | None]] = {}
+        self._assigned_names: Mapping[str, tuple[str, str | None]] = {}
         self.final_name_keys: Mapping[str, tuple[str, ...]] = {}
         self.final_yielding_names: dict[str, tuple[str, str | None]] = {}
         self.yielding_name_changes: set[str] = set()
@@ -1209,6 +1210,7 @@ class ModelResolver:  # noqa: PLR0904
         self.__dict__.setdefault("_found_model_name_keys", set())
         self.__dict__.setdefault("_released_model_names", set())
         self.__dict__.setdefault("assigned_yielding_names", {})
+        self.__dict__.setdefault("_assigned_names", {})
         self.__dict__.setdefault("final_name_keys", {})
         self.__dict__.setdefault("final_yielding_names", {})
         self.__dict__.setdefault("yielding_name_changes", set())
@@ -1841,19 +1843,26 @@ class ModelResolver:  # noqa: PLR0904
         return self._add_ref_at(self.resolve_ref(ref) if not resolved else ref, ref)
 
     def _add_ref_at(self, path: str, ref: str) -> Reference:
-        """Return the Reference at a resolved ``path``, added and named after ``ref``, its spelling, if it is new."""
+        """Return the Reference at a resolved ``path``, added and named after ``ref``, its spelling, if it is new.
+
+        A reference ``_assigned_names`` names takes the name and duplicate name they give it.
+        """
         if reference := self.references.get(path):
             return reference
         original_name = self.ref_original_name(ref, path) or self.ref_original_name(path, path)
         # For PrimaryFirst strategy, use unique=True for external references
         # so that definitions in the main input file get priority for clean names
         use_unique = self.naming_strategy == NamingStrategy.PrimaryFirst and self._is_external_path(path)
-        generate = partial(
-            self.get_class_name, original_name, unique=use_unique, skip_affix=self._affix_needs_scope, path=path
-        )
-        generated = generate()
-        self._record_allocation(path, generated.name, original_name)
-        name = self._apply_model_name_map(path, original_name, generated, regenerate=generate).name
+        duplicate_name: str | None = None
+        if (assigned := self._assigned_names.get(path)) is not None:
+            name, duplicate_name = assigned
+        else:
+            generate = partial(
+                self.get_class_name, original_name, unique=use_unique, skip_affix=self._affix_needs_scope, path=path
+            )
+            generated = generate()
+            self._record_allocation(path, generated.name, original_name)
+            name = self._apply_model_name_map(path, original_name, generated, regenerate=generate).name
         if self._yielding_names:
             self._evict_yielding_reference(name)
         reference = Reference(
@@ -1861,6 +1870,7 @@ class ModelResolver:  # noqa: PLR0904
             original_name=original_name,
             name=name,
             loaded=False,
+            duplicate_name=duplicate_name,
         )
         if self._records_name_requests:
             reference.__dict__[NAME_REQUEST_KEY] = NameRequest(original_name)
@@ -1868,6 +1878,10 @@ class ModelResolver:  # noqa: PLR0904
         self.references[path] = reference
         self._update_reference_name(None, reference.name, unique=use_unique)
         return reference
+
+    def _named_by_model_name_map(self, path: str) -> bool:
+        """Return whether ``--model-name-map`` named the reference at ``path``."""
+        return path in self._model_name_map_paths
 
     def named_after(self, path: str, original_name: str) -> bool:
         """Return whether the reference at ``path`` is named from ``original_name`` and not by ``--model-name-map``."""
@@ -1989,7 +2003,8 @@ class ModelResolver:  # noqa: PLR0904
 
         A reference yields its name when ``yields`` says so, or when it is created inside
         ``yielding_new_references()`` and is no primary definition; a yielding reference keeps yielding. A yielding
-        reference takes the name ``assigned_yielding_names`` gives its path, the name it ended with in an earlier parse.
+        reference takes the name ``assigned_yielding_names`` gives its path, the name it ended with in an earlier parse,
+        and every reference the name and duplicate name ``_assigned_names`` give it, those a naming plan gave it.
         Row ``legacy-first-come``: the first model to ask for a name takes it and a later one is numbered, in the order
         L1 reaches them, whatever each model is (a definition, an inline model, a variant) (#4825).
         """
@@ -2017,7 +2032,9 @@ class ModelResolver:  # noqa: PLR0904
             and class_name
             and not self._is_primary_definition(path)
         )
-        if yields and (assigned := self.assigned_yielding_names.get(joined_path)) is not None:
+        if (assigned := self._assigned_names.get(joined_path)) is not None or (
+            yields and (assigned := self.assigned_yielding_names.get(joined_path)) is not None
+        ):
             name, duplicate_name = assigned
         elif class_name:
             name = self._parent_prefixed(name, path)

@@ -8,19 +8,19 @@ from enum import StrEnum
 from pydantic import AnyUrl, BaseModel, ConfigDict
 
 
-class Item(BaseModel):
+class ItemSchema(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
     )
     w: int | None = None
 
 
-class Status(StrEnum):
+class Status1(StrEnum):
     new = 'new'
     old = 'old'
 
 
-class ItemSchema(BaseModel):
+class Item(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
     )
@@ -34,7 +34,7 @@ class AnyUrlSchema(BaseModel):
     href: str | None = None
 
 
-class StatusModel(StrEnum):
+class Status(StrEnum):
     open = 'open'
     closed = 'closed'
 
@@ -43,9 +43,9 @@ class Root(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
     )
-    item: Item | None = None
-    other: ItemSchema | None = None
+    item: ItemSchema | None = None
+    other: Item | None = None
     site: AnyUrl | None = None
     link: AnyUrlSchema | None = None
-    status: Status | None = None
-    state: StatusModel | None = None
+    status: Status1 | None = None
+    state: Status | None = None

@@ -610,6 +610,42 @@ class ActionsCache(BaseModel):
     id: int | None = None
 ```
 
+### `--naming-strategy definitions-first`
+
+| | |
+|---|---|
+| Option | `--naming-strategy definitions-first` |
+| Preset | `20261104` (the practical presets take it instead of `primary-first`) |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#4825](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4825); the name part of [#4846](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4846) |
+
+**Affects:** a definition (in `/definitions/`, `/$defs/` or `/components/schemas/` of any document) whose name an inline model, a union branch, a request or response variant or another definition asked for first. Models take their names in the order the parser reaches them, so the definition is numbered (`Package1`), or renamed `ChargeModel` where both took the name and the module renames the later one; `primary-first` renames only models of other files. With the value the first definition of a name, those of the input before those of the documents it references, takes it, and the model that held it takes the name the definition would have taken (`Package1`), else the first free one (`Charge1`). A model whose name is made from a renamed model, such as the model of its extra properties (`Package1AdditionalProperty`) or its request and response variants, is renamed with it, and every other model keeps its name. The options keyed by class name (`--aliases "Package.name"`, `--base-class-map`, ...) name the classes of the output.
+
+Schema: the component `build` holds an inline object `package` (`path`), and the component `package` (`name`) follows it.
+
+Without the option (same as 0.89.0):
+
+```python
+class Package(BaseModel):
+    path: str | None = None
+
+
+class Package1(BaseModel):
+    name: str | None = None
+```
+
+With the option:
+
+```python
+class Package1(BaseModel):
+    path: str | None = None
+
+
+class Package(BaseModel):
+    name: str | None = None
+```
+
 ### `--read-schema-version-per-document`
 
 | | |

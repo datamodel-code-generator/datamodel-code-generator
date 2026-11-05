@@ -53,6 +53,8 @@ OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
     "--use-encoded-str-for-constrained-base64",
     "--read-length-keywords-by-type",
     "--read-msgspec-union-bounds-exactly",
+    "--naming-strategy",
+    "definitions-first",
     "--use-duplicate-name-suffix-for-every-collision",
     "--capitalise-numbered-enum-members",
     "--keep-first-character-of-path-keys",
@@ -106,6 +108,12 @@ CASES_20261104: tuple[pytest.ParameterSet, ...] = (
         ["--output-model-type", "msgspec.Struct"],
         id="read-msgspec-union-bounds-exactly",
         marks=pytest.mark.filterwarnings(r"ignore:msgspec decodes every integer as the int member:UserWarning"),
+    ),
+    pytest.param(
+        OPEN_API_DATA_PATH / "definitions_first.yaml",
+        "openapi",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="naming-strategy-definitions-first",
     ),
     pytest.param(
         JSON_SCHEMA_DATA_PATH / "duplicate_name_suffix_every_collision.json",

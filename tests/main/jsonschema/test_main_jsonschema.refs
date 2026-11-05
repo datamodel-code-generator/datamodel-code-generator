@@ -8276,6 +8276,12 @@ no_use_annotated	main/jsonschema/msgspec_union_member_constraints/no_use_annotat
 	main/jsonschema/naming_strategy/complex_numbered/output.py
 [test_main_naming_strategy_complex_parent_prefixed]
 	main/jsonschema/naming_strategy/complex_parent_prefixed/output.py
+[test_main_naming_strategy_definitions_first]
+msgspec-suffix	main/jsonschema/main_jsonschema/main_naming_strategy_definitions_first[msgspec-suffix].py
+pydantic_v2	main/jsonschema/main_jsonschema/main_naming_strategy_definitions_first[pydantic_v2].py
+pydantic_v2-aliases	main/jsonschema/main_jsonschema/main_naming_strategy_definitions_first[pydantic_v2-aliases].py
+pydantic_v2-model-name-map	main/jsonschema/main_jsonschema/main_naming_strategy_definitions_first[pydantic_v2-model-name-map].py
+pydantic_v2-suffix	main/jsonschema/main_jsonschema/main_naming_strategy_definitions_first[pydantic_v2-suffix].py
 [test_main_naming_strategy_full_path]
 	main/jsonschema/naming_strategy/full_path/output.py	= main/jsonschema/naming_strategy/parent_prefixed/output.py
 [test_main_naming_strategy_parent_prefixed]
@@ -9759,6 +9765,8 @@ api	main/jsonschema/msgspec_enum_diagnostics/unused.txt	= main/jsonschema/msgspe
 cli	main/jsonschema/main_jsonschema/msgspec_unused_enum_generation[cli].warnings.txt	= main/jsonschema/main_jsonschema/msgspec_unused_enum_generation[api].warnings.txt
 cli	main/jsonschema/msgspec_enum_diagnostics/unused.py
 cli	main/jsonschema/msgspec_enum_diagnostics/unused.txt	= main/jsonschema/msgspec_enum_diagnostics/subclass_only.txt
+[test_naming_strategy_definitions_first_beside_a_resolver_that_names_models]
+	main/jsonschema/main_jsonschema/naming_strategy_definitions_first_beside_a_resolver_that_names_models.txt
 [test_nested_schema_resources]
 builtin-anchors-api	main/jsonschema/nested_resources/anchors.py
 builtin-anchors-api	main/jsonschema/nested_resources/anchors_runtime.txt

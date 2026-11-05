@@ -555,6 +555,23 @@ _PRACTICAL_20260619_EXTRA_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
     ),
 )
 
+_PRACTICAL_20261104_EXTRA_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
+    PresetOptionGroup(
+        title="Practical model structure and names",
+        config=PresetConfig(reuse_model=True, collapse_reuse_models=True, use_title_as_name=True),
+        description=(
+            "Deduplicate identical models without empty inheritance wrappers and prefer schema titles for class "
+            "names; the standard groups keep definitions ahead of inline duplicate names."
+        ),
+    ),
+    *_PRACTICAL_20260619_EXTRA_OPTION_GROUPS[1:],
+)
+"""The practical extras of the 20261104 presets: the naming strategy comes from the standard groups."""
+_PRACTICAL_EXTRA_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
+    "20261104": _PRACTICAL_20261104_EXTRA_OPTION_GROUPS
+}
+"""The practical extras of the dates whose extras are not those of 20260619."""
+
 _STANDARD_20260909_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
     *_STANDARD_20260826_OPTION_GROUPS,
     PresetOptionGroup(
@@ -823,6 +840,7 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
     PresetOptionGroup(
         title="Model names taken from the schema",
         config=PresetConfig(
+            naming_strategy=NamingStrategy.DefinitionsFirst,
             use_duplicate_name_suffix_for_every_collision=True,
             capitalise_numbered_enum_members=True,
             keep_first_character_of_path_keys=True,
@@ -830,7 +848,8 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             singularize_last_word_of_item_names=True,
         ),
         description=(
-            "Give the --duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize "
+            "Give every definition its own name before an inline model that asks for it first, give the "
+            "--duplicate-name-suffix suffix to every model renamed because its name is taken, capitalize "
             "the number of a capitalized enum member, strip only a leading slash from a paths key, name a "
             "converted AsyncAPI payload that names no type after its message, and singularize only the last word "
             "of an item model's name."
@@ -1003,7 +1022,7 @@ def _build_preset_family_infos(date: str) -> tuple[PresetInfo, ...]:
             target_python_version=target_python_version,
             option_groups=(
                 *_standard_option_groups_for_target(standard_option_groups, target_python_version),
-                *_PRACTICAL_20260619_EXTRA_OPTION_GROUPS,
+                *_PRACTICAL_EXTRA_OPTION_GROUPS_BY_DATE.get(date, _PRACTICAL_20260619_EXTRA_OPTION_GROUPS),
             ),
         )
         for target_python_version, name in _PRESET_NAMES_BY_TARGET["practical", date].items()
@@ -1228,7 +1247,9 @@ def render_presets_markdown() -> str:
         ),
         "",
         (
-            "The 20261104 presets also name models from the schema: `--use-duplicate-name-suffix-for-every-collision` "
+            "The 20261104 presets also name models from the schema: `--naming-strategy definitions-first` gives "
+            "every definition its own name before an inline model that asks for it first (the practical presets "
+            "take it instead of `primary-first`), `--use-duplicate-name-suffix-for-every-collision` "
             "gives the `--duplicate-name-suffix` suffix to every model renamed because its name is taken, "
             "`--capitalise-numbered-enum-members` capitalizes the number a capitalized enum member takes (`A_1`), "
             "`--keep-first-character-of-path-keys` strips only a leading slash from a paths key (`pets` names "

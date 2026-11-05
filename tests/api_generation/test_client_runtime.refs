@@ -61,6 +61,7 @@ multipart-split	main/generation_platform/client/runtime/multipart-split.txt
 multipart-split-all	main/generation_platform/client/runtime/multipart-split-all.txt
 multipart-text-files	main/generation_platform/client/runtime/multipart-text-files.txt
 naming	main/generation_platform/client/runtime/naming.txt
+naming-definitions-first	main/generation_platform/client/runtime/naming-definitions-first.txt
 naming-full-path	main/generation_platform/client/runtime/naming-full-path.txt
 naming-parent-prefixed	main/generation_platform/client/runtime/naming-parent-prefixed.txt
 naming-primary-first	main/generation_platform/client/runtime/naming-primary-first.txt
