@@ -140,6 +140,7 @@ def test_fastapi_server(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPat
         "reused_forms",
         "forms",
         "forms_30",
+        "forms_read_only",
         "bound_texts",
         "bound_texts_reuse",
         "bound_parts",
