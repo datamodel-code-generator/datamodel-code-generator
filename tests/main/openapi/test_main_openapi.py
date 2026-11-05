@@ -14477,6 +14477,80 @@ def test_main_openapi_reuse_scope_tree_imports(input_file: str, output_model_typ
     )
 
 
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args", "models"),
+    [
+        pytest.param(
+            DataModelType.PydanticV2BaseModel.value,
+            [],
+            {"a.Rank": ("a", "Rank"), "c.Rank": ("c", "Rank")},
+            id="pydantic_v2",
+        ),
+        pytest.param(
+            DataModelType.PydanticV2BaseModel.value,
+            ["--module-split-mode", "single"],
+            {"a.Item": ("a.item", "Item"), "c.Item": ("c.item", "Item")},
+            id="pydantic_v2-single",
+        ),
+        pytest.param(
+            DataModelType.DataclassesDataclass.value,
+            [],
+            {"a.Rank": ("a", "Rank"), "c.Rank": ("c", "Rank")},
+            id="dataclasses",
+        ),
+        pytest.param(
+            DataModelType.MsgspecStruct.value,
+            [],
+            {"a.Item": ("shared", "Item"), "c.Item": ("shared", "Item_1")},
+            id="msgspec",
+        ),
+    ],
+)
+def test_main_openapi_reuse_scope_tree_shared_class_names(
+    output_model_type: str, extra_args: list[str], models: dict[str, tuple[str, str]], output_dir: Path
+) -> None:
+    """Name the canonical models of one name in the shared module apart, the one written last keeping it (#6182).
+
+    The string maps of ``a`` and the integer maps of ``c`` each share one canonical, both named ``Item`` (``Rank``
+    under ``--module-split-mode single``): ``shared.py`` wrote the class twice, so the users of the first validated the
+    second. The first is now ``Item_1``, and every model accepts and rejects the payloads as its schema does.
+    """
+    input_path = OPEN_API_DATA_PATH / "reuse_scope_tree_shared_class_names.yaml"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--reuse-model",
+            "--reuse-scope",
+            "tree",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    components = yaml.safe_load(input_path.read_text())["components"]
+    verdicts = []
+    for schema_name, (module_path, model_name) in models.items():
+        validator = Draft202012Validator({"$ref": f"#/components/schemas/{schema_name}", "components": components})
+        with _generated_package_module(output_dir, module_path) as module:
+            validate = _model_json_validator(getattr(module, model_name))
+            for payload in ({"x": 1}, {"x": "s"}):
+                try:
+                    validate(json.dumps(payload))
+                except pydantic.ValidationError:
+                    result = "rejects"
+                else:
+                    result = "accepts"
+                schema_result = "accepts" if validator.is_valid(payload) else "rejects"
+                verdicts.append(f"{schema_name} {json.dumps(payload)}: schema {schema_result}, model {result}\n")
+    assert_output("".join(verdicts))
+
+
 def test_main_openapi_generic_base_class_package_cycle(output_dir: Path) -> None:
     """Write the generic base class in the package whose models a submodule imports, so that importing it runs none."""
     run_main_and_assert(

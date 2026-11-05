@@ -12,7 +12,7 @@ class Node(BaseModel):
     rank: Rank | None = None
 
 
-class Item(RootModel[dict[str, int]]):
+class Item_1(RootModel[dict[str, int]]):
     root: dict[str, int]
 
 
@@ -21,11 +21,11 @@ class Color(Enum):
     green = 'green'
 
 
-class Item_1(RootModel[dict[str, Node]]):
+class Item(RootModel[dict[str, Node]]):
     root: dict[str, Node]
 
 
-class Rank(Item_1):
+class Rank(Item):
     pass
 
 

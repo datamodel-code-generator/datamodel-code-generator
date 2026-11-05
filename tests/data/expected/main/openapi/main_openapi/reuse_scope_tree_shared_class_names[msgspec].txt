@@ -1,0 +1,4 @@
+a.Item {"x": 1}: schema rejects, model rejects
+a.Item {"x": "s"}: schema accepts, model accepts
+c.Item {"x": 1}: schema accepts, model accepts
+c.Item {"x": "s"}: schema rejects, model rejects

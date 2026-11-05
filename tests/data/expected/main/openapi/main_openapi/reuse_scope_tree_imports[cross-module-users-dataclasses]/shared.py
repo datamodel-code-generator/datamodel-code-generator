@@ -8,7 +8,7 @@ from typing import TypeAlias
 
 from . import b
 
-Item: TypeAlias = dict[str, int]
+Item_1: TypeAlias = dict[str, int]
 
 
 class Color(Enum):

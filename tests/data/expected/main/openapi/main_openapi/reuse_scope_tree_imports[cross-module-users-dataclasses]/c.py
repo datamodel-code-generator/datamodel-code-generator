@@ -5,6 +5,6 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
-from .shared import Item
+from .shared import Item_1
 
-Rank: TypeAlias = Item
+Rank: TypeAlias = Item_1

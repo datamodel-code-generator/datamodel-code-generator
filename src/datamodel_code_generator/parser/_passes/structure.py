@@ -261,6 +261,15 @@ def _merged_class_names(class_names: Sequence[str]) -> tuple[str, ...]:
     return tuple(names)
 
 
+def _shared_class_names(class_names: Sequence[str]) -> tuple[str, ...]:
+    """Return one distinct class name per canonical model of the shared module, in the order the module writes them.
+
+    The numbering is ``_merged_class_names`` from the last canonical backwards: the one written last keeps the name,
+    which Python binds and every user imported before the names were distinct.
+    """
+    return _merged_class_names(class_names[::-1])[::-1]
+
+
 def get_module_directory(module: tuple[str, ...]) -> tuple[str, ...]:
     """Get the directory portion of a module tuple.
 
@@ -546,12 +555,13 @@ def create_shared_module_from_duplicates(  # noqa: PLR0912
 ) -> tuple[tuple[str, ...], list[DataModel]]:
     """Create shared module with canonical models and replace duplicates with inherited models.
 
-    A duplicate that is removed rather than replaced hands every user to the shared model, since
-    users in other modules would otherwise import it from a module that no longer defines it. The subclass that
-    replaces a duplicate is named by the users of its module; where an earlier attempt of the run found the import
-    cycle of that module to fail (``ImportCycleSeeds.merges``), by every user, the shared module's canonicals
-    included: the cycle merges into an ``_internal`` module, which the subclass moves to, so a user that kept naming
-    the duplicate would name a model no module defines.
+    The canonicals were unique in their own modules only, so they take distinct names (``_shared_class_names``)
+    before the duplicates name them. A duplicate that is removed rather than replaced hands every user to the shared
+    model, since users in other modules would otherwise import it from a module that no longer defines it. The
+    subclass that replaces a duplicate is named by the users of its module; where an earlier attempt of the run found
+    the import cycle of that module to fail (``ImportCycleSeeds.merges``), by every user, the shared module's
+    canonicals included: the cycle merges into an ``_internal`` module, which the subclass moves to, so a user that
+    kept naming the duplicate would name a model no module defines.
     """
     shared_module = parser.shared_module_name
 
@@ -565,6 +575,11 @@ def create_shared_module_from_duplicates(  # noqa: PLR0912
         canonical_models_seen.add(canonical)
         parser._graph_builder.update_model_reference(canonical, new_file_path=Path(f"{shared_module}.py"))  # noqa: SLF001
         shared_models.append(canonical)
+    named_models = without_stand_ins(parser, shared_models)
+    shared_class_names = _shared_class_names([model.class_name for model in named_models])
+    for model, class_name in zip(named_models, shared_class_names, strict=True):
+        if model.class_name != class_name:
+            parser._graph_builder.rename_model(model, class_name=class_name, scheme="shared-module")  # noqa: SLF001
 
     inherits = parser.data_model_type.SUPPORTS_TREE_SCOPE_REUSE_MODEL_INHERITANCE
     updated_models: list[DataModel] = []
