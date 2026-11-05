@@ -6,6 +6,7 @@ import ast
 import importlib.util
 import inspect
 import json
+import os
 import platform
 import re
 import shutil
@@ -18,7 +19,7 @@ from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
 from io import StringIO
 from pathlib import Path
-from threading import Event
+from threading import Event, Thread
 from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, cast
 
 import black
@@ -114,6 +115,7 @@ if TYPE_CHECKING:
     from pytest_mock import MockerFixture
 
     from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+    from tests.main.conftest import InputFileTypeLiteral
 
 assert_file_content = create_assert_file_content(EXPECTED_MAIN_PATH)
 BLACK_VERSION = version.parse(black.__version__)
@@ -2155,6 +2157,43 @@ def test_space_and_special_characters_dict_stdin(monkeypatch: pytest.MonkeyPatch
         input_file_type="dict",
         assert_func=assert_file_content,
     )
+
+
+@pytest.mark.skipif(os.name == "nt", reason="named pipes need os.mkfifo")
+@pytest.mark.parametrize(
+    ("source", "input_file_type"),
+    [
+        pytest.param(JSON_SCHEMA_DATA_PATH / "simple_string.json", None, id="auto-jsonschema"),
+        pytest.param(JSON_SCHEMA_DATA_PATH / "simple_string.json", "jsonschema", id="jsonschema"),
+        pytest.param(DATA_PATH / "json" / "pet.json", None, id="auto-json"),
+        pytest.param(DATA_PATH / "csv" / "simple.csv", "csv", id="csv"),
+        pytest.param(DATA_PATH / "mcp_tools" / "tools_list.json", "mcp-tools", id="mcp-tools"),
+    ],
+)
+def test_main_named_pipe_input_is_read_once(
+    source: Path,
+    input_file_type: InputFileTypeLiteral | None,
+    tmp_path: Path,
+    output_file: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A named pipe input is read once, by type detection, conversion and parsing alike, and generates as its file.
+
+    The pipe yields its bytes once, so the second generation of the formatter parity check is left out.
+    """
+    monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
+    pipe = tmp_path / source.name
+    os.mkfifo(pipe)
+    writer = Thread(target=pipe.write_bytes, args=(source.read_bytes(),), daemon=True)
+    writer.start()
+    run_main_and_assert(
+        input_path=pipe,
+        output_path=output_file,
+        input_file_type=input_file_type,
+        extra_args=["--disable-timestamp"],
+        assert_func=assert_file_content,
+    )
+    writer.join()
 
 
 @freeze_time("2024-12-14")

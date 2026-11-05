@@ -527,6 +527,20 @@ def test_directory_auto_input_does_not_infer_from_generated_files(
     )
 
 
+def test_directory_auto_input_without_files(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A directory that holds only directories has no file to infer the input type from."""
+    source_path = tmp_path / "schemas"
+    (source_path / "empty").mkdir(parents=True)
+    run_main_and_assert(
+        input_path=source_path,
+        output_path=tmp_path / "models",
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains="File not found:",
+        extra_args=["--formatters", "builtin"],
+    )
+
+
 @pytest.mark.parametrize(
     ("directory_name", "extra_args"),
     [

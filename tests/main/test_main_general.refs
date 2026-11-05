@@ -717,6 +717,12 @@ typed-dict-extra-items	main/template_data/builtin_typed_dict.py
 	main/template_data/custom_template.py
 [test_main_named_paths_keep_what_follows_a_path]
 	main/main_general/main_named_paths_keep_what_follows_a_path.py
+[test_main_named_pipe_input_is_read_once]
+auto-json	main/named_pipe_input_is_read_once.py
+auto-jsonschema	main/named_pipe_input_is_read_once.py	= main/jsonschema/simple_string.py
+csv	main/named_pipe_input_is_read_once.py	= main/named_pipe_input_is_read_once~main_named_pipe_input_is_read_once[csv].py
+jsonschema	main/named_pipe_input_is_read_once.py	= main/jsonschema/simple_string.py
+mcp-tools	main/named_pipe_input_is_read_once.py	= main/named_pipe_input_is_read_once~main_named_pipe_input_is_read_once[mcp-tools].py
 [test_main_rejects_additional_import_injection]
 	main/additional_imports_invalid.txt
 [test_main_rejects_additional_import_injection_in_extra_template_data]
