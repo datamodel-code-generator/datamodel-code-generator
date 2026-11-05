@@ -15983,6 +15983,7 @@ def test_main_openapi_anchor_refs_in_object_document_loaded_by_pointer(
         pytest.param("id_api.yaml", ["--strict-refs"], id="strict-refs"),
         pytest.param("collapse_cycle_api.yaml", ["--collapse-root-models"], id="collapse-cycle"),
         pytest.param("dangling_ref_api.yaml", ["--model-name-map", '{"Nope": "Other"}'], id="settle-diagnostics"),
+        pytest.param("late_warning_api.yaml", [], id="parse-warning-after-failure"),
     ],
 )
 def test_main_openapi_object_documents_loaded_by_pointer_parse_again(
@@ -15997,8 +15998,9 @@ def test_main_openapi_object_documents_loaded_by_pointer_parse_again(
     --strict-refs stops parses again, where the pointer names the schema the `$id` holds. A parse again that stops
     before a cycle of root models it would collapse parses once more with every circular root model kept named, with
     the role known. The diagnostics of the settle step, a pointer that finds no schema and a --model-name-map key
-    that names no model, which the first parse never reaches, are reported by the parse again (#6106). One generation
-    is recorded, so the second one of the formatter parity check is left out.
+    that names no model, which the first parse never reaches, are reported by the parse again (#6106), as is the
+    warning of a parameter's unknown format that L1 reaches only after the parameter document stopped it (#6311). One
+    generation is recorded, so the second one of the formatter parity check is left out.
     """
     monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
     with warnings.catch_warnings(record=True) as recorded:

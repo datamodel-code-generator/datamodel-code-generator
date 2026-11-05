@@ -1708,6 +1708,8 @@ collapse-cycle	main/openapi/main_openapi/object_documents_loaded_by_pointer_pars
 collapse-cycle	main/openapi/main_openapi/object_documents_loaded_by_pointer_parse_again[collapse-cycle].txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 dangling-fallback	main/openapi/main_openapi/object_documents_loaded_by_pointer_parse_again[dangling-fallback].py
 dangling-fallback	main/openapi/main_openapi/object_documents_loaded_by_pointer_parse_again[dangling-fallback].txt
+parse-warning-after-failure	main/openapi/main_openapi/object_documents_loaded_by_pointer_parse_again[parse-warning-after-failure].py
+parse-warning-after-failure	main/openapi/main_openapi/object_documents_loaded_by_pointer_parse_again[parse-warning-after-failure].txt
 settle-diagnostics	main/openapi/main_openapi/object_documents_loaded_by_pointer_parse_again[settle-diagnostics].py
 settle-diagnostics	main/openapi/main_openapi/object_documents_loaded_by_pointer_parse_again[settle-diagnostics].txt
 strict-refs	main/openapi/main_openapi/object_documents_loaded_by_pointer_parse_again[strict-refs].py

@@ -18,6 +18,7 @@ from typing_extensions import Protocol, ReadOnly, Self, TypedDict, TypeVar, fina
 from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._model_keys import ModelKey, keyed_or_path, model_key_of
 from datamodel_code_generator._records import record
+from datamodel_code_generator._warning_control import shown_once
 from datamodel_code_generator.model.base import DataModel
 from datamodel_code_generator.parser._phases import DecisionOutcome
 
@@ -27,6 +28,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator import AllExportsCollisionStrategy, AllExportsScope, ModuleSplitMode
     from datamodel_code_generator._requirements import PydanticFloor
+    from datamodel_code_generator._warning_control import ShownWarning
     from datamodel_code_generator.format import CodeFormatter
     from datamodel_code_generator.imports import Import, Imports
     from datamodel_code_generator.model._decisions.collapse_eligibility import LaterHolderFacts
@@ -52,6 +54,8 @@ __all__ = [
     "SortedDataModels",
     "StructuredRun",
     "mark_settle_diagnostics_reported",
+    "parse_warnings_reported",
+    "parse_warnings_shown_once",
     "pydantic_floors_recorded",
     "settle_diagnostics_reported_once",
     "settle_diagnostics_suppressed",
@@ -336,9 +340,15 @@ def pydantic_floors_recorded() -> Generator[PydanticFloors]:
 @final
 @dataclass(slots=True)
 class _SettleDiagnostics:
-    """Whether a parse of the generation run reported the settle diagnostics."""
+    """Whether a parse of the generation run reported the settle diagnostics, and the warnings of its L0 and L1.
+
+    ``parse_reported`` says a parse finished L1, so it showed every warning of L0 and L1; ``parse_warnings`` are those
+    the parses showed.
+    """
 
     reported: bool = False
+    parse_reported: bool = False
+    parse_warnings: set[ShownWarning] = dataclasses.field(default_factory=set)
 
 
 _SETTLE_DIAGNOSTICS: ContextVar[_SettleDiagnostics | None] = ContextVar("settle_diagnostics", default=None)
@@ -348,8 +358,8 @@ _SETTLE_DIAGNOSTICS: ContextVar[_SettleDiagnostics | None] = ContextVar("settle_
 def settle_diagnostics_reported_once() -> Generator[None]:
     """Report the settle diagnostics of the generation run inside once, in the first of its parses that reaches them.
 
-    A parse again repeats no warning of L0 and L1, which the parse before reported up to where it stopped, but reports
-    the settle diagnostics where no parse before reached them, such as after a parse that failed in L1.
+    A parse again repeats no warning of L0 and L1 that a parse before showed, and reports the settle diagnostics where
+    no parse before reached them, such as after a parse that failed in L1.
     """
     with context_values({_SETTLE_DIAGNOSTICS: _SettleDiagnostics()}):
         yield
@@ -361,6 +371,26 @@ def settle_diagnostics_suppressed(suppress_parse_warnings: bool) -> bool:  # noq
     A parse again outside a generation run (``settle_diagnostics_reported_once``) always leaves them out.
     """
     return suppress_parse_warnings and ((diagnostics := _SETTLE_DIAGNOSTICS.get()) is None or diagnostics.reported)
+
+
+def parse_warnings_reported() -> bool:
+    """Return whether a parse of the generation run finished L1; outside a generation run, a parse before did."""
+    return (diagnostics := _SETTLE_DIAGNOSTICS.get()) is None or diagnostics.parse_reported
+
+
+@contextlib.contextmanager
+def parse_warnings_shown_once() -> Generator[None]:
+    """Show each L0 and L1 warning of the parse inside that no parse of the generation run showed (#6311).
+
+    A parse again after one that failed in L1 shows the warnings that parse did not reach; a parse that finishes L1
+    marks them all reported.
+    """
+    if (diagnostics := _SETTLE_DIAGNOSTICS.get()) is None:
+        yield
+        return
+    with shown_once(diagnostics.parse_warnings):
+        yield
+    diagnostics.parse_reported = True
 
 
 def mark_settle_diagnostics_reported() -> None:
