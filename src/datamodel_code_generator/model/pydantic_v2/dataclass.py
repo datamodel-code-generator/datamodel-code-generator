@@ -27,6 +27,7 @@ from datamodel_code_generator.model.base import (
     _find_base_classes,
     _nested_model_factory,
     _NestedModelFactory,
+    _order_refusals,
     _reference_names_model,
 )
 from datamodel_code_generator.model.dataclass import _DataclassReuseMixin
@@ -329,6 +330,19 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
         """Return model imports, ensuring the lookaround regex engine config is applied."""
         self._apply_lookaround_regex_engine()
         return super().imports
+
+    @override
+    def _refused_dataclass_arguments(self, arguments: Mapping[str, bool]) -> list[str]:
+        """Return why ``pydantic.dataclasses.dataclass`` refuses these arguments at import, as every Pydantic 2 does.
+
+        It takes neither ``match_args`` nor ``weakref_slot``, only ``init=False``, and ``order`` needs ``eq``.
+        """
+        refused = [
+            f"Pydantic dataclasses take no {name}" for name in ("match_args", "weakref_slot") if name in arguments
+        ]
+        if arguments.get("init"):
+            refused.append("Pydantic dataclasses take only init=False")
+        return refused + _order_refusals(arguments)
 
     @override
     def render(self, *, class_name: str | None = None) -> str:

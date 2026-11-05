@@ -9,3 +9,6 @@ pydantic_dataclass	main/jsonschema/keep_false_dataclass_arguments/keep_false_dat
 pydantic_dataclass	main/jsonschema/keep_false_dataclass_arguments/keep_false_dataclass_arguments[pydantic_dataclass].py
 pydantic_dataclass-kept	main/jsonschema/keep_false_dataclass_arguments/keep_false_dataclass_arguments[pydantic_dataclass-kept].equality.txt	= main/jsonschema/keep_false_dataclass_arguments/keep_false_dataclass_arguments[dataclass-kept].equality.txt
 pydantic_dataclass-kept	main/jsonschema/keep_false_dataclass_arguments/keep_false_dataclass_arguments[pydantic_dataclass-kept].py
+[test_keep_false_dataclass_arguments_refused]
+order_without_eq-left-out	main/jsonschema/keep_false_dataclass_arguments/refused[order_without_eq-left-out].py
+weakref_slot_on_python_3_10-left-out	main/jsonschema/keep_false_dataclass_arguments/refused[weakref_slot_on_python_3_10-left-out].py

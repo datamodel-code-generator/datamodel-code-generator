@@ -39,6 +39,7 @@ PythonConstruct: TypeAlias = Literal[
     "python.union_operator",
     "python.type_alias_annotation",
     "python.kw_only_dataclass",
+    "python.dataclass_weakref_slot",
     "python.typed_dict_required",
     "python.typed_dict_not_required",
     "python.builtin_generic_strings",
@@ -150,6 +151,7 @@ _ROWS: Final[tuple[Requirement, ...]] = (
     Requirement("python.union_operator", "python", "3.10"),
     Requirement("python.type_alias_annotation", "python", "3.10"),
     Requirement("python.kw_only_dataclass", "python", "3.10"),
+    Requirement("python.dataclass_weakref_slot", "python", "3.11"),
     Requirement(
         "python.typed_dict_required", "python", "3.11", form="typing.Required", backport="typing_extensions.Required"
     ),
