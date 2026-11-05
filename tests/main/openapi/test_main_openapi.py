@@ -17986,6 +17986,16 @@ the class's name and `Base` (`EventCreatedBase`), and the part the branches shar
             id="pydantic_v2-members-definitions-first",
         ),
         pytest.param(
+            "pydantic_v2.BaseModel",
+            [
+                "--name-allof-union-members-after-branches",
+                "--infer-union-variant-names",
+                "--class-name-suffix",
+                "Model",
+            ],
+            id="pydantic_v2-members-suffix",
+        ),
+        pytest.param(
             "msgspec.Struct",
             ["--name-allof-union-members-after-branches", "--infer-union-variant-names"],
             id="msgspec-members-infer",
@@ -18012,7 +18022,8 @@ def test_main_openapi_name_allof_union_members_after_branches(
     ``Event2`` (``EventCreated`` and ``EventDeleted`` under ``--infer-union-variant-names``) and its shared part
     ``Event3``; with it the members are ``Event1`` and ``Event2`` (``EventCreated`` and ``EventDeleted``), the bases
     ``Event1Base`` and ``Event2Base`` and the shared part ``EventBase``. The members of ``Notice``, whose branches are
-    ``$ref`` targets, are ``NoticeOpened`` and ``NoticeClosed``.
+    ``$ref`` targets, are ``NoticeOpened`` and ``NoticeClosed``. A ``--class-name-suffix`` ends each of these names
+    once, as it ends the others: ``EventCreatedModel``, ``EventBaseModel``, ``NoticeOpenedModel``.
     """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "allof_union_members.yaml",

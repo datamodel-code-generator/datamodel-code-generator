@@ -1553,6 +1553,7 @@ pydantic_v2-members-definitions-first	main/openapi/main_openapi/name_allof_union
 pydantic_v2-members-enclosing-model	main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-enclosing-model].py
 pydantic_v2-members-full-path	main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-full-path].py	= main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-enclosing-model].py
 pydantic_v2-members-infer	main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-infer].py	= main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-definitions-first].py
+pydantic_v2-members-suffix	main/openapi/main_openapi/name_allof_union_members_after_branches[pydantic_v2-members-suffix].py
 typed_dict-members-infer	main/openapi/main_openapi/name_allof_union_members_after_branches[typed_dict-members-infer].py
 [test_main_openapi_namespace_subns_ref]
 	main/openapi/namespace_subns_ref//*.py

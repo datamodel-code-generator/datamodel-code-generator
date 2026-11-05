@@ -207,6 +207,11 @@ class _ResolverNamer:
             cls, model_type=claim.kind, is_root=path == "#" or (path.endswith("#") and "/" not in path.split("#")[-1])
         )
 
+    def stem(self, claim: NameClaim, cls: str) -> str:
+        resolver = self._resolver
+        stem = cls.removeprefix(resolver.class_name_prefix).removesuffix(resolver.class_name_suffix)
+        return stem if stem and self.affixed(claim, stem) == cls else cls
+
     def _class_name(self, claim: NameClaim, name: str, *, affixed: bool) -> tuple[str, str]:
         """Return the module and class L1 makes of ``name`` for the model of ``claim``, as it asked for its own."""
         request = self._requests[claim.key]

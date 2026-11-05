@@ -494,6 +494,12 @@ class Namer(Protocol):
     def affixed(self, claim: NameClaim, cls: str) -> str:
         """Return ``cls`` with the class name affixes the model of ``claim`` takes."""
 
+    def stem(self, claim: NameClaim, cls: str) -> str:
+        """Return ``cls`` without the class name affixes the model of ``claim`` takes, where it is their form of one.
+
+        Any other class, such as one numbered after its affixes, is its own stem.
+        """
+
     def camel(self, text: str) -> str:
         """Return ``text`` in UpperCamelCase, as a full-path name joins a part."""
 
@@ -716,7 +722,8 @@ def plan_names(rules: NamingRules, claims: Sequence[NameClaim], namer: Namer) ->
     new name, and every other model keeps its name, which no planned name takes. Under ``definitions_first`` the first
     definition of a family takes the family's name, or the first free one where a model outside the plan holds it;
     each claim that held it takes the name the definition gave up where that is a numbered name of it, else the first
-    free one; then the allOf parts, which the allOf rule names alone, take theirs. Under ``enclosing_model`` every
+    free one; then the allOf parts, which the allOf rule names alone, take theirs, made of the names before affixes
+    (``Namer.stem``) and given the affixes of their own classes. Under ``enclosing_model`` every
     claim is named again (``_enclosing_model``).
     """
     by_key = {claim.key: claim for claim in claims}
@@ -751,10 +758,12 @@ def plan_names(rules: NamingRules, claims: Sequence[NameClaim], namer: Namer) ->
 
     def final(claim: NameClaim) -> tuple[str, str]:
         planned = names.get(claim.key)
-        return (claim.module, claim.cls) if planned is None else (planned.module, planned.cls)
+        module, cls = (claim.module, claim.cls) if planned is None else (planned.module, planned.cls)
+        return module, namer.stem(claim, cls)
 
     for key, part in parts.items():
         module, name = _allof_name(by_key[key], part, by_key, final, namer)
+        name = namer.affixed(by_key[key], name)
         names[key] = allocation.give(module, allocation.first_free(by_key[key], name, module), name)
     for key, via in closure.items():
         if key not in names:
