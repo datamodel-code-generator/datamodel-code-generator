@@ -54291,10 +54291,10 @@ A dotted schema name such as `pkg.Warn.Detail` beside `pkg.Warn` writes the clas
 module `pkg/Warn.py`. Importing the module binds the name `Warn` of the package to the module in place of the class, so
 the models that name either fail to decode. With this option the module, and the modules below it, take the first
 free name with trailing underscores (`pkg/Warn_.py`, or `pkg/Warn__.py` beside a module `pkg/Warn_.py`), also where
-the directories of a directory input name it; the class keeps its name. The class names are the final ones: where a later
-rename gives a class the name of a submodule (`--field-type-collision-strategy rename-type`, an import that shadows the
-class, `--collapse-root-models-name-strategy parent`), that submodule is renamed, and a submodule whose class a later
-rename moves off its name keeps its name.
+the directories of a directory input name it; the class keeps its name. The class names are the final ones: where a
+later rename gives a class the name of a submodule (`--field-type-collision-strategy rename-type`, an import that
+shadows the class, `--collapse-root-models-name-strategy parent`), that submodule is renamed, and a submodule whose
+class a later rename moves off its name keeps its name.
 
 !!! tip "Usage"
 
