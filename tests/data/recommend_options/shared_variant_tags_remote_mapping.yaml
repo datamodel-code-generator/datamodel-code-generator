@@ -1,0 +1,28 @@
+openapi: 3.1.0
+info:
+  title: Pets Mapped Across Documents
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Dog:
+      type: object
+      required: [petType]
+      properties:
+        petType: {type: string}
+        bark: {type: string}
+    ByName:
+      oneOf:
+        - $ref: '#/components/schemas/Dog'
+        - $ref: 'https://gigantic-server.com/schemas/Monster/schema.json'
+      discriminator:
+        propertyName: petType
+    ByKey:
+      oneOf:
+        - $ref: '#/components/schemas/Dog'
+        - $ref: 'https://gigantic-server.com/schemas/Monster/schema.json'
+      discriminator:
+        propertyName: petType
+        mapping:
+          monster: 'https://gigantic-server.com/schemas/Monster/schema.json'
+          dog: '#/components/schemas/Dog'

@@ -195,6 +195,11 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
         pytest.param("enum_const.yaml", [], id="enums-read-as-their-const"),
         pytest.param("shared_variant_tags.yaml", [], id="unions-merge-shared-variant-tags"),
         pytest.param(
+            "shared_variant_tags_remote_mapping.yaml",
+            [],
+            id="unions-merge-shared-variant-tags-remote-mapping-value",
+        ),
+        pytest.param(
             "shared_variant_tags.yaml",
             ["--preset", "standard-py314-20261027"],
             id="unions-merge-shared-variant-tags-older-preset",
@@ -286,7 +291,8 @@ def test_recommend_options_for_schemas(
     operations of a path item as its walk does: the ``query`` operation and ``additionalOperations`` from OpenAPI 3.2,
     and no ``x-`` key of ``paths``; the paths scope reads the methods before OpenAPI 3.2 and an ``x-`` key that holds
     an object. The api scope counts only the operations of the paths ``--openapi-include-paths`` selects, so an excluded
-    path whose operations generation never reads is no error.
+    path whose operations generation never reads is no error. A discriminator mapping value that names a schema of
+    another document tags no variant, and the values after it still tag theirs.
     """
     extra = [] if "--preset" in args else ["--target-python-version", "3.14"]
     _recommend(tmp_path, capsys, ["--input", source, *extra, *args], inputs=_inputs(INPUT_PATH / source))
