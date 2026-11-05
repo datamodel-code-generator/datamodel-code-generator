@@ -1993,29 +1993,26 @@ class DataTypeManager(ABC):
         an alias that names itself again (``seen``).
         """
         keywords: set[str] = set()
-        if not (members := tuple(_value_members(data_type))):
-            return None
-        for member in members:
-            if (
-                (reference := member.reference) is None
-                or id(reference) in seen
-                or (model := model_of(reference)) is None
-            ):
+        # The values of the aliases a member names are read from a stack of their own, so a long chain of aliases
+        # takes no call per alias.
+        pending: list[tuple[DataType, frozenset[int]]] = [(data_type, seen)]
+        while pending:
+            current, current_seen = pending.pop()
+            if not (members := tuple(_value_members(current))):
                 return None
-            if model.form != "alias":
-                keywords.update(cls.member_constraint_keywords(member, target_version, model_of) or ())
-            elif (
-                not (fields := model.fields)
-                or (
-                    aliased := cls.model_value_constraint_keywords(
-                        cast("DataType", fields[0].data_type), target_version, model_of, seen | {id(reference)}
-                    )
-                )
-                is None
-            ):
-                return None
-            else:
-                keywords.update(aliased)
+            for member in members:
+                if (
+                    (reference := member.reference) is None
+                    or id(reference) in current_seen
+                    or (model := model_of(reference)) is None
+                ):
+                    return None
+                if model.form != "alias":
+                    keywords.update(cls.member_constraint_keywords(member, target_version, model_of) or ())
+                elif not (fields := model.fields):
+                    return None
+                else:
+                    pending.append((cast("DataType", fields[0].data_type), current_seen | {id(reference)}))
         return frozenset(keywords)
 
     @classmethod
