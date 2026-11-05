@@ -1,0 +1,28 @@
+from __future__ import annotations
+
+from typing import Annotated, TypeAlias, Union
+
+from msgspec import UNSET, Meta, Struct, UnsetType
+
+Wide: TypeAlias = Annotated[int, Meta(ge=1234567890123456750)]
+
+
+Wide1: TypeAlias = Annotated[float, Meta(ge=1.2345678901234568e+18)]
+
+
+Narrow: TypeAlias = Annotated[int, Meta(ge=1234567890123456769)]
+
+
+Narrow1: TypeAlias = Annotated[float, Meta(ge=1.2345678901234568e+18)]
+
+
+Small: TypeAlias = Annotated[int, Meta(ge=10)]
+
+
+Small1: TypeAlias = Annotated[float, Meta(ge=5.5)]
+
+
+class Model(Struct):
+    wide: Union[Wide, Wide1, UnsetType] = UNSET
+    narrow: Union[int, Narrow1, UnsetType] = UNSET
+    small: Union[int, Small1, UnsetType] = UNSET

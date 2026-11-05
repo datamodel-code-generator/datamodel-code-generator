@@ -484,16 +484,52 @@ def test_main_asyncapi_invalid_schema_version(output_file: Path, capsys: pytest.
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--ignore-ref-siblings-by-schema-version"], id="first-read"),
+        pytest.param(
+            ["--ignore-ref-siblings-by-schema-version", "--read-schema-version-per-document"], id="per-document"
+        ),
+    ],
+)
+def test_main_asyncapi_read_schema_version_per_document_external_ref_siblings(
+    output_file: Path, extra_args: list[str]
+) -> None:
+    """Read a document an AsyncAPI 2 document references, which declares no version, as AsyncAPI 2.
+
+    AsyncAPI 2 ignores the keywords beside a ``$ref``, so ``Short`` is ``Text`` alone, without its ``maxLength``. With
+    ``--read-schema-version-per-document`` the referenced document takes the version of the AsyncAPI 2 document whose
+    reference loads it, as without it, where the document parsed decides.
+    """
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "ref_siblings_external_v2" / "api.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=[*PY310_TARGET_ARGS, *extra_args],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="asyncapi_read_schema_version_per_document_external_ref_siblings",
+        model_name="Note",
+        valid_json='"abcd"',
+        invalid_json="1",
+        expected_error_type="string_type",
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--name-converted-payloads-by-message"],
     option_description="""Name a converted payload that names no type of its own after its message.
 
 An AsyncAPI payload in Avro or XML Schema is converted to JSON Schema first. A payload that names no type of its own,
 such as an Avro `string`, array, map or union, or an XML Schema with several global elements, takes the converter's
-placeholder title `Model`: the field writes `Field(..., title='Model')`, and under `--use-title-as-name` the class is
-named `Model`. With `--name-converted-payloads-by-message` such a payload takes no title, as a JSON Schema payload,
-so its class is named after its message (`PingPublishPayload`) under `--use-title-as-name` too. A payload that names
-its type, such as an Avro record, keeps that name.""",
+placeholder title `Model`: the root of a string, array or union payload writes `Field(..., title='Model')`, and under
+`--use-title-as-name` a string, array, map or XML Schema payload is named `Model`, `Model1`, .... With
+`--name-converted-payloads-by-message` such a payload takes no title, as a JSON Schema payload, so its class is named
+after its message (`PingPublishPayload`) under `--use-title-as-name` too. A payload that names its type, such as an Avro
+record, keeps that name.""",
     input_schema="asyncapi/converted_payload_names.yaml",
     cli_args=["--name-converted-payloads-by-message"],
     golden_output="main/asyncapi/main_asyncapi/name_converted_payloads_by_message[by-message].py",
@@ -512,10 +548,10 @@ its type, such as an Avro record, keeps that name.""",
 def test_main_asyncapi_name_converted_payloads_by_message(output_file: Path, extra_args: list[str]) -> None:
     """Drop the converter's placeholder title of a converted payload under ``--name-converted-payloads-by-message``.
 
-    The Avro ``string``, array and union payloads and the XML Schema payload with two global elements take the title
-    ``Model`` without the option, so their field writes ``title='Model'`` and ``--use-title-as-name`` names their
-    classes ``Model``, ``Model1``, ...; with it they take no title and the names of their messages (#5677). The record
-    named ``Model`` keeps its name.
+    The Avro ``string``, array, map and union payloads and the XML Schema payload with two global elements take the
+    title ``Model`` without the option: the root of the string, array and union payloads writes ``title='Model'``, and
+    ``--use-title-as-name`` names the string, array, map and XML Schema payloads ``Model``, ``Model1``, ...; with it
+    they take no title and the names of their messages (#5677). The record named ``Model`` keeps its name.
     """
     run_main_and_assert(
         input_path=ASYNC_API_DATA_PATH / "converted_payload_names.yaml",

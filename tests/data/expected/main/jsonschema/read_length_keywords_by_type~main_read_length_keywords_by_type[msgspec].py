@@ -46,4 +46,5 @@ class LengthKeywordsByType(Struct):
     letters: list[Letter] | UnsetType = UNSET
     letter_seq: Sequence[LetterSeqEnum] | UnsetType = UNSET
     as_text: str | UnsetType = UNSET
+    count: int | UnsetType = UNSET
     short: Short | UnsetType = UNSET

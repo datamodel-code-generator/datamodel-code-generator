@@ -292,6 +292,41 @@ def test_external_ref_mapping_all_of_base_in_input_directory(output_dir: Path) -
     )
 
 
+def test_external_ref_mapping_all_of_union_branch(output_file: Path) -> None:
+    """Read no mapped document for the null of the union that an allOf member's anyOf gives.
+
+    Under --intersect-combined-schema-keywords that union admits null where every part of the allOf does. A branch the
+    mapping types by its import (``Soil``) admits none and its document is not read, as without the option, so
+    ``absent.yaml`` need not exist; the null branch of ``Ground`` and the untyped ``Plot`` give ``Field`` its None.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "external_ref_mapping_all_of_union" / "api.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--external-ref-mapping",
+            "absent.yaml=mapped.models",
+            "--intersect-combined-schema-keywords",
+            *COMMON_ARGS,
+        ],
+    )
+
+
+def test_python_import_all_of_alias_base(output_file: Path) -> None:
+    """Inherit the class that an alias's x-python-import names where an allOf member names the alias.
+
+    Under --intersect-combined-schema-keywords a member naming a ``$ref`` alias takes the alias's target as its base,
+    but an alias with ``x-python-import`` is typed by the class it imports wherever it is referenced, so ``Branch``
+    inherits that class, not ``Stem``.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "python_import_all_of" / "alias.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--intersect-combined-schema-keywords", *COMMON_ARGS],
+    )
+
+
 @pytest.mark.parametrize("output_model_type", OUTPUT_MODEL_TYPES)
 def test_python_import_all_of_base(
     output_model_type: str, output_file: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

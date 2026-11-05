@@ -9,7 +9,7 @@ import subprocess
 import sys
 from collections import Counter
 from pathlib import Path
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import pytest
 
@@ -28,6 +28,9 @@ from tests.data.python.model_resolver_pickle_types import (
     SlottedModelResolver,
     TupleReduceModelResolver,
 )
+
+if TYPE_CHECKING:
+    from datamodel_code_generator.format import PythonVersion
 
 EXPECTED_RESOLVER_PATH = Path(__file__).parent / "data" / "expected" / "resolver"
 MODEL_RESOLVER_PICKLE_HELPER = Path(__file__).parent / "data" / "python" / "model_resolver_pickle_compat.py"
@@ -157,6 +160,44 @@ def test_model_resolver_public_field_mapping_preserves_independent_instances_and
     assert resolver.default_class_name_generator("3name") == "Replacement3name"
 
 
+def test_model_resolver_builds_a_resolver_class_that_takes_the_arguments_of_0_89_0() -> None:
+    """Build a resolver class whose ``__init__`` takes the arguments of 0.89.0, as the numbered-member option is off.
+
+    ``capitalise_numbered_enum_members`` is passed only when it is on, so such a class names enum members as before.
+    """
+
+    class LegacyArgumentsResolver(EnumFieldNameResolver):
+        def __init__(
+            self,
+            *,
+            aliases: dict[str, str] | None = None,
+            snake_case_field: bool = False,
+            empty_field_name: str | None = None,
+            original_delimiter: str | None = None,
+            special_field_name_prefix: str | None = None,
+            remove_special_field_name_prefix: bool = False,
+            capitalise_enum_members: bool = False,
+            no_alias: bool = False,
+            use_subclass_enum: bool = False,
+            target_python_version: PythonVersion | None = None,
+        ) -> None:
+            super().__init__(
+                aliases=aliases,
+                snake_case_field=snake_case_field,
+                empty_field_name=empty_field_name,
+                original_delimiter=original_delimiter,
+                special_field_name_prefix=special_field_name_prefix,
+                remove_special_field_name_prefix=remove_special_field_name_prefix,
+                capitalise_enum_members=capitalise_enum_members,
+                no_alias=no_alias,
+                use_subclass_enum=use_subclass_enum,
+                target_python_version=target_python_version,
+            )
+
+    resolver = ModelResolver(field_name_resolver_classes={ModelType.ENUM: LegacyArgumentsResolver})
+    assert_output(f"{resolver.get_valid_field_name('a', {'a'}, model_type=ModelType.ENUM)}\n")
+
+
 def test_model_resolver_output_providers_load_only_for_compatibility_access() -> None:
     """Exercise the lazy fast path and the full legacy mapping in a fresh process."""
     result = subprocess.run(
@@ -199,7 +240,10 @@ def test_model_resolver_output_providers_load_only_for_compatibility_access() ->
 def test_model_resolver_pickles_are_compatible_across_the_resolver_state_rename(  # noqa: PLR0914
     tmp_path: Path,
 ) -> None:
-    """Load a main-branch pickle and expose current pickles to the earlier public layout."""
+    """Load a main-branch pickle and expose current pickles to the earlier public layout.
+
+    The resolver loaded from the main-branch pickle also names an item class and a numbered enum member.
+    """
     resolver = ModelResolver()
     shallow_copy = copy.copy(resolver)
     deep_copy = copy.deepcopy(resolver)

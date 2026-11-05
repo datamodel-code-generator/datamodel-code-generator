@@ -21,6 +21,14 @@ components:
             - type: string
             - type: integer
           minItems: 2
+        contained:
+          type: array
+          prefixItems:
+            - type: string
+            - type: integer
+          items: false
+          contains: {}
+          minContains: 2
     Child:
       allOf:
         - $ref: '#/components/schemas/Parent'
@@ -31,6 +39,10 @@ components:
                 - type: string
                   maxLength: 3
             open:
+              prefixItems:
+                - type: string
+                  maxLength: 3
+            contained:
               prefixItems:
                 - type: string
                   maxLength: 3

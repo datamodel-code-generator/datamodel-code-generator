@@ -649,7 +649,7 @@ def parse_string_property_name_union(
 ) -> tuple[DataType | None, bool]:
     """Build constrained string keys, retaining unions already dominated by a plain string branch.
 
-    ``member`` reads a branch of a union of keys.
+    ``member`` reads a branch of a union of keys; the one branch an ``anyOf`` keeps is read as the ``anyOf`` is.
     """
     if (
         schema.model_fields_set - parser.STRING_PROPERTY_NAME_FIELDS
@@ -665,20 +665,28 @@ def parse_string_property_name_union(
         return parse_property_name_key_schema(parser, schema, member=member), not schema.has_constraint
     if schema.has_constraint:
         return None, False
+    branches = [
+        branch
+        for branch in schema.anyOf
+        if not (
+            branch is False
+            or (
+                discard_nonstring
+                and isinstance(branch, JsonSchemaObject)
+                and not branch.model_fields_set - parser.STRING_PROPERTY_NAME_FIELDS
+                and type(parser)._property_names_forbids_all_keys(branch)  # noqa: SLF001
+            )
+        )
+    ]
     data_types: list[DataType] = []
     branch_count = 0
-    for branch in schema.anyOf:
-        if branch is False or (
-            discard_nonstring
-            and isinstance(branch, JsonSchemaObject)
-            and not branch.model_fields_set - parser.STRING_PROPERTY_NAME_FIELDS
-            and type(parser)._property_names_forbids_all_keys(branch)  # noqa: SLF001
-        ):
-            continue
+    for branch in branches:
         data_type, unrestricted = (
-            (parser.data_type_manager.get_data_type(Types.string), True)
-            if branch is True
-            else parse_string_property_name_union(parser, branch, discard_nonstring=discard_nonstring, member=True)
+            parse_string_property_name_union(
+                parser, branch, discard_nonstring=discard_nonstring, member=member or len(branches) > 1
+            )
+            if isinstance(branch, JsonSchemaObject)
+            else (parser.data_type_manager.get_data_type(Types.string), True)
         )
         if unrestricted and (not parser.field_constraints or branch_count == 0 or len(data_types) != branch_count):
             return None, True

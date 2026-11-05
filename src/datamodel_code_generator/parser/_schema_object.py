@@ -52,6 +52,7 @@ __all__ = [
     "JsonSchemaLiteral",
     "JsonSchemaObject",
     "get_ref_type",
+    "reads_ref_alone",
 ]
 
 JsonSchemaLiteral = Union[bool, int, str]  # noqa: UP007
@@ -277,6 +278,22 @@ def _is_document_object(values: object) -> TypeIs[dict[str, Any]]:
     return isinstance(values, dict) and (graph := SCHEMA_GRAPH.get()) is not None and id(values) in graph.locations
 
 
+def reads_ref_alone(values: object, context: Mapping[str, Any] | None) -> TypeIs[dict[str, Any]]:
+    """Return whether a JSON object of a loaded document is read as its ``$ref`` alone, without the keywords beside it.
+
+    Only under ``--ignore-ref-siblings-by-schema-version``, whose test of a location the parser passes in ``context``
+    (``IGNORED_REF_SIBLINGS_CONTEXT``), where the schema version of the object's document ignores them (draft 4, 6 and
+    7, OpenAPI 3.0, AsyncAPI 2).
+    """
+    return (
+        (ignores := (context or {}).get(IGNORED_REF_SIBLINGS_CONTEXT)) is not None
+        and _is_document_object(values)
+        and isinstance(values.get("$ref"), str)
+        and len(values) > 1
+        and ignores(_source_location(values))
+    )
+
+
 def _has_map_key_keywords(schema: JsonSchemaObject) -> bool:
     """Return whether ``schema`` has the keywords of a map's keys: patternProperties or a propertyNames but false."""
     return bool(schema.patternProperties or (schema.propertyNames is not None and schema.propertyNames is not False))
@@ -439,15 +456,9 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
         out of it, annotations and extensions included, and the document keeps them for the JSON pointers that name
         them. Defined last, it runs before the other validators and sees the document object.
         """
-        if (
-            (ignores := (info.context or {}).get(IGNORED_REF_SIBLINGS_CONTEXT)) is None
-            or not _is_document_object(values)
-            or not isinstance(ref := values.get("$ref"), str)
-            or len(values) == 1
-            or not ignores(location := _source_location(values))
-        ):
+        if not reads_ref_alone(values, info.context):
             return values
-        return _located({"$ref": ref}, location)
+        return _located({"$ref": values["$ref"]}, _source_location(values))
 
     @property
     def python_field_overrides(self) -> Mapping[str, str]:

@@ -1,0 +1,9 @@
+asyncapi: 2.6.0
+info:
+  title: Notes
+  version: "1"
+channels: {}
+components:
+  schemas:
+    Note:
+      $ref: "notes.yaml#/Short"

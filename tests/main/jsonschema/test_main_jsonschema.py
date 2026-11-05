@@ -8757,6 +8757,7 @@ string is: at a property, an item, a map value, a root, the branches of a union 
         pytest.param([], id="released"),
         pytest.param(["--use-annotated"], id="use_annotated_released"),
         pytest.param(["--output-model-type", "msgspec.Struct"], id="msgspec_released"),
+        pytest.param(["--type-mappings", "integer+int64=string"], id="type_mappings_released"),
         *(
             pytest.param([*args, "--read-length-keywords-by-type"], id=id_)
             for args, id_ in (
@@ -8770,6 +8771,7 @@ string is: at a property, an item, a map value, a root, the branches of a union 
                     ["--use-annotated", "--omit-redundant-constraints", "--enum-field-as-literal", "all"],
                     "literals",
                 ),
+                (["--type-mappings", "integer+int64=string"], "type_mappings"),
             )
         ),
     ],
@@ -8780,8 +8782,9 @@ def test_main_read_length_keywords_by_type(output_file: Path, extra_args: list[s
     Without it ``maxLength`` beside an array bounds the list's items and ``maxItems`` beside a string the string's
     length, so the models reject payloads the schema accepts. With it those keywords are left out at a property, an
     item, a map value, a root, a union branch, a type list, an array without ``type``, a ``list`` or ``Sequence`` of
-    ``Literal`` values and a type override, while ``maxItems`` beside an array and ``maxLength`` beside a string stay.
-    Each verdict line gives the schema's own verdict after the model's.
+    ``Literal`` values and a type override, while ``maxItems`` beside an array and ``maxLength`` beside a string stay;
+    ``maxLength`` beside an integer is left out of the ``constr`` that ``--type-mappings`` types it as too. Each verdict
+    line gives the schema's own verdict after the model's.
     """
     name = "length_keywords_by_type"
     run_main_and_assert(
@@ -39266,7 +39269,8 @@ and an input document that declares none is read as it is on its own. Here the d
 beside its allOf `$ref`, as draft 7 says, and the 2020-12 root keeps it. An OpenAPI 3.1 document reads the keywords
 beside a `$ref` as JSON Schema 2020-12 does, and the property-count rule of `--generate-schema-validators` leaves out a
 `minProperties` beside an allOf `$ref` of a draft-07 document. An explicit `--schema-version` reads every document by
-that version, with or without the option.""",
+that version, with or without the option, except that without it the schema validators of
+`--generate-schema-validators` read an OpenAPI or AsyncAPI document as draft 7.""",
     input_schema="jsonschema/schema_version_per_document_refs/root.json",
     cli_args=["--read-schema-version-per-document"],
     golden_output="main/jsonschema/main_jsonschema/read_schema_version_per_document[per-document].py",
@@ -39416,6 +39420,41 @@ def test_main_jsonschema_read_schema_version_per_document_dynamic_scope(output_f
 
 @pytest.mark.parametrize(
     "extra_args",
+    [pytest.param([], id="first-read"), pytest.param(["--read-schema-version-per-document"], id="per-document")],
+)
+def test_main_jsonschema_read_schema_version_per_document_external_recursive_anchor(
+    output_file: Path, extra_args: list[str]
+) -> None:
+    """Find the ``$recursiveAnchor`` under ``$defs`` of a referenced 2019-09 document by its own version.
+
+    In strict version mode a draft-07 document holds its definitions under ``definitions`` only. The ``$ref`` with
+    siblings copies ``Tree`` of the 2019-09 document into ``T``, whose ``$recursiveRef`` names the anchored ``Tree``;
+    with the option the anchor is found under the ``$defs`` its document's version holds them in, so ``children`` are
+    trees. Without it ``children`` are ``Any``, as the draft-07 document's paths miss the anchor.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "recursive_anchor_external_defs" / "root.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *extra_args,
+            *("--schema-version-mode", "strict", "--disable-timestamp", "--formatters", "builtin"),
+        ],
+        force_exec_validation=True,
+    )
+    if extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="read_schema_version_per_document_external_recursive_anchor",
+            model_name="Root",
+            valid_json=json.dumps({"t": {"value": 1, "children": [{"value": 2}]}}),
+            invalid_json=json.dumps({"t": {"value": 1, "children": [{"value": "x"}]}}),
+            expected_error_type="int_parsing",
+        )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
     [pytest.param([], id="overlaid"), pytest.param(["--ignore-ref-siblings-by-schema-version"], id="ignored")],
 )
 def test_main_jsonschema_ignore_ref_siblings_by_schema_version(output_file: Path, extra_args: list[str]) -> None:
@@ -39441,4 +39480,42 @@ def test_main_jsonschema_ignore_ref_siblings_by_schema_version(output_file: Path
             expected_error_type="string_type",
             expected_attribute_path=("tags", "root"),
             expected_attribute_value=["a", "a"],
+        )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="overlaid"), pytest.param(["--ignore-ref-siblings-by-schema-version"], id="ignored")],
+)
+def test_main_jsonschema_ignore_ref_siblings_by_schema_version_identifier_and_import(
+    output_file: Path, extra_args: list[str]
+) -> None:
+    """Leave out an ``$id`` and an ``x-python-import`` beside a ``$ref`` of a draft-07 document under the option.
+
+    Draft 7 ignores every keyword beside a ``$ref``. Without the option the ``$id`` beside the ``$ref`` of ``name``
+    rebases it onto a resource that holds no ``Name``, which leaves ``name`` an ``Any`` model with a warning, and the
+    ``x-python-import`` beside the ``$ref`` of ``Address`` types ``address`` as ``IPv4Address``; with it both are read
+    as their targets, the three-character string ``Name``.
+    """
+    with warnings.catch_warnings(record=True) as records:
+        warnings.simplefilter("always", DanglingRefWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "ref_siblings_ignored_identifier_draft07.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(sorted({f"{record.message}\n" for record in records if record.category is DanglingRefWarning})),
+        name="warnings",
+    )
+    if extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="ignore_ref_siblings_by_schema_version_identifier_and_import",
+            model_name="Holder",
+            valid_json=json.dumps({"name": "abc", "address": "abc"}),
+            invalid_json=json.dumps({"address": "1.2.3.4"}),
+            expected_error_type="string_too_long",
         )

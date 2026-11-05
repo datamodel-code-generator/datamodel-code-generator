@@ -447,8 +447,10 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         document sets no property-count rule for a
                         minProperties beside an allOf $ref. Without it the
                         version of the document parsed first applies to every
-                        document, as in 0.88.0. No effect with an explicit
-                        --schema-version.
+                        document, as in 0.88.0. An explicit --schema-version
+                        gives every document its version; the schema
+                        validators then read an OpenAPI or AsyncAPI document
+                        by it only with the option, else as draft 7.
   --schema-version SCHEMA_VERSION
                         Schema version. Valid values depend on input type:
                         JsonSchema: auto, draft-04, draft-06, draft-07,

@@ -8,6 +8,7 @@ JSON pointer walk (``get_model_by_path``, ``split_json_pointer``, ``unescape_jso
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple
 
 from typing_extensions import Sentinel
@@ -82,34 +83,60 @@ def _constraint_values(obj: JsonSchemaObject, keys: Iterable[str], *, as_numbers
     }
 
 
-def _dump_parts_admit_null(parts: Sequence[Mapping[str, Any]]) -> bool:
-    """Return whether the dumped parts of an intersection admit null (site ``all-of-parts``); the last is its own."""
+def _dump_parts_admit_null(parts: Sequence[Mapping[str, Any]], *, own_last: bool = True) -> bool:
+    """Return whether the dumped parts of an intersection admit null (site ``all-of-parts``); the last is its own.
+
+    Without ``own_last`` none of them is the site's own: each part with a ``type`` must declare null.
+    """
     return bool(
         resolve_null_facts(
-            dump_null_sources(parts[-1]),
+            dump_null_sources(parts[-1] if own_last else {}),
             "all-of-parts",
             parts=[dump_null_sources(part) for part in parts if "type" in part],
         ).admits_null
     )
 
 
-def _intersect_dumps(
+def _dump_parts_without_own_admit_null(parts: Sequence[Mapping[str, Any]]) -> bool:
+    """Return ``_dump_parts_admit_null`` of parts none of which is the site's own."""
+    return _dump_parts_admit_null(parts, own_last=False)
+
+
+def _dump_enum_entries_skip_null(dump: Mapping[str, Any]) -> bool:
+    """Return whether the ``x-enum-*`` entries of a dumped schema leave out the null of its enum (site ``enum``)."""
+    return (
+        resolve_null_facts(
+            replace(
+                dump_null_sources(dump),
+                type_string=dump.get("type") == "string",
+                enum_null=None in (dump.get("enum") or ()),
+            ),
+            "enum",
+        ).rule
+        == "enum-null-as-nullable"
+    )
+
+
+def _intersect_dumps(  # noqa: PLR0913
     parts: Sequence[Mapping[str, Any]],
     row: dict[str, Any],
     *,
     ref_siblings_are_parts: bool = True,
     legacy_rows: Collection[str] = (),
     removes_enum_outside_type: bool = False,
+    own_last: bool = True,
 ) -> KeywordIntersection:
     """Return ``parser/_intersection.py:intersect_keywords`` of dumped schema objects, null by ``all-of-parts``.
 
     ``removes_enum_outside_type`` removes the ``enum`` values the merged ``type`` rejects (``_json_value_admitted``).
+    Without ``own_last`` no part is the site's own keywords, whose declared null the null rule would take.
     """
     return intersect_keywords(
         parts,
         row,
         extras_key=JsonSchemaObject.__extra_key__,
-        parts_admit_null=_dump_parts_admit_null,
+        parts_admit_null=_dump_parts_admit_null if own_last else _dump_parts_without_own_admit_null,
+        enum_entries_skip_null=_dump_enum_entries_skip_null,
         ref_siblings_are_parts=ref_siblings_are_parts,
         legacy_rows=legacy_rows,
         admits_value=_json_value_admitted if removes_enum_outside_type else None,

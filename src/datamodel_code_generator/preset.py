@@ -1326,7 +1326,8 @@ def render_presets_markdown() -> str:
         ))
         for group in info.option_groups:
             options = ", ".join(f"`{option}`" for option in group.options)
-            lines.append(f"| {group.title} | {options} | {group.description} |")
+            notes = group.description.replace("|", r"\|")
+            lines.append(f"| {group.title} | {options} | {notes} |")
         lines.append("")
     return "\n".join(lines)
 

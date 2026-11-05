@@ -3217,6 +3217,7 @@ string is: at a property, an item, a map value, a root, the branches of a union 
           "x-python-type": "Sequence[str]"
         },
         "as_text": {"type": "array", "items": {"type": "integer"}, "maxLength": 2, "x-python-type": "str"},
+        "count": {"type": "integer", "format": "int64", "maxLength": 2},
         "short": {"$ref": "#/$defs/Short"}
       },
       "$defs": {
@@ -3285,6 +3286,7 @@ string is: at a property, an item, a map value, a root, the branches of a union 
             letters: list[Letter] | None = None
             letter_seq: Sequence[LetterSeqEnum] | None = None
             as_text: str | None = None
+            count: int | None = None
             short: Short | None = None
         ```
 
@@ -3348,6 +3350,7 @@ string is: at a property, an item, a map value, a root, the branches of a union 
             letters: Annotated[list[Letter] | None, Field(max_length=2)] = None
             letter_seq: Annotated[Sequence[LetterSeqEnum] | None, Field(max_length=2)] = None
             as_text: Annotated[str | None, Field(max_length=2)] = None
+            count: int | None = None
             short: Short | None = None
         ```
 

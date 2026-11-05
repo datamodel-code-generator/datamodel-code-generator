@@ -1775,6 +1775,10 @@ typed-dict	main/openapi/openapi_read_only_write_only_variant_graph_default.py	= 
 [test_main_openapi_read_schema_version_per_document]
 first-read	main/openapi/main_openapi/read_schema_version_per_document[first-read].py
 per-document	main/openapi/main_openapi/read_schema_version_per_document[per-document].py
+[test_main_openapi_read_schema_version_per_document_external_item_schema]
+first-read	main/openapi/main_openapi/read_schema_version_per_document_external_item_schema[first-read].py
+per-document	main/openapi/main_openapi/read_schema_version_per_document_external_item_schema[per-document].py
+per-document-api-scope	main/openapi/main_openapi/read_schema_version_per_document_external_item_schema[per-document-api-scope].py	= main/openapi/main_openapi/read_schema_version_per_document_external_item_schema[per-document].py
 [test_main_openapi_recursive_ref_discriminator]
 	main/openapi/recursive_ref_discriminator.py
 [test_main_openapi_recursive_ref_discriminator_pydantic_v2]

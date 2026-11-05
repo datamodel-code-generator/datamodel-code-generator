@@ -503,6 +503,8 @@ class FieldNameResolver:
     """Converts schema field names to valid Python identifiers."""
 
     FIELD_ASSIGNMENT_HELPER: ClassVar[str | None] = None
+    capitalise_numbered_enum_members: bool = False
+    """Set by ``__init__``; a resolver unpickled from 0.89.0, whose state lacks it, reads it off."""
 
     def __init__(  # noqa: PLR0913, PLR0917
         self,
@@ -904,6 +906,11 @@ class _FieldNameResolvers:
         self._resolved: dict[ModelType, FieldNameResolver] = {}
 
     def __getitem__(self, model_type: ModelType) -> FieldNameResolver:
+        """Return the resolver of a model type, built at its first use.
+
+        ``capitalise_numbered_enum_members`` is passed only when it is on, so a resolver class whose ``__init__`` takes
+        the arguments of 0.89.0 is built as before.
+        """
         if (resolved := self._resolved.get(model_type)) is not None:
             return resolved
         resolver_class = None
@@ -917,13 +924,14 @@ class _FieldNameResolvers:
             resolver_class = _default_field_name_resolver_class(model_type)
         is_enum = model_type is ModelType.ENUM
         options = self._options
-        resolver = resolver_class(
-            **options._replace(
-                capitalise_enum_members=options.capitalise_enum_members if is_enum else False,
-                capitalise_numbered_enum_members=options.capitalise_numbered_enum_members if is_enum else False,
-                use_subclass_enum=options.use_subclass_enum if is_enum else False,
-            )._asdict()
-        )
+        arguments = options._replace(
+            capitalise_enum_members=options.capitalise_enum_members if is_enum else False,
+            capitalise_numbered_enum_members=options.capitalise_numbered_enum_members if is_enum else False,
+            use_subclass_enum=options.use_subclass_enum if is_enum else False,
+        )._asdict()
+        if not arguments["capitalise_numbered_enum_members"]:
+            del arguments["capitalise_numbered_enum_members"]
+        resolver = resolver_class(**arguments)
         self._resolved[model_type] = resolver
         return resolver
 
@@ -1196,6 +1204,7 @@ class ModelResolver:  # noqa: PLR0904
         self.__dict__.setdefault("_model_name_keys", None)
         self.__dict__.setdefault("_reserved_names", {})
         self.__dict__.setdefault("model_name_record", None)
+        self.__dict__.setdefault("singularize_last_word_of_item_names", False)
         for name, value in slot_state.items():
             setattr(self, name, value)
 

@@ -40,4 +40,5 @@ class LengthKeywordsByType(BaseModel):
     letters: list[Literal['xx', 'yy']] | None = None
     letter_seq: Sequence[Literal['xx', 'yy']] | None = None
     as_text: str | None = None
+    count: int | None = None
     short: Short | None = None

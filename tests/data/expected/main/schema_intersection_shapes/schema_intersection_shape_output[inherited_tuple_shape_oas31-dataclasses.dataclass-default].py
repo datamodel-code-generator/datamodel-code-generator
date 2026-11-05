@@ -11,6 +11,7 @@ from typing import Any, TypeAlias
 class Parent:
     closed: list[str | int] | None = None
     open: list[Any] | None = None
+    contained: list[str | int] | None = None
 
 
 ClosedItem: TypeAlias = str
@@ -20,3 +21,4 @@ ClosedItem: TypeAlias = str
 class Child(Parent):
     closed: list[ClosedItem | int] | None = None
     open: list[Any] | None = None
+    contained: list[str | int] | None = None

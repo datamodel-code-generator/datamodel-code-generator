@@ -7,3 +7,4 @@ invalid {"named_and_patterned": {"abcdef": "x"}}: accepted
 invalid {"named_and_patterned": {"ABC": "x"}}: accepted
 invalid {"nested": [{"a": true}]}: accepted
 invalid {"either": {"c": "x"}}: accepted
+invalid {"single_branch": {"b": "x"}}: accepted

@@ -36,6 +36,11 @@
       "type": "object",
       "propertyNames": {"anyOf": [{"pattern": "^a"}, {"pattern": "^b"}]},
       "additionalProperties": {"type": "string"}
+    },
+    "single_branch": {
+      "type": "object",
+      "propertyNames": {"anyOf": [{"pattern": "^a"}]},
+      "additionalProperties": {"type": "string"}
     }
   }
 }

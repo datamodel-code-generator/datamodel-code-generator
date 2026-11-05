@@ -17313,6 +17313,41 @@ def test_main_openapi_read_schema_version_per_document(output_file: Path, extra_
         )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--openapi-scopes", "paths"], id="first-read"),
+        pytest.param(["--openapi-scopes", "paths", "--read-schema-version-per-document"], id="per-document"),
+        pytest.param(["--openapi-scopes", "api", "--read-schema-version-per-document"], id="per-document-api-scope"),
+    ],
+)
+def test_main_openapi_read_schema_version_per_document_external_item_schema(
+    output_file: Path, extra_args: list[str]
+) -> None:
+    """Read the ``itemSchema`` of a response that an OpenAPI 3.1 document takes from a 3.2 document with the option.
+
+    ``itemSchema`` is an OpenAPI 3.2 keyword; with the option the media type object is read by the version of the
+    document that holds it, so ``/pets`` gets a list of ``PetsGetResponseItem``, also in the api scope. Without it the
+    3.1 document's version reads it, which has no ``itemSchema``, and the response has no model.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "item_schema_external_32" / "root.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    if "--read-schema-version-per-document" in extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="read_schema_version_per_document_external_item_schema",
+            model_name="PetsGetResponse",
+            valid_json=json.dumps([{"name": "x"}]),
+            invalid_json=json.dumps([{"name": 1}]),
+            expected_error_type="string_type",
+        )
+
+
 @pytest.mark.cli_doc(
     options=["--ignore-ref-siblings-by-schema-version"],
     option_description="""Read a `$ref` as its target alone where the schema version ignores the keywords beside it.

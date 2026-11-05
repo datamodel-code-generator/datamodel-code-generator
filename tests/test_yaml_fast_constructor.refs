@@ -17,6 +17,8 @@ asyncapi/non-object-components.yaml	yaml_fast_constructor/parity.txt
 asyncapi/non_finite_embedded_schemas.yaml	yaml_fast_constructor/parity.txt
 asyncapi/protobuf-local-import.yaml	yaml_fast_constructor/parity.txt
 asyncapi/protobuf-schema-format.yaml	yaml_fast_constructor/parity.txt
+asyncapi/ref_siblings_external_v2/api.yaml	yaml_fast_constructor/parity.txt
+asyncapi/ref_siblings_external_v2/notes.yaml	yaml_fast_constructor/parity.txt
 asyncapi/root-message-ref.yaml	yaml_fast_constructor/parity.txt
 asyncapi/schema-format-v2.yaml	yaml_fast_constructor/parity.txt
 asyncapi/schema_location.yaml	yaml_fast_constructor/parity.txt
@@ -330,6 +332,7 @@ openapi/external_ref_mapping_all_of_modules/a.yaml	yaml_fast_constructor/parity.
 openapi/external_ref_mapping_all_of_modules/b.yaml	yaml_fast_constructor/parity.txt
 openapi/external_ref_mapping_all_of_modules/c.yaml	yaml_fast_constructor/parity.txt
 openapi/external_ref_mapping_all_of_modules/d.yaml	yaml_fast_constructor/parity.txt
+openapi/external_ref_mapping_all_of_union/api.yaml	yaml_fast_constructor/parity.txt
 openapi/external_ref_with_transitive_local_ref/openapi.yaml	yaml_fast_constructor/parity.txt
 openapi/external_ref_with_transitive_local_ref/schemas/feedback.yaml	yaml_fast_constructor/parity.txt
 openapi/external_relative_ref/model_a/types.openapi.yaml	yaml_fast_constructor/parity.txt
@@ -370,6 +373,8 @@ openapi/invalid_dotted_relative_import.yaml	yaml_fast_constructor/parity.txt
 openapi/invalid_dotted_schema_name.yaml	yaml_fast_constructor/parity.txt
 openapi/item_schema.yaml	yaml_fast_constructor/parity.txt
 openapi/item_schema_31.yaml	yaml_fast_constructor/parity.txt
+openapi/item_schema_external_32/responses.yaml	yaml_fast_constructor/parity.txt
+openapi/item_schema_external_32/root.yaml	yaml_fast_constructor/parity.txt
 openapi/item_schema_null_schema.yaml	yaml_fast_constructor/parity.txt
 openapi/json_pointer.yaml	yaml_fast_constructor/parity.txt
 openapi/json_pointer_boolean_key.yaml	yaml_fast_constructor/parity.txt
@@ -462,6 +467,7 @@ openapi/pattern_lookaround.yaml	yaml_fast_constructor/parity.txt
 openapi/pointer_into_integer_keyed_document/openapi.yaml	yaml_fast_constructor/parity.txt
 openapi/pointer_into_integer_keyed_document/plain.yaml	yaml_fast_constructor/parity.txt
 openapi/pointer_into_integer_keyed_document/shared.yaml	yaml_fast_constructor/parity.txt
+openapi/python_import_all_of/alias.yaml	yaml_fast_constructor/parity.txt
 openapi/python_import_all_of/api.yaml	yaml_fast_constructor/parity.txt
 openapi/query_parameters.yaml	yaml_fast_constructor/parity.txt
 openapi/query_parameters_with_config.yaml	yaml_fast_constructor/parity.txt

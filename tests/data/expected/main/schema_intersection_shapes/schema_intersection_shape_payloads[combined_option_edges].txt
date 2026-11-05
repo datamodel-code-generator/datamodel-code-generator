@@ -1,0 +1,276 @@
+pydantic_v2.BaseModel default false_branch {"q": "s", "x": 1} accepted
+pydantic_v2.BaseModel default false_branch null rejected
+pydantic_v2.BaseModel default false_branch {"x": "s"} rejected
+pydantic_v2.BaseModel default shared null rejected
+pydantic_v2.BaseModel default shared {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel default shared {"x": "s"} rejected
+pydantic_v2.BaseModel default shared {"y": 1} rejected
+pydantic_v2.BaseModel default int_branches 7 accepted
+pydantic_v2.BaseModel default int_branches 0 accepted
+pydantic_v2.BaseModel default int_branches 3 rejected
+pydantic_v2.BaseModel default int_branches 7.5 accepted
+pydantic_v2.BaseModel default named "a" accepted
+pydantic_v2.BaseModel default named "b" accepted
+pydantic_v2.BaseModel default named 1 accepted
+pydantic_v2.BaseModel default named "c" rejected
+pydantic_v2.BaseModel default ordered {"b": "x"} accepted
+pydantic_v2.BaseModel default ordered {"b": 1} accepted
+pydantic_v2.BaseModel default ordered {"a": "s"} rejected
+pydantic_v2.BaseModel default sibling_child {"extra": 3, "x": 1} accepted
+pydantic_v2.BaseModel default sibling_child {"extra": 7} accepted
+pydantic_v2.BaseModel default sibling_child {"extra": 0} accepted
+pydantic_v2.BaseModel default sibling_child {"extra": "s"} accepted
+pydantic_v2.BaseModel default sibling_child {"x": "s"} rejected
+pydantic_v2.dataclass default false_branch {"q": "s", "x": 1} accepted
+pydantic_v2.dataclass default false_branch null rejected
+pydantic_v2.dataclass default false_branch {"x": "s"} rejected
+pydantic_v2.dataclass default shared null rejected
+pydantic_v2.dataclass default shared {"y": "s", "x": 1} accepted
+pydantic_v2.dataclass default shared {"x": "s"} rejected
+pydantic_v2.dataclass default shared {"y": 1} rejected
+pydantic_v2.dataclass default int_branches 7 accepted
+pydantic_v2.dataclass default int_branches 0 accepted
+pydantic_v2.dataclass default int_branches 3 rejected
+pydantic_v2.dataclass default int_branches 7.5 accepted
+pydantic_v2.dataclass default named "a" accepted
+pydantic_v2.dataclass default named "b" accepted
+pydantic_v2.dataclass default named 1 accepted
+pydantic_v2.dataclass default named "c" rejected
+pydantic_v2.dataclass default ordered {"b": "x"} accepted
+pydantic_v2.dataclass default ordered {"b": 1} accepted
+pydantic_v2.dataclass default ordered {"a": "s"} rejected
+pydantic_v2.dataclass default sibling_child {"extra": 3, "x": 1} accepted
+pydantic_v2.dataclass default sibling_child {"extra": 7} accepted
+pydantic_v2.dataclass default sibling_child {"extra": 0} accepted
+pydantic_v2.dataclass default sibling_child {"extra": "s"} accepted
+pydantic_v2.dataclass default sibling_child {"x": "s"} rejected
+msgspec.Struct default false_branch {"q": "s", "x": 1} import error
+msgspec.Struct default false_branch null import error
+msgspec.Struct default false_branch {"x": "s"} import error
+msgspec.Struct default shared null import error
+msgspec.Struct default shared {"y": "s", "x": 1} import error
+msgspec.Struct default shared {"x": "s"} import error
+msgspec.Struct default shared {"y": 1} import error
+msgspec.Struct default int_branches 7 import error
+msgspec.Struct default int_branches 0 import error
+msgspec.Struct default int_branches 3 import error
+msgspec.Struct default int_branches 7.5 import error
+msgspec.Struct default named "a" import error
+msgspec.Struct default named "b" import error
+msgspec.Struct default named 1 import error
+msgspec.Struct default named "c" import error
+msgspec.Struct default ordered {"b": "x"} import error
+msgspec.Struct default ordered {"b": 1} import error
+msgspec.Struct default ordered {"a": "s"} import error
+msgspec.Struct default sibling_child {"extra": 3, "x": 1} import error
+msgspec.Struct default sibling_child {"extra": 7} import error
+msgspec.Struct default sibling_child {"extra": 0} import error
+msgspec.Struct default sibling_child {"extra": "s"} import error
+msgspec.Struct default sibling_child {"x": "s"} import error
+pydantic_v2.BaseModel --field-constraints false_branch {"q": "s", "x": 1} accepted
+pydantic_v2.BaseModel --field-constraints false_branch null rejected
+pydantic_v2.BaseModel --field-constraints false_branch {"x": "s"} rejected
+pydantic_v2.BaseModel --field-constraints shared null rejected
+pydantic_v2.BaseModel --field-constraints shared {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --field-constraints shared {"x": "s"} rejected
+pydantic_v2.BaseModel --field-constraints shared {"y": 1} rejected
+pydantic_v2.BaseModel --field-constraints int_branches 7 accepted
+pydantic_v2.BaseModel --field-constraints int_branches 0 accepted
+pydantic_v2.BaseModel --field-constraints int_branches 3 rejected
+pydantic_v2.BaseModel --field-constraints int_branches 7.5 accepted
+pydantic_v2.BaseModel --field-constraints named "a" accepted
+pydantic_v2.BaseModel --field-constraints named "b" accepted
+pydantic_v2.BaseModel --field-constraints named 1 accepted
+pydantic_v2.BaseModel --field-constraints named "c" rejected
+pydantic_v2.BaseModel --field-constraints ordered {"b": "x"} accepted
+pydantic_v2.BaseModel --field-constraints ordered {"b": 1} accepted
+pydantic_v2.BaseModel --field-constraints ordered {"a": "s"} rejected
+pydantic_v2.BaseModel --field-constraints sibling_child {"extra": 3, "x": 1} accepted
+pydantic_v2.BaseModel --field-constraints sibling_child {"extra": 7} accepted
+pydantic_v2.BaseModel --field-constraints sibling_child {"extra": 0} accepted
+pydantic_v2.BaseModel --field-constraints sibling_child {"extra": "s"} accepted
+pydantic_v2.BaseModel --field-constraints sibling_child {"x": "s"} rejected
+pydantic_v2.BaseModel --use-annotated false_branch {"q": "s", "x": 1} accepted
+pydantic_v2.BaseModel --use-annotated false_branch null rejected
+pydantic_v2.BaseModel --use-annotated false_branch {"x": "s"} rejected
+pydantic_v2.BaseModel --use-annotated shared null rejected
+pydantic_v2.BaseModel --use-annotated shared {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --use-annotated shared {"x": "s"} rejected
+pydantic_v2.BaseModel --use-annotated shared {"y": 1} rejected
+pydantic_v2.BaseModel --use-annotated int_branches 7 accepted
+pydantic_v2.BaseModel --use-annotated int_branches 0 accepted
+pydantic_v2.BaseModel --use-annotated int_branches 3 rejected
+pydantic_v2.BaseModel --use-annotated int_branches 7.5 accepted
+pydantic_v2.BaseModel --use-annotated named "a" accepted
+pydantic_v2.BaseModel --use-annotated named "b" accepted
+pydantic_v2.BaseModel --use-annotated named 1 accepted
+pydantic_v2.BaseModel --use-annotated named "c" rejected
+pydantic_v2.BaseModel --use-annotated ordered {"b": "x"} accepted
+pydantic_v2.BaseModel --use-annotated ordered {"b": 1} accepted
+pydantic_v2.BaseModel --use-annotated ordered {"a": "s"} rejected
+pydantic_v2.BaseModel --use-annotated sibling_child {"extra": 3, "x": 1} accepted
+pydantic_v2.BaseModel --use-annotated sibling_child {"extra": 7} accepted
+pydantic_v2.BaseModel --use-annotated sibling_child {"extra": 0} accepted
+pydantic_v2.BaseModel --use-annotated sibling_child {"extra": "s"} accepted
+pydantic_v2.BaseModel --use-annotated sibling_child {"x": "s"} rejected
+pydantic_v2.BaseModel --collapse-root-models false_branch {"q": "s", "x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models false_branch null rejected
+pydantic_v2.BaseModel --collapse-root-models false_branch {"x": "s"} rejected
+pydantic_v2.BaseModel --collapse-root-models shared null rejected
+pydantic_v2.BaseModel --collapse-root-models shared {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models shared {"x": "s"} rejected
+pydantic_v2.BaseModel --collapse-root-models shared {"y": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models int_branches 7 accepted
+pydantic_v2.BaseModel --collapse-root-models int_branches 0 accepted
+pydantic_v2.BaseModel --collapse-root-models int_branches 3 rejected
+pydantic_v2.BaseModel --collapse-root-models int_branches 7.5 accepted
+pydantic_v2.BaseModel --collapse-root-models named "a" accepted
+pydantic_v2.BaseModel --collapse-root-models named "b" accepted
+pydantic_v2.BaseModel --collapse-root-models named 1 accepted
+pydantic_v2.BaseModel --collapse-root-models named "c" rejected
+pydantic_v2.BaseModel --collapse-root-models ordered {"b": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models ordered {"b": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models ordered {"a": "s"} rejected
+pydantic_v2.BaseModel --collapse-root-models sibling_child {"extra": 3, "x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models sibling_child {"extra": 7} accepted
+pydantic_v2.BaseModel --collapse-root-models sibling_child {"extra": 0} accepted
+pydantic_v2.BaseModel --collapse-root-models sibling_child {"extra": "s"} accepted
+pydantic_v2.BaseModel --collapse-root-models sibling_child {"x": "s"} rejected
+msgspec.Struct --collapse-root-models false_branch {"q": "s", "x": 1} import error
+msgspec.Struct --collapse-root-models false_branch null import error
+msgspec.Struct --collapse-root-models false_branch {"x": "s"} import error
+msgspec.Struct --collapse-root-models shared null import error
+msgspec.Struct --collapse-root-models shared {"y": "s", "x": 1} import error
+msgspec.Struct --collapse-root-models shared {"x": "s"} import error
+msgspec.Struct --collapse-root-models shared {"y": 1} import error
+msgspec.Struct --collapse-root-models int_branches 7 import error
+msgspec.Struct --collapse-root-models int_branches 0 import error
+msgspec.Struct --collapse-root-models int_branches 3 import error
+msgspec.Struct --collapse-root-models int_branches 7.5 import error
+msgspec.Struct --collapse-root-models named "a" import error
+msgspec.Struct --collapse-root-models named "b" import error
+msgspec.Struct --collapse-root-models named 1 import error
+msgspec.Struct --collapse-root-models named "c" import error
+msgspec.Struct --collapse-root-models ordered {"b": "x"} import error
+msgspec.Struct --collapse-root-models ordered {"b": 1} import error
+msgspec.Struct --collapse-root-models ordered {"a": "s"} import error
+msgspec.Struct --collapse-root-models sibling_child {"extra": 3, "x": 1} import error
+msgspec.Struct --collapse-root-models sibling_child {"extra": 7} import error
+msgspec.Struct --collapse-root-models sibling_child {"extra": 0} import error
+msgspec.Struct --collapse-root-models sibling_child {"extra": "s"} import error
+msgspec.Struct --collapse-root-models sibling_child {"x": "s"} import error
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs false_branch {"q": "s", "x": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs false_branch null rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs false_branch {"x": "s"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs shared null rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs shared {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs shared {"x": "s"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs shared {"y": 1} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs int_branches 7 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs int_branches 0 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs int_branches 3 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs int_branches 7.5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs named "a" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs named "b" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs named 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs named "c" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ordered {"b": "x"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ordered {"b": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ordered {"a": "s"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs sibling_child {"extra": 3, "x": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs sibling_child {"extra": 7} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs sibling_child {"extra": 0} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs sibling_child {"extra": "s"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs sibling_child {"x": "s"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs false_branch {"q": "s", "x": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs false_branch null rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs false_branch {"x": "s"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs shared null rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs shared {"y": "s", "x": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs shared {"x": "s"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs shared {"y": 1} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs int_branches 7 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs int_branches 0 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs int_branches 3 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs int_branches 7.5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs named "a" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs named "b" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs named 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs named "c" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ordered {"b": "x"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ordered {"b": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ordered {"a": "s"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs sibling_child {"extra": 3, "x": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs sibling_child {"extra": 7} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs sibling_child {"extra": 0} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs sibling_child {"extra": "s"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs sibling_child {"x": "s"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs false_branch {"q": "s", "x": 1} import error
+msgspec.Struct --use-site-models-for-constrained-refs false_branch null import error
+msgspec.Struct --use-site-models-for-constrained-refs false_branch {"x": "s"} import error
+msgspec.Struct --use-site-models-for-constrained-refs shared null import error
+msgspec.Struct --use-site-models-for-constrained-refs shared {"y": "s", "x": 1} import error
+msgspec.Struct --use-site-models-for-constrained-refs shared {"x": "s"} import error
+msgspec.Struct --use-site-models-for-constrained-refs shared {"y": 1} import error
+msgspec.Struct --use-site-models-for-constrained-refs int_branches 7 import error
+msgspec.Struct --use-site-models-for-constrained-refs int_branches 0 import error
+msgspec.Struct --use-site-models-for-constrained-refs int_branches 3 import error
+msgspec.Struct --use-site-models-for-constrained-refs int_branches 7.5 import error
+msgspec.Struct --use-site-models-for-constrained-refs named "a" import error
+msgspec.Struct --use-site-models-for-constrained-refs named "b" import error
+msgspec.Struct --use-site-models-for-constrained-refs named 1 import error
+msgspec.Struct --use-site-models-for-constrained-refs named "c" import error
+msgspec.Struct --use-site-models-for-constrained-refs ordered {"b": "x"} import error
+msgspec.Struct --use-site-models-for-constrained-refs ordered {"b": 1} import error
+msgspec.Struct --use-site-models-for-constrained-refs ordered {"a": "s"} import error
+msgspec.Struct --use-site-models-for-constrained-refs sibling_child {"extra": 3, "x": 1} import error
+msgspec.Struct --use-site-models-for-constrained-refs sibling_child {"extra": 7} import error
+msgspec.Struct --use-site-models-for-constrained-refs sibling_child {"extra": 0} import error
+msgspec.Struct --use-site-models-for-constrained-refs sibling_child {"extra": "s"} import error
+msgspec.Struct --use-site-models-for-constrained-refs sibling_child {"x": "s"} import error
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs false_branch {"q": "s", "x": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs false_branch null rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs false_branch {"x": "s"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs shared null rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs shared {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs shared {"x": "s"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs shared {"y": 1} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs int_branches 7 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs int_branches 0 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs int_branches 3 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs int_branches 7.5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs named "a" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs named "b" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs named 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs named "c" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ordered {"b": "x"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ordered {"b": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ordered {"a": "s"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs sibling_child {"extra": 3, "x": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs sibling_child {"extra": 7} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs sibling_child {"extra": 0} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs sibling_child {"extra": "s"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs sibling_child {"x": "s"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs false_branch {"q": "s", "x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs false_branch null rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs false_branch {"x": "s"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs shared null rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs shared {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs shared {"x": "s"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs shared {"y": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs int_branches 7 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs int_branches 0 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs int_branches 3 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs int_branches 7.5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs named "a" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs named "b" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs named 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs named "c" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ordered {"b": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ordered {"b": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ordered {"a": "s"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs sibling_child {"extra": 3, "x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs sibling_child {"extra": 7} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs sibling_child {"extra": 0} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs sibling_child {"extra": "s"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs sibling_child {"x": "s"} rejected
