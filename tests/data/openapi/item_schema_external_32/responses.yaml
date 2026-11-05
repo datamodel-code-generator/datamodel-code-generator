@@ -1,0 +1,16 @@
+openapi: 3.2.0
+info:
+  title: Responses
+  version: "1"
+paths: {}
+components:
+  responses:
+    PetLines:
+      description: one pet per line
+      content:
+        application/jsonl:
+          itemSchema:
+            type: object
+            properties:
+              name:
+                type: string

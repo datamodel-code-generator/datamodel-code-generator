@@ -1,0 +1,1 @@
+{"title": "Deep", "type": "object", "properties": {"message": {"type": "string"}, "note": {"$ref": "Warn/Deep.json"}}}

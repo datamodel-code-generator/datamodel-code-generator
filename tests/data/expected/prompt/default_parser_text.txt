@@ -18,6 +18,8 @@
 - `--input-file-type`: Specify the input file type for code generation.
 - `--input-model`: Import a Python type or dict schema from a module or Python file.
 - `--input-model-ref-strategy`: Strategy for referenced types when using --input-model.
+- `--no-ignore-ref-siblings-by-schema-version`
+- `--no-read-schema-version-per-document`
 - `--output`: Specify the destination path for generated Python code.
 - `--preset`: Apply an immutable built-in option preset.
 - `--read-schema-version-per-document`: Read each document by the schema version it declares.
@@ -37,12 +39,27 @@
 - `--intersect-allof-keywords`: Combine the keywords of every part of an `allOf`, a `$ref` with siblings or an o...
 - `--intersect-combined-schema-keywords`: Combine the keywords beside an `anyOf` or `oneOf` with each branch, as...
 - `--keep-enum-member-values`: Give an enum class a value base only when it keeps every member value.
+- `--no-filter-literal-values`
+- `--no-intersect-allof-keywords`
+- `--no-intersect-combined-schema-keywords`
+- `--no-keep-enum-member-values`
+- `--no-read-const-beside-enum`
+- `--no-read-unevaluated-properties`
 - `--no-use-annotated`
 - `--no-use-closed-typed-dict`: Disable PEP 728 TypedDict closed/extra_items generation.
+- `--no-use-decimal-in-field-forms`
+- `--no-use-encoded-str-for-constrained-base64`
+- `--no-use-object-type`
+- `--no-use-single-dict-for-object-maps`
+- `--no-use-single-value-enum-as-const`
 - `--no-use-specialized-enum`: Disable specialized Enum classes for Python 3.11+ code generation.
 - `--no-use-standard-collections`: Use typing.Dict/List instead of built-in dict/list for container types.
 - `--no-use-standard-primitive-types`
+- `--no-use-tuple-for-closed-arrays`
+- `--no-use-tuple-for-fixed-items`
+- `--no-use-typed-map-values-beside-other-types`
 - `--no-use-union-operator`: Use Union[X, Y] / Optional[X] instead of X | Y union operator.
+- `--no-use-unique-items-as-set`
 - `--output-date-class`: Specify date class type for date schema fields.
 - `--output-datetime-class`: Specify datetime class type for date-time schema fields.
 - `--read-const-beside-enum`: Read a `const` beside an `enum` as JSON Schema does.
@@ -92,8 +109,19 @@
 - `--infer-union-variant-names`: Name inline oneOf/anyOf branch models after the value of their tag field (`Pet`...
 - `--merge-shared-variant-tags`: Give a variant that discriminated unions tag differently every tag they give it.
 - `--no-alias`: Disable Field alias generation for non-Python-safe property names.
+- `--no-capitalize-numbered-enum-members`
 - `--no-deserialize-default-values`: Keep serialized schema defaults instead of deserializing selected types.
+- `--no-merge-shared-variant-tags`
+- `--no-omit-redundant-constraints`
+- `--no-read-length-keywords-by-type`
+- `--no-read-msgspec-union-bounds-exactly`
 - `--no-snake-case-field`
+- `--no-use-field-description`
+- `--no-use-field-description-example`
+- `--no-use-schema-description`
+- `--no-use-single-line-docstring`
+- `--no-use-site-models-for-constrained-refs`
+- `--no-use-title-as-name`
 - `--omit-redundant-constraints`: Do not write a constraint again beside a type that already enforces it.
 - `--original-field-name-delimiter`: Specify delimiter for original field names when using snake-case conversion.
 - `--read-length-keywords-by-type`: Read the string and the array keywords for their own kind only, as JSON Sche...
@@ -145,8 +173,25 @@
 - `--name-converted-payloads-by-message`: Name a converted payload that names no type of its own after its message.
 - `--naming-strategy`: Choose how models are named and how duplicate model names are told apart.
 - `--no-allow-population-by-field-name`
+- `--no-collapse-reuse-models`
 - `--no-collapse-root-models`
+- `--no-collapse-shared-parent-wrappers`
+- `--no-keep-field-defaults-off-branch-roots`
+- `--no-keep-reference-null-on-merged-models`
+- `--no-name-converted-payloads-by-message`
+- `--no-omit-redundant-reference-null`
+- `--no-pin-aliases-with-alias-generator`
+- `--no-read-nullable-beside-type-list`
+- `--no-reuse-model`
+- `--no-singularize-last-word-of-item-names`
+- `--no-strict-nullable`
+- `--no-tag-msgspec-by-payload-name`
+- `--no-use-default-kwarg`
+- `--no-use-duplicate-name-suffix-for-every-collision`
 - `--no-use-frozen-field`
+- `--no-use-msgspec-meta-for-map-keys`
+- `--no-use-serialize-as-any-for-every-subclass`
+- `--no-use-subclass-enum`
 - `--omit-redundant-reference-null`: Do not write None again at a reference to a model that holds null itself.
 - `--order-constructor-fields-by`: Order constructor fields by final names or by written defaults.
 - `--output-model-type`: Generate models from GraphQL with different output model types.
@@ -170,11 +215,13 @@
 - `--use-frozen-field`: Generate frozen (immutable) field definitions for readOnly properties.
 - `--use-generic-base-class`: Generate a shared base class with model configuration to avoid repetition (DRY).
 - `--use-missing-sentinel`: Use Pydantic's MISSING sentinel for unset optional BaseModel or dataclass fields.
+- `--use-msgspec-meta-for-map-keys`: Check the keys of a msgspec map whose keys propertyNames or patternProperti...
 - `--use-msgspec-nullable-enum-alias`: Write a msgspec.Struct enum that lists null as an Enum and a nullable alias.
 - `--use-msgspec-tagged-unions`: Write a msgspec.Struct discriminated union as tagged structs as a whole.
 - `--use-one-literal-as-default`: Use single literal value as default when enum has only one option.
 - `--use-root-model-sequence-interface`: Make non-null sequence-like Pydantic v2 RootModel classes implement col...
 - `--use-serialize-as-any`: Wrap fields with subtypes in Pydantic's SerializeAsAny.
+- `--use-serialize-as-any-for-every-subclass`: Wrap a field in SerializeAsAny when any subclass of its model add...
 - `--use-subclass-enum`: Generate typed Enum subclasses for enums with specific field types.
 
 ### Template Customization
@@ -195,10 +242,14 @@
 - `--extra-template-data`: Pass custom template variables via inline JSON or a JSON file path.
 - `--formatters`: Specify code formatters to apply to generated output.
 - `--generate-schema-validators`: Generate experimental Pydantic v2 model validators for JSON Schema runtime rules.
+- `--no-check-pattern-maps-strictly`
+- `--no-disable-timestamp`
 - `--no-formatters`: Select no formatter for the generated output.
+- `--no-rename-submodules-hidden-by-classes`
 - `--no-strict-dotted-module-names`
 - `--no-treat-dot-as-module`: Keep dots in schema names as underscores for flat output.
 - `--no-use-type-checking-imports`: Keep generated model imports available at runtime when using Ruff fixes.
+- `--rename-submodules-hidden-by-classes`: Rename a submodule named like a class of its package.
 - `--schema-validator-base-class-name`: Set the generated shared Pydantic v2 schema runtime validator base class...
 - `--schema-validator-type`: Select the schema-derived runtime validator backend.
 - `--strict-dotted-module-names`: Require canonical Python identifiers when inferring dotted module paths.
@@ -212,6 +263,8 @@
 - `--dedupe-request-response-variants`: Decide Request/Response variants from the schema graph and build each in...
 - `--include-path-parameters`: Include OpenAPI path parameters in generated parameter models.
 - `--keep-first-character-of-path-keys`: Strip only a leading slash from a paths key when naming its operation m...
+- `--no-dedupe-request-response-variants`
+- `--no-keep-first-character-of-path-keys`
 - `--openapi-as-definitions`: Give OpenAPI paths bodies or ref components the models their definitions get.
 - `--openapi-include-info-version`: Emit OpenAPI info.version as a generated constant.
 - `--openapi-include-paths`: Filter OpenAPI paths to include in model generation.

@@ -10,7 +10,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 |-------|---------|-------------|
 | [Custom Templates](#custom-templates) | 3 | Custom templates and extra template data. |
 | [Generated Output](#generated-output) | 9 | Generated file headers and reproducible output. |
-| [Imports](#imports) | 4 | Generated imports and type-checking import behavior. |
+| [Imports](#imports) | 5 | Generated imports and type-checking import behavior. |
 | [Output Formatting](#output-formatting) | 6 | Formatter selection, quote style, and string wrapping. |
 
 ## Custom Templates {#custom-templates}
@@ -47,6 +47,7 @@ Generated imports and type-checking import behavior.
 |--------|-------------|
 | [`--additional-imports`](../template-customization.md#additional-imports) | Add custom imports to generated output files. |
 | [`--no-use-type-checking-imports`](../template-customization.md#no-use-type-checking-imports) | Keep generated model imports available at runtime when using Ruff fixes. |
+| [`--rename-submodules-hidden-by-classes`](../template-customization.md#rename-submodules-hidden-by-classes) | Rename a submodule named like a class of its package. |
 | [`--use-exact-imports`](../template-customization.md#use-exact-imports) | Import exact types instead of modules. |
 | [`--use-type-checking-imports`](../template-customization.md#use-type-checking-imports) | Allow Ruff to move typing-only imports into TYPE_CHECKING blocks. |
 

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "$defs": {
+    "P": {"properties": {"x": {"type": "integer"}}},
+    "F": false,
+    "Str": {"type": "string"},
+    "Base": {"type": "object", "properties": {"a": {"type": "string"}, "b": {"type": "string"}}},
+    "Shared": {"allOf": [{"$ref": "#/$defs/P"}]},
+    "NullOrObject": {"anyOf": [{"type": "object", "properties": {"y": {"type": "string"}}}, {"type": "null"}]},
+    "IntBranches": {
+      "type": "integer",
+      "anyOf": [{"type": ["number", "null"], "minimum": 5}, {"type": ["number", "null"], "maximum": 1}]
+    },
+    "Siblings": {"allOf": [{"$ref": "#/$defs/P", "properties": {"extra": {"type": "integer", "maximum": 5}}}]},
+    "SiblingChild": {"allOf": [{"$ref": "#/$defs/Siblings"}, {"type": "object", "properties": {"extra": {"minimum": 1}}}]}
+  },
+  "properties": {
+    "false_branch": {
+      "allOf": [
+        {
+          "anyOf": [{"$ref": "#/$defs/F"}, {"type": "object", "properties": {"q": {"type": "string"}}}]
+        },
+        {"$ref": "#/$defs/P"}
+      ]
+    },
+    "shared": {"allOf": [{"$ref": "#/$defs/NullOrObject"}, {"$ref": "#/$defs/Shared"}, {"allOf": [{"$ref": "#/$defs/Shared"}]}]},
+    "int_branches": {"$ref": "#/$defs/IntBranches"},
+    "named": {"$ref": "#/$defs/Str", "enum": ["a", null, 1, "b"], "x-enum-varnames": ["A", "ONE", "B"]},
+    "ordered": {"$ref": "#/$defs/Base", "properties": {"a": {"type": "integer"}, "b": {"enum": ["x", 1]}}},
+    "sibling_child": {"$ref": "#/$defs/SiblingChild"}
+  },
+  "required": ["false_branch", "shared"]
+}

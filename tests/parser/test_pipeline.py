@@ -89,6 +89,10 @@ COVERAGE_RUNS = (
         "--field-type-collision-strategy rename-type "
         """--base-class-map '{"Pet_1": "explicit_alias_base.NamespaceBase"}'"""
     ),
+    (
+        "--input tests/data/jsonschema/submodule_named_like_package_class.json --input-file-type jsonschema "
+        "--rename-submodules-hidden-by-classes"
+    ),
 )
 """Runs that reach the passes no golden run reaches, each under the condition it names."""
 

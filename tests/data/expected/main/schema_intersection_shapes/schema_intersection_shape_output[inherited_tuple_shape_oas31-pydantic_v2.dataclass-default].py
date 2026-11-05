@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any
 
-from pydantic import Field
+from pydantic import Field, constr
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
@@ -14,6 +14,7 @@ from typing_extensions import TypeAliasType
 class Parent:
     closed: list[str | int] | None = Field(None, max_length=2, min_length=2)
     open: list[Any] | None = Field(None, min_length=2)
+    contained: list[str | int] | None = Field(None, max_length=2, min_length=2)
 
 
 ClosedItem = TypeAliasType("ClosedItem", Annotated[str, Field(max_length=3)])
@@ -23,3 +24,6 @@ ClosedItem = TypeAliasType("ClosedItem", Annotated[str, Field(max_length=3)])
 class Child(Parent):
     closed: list[ClosedItem | int] | None = Field(None, max_length=2, min_length=2)
     open: list[Any] | None = Field(None, min_length=2)
+    contained: list[constr(max_length=3) | int] | None = Field(
+        None, max_length=2, min_length=2
+    )

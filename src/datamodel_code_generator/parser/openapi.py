@@ -870,15 +870,19 @@ class OpenAPIParser(JsonSchemaParser):
             raw_item_schema = cast("dict[str, YamlValue]", item_schema.model_dump(by_alias=True, exclude_none=True))
         return JsonSchemaObject.model_validate(_item_schema_array(raw_item_schema))
 
-    def _pick_media_schema(self, schema: _SchemaT | None, item_schema: _SchemaT | None) -> tuple[_SchemaT, bool] | None:
+    def _pick_media_schema(
+        self, schema: _SchemaT | None, item_schema: _SchemaT | None, location: SchemaLocation | None
+    ) -> tuple[_SchemaT, bool] | None:
         """Return the schema of a media type object, and whether it is its ``itemSchema``, from the two keys' values.
 
-        The schema is ``schema``, else the ``itemSchema`` of OpenAPI 3.2. A key set to null holds nothing, as the models
-        read it, so the ``itemSchema`` beside ``schema: null`` is read. A media type object with neither has none.
+        The schema is ``schema``, else the ``itemSchema`` of OpenAPI 3.2, as the version of the document at
+        ``location``, the media type object's, reads it (``_features_at``). A key set to null holds nothing, as the
+        models read it, so the ``itemSchema`` beside ``schema: null`` is read. A media type object with neither has
+        none.
         """
         if schema is not None:
             return schema, False
-        if item_schema is not None and self._features_at(None).media_item_schema:
+        if item_schema is not None and self._features_at(location).media_item_schema:
             return item_schema, True
         return None
 
@@ -887,10 +891,10 @@ class OpenAPIParser(JsonSchemaParser):
 
         The array that represents an ``itemSchema`` stands for the media type object that holds it.
         """
-        if (picked := self._pick_media_schema(media_obj.schema_, media_obj.itemSchema)) is None:
+        location = media_obj.schema_location
+        if (picked := self._pick_media_schema(media_obj.schema_, media_obj.itemSchema, location)) is None:
             return None
         schema, from_item_schema = picked
-        location = media_obj.schema_location
         if from_item_schema:
             return MediaSchemaSource(
                 _locate(self._array_schema_from_media_item_schema(schema), location), from_item_schema=True
@@ -905,13 +909,14 @@ class OpenAPIParser(JsonSchemaParser):
             return None
 
         raw_media_obj = cast("dict[str, RawSchema | None]", media_obj)
-        if (picked := self._pick_media_schema(raw_media_obj.get("schema"), raw_media_obj.get("itemSchema"))) is None:
+        location = self._raw_location(media_obj)
+        if (
+            picked := self._pick_media_schema(raw_media_obj.get("schema"), raw_media_obj.get("itemSchema"), location)
+        ) is None:
             return None
         schema, from_item_schema = picked
         if from_item_schema:
-            return RawMediaSchemaSource(
-                _located(_item_schema_array(schema), self._raw_location(media_obj)), from_item_schema=True
-            )
+            return RawMediaSchemaSource(_located(_item_schema_array(schema), location), from_item_schema=True)
         return RawMediaSchemaSource(schema)
 
     def _media_schema_path(self, path: list[str], *, from_item_schema: bool) -> list[str]:  # noqa: PLR6301

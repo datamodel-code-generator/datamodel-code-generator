@@ -24,12 +24,16 @@ mapping: ENUM PYDANTIC CLASS MSGSPEC
 resolver types: EnumFieldNameResolver PydanticFieldNameResolver FieldNameResolver MsgspecFieldNameResolver
 class field: legacy_3name
 pydantic field: schema_
+item class: Pet
+numbered enum member: a_1
 main slotted -> current
 state layout: private
 mapping: ENUM PYDANTIC CLASS MSGSPEC
 resolver types: EnumFieldNameResolver PydanticFieldNameResolver FieldNameResolver MsgspecFieldNameResolver
 class field: slotted_3name
 pydantic field: schema_
+item class: Pet
+numbered enum member: a_1
 slot marker: main-slot
 current -> main
 state layout: public

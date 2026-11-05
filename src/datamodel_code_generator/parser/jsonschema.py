@@ -109,6 +109,7 @@ from datamodel_code_generator._constraint_applicability import (
     length_keywords_by_type,
     literal_check,  # noqa: F401  # Preserve the established parser.jsonschema export.
     literal_enforces_every_keyword,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    other_kind_keywords,
     property_consumed_keywords,
     split_declared_keywords,  # noqa: F401  # Preserve the established parser.jsonschema export.
     undeclared_keywords_taken,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -344,6 +345,7 @@ from datamodel_code_generator.parser._schema_object import (
     _source_location,
     _type_null_sources,
     get_ref_type,
+    reads_ref_alone,
 )
 from datamodel_code_generator.parser._schema_reading import (
     _ARRAY_ITEMS_CONSTRAINT_FIELDS,
@@ -1184,12 +1186,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     @property
     def _document_schema_paths(self) -> list[tuple[str, list[str]]]:
-        """Return the schema paths of the document being parsed.
+        """Return the schema paths of the document being parsed (``_schema_paths_at``)."""
+        return self._schema_paths_at(None)
+
+    def _schema_paths_at(self, at: SchemaLocation | None) -> list[tuple[str, list[str]]]:
+        """Return the schema paths of the document a location is in, None: the document being parsed.
 
         They are those of its schema version under --read-schema-version-per-document, else ``schema_paths``, of the
         document parsed at the first read (row ``legacy-first-read-dialect``).
         """
-        if (dialect := self._dialect_at(None)) is None:
+        if (dialect := self._dialect_at(at)) is None:
             return self.schema_paths
         return self._schema_paths_of(dialect.features)
 
@@ -2083,15 +2089,22 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _get_constrained_data_type(self, obj: JsonSchemaObject, type_: str, *, field_constraints: bool) -> DataType:
         """Map one type of ``obj`` and its format, with the constraints ``obj`` writes beside it.
 
-        Under ``field_constraints`` the field writes the constraints, so the type takes none of them.
+        Under ``field_constraints`` the field writes the constraints, so the type takes none of them. Under
+        ``--read-length-keywords-by-type`` it takes no string or array keyword that ``type_`` does not hold
+        (``other_kind_keywords``), as the field forms leave them out, also where ``--type-mappings`` maps ``type_`` to
+        a string.
         """
         format_ = obj.format or "default"
         types = self._get_type_with_mappings(type_, format_)
+        by_type = length_keywords_by_type(self.data_type_manager.constraint_options)
         keyword_order = constrained_type_keyword_order(
             types.name,
             encoded_str=field_constraints and self.data_type_manager.encodes_constrained_base64,
-            by_type=length_keywords_by_type(self.data_type_manager.constraint_options),
+            by_type=by_type,
         )
+        if by_type:
+            other = other_kind_keywords(_value_keywords.declared_kinds(self, type_, obj.format), by_type=True)
+            keyword_order = tuple(keyword for keyword in keyword_order if keyword not in other)
         kwargs: dict[str, JsonSchemaDataTypeKwargValue] = {
             **_constraint_values(obj, keyword_order, as_numbers=True),
             **self._get_format_type_kwargs(type_, format_, types),
@@ -2914,7 +2927,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Enter the resolution context of the document that a resolved reference points into."""
         document = self._schema_resource_document(_ref_path_parts(file_part))
         path_parts = self._schema_resource_path_parts.get(document) or _ref_path_parts(file_part)
-        with self._schema_document_context(path_parts):
+        with _schema_documents.referenced_document_context(self, self._schema_document_context(path_parts)):
             raw = self._prepare_schema_resources(_schema_refs.ref_file_document(self, file_part), path_parts)
             with self.root_id_context(raw):
                 yield document, raw
@@ -3087,7 +3100,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         with (
             self.model_resolver.current_base_path_context(base_path),
             self.model_resolver.base_url_context(file_part or self.model_resolver.base_url),
-            self.model_resolver.current_root_context(root_path),
+            _schema_documents.referenced_document_context(self, self.model_resolver.current_root_context(root_path)),
         ):
             yield
 
@@ -3956,8 +3969,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         The row is their merge (``all_of_member_row`` without bounds), in which the branch's value of a keyword wins.
         Unless ``legacy-combined-branch-row`` is kept, the branch is the intersection of both over that row, keyword
-        by keyword, with a warning naming ``where`` for keywords without a common value. ``nullable`` is no part of
-        it: the row's value stays, so the union reads the null of a copied ``nullable`` as the null rule does (row
+        by keyword, with a warning naming ``where`` for keywords without a common value; neither is the site's own, so
+        a ``type`` keeps null only where each of them that has a ``type`` declares it. ``nullable`` is no part of it:
+        the row's value stays, so the union reads the null of a copied ``nullable`` as the null rule does (row
         ``combined-branch`` of ``parser/_null_facts.py``).
         """
         row = all_of_member_row(outer, branch, intersect_bounds=False)
@@ -3967,6 +3981,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             [_without_nullable(outer), _without_nullable(branch)],
             _without_nullable(row),
             removes_enum_outside_type="legacy-enum-outside-type-kept" not in self._legacy_intersection,
+            own_last=False,
         )
         self._warn_intersection(where, intersection, f"the keywords beside its {keyword} and its own keywords")
         return intersection.keywords | ({"nullable": row["nullable"]} if "nullable" in row else {})
@@ -5071,29 +5086,65 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return []
         return [self.data_type_manager.get_data_type(Types.null)]
 
-    def _all_of_part_admits_null(self, part: JsonSchemaObject | bool, seen: frozenset[str] = frozenset()) -> bool:  # noqa: FBT001
+    def _all_of_part_admits_null(self, part: JsonSchemaObject | bool) -> bool:  # noqa: FBT001
         """Return whether a part of an allOf admits null, the site itself included (site ``all-of-union``).
 
-        Its own keywords decide (``parser/_null_facts.py``), and so do the target of its ``$ref``, one branch each of
-        its ``anyOf`` and ``oneOf``, and each of its own ``allOf`` members, read the same way; a reference the walk has
-        passed admits none.
+        Its own keywords decide (``parser/_null_facts.py``; a ``const`` only where its version has the keyword, and the
+        keywords beside a ``$ref`` only where they are parts of it, ``_ref_siblings_are_parts_of``), and so do the
+        target of its ``$ref``, one branch each of its ``anyOf`` and ``oneOf``, and each of its own ``allOf`` members,
+        read the same way. A false schema, a reference the walk has passed and one ``--external-ref-mapping`` maps,
+        whose document the walk does not read, admit none. The walk reads each reference once, unless a reference it
+        had passed cut its answer short.
         """
-        if not isinstance(part, JsonSchemaObject):
-            return part
-        if part.ref and (
-            (path := self._ref_path(part.ref)) in seen
-            or not self._all_of_part_admits_null(self._load_ref_schema_object(part.ref), seen | {path})
-        ):
-            return False
-        return (
-            bool(self._null_facts(part, "all-of-union").admits_null)
-            and all(
-                any(self._all_of_part_admits_null(branch, seen) for branch in branches)
-                for branches in (part.anyOf, part.oneOf)
-                if branches
-            )
-            and all(self._all_of_part_admits_null(member, seen) for member in part.allOf)
-        )
+        known: dict[str, bool] = {}
+
+        def target_admits(ref: str, seen: frozenset[str]) -> tuple[bool, bool]:
+            """Return ``admits`` of the schema ``ref`` names, read once per walk unless a cut shortened its answer."""
+            if self._resolve_external_ref_mapping(ref) is not None:
+                return False, False
+            if (path := self._ref_path(ref)) in seen:
+                return False, True
+            if (answer := known.get(path)) is not None:
+                return answer, False
+            answer, cut = admits(self._load_ref_schema_object(ref), seen | {path})
+            if not cut:
+                known[path] = answer
+            return answer, cut
+
+        def first(parts: Iterable[JsonSchemaObject | bool], seen: frozenset[str], *, answer: bool) -> tuple[bool, bool]:
+            """Return whether one of ``parts`` gives ``answer``, read up to it, and whether a cut shortened a read."""
+            cut = False
+            for item in parts:
+                item_answer, item_cut = admits(item, seen)
+                cut = cut or item_cut
+                if item_answer is answer:
+                    return True, cut
+            return False, cut
+
+        def admits(part: JsonSchemaObject | bool, seen: frozenset[str]) -> tuple[bool, bool]:  # noqa: FBT001
+            """Return whether ``part`` admits null, and whether a reference the walk had passed cut the answer short."""
+            if not isinstance(part, JsonSchemaObject) or part.is_boolean_schema_false:
+                return part is True, False
+            cut = False
+            if part.ref:
+                answer, cut = target_admits(part.ref, seen)
+                if not answer or not self._ref_siblings_are_parts_of(part):
+                    return answer, cut
+            sources = _null_sources(part, "all-of-union", self._type_has_null)
+            if sources.const_set and not self._features_at(part).const_support:
+                sources = replace(sources, const_set=False, const_null=False)
+            if not resolve_null_facts(sources, "all-of-union", self._null_mode).admits_null:
+                return False, cut
+            for branches in (part.anyOf, part.oneOf):
+                if branches:
+                    found, branch_cut = first(branches, seen, answer=True)
+                    cut = cut or branch_cut
+                    if not found:
+                        return False, cut
+            rejected, member_cut = first(part.allOf, seen, answer=False)
+            return not rejected, cut or member_cut
+
+        return admits(part, frozenset())[0]
 
     def _parse_all_of_union_model(
         self,
@@ -7536,6 +7587,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._schema_resource_root_bases: dict[str, str] = registry.root_bases
         self._schema_resource_cache: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {}
         self._document_dialects: dict[str, DocumentDialect] = {}
+        self._referring_dialect: DocumentDialect | None = None
         self._has_embedded_schema_resources = False
         self._lenient_documents: dict[str, dict[str, Any]] = {}
         self._implicit_documents: set[str] = set()
@@ -7602,6 +7654,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         resolve through an embedded `$id` are rewritten copy-on-write, and the prepared document is indexed.
         """
         return _schema_documents.prepare_schema_resources(self, raw, path_parts)
+
+    def _record_document_dialect(self, raw: dict[str, Any], path_parts: list[str]) -> None:
+        """Record the schema version a loaded document is read by (L0), which the documents it loads take by default."""
+        _schema_documents.record_document_dialect(self, raw, self._schema_resource_document(path_parts))
 
     def _index_document(self, raw: dict[str, Any], path_parts: list[str]) -> dict[str, Any]:
         """Return a loaded document as a tree whose JSON objects the schema graph locates (L0).
@@ -7774,8 +7830,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         path: list[str],
         validated_obj: JsonSchemaObject | None = None,
     ) -> None:
-        """Parse a raw schema, reusing a validated object when available."""
-        if isinstance(raw, dict) and "x-python-import" in raw and not self._is_base_stand_in_path(path):
+        """Parse a raw schema, reusing a validated object when available.
+
+        A schema with ``x-python-import`` is the class it imports, unless --ignore-ref-siblings-by-schema-version reads
+        it as its ``$ref`` alone (``reads_ref_alone``).
+        """
+        if (
+            isinstance(raw, dict)
+            and "x-python-import" in raw
+            and not self._is_base_stand_in_path(path)
+            and not reads_ref_alone(raw, self._schema_validation_context)
+        ):
             self.model_resolver.add(path, name, class_name=True, loaded=True)
             self._python_import_values[self.model_resolver.join_path(tuple(path))] = raw["x-python-import"]
             return

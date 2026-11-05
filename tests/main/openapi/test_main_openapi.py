@@ -10516,6 +10516,41 @@ def test_main_openapi_serialize_as_any_pydantic_v2(output_file: Path) -> None:
     version.parse(pydantic.VERSION) < version.parse("2.0.0"),
     reason="Require Pydantic version 2.0.0 or later",
 )
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="released"),
+        pytest.param(["--use-serialize-as-any-for-every-subclass"], id="every-subclass"),
+        pytest.param(
+            ["--use-serialize-as-any-for-every-subclass", "--use-exact-imports", "--collapse-root-models"],
+            id="every-subclass-exact-collapsed",
+        ),
+    ],
+)
+def test_main_openapi_serialize_as_any_module_qualified(output_dir: Path, extra_args: list[str]) -> None:
+    """Wrap a field that names its model through its module in SerializeAsAny under the every-subclass option.
+
+    ``a.Holder.d`` names ``c.Base``, which ``c.Child`` extends, and ``b.Root`` holds a list of it. Without the option
+    ``d: c.Base`` and ``root: list[c.Base]`` are not wrapped, as the reference is written through its module (#5595),
+    and a ``Child`` serializes as a ``Base``; with it both are, as is the collapsed root under ``--use-exact-imports``.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "serialize_as_any_module_qualified.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--use-serialize-as-any"),
+            *extra_args,
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_package_module(output_dir, "a") as module:
+        child = importlib.import_module(f"{output_dir.name}.c").Child
+        holder = module.Holder(d=child(b="1", e="2"), r=[child(b="3", e="4")])
+        assert_output(json.dumps(holder.model_dump(mode="json"), sort_keys=True) + "\n", name="dump")
+
+
 def test_main_openapi_serialize_as_any_module_import_alias_pydantic_v2(output_dir: Path) -> None:
     """Test SerializeAsAny with modular output and dotted schema import aliases."""
     run_main_and_assert(
@@ -16935,11 +16970,13 @@ MERGED_VARIANT_TAGS_PAYLOAD: dict[str, dict[str, str]] = {
     option_description="""Give a variant that discriminated unions tag differently every tag they give it.
 
 A variant that several discriminated unions list has one tag field. Without the option it keeps the tags of the first
-union that tags it, so a union that tags it otherwise, by a mapping key or by the schema name, rejects every document
-that selects the variant, and a warning says so. With `--merge-shared-variant-tags` its tag field is a `Literal` of
-every tag the unions give it, so each union decodes the documents it selects the variant by; a union then also accepts
-the tags the other unions give the variant. A variant keeps the first union's tags where a union would then give two of
-its variants one tag, as crossing mappings do, and msgspec Structs, which take one tag, are unchanged.""",
+union that tags it, so a union that tags it otherwise, by a mapping key or by the schema name, rejects the documents
+that select the variant by a tag it does not keep, and a warning says so. With `--merge-shared-variant-tags` its tag
+field is a `Literal` of every tag the unions give it, so each union decodes the documents it selects the variant by; a
+union then also accepts the tags the other unions give the variant. A tag that the pattern of the tag field rejects is
+left out, as the schema rejects the documents it selects the variant by. A variant keeps the first union's tags where a
+union listing it, or nesting a union that lists it, would then read one of its tags on another variant, as crossing
+mappings do, and msgspec Structs, which take one tag, are unchanged.""",
     input_schema="openapi/discriminator_merged_variant_tags.yaml",
     cli_args=["--merge-shared-variant-tags"],
     golden_output="main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2-merged].py",
@@ -17015,6 +17052,190 @@ def test_main_openapi_merge_shared_variant_tags_msgspec(tmp_path: Path) -> None:
             extra_args=[*common, "--merge-shared-variant-tags"],
             expected_output=output_file.read_text(encoding="utf-8"),
         )
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"])
+def test_main_openapi_merge_shared_variant_tags_nested(output_file: Path, output_model_type: str) -> None:
+    """Keep a union discriminated that nests a union of variants whose tags ``--merge-shared-variant-tags`` merges.
+
+    ``DogOrBird`` tags ``Dog`` and ``Bird`` by their names and ``ByKey`` by the mapping keys, so each takes both tags.
+    ``Outer`` lists ``Cat`` beside ``DogOrBird``, and ``inline`` lists ``Cat`` beside an inline choice of ``Dog`` and
+    ``Bird``: both read every tag of a nested variant, which stay distinct, so they stay discriminated as without the
+    option.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "discriminator_merged_nested_variant_tags.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--merge-shared-variant-tags",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"merge_shared_variant_tags_nested_{output_model_type.replace('.', '_')}",
+        model_name="Holder",
+        valid_json=json.dumps({
+            "outer": {"kind": "dog", "bark": "woof"},
+            "byKey": {"kind": "Bird"},
+            "inline": {"kind": "bird", "wing": "left"},
+        }),
+        invalid_json=json.dumps({"outer": {"kind": "fox"}}),
+        expected_error_type="union_tag_invalid",
+    )
+
+
+MERGED_NESTED_CLASH_PAYLOAD = {
+    "outer": {"kind": "Cat"},
+    "byKey": {"kind": "bird"},
+    "inline": {"kind": "Dog"},
+    "top": {"kind": "Fox"},
+    "herd": {"kind": "hen"},
+    "pond": {"kind": "Duck"},
+    "coast": {"kind": "Seal"},
+    "pinniped": {"kind": "seal"},
+    "tank": {"kind": "kit"},
+    "stream": {"kind": "Trout"},
+}
+"""A document of each union of ``discriminator_merged_variant_tags_nested_clash.yaml`` that it selects a variant by."""
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2"),
+        pytest.param("pydantic_v2.dataclass", [], id="pydantic_v2_dataclass"),
+        pytest.param("pydantic_v2.BaseModel", ["--collapse-root-models"], id="pydantic_v2-collapse_root_models"),
+    ],
+)
+def test_main_openapi_merge_shared_variant_tags_nested_clash(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Read every union that nests a union listing a shared variant where ``--merge-shared-variant-tags`` merges tags.
+
+    ``ByKey`` maps ``Cat`` to ``Dog``, which ``Outer`` and ``inline`` hold through a nested union beside ``Cat``, so
+    ``Dog`` keeps ``Dog``, with the warning, and both stay discriminated as without the option (#6233), while ``Bird``
+    takes ``Bird`` and ``bird``. ``Herd`` maps ``Fox`` to ``Cow``, which ``Top`` holds two unions down beside ``Fox``,
+    and ``Farm`` maps ``Duck`` to ``Pig``, which ``Pond`` lists beside the nested ``Duck``: ``Cow`` and ``Pig`` keep
+    one union's tags, and ``Hen`` and ``Goose`` still take both of theirs. ``Coast`` and ``Tank`` have tags only
+    through the unions they nest, and give ``Seal`` and ``Trout`` other tags than ``Pinniped`` and ``Stream`` do, so
+    ``Seal`` and ``Trout`` take both.
+    """
+    with pytest.warns(
+        UserWarning, match=r"is a variant of discriminated unions that map 'kind' to different tags"
+    ) as records:
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator_merged_variant_tags_nested_clash.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                *("--output-model-type", output_model_type, "--merge-shared-variant-tags"),
+                *extra_args,
+                *("--disable-timestamp", "--formatters", "builtin"),
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in records if record.category is UserWarning), name="warnings"
+    )
+    module_name = f"merge_shared_variant_tags_nested_clash_{output_model_type.replace('.', '_')}"
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=module_name,
+        model_name="Holder",
+        valid_json=json.dumps(MERGED_NESTED_CLASH_PAYLOAD),
+        invalid_json=json.dumps({"outer": {"kind": "zzz"}}),
+        expected_error_type="union_tag_invalid",
+    )
+    for property_name in ("inline", "top", "pond", "coast", "tank", "stream"):
+        assert_generated_model_json_invalid(
+            output_file,
+            module_name=module_name,
+            model_name="Holder",
+            invalid_json=json.dumps({property_name: {"kind": "zzz"}}),
+            expected_error_type="union_tag_invalid",
+        )
+
+
+MERGED_VARIANT_TAG_LIMIT_PAYLOADS: dict[str, dict[str, list[dict[str, Any]]]] = {
+    "discriminator_merged_variant_tag_limits": {
+        "byKey": [{"kind": "cat"}, {"kind": "dog"}],
+        "byName": [{"kind": "Cat"}, {"kind": "cat"}],
+        "outer": [{"kind": "ant"}, {"kind": "bee", "legs": 6}, {"kind": "wasp"}],
+        "other": [{"kind": "bee", "legs": 6}, {"kind": "moth"}],
+        "forward": [{"kind": "a"}, {"kind": "c"}],
+        "backward": [{"kind": "d"}],
+        "maybe": [{"kind": "c"}, {"kind": "d"}],
+    },
+    "discriminator_merged_collapsed_variant_tags": {
+        "cats": [{"kind": "cat"}, {"kind": "Cat"}, {"kind": "dog"}],
+        "kitties": [{"kind": "kitty"}, {"kind": "Cat"}, {"kind": "dog"}],
+    },
+}
+"""Documents of each union of the inputs, which the generated ``Holder`` decodes into the variant it records."""
+
+
+@pytest.mark.parametrize(
+    ("name", "extra_args"),
+    [
+        pytest.param("discriminator_merged_variant_tag_limits", [], id="limits"),
+        pytest.param("discriminator_merged_variant_tag_limits", ["--field-constraints"], id="limits-field_constraints"),
+        pytest.param(
+            "discriminator_merged_collapsed_variant_tags",
+            ["--reuse-model", "--collapse-reuse-models"],
+            id="collapsed_reuse",
+        ),
+    ],
+)
+def test_main_openapi_merge_shared_variant_tags_limits(output_file: Path, name: str, extra_args: list[str]) -> None:
+    """Merge under ``--merge-shared-variant-tags`` only the tags each union decodes, as its schema reads them.
+
+    ``Cat`` and ``Dog`` take their tags by the mapping of ``ByKey`` and by their names in ``ByName``, which the pattern
+    of their tag fields rejects, so they keep the mapped tags, which the field forms write without the pattern and a
+    model builds. ``Other`` maps ``bee`` to ``Ant``, which ``Outer`` lists beside the nested ``Bee`` it maps ``bee`` to,
+    so ``Ant`` keeps ``ant`` and ``Outer`` stays discriminated. ``Forward`` and ``Backward`` cross ``a`` and ``b`` but
+    map ``Green`` to ``c`` and ``d``, so ``Green`` takes both, also where ``maybe`` lists it beside null. Collapsed
+    reuse writes ``Kitties`` with ``Cat`` for the equal ``Kitty``, which it maps to ``kitty``, so ``Cat`` takes ``cat``
+    and ``kitty`` and no other tag.
+    """
+    with warnings.catch_warnings(record=True) as records:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / f"{name}.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                *("--output-model-type", "pydantic_v2.BaseModel", "--merge-shared-variant-tags"),
+                *extra_args,
+                *("--disable-timestamp", "--formatters", "builtin"),
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(sorted({f"{record.message}\n" for record in records if record.category is UserWarning})),
+        name="warnings",
+    )
+    decoded = []
+    with _generated_model(output_file, name, "Holder") as holder:
+        validate = _model_json_validator(holder)
+        for property_name, documents in MERGED_VARIANT_TAG_LIMIT_PAYLOADS[name].items():
+            for document in documents:
+                try:
+                    value = getattr(validate(json.dumps({property_name: document})), property_name)
+                except pydantic.ValidationError:
+                    result = "rejected"
+                else:
+                    while (root := getattr(value, "root", None)) is not None:
+                        value = root
+                    result = type(value).__name__
+                decoded.append(f"{property_name} {json.dumps(document)}: {result}\n")
+    assert_output("".join(decoded), name="decoded")
 
 
 @pytest.mark.cli_doc(
@@ -17161,6 +17382,41 @@ def test_main_openapi_read_schema_version_per_document(output_file: Path, extra_
             valid_json=json.dumps({"tags": ["a", "b"]}),
             invalid_json=json.dumps({"tags": ["a", "a"]}),
             expected_error_type="value_error",
+        )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--openapi-scopes", "paths"], id="first-read"),
+        pytest.param(["--openapi-scopes", "paths", "--read-schema-version-per-document"], id="per-document"),
+        pytest.param(["--openapi-scopes", "api", "--read-schema-version-per-document"], id="per-document-api-scope"),
+    ],
+)
+def test_main_openapi_read_schema_version_per_document_external_item_schema(
+    output_file: Path, extra_args: list[str]
+) -> None:
+    """Read the ``itemSchema`` of a response that an OpenAPI 3.1 document takes from a 3.2 document with the option.
+
+    ``itemSchema`` is an OpenAPI 3.2 keyword; with the option the media type object is read by the version of the
+    document that holds it, so ``/pets`` gets a list of ``PetsGetResponseItem``, also in the api scope. Without it the
+    3.1 document's version reads it, which has no ``itemSchema``, and the response has no model.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "item_schema_external_32" / "root.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    if "--read-schema-version-per-document" in extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="read_schema_version_per_document_external_item_schema",
+            model_name="PetsGetResponse",
+            valid_json=json.dumps([{"name": "x"}]),
+            invalid_json=json.dumps([{"name": 1}]),
+            expected_error_type="string_type",
         )
 
 

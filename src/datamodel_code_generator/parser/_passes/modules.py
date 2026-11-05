@@ -12,7 +12,6 @@ state satisfy structurally. ``process_each_module`` runs the passes of each modu
 
 from __future__ import annotations
 
-import re
 from collections import defaultdict
 from dataclasses import replace
 from itertools import chain
@@ -152,6 +151,7 @@ from datamodel_code_generator.parser._tag_plan import (
     UnionTagDecision,
     UnionView,
     appended_takes_struct_tag,
+    collapsed_duplicate,
     field_namer,
     has_any_variant,
     has_reused_variant,
@@ -168,6 +168,7 @@ from datamodel_code_generator.parser._tag_plan import (
     site_validity,
     tag_capabilities,
     tag_msgspec_unions,
+    tag_satisfies_pattern,
     union_site,
 )
 from datamodel_code_generator.python_literal import runtime_expression_imports, stable_repr
@@ -407,6 +408,10 @@ class InlineVariantHost(Protocol):
     @property
     def merge_shared_variant_tags(self) -> bool:
         """Whether a variant that discriminated unions tag differently takes every tag they give it."""
+
+    @property
+    def _collapsed_reuse_users(self) -> dict[int, tuple[DataType, Reference]]:
+        """The data types collapsed reuse redirected, with the reference each named before."""
 
 
 class CollapseHost(
@@ -901,17 +906,6 @@ def _discriminator_tag_constraints(field: DataModelFieldBase) -> tuple[Constrain
     return constraints, values, pattern
 
 
-def _tag_satisfies_pattern(value: DiscriminatorValue, pattern: str) -> bool:
-    """Return whether a tag value satisfies a pattern as ``re.search`` finds it, which a non-string always does.
-
-    A pattern Python cannot compile counts as satisfied.
-    """
-    try:
-        return not isinstance(value, str) or re.search(pattern, value) is not None
-    except re.error:
-        return True
-
-
 def _drop_discriminator_tag_patterns(
     builder: GraphBuilder,
     tag_fields: Iterable[tuple[DataModelFieldBase, Sequence[DiscriminatorValue]]],
@@ -929,7 +923,7 @@ def _drop_discriminator_tag_patterns(
         if (found := _discriminator_tag_constraints(field)) is not None
     ]
     if not all(
-        _tag_satisfies_pattern(value, pattern) for _, (_, _, pattern), tag_values in patterned for value in tag_values
+        tag_satisfies_pattern(value, pattern) for _, (_, _, pattern), tag_values in patterned for value in tag_values
     ):
         return
     for field, (constraints, values, _), _ in patterned:
@@ -954,6 +948,7 @@ def merged_variant_models(parser: InlineVariantHost) -> MergedVariantTags:
         parser.results,
         field_namer(parser.model_resolver, parser.field_name_model_type),
         enum_member_tags=parser.use_enum_values_in_discriminator,
+        collapsed_users=parser._collapsed_reuse_users,  # noqa: SLF001
     )
 
 
@@ -1918,12 +1913,9 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
                     (union_name, field.data_type.data_types, mapping),
                     *collapsed_unions,
                 ):
-                    user, reference = parser._collapsed_reuse_users.get(id(collapsed_types[index]), (None, None))  # noqa: SLF001
                     if (
-                        user is collapsed_types[index]
-                        and reference is not None
-                        and isinstance(removed := reference.source, DataModel)
-                    ):
+                        removed := collapsed_duplicate(parser._collapsed_reuse_users, collapsed_types[index])  # noqa: SLF001
+                    ) is not None:
                         plan.record_collapsed_tags(
                             discriminator_model,
                             collapsed_name,

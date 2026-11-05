@@ -654,7 +654,7 @@ class ApiOpenAPIParser(OpenAPIParser):
                     msg = "API_INVALID_OBJECT: invalid parameter location"
                     raise SchemaParseError(msg, path=path)
                 if location == "querystring" and (
-                    not self._features_at(None).querystring_parameter
+                    not self._features_at(self._raw_location(raw)).querystring_parameter
                     or any(key in raw for key in ("schema", "style", "explode"))
                     or "content" not in raw
                 ):
@@ -735,7 +735,9 @@ class ApiOpenAPIParser(OpenAPIParser):
             schema.from_item_schema or self._reference_use(schema.schema, [*path, "schema"])[0] is None
         ):
             return True
-        return "encoding" in medium and encoding_applies(owner, openapi_32=self._features_at(None).media_item_schema)
+        return "encoding" in medium and encoding_applies(
+            owner, openapi_32=self._features_at(self._raw_location(medium)).media_item_schema
+        )
 
     def _walk_response(self, name: str, target: _ApiObject, *, header_name: str | None = None) -> None:
         """Collect all response media followed by response headers."""
@@ -864,7 +866,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         """Preserve source order and literal locations for OpenAPI 3.2 methods."""
         yield from path_item_operations(
             target.value,
-            openapi_32=self._features_at(None).media_item_schema,
+            openapi_32=self._features_at(self._raw_location(target.value)).media_item_schema,
             invalid=lambda message, tokens: SchemaParseError(message, path=[*target.path, *tokens]),
         )
 
@@ -1035,7 +1037,9 @@ class ApiOpenAPIParser(OpenAPIParser):
         if "encoding" not in medium:
             return
         try:
-            parsed_media = encoding_media(media, owner, openapi_32=self._features_at(None).media_item_schema)
+            parsed_media = encoding_media(
+                media, owner, openapi_32=self._features_at(self._raw_location(medium)).media_item_schema
+            )
         except ValueError as exc:
             raise SchemaParseError(str(exc), path=path, original_error=exc) from exc
         encoding_path = [*path, "encoding"]

@@ -426,6 +426,14 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FreezePoint.B1,
     ),
     AttributeFact(
+        "_MetaStrKeyType",
+        "meta_keywords",
+        FactKind.FACT,
+        (Fact.CONSTRAINTS,),
+        Phase.PARSE,
+        FreezePoint.B1,
+    ),
+    AttributeFact(
         "DataModelFieldBase",
         "name",
         FactKind.FACT,
@@ -972,6 +980,15 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     ),
     AttributeFact(
         "DataModel", "discriminator_tag", FactKind.FACT, (Fact.DISCRIMINATOR_TAGS,), Phase.CROSS_MODULE, FreezePoint.B1
+    ),
+    AttributeFact(
+        "DataModel",
+        "serialized_as_any",
+        FactKind.FACT,
+        (Fact.FIELD_TYPES,),
+        Phase.DECIDE,
+        FreezePoint.B1,
+        store_ops=("mark_serialized_as_any",),
     ),
     AttributeFact(
         "DataModel",

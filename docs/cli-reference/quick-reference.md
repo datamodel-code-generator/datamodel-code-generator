@@ -180,11 +180,13 @@ datamodel-codegen [OPTIONS]
 | [`--use-frozen-field`](model-customization.md#use-frozen-field) | Generate frozen (immutable) field definitions for readOnly properties. |
 | [`--use-generic-base-class`](model-customization.md#use-generic-base-class) | Generate a shared base class with model configuration to avoid repetition (DRY). |
 | [`--use-missing-sentinel`](model-customization.md#use-missing-sentinel) | Use Pydantic's MISSING sentinel for unset optional BaseModel or dataclass fields... |
+| [`--use-msgspec-meta-for-map-keys`](model-customization.md#use-msgspec-meta-for-map-keys) | Check the keys of a msgspec map whose keys propertyNames or patternProperties co... |
 | [`--use-msgspec-nullable-enum-alias`](model-customization.md#use-msgspec-nullable-enum-alias) | Write a msgspec.Struct enum that lists null as an Enum and a nullable alias. |
 | [`--use-msgspec-tagged-unions`](model-customization.md#use-msgspec-tagged-unions) | Write a msgspec.Struct discriminated union as tagged structs as a whole. |
 | [`--use-one-literal-as-default`](model-customization.md#use-one-literal-as-default) | Use single literal value as default when enum has only one option. |
 | [`--use-root-model-sequence-interface`](model-customization.md#use-root-model-sequence-interface) | Make non-null sequence-like Pydantic v2 RootModel classes implement collections.... |
 | [`--use-serialize-as-any`](model-customization.md#use-serialize-as-any) | Wrap fields with subtypes in Pydantic's SerializeAsAny. |
+| [`--use-serialize-as-any-for-every-subclass`](model-customization.md#use-serialize-as-any-for-every-subclass) | Wrap a field in SerializeAsAny when any subclass of its model adds fields. |
 | [`--use-subclass-enum`](model-customization.md#use-subclass-enum) | Generate typed Enum subclasses for enums with specific field types. |
 
 ### 🎨 Template Customization
@@ -211,6 +213,7 @@ datamodel-codegen [OPTIONS]
 | [`--no-formatters`](template-customization.md#no-formatters) | Select no formatter for the generated output. |
 | [`--no-treat-dot-as-module`](template-customization.md#no-treat-dot-as-module) | Keep dots in schema names as underscores for flat output. |
 | [`--no-use-type-checking-imports`](template-customization.md#no-use-type-checking-imports) | Keep generated model imports available at runtime when using Ruff fixes. |
+| [`--rename-submodules-hidden-by-classes`](template-customization.md#rename-submodules-hidden-by-classes) | Rename a submodule named like a class of its package. |
 | [`--schema-validator-base-class-name`](template-customization.md#schema-validator-base-class-name) | Set the generated shared Pydantic v2 schema runtime validator base class name. |
 | [`--schema-validator-type`](template-customization.md#schema-validator-type) | Select the schema-derived runtime validator backend. |
 | [`--strict-dotted-module-names`](template-customization.md#strict-dotted-module-names) | Require canonical Python identifiers when inferring dotted module paths. |
@@ -489,6 +492,7 @@ All options sorted alphabetically:
 - [`--read-unevaluated-properties`](typing-customization.md#read-unevaluated-properties) - Read a schema-valued `unevaluatedProperties` as `additionalP...
 - [`--recommend-options`](general-options.md#recommend-options) - Recommend options for the input schema on top of the latest ...
 - [`--remove-special-field-name-prefix`](field-customization.md#remove-special-field-name-prefix) - Remove the special prefix from field names.
+- [`--rename-submodules-hidden-by-classes`](template-customization.md#rename-submodules-hidden-by-classes) - Rename a submodule named like a class of its package.
 - [`--reuse-model`](model-customization.md#reuse-model) - Reuse identical model definitions instead of generating dupl...
 - [`--reuse-scope`](model-customization.md#reuse-scope) - Scope for model reuse detection (root or tree).
 - [`--schema-validator-base-class-name`](template-customization.md#schema-validator-base-class-name) - Set the generated shared Pydantic v2 schema runtime validato...
@@ -550,6 +554,7 @@ All options sorted alphabetically:
 - [`--use-generic-container-types`](typing-customization.md#use-generic-container-types) - Use generic container types (Sequence, Mapping) for type hin...
 - [`--use-inline-field-description`](field-customization.md#use-inline-field-description) - Add field descriptions as inline comments.
 - [`--use-missing-sentinel`](model-customization.md#use-missing-sentinel) - Use Pydantic's MISSING sentinel for unset optional BaseModel...
+- [`--use-msgspec-meta-for-map-keys`](model-customization.md#use-msgspec-meta-for-map-keys) - Check the keys of a msgspec map whose keys propertyNames or ...
 - [`--use-msgspec-nullable-enum-alias`](model-customization.md#use-msgspec-nullable-enum-alias) - Write a msgspec.Struct enum that lists null as an Enum and a...
 - [`--use-msgspec-tagged-unions`](model-customization.md#use-msgspec-tagged-unions) - Write a msgspec.Struct discriminated union as tagged structs...
 - [`--use-non-positive-negative-number-constrained-types`](typing-customization.md#use-non-positive-negative-number-constrained-types) - Use NonPositive/NonNegative types for number constraints.
@@ -562,6 +567,7 @@ All options sorted alphabetically:
 - [`--use-schema-description`](field-customization.md#use-schema-description) - Use schema description as class docstring.
 - [`--use-serialization-alias`](field-customization.md#use-serialization-alias) - Use serialization_alias instead of alias for field aliasing ...
 - [`--use-serialize-as-any`](model-customization.md#use-serialize-as-any) - Wrap fields with subtypes in Pydantic's SerializeAsAny.
+- [`--use-serialize-as-any-for-every-subclass`](model-customization.md#use-serialize-as-any-for-every-subclass) - Wrap a field in SerializeAsAny when any subclass of its mode...
 - [`--use-single-dict-for-object-maps`](typing-customization.md#use-single-dict-for-object-maps) - Type an object map as one dict instead of a union of dicts.
 - [`--use-single-line-docstring`](field-customization.md#use-single-line-docstring) - Emit short docstrings on a single line.
 - [`--use-single-value-enum-as-const`](typing-customization.md#use-single-value-enum-as-const) - Treat `enum` with a single value as `const` with that value.

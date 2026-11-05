@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "merged": {
+      "anyOf": [
+        {"type": "integer", "minimum": 0, "exclusiveMinimum": 10.5},
+        {"type": "number", "minimum": 5.5}
+      ]
+    },
+    "superseded": {
+      "anyOf": [
+        {"type": "integer", "minimum": 1234567890123456771},
+        {"type": "number", "minimum": 1234567890123456771, "exclusiveMinimum": 1234567890123456769}
+      ]
+    },
+    "upper": {
+      "anyOf": [
+        {"type": "integer", "maximum": 100, "exclusiveMaximum": 20.5, "multipleOf": 4},
+        {"type": "number", "maximum": 25.5, "multipleOf": 8}
+      ]
+    }
+  }
+}

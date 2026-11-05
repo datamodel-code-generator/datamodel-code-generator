@@ -17,7 +17,7 @@ from datamodel_code_generator._format_types import (
     Formatter,
     PythonVersion,
 )
-from datamodel_code_generator._option_names import option_flag, option_flags, toml_value
+from datamodel_code_generator._option_names import option_flags, toml_value
 from datamodel_code_generator._option_rules import implied_options
 from datamodel_code_generator._registry_render import _render_registry_json
 from datamodel_code_generator._requirements import python_target_meets
@@ -307,6 +307,17 @@ class PresetOptionGroup:
     output_model_types: frozenset[DataModelType] = frozenset()
     requires_python_strenum: bool = False
 
+    def __post_init__(self) -> None:
+        """Check that the command line can turn off every option the group turns on, unless it is deprecated."""
+        for item in self.config.items():
+            if (
+                item.value is True
+                and _documented_option(item.field_name, negative=True) is None
+                and not CLI_OPTION_META[_config_item_to_cli_option(item)].deprecated
+            ):  # pragma: no cover
+                msg = f"Preset option {_config_item_to_cli_option(item)} has no --no- form to turn it off"
+                raise PresetError(msg)
+
     @property
     def options(self) -> tuple[str, ...]:
         """Return documented CLI options derived from typed config fields."""
@@ -389,9 +400,14 @@ def _ensure_preset_enum_config_value(
     raise PresetError(msg)  # pragma: no cover
 
 
+def _documented_option(field_name: str, *, negative: bool = False) -> str | None:
+    """Return the spelling the CLI reference documents of the option of a config field, or of its --no- form."""
+    return next((flag for flag in option_flags(field_name, negative=negative) if flag in CLI_OPTION_META), None)
+
+
 def _config_item_to_cli_option(item: PresetConfigItem) -> str:
     """Translate a typed config field name to the spelling of its CLI options that the CLI reference documents."""
-    option = next((flag for flag in option_flags(item.field_name) if flag in CLI_OPTION_META), None)
+    option = _documented_option(item.field_name)
     if option is None:  # pragma: no cover
         msg = f"Preset field {stable_repr(item.field_name)} does not map to a documented CLI option"
         raise PresetError(msg)
@@ -402,8 +418,7 @@ def _config_item_to_cli_option(item: PresetConfigItem) -> str:
     if item.value:
         return f"{option} {' '.join(str(value.value) for value in item.value)}"
 
-    negative_option = option_flag(item.field_name, negative=True)
-    if negative_option not in CLI_OPTION_META:  # pragma: no cover
+    if (negative_option := _documented_option(item.field_name, negative=True)) is None:  # pragma: no cover
         msg = f"Preset field {stable_repr(item.field_name)} does not map to a documented negative CLI option"
         raise PresetError(msg)
     return negative_option
@@ -777,7 +792,8 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         config=PresetConfig(merge_shared_variant_tags=True),
         description=(
             "Give a variant that discriminated unions tag differently, such as one by a mapping key and one by the "
-            "schema name, every tag they give it, so each union decodes the documents it selects the variant by."
+            "schema name, every tag they give it, so each union decodes the documents it selects the variant by. "
+            "msgspec Structs take one tag, so they are unchanged."
         ),
     ),
     PresetOptionGroup(
@@ -785,7 +801,7 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         config=PresetConfig(use_encoded_str_for_constrained_base64=True),
         description=(
             "Write a format: byte string with a pattern or lengths in the field forms as an EncodedStr with the "
-            "constraints in front of the decoding, so Pydantic checks them on the base64 text."
+            "constraints in front of the decoding, so Pydantic 2.10 or later checks them on the base64 text."
         ),
     ),
     PresetOptionGroup(
@@ -853,6 +869,31 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         description=(
             "Keep the null that the schema of a reference admits when its model is merged into an equal model that "
             "rejects null, so a `type: [object, null]` property keeps `| None` after duplicate removal or reuse."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Meta for msgspec map keys",
+        config=PresetConfig(use_msgspec_meta_for_map_keys=True),
+        description=(
+            "Write the keys of a msgspec map whose keys propertyNames or patternProperties constrain as "
+            "Annotated[str, Meta(...)], so msgspec checks them."
+        ),
+    ),
+    PresetOptionGroup(
+        title="Submodules hidden by classes renamed",
+        config=PresetConfig(rename_submodules_hidden_by_classes=True),
+        description=(
+            "Rename a submodule named like a class of its package, such as pkg/Warn.py beside the class Warn of "
+            "pkg/__init__.py, to the first free name with trailing underscores, so importing it leaves the class in "
+            "place."
+        ),
+    ),
+    PresetOptionGroup(
+        title="SerializeAsAny for every subclass",
+        config=PresetConfig(use_serialize_as_any_for_every_subclass=True),
+        description=(
+            "Under --use-serialize-as-any, wrap a field in SerializeAsAny when any subclass of its model in the "
+            "output adds fields, at any depth, after reuse merges the model and through its module."
         ),
     ),
 )
@@ -1117,9 +1158,9 @@ def render_presets_markdown() -> str:
             "discriminated unions tag differently, such as one by a mapping key and one by the schema name, takes "
             "every tag they give it, so each union decodes the documents it selects the variant by, "
             "`--use-encoded-str-for-constrained-base64`: a format: byte string with a pattern or lengths is written "
-            "as `Annotated[str, Field(...), EncodedStr(encoder=Base64Encoder)]`, so Pydantic checks them on the "
-            "base64 text instead of the decoded text, and `--read-length-keywords-by-type`: `minLength` and "
-            "`maxLength` beside an array, and `minItems` and `maxItems` beside a string, are left out instead of "
+            "as `Annotated[str, Field(...), EncodedStr(encoder=Base64Encoder)]`, so Pydantic 2.10 or later checks "
+            "them on the base64 text instead of the decoded text, and `--read-length-keywords-by-type`: `minLength` "
+            "and `maxLength` beside an array, and `minItems` and `maxItems` beside a string, are left out instead of "
             "bounding the length of the other kind, as JSON Schema reads them, and "
             "`--read-msgspec-union-bounds-exactly`: the int member of a msgspec union with a number member keeps its "
             "bounds only when they admit every integer the number member's bounds, read as the schema writes them, "
@@ -1132,7 +1173,13 @@ def render_presets_markdown() -> str:
             "nested properties name by name and by the type it narrows, an allOf member reads its $ref siblings, "
             "$ref aliases and null branches, and no enum value that the merged type rejects is kept, as JSON Schema "
             "validates them, and `--keep-reference-null-on-merged-models`: a reference whose schema admits null keeps "
-            "its `| None` when its model is merged into an equal model that rejects null."
+            "its `| None` when its model is merged into an equal model that rejects null. They also add "
+            "`--use-msgspec-meta-for-map-keys`: the keys of a msgspec map whose keys propertyNames or "
+            "patternProperties constrain are written as `Annotated[str, Meta(...)]`, so msgspec checks them, and "
+            "`--rename-submodules-hidden-by-classes`: a submodule named like a class of its package is renamed "
+            "(`pkg/Warn_.py`), so importing it leaves the class in place, and "
+            "`--use-serialize-as-any-for-every-subclass`: under `--use-serialize-as-any` a field is wrapped in "
+            "`SerializeAsAny` when any subclass of its model in the output adds fields."
         ),
         "",
         (
@@ -1160,7 +1207,9 @@ def render_presets_markdown() -> str:
         "```",
         "",
         (
-            "Use documented `--no-*` options for boolean settings that support negation. "
+            "Use the `--no-*` form of a boolean option to turn it off; every boolean option a preset turns on has one, "
+            "such as `--no-read-length-keywords-by-type`, and `false` beside the preset in pyproject.toml, such as "
+            "`read-length-keywords-by-type = false`, turns it off the same way. "
             "For value options, pass the replacement value explicitly, such as `--enum-field-as-literal none`. "
             "A list option replaces the whole list a preset sets, such as `--openapi-as-definitions paths-bodies`; "
             "in pyproject.toml an empty list, such as `openapi-as-definitions = []`, turns off every value the preset "
@@ -1294,7 +1343,8 @@ def render_presets_markdown() -> str:
         ))
         for group in info.option_groups:
             options = ", ".join(f"`{option}`" for option in group.options)
-            lines.append(f"| {group.title} | {options} | {group.description} |")
+            notes = group.description.replace("|", r"\|")
+            lines.append(f"| {group.title} | {options} | {notes} |")
         lines.append("")
     return "\n".join(lines)
 

@@ -11,9 +11,16 @@ from pydantic import BaseModel, Field, RootModel
 class Parent(BaseModel):
     closed: Annotated[list[str | int] | None, Field(max_length=2, min_length=2)] = None
     open: Annotated[list[Any] | None, Field(min_length=2)] = None
+    contained: Annotated[list[str | int] | None, Field(max_length=2, min_length=2)] = (
+        None
+    )
 
 
 class ClosedItem(RootModel[str]):
+    root: Annotated[str, Field(max_length=3)]
+
+
+class ContainedItem(RootModel[str]):
     root: Annotated[str, Field(max_length=3)]
 
 
@@ -22,3 +29,6 @@ class Child(Parent):
         list[ClosedItem | int] | None, Field(max_length=2, min_length=2)
     ] = None
     open: Annotated[list[Any] | None, Field(min_length=2)] = None
+    contained: Annotated[
+        list[ContainedItem | int] | None, Field(max_length=2, min_length=2)
+    ] = None

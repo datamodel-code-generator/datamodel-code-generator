@@ -1109,6 +1109,10 @@
       "not_recommended": "style",
       "reason": "Removes leading underscores of field names; a project convention."
     },
+    "rename_submodules_hidden_by_classes": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "reuse_model": {
       "rules": [
         "reuse.identical-inline-shapes"
@@ -1360,6 +1364,10 @@
       "not_recommended": "runtime-behaviour",
       "reason": "MISSING instead of None for absent fields; changes field values."
     },
+    "use_msgspec_meta_for_map_keys": {
+      "not_recommended": "preset",
+      "reason": "msgspec.Struct output only: set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "use_msgspec_nullable_enum_alias": {
       "not_recommended": "runtime-behaviour",
       "reason": "msgspec.Struct output only: changes how enums that list null decode."
@@ -1407,6 +1415,10 @@
     "use_serialize_as_any": {
       "not_recommended": "runtime-behaviour",
       "reason": "Serializes subclasses by their runtime type; changes serialization."
+    },
+    "use_serialize_as_any_for_every_subclass": {
+      "not_recommended": "preset",
+      "reason": "Pydantic v2 output under --use-serialize-as-any only: set by the 20261104 presets; the recommendation starts from a preset."
     },
     "read_unevaluated_properties": {
       "not_recommended": "preset",

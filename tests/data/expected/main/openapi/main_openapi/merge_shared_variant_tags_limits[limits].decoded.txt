@@ -1,0 +1,14 @@
+byKey {"kind": "cat"}: Cat
+byKey {"kind": "dog"}: Dog
+byName {"kind": "Cat"}: rejected
+byName {"kind": "cat"}: Cat
+outer {"kind": "ant"}: Ant
+outer {"kind": "bee", "legs": 6}: Bee
+outer {"kind": "wasp"}: Wasp
+other {"kind": "bee", "legs": 6}: rejected
+other {"kind": "moth"}: Moth
+forward {"kind": "a"}: Red
+forward {"kind": "c"}: Green
+backward {"kind": "d"}: Green
+maybe {"kind": "c"}: Green
+maybe {"kind": "d"}: Green

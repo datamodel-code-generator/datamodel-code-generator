@@ -1,0 +1,1 @@
+msgspec decodes every integer as the int member of a union that has a float member too, so ge of the int member would reject integers the float member accepts; Model.merged is generated without this constraint.

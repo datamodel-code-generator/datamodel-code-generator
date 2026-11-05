@@ -11,6 +11,7 @@ from typing_extensions import NotRequired
 class Parent(TypedDict):
     closed: NotRequired[list[str | int]]
     open: NotRequired[list[Any]]
+    contained: NotRequired[list[str | int]]
 
 
 ClosedItem: TypeAlias = str
@@ -19,3 +20,4 @@ ClosedItem: TypeAlias = str
 class Child(Parent):
     closed: NotRequired[list[ClosedItem | int]]
     open: NotRequired[list[Any]]
+    contained: NotRequired[list[str | int]]

@@ -1,0 +1,1 @@
+{"title": "Warn", "type": "object", "properties": {"count": {"type": "integer"}}}

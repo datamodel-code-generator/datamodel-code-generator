@@ -55,11 +55,13 @@
 | [`--use-frozen-field`](#use-frozen-field) | Generate frozen (immutable) field definitions for readOnly p... |
 | [`--use-generic-base-class`](#use-generic-base-class) | Generate a shared base class with model configuration to avo... |
 | [`--use-missing-sentinel`](#use-missing-sentinel) | Use Pydantic's MISSING sentinel for unset optional BaseModel... |
+| [`--use-msgspec-meta-for-map-keys`](#use-msgspec-meta-for-map-keys) | Check the keys of a msgspec map whose keys propertyNames or ... |
 | [`--use-msgspec-nullable-enum-alias`](#use-msgspec-nullable-enum-alias) | Write a msgspec.Struct enum that lists null as an Enum and a... |
 | [`--use-msgspec-tagged-unions`](#use-msgspec-tagged-unions) | Write a msgspec.Struct discriminated union as tagged structs... |
 | [`--use-one-literal-as-default`](#use-one-literal-as-default) | Use single literal value as default when enum has only one o... |
 | [`--use-root-model-sequence-interface`](#use-root-model-sequence-interface) | Make non-null sequence-like Pydantic v2 RootModel classes im... |
 | [`--use-serialize-as-any`](#use-serialize-as-any) | Wrap fields with subtypes in Pydantic's SerializeAsAny. |
+| [`--use-serialize-as-any-for-every-subclass`](#use-serialize-as-any-for-every-subclass) | Wrap a field in SerializeAsAny when any subclass of its mode... |
 | [`--use-subclass-enum`](#use-subclass-enum) | Generate typed Enum subclasses for enums with specific field... |
 
 ---
@@ -4264,10 +4266,11 @@ Name a converted payload that names no type of its own after its message.
 
 An AsyncAPI payload in Avro or XML Schema is converted to JSON Schema first. A payload that names no type of its own,
 such as an Avro `string`, array, map or union, or an XML Schema with several global elements, takes the converter's
-placeholder title `Model`: the field writes `Field(..., title='Model')`, and under `--use-title-as-name` the class is
-named `Model`. With `--name-converted-payloads-by-message` such a payload takes no title, as a JSON Schema payload,
-so its class is named after its message (`PingPublishPayload`) under `--use-title-as-name` too. A payload that names
-its type, such as an Avro record, keeps that name.
+placeholder title `Model`: the root of a string, array or union payload writes `Field(..., title='Model')`, and under
+`--use-title-as-name` a string, array, map or XML Schema payload is named `Model`, `Model1`, .... With
+`--name-converted-payloads-by-message` such a payload takes no title, as a JSON Schema payload, so its class is named
+after its message (`PingPublishPayload`) under `--use-title-as-name` too. A payload that names its type, such as an Avro
+record, keeps that name.
 
 **Related:** [`--use-title-as-name`](field-customization.md#use-title-as-name)
 
@@ -8408,6 +8411,138 @@ preserves the difference between an omitted field and a nullable field set to `N
 
 ---
 
+## `--use-msgspec-meta-for-map-keys` {#use-msgspec-meta-for-map-keys}
+
+Check the keys of a msgspec map whose keys propertyNames or patternProperties constrain.
+
+A map whose keys a `propertyNames` schema or the patterns of `patternProperties` constrain by `pattern`, `minLength`
+or `maxLength` is written with `str` keys in msgspec.Struct output, so every key decodes, while Pydantic output checks
+them. With this option the keys are `Annotated[str, Meta(...)]`, which msgspec checks at decode. The keys of a
+`propertyNames` union stay `str`, as msgspec decodes a union of strings by one of them.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input msgspec_map_keys.json --output-model-type msgspec.Struct --use-msgspec-meta-for-map-keys # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-msgspec-meta-for-map-keys` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Model",
+      "type": "object",
+      "properties": {
+        "named": {
+          "type": "object",
+          "propertyNames": {"pattern": "^[a-z]+$"},
+          "additionalProperties": {"type": "string"}
+        },
+        "sized": {
+          "type": "object",
+          "propertyNames": {"minLength": 2, "maxLength": 4},
+          "additionalProperties": {"type": "integer"}
+        },
+        "patterned": {
+          "type": "object",
+          "patternProperties": {"^x-": {"type": "string"}},
+          "additionalProperties": false
+        },
+        "named_and_patterned": {
+          "type": "object",
+          "propertyNames": {"maxLength": 5},
+          "patternProperties": {"^[a-z]+$": {"type": "string"}},
+          "additionalProperties": false
+        },
+        "nested": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "propertyNames": {"pattern": "^[0-9]+$"},
+            "additionalProperties": {"type": "boolean"}
+          }
+        },
+        "either": {
+          "type": "object",
+          "propertyNames": {"anyOf": [{"pattern": "^a"}, {"pattern": "^b"}]},
+          "additionalProperties": {"type": "string"}
+        },
+        "single_branch": {
+          "type": "object",
+          "propertyNames": {"anyOf": [{"pattern": "^a"}]},
+          "additionalProperties": {"type": "string"}
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  msgspec_map_keys.json
+
+        from __future__ import annotations
+
+        from typing import Annotated
+
+        from msgspec import UNSET, Meta, Struct, UnsetType
+
+
+        class Model(Struct):
+            named: dict[Annotated[str, Meta(pattern='^[a-z]+$')], str] | UnsetType = UNSET
+            sized: dict[Annotated[str, Meta(max_length=4, min_length=2)], int] | UnsetType = (
+                UNSET
+            )
+            patterned: dict[Annotated[str, Meta(pattern='^x-')], str] | UnsetType = UNSET
+            named_and_patterned: (
+                dict[Annotated[str, Meta(max_length=5, pattern='^[a-z]+$')], str] | UnsetType
+            ) = UNSET
+            nested: list[dict[Annotated[str, Meta(pattern='^[0-9]+$')], bool]] | UnsetType = (
+                UNSET
+            )
+            either: dict[str, str] | UnsetType = UNSET
+            single_branch: dict[Annotated[str, Meta(pattern='^a')], str] | UnsetType = UNSET
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  msgspec_map_keys.json
+
+        from __future__ import annotations
+
+        from msgspec import UNSET, Struct, UnsetType
+
+
+        class Model(Struct):
+            named: dict[str, str] | UnsetType = UNSET
+            sized: dict[str, int] | UnsetType = UNSET
+            patterned: dict[str, str] | UnsetType = UNSET
+            named_and_patterned: dict[str, str] | UnsetType = UNSET
+            nested: list[dict[str, bool]] | UnsetType = UNSET
+            either: dict[str, str] | UnsetType = UNSET
+            single_branch: dict[str, str] | UnsetType = UNSET
+        ```
+
+        <!-- fmt: on -->
+
+---
+
 ## `--use-msgspec-nullable-enum-alias` {#use-msgspec-nullable-enum-alias}
 
 Write a msgspec.Struct enum that lists null as an Enum and a nullable alias.
@@ -9267,6 +9402,152 @@ polymorphic types and inheritance hierarchies.
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--use-serialize-as-any-for-every-subclass` {#use-serialize-as-any-for-every-subclass}
+
+Wrap a field in SerializeAsAny when any subclass of its model adds fields.
+
+`--use-serialize-as-any` wraps a field whose model has a direct subclass that adds fields, as the subclasses recorded
+when the model was parsed tell, so a subclass two levels down, a subclass of a model that `--reuse-model` or
+`--collapse-reuse-models` merged into another, and a field that names its model through its module (`c.Base`) are left
+out and serialize as the base model. With this option the class hierarchy of the generated output decides: a field is
+wrapped when any subclass of its model, at any depth, adds fields (Pydantic v2 only).
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input serialize_as_any_every_subclass.json --use-serialize-as-any --use-serialize-as-any-for-every-subclass --reuse-model # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-serialize-as-any-for-every-subclass` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$defs": {
+        "A": {"type": "object", "properties": {"x": {"type": "string"}}},
+        "B": {"type": "object", "properties": {"x": {"type": "string"}}},
+        "Sub": {"allOf": [{"$ref": "#/$defs/B"}, {"type": "object", "properties": {"y": {"type": "integer"}}}]},
+        "C": {"type": "object", "properties": {"z": {"type": "string"}}},
+        "Mid": {"allOf": [{"$ref": "#/$defs/C"}]},
+        "Leaf": {"allOf": [{"$ref": "#/$defs/Mid"}, {"type": "object", "properties": {"w": {"type": "integer"}}}]},
+        "Holder": {
+          "type": "object",
+          "properties": {"a": {"$ref": "#/$defs/A"}, "b": {"$ref": "#/$defs/B"}, "c": {"$ref": "#/$defs/C"}}
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  serialize_as_any_every_subclass.json
+
+        from __future__ import annotations
+
+        from typing import Any
+
+        from pydantic import BaseModel, RootModel, SerializeAsAny
+
+
+        class Model(RootModel[Any]):
+            root: Any
+
+
+        class A(BaseModel):
+            x: str | None = None
+
+
+        class B(A):
+            pass
+
+
+        class Sub(B):
+            y: int | None = None
+
+
+        class C(BaseModel):
+            z: str | None = None
+
+
+        class Mid(C):
+            pass
+
+
+        class Leaf(Mid):
+            w: int | None = None
+
+
+        class Holder(BaseModel):
+            a: SerializeAsAny[A] | None = None
+            b: SerializeAsAny[B] | None = None
+            c: SerializeAsAny[C] | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  serialize_as_any_every_subclass.json
+
+        from __future__ import annotations
+
+        from typing import Any
+
+        from pydantic import BaseModel, RootModel
+
+
+        class Model(RootModel[Any]):
+            root: Any
+
+
+        class A(BaseModel):
+            x: str | None = None
+
+
+        class B(A):
+            pass
+
+
+        class Sub(B):
+            y: int | None = None
+
+
+        class C(BaseModel):
+            z: str | None = None
+
+
+        class Mid(C):
+            pass
+
+
+        class Leaf(Mid):
+            w: int | None = None
+
+
+        class Holder(BaseModel):
+            a: A | None = None
+            b: B | None = None
+            c: C | None = None
+        ```
+
+        <!-- fmt: on -->
 
 ---
 

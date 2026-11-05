@@ -62,6 +62,9 @@ OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
     "--ignore-ref-siblings-by-schema-version",
     "--intersect-combined-schema-keywords",
     "--keep-reference-null-on-merged-models",
+    "--use-msgspec-meta-for-map-keys",
+    "--rename-submodules-hidden-by-classes",
+    "--use-serialize-as-any-for-every-subclass",
 )
 """The options the 20261104 presets set beyond the 20261027 presets."""
 
@@ -153,6 +156,24 @@ CASES_20261104: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--output-model-type", "typing.TypedDict"],
         id="keep-reference-null-on-merged-models",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "msgspec_map_keys.json",
+        "jsonschema",
+        ["--output-model-type", "msgspec.Struct"],
+        id="use-msgspec-meta-for-map-keys",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "submodule_named_like_package_class_files",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="rename-submodules-hidden-by-classes",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "serialize_as_any_every_subclass.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel", "--use-serialize-as-any"],
+        id="use-serialize-as-any-for-every-subclass",
     ),
 )
 """The inputs each opt-in option of the 20261104 presets changes."""
@@ -372,6 +393,72 @@ def test_preset_sets_opt_in_option(
             if input_path.is_dir()
             else {"expected_output": preset_output.read_text(encoding="utf-8")}
         ),
+    )
+
+
+@pytest.mark.parametrize("source", ["command-line", "pyproject"])
+@pytest.mark.parametrize(
+    ("input_path", "extra_args", "option", "off"),
+    [
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "enum_const_positions.json",
+            [],
+            "--read-const-beside-enum",
+            "--no-read-const-beside-enum",
+            id="read-const-beside-enum",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "length_keywords_by_type.json",
+            [],
+            "--read-length-keywords-by-type",
+            "--no-read-length-keywords-by-type",
+            id="read-length-keywords-by-type",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "capitalise_numbered_enum_members.json",
+            ["--capitalise-enum-members"],
+            "--capitalise-numbered-enum-members",
+            "--no-capitalize-numbered-enum-members",
+            id="capitalize-numbered-enum-members-alias",
+        ),
+    ],
+)
+def test_preset_option_turned_off(
+    input_path: Path, extra_args: list[str], option: str, off: str, source: str, tmp_path: Path
+) -> None:
+    """Turn off one option of a 20261104 preset: the output is that of the preset without the option.
+
+    The --no- form on the command line, or false for the option in the pyproject.toml that selects the preset, gives
+    the output of the 20261017 preset plus every option the 20261027 and 20261104 presets add but that one; an alias
+    of the option has a --no- form and a key too.
+    """
+    project = tmp_path / "project"
+    project.mkdir()
+    preset = "standard-py312-20261104"
+    preset_args = ["--preset", preset, off]
+    if source == "pyproject":
+        (project / "pyproject.toml").write_text(
+            f'[tool.datamodel-codegen]\npreset = "{preset}"\n{off.removeprefix("--no-")} = false\n', encoding="utf-8"
+        )
+        preset_args = []
+    common = ["--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp", *extra_args]
+    off_output = tmp_path / "off.py"
+    with chdir(project):
+        run_main_and_assert(
+            input_path=input_path,
+            output_path=off_output,
+            input_file_type="jsonschema",
+            extra_args=[*preset_args, *common],
+            skip_code_validation=sys.version_info < (3, 12),
+        )
+    options = [item for item in (*OPT_IN_OPTIONS, *OPT_IN_OPTIONS_20261104) if item != option]
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=tmp_path / "options.py",
+        input_file_type="jsonschema",
+        extra_args=["--preset", "standard-py312-20261017", *common, *options],
+        skip_code_validation=sys.version_info < (3, 12),
+        expected_output=off_output.read_text(encoding="utf-8"),
     )
 
 

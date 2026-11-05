@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "named": {
+      "type": "object",
+      "propertyNames": {"pattern": "^[a-z]+$"},
+      "additionalProperties": {"type": "string"}
+    },
+    "sized": {
+      "type": "object",
+      "propertyNames": {"minLength": 2, "maxLength": 4},
+      "additionalProperties": {"type": "integer"}
+    },
+    "patterned": {
+      "type": "object",
+      "patternProperties": {"^x-": {"type": "string"}},
+      "additionalProperties": false
+    },
+    "named_and_patterned": {
+      "type": "object",
+      "propertyNames": {"maxLength": 5},
+      "patternProperties": {"^[a-z]+$": {"type": "string"}},
+      "additionalProperties": false
+    },
+    "nested": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "propertyNames": {"pattern": "^[0-9]+$"},
+        "additionalProperties": {"type": "boolean"}
+      }
+    },
+    "either": {
+      "type": "object",
+      "propertyNames": {"anyOf": [{"pattern": "^a"}, {"pattern": "^b"}]},
+      "additionalProperties": {"type": "string"}
+    },
+    "single_branch": {
+      "type": "object",
+      "propertyNames": {"anyOf": [{"pattern": "^a"}]},
+      "additionalProperties": {"type": "string"}
+    }
+  }
+}

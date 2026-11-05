@@ -277,10 +277,12 @@ class ParserConfig(BaseModel):
     http_timeout: float | None = None
     use_annotated: bool = False
     use_serialize_as_any: bool = False
+    use_serialize_as_any_for_every_subclass: bool = False
     use_non_positive_negative_number_constrained_types: bool = False
     use_decimal_for_multiple_of: bool = False
     use_decimal_in_field_forms: bool = False
     use_encoded_str_for_constrained_base64: bool = False
+    use_msgspec_meta_for_map_keys: bool = False
     omit_redundant_constraints: bool = False
     read_length_keywords_by_type: bool = False
     read_msgspec_union_bounds_exactly: bool = False
@@ -331,6 +333,7 @@ class ParserConfig(BaseModel):
     http_query_parameters: Sequence[tuple[str, str]] | None = None
     treat_dot_as_module: bool | None = None
     strict_dotted_module_names: bool = False
+    rename_submodules_hidden_by_classes: bool = False
     use_exact_imports: bool = False
     use_type_checking_imports: bool | None = None
     default_field_extras: dict[str, Any] | None = None

@@ -22,6 +22,7 @@ walk of ``parser/_schema_reading.py``, which the reference reading (``parser/_sc
 from __future__ import annotations
 
 import json
+from contextlib import contextmanager
 from copy import copy
 from dataclasses import replace
 from functools import partial
@@ -67,12 +68,12 @@ from datamodel_code_generator.parser._schema_reading import (
 from datamodel_code_generator.parser.base import title_to_class_name
 from datamodel_code_generator.parser.schema_version import JsonSchemaFeatures, _detect_declared_jsonschema_version
 from datamodel_code_generator.python_literal import stable_repr
-from datamodel_code_generator.reference import SchemaLocation, is_url
+from datamodel_code_generator.reference import SchemaLocation, context_variable, is_url
 from datamodel_code_generator.util import get_yaml_parse_errors
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Callable, Iterator, Sequence
+    from collections.abc import Callable, Generator, Iterator, Sequence
     from contextlib import AbstractContextManager
 
     from datamodel_code_generator._parser_context import ParserSourceContext
@@ -119,6 +120,7 @@ __all__ = [
     "parse_source",
     "prepare_schema_resources",
     "read_document",
+    "referenced_document_context",
     "reserved_targets",
     "resolve_lenient_resource_ref",
     "resolve_root_model_name",
@@ -219,6 +221,7 @@ class SchemaDocumentsHost(Protocol):
     source: str | Path | list[Path] | ParseResult | dict[str, YamlValue]
     _cache_local_sources: bool
     _document_dialects: dict[str, DocumentDialect]
+    _referring_dialect: DocumentDialect | None
     _document_roles: dict[str, dict[str, None]]
     _documents_as_written: dict[int, tuple[dict[str, YamlValue], dict[str, YamlValue]]]
     _has_embedded_schema_resources: bool
@@ -344,6 +347,9 @@ class SchemaDocumentsHost(Protocol):
 
     def _resolve_schema_resource_ref(self, reference: str, base: str, document: str, *, nested_scope: bool) -> str:
         """Resolve registered resources before considering a physical document fetch."""
+
+    def _ignores_ref_siblings_at(self, location: SchemaLocation | None) -> bool:
+        """Return whether the schema version of a location ignores the keywords beside a ``$ref``."""
 
     def _read_dialect(self, raw: dict[str, Any], *, inherited: DocumentDialect | None = None) -> DocumentDialect:
         """Return the dialect a document of the parser's kind is read by (``parser/jsonschema.py``)."""
@@ -547,11 +553,19 @@ def schema_resource_identifier(
     """Inherit draft identifiers while preserving fallbacks for roots and unknown dialects.
 
     A schema below no `$schema` reads the identifier keyword of the version its document is read by under
-    --read-schema-version-per-document, else that of ``schema_features`` (row ``legacy-first-read-dialect``).
+    --read-schema-version-per-document, else that of ``schema_features`` (row ``legacy-first-read-dialect``). Under
+    --ignore-ref-siblings-by-schema-version a schema with a `$ref` declares none where the version of its document
+    ignores the keywords beside the `$ref`, as its schema object is the `$ref` alone (``reads_ref_alone``).
     """
     if "$schema" in schema and getattr(parser.config, "jsonschema_version", None) in {None, JsonSchemaVersion.Auto}:
         version = _detect_declared_jsonschema_version(schema)
         id_field = JsonSchemaFeatures.from_version(version).id_field if version is not None else None
+    if (
+        parser.config.ignore_ref_siblings_by_schema_version
+        and isinstance(schema.get("$ref"), str)
+        and parser._ignores_ref_siblings_at(SchemaLocation(document, ()))  # noqa: SLF001
+    ):
+        return id_field, None
     identifier = schema.get(id_field or document_id_field(parser, document))
     if not identifier and (is_root or id_field is None):
         identifier = schema.get("$id") or schema.get("id")
@@ -702,7 +716,7 @@ def loaded_document_dialect(parser: SchemaDocumentsHost, raw: dict[str, Any], do
     """Return the schema version a loaded document is read by (L0).
 
     An input document is read by itself. Any other document that declares no version keeps the version an earlier
-    load gave it, else takes that of the document being parsed when a reference loads it.
+    load gave it, else takes that of the document whose reference loads it (``loading_document_dialect``).
     """
     inherited = None
     if raw is not parser.raw_obj and document not in parser.model_resolver.after_load_files:
@@ -710,9 +724,37 @@ def loaded_document_dialect(parser: SchemaDocumentsHost, raw: dict[str, Any], do
     return parser._read_dialect(raw, inherited=inherited)  # noqa: SLF001
 
 
+def record_document_dialect(parser: SchemaDocumentsHost, raw: dict[str, Any], document: str) -> None:
+    """Record the schema version a loaded document is read by (``loaded_document_dialect``, L0).
+
+    A document it loads that declares no version takes it from there (``loading_document_dialect``).
+    """
+    parser._document_dialects[document] = loaded_document_dialect(parser, raw, document)  # noqa: SLF001
+
+
 def loading_document_dialect(parser: SchemaDocumentsHost) -> DocumentDialect | None:
-    """Return the version of the document being parsed, which a document its references load takes by default."""
-    return parser._document_dialects.get(parser._schema_resource_document(list(parser.model_resolver.current_root)))  # noqa: SLF001
+    """Return the version of the document whose reference loads a document, which it takes by default.
+
+    It is the version of the document being parsed; in the resolution context of a document no load has recorded
+    yet, which a reference entered to load it, that of the document the reference is in.
+    """
+    current = parser._schema_resource_document(list(parser.model_resolver.current_root))  # noqa: SLF001
+    return parser._document_dialects.get(current) or parser._referring_dialect  # noqa: SLF001
+
+
+@contextmanager
+def referenced_document_context(
+    parser: SchemaDocumentsHost, context: AbstractContextManager[None]
+) -> Generator[None, None, None]:
+    """Enter ``context``, the resolution context of a document a reference names, keeping the referring version.
+
+    The version of the document the reference is in is read before the switch, so a document the context loads
+    takes it when it declares none (``loading_document_dialect``).
+    """
+    referring = loading_document_dialect(parser) if parser._reads_schema_version_per_document else None  # noqa: SLF001
+    setter = partial(setattr, parser, "_referring_dialect")
+    with context, context_variable(setter, parser._referring_dialect, referring):  # noqa: SLF001
+        yield
 
 
 def prepare_schema_resources(parser: SchemaDocumentsHost, raw: dict[str, Any], path_parts: list[str]) -> dict[str, Any]:
@@ -726,7 +768,7 @@ def prepare_schema_resources(parser: SchemaDocumentsHost, raw: dict[str, Any], p
     parser._schema_resource_path_parts.setdefault(document, path_parts)  # noqa: SLF001
     if (cached := parser._schema_resource_cache.get(document)) is not None and (raw is cached[0] or raw is cached[1]):  # noqa: SLF001
         return cached[1]
-    parser._document_dialects[document] = loaded_document_dialect(parser, raw, document)  # noqa: SLF001
+    record_document_dialect(parser, raw, document)
     registry = parser._schema_resource_registry  # noqa: SLF001
     registry.forget(document)
     parser._lenient_documents.pop(document, None)  # noqa: SLF001

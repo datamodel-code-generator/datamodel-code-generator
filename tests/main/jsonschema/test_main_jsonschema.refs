@@ -6947,6 +6947,13 @@ pydantic-dataclass-self-named-pydantic-2	main/jsonschema/field_type_collision_ru
 pydantic-dataclass-self-named-pydantic-2	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-subclass	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_subclass.py
 pydantic-dataclass-subclass	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+[test_main_jsonschema_forwarded_class_beside_loaded_submodule]
+dataclasses.dataclass	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[dataclasses.dataclass].payloads.txt
+dataclasses.dataclass	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[dataclasses.dataclass]/
+msgspec.Struct	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[msgspec.Struct].payloads.txt
+msgspec.Struct	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[msgspec.Struct]/
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[dataclasses.dataclass].payloads.txt
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[pydantic_v2.BaseModel]/
 [test_main_jsonschema_forwarding_reference_collapse_root]
 	main/jsonschema/forwarding_reference//*.py
 [test_main_jsonschema_generate_schema_validators]
@@ -6978,6 +6985,11 @@ default	main/jsonschema/main_jsonschema/hyphenated_directory_reference[default]/
 [test_main_jsonschema_ignore_ref_siblings_by_schema_version]
 ignored	main/jsonschema/main_jsonschema/ignore_ref_siblings_by_schema_version[ignored].py
 overlaid	main/jsonschema/main_jsonschema/ignore_ref_siblings_by_schema_version[overlaid].py
+[test_main_jsonschema_ignore_ref_siblings_by_schema_version_identifier_and_import]
+ignored	main/jsonschema/main_jsonschema/ignore_ref_siblings_by_schema_version_identifier_and_import[ignored].py
+ignored	main/jsonschema/main_jsonschema/ignore_ref_siblings_by_schema_version_identifier_and_import[ignored].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+overlaid	main/jsonschema/main_jsonschema/ignore_ref_siblings_by_schema_version_identifier_and_import[overlaid].py
+overlaid	main/jsonschema/main_jsonschema/ignore_ref_siblings_by_schema_version_identifier_and_import[overlaid].warnings.txt
 [test_main_jsonschema_import_cycle_map_key_alias]
 dataclasses.dataclass	main/jsonschema/main_jsonschema/import_cycle_map_key_alias[dataclasses.dataclass]/
 msgspec.Struct	main/jsonschema/main_jsonschema/import_cycle_map_key_alias[msgspec.Struct]/
@@ -7438,8 +7450,13 @@ per-document	main/jsonschema/main_jsonschema/read_schema_version_per_document[pe
 first-read	main/jsonschema/main_jsonschema/read_schema_version_per_document_directory[first-read]/
 per-document	main/jsonschema/main_jsonschema/read_schema_version_per_document_directory[per-document]/
 single-value-enum-as-const	main/jsonschema/main_jsonschema/read_schema_version_per_document_directory[single-value-enum-as-const]/
+[test_main_jsonschema_read_schema_version_per_document_dynamic_scope]
+	main/jsonschema/main_jsonschema/read_schema_version_per_document_dynamic_scope.py
 [test_main_jsonschema_read_schema_version_per_document_explicit_version]
 	main/jsonschema/main_jsonschema/read_schema_version_per_document_explicit_version/
+[test_main_jsonschema_read_schema_version_per_document_external_recursive_anchor]
+first-read	main/jsonschema/main_jsonschema/read_schema_version_per_document_external_recursive_anchor[first-read].py
+per-document	main/jsonschema/main_jsonschema/read_schema_version_per_document_external_recursive_anchor[per-document].py
 [test_main_jsonschema_read_schema_version_per_document_property_count]
 first-read	main/jsonschema/main_jsonschema/read_schema_version_per_document_property_count[first-read].py
 per-document	main/jsonschema/main_jsonschema/read_schema_version_per_document_property_count[per-document].py
@@ -7754,6 +7771,28 @@ module-import-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by
 module-import-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[module-import-msgspec.Struct]/
 module-import-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[module-import-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[module-import-dataclasses.dataclass].payloads.txt
 module-import-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[module-import-pydantic_v2.BaseModel]/
+renamed-after-collapse-rename	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-after-collapse-rename].payloads.txt
+renamed-after-collapse-rename	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-after-collapse-rename]/
+renamed-after-import-rename	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-after-import-rename].payloads.txt
+renamed-after-import-rename	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-after-import-rename]/
+renamed-after-type-rename	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-after-type-rename].payloads.txt
+renamed-after-type-rename	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-after-type-rename]/
+renamed-dataclasses.dataclass	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-dataclasses.dataclass].payloads.txt
+renamed-dataclasses.dataclass	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-dataclasses.dataclass]/
+renamed-files	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-files].payloads.txt
+renamed-files	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-files]/
+renamed-files-nested	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-files-nested].payloads.txt
+renamed-files-nested	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-files-nested]/
+renamed-forwarded	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-forwarded].payloads.txt
+renamed-forwarded	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-forwarded]/
+renamed-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-msgspec.Struct].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-dataclasses.dataclass].payloads.txt
+renamed-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-msgspec.Struct]/
+renamed-nothing	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-nothing].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-dataclasses.dataclass].payloads.txt
+renamed-nothing	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-nothing]/	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-pydantic_v2.BaseModel]/
+renamed-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-dataclasses.dataclass].payloads.txt
+renamed-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-pydantic_v2.BaseModel]/
+renamed-pydantic_v2.BaseModel-exact-imports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-pydantic_v2.BaseModel-exact-imports].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-dataclasses.dataclass].payloads.txt
+renamed-pydantic_v2.BaseModel-exact-imports	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-pydantic_v2.BaseModel-exact-imports]/
 [test_main_jsonschema_tagged_union_non_literal_const]
 	main/jsonschema/main_jsonschema/tagged_union_non_literal_const.py
 [test_main_jsonschema_time_delta]
@@ -8379,7 +8418,7 @@ unrelated-custom-explicit-target-unset	main/jsonschema/pydantic_v2_dataclass_ref
 	main/jsonschema/pydantic_v2_model_rebuild_inheritance.py
 [test_main_read_length_keywords_by_type]
 collapse_root_models	main/jsonschema/main_jsonschema/main_read_length_keywords_by_type[collapse_root_models].verdicts.txt
-collapse_root_models	main/jsonschema/read_length_keywords_by_type.py
+collapse_root_models	main/jsonschema/read_length_keywords_by_type.py	= main/jsonschema/read_length_keywords_by_type~main_read_length_keywords_by_type[collapse_root_models].py
 dataclass_annotated	main/jsonschema/main_jsonschema/main_read_length_keywords_by_type[dataclass_annotated].verdicts.txt	= main/jsonschema/main_jsonschema/main_read_length_keywords_by_type[collapse_root_models].verdicts.txt
 dataclass_annotated	main/jsonschema/read_length_keywords_by_type.py	= main/jsonschema/read_length_keywords_by_type~main_read_length_keywords_by_type[dataclass_annotated].py
 default	main/jsonschema/main_jsonschema/main_read_length_keywords_by_type[default].verdicts.txt	= main/jsonschema/main_jsonschema/main_read_length_keywords_by_type[collapse_root_models].verdicts.txt
@@ -8394,6 +8433,10 @@ msgspec_released	main/jsonschema/main_jsonschema/main_read_length_keywords_by_ty
 msgspec_released	main/jsonschema/read_length_keywords_by_type.py	= main/jsonschema/read_length_keywords_by_type~main_read_length_keywords_by_type[msgspec_released].py
 released	main/jsonschema/main_jsonschema/main_read_length_keywords_by_type[released].verdicts.txt
 released	main/jsonschema/read_length_keywords_by_type.py	= main/jsonschema/read_length_keywords_by_type~main_read_length_keywords_by_type[released].py
+type_mappings	main/jsonschema/main_jsonschema/main_read_length_keywords_by_type[type_mappings].verdicts.txt	= main/jsonschema/main_jsonschema/main_read_length_keywords_by_type[collapse_root_models].verdicts.txt
+type_mappings	main/jsonschema/read_length_keywords_by_type.py	= main/jsonschema/read_length_keywords_by_type~main_read_length_keywords_by_type[type_mappings].py
+type_mappings_released	main/jsonschema/main_jsonschema/main_read_length_keywords_by_type[type_mappings_released].verdicts.txt	= main/jsonschema/main_jsonschema/main_read_length_keywords_by_type[released].verdicts.txt
+type_mappings_released	main/jsonschema/read_length_keywords_by_type.py
 use_annotated	main/jsonschema/main_jsonschema/main_read_length_keywords_by_type[use_annotated].verdicts.txt	= main/jsonschema/main_jsonschema/main_read_length_keywords_by_type[collapse_root_models].verdicts.txt
 use_annotated	main/jsonschema/read_length_keywords_by_type.py	= main/jsonschema/read_length_keywords_by_type~main_read_length_keywords_by_type[use_annotated].py
 use_annotated_released	main/jsonschema/main_jsonschema/main_read_length_keywords_by_type[use_annotated_released].verdicts.txt
@@ -8480,6 +8523,11 @@ dedupe-msgspec.Struct	main/jsonschema/read_only_write_only_constrained_root_map.
 dedupe-pydantic_v2.BaseModel	main/jsonschema/read_only_write_only_constrained_root_map.py	= main/jsonschema/read_only_write_only_constrained_root_map~main_read_only_write_only_constrained_root_map[dedupe-pydantic_v2.BaseModel].py
 default-msgspec.Struct	main/jsonschema/read_only_write_only_constrained_root_map.py	= main/jsonschema/read_only_write_only_constrained_root_map~main_read_only_write_only_constrained_root_map[default-msgspec.Struct].py
 default-pydantic_v2.BaseModel	main/jsonschema/read_only_write_only_constrained_root_map.py	= main/jsonschema/read_only_write_only_constrained_root_map~main_read_only_write_only_constrained_root_map[default-pydantic_v2.BaseModel].py
+[test_main_read_only_write_only_constrained_union]
+dedupe-flagged	main/jsonschema/read_only_write_only_constrained_union.py
+dedupe-unflagged	main/jsonschema/read_only_write_only_constrained_union.py	= main/jsonschema/read_only_write_only_constrained_union~main_read_only_write_only_constrained_union[dedupe-unflagged].py
+default-flagged	main/jsonschema/read_only_write_only_constrained_union.py	= main/jsonschema/read_only_write_only_constrained_union~main_read_only_write_only_constrained_union[default-flagged].py
+default-unflagged	main/jsonschema/read_only_write_only_constrained_union.py	= main/jsonschema/read_only_write_only_constrained_union~main_read_only_write_only_constrained_union[default-unflagged].py
 [test_main_read_only_write_only_constrained_value]
 dedupe-msgspec.Struct	main/jsonschema/read_only_write_only_constrained_value.py
 dedupe-pydantic_v2.BaseModel	main/jsonschema/read_only_write_only_constrained_value.py	= main/jsonschema/read_only_write_only_constrained_value~main_read_only_write_only_constrained_value[dedupe-pydantic_v2.BaseModel].py
@@ -8895,6 +8943,17 @@ python-3.11-collapse-root-models	main/jsonschema/rust_unsupported_typed_extra_py
 	main/jsonschema/selective_constraint_kwargs.py
 [test_main_self_reference]
 	main/jsonschema/self_reference.py
+[test_main_serialize_as_any_every_subclass]
+every-subclass	main/jsonschema/main_jsonschema/main_serialize_as_any_every_subclass[every-subclass].dump.txt
+every-subclass	main/jsonschema/serialize_as_any_every_subclass.py	= main/jsonschema/serialize_as_any_every_subclass~main_serialize_as_any_every_subclass[every-subclass].py
+every-subclass-collapse	main/jsonschema/main_jsonschema/main_serialize_as_any_every_subclass[every-subclass-collapse].dump.txt
+every-subclass-collapse	main/jsonschema/serialize_as_any_every_subclass.py	= main/jsonschema/serialize_as_any_every_subclass~main_serialize_as_any_every_subclass[every-subclass-collapse].py
+every-subclass-reuse	main/jsonschema/main_jsonschema/main_serialize_as_any_every_subclass[every-subclass-reuse].dump.txt	= main/jsonschema/main_jsonschema/main_serialize_as_any_every_subclass[every-subclass-collapse].dump.txt
+every-subclass-reuse	main/jsonschema/serialize_as_any_every_subclass.py	= main/jsonschema/serialize_as_any_every_subclass~main_serialize_as_any_every_subclass[every-subclass-reuse].py
+released	main/jsonschema/main_jsonschema/main_serialize_as_any_every_subclass[released].dump.txt
+released	main/jsonschema/serialize_as_any_every_subclass.py
+released-reuse	main/jsonschema/main_jsonschema/main_serialize_as_any_every_subclass[released-reuse].dump.txt
+released-reuse	main/jsonschema/serialize_as_any_every_subclass.py	= main/jsonschema/serialize_as_any_every_subclass~main_serialize_as_any_every_subclass[released-reuse].py
 [test_main_serialize_as_any_import_fast_path]
 	main/jsonschema/serialize_as_any_import_fast_path.py
 [test_main_similar_nested_array]

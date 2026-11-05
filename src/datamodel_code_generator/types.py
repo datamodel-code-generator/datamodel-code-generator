@@ -1014,6 +1014,10 @@ class DataType(_BaseModel):  # noqa: PLR0904
         """
         return type_
 
+    def _get_wrapped_alias_type_hint(self, alias: str) -> str:  # noqa: PLR6301
+        """Wrap the expression a reference type names its model by, its alias, as subclasses decide; here never."""
+        return alias
+
     @staticmethod
     def _wrap_discriminator_type_hint(type_: str, discriminator: str) -> str:
         """Preserve the historical discriminator rendering for direct DataType users.
@@ -1410,6 +1414,8 @@ def _render_apply(expr: TypeApply) -> str:
         text = render_type_expr(expr.args[0])
     elif not text:
         text, member_null = _render_form(expr)
+    elif node.reference is not None and text == node.alias:
+        text = node._get_wrapped_alias_type_hint(text)  # noqa: SLF001
     if (container := expr.container) is not None:
         if member_null:
             text, member_null = node._optional_hint(text, node.use_union_operator), False  # noqa: SLF001
@@ -1769,6 +1775,7 @@ class DataTypeManager(ABC):
     read_msgspec_union_bounds_exactly: bool = False
     use_decimal_in_field_forms: bool = False
     use_encoded_str_for_constrained_base64: bool = False
+    use_msgspec_meta_for_map_keys: bool = False
     WRITES_ENCODED_STR: ClassVar[bool] = False
     """Whether the output writes a string decoded from base64 text with its constraints in front of the decoding."""
     CONSTRAINED_TYPE_CONSUMED_KEYS: ClassVar[dict[str, tuple[str, ...]]] = dict(
@@ -1841,6 +1848,10 @@ class DataTypeManager(ABC):
     def get_data_type(self, types: Types, **kwargs: Any) -> DataType:
         """Map a Types enum value to a DataType. Must be implemented by subclasses."""
         raise NotImplementedError
+
+    def get_map_key_str_type(self, **kwargs: Any) -> DataType:
+        """Return the string key type of a dict whose keys a ``pattern``, ``minLength`` or ``maxLength`` constrains."""
+        return self.get_data_type(Types.string, **kwargs)
 
     def _non_finite_multiple_of(self, types: Types, kwargs: Mapping[str, Any]) -> float | None:  # noqa: ARG002, PLR6301
         """Return the ``multipleOf`` that ``get_data_type`` leaves out of the type as the backend refuses it, if any."""

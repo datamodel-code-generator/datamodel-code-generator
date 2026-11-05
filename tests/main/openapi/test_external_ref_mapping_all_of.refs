@@ -43,9 +43,13 @@ typing.TypedDict-beside	main/openapi/external_ref_mapping_all_of/grandchild_modu
 typing.TypedDict-beside	main/openapi/external_ref_mapping_all_of/grandchild_modules[typing.TypedDict-beside]/
 typing.TypedDict-subdirectory	main/openapi/external_ref_mapping_all_of/grandchild_modules[typing.TypedDict-subdirectory].payloads.txt	= main/openapi/external_ref_mapping_all_of/grandchild_modules[dataclasses.dataclass-beside].payloads.txt
 typing.TypedDict-subdirectory	main/openapi/external_ref_mapping_all_of/grandchild_modules[typing.TypedDict-subdirectory]/
+[test_external_ref_mapping_all_of_union_branch]
+	main/openapi/external_ref_mapping_all_of/union_branch.py
 [test_external_ref_mapping_all_of_unmapped_extra_items]
 	main/openapi/external_ref_mapping_all_of/unmapped_extra_items.extra_items.txt
 	main/openapi/external_ref_mapping_all_of/unmapped_extra_items.py
+[test_python_import_all_of_alias_base]
+	main/openapi/external_ref_mapping_all_of/python_import_all_of_alias_base.py
 [test_python_import_all_of_base]
 dataclasses.dataclass	main/openapi/external_ref_mapping_all_of/python_import_all_of_base[dataclasses.dataclass].payloads.txt
 dataclasses.dataclass	main/openapi/external_ref_mapping_all_of/python_import_all_of_base[dataclasses.dataclass].py

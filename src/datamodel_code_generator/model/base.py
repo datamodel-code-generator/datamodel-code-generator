@@ -701,8 +701,9 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     def unconstrain_union_members(self, options: ConstraintOptions | None = None) -> bool | None:
         """Write union members without the constraints the output model cannot check on one member alone.
 
-        ``options`` are the constraint options of the run (``DataTypeManager.constraint_options``). Return False when
-        the field stayed as it was; None, which an override that returns nothing gives, counts as a change.
+        ``options`` are the constraint options of the run (``DataTypeManager.constraint_options``), given only under
+        ``--read-msgspec-union-bounds-exactly``. Return False when the field stayed as it was; None, which an override
+        that returns nothing gives, counts as a change.
         """
 
     def inherit_unconstrained_union_members(self, source: DataModelFieldBase) -> None:
@@ -2291,6 +2292,9 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     _INCLUDE_DICT_KEY_REFERENCE_CLASSES: ClassVar[Callable[[DataModel], bool] | None] = None
     _TYPED_EXTRA_DICT_KEY_CAPABILITY: ClassVar[Callable[[DataType], bool] | None] = None
     has_forward_reference: bool = False
+    serialized_as_any: bool | None = None
+    """Whether ``--use-serialize-as-any`` wraps a type naming the model, as the final class hierarchy decides under
+    --use-serialize-as-any-for-every-subclass; None where nothing decided it (``_writes_serialize_as_any``)."""
     discriminator_tag: tuple[Any, Any] | None = None
 
     @classmethod

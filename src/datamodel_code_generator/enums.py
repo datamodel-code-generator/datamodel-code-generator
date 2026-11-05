@@ -181,7 +181,9 @@ class NamingStrategy(Enum):
 
     numbered: Append numeric suffix (Address1, Address2) [default].
     parent_prefixed: Prefix every nested model with the name of the model that holds it, in CamelCase, nested parents
-        included (CompanyAddress, CompanyEmployeeHomeAddress); the model names are those of full_path.
+        included (CompanyAddress, CompanyEmployeeHomeAddress); the model names are those of full_path where the class
+        names are converted as by default, as a custom_class_name_generator gets the names joined by an underscore
+        (Company_address) here and in CamelCase (CompanyAddress) under full_path.
     full_path: Prefix every nested model with the names of the models that hold it (CompanyEmployeeHomeAddress).
     primary_first: Prioritize primary schema definitions, others get suffix.
     """

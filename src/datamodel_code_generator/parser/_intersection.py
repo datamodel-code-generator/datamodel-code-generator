@@ -429,6 +429,7 @@ class _Reconciler:
 
     __slots__ = (
         "admits_value",
+        "enum_entries_skip_null",
         "extras_key",
         "own_enum_is_part",
         "parts_admit_null",
@@ -443,11 +444,13 @@ class _Reconciler:
         *,
         own_enum_is_part: bool,
         admits_value: Callable[[frozenset[str], object], bool] | None,
+        enum_entries_skip_null: Callable[[Mapping[str, Any]], bool],
     ) -> None:
         self.extras_key = extras_key
         self.parts_admit_null = parts_admit_null
         self.own_enum_is_part = own_enum_is_part
         self.admits_value = admits_value
+        self.enum_entries_skip_null = enum_entries_skip_null
         self.unsatisfiable: list[str] = []
         self.untaken_patterns: list[str] = []
 
@@ -459,6 +462,7 @@ class _Reconciler:
     def schema(self, parts: Sequence[Mapping[str, Any]], row: dict[str, Any]) -> dict[str, Any] | None:
         """Return a copy of ``row`` with the keywords it gets wrong replaced, or None when it gets none wrong."""
         updates: dict[str, Any] = {}
+        own_conflicts = len(self.unsatisfiable)
         for lower, upper in _BOUND_DIMENSIONS:
             self._bounds(lower, upper, parts, row, updates)
         for keyword in ("multipleOf", "uniqueItems"):
@@ -473,7 +477,7 @@ class _Reconciler:
         self._type(parts, row, updates)
         self._enum(parts, row, updates)
         if self.admits_value is not None:
-            self._enum_outside_type(parts, row, updates, self.admits_value)
+            self._enum_outside_type(parts, row, updates, self.admits_value, self.unsatisfiable[own_conflicts:])
         self._const(parts)
         for keyword in _SCHEMA_KEYWORDS:
             values = [part[keyword] for part in parts if keyword in part]
@@ -572,14 +576,18 @@ class _Reconciler:
         row: dict[str, Any],
         updates: dict[str, Any],
         admits_value: Callable[[frozenset[str], object], bool],
+        conflicts: Collection[str],
     ) -> None:
         """Remove the ``enum`` values the written ``type`` rejects, with their ``x-enum-*`` entries.
 
         A ``null`` value stays, since the null rule owns it; an ``enum`` whose every other value the ``type`` rejects
-        keeps the row's value, recorded as a keyword without a common value, unless the parts admit its null.
+        keeps the row's value, recorded as a keyword without a common value, unless the parts admit its null. Nothing
+        is removed where the schema's own ``type`` or ``enum`` has no common value (``conflicts``, those of this schema
+        and not of a nested one). Each entry is matched to its value as the schema's enum class reads them: past the
+        null where the entries leave it out (``enum_entries_skip_null``).
         """
         if (
-            {"type", "enum"} & set(self.unsatisfiable)
+            {"type", "enum"} & set(conflicts)
             or (types := updates.get("type", row.get("type"))) is None
             or not isinstance(values := updates.get("enum", row.get("enum")), list)
         ):
@@ -592,8 +600,13 @@ class _Reconciler:
             self.unsatisfiable.append("enum")
             return
         updates["enum"] = [values[index] for index in indices]
+        skips_null = self.enum_entries_skip_null({
+            key: value for key, value in {**row, **updates}.items() if value is not _REMOVED
+        })
+        entry_positions = [index for index, value in enumerate(values) if value is not None or not skips_null]
+        kept = set(indices)
         updates.update({
-            key: [metadata[index] for index in indices if index < len(metadata)]
+            key: [entry for position, entry in zip(entry_positions, metadata, strict=False) if position in kept]
             for key in ENUM_METADATA_KEYWORDS
             if isinstance(metadata := updates.get(key, row.get(key)), list)
         })
@@ -648,6 +661,7 @@ def intersect_keywords(  # noqa: PLR0913
     *,
     extras_key: str,
     parts_admit_null: Callable[[Sequence[Mapping[str, Any]]], bool],
+    enum_entries_skip_null: Callable[[Mapping[str, Any]], bool],
     ref_siblings_are_parts: bool = True,
     legacy_rows: Collection[str] = (),
     admits_value: Callable[[frozenset[str], object], bool] | None = None,
@@ -657,7 +671,8 @@ def intersect_keywords(  # noqa: PLR0913
     ``parts`` are dumped schema dicts in order: the referenced or inherited schema first, the site's own keywords
     last. ``extras_key`` is where a dump keeps keywords such as ``const``. ``parts_admit_null`` answers whether the
     parts of a typed site, or of a nested schema of it, admit null: the null rule of the caller (row ``all-of-parts``
-    of ``parser/_null_facts.py``). A keyword of the row stays wherever it
+    of ``parser/_null_facts.py``), and ``enum_entries_skip_null`` whether the ``x-enum-*`` entries of a schema leave
+    out the null of its ``enum`` (``_enum_entries_skip_null``). A keyword of the row stays wherever it
     enforces what the intersection of the parts enforces (a looser bound, a concatenated or wider ``enum``, a wider
     ``type`` or a dropped ``false`` does not), and nested schemas follow the same rule. ``ref_siblings_are_parts`` is
     False for ``$ref`` siblings in a dialect that does not read them as parts (the legacy sibling enum row). Under
@@ -672,6 +687,7 @@ def intersect_keywords(  # noqa: PLR0913
         parts_admit_null,
         own_enum_is_part=ref_siblings_are_parts,
         admits_value=admits_value,
+        enum_entries_skip_null=enum_entries_skip_null,
     )
     keywords = reconciler.schema(parts, row)
     return KeywordIntersection(

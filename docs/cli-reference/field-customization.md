@@ -2236,11 +2236,13 @@ Existing generated output is preserved unless this option is enabled.
 Give a variant that discriminated unions tag differently every tag they give it.
 
 A variant that several discriminated unions list has one tag field. Without the option it keeps the tags of the first
-union that tags it, so a union that tags it otherwise, by a mapping key or by the schema name, rejects every document
-that selects the variant, and a warning says so. With `--merge-shared-variant-tags` its tag field is a `Literal` of
-every tag the unions give it, so each union decodes the documents it selects the variant by; a union then also accepts
-the tags the other unions give the variant. A variant keeps the first union's tags where a union would then give two of
-its variants one tag, as crossing mappings do, and msgspec Structs, which take one tag, are unchanged.
+union that tags it, so a union that tags it otherwise, by a mapping key or by the schema name, rejects the documents
+that select the variant by a tag it does not keep, and a warning says so. With `--merge-shared-variant-tags` its tag
+field is a `Literal` of every tag the unions give it, so each union decodes the documents it selects the variant by; a
+union then also accepts the tags the other unions give the variant. A tag that the pattern of the tag field rejects is
+left out, as the schema rejects the documents it selects the variant by. A variant keeps the first union's tags where a
+union listing it, or nesting a union that lists it, would then read one of its tags on another variant, as crossing
+mappings do, and msgspec Structs, which take one tag, are unchanged.
 
 !!! tip "Usage"
 
@@ -3215,6 +3217,7 @@ string is: at a property, an item, a map value, a root, the branches of a union 
           "x-python-type": "Sequence[str]"
         },
         "as_text": {"type": "array", "items": {"type": "integer"}, "maxLength": 2, "x-python-type": "str"},
+        "count": {"type": "integer", "format": "int64", "maxLength": 2},
         "short": {"$ref": "#/$defs/Short"}
       },
       "$defs": {
@@ -3283,6 +3286,7 @@ string is: at a property, an item, a map value, a root, the branches of a union 
             letters: list[Letter] | None = None
             letter_seq: Sequence[LetterSeqEnum] | None = None
             as_text: str | None = None
+            count: int | None = None
             short: Short | None = None
         ```
 
@@ -3346,6 +3350,7 @@ string is: at a property, an item, a map value, a root, the branches of a union 
             letters: Annotated[list[Letter] | None, Field(max_length=2)] = None
             letter_seq: Annotated[Sequence[LetterSeqEnum] | None, Field(max_length=2)] = None
             as_text: Annotated[str | None, Field(max_length=2)] = None
+            count: int | None = None
             short: Short | None = None
         ```
 

@@ -4162,9 +4162,33 @@ _CATALOG_PAYLOADS = ['{"featured": {"sku": "s"}, "parent": {"featured": {"sku": 
 _DETAIL_PAYLOADS = ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']
 _NEEDS_STR_ENUM = pytest.mark.skipif(sys.version_info < (3, 11), reason="the output imports enum.StrEnum")
 _ANNOTATIONS_DECODED = [("api", "Order", _ITEM_PAYLOADS), ("", "Catalog", _CATALOG_PAYLOADS)]
+_RENAMED_SUBMODULE_DECODED = [
+    (
+        "pkg.api",
+        "Order",
+        ['{"detail": {"message": "m", "note": {"text": "t"}}, "other": {"flag": true}}', '{"detail": {"message": 1}}'],
+    ),
+    ("pkg", "Report", ['{"warn": {"count": 1}}', '{"warn": {"count": "x"}}']),
+]
 _LITERAL_PAYLOADS = ['{"item": {"sku": "s"}}', '{"kind": "book"}', '{"kind": "disc"}', '{"item": {"sku": 1}}']
 
 
+@pytest.mark.cli_doc(
+    options=["--rename-submodules-hidden-by-classes"],
+    option_description="""Rename a submodule named like a class of its package.
+
+A dotted schema name such as `pkg.Warn.Detail` beside `pkg.Warn` writes the class `Warn` in `pkg/__init__.py` and the
+module `pkg/Warn.py`. Importing the module binds the name `Warn` of the package to the module in place of the class, so
+the models that name either fail to decode. With this option the module, and the modules below it, take the first
+free name with trailing underscores (`pkg/Warn_.py`, or `pkg/Warn__.py` beside a module `pkg/Warn_.py`), also where
+the directories of a directory input name it; the class keeps its name. The class names are the final ones: where a
+later rename gives a class the name of a submodule (`--field-type-collision-strategy rename-type`, an import that
+shadows the class, `--collapse-root-models-name-strategy parent`), that submodule is renamed, and a submodule whose
+class a later rename moves off its name keeps its name.""",
+    input_schema="jsonschema/submodule_named_like_package_class.json",
+    cli_args=["--output-model-type", "pydantic_v2.BaseModel", "--rename-submodules-hidden-by-classes"],
+    golden_output="main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-pydantic_v2.BaseModel]/",
+)
 @pytest.mark.parametrize(
     ("input_name", "output_model_type", "target_python_version", "extra_args", "decoded"),
     [
@@ -4387,6 +4411,122 @@ _LITERAL_PAYLOADS = ['{"item": {"sku": "s"}}', '{"kind": "book"}', '{"kind": "di
             )
             for output_model_type in ("pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct")
         ),
+        *(
+            pytest.param(
+                "submodule_named_like_package_class.json",
+                output_model_type,
+                "3.10",
+                ["--rename-submodules-hidden-by-classes", *extra_args],
+                _RENAMED_SUBMODULE_DECODED,
+                id=f"renamed-{output_model_type}{suffix}",
+            )
+            for output_model_type, extra_args, suffix in (
+                ("pydantic_v2.BaseModel", [], ""),
+                ("dataclasses.dataclass", [], ""),
+                ("msgspec.Struct", [], ""),
+                ("pydantic_v2.BaseModel", ["--use-exact-imports"], "-exact-imports"),
+            )
+        ),
+        pytest.param(
+            "submodule_named_like_package_class_files",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--rename-submodules-hidden-by-classes"],
+            [
+                ("api", "Order", ['{"detail": {"message": "m", "note": {"text": "t"}}, "warn": {"count": 1}}']),
+                ("pkg", "Warn", ['{"count": 1}', '{"count": "x"}']),
+            ],
+            id="renamed-files",
+        ),
+        pytest.param(
+            "submodule_named_like_renamed_package_class_files",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--rename-submodules-hidden-by-classes"],
+            [
+                (
+                    "api",
+                    "Order",
+                    [
+                        '{"detail": {"message": "m", "note": {"text": "t"}}, "warn": {"count": 1}}',
+                        '{"detail": {"note": 1}}',
+                    ],
+                ),
+                ("pkg", "Warn", ['{"count": 1, "level": "high"}', '{"level": 2}']),
+            ],
+            id="renamed-files-nested",
+        ),
+        pytest.param(
+            "module_named_annotations.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--rename-submodules-hidden-by-classes"],
+            _ANNOTATIONS_DECODED,
+            id="renamed-nothing",
+        ),
+        pytest.param(
+            "submodule_named_like_renamed_type_class.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--rename-submodules-hidden-by-classes", "--field-type-collision-strategy", "rename-type"],
+            [
+                (
+                    "pkg.api",
+                    "Order",
+                    [
+                        '{"detail": {"message": "m"}, "note": {"text": "t"}, "report": {"Warn": {"count": 1}}}',
+                        '{"detail": {"message": 1}}',
+                    ],
+                ),
+                ("pkg", "Report", ['{"Warn": {"count": 2}}', '{"Warn": {"count": "x"}}']),
+            ],
+            id="renamed-after-type-rename",
+        ),
+        pytest.param(
+            "submodule_named_like_import_renamed_class.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--rename-submodules-hidden-by-classes", "--type-overrides", '{"Other.a": "decimal.Decimal"}'],
+            [
+                (
+                    "pkg.api",
+                    "Order",
+                    [
+                        '{"detail": {"message": "m"}, "other": {"a": "1.5", "b": {"m": 1}}}',
+                        '{"detail": {"message": 1}}',
+                    ],
+                ),
+                ("pkg", "Other", ['{"a": "2.5", "b": {"m": 2}}', '{"a": "x"}']),
+            ],
+            id="renamed-after-import-rename",
+        ),
+        pytest.param(
+            "submodule_named_like_collapsed_root_class.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            [
+                "--rename-submodules-hidden-by-classes",
+                "--collapse-root-models",
+                "--collapse-root-models-name-strategy",
+                "parent",
+            ],
+            [
+                ("pkg.api", "Order", ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']),
+                ("top", "User", ['{"w": {"n": 1}}', '{"w": {"n": "x"}}']),
+            ],
+            id="renamed-after-collapse-rename",
+        ),
+        pytest.param(
+            "submodule_named_like_forwarded_class.json",
+            "pydantic_v2.BaseModel",
+            "3.10",
+            ["--rename-submodules-hidden-by-classes"],
+            [
+                ("pkg.api", "Order", ['{"detail": {"message": "m"}}', '{"detail": {"message": 1}}']),
+                ("pkg", "Warn", ['{"count": 1, "x": {"warn": {"count": 2}}}', '{"count": "x"}']),
+            ],
+            id="renamed-forwarded",
+        ),
     ],
 )
 def test_main_jsonschema_submodule_hidden_by_package(
@@ -4419,8 +4559,18 @@ def test_main_jsonschema_submodule_hidden_by_package(
     ``--generate-schema-validators`` follows it (``BaseModel_aliased``). Where ``pkg/api.py`` imports
     ``pydantic.BaseModel`` or ``typing.Literal`` beside ``from . import BaseModel`` or ``from . import Literal``
     (#6105), the later import named both: the models of ``pkg/BaseModel.py`` and ``pkg/Literal.py`` are imported from
-    their modules, the default enum member included. The models are decoded after the first module named is imported,
-    in one import of the package.
+    their modules, the default enum member included. Where the ``__init__.py`` imports nothing from the submodule
+    (#6067), importing ``pkg.Warn`` replaced the class: --rename-submodules-hidden-by-classes renames the submodule and
+    the modules below it (``pkg/Warn__/``, as ``pkg/Warn_.py`` holds another submodule), also where the file layout of a
+    directory input names it (``pkg/Warn.json``, ``pkg/Warn/deep.json``; the header of a renamed module names its input
+    file, ``pkg/Warn/Deep.json`` for ``pkg/Warn_/Deep_.py`` where the package and the module below it are both renamed),
+    and renames nothing where no class hides a submodule. It renames by the final class names: where a later rename
+    gives a class the name of a submodule (``Warn_1`` of ``--field-type-collision-strategy rename-type``, ``Decimal1``
+    beside the import of ``decimal.Decimal``, ``Warn`` of ``--collapse-root-models-name-strategy parent``) the run is
+    parsed again and renames that submodule (``pkg/Warn_1_.py``), and keeps a submodule whose class a later rename moves
+    off its name (``pkg/Warn.py`` beside ``Warn_1``); a class that an import cycle merge moves into ``pkg/_internal.py``
+    is still bound by ``pkg/__init__.py``, so its submodule stays renamed. The models are decoded after the first module
+    named is imported, in one import of the package.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / input_name,
@@ -4442,6 +4592,46 @@ def test_main_jsonschema_submodule_hidden_by_package(
     with _generated_package_module(output_dir, decoded[0][0]):
         for module_path, model_name, payloads in decoded:
             module = importlib.import_module(f"{output_dir.name}.{module_path}" if module_path else output_dir.name)
+            verdicts += [
+                _decode_with_generated_model(output_model_type, getattr(module, model_name), payload)
+                for payload in payloads
+            ]
+    assert_output("\n".join(verdicts) + "\n", name="payloads")
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"])
+def test_main_jsonschema_forwarded_class_beside_loaded_submodule(output_dir: Path, output_model_type: str) -> None:
+    """Write a package whose ``__init__.py`` re-exports a class named like a submodule that it loads first.
+
+    An import cycle merge moves ``pkg.Warn`` and ``pkg.api.Order`` into ``pkg/_internal.py``, and ``pkg/__init__.py``
+    writes ``from ._internal import Warn``. ``_internal`` imports ``pkg/Warn.py`` for ``Order.detail`` while the
+    ``__init__.py`` runs, before it binds the class, so the class stays bound and the output is written (#6067). The
+    package is imported as Python imports it, a package before its modules: the code validation of the stored outputs
+    runs a module before its package, and ``_internal`` would then import an ``__init__.py`` that imports it half built.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "submodule_named_like_forwarded_loaded_class.json",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        skip_code_validation=True,
+    )
+    decoded = [
+        ("pkg.api", "Order", ['{"detail": {"message": "m"}, "warn": {"count": 1}}', '{"detail": {"message": 1}}']),
+        ("pkg", "Warn", ['{"count": 1, "order": {"detail": {"message": "m"}}}', '{"count": "x"}']),
+    ]
+    verdicts = []
+    with _generated_package_module(output_dir, "pkg.api"):
+        for module_path, model_name, payloads in decoded:
+            module = importlib.import_module(f"{output_dir.name}.{module_path}")
             verdicts += [
                 _decode_with_generated_model(output_model_type, getattr(module, model_name), payload)
                 for payload in payloads
@@ -5752,6 +5942,61 @@ def test_main_ref_nullable_import_fast_path(output_file: Path) -> None:
         assert_func=assert_file_content,
         extra_args=["--no-use-union-operator"],
     )
+
+
+@pytest.mark.cli_doc(
+    options=["--use-serialize-as-any-for-every-subclass"],
+    option_description="""Wrap a field in SerializeAsAny when any subclass of its model adds fields.
+
+`--use-serialize-as-any` wraps a field whose model has a direct subclass that adds fields, as the subclasses recorded
+when the model was parsed tell, so a subclass two levels down, a subclass of a model that `--reuse-model` or
+`--collapse-reuse-models` merged into another, and a field that names its model through its module (`c.Base`) are left
+out and serialize as the base model. With this option the class hierarchy of the generated output decides: a field is
+wrapped when any subclass of its model, at any depth, adds fields (Pydantic v2 only).""",
+    input_schema="jsonschema/serialize_as_any_every_subclass.json",
+    cli_args=["--use-serialize-as-any", "--use-serialize-as-any-for-every-subclass", "--reuse-model"],
+    golden_output="main/jsonschema/serialize_as_any_every_subclass~main_serialize_as_any_every_subclass[every-subclass-reuse].py",
+    comparison_output="main/jsonschema/serialize_as_any_every_subclass~main_serialize_as_any_every_subclass[released-reuse].py",
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="released"),
+        pytest.param(["--reuse-model"], id="released-reuse"),
+        pytest.param(["--use-serialize-as-any-for-every-subclass"], id="every-subclass"),
+        pytest.param(["--use-serialize-as-any-for-every-subclass", "--reuse-model"], id="every-subclass-reuse"),
+        pytest.param(
+            ["--use-serialize-as-any-for-every-subclass", "--reuse-model", "--collapse-reuse-models"],
+            id="every-subclass-collapse",
+        ),
+    ],
+)
+def test_main_serialize_as_any_every_subclass(output_file: Path, extra_args: list[str]) -> None:
+    """Wrap a field in SerializeAsAny by the class hierarchy of the output under the every-subclass option.
+
+    ``Sub`` extends ``B``, which equals ``A``, and ``Leaf`` extends ``C`` through the empty ``Mid``. Without the option
+    ``Holder.c`` is not wrapped and loses ``w`` (#5673), and under ``--reuse-model`` neither is ``Holder.b``, which
+    loses ``y`` (#5672). With it every field whose model has a subclass that adds fields is wrapped, ``Holder.a`` too
+    once reuse makes ``B`` a subclass of ``A`` or collapses ``B`` into it, so the dump keeps the subclass fields.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "serialize_as_any_every_subclass.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--use-serialize-as-any"),
+            *extra_args,
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+        force_exec_validation=True,
+    )
+    with _generated_model(output_file, "serialize_as_any_every_subclass", "Holder") as holder:
+        module = sys.modules[holder.__module__]
+        fields = {"b": module.Sub(x="1", y=2), "c": module.Leaf(z="1", w=3)}
+        if issubclass(module.Sub, module.A):
+            fields["a"] = module.Sub(x="2", y=4)
+        assert_output(json.dumps(holder(**fields).model_dump(mode="json"), sort_keys=True) + "\n", name="dump")
 
 
 def test_main_serialize_as_any_import_fast_path(output_file: Path) -> None:
@@ -8610,9 +8855,11 @@ def test_main_encoded_str_for_constrained_base64(output_file: Path, extra_args: 
         validate(json.dumps(payloads["base"]))
         for field_name, values in payloads["cases"].items():
             for kind, value in values.items():
-                verdict = "rejected"
-                with suppress(ValidationError):
+                try:
                     validate(json.dumps(payloads["base"] | {field_name: value}))
+                except ValidationError:
+                    verdict = "rejected"
+                else:
                     verdict = "accepted"
                 verdicts.append(f"{field_name} {kind}: {verdict}")
     assert_output("\n".join(verdicts) + "\n", name="verdicts")
@@ -8641,6 +8888,7 @@ string is: at a property, an item, a map value, a root, the branches of a union 
         pytest.param([], id="released"),
         pytest.param(["--use-annotated"], id="use_annotated_released"),
         pytest.param(["--output-model-type", "msgspec.Struct"], id="msgspec_released"),
+        pytest.param(["--type-mappings", "integer+int64=string"], id="type_mappings_released"),
         *(
             pytest.param([*args, "--read-length-keywords-by-type"], id=id_)
             for args, id_ in (
@@ -8654,6 +8902,7 @@ string is: at a property, an item, a map value, a root, the branches of a union 
                     ["--use-annotated", "--omit-redundant-constraints", "--enum-field-as-literal", "all"],
                     "literals",
                 ),
+                (["--type-mappings", "integer+int64=string"], "type_mappings"),
             )
         ),
     ],
@@ -8664,8 +8913,9 @@ def test_main_read_length_keywords_by_type(output_file: Path, extra_args: list[s
     Without it ``maxLength`` beside an array bounds the list's items and ``maxItems`` beside a string the string's
     length, so the models reject payloads the schema accepts. With it those keywords are left out at a property, an
     item, a map value, a root, a union branch, a type list, an array without ``type``, a ``list`` or ``Sequence`` of
-    ``Literal`` values and a type override, while ``maxItems`` beside an array and ``maxLength`` beside a string stay.
-    Each verdict line gives the schema's own verdict after the model's.
+    ``Literal`` values and a type override, while ``maxItems`` beside an array and ``maxLength`` beside a string stay;
+    ``maxLength`` beside an integer is left out of the ``constr`` that ``--type-mappings`` types it as too. Each verdict
+    line gives the schema's own verdict after the model's.
     """
     name = "length_keywords_by_type"
     run_main_and_assert(
@@ -8693,9 +8943,11 @@ def test_main_read_length_keywords_by_type(output_file: Path, extra_args: list[s
         for field_name, values in payloads["cases"].items():
             for kind, value in values.items():
                 payload = payloads["base"] | {field_name: value}
-                verdict = "rejected"
-                with suppress(error_type):
+                try:
                     validate(json.dumps(payload))
+                except error_type:
+                    verdict = "rejected"
+                else:
                     verdict = "accepted"
                 expected = "accepted" if schema.is_valid(payload) else "rejected"
                 verdicts.append(f"{field_name} {kind}: {verdict} (schema: {expected})")
@@ -30279,6 +30531,41 @@ def test_main_read_only_write_only_boolean_property(output_file: Path, dedupe_ar
 
 
 @pytest.mark.parametrize(
+    "input_name",
+    [
+        pytest.param("read_only_write_only_constrained_union.json", id="unflagged"),
+        pytest.param("read_only_write_only_constrained_union_flagged.json", id="flagged"),
+    ],
+)
+@pytest.mark.parametrize(
+    "dedupe_args",
+    [pytest.param(["--dedupe-request-response-variants"], id="dedupe"), pytest.param([], id="default")],
+)
+def test_main_read_only_write_only_constrained_union(
+    output_file: Path, input_name: str, dedupe_args: list[str]
+) -> None:
+    """Write the root models of a constrained inline union once under the request/response split.
+
+    With --dedupe-request-response-variants the schema graph decides, so ``Holder.x`` takes ``X | X1``, the names it
+    takes without the split, with or without a readOnly property beside it; without it a temporary parse of
+    ``Holder`` builds ``X`` and ``X1``, which nothing references, and ``Holder.x`` takes ``X2 | X3``, as in 0.86.0.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *dedupe_args,
+            "--disable-timestamp",
+            "--field-constraints",
+            "--read-only-write-only-model-type",
+            "request-response",
+        ],
+    )
+
+
+@pytest.mark.parametrize(
     ("input_name", "valid", "invalid"),
     [
         pytest.param(
@@ -38573,6 +38860,37 @@ def test_main_jsonschema_refuses_keyword_module(
             "the class 'Warn' in the root package beside the module 'Warn' (Warn.py)",
             id="root",
         ),
+        pytest.param(
+            "submodule_named_like_import_renamed_class",
+            ["--type-overrides", '{"Other.a": "decimal.Decimal"}'],
+            "the class 'Decimal1' in the package 'pkg' beside the module 'pkg.Decimal1' (pkg/Decimal1.py)",
+            id="import-renamed",
+        ),
+        pytest.param(
+            "submodule_named_like_collapsed_root_class",
+            ["--collapse-root-models", "--collapse-root-models-name-strategy", "parent"],
+            "the class 'Warn' in the package 'pkg' beside the module 'pkg.Warn' (pkg/Warn.py)",
+            id="collapse-renamed",
+        ),
+        pytest.param(
+            "submodule_named_like_forwarded_class",
+            [],
+            "the class 'Warn' in the package 'pkg' beside the module 'pkg.Warn' (pkg/Warn.py)",
+            id="forwarded",
+        ),
+        pytest.param(
+            "shared_module_named_like_root_class",
+            [
+                "--rename-submodules-hidden-by-classes",
+                "--reuse-model",
+                "--reuse-scope",
+                "tree",
+                "--shared-module-name",
+                "Common",
+            ],
+            "the class 'Common' in the root package beside the module 'Common' (Common.py)",
+            id="shared-module",
+        ),
     ],
 )
 @pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"])
@@ -38589,8 +38907,20 @@ def test_main_jsonschema_refuses_class_named_like_submodule(
     Importing ``pkg.Warn`` binds ``Warn`` in ``pkg`` over the class, so the models that use the class failed to import
     or decode (#6067). The names are the models' and the files', so the run fails and names the class and the module;
     where the ``__init__.py`` loads the module before its classes are defined (it imports from it, or
-    ``--all-exports-scope`` re-exports a module of it) the output works and is written.
+    ``--all-exports-scope`` re-exports a module of it) the output works and is written. The class names are the final
+    ones, a later rename included (``Decimal1`` beside the import of ``decimal.Decimal``, the ``parent`` name of a
+    collapsed root model), and a class that an import cycle merge moves into ``pkg/_internal.py`` is bound by the
+    ``__init__.py`` that re-exports it. The refusal names --rename-submodules-hidden-by-classes, which renames such a
+    module; with it the run fails only for a module that the option does not rename, the shared module of tree-scope
+    reuse.
     """
+    hint = (
+        "--rename-submodules-hidden-by-classes renames only the modules that the schema names and the input files "
+        "give: rename the class in the input or give the module another name (--shared-module-name)."
+        if "--rename-submodules-hidden-by-classes" in extra_args
+        else "Rename the class or the module in the input, or pass --rename-submodules-hidden-by-classes to rename the "
+        "module."
+    )
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / f"{input_name}.json",
         output_path=output_dir,
@@ -38605,7 +38935,10 @@ def test_main_jsonschema_refuses_class_named_like_submodule(
         ],
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr_contains=f"Cannot write {message}: importing the module binds its name in the package",
+        expected_stderr_contains=(
+            f"Cannot write {message}: importing the module binds its name in the package over the class, so the models "
+            f"that use the class fail to import or decode. {hint}"
+        ),
         output_should_not_exist=True,
     )
 
@@ -39113,7 +39446,8 @@ and an input document that declares none is read as it is on its own. Here the d
 beside its allOf `$ref`, as draft 7 says, and the 2020-12 root keeps it. An OpenAPI 3.1 document reads the keywords
 beside a `$ref` as JSON Schema 2020-12 does, and the property-count rule of `--generate-schema-validators` leaves out a
 `minProperties` beside an allOf `$ref` of a draft-07 document. An explicit `--schema-version` reads every document by
-that version, with or without the option.""",
+that version, with or without the option, except that without it the schema validators of
+`--generate-schema-validators` read an OpenAPI or AsyncAPI document as draft 7.""",
     input_schema="jsonschema/schema_version_per_document_refs/root.json",
     cli_args=["--read-schema-version-per-document"],
     golden_output="main/jsonschema/main_jsonschema/read_schema_version_per_document[per-document].py",
@@ -39237,6 +39571,65 @@ def test_main_jsonschema_read_schema_version_per_document_property_count(
         )
 
 
+def test_main_jsonschema_read_schema_version_per_document_dynamic_scope(output_file: Path) -> None:
+    """Read a document that declares no version by the version of the document that refers to it wherever it loads.
+
+    The ``$dynamicAnchor`` of the 2020-12 root makes the parser follow the references of ``mid.json`` into
+    ``leaf.json`` before parsing them; ``leaf.json`` takes 2020-12 from ``mid.json`` there too, so ``Score`` keeps the
+    ``maximum`` beside its allOf ``$ref`` and rejects 11.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "schema_version_per_document_dynamic_scope" / "root.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--read-schema-version-per-document", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="read_schema_version_per_document_dynamic_scope",
+        model_name="Root",
+        valid_json=json.dumps({"mid": {"score": 10}}),
+        invalid_json=json.dumps({"mid": {"score": 11}}),
+        expected_error_type="less_than_equal",
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="first-read"), pytest.param(["--read-schema-version-per-document"], id="per-document")],
+)
+def test_main_jsonschema_read_schema_version_per_document_external_recursive_anchor(
+    output_file: Path, extra_args: list[str]
+) -> None:
+    """Find the ``$recursiveAnchor`` under ``$defs`` of a referenced 2019-09 document by its own version.
+
+    In strict version mode a draft-07 document holds its definitions under ``definitions`` only. The ``$ref`` with
+    siblings copies ``Tree`` of the 2019-09 document into ``T``, whose ``$recursiveRef`` names the anchored ``Tree``;
+    with the option the anchor is found under the ``$defs`` its document's version holds them in, so ``children`` are
+    trees. Without it ``children`` are ``Any``, as the draft-07 document's paths miss the anchor.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "recursive_anchor_external_defs" / "root.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *extra_args,
+            *("--schema-version-mode", "strict", "--disable-timestamp", "--formatters", "builtin"),
+        ],
+        force_exec_validation=True,
+    )
+    if extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="read_schema_version_per_document_external_recursive_anchor",
+            model_name="Root",
+            valid_json=json.dumps({"t": {"value": 1, "children": [{"value": 2}]}}),
+            invalid_json=json.dumps({"t": {"value": 1, "children": [{"value": "x"}]}}),
+            expected_error_type="int_parsing",
+        )
+
+
 @pytest.mark.parametrize(
     "extra_args",
     [pytest.param([], id="overlaid"), pytest.param(["--ignore-ref-siblings-by-schema-version"], id="ignored")],
@@ -39264,4 +39657,42 @@ def test_main_jsonschema_ignore_ref_siblings_by_schema_version(output_file: Path
             expected_error_type="string_type",
             expected_attribute_path=("tags", "root"),
             expected_attribute_value=["a", "a"],
+        )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="overlaid"), pytest.param(["--ignore-ref-siblings-by-schema-version"], id="ignored")],
+)
+def test_main_jsonschema_ignore_ref_siblings_by_schema_version_identifier_and_import(
+    output_file: Path, extra_args: list[str]
+) -> None:
+    """Leave out an ``$id`` and an ``x-python-import`` beside a ``$ref`` of a draft-07 document under the option.
+
+    Draft 7 ignores every keyword beside a ``$ref``. Without the option the ``$id`` beside the ``$ref`` of ``name``
+    rebases it onto a resource that holds no ``Name``, which leaves ``name`` an ``Any`` model with a warning, and the
+    ``x-python-import`` beside the ``$ref`` of ``Address`` types ``address`` as ``IPv4Address``; with it both are read
+    as their targets, the three-character string ``Name``.
+    """
+    with warnings.catch_warnings(record=True) as records:
+        warnings.simplefilter("always", DanglingRefWarning)
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "ref_siblings_ignored_identifier_draft07.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(sorted({f"{record.message}\n" for record in records if record.category is DanglingRefWarning})),
+        name="warnings",
+    )
+    if extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="ignore_ref_siblings_by_schema_version_identifier_and_import",
+            model_name="Holder",
+            valid_json=json.dumps({"name": "abc", "address": "abc"}),
+            invalid_json=json.dumps({"address": "1.2.3.4"}),
+            expected_error_type="string_too_long",
         )

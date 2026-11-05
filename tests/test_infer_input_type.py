@@ -125,6 +125,8 @@ def test_infer_input_type() -> None:  # noqa: PLR0912
             continue
         if "model_name_map_duplicate_suffix" in file.parts and file.name == "ext.json":
             continue
+        if "schema_version_per_document_dynamic_scope" in file.parts and file.name == "leaf.json":
+            continue
         assert_infer_input_type(file, InputFileType.JsonSchema)
     for file in (DATA_PATH / "openapi").rglob("*"):
         if "allof_no_merge_external_relative" in file.parts and file.name != "openapi.yaml":
@@ -174,6 +176,8 @@ def test_infer_input_type() -> None:  # noqa: PLR0912
             continue
         assert_infer_input_type(file, InputFileType.OpenAPI)
     for file in (DATA_PATH / "asyncapi").rglob("*"):
+        if "ref_siblings_external_v2" in file.parts and file.name == "notes.yaml":
+            continue
         assert_infer_input_type(file, InputFileType.AsyncAPI)
 
     xmlschema_files = list((DATA_PATH / "xmlschema").rglob("*.xsd"))

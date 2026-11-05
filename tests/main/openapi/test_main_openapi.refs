@@ -1418,8 +1418,28 @@ pydantic_v2-merged	main/openapi/main_openapi/merge_shared_variant_tags[pydantic_
 pydantic_v2-merged	main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2-merged].warnings.txt
 pydantic_v2_dataclass-merged	main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2_dataclass-merged].py
 pydantic_v2_dataclass-merged	main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2_dataclass-merged].warnings.txt	= main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2-merged].warnings.txt
+[test_main_openapi_merge_shared_variant_tags_limits]
+collapsed_reuse	main/openapi/main_openapi/merge_shared_variant_tags_limits[collapsed_reuse].decoded.txt
+collapsed_reuse	main/openapi/main_openapi/merge_shared_variant_tags_limits[collapsed_reuse].py
+collapsed_reuse	main/openapi/main_openapi/merge_shared_variant_tags_limits[collapsed_reuse].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+limits	main/openapi/main_openapi/merge_shared_variant_tags_limits[limits].decoded.txt
+limits	main/openapi/main_openapi/merge_shared_variant_tags_limits[limits].py
+limits	main/openapi/main_openapi/merge_shared_variant_tags_limits[limits].warnings.txt
+limits-field_constraints	main/openapi/main_openapi/merge_shared_variant_tags_limits[limits-field_constraints].decoded.txt	= main/openapi/main_openapi/merge_shared_variant_tags_limits[limits].decoded.txt
+limits-field_constraints	main/openapi/main_openapi/merge_shared_variant_tags_limits[limits-field_constraints].py	= main/openapi/main_openapi/merge_shared_variant_tags_limits[limits].py
+limits-field_constraints	main/openapi/main_openapi/merge_shared_variant_tags_limits[limits-field_constraints].warnings.txt	= main/openapi/main_openapi/merge_shared_variant_tags_limits[limits].warnings.txt
 [test_main_openapi_merge_shared_variant_tags_msgspec]
 	main/openapi/main_openapi/merge_shared_variant_tags_msgspec.py
+[test_main_openapi_merge_shared_variant_tags_nested]
+pydantic_v2.BaseModel	main/openapi/main_openapi/merge_shared_variant_tags_nested[pydantic_v2.BaseModel].py
+pydantic_v2.dataclass	main/openapi/main_openapi/merge_shared_variant_tags_nested[pydantic_v2.dataclass].py
+[test_main_openapi_merge_shared_variant_tags_nested_clash]
+pydantic_v2	main/openapi/main_openapi/merge_shared_variant_tags_nested_clash[pydantic_v2].py
+pydantic_v2	main/openapi/main_openapi/merge_shared_variant_tags_nested_clash[pydantic_v2].warnings.txt
+pydantic_v2-collapse_root_models	main/openapi/main_openapi/merge_shared_variant_tags_nested_clash[pydantic_v2-collapse_root_models].py
+pydantic_v2-collapse_root_models	main/openapi/main_openapi/merge_shared_variant_tags_nested_clash[pydantic_v2-collapse_root_models].warnings.txt
+pydantic_v2_dataclass	main/openapi/main_openapi/merge_shared_variant_tags_nested_clash[pydantic_v2_dataclass].py
+pydantic_v2_dataclass	main/openapi/main_openapi/merge_shared_variant_tags_nested_clash[pydantic_v2_dataclass].warnings.txt	= main/openapi/main_openapi/merge_shared_variant_tags_nested_clash[pydantic_v2].warnings.txt
 [test_main_openapi_model_name_map_key_of_numbered_name]
 both-variants	main/openapi/openapi_model_name_map_key_of_numbered_name.py
 duplicate-name-suffix-in-module	main/openapi/openapi_model_name_map_key_of_numbered_name.py	= main/openapi/openapi_model_name_map_key_of_numbered_name~model_name_map_key_of_numbered_name[duplicate-name-suffix-in-module].py
@@ -1762,6 +1782,10 @@ typed-dict	main/openapi/openapi_read_only_write_only_variant_graph_default.py	= 
 [test_main_openapi_read_schema_version_per_document]
 first-read	main/openapi/main_openapi/read_schema_version_per_document[first-read].py
 per-document	main/openapi/main_openapi/read_schema_version_per_document[per-document].py
+[test_main_openapi_read_schema_version_per_document_external_item_schema]
+first-read	main/openapi/main_openapi/read_schema_version_per_document_external_item_schema[first-read].py
+per-document	main/openapi/main_openapi/read_schema_version_per_document_external_item_schema[per-document].py
+per-document-api-scope	main/openapi/main_openapi/read_schema_version_per_document_external_item_schema[per-document-api-scope].py	= main/openapi/main_openapi/read_schema_version_per_document_external_item_schema[per-document].py
 [test_main_openapi_recursive_ref_discriminator]
 	main/openapi/recursive_ref_discriminator.py
 [test_main_openapi_recursive_ref_discriminator_pydantic_v2]
@@ -1831,6 +1855,13 @@ modular-pydantic_v2	main/openapi/main_openapi/reuse_scope_tree_imports[modular-p
 	main/openapi/openapi_serialization_aliases_parameters.py
 [test_main_openapi_serialize_as_any_module_import_alias_pydantic_v2]
 	main/openapi/serialize_as_any_module_import_alias//*.py
+[test_main_openapi_serialize_as_any_module_qualified]
+every-subclass	main/openapi/main_openapi/serialize_as_any_module_qualified[every-subclass].dump.txt
+every-subclass	main/openapi/main_openapi/serialize_as_any_module_qualified[every-subclass]/
+every-subclass-exact-collapsed	main/openapi/main_openapi/serialize_as_any_module_qualified[every-subclass-exact-collapsed].dump.txt	= main/openapi/main_openapi/serialize_as_any_module_qualified[every-subclass].dump.txt
+every-subclass-exact-collapsed	main/openapi/main_openapi/serialize_as_any_module_qualified[every-subclass-exact-collapsed]/
+released	main/openapi/main_openapi/serialize_as_any_module_qualified[released].dump.txt
+released	main/openapi/main_openapi/serialize_as_any_module_qualified[released]/
 [test_main_openapi_serialize_as_any_pydantic_v2]
 	main/openapi/serialize_as_any_pydantic_v2.py
 [test_main_openapi_shadowed_imports]

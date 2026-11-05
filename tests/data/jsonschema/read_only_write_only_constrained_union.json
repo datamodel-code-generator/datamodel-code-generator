@@ -1,0 +1,10 @@
+{
+  "$defs": {
+    "Holder": {
+      "type": "object",
+      "properties": {"x": {"minLength": 1, "oneOf": [{"type": "string"}, {"type": "integer"}]}}
+    }
+  },
+  "type": "object",
+  "properties": {"h": {"$ref": "#/$defs/Holder"}}
+}

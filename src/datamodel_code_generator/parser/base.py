@@ -231,6 +231,7 @@ from datamodel_code_generator.parser._passes.imports import (
 )
 from datamodel_code_generator.parser._pipeline import PARSE_CALLER, Runner, parse_caller
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
+from datamodel_code_generator.parser._serialize_as_any import SERIALIZE_AS_ANY_FOR_EVERY_SUBCLASS
 from datamodel_code_generator.parser._stdout_repair import _TOP_LEVEL_FUTURE_IMPORT_PATTERN
 from datamodel_code_generator.parser._tag_plan import TagCapabilities, TagPlan, tag_capabilities
 from datamodel_code_generator.parser._union_constraints import OMIT_UNTAKEN_UNION_CONSTRAINTS
@@ -618,7 +619,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     _cache_local_sources_during_parse: ClassVar[bool] = False
     _cache_parsed_sources_from_path: ClassVar[bool] = False
     _collapses_list_item_root_models: ClassVar[bool] = True
-    _DECISION_PASSES: ClassVar[tuple[DecisionPass[Any], ...]] = (OMIT_HELD_NULL, OMIT_UNTAKEN_UNION_CONSTRAINTS)
+    _DECISION_PASSES: ClassVar[tuple[DecisionPass[Any], ...]] = (
+        OMIT_HELD_NULL,
+        SERIALIZE_AS_ANY_FOR_EVERY_SUBCLASS,
+        OMIT_UNTAKEN_UNION_CONSTRAINTS,
+    )
     """The decisions of the decision phase, in registration order; ``parser/_phases.py`` says how they run."""
     _http_fetch_session: _HTTPFetchSession | None = None
     _dropped_constraint_fields: DroppedConstraintFields = frozenset()
@@ -976,6 +981,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.data_type_manager.read_msgspec_union_bounds_exactly = config.read_msgspec_union_bounds_exactly
         self.data_type_manager.use_decimal_in_field_forms = config.use_decimal_in_field_forms
         self.data_type_manager.use_encoded_str_for_constrained_base64 = config.use_encoded_str_for_constrained_base64
+        self.data_type_manager.use_msgspec_meta_for_map_keys = config.use_msgspec_meta_for_map_keys
         self.data_model_type: type[DataModel] = config.data_model_type
         self.data_model_root_type: type[DataModel] = config.data_model_root_type
         self.pydantic_v2_root_model_type: type[DataModel] | None = _get_field_dependency_ordering_model_type(
@@ -1063,6 +1069,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.final_name_keys_to_assign: tuple[tuple[str, tuple[str, ...]], ...] = ()
         self.import_cycle_seeds_to_apply: ImportCycleSeeds | None = None
         self.fails_to_import = False
+        self.hidden_class_refusal: str | None = None
+        self._hidden_submodule_renames: tuple[tuple[ModulePath, str], ...] = ()
+        self._renamed_module_inputs: dict[Path, Path] = {}
         self._written_imports: list[tuple[ModulePath, Imports]] = []
         self.typed_nullable_map_reference_ids: set[ModelKey] = set()
         self._literal_under_all_enum_reference_ids: set[ModelKey] = set()
@@ -2491,7 +2500,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         require_update: Collection[ModelKey],
         future_imports_str: str,
     ) -> Result | None:
-        """Generate output for a single module."""
+        """Generate output for a single module.
+
+        Its header names the input file of its first model, which a module that --rename-submodules-hidden-by-classes
+        renamed keeps (``_renamed_module_inputs``).
+        """
         result: list[str] = []
         export_imports: Imports | None = None
         module_future_imports_str = self._get_module_future_imports(ctx, config, future_imports_str)
@@ -2552,10 +2565,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if not result and not ctx.is_init:
             return None
 
+        file_path = ctx.models[0].file_path if ctx.models else None
         return Result(
             body=self._formatted_body("\n".join(result), config),
             future_imports=module_future_imports_str,
-            source=ctx.models[0].file_path if ctx.models else None,
+            source=None if file_path is None else self._renamed_module_inputs.get(file_path, file_path),
         )
 
     def _reject_unimportable_imports(self, module: ModulePath, imports: Imports, *, is_init: bool) -> None:

@@ -22,6 +22,8 @@ How do I convert enums to Literal types?
 - `--input-file-type`: Specify the input file type for code generation.
 - `--input-model`: Import a Python type or dict schema from a module or Python file.
 - `--input-model-ref-strategy`: Strategy for referenced types when using --input-model.
+- `--no-ignore-ref-siblings-by-schema-version`
+- `--no-read-schema-version-per-document`
 - `--output`: Specify the destination path for generated Python code.
 - `--preset`: Apply an immutable built-in option preset.
 - `--read-schema-version-per-document`: Read each document by the schema version it declares.
@@ -41,12 +43,27 @@ How do I convert enums to Literal types?
 - `--intersect-allof-keywords`: Combine the keywords of every part of an `allOf`, a `$ref` with siblings or an o...
 - `--intersect-combined-schema-keywords`: Combine the keywords beside an `anyOf` or `oneOf` with each branch, as...
 - `--keep-enum-member-values`: Give an enum class a value base only when it keeps every member value.
+- `--no-filter-literal-values`
+- `--no-intersect-allof-keywords`
+- `--no-intersect-combined-schema-keywords`
+- `--no-keep-enum-member-values`
+- `--no-read-const-beside-enum`
+- `--no-read-unevaluated-properties`
 - `--no-use-annotated`
 - `--no-use-closed-typed-dict`: Disable PEP 728 TypedDict closed/extra_items generation.
+- `--no-use-decimal-in-field-forms`
+- `--no-use-encoded-str-for-constrained-base64`
+- `--no-use-object-type`
+- `--no-use-single-dict-for-object-maps`
+- `--no-use-single-value-enum-as-const`
 - `--no-use-specialized-enum`: Disable specialized Enum classes for Python 3.11+ code generation.
 - `--no-use-standard-collections`: Use typing.Dict/List instead of built-in dict/list for container types.
 - `--no-use-standard-primitive-types`
+- `--no-use-tuple-for-closed-arrays`
+- `--no-use-tuple-for-fixed-items`
+- `--no-use-typed-map-values-beside-other-types`
 - `--no-use-union-operator`: Use Union[X, Y] / Optional[X] instead of X | Y union operator.
+- `--no-use-unique-items-as-set`
 - `--output-date-class`: Specify date class type for date schema fields.
 - `--output-datetime-class`: Specify datetime class type for date-time schema fields.
 - `--read-const-beside-enum`: Read a `const` beside an `enum` as JSON Schema does.
@@ -96,8 +113,19 @@ How do I convert enums to Literal types?
 - `--infer-union-variant-names`: Name inline oneOf/anyOf branch models after the value of their tag field (`Pet`...
 - `--merge-shared-variant-tags`: Give a variant that discriminated unions tag differently every tag they give it.
 - `--no-alias`: Disable Field alias generation for non-Python-safe property names.
+- `--no-capitalize-numbered-enum-members`
 - `--no-deserialize-default-values`: Keep serialized schema defaults instead of deserializing selected types.
+- `--no-merge-shared-variant-tags`
+- `--no-omit-redundant-constraints`
+- `--no-read-length-keywords-by-type`
+- `--no-read-msgspec-union-bounds-exactly`
 - `--no-snake-case-field`
+- `--no-use-field-description`
+- `--no-use-field-description-example`
+- `--no-use-schema-description`
+- `--no-use-single-line-docstring`
+- `--no-use-site-models-for-constrained-refs`
+- `--no-use-title-as-name`
 - `--omit-redundant-constraints`: Do not write a constraint again beside a type that already enforces it.
 - `--original-field-name-delimiter`: Specify delimiter for original field names when using snake-case conversion.
 - `--read-length-keywords-by-type`: Read the string and the array keywords for their own kind only, as JSON Sche...
@@ -149,8 +177,25 @@ How do I convert enums to Literal types?
 - `--name-converted-payloads-by-message`: Name a converted payload that names no type of its own after its message.
 - `--naming-strategy`: Choose how models are named and how duplicate model names are told apart.
 - `--no-allow-population-by-field-name`
+- `--no-collapse-reuse-models`
 - `--no-collapse-root-models`
+- `--no-collapse-shared-parent-wrappers`
+- `--no-keep-field-defaults-off-branch-roots`
+- `--no-keep-reference-null-on-merged-models`
+- `--no-name-converted-payloads-by-message`
+- `--no-omit-redundant-reference-null`
+- `--no-pin-aliases-with-alias-generator`
+- `--no-read-nullable-beside-type-list`
+- `--no-reuse-model`
+- `--no-singularize-last-word-of-item-names`
+- `--no-strict-nullable`
+- `--no-tag-msgspec-by-payload-name`
+- `--no-use-default-kwarg`
+- `--no-use-duplicate-name-suffix-for-every-collision`
 - `--no-use-frozen-field`
+- `--no-use-msgspec-meta-for-map-keys`
+- `--no-use-serialize-as-any-for-every-subclass`
+- `--no-use-subclass-enum`
 - `--omit-redundant-reference-null`: Do not write None again at a reference to a model that holds null itself.
 - `--order-constructor-fields-by`: Order constructor fields by final names or by written defaults.
 - `--output-model-type`: Generate models from GraphQL with different output model types.
@@ -174,11 +219,13 @@ How do I convert enums to Literal types?
 - `--use-frozen-field`: Generate frozen (immutable) field definitions for readOnly properties.
 - `--use-generic-base-class`: Generate a shared base class with model configuration to avoid repetition (DRY).
 - `--use-missing-sentinel`: Use Pydantic's MISSING sentinel for unset optional BaseModel or dataclass fields.
+- `--use-msgspec-meta-for-map-keys`: Check the keys of a msgspec map whose keys propertyNames or patternProperti...
 - `--use-msgspec-nullable-enum-alias`: Write a msgspec.Struct enum that lists null as an Enum and a nullable alias.
 - `--use-msgspec-tagged-unions`: Write a msgspec.Struct discriminated union as tagged structs as a whole.
 - `--use-one-literal-as-default`: Use single literal value as default when enum has only one option.
 - `--use-root-model-sequence-interface`: Make non-null sequence-like Pydantic v2 RootModel classes implement col...
 - `--use-serialize-as-any`: Wrap fields with subtypes in Pydantic's SerializeAsAny.
+- `--use-serialize-as-any-for-every-subclass`: Wrap a field in SerializeAsAny when any subclass of its model add...
 - `--use-subclass-enum`: Generate typed Enum subclasses for enums with specific field types.
 
 ### Template Customization
@@ -199,10 +246,14 @@ How do I convert enums to Literal types?
 - `--extra-template-data`: Pass custom template variables via inline JSON or a JSON file path.
 - `--formatters`: Specify code formatters to apply to generated output.
 - `--generate-schema-validators`: Generate experimental Pydantic v2 model validators for JSON Schema runtime rules.
+- `--no-check-pattern-maps-strictly`
+- `--no-disable-timestamp`
 - `--no-formatters`: Select no formatter for the generated output.
+- `--no-rename-submodules-hidden-by-classes`
 - `--no-strict-dotted-module-names`
 - `--no-treat-dot-as-module`: Keep dots in schema names as underscores for flat output.
 - `--no-use-type-checking-imports`: Keep generated model imports available at runtime when using Ruff fixes.
+- `--rename-submodules-hidden-by-classes`: Rename a submodule named like a class of its package.
 - `--schema-validator-base-class-name`: Set the generated shared Pydantic v2 schema runtime validator base class...
 - `--schema-validator-type`: Select the schema-derived runtime validator backend.
 - `--strict-dotted-module-names`: Require canonical Python identifiers when inferring dotted module paths.
@@ -216,6 +267,8 @@ How do I convert enums to Literal types?
 - `--dedupe-request-response-variants`: Decide Request/Response variants from the schema graph and build each in...
 - `--include-path-parameters`: Include OpenAPI path parameters in generated parameter models.
 - `--keep-first-character-of-path-keys`: Strip only a leading slash from a paths key when naming its operation m...
+- `--no-dedupe-request-response-variants`
+- `--no-keep-first-character-of-path-keys`
 - `--openapi-as-definitions`: Give OpenAPI paths bodies or ref components the models their definitions get.
 - `--openapi-include-info-version`: Emit OpenAPI info.version as a generated constant.
 - `--openapi-include-paths`: Filter OpenAPI paths to include in model generation.
@@ -375,7 +428,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --http-timeout HTTP_TIMEOUT
                         Timeout in seconds for HTTP requests to remote hosts
                         (default: 30)
-  --ignore-ref-siblings-by-schema-version
+  --ignore-ref-siblings-by-schema-version, --no-ignore-ref-siblings-by-schema-version
                         Read a $ref as its target alone where the schema
                         version ignores the keywords beside it (JSON Schema
                         draft 4, 6 and 7, OpenAPI 3.0, AsyncAPI 2), as those
@@ -430,7 +483,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Apply an immutable built-in option preset. Preset
                         names include the target Python version so generated
                         syntax is pinned.
-  --read-schema-version-per-document
+  --read-schema-version-per-document, --no-read-schema-version-per-document
                         Read each document by the schema version it declares
                         ($schema, or the openapi or asyncapi field); a
                         referenced document that declares none takes the
@@ -444,8 +497,10 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         document sets no property-count rule for a
                         minProperties beside an allOf $ref. Without it the
                         version of the document parsed first applies to every
-                        document, as in 0.88.0. No effect with an explicit
-                        --schema-version.
+                        document, as in 0.88.0. An explicit --schema-version
+                        gives every document its version; the schema
+                        validators then read an OpenAPI or AsyncAPI document
+                        by it only with the option, else as draft 7.
   --schema-version SCHEMA_VERSION
                         Schema version. Valid values depend on input type:
                         JsonSchema: auto, draft-04, draft-06, draft-07,
@@ -508,7 +563,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         "literal", "priority": "enum"}'. Overrides --enum-
                         field-as-literal for matched fields.
   --field-constraints   Use field constraints and not con* annotations
-  --filter-literal-values
+  --filter-literal-values, --no-filter-literal-values
                         Keep only the values of a `const` or an `enum` that
                         meet the `minLength`, `maxLength`, `pattern`, bound
                         and `multipleOf` constraints beside them in its
@@ -523,7 +578,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Format: JSON object mapping symbols to module paths.
                         Example: '{"TypedDict": "my_project.typing_compat",
                         "NotRequired": "my_project.typing_compat"}'.
-  --intersect-allof-keywords
+  --intersect-allof-keywords, --no-intersect-allof-keywords
                         Combine the keywords of every part of an `allOf`, of a
                         `$ref` with sibling keywords and of an inherited
                         property override, as JSON Schema validates them: the
@@ -533,7 +588,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         and the constraints of the root, item and map value
                         positions of an `allOf`. Without it, the keyword of
                         the last part wins where the parts disagree
-  --intersect-combined-schema-keywords
+  --intersect-combined-schema-keywords, --no-intersect-combined-schema-keywords
                         Combine the keywords of every part of a combined
                         schema as JSON Schema validates them, as --intersect-
                         allof-keywords does (this option turns it on), and
@@ -548,13 +603,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         `anyOf` or `oneOf`, and no `enum` value that the
                         merged `type` rejects. Without it these keep the
                         output of 0.88.0
-  --keep-enum-member-values
+  --keep-enum-member-values, --no-keep-enum-member-values
                         Write an enum as a plain Enum where the value base of
                         --use-specialized-enum or --use-subclass-enum would
                         change a member value, such as 2.5 in an IntEnum;
                         without it the base follows the schema type, as in
                         0.86.0
-  --merge-shared-variant-tags
+  --merge-shared-variant-tags, --no-merge-shared-variant-tags
                         Give a variant that several discriminated unions tag
                         differently (for example one by a mapping key, one by
                         the schema name) every tag they give it, so each union
@@ -565,13 +620,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         union listing it would then give two of its variants
                         one tag, and msgspec Structs, which take one tag, keep
                         it too.
-  --omit-redundant-constraints
+  --omit-redundant-constraints, --no-omit-redundant-constraints
                         Do not write a constraint again beside a type that
                         already enforces it: the bound of a zero-bound class
                         such as NonNegativeInt, and the length and number
                         constraints a const or enum Literal meets by its
                         values
-  --read-const-beside-enum
+  --read-const-beside-enum, --no-read-const-beside-enum
                         Read a `const` beside an `enum` as JSON Schema does: a
                         value whose schema names the enum is typed by the
                         const that narrows it (`Literal[Enum.member]`, a
@@ -580,7 +635,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         value-enum-as-const an `enum` that admits its `const`
                         is read as that `const` instead of an Enum, except one
                         with `nullable: true` and a value other than null
-  --read-length-keywords-by-type
+  --read-length-keywords-by-type, --no-read-length-keywords-by-type
                         Read minLength, maxLength and pattern for strings only
                         and minItems, maxItems and uniqueItems for arrays
                         only, as JSON Schema does, so a maxLength beside an
@@ -589,7 +644,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         declared array writes minLength/maxLength and a
                         declared string minItems/maxItems as their length
                         bounds, as in 0.88.0
-  --read-msgspec-union-bounds-exactly
+  --read-msgspec-union-bounds-exactly, --no-read-msgspec-union-bounds-exactly
                         msgspec.Struct output only: decide whether the int
                         member of a union with a number member drops its Meta
                         bounds on the bounds the schema writes, exactly;
@@ -597,7 +652,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         as the float it is written as, so the int member can
                         keep a bound that rejects an integer the number member
                         accepts, as in 0.88.0
-  --read-unevaluated-properties
+  --read-unevaluated-properties, --no-read-unevaluated-properties
                         Read a schema-valued unevaluatedProperties as
                         additionalProperties where no applicator evaluates the
                         object in place, so it types the extra keys of a model
@@ -633,13 +688,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Use condecimal instead of confloat for float/number
                         fields with multipleOf constraint (Pydantic only).
                         Avoids floating-point precision issues in validation.
-  --use-decimal-in-field-forms
+  --use-decimal-in-field-forms, --no-use-decimal-in-field-forms
                         Under --use-decimal-for-multiple-of, also write
                         Decimal for a number with multipleOf in the field
                         forms (--field-constraints, --use-annotated), with the
                         constraints in Field(), and make the Decimal strict
                         under --strict-types float (Pydantic only)
-  --use-encoded-str-for-constrained-base64
+  --use-encoded-str-for-constrained-base64, --no-use-encoded-str-for-constrained-base64
                         Write a format: byte string with pattern, minLength or
                         maxLength in the field forms (--field-constraints,
                         --use-annotated) as Annotated[str, Field(...),
@@ -660,7 +715,8 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --use-non-positive-negative-number-constrained-types
                         Use the Non{Positive,Negative}{FloatInt} types instead
                         of the corresponding con* constrained types.
-  --use-object-type     Use object instead of Any for unspecified JSON Schema
+  --use-object-type, --no-use-object-type
+                        Use object instead of Any for unspecified JSON Schema
                         object and array values
   --use-one-literal-as-default
                         Use one literal as default value for one literal field
@@ -671,13 +727,22 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --use-serialize-as-any
                         Use pydantic.SerializeAsAny for fields with types that
                         have subtypes (Pydantic v2 only)
-  --use-single-dict-for-object-maps
+  --use-serialize-as-any-for-every-subclass, --no-use-serialize-as-any-for-every-subclass
+                        Under --use-serialize-as-any, wrap a field in
+                        SerializeAsAny when any subclass of its model in the
+                        generated output adds fields: at any depth, after
+                        --reuse-model or --collapse-reuse-models merges the
+                        model, and where the field names the model through its
+                        module; without it only a field whose model has a
+                        direct subclass is wrapped, as in 0.88.0 (Pydantic v2
+                        only)
+  --use-single-dict-for-object-maps, --no-use-single-dict-for-object-maps
                         Type an object map, an object without properties whose
                         keys patternProperties or propertyNames constrain, as
                         one dict whose keys are those of every key class and
                         whose value is the union of their values, beside the
                         null and the other types of its type array
-  --use-single-value-enum-as-const
+  --use-single-value-enum-as-const, --no-use-single-value-enum-as-const
                         Treat `enum` with a single value as `const` with that
                         value, which JSON Schema defines as equal: oneOf/anyOf
                         branches such as {"type": "string", "enum": ["low"]}
@@ -687,7 +752,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         typed Literal[...] instead of a one-member Enum,
                         except one with `nullable: true` and a value other
                         than null, which is read as written
-  --use-site-models-for-constrained-refs
+  --use-site-models-for-constrained-refs, --no-use-site-models-for-constrained-refs
                         Give an allOf of $ref members whose other parts add
                         constraints, an enum or a type its own model of the
                         values all parts admit, instead of the referenced
@@ -698,18 +763,19 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --use-standard-collections, --no-use-standard-collections
                         Use standard collections for type hinting (list,
                         dict). Default: enabled
-  --use-subclass-enum   Define generic Enum class as subclass with field type
+  --use-subclass-enum, --no-use-subclass-enum
+                        Define generic Enum class as subclass with field type
                         when enum has type (int, float, bytes, str)
   --use-total-false-for-typed-dict
                         Generate TypedDict with total=False and mark required
                         fields with Required
-  --use-tuple-for-closed-arrays
+  --use-tuple-for-closed-arrays, --no-use-tuple-for-closed-arrays
                         Generate tuple types for positional arrays that no
                         other item can follow: a closed prefixItems tail
                         (items, unevaluatedItems or additionalItems false)
                         whose length the length keywords fix, so that each
                         position keeps its own type
-  --use-tuple-for-fixed-items
+  --use-tuple-for-fixed-items, --no-use-tuple-for-fixed-items
                         Generate tuple types for arrays with items array
                         syntax when minItems equals maxItems equals items
                         length
@@ -720,7 +786,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --use-type-alias-type
                         Use TypeAliasType for type aliases on Python 3.10 and
                         3.11 (implies --use-type-alias; experimental)
-  --use-typed-map-values-beside-other-types
+  --use-typed-map-values-beside-other-types, --no-use-typed-map-values-beside-other-types
                         With --use-typed-nullable-map-values, also type the
                         map values of type arrays that list object beside
                         other types, such as [object, string], as dict[str,
@@ -735,14 +801,14 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --use-union-operator, --no-use-union-operator
                         Use | operator for Union type (PEP 604). Default:
                         enabled
-  --use-unique-items-as-set
+  --use-unique-items-as-set, --no-use-unique-items-as-set
                         define field type as `set` when the field attribute
                         has `uniqueItems`
 
 [36;1mField customization[0m:
   --capitalise-enum-members, --capitalize-enum-members
                         Capitalize field names on enum
-  --capitalise-numbered-enum-members, --capitalize-numbered-enum-members
+  --capitalise-numbered-enum-members, --no-capitalise-numbered-enum-members, --capitalize-numbered-enum-members, --no-capitalize-numbered-enum-members
                         Under --capitalise-enum-members, capitalize also the
                         number a member takes when its capitalized name is
                         taken (A_1 instead of a_1 for the members 'a' and
@@ -764,12 +830,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         type': rename type class with suffix to preserve field
                         name.
   --force-optional      Force optional for required fields
-  --keep-field-defaults-off-branch-roots
+  --keep-field-defaults-off-branch-roots, --no-keep-field-defaults-off-branch-roots
                         Leave the default of a property off the root models
                         extracted from the branches of its `anyOf` or `oneOf`,
                         which then require their value; without it each such
                         root takes the property's default
-  --keep-reference-null-on-merged-models
+  --keep-reference-null-on-merged-models, --no-keep-reference-null-on-merged-models
                         Keep the null that the schema of a field, item or
                         member admits where the model it references is merged
                         into an equal model that rejects null (deduplication
@@ -788,7 +854,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --no-alias            Do not add a field alias. E.g., if --snake-case-field
                         is used along with a base class, which has an
                         alias_generator
-  --omit-redundant-reference-null
+  --omit-redundant-reference-null, --no-omit-redundant-reference-null
                         Do not write None again where a field, item or member
                         references a model that holds null itself (a root
                         model or type alias whose type admits None, or an enum
@@ -798,7 +864,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Set delimiter to convert to snake case. This option
                         only can be used with --snake-case-field (default: `_`
                         )
-  --read-nullable-beside-type-list
+  --read-nullable-beside-type-list, --no-read-nullable-beside-type-list
                         Write the null that `nullable: true` declares beside a
                         `type` list with an object into the root model of that
                         schema under --strict-nullable or --use-missing-
@@ -819,7 +885,8 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --special-field-name-prefix SPECIAL_FIELD_NAME_PREFIX
                         Set field name prefix when first character can't be
                         used as Python field name (default: `field`)
-  --strict-nullable     Treat default field as a non-nullable field
+  --strict-nullable, --no-strict-nullable
+                        Treat default field as a non-nullable field
   --strip-default-none  Strip default None on fields (no effect on
                         msgspec.Struct: it defaults an omitted field to UNSET,
                         and to None only when the type admits None)
@@ -834,11 +901,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         instead of None default. E.g., `field: Model | None =
                         Field(default_factory=Model)` instead of `field: Model
                         | None = None`
-  --use-default-kwarg   Use `default=` instead of a positional argument for
+  --use-default-kwarg, --no-use-default-kwarg
+                        Use `default=` instead of a positional argument for
                         Fields that have default values.
-  --use-field-description
+  --use-field-description, --no-use-field-description
                         Use schema description to populate field docstring
-  --use-field-description-example
+  --use-field-description-example, --no-use-field-description-example
                         Use schema example to populate field docstring
   --use-frozen-field, --no-use-frozen-field
                         Use Field(frozen=True) for readOnly fields (Pydantic
@@ -859,7 +927,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         aliasing (Pydantic v2 only). This allows setting
                         values using the Pythonic field name while serializing
                         to the original name.
-  --use-single-line-docstring
+  --use-single-line-docstring, --no-use-single-line-docstring
                         Use single-line docstrings when the content fits on
                         one line
 
@@ -901,7 +969,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Suffix to add to generated class names (e.g., 'Schema'
                         produces 'UserSchema'). Does not apply to root model
                         when --class-name is specified.
-  --collapse-reuse-models
+  --collapse-reuse-models, --no-collapse-reuse-models
                         When used with --reuse-model, collapse duplicate
                         models by replacing references instead of creating
                         empty inheritance subclasses. This eliminates 'class
@@ -914,7 +982,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         reference other models. 'child': Keep inner model's
                         name (default). 'parent': Use wrapper's name for inner
                         model. Requires --collapse-root-models to be set.
-  --collapse-shared-parent-wrappers
+  --collapse-shared-parent-wrappers, --no-collapse-shared-parent-wrappers
                         Under --collapse-root-models-name-strategy parent,
                         make every model that references a wrapper reference
                         the inner model that takes its name, as its first
@@ -929,7 +997,8 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --disable-appending-item-suffix
                         Disable appending `Item` suffix to model name in an
                         array
-  --disable-timestamp   Disable timestamp on file headers
+  --disable-timestamp, --no-disable-timestamp
+                        Disable timestamp on file headers
   --duplicate-name-suffix DUPLICATE_NAME_SUFFIX
                         JSON mapping of type to suffix for resolving duplicate
                         name conflicts. Example: '{"model": "Schema"}' changes
@@ -965,7 +1034,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --module-split-mode {single}
                         Split generated models into separate files. 'single':
                         generate one file per model class.
-  --name-converted-payloads-by-message
+  --name-converted-payloads-by-message, --no-name-converted-payloads-by-message
                         AsyncAPI only: name a payload that an Avro or XML
                         Schema converter gives no name of its own, such as an
                         Avro string or array, after its message, as a JSON
@@ -1026,7 +1095,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --parent-scoped-naming
                         Deprecated: --parent-scoped-naming is deprecated. Use
                         --naming-strategy parent-prefixed instead.
-  --pin-aliases-with-alias-generator
+  --pin-aliases-with-alias-generator, --no-pin-aliases-with-alias-generator
                         pydantic_v2.BaseModel and pydantic_v2.dataclass
                         output: decide a field's alias by the alias generator
                         its model applies, the one in its config or in the
@@ -1037,7 +1106,16 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         dataclass whose config names an alias generator.
                         Without it a field keeps the alias it has without the
                         generator, which the config then replaces.
-  --reuse-model         Reuse models on the field when a module has the model
+  --rename-submodules-hidden-by-classes, --no-rename-submodules-hidden-by-classes
+                        Rename a submodule named like a class of its package,
+                        such as pkg/Warn.py beside the class Warn of
+                        pkg/__init__.py, to the first free name with trailing
+                        underscores (pkg/Warn_.py), with the modules below it;
+                        the class keeps its name. Without it importing the
+                        submodule replaces the class in its package, so the
+                        models that use either fail to decode
+  --reuse-model, --no-reuse-model
+                        Reuse models on the field when a module has the model
                         with the same content
   --reuse-scope {module,tree}
                         Scope for model reuse deduplication: module (per-file,
@@ -1047,7 +1125,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Name of the shared module for --reuse-scope=tree
                         (default: "shared"). Use this option if your schema
                         has a file named "shared".
-  --singularize-last-word-of-item-names
+  --singularize-last-word-of-item-names, --no-singularize-last-word-of-item-names
                         Name the item model of an array by singularizing only
                         the last word of its name (actions_caches gives
                         ActionsCache, payment_status gives PaymentStatusItem);
@@ -1060,7 +1138,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         applies only to automatic inference and does not
                         override --treat-dot-as-module or --no-treat-dot-as-
                         module.
-  --tag-msgspec-by-payload-name
+  --tag-msgspec-by-payload-name, --no-tag-msgspec-by-payload-name
                         msgspec.Struct output only: tag the structs of a
                         discriminated union with the property name the
                         document carries (for example 'pet-kind') instead of
@@ -1093,7 +1171,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         becomes 'foo/bar.py'). Use --no-treat-dot-as-module to
                         keep dots in names as underscores for single-file
                         output.
-  --use-duplicate-name-suffix-for-every-collision
+  --use-duplicate-name-suffix-for-every-collision, --no-use-duplicate-name-suffix-for-every-collision
                         Give the --duplicate-name-suffix suffix also to a
                         model renamed because its name is taken in its module,
                         by another model or by a name the module imports (an
@@ -1107,6 +1185,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Generate a shared base class with model configuration
                         (e.g., extra='forbid') instead of repeating the
                         configuration in each model. Keeps code DRY.
+  --use-msgspec-meta-for-map-keys, --no-use-msgspec-meta-for-map-keys
+                        msgspec.Struct output only: write the keys of a map
+                        whose keys propertyNames or patternProperties
+                        constrain by pattern, minLength or maxLength as
+                        Annotated[str, Meta(...)], so msgspec checks them as
+                        Pydantic output does; without it the keys are str and
+                        every key is accepted, as in 0.88.0
   --use-msgspec-nullable-enum-alias
                         msgspec.Struct output only: write an enum that lists
                         null as an Enum without the None member plus an Enum |
@@ -1130,7 +1215,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         classes implement collections.abc.Sequence by adding
                         Sequence[T] inheritance and root-delegating __iter__,
                         __getitem__, and __len__ methods
-  --use-schema-description
+  --use-schema-description, --no-use-schema-description
                         Use schema description to populate class docstring
   --use-standard-primitive-types, --no-use-standard-primitive-types
                         Use Python standard library types for string formats
@@ -1143,7 +1228,8 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         whose class names collide, plus single-branch unions
                         (type: "exec" -> LocalShellActionExec) and single-key
                         branches ({"granular": ...} -> AskForApprovalGranular)
-  --use-title-as-name   use titles as class names of models
+  --use-title-as-name, --no-use-title-as-name
+                        use titles as class names of models
 
 [36;1mTemplate customization[0m:
   --aliases ALIASES     Alias mapping as inline JSON or a JSON file path for
@@ -1156,7 +1242,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         only): {'field': ['alt1', 'alt2']} uses AliasChoices
                         for validation. Example: {'User.name': 'user_name',
                         'id': 'id_'} generates `id_: ... = Field(alias='id')`.
-  --check-pattern-maps-strictly
+  --check-pattern-maps-strictly, --no-check-pattern-maps-strictly
                         Under --generate-schema-validators, count every key
                         that a pattern of patternProperties admits, check
                         declared keys against the patterns that match them,
@@ -1231,7 +1317,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         later)
 
 [36;1mOpenAPI-only options[0m:
-  --dedupe-request-response-variants
+  --dedupe-request-response-variants, --no-dedupe-request-response-variants
                         Decide Request/Response variants from the schema graph
                         and build each inline model once, without the
                         unreferenced duplicate classes and shifted class
@@ -1239,7 +1325,7 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --include-path-parameters
                         Include path parameters in generated parameter models
                         in addition to query parameters (Only OpenAPI)
-  --keep-first-character-of-path-keys
+  --keep-first-character-of-path-keys, --no-keep-first-character-of-path-keys
                         Strip only a leading slash from a paths key when
                         naming its operation models, as webhook names are, so
                         the key pets gives PetsGetResponse; without it the

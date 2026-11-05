@@ -360,6 +360,16 @@ def drop_field_constraints(original: Callable[..., None]) -> Callable[..., None]
     return drop_field_constraints
 
 
+def mark_serialized_as_any(original: Callable[..., None]) -> Callable[..., None]:
+    """Wrap ``_DecisionWriter.mark_serialized_as_any``: it writes the model that the guarded view it gets names."""
+
+    @wraps(original)
+    def mark_serialized_as_any(self: Any, model: Any, wrapped: bool) -> None:
+        return original(self, viewed(model), wrapped)
+
+    return mark_serialized_as_any
+
+
 def get_inherited_constructor_info(original: Callable[..., Any]) -> Callable[..., Any]:
     """Wrap ``get_inherited_constructor_info``: record the fields constructor ordering reads from the bases.
 

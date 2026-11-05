@@ -11,8 +11,8 @@ This documentation is auto-generated from test cases.
 | 📁 [Base Options](base-options.md) | 15 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 47 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 36 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 57 | Model generation behavior |
-| 🎨 [Template Customization](template-customization.md) | 29 | Output formatting and custom rendering |
+| 🏗️ [Model Customization](model-customization.md) | 59 | Model generation behavior |
+| 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 11 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
 | ⚙️ [General Options](general-options.md) | 25 | Utilities and meta options |
@@ -26,7 +26,7 @@ Use these pages when you know the workflow area but not the exact option name.
 | Topic | Options | Groups |
 |-------|---------|--------|
 | [Model Customization](topics/model-customization.md) | 27 | Model Naming, Model Reuse, Model Shape, Root Model |
-| [Template Customization](topics/template-customization.md) | 22 | Custom Templates, Generated Output, Imports, Output Formatting |
+| [Template Customization](topics/template-customization.md) | 23 | Custom Templates, Generated Output, Imports, Output Formatting |
 | [Typing Customization](topics/typing-customization.md) | 30 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 10 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
 
@@ -314,6 +314,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--read-unevaluated-properties`](typing-customization.md#read-unevaluated-properties)
 - [`--recommend-options`](general-options.md#recommend-options)
 - [`--remove-special-field-name-prefix`](field-customization.md#remove-special-field-name-prefix)
+- [`--rename-submodules-hidden-by-classes`](template-customization.md#rename-submodules-hidden-by-classes)
 - [`--reuse-model`](model-customization.md#reuse-model)
 - [`--reuse-scope`](model-customization.md#reuse-scope)
 
@@ -384,6 +385,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-generic-container-types`](typing-customization.md#use-generic-container-types)
 - [`--use-inline-field-description`](field-customization.md#use-inline-field-description)
 - [`--use-missing-sentinel`](model-customization.md#use-missing-sentinel)
+- [`--use-msgspec-meta-for-map-keys`](model-customization.md#use-msgspec-meta-for-map-keys)
 - [`--use-msgspec-nullable-enum-alias`](model-customization.md#use-msgspec-nullable-enum-alias)
 - [`--use-msgspec-tagged-unions`](model-customization.md#use-msgspec-tagged-unions)
 - [`--use-non-positive-negative-number-constrained-types`](typing-customization.md#use-non-positive-negative-number-constrained-types)
@@ -396,6 +398,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-schema-description`](field-customization.md#use-schema-description)
 - [`--use-serialization-alias`](field-customization.md#use-serialization-alias)
 - [`--use-serialize-as-any`](model-customization.md#use-serialize-as-any)
+- [`--use-serialize-as-any-for-every-subclass`](model-customization.md#use-serialize-as-any-for-every-subclass)
 - [`--use-single-dict-for-object-maps`](typing-customization.md#use-single-dict-for-object-maps)
 - [`--use-single-line-docstring`](field-customization.md#use-single-line-docstring)
 - [`--use-single-value-enum-as-const`](typing-customization.md#use-single-value-enum-as-const)

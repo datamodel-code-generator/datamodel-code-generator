@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "merged": {
+      "anyOf": [
+        {"type": "integer", "minimum": 5},
+        {"type": "number", "minimum": 0, "x-ge": 10}
+      ]
+    }
+  }
+}
