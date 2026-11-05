@@ -507,6 +507,10 @@ source_mismatch	main/openapi/invalid_dotted_schema_name_legacy_stdout.py
 	main/openapi/openapi_allof_boolean_member.py
 [test_main_openapi_allof_inherited_constraint_composition_isolation]
 	main/openapi/allof_inherited_constraint_composition_isolation.py
+[test_main_openapi_allof_member_parts_request_response]
+combined	main/openapi/main_openapi/allof_member_parts_request_response[combined].py
+combined-deduped	main/openapi/main_openapi/allof_member_parts_request_response[combined-deduped].py	= main/openapi/main_openapi/allof_member_parts_request_response[combined].py
+released	main/openapi/main_openapi/allof_member_parts_request_response[released].py
 [test_main_openapi_allof_merge_mode_all]
 	main/openapi/allof_materialize_defaults.py
 [test_main_openapi_allof_merge_mode_none]

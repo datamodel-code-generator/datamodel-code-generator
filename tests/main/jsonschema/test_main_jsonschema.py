@@ -38186,6 +38186,53 @@ def test_main_jsonschema_intersect_allof_keywords(output_file: Path, extra_args:
     )
 
 
+@pytest.mark.cli_doc(
+    options=["--intersect-combined-schema-keywords"],
+    option_description="""Combine the keywords beside an `anyOf` or `oneOf` with each branch, as JSON Schema does.
+
+The keywords beside an `anyOf` or `oneOf` apply to every value, whichever branch it meets. Without the option each
+branch is parsed with them merged in, and the branch's value of a keyword wins: `minimum: 5` beside a branch with
+`minimum: 1` gives `ge=1`. With `--intersect-combined-schema-keywords`, which turns on `--intersect-allof-keywords`,
+each branch is their intersection as `--intersect-allof-keywords` writes it: the tightest bound, the conjunction of
+the `pattern`s, the common `multipleOf`, the `type` and `enum` values both admit, and nested `properties` alike; the
+`nullable` beside the `anyOf` stays with the branch. Where parts meet, an `enum` also loses the values the merged
+`type` rejects. A branch whose keywords no value meets together keeps its earlier merge with a warning. A property
+that overrides an inherited one merges its `properties` name by name, so a nested property named `default` or
+`nullable` stays; an override that narrows the inherited `type` (to `null`, to one of its types, or in a nested
+schema) is the intersection instead of the inherited type; and under `--allof-merge-mode none` the type shape keeps
+the length of a closed tuple. An `allOf` member reads the siblings of its `$ref` as a part where the dialect does
+(2019-09 and later, OpenAPI 3.1), a member naming a `$ref` alias takes the alias's target as its base, and the union
+an `allOf` member's `anyOf` or `oneOf` gives admits null where every part of the `allOf` does.""",
+    input_schema="jsonschema/schema_intersection/combined_branch_keywords.json",
+    cli_args=["--intersect-combined-schema-keywords"],
+    golden_output=(
+        "main/schema_intersection_shapes/"
+        "schema_intersection_shape_output_with_combined_option[combined_branch_keywords-pydantic_v2.BaseModel-default].py"
+    ),
+    comparison_output=(
+        "main/schema_intersection_shapes/"
+        "schema_intersection_shape_output_without_option[combined_branch_keywords-pydantic_v2.BaseModel-default].py"
+    ),
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param(["--intersect-combined-schema-keywords"], id="with-option"), pytest.param([], id="without-option")],
+)
+def test_main_jsonschema_intersect_combined_schema_keywords(output_file: Path, extra_args: list[str]) -> None:
+    """Intersect each branch of an anyOf or oneOf with the keywords beside it with the option.
+
+    Without --intersect-combined-schema-keywords the branch's keyword wins, as in 0.88.0 (#5416): ``minimum: 1``
+    replaces the ``minimum: 5`` beside the ``anyOf``.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "schema_intersection" / "combined_branch_keywords.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize(
     "output_model_type",
     [

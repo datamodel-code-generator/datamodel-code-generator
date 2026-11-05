@@ -6757,5 +6757,458 @@
         ]
       }
     }
+  },
+  "combined_branch_keywords": {
+    "model": "Model",
+    "fields": {
+      "bound": {
+        "valid": [
+          7,
+          "s"
+        ],
+        "invalid": [
+          3
+        ]
+      },
+      "length": {
+        "valid": [
+          "ab",
+          5
+        ],
+        "invalid": [
+          "abcdef"
+        ]
+      },
+      "pattern": {
+        "valid": [
+          "ab",
+          1
+        ],
+        "invalid": [
+          "xb",
+          "ac"
+        ]
+      },
+      "multiple": {
+        "valid": [
+          6,
+          "s"
+        ],
+        "invalid": [
+          3,
+          4
+        ]
+      },
+      "typed": {
+        "valid": [
+          "a",
+          "abcd",
+          ""
+        ],
+        "invalid": [
+          5
+        ]
+      },
+      "values": {
+        "valid": [
+          "b",
+          1
+        ],
+        "invalid": [
+          "a",
+          "c",
+          2
+        ]
+      },
+      "ref_branch": {
+        "valid": [
+          5,
+          "s"
+        ],
+        "invalid": [
+          3
+        ]
+      },
+      "ref_enum": {
+        "valid": [
+          1,
+          2
+        ],
+        "invalid": [
+          "a",
+          3
+        ]
+      },
+      "dead": {
+        "valid": [
+          "x"
+        ],
+        "invalid": [
+          1,
+          ""
+        ]
+      }
+    }
+  },
+  "combined_branch_nullable_oas30": {
+    "model": "Model",
+    "dialect": "http://json-schema.org/draft-04/schema#",
+    "fields": {
+      "bound": {
+        "valid": [
+          7,
+          "s"
+        ],
+        "invalid": [
+          3
+        ]
+      },
+      "own": {
+        "valid": [
+          9,
+          "ab"
+        ],
+        "invalid": [
+          10,
+          "abcd"
+        ]
+      }
+    }
+  },
+  "inherited_override_maps": {
+    "model": "Child",
+    "fields": {
+      "settings": {
+        "valid": [
+          {
+            "default": "x",
+            "name": "ab",
+            "nullable": 1,
+            "examples": 2,
+            "example": true,
+            "type": "t"
+          }
+        ],
+        "invalid": [
+          {
+            "default": 1
+          },
+          {
+            "nullable": "x"
+          },
+          {
+            "examples": "x"
+          },
+          {
+            "example": "x"
+          },
+          {
+            "name": "abcd"
+          }
+        ]
+      },
+      "tagged": {
+        "valid": [
+          {
+            "default": "x"
+          },
+          {
+            "n1": 1
+          }
+        ],
+        "invalid": [
+          {
+            "default": 1
+          }
+        ]
+      }
+    }
+  },
+  "inherited_type_narrowing": {
+    "model": "Child",
+    "fields": {
+      "to_null": {
+        "valid": [
+          null
+        ],
+        "invalid": [
+          "x"
+        ]
+      },
+      "to_string": {
+        "valid": [
+          "x"
+        ],
+        "invalid": [
+          1
+        ]
+      },
+      "to_int_or_null": {
+        "valid": [
+          1,
+          null
+        ],
+        "invalid": [
+          "s"
+        ]
+      },
+      "to_int": {
+        "valid": [
+          1
+        ],
+        "invalid": [
+          1.5
+        ]
+      },
+      "drop_null": {
+        "valid": [
+          "x"
+        ],
+        "invalid": [
+          1
+        ]
+      },
+      "bounded_to_null": {
+        "valid": [
+          null
+        ],
+        "invalid": [
+          "ab"
+        ]
+      },
+      "to_object": {
+        "valid": [
+          {
+            "x": 1
+          }
+        ],
+        "invalid": [
+          {
+            "x": "a"
+          },
+          "s"
+        ]
+      },
+      "ref_to_string": {
+        "valid": [
+          "s"
+        ],
+        "invalid": [
+          1
+        ]
+      },
+      "items_to_string": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          [
+            1
+          ]
+        ]
+      },
+      "nested_to_string": {
+        "valid": [
+          {
+            "x": "a",
+            "y": 1
+          }
+        ],
+        "invalid": [
+          {
+            "x": 1
+          },
+          {
+            "y": "s"
+          }
+        ]
+      },
+      "restated": {
+        "valid": [
+          {
+            "x": "a"
+          }
+        ],
+        "invalid": [
+          {
+            "x": 1
+          }
+        ]
+      },
+      "add_items": {
+        "valid": [
+          [
+            "a"
+          ]
+        ],
+        "invalid": [
+          [
+            1
+          ]
+        ]
+      },
+      "open_map": {
+        "valid": [
+          {
+            "k": 1
+          }
+        ],
+        "invalid": [
+          {
+            "k": "s"
+          }
+        ]
+      }
+    }
+  },
+  "inherited_tuple_shape_oas31": {
+    "model": "Child",
+    "dialect": "https://json-schema.org/draft/2020-12/schema",
+    "fields": {
+      "closed": {
+        "valid": [
+          [
+            "ab",
+            1
+          ]
+        ],
+        "invalid": [
+          [],
+          [
+            "a"
+          ],
+          [
+            "abcd",
+            1
+          ]
+        ]
+      },
+      "open": {
+        "valid": [
+          [
+            "ab",
+            1
+          ],
+          [
+            "ab",
+            1,
+            "extra"
+          ]
+        ],
+        "invalid": [
+          [
+            "ab"
+          ]
+        ]
+      }
+    }
+  },
+  "allof_member_parts": {
+    "model": "Model",
+    "base": {
+      "nullable_union": {
+        "y": "s"
+      }
+    },
+    "fields": {
+      "siblings": {
+        "valid": [
+          {
+            "extra": true,
+            "id": "a",
+            "code": 5
+          }
+        ],
+        "invalid": [
+          {},
+          {
+            "extra": "x"
+          },
+          {
+            "extra": true,
+            "code": 0
+          },
+          {
+            "extra": true,
+            "code": 10
+          }
+        ]
+      },
+      "branch": {
+        "valid": [
+          {
+            "id": 1,
+            "name": "x"
+          }
+        ],
+        "invalid": [
+          {
+            "id": "not a number",
+            "name": "x"
+          },
+          {
+            "id": 10
+          }
+        ]
+      },
+      "override": {
+        "valid": [
+          {
+            "id": 5
+          }
+        ],
+        "invalid": [
+          {
+            "id": 0
+          },
+          {
+            "id": 10
+          },
+          {
+            "id": "s"
+          }
+        ]
+      },
+      "nullable_union": {
+        "valid": [
+          null,
+          {
+            "y": "s",
+            "x": 1
+          }
+        ],
+        "invalid": [
+          {
+            "y": 1
+          },
+          {
+            "x": "s"
+          }
+        ]
+      }
+    }
+  },
+  "allof_member_parts_draft07": {
+    "model": "Model",
+    "fields": {
+      "siblings": {
+        "valid": [
+          {},
+          {
+            "extra": "x"
+          },
+          {
+            "id": "a"
+          }
+        ],
+        "invalid": [
+          {
+            "id": 1
+          }
+        ]
+      }
+    }
   }
 }

@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Model",
+  "type": "object",
+  "definitions": {
+    "A": {"type": "object", "properties": {"id": {"type": "string"}}},
+    "B": {"type": "object", "properties": {"id": {"type": "string"}}},
+    "WithSiblings": {
+      "allOf": [
+        {"$ref": "#/definitions/A", "properties": {"extra": {"type": "boolean"}}, "required": ["extra"]},
+        {"$ref": "#/definitions/B"}
+      ]
+    }
+  },
+  "properties": {"siblings": {"$ref": "#/definitions/WithSiblings"}}
+}

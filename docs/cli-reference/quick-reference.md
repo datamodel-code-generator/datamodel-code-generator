@@ -45,6 +45,7 @@ datamodel-codegen [OPTIONS]
 | [`--ignore-enum-constraints`](typing-customization.md#ignore-enum-constraints) | Ignore enum constraints and use base string type instead of Enum classes. |
 | [`--import-overrides`](typing-customization.md#import-overrides) | Override modules for generated imports by symbol name. |
 | [`--intersect-allof-keywords`](typing-customization.md#intersect-allof-keywords) | Combine the keywords of every part of an `allOf`, a `$ref` with siblings or an o... |
+| [`--intersect-combined-schema-keywords`](typing-customization.md#intersect-combined-schema-keywords) | Combine the keywords beside an `anyOf` or `oneOf` with each branch, as JSON Sche... |
 | [`--keep-enum-member-values`](typing-customization.md#keep-enum-member-values) | Give an enum class a value base only when it keeps every member value. |
 | [`--no-use-closed-typed-dict`](typing-customization.md#no-use-closed-typed-dict) | Disable PEP 728 TypedDict closed/extra_items generation. |
 | [`--no-use-specialized-enum`](typing-customization.md#no-use-specialized-enum) | Disable specialized Enum classes for Python 3.11+ code generation. |
@@ -430,6 +431,7 @@ All options sorted alphabetically:
 - [`--input-model-ref-strategy`](base-options.md#input-model-ref-strategy) - Strategy for referenced types when using --input-model.
 - [`--install-skill`](utility-options.md#install-skill) - Install the bundled Agent Skill (experimental)
 - [`--intersect-allof-keywords`](typing-customization.md#intersect-allof-keywords) - Combine the keywords of every part of an `allOf`, a `$ref` w...
+- [`--intersect-combined-schema-keywords`](typing-customization.md#intersect-combined-schema-keywords) - Combine the keywords beside an `anyOf` or `oneOf` with each ...
 - [`--job`](utility-options.md#job) - Run a named generation job from pyproject.toml (experimental)
 - [`--keep-enum-member-values`](typing-customization.md#keep-enum-member-values) - Give an enum class a value base only when it keeps every mem...
 - [`--keep-field-defaults-off-branch-roots`](model-customization.md#keep-field-defaults-off-branch-roots) - Leave a property's default off the root models extracted fro...

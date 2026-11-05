@@ -30,6 +30,7 @@ from datamodel_code_generator.types import DataType, UnionIntFloat
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterable, Mapping, Sequence
+    from collections.abc import Set as AbstractSet
 
     from datamodel_code_generator.parser._intersection import KeywordIntersection
 
@@ -62,6 +63,16 @@ def _get_json_value_type(value: object) -> str:
     return next((name for kind, name in _JSON_VALUE_TYPES if isinstance(value, kind)), "")
 
 
+def _json_value_admitted(schema_types: AbstractSet[str], value: object) -> bool:
+    """Return whether the JSON types ``schema_types`` (``admitted_types`` of a ``type``) admit a value.
+
+    A float without a fraction is an integer too.
+    """
+    return _get_json_value_type(value) in schema_types or (
+        isinstance(value, float) and value.is_integer() and "integer" in schema_types
+    )
+
+
 def _constraint_values(obj: JsonSchemaObject, keys: Iterable[str], *, as_numbers: bool = False) -> dict[str, Any]:
     """Return the value of each of ``keys`` that a schema sets, in their order; ``as_numbers`` unwraps a number."""
     return {
@@ -88,8 +99,12 @@ def _intersect_dumps(
     *,
     ref_siblings_are_parts: bool = True,
     legacy_rows: Collection[str] = (),
+    removes_enum_outside_type: bool = False,
 ) -> KeywordIntersection:
-    """Return ``parser/_intersection.py:intersect_keywords`` of dumped schema objects, null by ``all-of-parts``."""
+    """Return ``parser/_intersection.py:intersect_keywords`` of dumped schema objects, null by ``all-of-parts``.
+
+    ``removes_enum_outside_type`` removes the ``enum`` values the merged ``type`` rejects (``_json_value_admitted``).
+    """
     return intersect_keywords(
         parts,
         row,
@@ -97,6 +112,7 @@ def _intersect_dumps(
         parts_admit_null=_dump_parts_admit_null,
         ref_siblings_are_parts=ref_siblings_are_parts,
         legacy_rows=legacy_rows,
+        admits_value=_json_value_admitted if removes_enum_outside_type else None,
     )
 
 

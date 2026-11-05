@@ -911,6 +911,10 @@
       "not_recommended": "preset",
       "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
+    "intersect_combined_schema_keywords": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "job": {
       "not_recommended": "command",
       "reason": "Selects a pyproject.toml job; the recommendation keeps it."

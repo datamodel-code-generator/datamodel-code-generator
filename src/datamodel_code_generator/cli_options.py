@@ -405,6 +405,11 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--use-single-value-enum-as-const --read-const-beside-enum --filter-literal-values",
         "--intersect-allof-keywords",
     ),
+    **_opts(
+        _C.TYPING,
+        "--intersect-combined-schema-keywords",
+        implies=_implied("intersect_combined_schema_keywords"),
+    ),
     **_opts(_C.MODEL, "--read-nullable-beside-type-list --keep-field-defaults-off-branch-roots"),
     **_opts(_C.TYPING, "--disable-future-imports", group=_G.IMPORTS),
     **_opts(

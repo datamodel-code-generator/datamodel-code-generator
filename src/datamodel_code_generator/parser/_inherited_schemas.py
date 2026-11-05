@@ -61,6 +61,7 @@ from datamodel_code_generator.parser._schema_reading import (
     _schema_dump,
     _without_contains_keywords,
 )
+from datamodel_code_generator.parser._value_keywords import get_effective_array_length
 from datamodel_code_generator.parser.base import (
     _DEFERRED_INHERITED_FIELD_KEY,
     _DEFERRED_INHERITED_TYPE_KEY,
@@ -93,6 +94,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "InheritedSchemasHost",
+    "all_of_members",
     "build_missing_required_field",
     "drop_incompatible_inherited_constraints",
     "get_allof_parent_references",
@@ -254,7 +256,7 @@ class InheritedSchemasHost(Protocol):
 
     @property
     def _legacy_intersection(self) -> frozenset[str]:
-        """The rows of ``parser/_intersection.py:LEGACY_ROWS`` kept: every row without --intersect-allof-keywords."""
+        """The rows of ``parser/_intersection.py:LEGACY_ROWS`` kept: those of each intersect option that is off."""
 
     @property
     def _legacy_rw_variants(self) -> frozenset[str]:
@@ -369,6 +371,13 @@ class InheritedSchemasHost(Protocol):
         canonical_ref: Callable[[str], str] | None = None,
     ) -> list[JsonSchemaObject | bool] | None:
         """Return the positions of a positional array written as a tuple, or None when it is written as a list."""
+
+    @classmethod
+    def _get_array_items_constraints(cls, obj: JsonSchemaObject) -> dict[str, int]:
+        """Return array length constraints derived from boolean items."""
+
+    def _load_ref_schema_object(self, ref: str) -> JsonSchemaObject:
+        """Load a JsonSchemaObject from a $ref using standard resolve/load pipeline."""
 
     def _get_flattenable_inherited_constraint_items(
         self,
@@ -618,12 +627,21 @@ def get_inherited_type_shape(
 ) -> dict[str, Any]:
     """Return structural schema keywords without inherited value restrictions; a tuple keeps its length.
 
+    The length is that of explicit equal ``minItems`` and ``maxItems``, and unless
+    ``legacy-type-shape-length-from-max-items`` is kept also the one the effective length bounds fix
+    (``parser/_value_keywords.py:get_effective_array_length``: a closed tuple whose tail or a position is ``false``).
     ``canonical_ref`` reads the ``$ref`` values of ``schema`` in the document that defines it.
     """
     schema_dict = schema.model_dump(exclude_unset=True, by_alias=True)
     shape = {key: value for key, value in schema_dict.items() if key in _INHERITED_TYPE_SHAPE_FIELDS}
     positional_items = schema.prefixItems or (schema.items if isinstance(schema.items, list) else None)
-    if positional_items and schema.minItems == schema.maxItems == len(positional_items):
+    if positional_items and (
+        schema.minItems == schema.maxItems == len(positional_items)
+        or (
+            "legacy-type-shape-length-from-max-items" not in parser._legacy_intersection  # noqa: SLF001
+            and get_effective_array_length(type(parser), schema) == len(positional_items)
+        )
+    ):
         shape["minItems"] = schema.minItems
         shape["maxItems"] = schema.maxItems
     elif (
@@ -1278,10 +1296,15 @@ def override_row(parser: InheritedSchemasHost, parent: dict[str, Any], child: di
     """Return ``parser/_intersection.py:inherited_override_row`` under the merge mode of this parse.
 
     An override drops the inherited ``nullable`` by the null rule ``inherited-typed-without-null``, read from its
-    own ``type`` and ``nullable`` (``parser/_null_facts.py:dump_null_sources``).
+    own ``type`` and ``nullable`` (``parser/_null_facts.py:dump_null_sources``). A map of named schemas merges name by
+    name unless ``legacy-schema-maps-merged-as-schemas`` is kept.
     """
     return inherited_override_row(
-        parent, child, merge_mode=parser.allof_merge_mode.value, drops_null=_dump_drops_inherited_null
+        parent,
+        child,
+        merge_mode=parser.allof_merge_mode.value,
+        drops_null=_dump_drops_inherited_null,
+        maps_by_name="legacy-schema-maps-merged-as-schemas" not in parser._legacy_intersection,  # noqa: SLF001
     )
 
 
@@ -1316,6 +1339,7 @@ def inherited_override_schema(
         [parent_dict, child_dict],
         parser._inherited_override_row(parent_dict, child_dict),  # noqa: SLF001
         legacy_rows=parser._legacy_intersection,  # noqa: SLF001
+        removes_enum_outside_type="legacy-enum-outside-type-kept" not in parser._legacy_intersection,  # noqa: SLF001
     )
     parser._warn_intersection(where, intersection)  # noqa: SLF001
     merged_property = parser._schema_object(intersection.keywords)  # noqa: SLF001
@@ -1325,12 +1349,74 @@ def inherited_override_schema(
     return merged_property
 
 
+def copy_carries_override(
+    parser: InheritedSchemasHost,
+    child: JsonSchemaObject,
+    parent: JsonSchemaObject,
+    context: tuple[str, frozenset[_TargetNode]],
+) -> bool:
+    """Return whether the copy of an inherited field carries a partial override without constraints.
+
+    The copy keeps the inherited type and drops at most its null, so it carries an override whose ``type`` admits
+    every non-null type the inherited property admits and whose nested schema keywords admit every value the
+    inherited ones do: the inherited value narrows the override's (``is_partial_inherited_nested_value`` read the
+    other way round), or the override writes the inherited value as it is.
+    """
+    parent_ref, active = context
+    shape = parser._remove_unconstrained_compositions(get_inherited_override_shape(parser, child))  # noqa: SLF001
+    if (child_type := shape.pop("type", None)) is not None and not set(
+        non_null_types(parser._get_inherited_schema_types(parent, parent_ref, active))  # noqa: SLF001
+    ) <= admitted_types(declared_types(child_type)):
+        return False
+    parent_dump = parent.model_dump(exclude_unset=True, by_alias=True)
+    return all(
+        _admits_inherited_value(parser, getattr(child, keyword), parent_dump.get(keyword), context) for keyword in shape
+    )
+
+
+def _admits_inherited_value(
+    parser: InheritedSchemasHost, child: object, parent: object, context: tuple[str, frozenset[_TargetNode]]
+) -> bool:
+    """Return whether the value an override gives a nested schema keyword admits every value of the inherited one.
+
+    ``child`` is the override's value (schema objects), ``parent`` the dump of the inherited value; a map of named
+    schemas and the positions of a tuple compare entry by entry of the override, and a value the inherited schema
+    does not set is admitted only where the override's constrains nothing.
+    """
+    match child, parent:
+        case JsonSchemaObject() as child_schema, _:
+            child_dump = child_schema.model_dump(exclude_unset=True, by_alias=True)
+            if parent is None:
+                return parser._is_unconstrained_inherited_schema(child_dump)  # noqa: SLF001
+            return child_dump == parent or parser._is_partial_inherited_nested_value(  # noqa: SLF001
+                parent, child_schema, context=context
+            )
+        case dict() as child_map, dict() as parent_map:
+            return all(
+                _admits_inherited_value(parser, value, parent_map.get(name), context)
+                for name, value in child_map.items()
+            )
+        case list() as child_items, list() as parent_items:
+            return all(
+                _admits_inherited_value(
+                    parser, value, parent_items[index] if index < len(parent_items) else None, context
+                )
+                for index, value in enumerate(child_items)
+            )
+    return child is True or child == parent
+
+
 def get_deferred_inherited_property_names(
     parser: InheritedSchemasHost,
     source_obj: JsonSchemaObject,
     parent_properties: dict[str, tuple[JsonSchemaObject | bool, str]],
 ) -> frozenset[str]:
-    """Find partial properties that need canonical generated-type resolution."""
+    """Find partial properties that need canonical generated-type resolution.
+
+    A partial override without constraints is resolved as a copy of the inherited field, unless
+    ``legacy-type-narrowing-override-deferred`` is dropped and the copy does not carry it (``copy_carries_override``):
+    such an override is the intersection with the inherited property, as a constrained one is.
+    """
     if not source_obj.properties:
         return frozenset()
     deferred_names: set[str] = set()
@@ -1356,6 +1442,10 @@ def get_deferred_inherited_property_names(
                 ):
                     continue
                 if parser._has_inherited_constraints(normalized_child):  # noqa: SLF001
+                    continue
+                if "legacy-type-narrowing-override-deferred" not in parser._legacy_intersection and not (  # noqa: SLF001
+                    copy_carries_override(parser, normalized_child, effective_parent, (effective_ref, active))
+                ):
                     continue
                 deferred_names.add(field_name)
             case _:
@@ -1530,9 +1620,62 @@ def inherited_node(parser: InheritedSchemasHost, resolved_ref: str) -> _TargetNo
     return _schema_node(schema, resolved_ref)
 
 
-def iter_allof_refs(parser: InheritedSchemasHost, schema: JsonSchemaObject) -> Iterator[str]:
-    """Yield refs nested only through inline allOf branches in document order."""
+def all_of_members(parser: InheritedSchemasHost, schema: JsonSchemaObject) -> list[JsonSchemaObject | bool]:
+    """Return the members of an allOf as its readers read them, in order.
+
+    ``JsonSchemaParser.parse_all_of`` (the members it parses and the properties they declare), ``iter_allof_refs``
+    (the parents of the inherited property map) and the request/response walk (``_typed_model_children``) read the
+    members through it. A member is as written under ``legacy-all-of-ref-siblings-ignored`` and
+    ``legacy-all-of-alias-member-base``. Without the first, a ``$ref`` member whose sibling keywords are parts of it
+    (``_ref_siblings_are_parts_of``, keywords beyond annotations) is read as two members, the ``$ref`` and its
+    siblings at its location, as an inline member is read. Without the second, a ``$ref`` member names the schema that
+    a chain of aliases ends at (``alias_target``).
+    """
+    legacy = parser._legacy_intersection  # noqa: SLF001
+    splits = "legacy-all-of-ref-siblings-ignored" not in legacy
+    follows = "legacy-all-of-alias-member-base" not in legacy
+    if not (splits or follows):
+        return list(schema.allOf)
+    members: list[JsonSchemaObject | bool] = []
     for item in schema.allOf:
+        if not (isinstance(item, JsonSchemaObject) and item.ref):
+            members.append(item)
+            continue
+        target = alias_target(parser, item.ref) if follows else item.ref
+        siblings = splits and item.has_ref_with_schema_keywords and parser._ref_siblings_are_parts_of(item)  # noqa: SLF001
+        if target is item.ref and not siblings:
+            members.append(item)
+            continue
+        members.append(parser._schema_object({"$ref": target}).with_schema_location(item.schema_location))  # noqa: SLF001
+        if siblings:
+            members.append(
+                parser._schema_object(_dump_without_keywords(item, {"$ref"})).with_schema_location(  # noqa: SLF001
+                    item.schema_location
+                )
+            )
+    return members
+
+
+def alias_target(parser: InheritedSchemasHost, ref: str) -> str:
+    """Return the reference a chain of aliases from ``ref`` ends at, ``ref`` itself when it names no alias.
+
+    An alias is a schema that is a ``$ref`` beside annotations only (``has_ref_with_schema_keywords`` false): it is
+    the same schema as its target in every output form. A reference the chain has passed stops it.
+    """
+    seen = {parser._ref_path(ref)}  # noqa: SLF001
+    while (
+        (target := parser._load_ref_schema_object(ref)).ref  # noqa: SLF001
+        and not target.has_ref_with_schema_keywords
+        and (path := parser._ref_path(target.ref)) not in seen  # noqa: SLF001
+    ):
+        seen.add(path)
+        ref = target.ref
+    return ref
+
+
+def iter_allof_refs(parser: InheritedSchemasHost, schema: JsonSchemaObject) -> Iterator[str]:
+    """Yield refs nested only through inline allOf branches in document order (members by ``all_of_members``)."""
+    for item in all_of_members(parser, schema):
         match item:
             case JsonSchemaObject(ref=str() as ref) if ref:
                 yield ref

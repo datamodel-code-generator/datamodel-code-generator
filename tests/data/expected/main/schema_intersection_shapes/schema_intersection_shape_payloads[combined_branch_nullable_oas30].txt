@@ -1,0 +1,84 @@
+pydantic_v2.BaseModel default bound 7 accepted
+pydantic_v2.BaseModel default bound "s" accepted
+pydantic_v2.BaseModel default bound 3 accepted
+pydantic_v2.BaseModel default own 9 accepted
+pydantic_v2.BaseModel default own "ab" accepted
+pydantic_v2.BaseModel default own 10 accepted
+pydantic_v2.BaseModel default own "abcd" accepted
+pydantic_v2.dataclass default bound 7 accepted
+pydantic_v2.dataclass default bound "s" accepted
+pydantic_v2.dataclass default bound 3 accepted
+pydantic_v2.dataclass default own 9 accepted
+pydantic_v2.dataclass default own "ab" accepted
+pydantic_v2.dataclass default own 10 accepted
+pydantic_v2.dataclass default own "abcd" accepted
+msgspec.Struct default bound 7 accepted
+msgspec.Struct default bound "s" accepted
+msgspec.Struct default bound 3 accepted
+msgspec.Struct default own 9 accepted
+msgspec.Struct default own "ab" accepted
+msgspec.Struct default own 10 accepted
+msgspec.Struct default own "abcd" accepted
+pydantic_v2.BaseModel --field-constraints bound 7 accepted
+pydantic_v2.BaseModel --field-constraints bound "s" accepted
+pydantic_v2.BaseModel --field-constraints bound 3 accepted
+pydantic_v2.BaseModel --field-constraints own 9 accepted
+pydantic_v2.BaseModel --field-constraints own "ab" accepted
+pydantic_v2.BaseModel --field-constraints own 10 accepted
+pydantic_v2.BaseModel --field-constraints own "abcd" accepted
+pydantic_v2.BaseModel --use-annotated bound 7 accepted
+pydantic_v2.BaseModel --use-annotated bound "s" accepted
+pydantic_v2.BaseModel --use-annotated bound 3 accepted
+pydantic_v2.BaseModel --use-annotated own 9 accepted
+pydantic_v2.BaseModel --use-annotated own "ab" accepted
+pydantic_v2.BaseModel --use-annotated own 10 accepted
+pydantic_v2.BaseModel --use-annotated own "abcd" accepted
+pydantic_v2.BaseModel --collapse-root-models bound 7 accepted
+pydantic_v2.BaseModel --collapse-root-models bound "s" accepted
+pydantic_v2.BaseModel --collapse-root-models bound 3 accepted
+pydantic_v2.BaseModel --collapse-root-models own 9 accepted
+pydantic_v2.BaseModel --collapse-root-models own "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models own 10 accepted
+pydantic_v2.BaseModel --collapse-root-models own "abcd" accepted
+msgspec.Struct --collapse-root-models bound 7 accepted
+msgspec.Struct --collapse-root-models bound "s" accepted
+msgspec.Struct --collapse-root-models bound 3 accepted
+msgspec.Struct --collapse-root-models own 9 accepted
+msgspec.Struct --collapse-root-models own "ab" accepted
+msgspec.Struct --collapse-root-models own 10 accepted
+msgspec.Struct --collapse-root-models own "abcd" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs bound 7 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs bound "s" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs bound 3 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs own 9 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs own "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs own 10 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs own "abcd" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs bound 7 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs bound "s" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs bound 3 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs own 9 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs own "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs own 10 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs own "abcd" accepted
+msgspec.Struct --use-site-models-for-constrained-refs bound 7 accepted
+msgspec.Struct --use-site-models-for-constrained-refs bound "s" accepted
+msgspec.Struct --use-site-models-for-constrained-refs bound 3 accepted
+msgspec.Struct --use-site-models-for-constrained-refs own 9 accepted
+msgspec.Struct --use-site-models-for-constrained-refs own "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs own 10 accepted
+msgspec.Struct --use-site-models-for-constrained-refs own "abcd" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs bound 7 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs bound "s" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs bound 3 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs own 9 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs own "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs own 10 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs own "abcd" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs bound 7 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs bound "s" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs bound 3 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs own 9 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs own "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs own 10 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs own "abcd" accepted

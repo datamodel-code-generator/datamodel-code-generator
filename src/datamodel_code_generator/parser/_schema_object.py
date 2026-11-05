@@ -227,6 +227,9 @@ def _type_null_sources(obj: JsonSchemaObject) -> NullSources:
         nullable=obj.nullable,
         copied_nullable=bool(obj.__dict__.get(_COPIED_NULLABLE_KEY)),
         enum_null=None in obj.enum,
+        enum_set=bool(obj.enum),
+        const_set="const" in obj.extras,
+        const_null="const" in obj.extras and obj.extras["const"] is None,
     )
 
 
