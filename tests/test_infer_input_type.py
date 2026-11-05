@@ -176,6 +176,8 @@ def test_infer_input_type() -> None:  # noqa: PLR0912
             continue
         assert_infer_input_type(file, InputFileType.OpenAPI)
     for file in (DATA_PATH / "asyncapi").rglob("*"):
+        if "ref_siblings_external_v2" in file.parts and file.name == "notes.yaml":
+            continue
         assert_infer_input_type(file, InputFileType.AsyncAPI)
 
     xmlschema_files = list((DATA_PATH / "xmlschema").rglob("*.xsd"))
