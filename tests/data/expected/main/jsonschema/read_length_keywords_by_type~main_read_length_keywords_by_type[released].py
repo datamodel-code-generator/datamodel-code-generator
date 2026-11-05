@@ -47,4 +47,5 @@ class LengthKeywordsByType(BaseModel):
     letters: list[Letter] | None = Field(None, max_length=2)
     letter_seq: Sequence[LetterSeqEnum] | None = Field(None, max_length=2)
     as_text: str | None = Field(None, max_length=2)
+    count: int | None = None
     short: Short | None = None

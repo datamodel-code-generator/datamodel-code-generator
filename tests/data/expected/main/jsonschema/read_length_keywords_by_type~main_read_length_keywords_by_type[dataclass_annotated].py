@@ -49,4 +49,5 @@ class LengthKeywordsByType:
     letters: list[Letter] | None = None
     letter_seq: Sequence[LetterSeqEnum] | None = None
     as_text: str | None = None
+    count: int | None = None
     short: Short | None = None

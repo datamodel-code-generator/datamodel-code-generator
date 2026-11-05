@@ -48,4 +48,5 @@ class LengthKeywordsByType(Struct):
         UNSET
     )
     as_text: Annotated[str, Meta(max_length=2)] | UnsetType = UNSET
+    count: int | UnsetType = UNSET
     short: Short | UnsetType = UNSET

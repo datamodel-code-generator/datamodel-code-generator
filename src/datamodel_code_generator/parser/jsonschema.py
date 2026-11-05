@@ -109,6 +109,7 @@ from datamodel_code_generator._constraint_applicability import (
     length_keywords_by_type,
     literal_check,  # noqa: F401  # Preserve the established parser.jsonschema export.
     literal_enforces_every_keyword,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    other_kind_keywords,
     property_consumed_keywords,
     split_declared_keywords,  # noqa: F401  # Preserve the established parser.jsonschema export.
     undeclared_keywords_taken,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -2083,15 +2084,22 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _get_constrained_data_type(self, obj: JsonSchemaObject, type_: str, *, field_constraints: bool) -> DataType:
         """Map one type of ``obj`` and its format, with the constraints ``obj`` writes beside it.
 
-        Under ``field_constraints`` the field writes the constraints, so the type takes none of them.
+        Under ``field_constraints`` the field writes the constraints, so the type takes none of them. Under
+        ``--read-length-keywords-by-type`` it takes no string or array keyword that ``type_`` does not hold
+        (``other_kind_keywords``), as the field forms leave them out, also where ``--type-mappings`` maps ``type_`` to
+        a string.
         """
         format_ = obj.format or "default"
         types = self._get_type_with_mappings(type_, format_)
+        by_type = length_keywords_by_type(self.data_type_manager.constraint_options)
         keyword_order = constrained_type_keyword_order(
             types.name,
             encoded_str=field_constraints and self.data_type_manager.encodes_constrained_base64,
-            by_type=length_keywords_by_type(self.data_type_manager.constraint_options),
+            by_type=by_type,
         )
+        if by_type:
+            other = other_kind_keywords(_value_keywords.declared_kinds(self, type_, obj.format), by_type=True)
+            keyword_order = tuple(keyword for keyword in keyword_order if keyword not in other)
         kwargs: dict[str, JsonSchemaDataTypeKwargValue] = {
             **_constraint_values(obj, keyword_order, as_numbers=True),
             **self._get_format_type_kwargs(type_, format_, types),

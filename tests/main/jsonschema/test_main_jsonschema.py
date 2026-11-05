@@ -8757,6 +8757,7 @@ string is: at a property, an item, a map value, a root, the branches of a union 
         pytest.param([], id="released"),
         pytest.param(["--use-annotated"], id="use_annotated_released"),
         pytest.param(["--output-model-type", "msgspec.Struct"], id="msgspec_released"),
+        pytest.param(["--type-mappings", "integer+int64=string"], id="type_mappings_released"),
         *(
             pytest.param([*args, "--read-length-keywords-by-type"], id=id_)
             for args, id_ in (
@@ -8770,6 +8771,7 @@ string is: at a property, an item, a map value, a root, the branches of a union 
                     ["--use-annotated", "--omit-redundant-constraints", "--enum-field-as-literal", "all"],
                     "literals",
                 ),
+                (["--type-mappings", "integer+int64=string"], "type_mappings"),
             )
         ),
     ],
@@ -8780,8 +8782,9 @@ def test_main_read_length_keywords_by_type(output_file: Path, extra_args: list[s
     Without it ``maxLength`` beside an array bounds the list's items and ``maxItems`` beside a string the string's
     length, so the models reject payloads the schema accepts. With it those keywords are left out at a property, an
     item, a map value, a root, a union branch, a type list, an array without ``type``, a ``list`` or ``Sequence`` of
-    ``Literal`` values and a type override, while ``maxItems`` beside an array and ``maxLength`` beside a string stay.
-    Each verdict line gives the schema's own verdict after the model's.
+    ``Literal`` values and a type override, while ``maxItems`` beside an array and ``maxLength`` beside a string stay;
+    ``maxLength`` beside an integer is left out of the ``constr`` that ``--type-mappings`` types it as too. Each verdict
+    line gives the schema's own verdict after the model's.
     """
     name = "length_keywords_by_type"
     run_main_and_assert(

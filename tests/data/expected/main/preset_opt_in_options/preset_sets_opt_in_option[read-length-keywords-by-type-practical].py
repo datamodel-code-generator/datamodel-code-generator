@@ -37,4 +37,5 @@ class LengthKeywordsByType(BaseModel):
     letters: list[Letter] | None = None
     letter_seq: Sequence[Letter] | None = None
     as_text: str | None = None
+    count: int | None = None
     short: list[int] | None = None
