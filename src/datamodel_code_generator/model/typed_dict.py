@@ -378,6 +378,12 @@ class TypedDict(DataModel):
         TypedDict._setup_typed_dict_kwargs(reuse_model)
         return reuse_model
 
+    @staticmethod
+    @override
+    def _base_layout_key(field: DataModelFieldBase) -> object:
+        """Return the key the schema gives the field: a TypedDict holds it apart from a key of the same Python name."""
+        return id(field) if (key := _field_source_name(field)) is None else key
+
     @property
     def is_functional_syntax(self) -> bool:
         """Check if TypedDict requires functional syntax."""

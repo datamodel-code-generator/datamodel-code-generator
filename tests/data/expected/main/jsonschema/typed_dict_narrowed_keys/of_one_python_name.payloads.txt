@@ -1,0 +1,5 @@
+{"foo_bar": 1}: schema accepts, model accepts
+{"foo_bar": 1, "foo-bar": "s", "x": "t"}: schema accepts, model accepts
+{"foo-bar": "s"}: schema rejects, model rejects
+{"foo_bar": 1, "foo-bar": 2}: schema rejects, model rejects
+{"foo_bar": 1, "x": null}: schema rejects, model rejects
