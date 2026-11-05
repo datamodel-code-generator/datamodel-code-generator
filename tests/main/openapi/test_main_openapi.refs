@@ -1562,6 +1562,7 @@ pydantic_v2	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic
 pydantic_v2-definitions-first	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2-definitions-first].py
 pydantic_v2-definitions-first-annotated	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2-definitions-first-annotated].py
 pydantic_v2-definitions-first-request-response	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2-definitions-first-request-response].py
+pydantic_v2-definitions-first-request-response-aliases	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2-definitions-first-request-response-aliases].py
 pydantic_v2-definitions-first-titles	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2-definitions-first-titles].py
 pydantic_v2-primary-first	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2-primary-first].py	= main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2].py
 typed_dict-definitions-first	main/openapi/main_openapi/naming_strategy_definitions_first[typed_dict-definitions-first].py

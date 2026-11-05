@@ -17787,6 +17787,14 @@ model, such as the model of its extra properties or its request and response var
         ),
         pytest.param(
             "pydantic_v2.BaseModel",
+            [
+                *("--naming-strategy", "definitions-first", "--read-only-write-only-model-type", "request-response"),
+                *("--aliases", '{"Package.name": "label"}'),
+            ],
+            id="pydantic_v2-definitions-first-request-response-aliases",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
             ["--naming-strategy", "definitions-first", "--use-title-as-name"],
             id="pydantic_v2-definitions-first-titles",
         ),
@@ -17806,7 +17814,8 @@ def test_main_openapi_naming_strategy_definitions_first(
     the models of their extra properties and their request and response variants follow them. Under
     ``--use-annotated`` the constrained string branch of ``charge`` gives way to the component ``charge``
     (``Charge1``, ``Charge``) instead of the component taking ``ChargeModel``. Under ``--use-title-as-name`` the
-    model of the extra properties of the inline ``package`` takes its title, ``PackageExtra``, and keeps it.
+    model of the extra properties of the inline ``package`` takes its title, ``PackageExtra``, and keeps it. An alias
+    keyed by ``Package`` names the field of the component, whose request and response variants alone are written.
     """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "definitions_first.yaml",
