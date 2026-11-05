@@ -11,7 +11,7 @@ This documentation is auto-generated from test cases.
 | 📁 [Base Options](base-options.md) | 17 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 49 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 38 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 60 | Model generation behavior |
+| 🏗️ [Model Customization](model-customization.md) | 61 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 11 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
@@ -25,7 +25,7 @@ Use these pages when you know the workflow area but not the exact option name.
 
 | Topic | Options | Groups |
 |-------|---------|--------|
-| [Model Customization](topics/model-customization.md) | 28 | Model Naming, Model Reuse, Model Shape, Root Model |
+| [Model Customization](topics/model-customization.md) | 29 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 23 | Custom Templates, Generated Output, Imports, Output Formatting |
 | [Typing Customization](topics/typing-customization.md) | 31 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 10 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
@@ -243,6 +243,7 @@ These links are generated from CLI option metadata and summarize options that im
 ### K {#k}
 
 - [`--keep-constrained-root-models-in-every-container`](model-customization.md#keep-constrained-root-models-in-every-container)
+- [`--keep-enum-literal-aliases`](model-customization.md#keep-enum-literal-aliases)
 - [`--keep-enum-member-values`](typing-customization.md#keep-enum-member-values)
 - [`--keep-field-defaults-off-branch-roots`](model-customization.md#keep-field-defaults-off-branch-roots)
 - [`--keep-first-character-of-path-keys`](openapi-only-options.md#keep-first-character-of-path-keys)
