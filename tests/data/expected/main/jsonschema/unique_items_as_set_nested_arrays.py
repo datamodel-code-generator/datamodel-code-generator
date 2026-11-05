@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
-from msgspec import UNSET, Struct, UnsetType, field
+from msgspec import UNSET, Struct, UnsetType, convert, field
 
 AnyOf: TypeAlias = set[int]
 
@@ -44,6 +44,9 @@ NestedSet: TypeAlias = list[NestedSetItem]
 Tuple: TypeAlias = tuple[int, str]
 
 
+ItemsDefaultItem: TypeAlias = set[int]
+
+
 class Model(Struct):
     any_of: AnyOf | str | UnsetType = field(default_factory=lambda: [1, 2])
     one_of: OneOf | str | UnsetType = UNSET
@@ -58,3 +61,9 @@ class Model(Struct):
     two_patterns: dict[str, list[int]] | UnsetType = UNSET
     two_maps: dict[str, list[int]] | UnsetType = UNSET
     tuples: list[Tuple] | UnsetType = UNSET
+    items_default: list[ItemsDefaultItem] | UnsetType = field(
+        default_factory=lambda: convert([[1, 2]], type=list[ItemsDefaultItem])
+    )
+    values_default: dict[str, list[int]] | UnsetType = field(
+        default_factory=lambda: {'k': [1]}
+    )

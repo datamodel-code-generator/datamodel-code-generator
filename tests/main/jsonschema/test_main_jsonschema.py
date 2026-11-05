@@ -8991,7 +8991,8 @@ def test_main_unique_items_as_set_nested_arrays(output_model: str, tmp_path: Pat
     set. An array stays a list beside a member of its kind that keeps its lists, the values of two patterns or the
     values of two maps, as a msgspec union holds one array-like member and one map. A tuple that the keyword declares
     unique stays a tuple with a warning, as at a field. Up to 0.89.0 only the arrays of a field's own schema became
-    sets, so the others kept the duplicates their schema rejects.
+    sets, so the others kept the duplicates their schema rejects. An array stays a list where the field's default holds
+    an array, the items of ``items_default`` and the values of ``values_default``, as the default holds lists there.
     """
     integers = {"type": "array", "items": {"type": "integer"}, "uniqueItems": True}
     input_file = tmp_path / "nested_arrays.json"
@@ -9037,6 +9038,8 @@ def test_main_unique_items_as_set_nested_arrays(output_model: str, tmp_path: Pat
                         "uniqueItems": True,
                     },
                 },
+                "items_default": {"type": "array", "items": integers, "default": [[1, 2]]},
+                "values_default": {"type": "object", "additionalProperties": integers, "default": {"k": [1]}},
             },
         }),
         encoding="utf-8",
@@ -9075,7 +9078,8 @@ def test_main_unique_items_as_set_nested_arrays(output_model: str, tmp_path: Pat
                 "Model(any_of={1, 2}, one_of={1}, nullable={2}, items=[{3}], values={'k': {4}}, patterns={'a': {5}}, "
                 "all_of=AllOf(root={6}), beside_any_of=[BesideAnyOf(root={'x'}), BesideAnyOf1(root=7)], "
                 "arrays_of_sets=ArraysOfSets(root=[{8}, {8}]), nested_sets=None, "
-                "two_patterns={'b': [9, 9]}, two_maps={'k': [10, 10]}, tuples=None)"
+                "two_patterns={'b': [9, 9]}, two_maps={'k': [10, 10]}, tuples=None, items_default=[[1, 2]], "
+                "values_default={'k': [1]})"
             ),
         )
 

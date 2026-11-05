@@ -1405,7 +1405,8 @@ def plan_unique_sets(
     but those of the field's own schema (``_own_unique_arrays``) stays a list in a union beside another member of its
     kind that keeps its lists (``_beside_its_kind``), decided again until no such set is left. The field's array
     ``default`` becomes the set of its values where a list of the field's own level becomes one and they hash;
-    otherwise those lists stay.
+    otherwise those lists stay. A list inside the field's type stays a list where the field's default holds an array
+    (``_arrays_a_default_holds``), which the default would hold as a list where the type promises a set.
     """
     lists: dict[int, DataType] = {}
     tuples: dict[int, DataType] = {}
@@ -1416,7 +1417,10 @@ def plan_unique_sets(
             lists.update((id(array), array) for array in group if array.is_list)
     own = _own_unique_arrays(field)
     nodes = dict(_nodes_with_paths(field.data_type, ()))
-    kept: set[_Path] = set()
+    own_level = {*map(id, _unique_items_arrays(field.data_type))}
+    kept = {
+        path for path in _arrays_a_default_holds(field.data_type, field.default, ()) if id(nodes[path]) not in own_level
+    }
     while True:
         sets: dict[int, DataType] = {}
         for path, node in nodes.items():
@@ -1441,6 +1445,26 @@ def plan_unique_sets(
             for array in own_level:
                 del sets[id(array)]
     return UniqueItemsPlan(tuple(sets.values()), default_set, tuple(tuples.values()))
+
+
+def _arrays_a_default_holds(data_type: DataType, value: Any, path: _Path) -> Iterator[_Path]:
+    """Yield the paths of the array-like nodes of a type tree, at ``path``, where a default ``value`` holds an array.
+
+    The items of an array and the values of a map are read in every node the container holds, and a union in each of
+    its members, so every node that may take an array of the default is found.
+    """
+    if isinstance(value, (list, tuple)) and data_type in ARRAYS:
+        yield path
+        items: Iterable[Any] = value
+    elif isinstance(value, dict) and data_type in MAPPINGS:
+        items = value.values()
+    elif data_type not in CONTAINERS:
+        items = (value,)
+    else:
+        return
+    for item in items:
+        for index, nested in enumerate(data_type.data_types):
+            yield from _arrays_a_default_holds(nested, item, (*path, index))
 
 
 def _own_unique_arrays(field: DataModelFieldBase) -> set[int]:
