@@ -8,7 +8,8 @@ backend class, which hashes frozen instances by their values, or hashes by ident
 ``dict_key_takes_root_type`` decides whether a dict key that names a root model takes the model's root type, as the
 model's instances cannot be dict keys. ``value_hashes`` and ``field_value_hashes`` decide whether the values Pydantic
 validates for a field hash as builtin values. ``set_items_can_hash`` decides whether some value that the items of an
-array take hashes, so that a set can hold it.
+array take hashes, so that a set can hold it, and ``instances_never_hash`` whether the instances of a model class never
+hash, whatever their values.
 
 Every input is an immutable fact; the adapters read them from the live objects and are listed in
 ``docs/architecture.md``.
@@ -33,6 +34,7 @@ __all__ = [
     "dict_key_takes_root_type",
     "field_value_hashes",
     "frozen_by_config",
+    "instances_never_hash",
     "keeps_builtin_hash",
     "set_items_can_hash",
     "set_items_may_keep_builtin_hash",
@@ -85,7 +87,7 @@ class SetItemFacts:
 
     unhashable: bool = False
     """The type is a container whose values do not hash, as it is written: a list, a sequence, a set, a dict or a
-    mapping."""
+    mapping, or it names a model whose instances never hash (``instances_never_hash``)."""
     null: bool = False
     """The type takes None too."""
     members: tuple[SetItemFacts, ...] = ()
@@ -110,6 +112,16 @@ def _takes_hashable_value(facts: SetItemFacts) -> bool:
     if facts.positions is not None:
         return all(map(_takes_hashable_value, facts.positions))
     return not facts.unhashable and (not facts.members or any(map(_takes_hashable_value, facts.members)))
+
+
+def instances_never_hash(*, dicts: bool, compares_by_value: bool, frozen: bool, own_hash: bool) -> bool:
+    """Return whether the instances of a model class never hash, whatever their values, so that no set holds one.
+
+    Instances that are dicts (a TypedDict) never hash; a class that compares its instances by value (a dataclass or
+    msgspec Struct by default, a RootModel without the hash a Pydantic class takes as a set item) hashes them only where
+    it is frozen or may have a hash of its own (``unsafe_hash``, class code, a custom base class or templates).
+    """
+    return dicts or (compares_by_value and not frozen and not own_hash)
 
 
 def frozen_by_config(chain: Iterable[HashClassFacts]) -> bool:

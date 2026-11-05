@@ -9260,6 +9260,15 @@ extra-items	main/jsonschema/typed_dict_extra_items_py315.py
 [test_main_union_annotation_at_line_length]
 formatters0	main/jsonschema/union_annotation_at_line_length.py
 formatters1	main/jsonschema/union_annotation_at_line_length.py
+[test_main_unique_items_as_set_model_items]
+dataclass	main/jsonschema/unique_items_as_set_model_items.py
+frozen-msgspec	main/jsonschema/unique_items_as_set_model_items.py	= main/jsonschema/unique_items_as_set_model_items~main_unique_items_as_set_model_items[frozen-msgspec].py
+frozen-pydantic-dataclass	main/jsonschema/unique_items_as_set_model_items.py	= main/jsonschema/unique_items_as_set_model_items~main_unique_items_as_set_model_items[frozen-pydantic-dataclass].py
+msgspec	main/jsonschema/unique_items_as_set_model_items.py	= main/jsonschema/unique_items_as_set_model_items~main_unique_items_as_set_model_items[msgspec].py
+pydantic-dataclass	main/jsonschema/unique_items_as_set_model_items.py	= main/jsonschema/unique_items_as_set_model_items~main_unique_items_as_set_model_items[pydantic-dataclass].py
+root-model-type-alias	main/jsonschema/unique_items_as_set_model_items.py	= main/jsonschema/unique_items_as_set_model_items~main_unique_items_as_set_model_items[root-model-type-alias].py
+type-alias	main/jsonschema/unique_items_as_set_model_items.py	= main/jsonschema/unique_items_as_set_model_items~main_unique_items_as_set_model_items[type-alias].py
+typed-dict	main/jsonschema/unique_items_as_set_model_items.py	= main/jsonschema/unique_items_as_set_model_items~main_unique_items_as_set_model_items[typed-dict].py
 [test_main_unique_items_as_set_nested_arrays]
 msgspec.Struct	main/jsonschema/unique_items_as_set_nested_arrays.py
 pydantic_v2.BaseModel	main/jsonschema/unique_items_as_set_nested_arrays.py	= main/jsonschema/unique_items_as_set_nested_arrays~main_unique_items_as_set_nested_arrays[pydantic_v2.BaseModel].py

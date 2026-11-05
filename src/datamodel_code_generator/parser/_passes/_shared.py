@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 from collections import defaultdict
 from copy import deepcopy
+from dataclasses import replace
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias
 
@@ -313,6 +314,23 @@ class OutputOptionsHost(DataModelTypeHost, Protocol):
     @property
     def target_pydantic_version(self) -> TargetPydanticVersion | None:
         """The Pydantic version the output targets, if configured."""
+
+
+class GenericBaseHost(Protocol):
+    """The generic base class the output's models inherit from (--use-generic-base-class)."""
+
+    @property
+    def generic_base_class_config(self) -> dict[str, Any]:
+        """The configuration of the generated base class."""
+
+    @property
+    def use_generic_base_class(self) -> bool:
+        """Whether the models share a generated base class."""
+
+
+def generic_base_config(host: GenericBaseHost) -> dict[str, Any] | None:
+    """Return the configuration of the generic base class the output's models inherit from, or None without one."""
+    return host.generic_base_class_config if host.use_generic_base_class else None
 
 
 class RootModelTypeHost(Protocol):
@@ -1318,6 +1336,7 @@ def unique_items_plan(
     keeps_tuples: bool,
     sources: UniqueItemsSources = "all",
     merged: Sequence[DataModelFieldBase | None] = (),
+    generic_base_config: Mapping[str, Any] | None = None,
 ) -> UniqueItemsPlan:
     """Return the arrays of a field's type that --use-unique-items-as-set writes as sets.
 
@@ -1332,21 +1351,30 @@ def unique_items_plan(
     ``uniqueItems`` at the same position of its type too, so a merge never makes a set of the array of a model that
     does not declare it. A list but those of the field's own schema (``_own_unique_arrays``) stays a list in a union
     beside another member of its kind that keeps its lists (``_beside_its_kind``), which the set would split from a
-    member written alike, decided again until no such set is left.
+    member written alike, decided again until no such set is left. ``generic_base_config`` is the configuration of the
+    generic base class that the output's models inherit from (--use-generic-base-class), which a model item reads
+    (``DataModel._instances_never_hash``).
     """
-    return _unique_items_plan(field, keeps_tuples=keeps_tuples, sources=sources, merged=merged, aliases=frozenset())
+    return _unique_items_plan(field, _PlanReading(keeps_tuples, sources, generic_base_config), merged)
+
+
+@final
+@record(eq=False)
+class _PlanReading:
+    """How a plan reads a field's type: the options of ``unique_items_plan`` and the type aliases it is read inside."""
+
+    keeps_tuples: bool
+    sources: UniqueItemsSources
+    generic_base_config: Mapping[str, Any] | None
+    aliases: frozenset[int] = frozenset()
+    """The type aliases, by id, whose values the plan is read in."""
 
 
 def _unique_items_plan(
-    field: DataModelFieldBase,
-    *,
-    keeps_tuples: bool,
-    sources: UniqueItemsSources,
-    merged: Sequence[DataModelFieldBase | None],
-    aliases: frozenset[int],
+    field: DataModelFieldBase, reading: _PlanReading, merged: Sequence[DataModelFieldBase | None]
 ) -> UniqueItemsPlan:
-    """Return ``unique_items_plan`` of a field read inside the type aliases ``aliases``, by id."""
-    if not (arrays := _declared_unique_arrays(field, sources)):
+    """Return ``unique_items_plan`` of a field as ``reading`` reads it."""
+    if not (arrays := _declared_unique_arrays(field, reading.sources)):
         return _NO_UNIQUE_ITEMS
     if merged:
         declared = [{path for path, _ in _declared_unique_arrays(other, "all")} if other else set() for other in merged]
@@ -1354,11 +1382,11 @@ def _unique_items_plan(
     lists: dict[int, DataType] = {}
     tuples: dict[int, DataType] = {}
     for _, group in arrays:
-        if keeps_tuples and any(array.is_tuple for array in group):
+        if reading.keeps_tuples and any(array.is_tuple for array in group):
             tuples.update((id(array), array) for array in group if array.is_tuple)
         else:
             lists.update((id(array), array) for array in group if array.is_list)
-    alias_sources: UniqueItemsSources = "field" if sources == "field" else "all"
+    items = replace(reading, sources="field" if reading.sources == "field" else "all")
     own = _own_unique_arrays(field)
     nodes = dict(_nodes_with_paths(field.data_type, ()))
     kept: set[_Path] = set()
@@ -1368,12 +1396,7 @@ def _unique_items_plan(
             if (
                 id(node) in lists
                 and path not in kept
-                and set_items_can_hash(
-                    tuple(
-                        _set_item_facts(item, sets, keeps_tuples=keeps_tuples, sources=alias_sources, aliases=aliases)
-                        for item in node.data_types
-                    )
-                )
+                and set_items_can_hash(tuple(_set_item_facts(item, sets, items) for item in node.data_types))
             ):
                 sets[id(node)] = node
         if not (
@@ -1486,38 +1509,35 @@ def _unique_items_arrays(data_type: DataType) -> Iterator[DataType]:
             yield from _unique_items_arrays(nested)
 
 
-def _set_item_facts(
-    data_type: DataType,
-    sets: Collection[int],
-    *,
-    keeps_tuples: bool,
-    sources: UniqueItemsSources,
-    aliases: frozenset[int],
-) -> SetItemFacts:
+def _set_item_facts(data_type: DataType, sets: Collection[int], reading: _PlanReading) -> SetItemFacts:
     """Return the facts of an item type of an array that ``set_items_can_hash`` reads.
 
     ``sets`` holds the lists of the type that become sets, by id. A container is read as it is written: a set under
     --use-generic-container-types is a frozen set, whose values hash. The positions of a tuple of one repeated type are
     that type. A type alias is read as its value, whose lists become sets as its own plan says; one that holds itself is
-    read as any other model the type names.
+    read as any other model the type names. A model takes no hashable value where its class never hashes its instances
+    (``DataModel._instances_never_hash``).
     """
     if data_type.is_optional:
         return SetItemFacts(null=True)
     if (
         (reference := data_type.reference) is not None
         and isinstance(alias := reference.source, TypeAliasBase)
-        and id(alias) not in aliases
+        and id(alias) not in reading.aliases
         and alias.fields
     ):
-        aliases |= {id(alias)}
         value = alias.fields[0]
-        alias_plan = _unique_items_plan(value, keeps_tuples=keeps_tuples, sources=sources, merged=(), aliases=aliases)
-        return _set_item_facts(
-            value.data_type, {*map(id, alias_plan.sets)}, keeps_tuples=keeps_tuples, sources=sources, aliases=aliases
-        )
+        inside = replace(reading, aliases=reading.aliases | {id(alias)})
+        return _set_item_facts(value.data_type, {*map(id, _unique_items_plan(value, inside, ()).sets)}, inside)
+    if (
+        reference is not None
+        and isinstance(model := reference.source, DataModel)
+        and model._instances_never_hash(reading.generic_base_config)  # noqa: SLF001
+    ):
+        return SetItemFacts(unhashable=True)
 
     def read(nested: DataType) -> SetItemFacts:
-        return _set_item_facts(nested, sets, keeps_tuples=keeps_tuples, sources=sources, aliases=aliases)
+        return _set_item_facts(nested, sets, reading)
 
     if data_type.is_tuple:
         count = data_type.tuple_item_count

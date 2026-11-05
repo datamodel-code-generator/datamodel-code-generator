@@ -1,0 +1,82 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "pets": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Pet"
+      }
+    },
+    "names": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Name"
+      }
+    },
+    "shapes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Shape"
+      }
+    },
+    "maybe_pets": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Pet"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "Pet": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "Shape": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Circle"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "Circle": {
+      "type": "object",
+      "required": [
+        "r"
+      ],
+      "properties": {
+        "r": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

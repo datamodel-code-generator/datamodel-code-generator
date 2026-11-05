@@ -236,3 +236,12 @@ match = "^\\[(?:constraints|type)\\] allof_value(?:_part)?s:\\w+(?::\\w+)?: .* -
 reason = "an allOf value site that keeps the form it is written in (without --intersect-allof-keywords) took its root's constraints from the allOf site, so the bounds, lengths and multipleOf of its parts were dropped without a warning; the root writes them now (schema-mismatch fix)"
 decision = "#6171"
 release_note = "an allOf of value parts that keeps the form it is written in writes the keywords of its parts on its root, so a lone allOf member's minItems, maxLength or bounds are no longer dropped"
+
+[[accepted]]
+input = "*unique_items_model_items*"
+backends = [ "msgspec.Struct" ]
+aspects = [ "type" ]
+match = "^\\[type\\] Root:pets: Union\\[msgspec\\.UnsetType, set\\[Pet\\]\\] -> Union\\[list\\[Pet\\], msgspec\\.UnsetType\\]$"
+reason = "with --use-unique-items-as-set (the practical presets), a uniqueItems array of msgspec Structs that compare by value without being frozen was set[Pet], which msgspec cannot decode (TypeError: cannot use 'Pet' as a set element); such items, and those of a TypedDict, a non-frozen dataclass and a RootModel alias, keep a list (crash-class fix)"
+decision = "#6266"
+release_note = "with --use-unique-items-as-set, a uniqueItems array of models whose class can never hash its instances (TypedDict, non-frozen dataclasses and msgspec Structs, RootModel aliases) stays a list instead of a set that rejects every non-empty array, and the models of a type alias that a set names take the set item hash"

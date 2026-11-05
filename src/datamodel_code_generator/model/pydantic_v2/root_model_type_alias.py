@@ -8,7 +8,9 @@ This improves mypy type inference for RootModel constructors.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
+
+from typing_extensions import override
 
 from datamodel_code_generator import cached_path_exists
 from datamodel_code_generator.model.base import overrides_builtin_templates
@@ -18,7 +20,7 @@ from datamodel_code_generator.model.pydantic_v2.root_model import RootModel
 from datamodel_code_generator.types import NONE
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
     from pathlib import Path
 
     from datamodel_code_generator.imports import Import
@@ -68,3 +70,8 @@ class RootModelTypeAlias(RootModel):
     DOCSTRING_INDENT: ClassVar[int] = 0
     FIELD_DOCSTRING_INDENT: ClassVar[int] = 0
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_ROOT_MODEL,)
+
+    @override
+    def _instances_never_hash(self, generic_base_config: Mapping[str, Any] | None) -> bool:
+        """Return True: the alias ``Foo = RootModel[type]`` has no class body for the identity hash of a set item."""
+        return self._class_never_hashes()

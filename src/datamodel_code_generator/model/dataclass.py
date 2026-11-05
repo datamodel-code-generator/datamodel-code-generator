@@ -68,7 +68,7 @@ from datamodel_code_generator.types import DataType, StrictTypes, chain_as_tuple
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Collection, Iterator, Sequence
+    from collections.abc import Collection, Iterator, Mapping, Sequence
     from pathlib import Path
 
     from datamodel_code_generator.enums import DataclassArguments
@@ -237,6 +237,18 @@ class _DataclassReuseMixin:
     def has_keyword_only_definition(self) -> bool:
         """Return whether a dataclass declaration enables keyword-only fields."""
         return bool(cast("DataModel", self).dataclass_arguments.get("kw_only"))
+
+    def _instances_never_hash(self, generic_base_config: Mapping[str, Any] | None) -> bool:  # noqa: ARG002
+        """Return whether the dataclass compares by value (``eq``, the default) without being frozen.
+
+        Such a dataclass sets ``__hash__`` to None; ``unsafe_hash`` gives it a hash, and so does ``eq=False``, which
+        keeps the identity hash. Its decorator alone decides, whatever its bases.
+        """
+        model = cast("DataModel", self)
+        arguments = model.dataclass_arguments
+        return bool(arguments.get("eq", True)) and model._class_never_hashes(  # noqa: SLF001
+            frozen=bool(arguments.get("frozen")), own_hash=bool(arguments.get("unsafe_hash"))
+        )
 
     def _derived_options(self) -> dict[str, Any]:
         """Return the constructor options a model built from this one carries over, frozen and its arguments too."""
