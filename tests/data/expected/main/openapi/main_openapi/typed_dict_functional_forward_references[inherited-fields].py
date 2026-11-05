@@ -14,7 +14,7 @@ class Early(TypedDict):
 
 
 class Base(TypedDict):
-    kid: NotRequired["Child"]
+    kid: NotRequired[Child]
     early: NotRequired[Early]
     name: NotRequired[str]
 

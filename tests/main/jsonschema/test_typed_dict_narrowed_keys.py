@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING, Any, get_type_hints
 import msgspec
 import pytest
 from jsonschema import Draft202012Validator
+from referencing import Registry
+from referencing.jsonschema import DRAFT202012
 
 from tests.conftest import assert_output
 from tests.main.conftest import (
@@ -115,3 +117,41 @@ def test_typed_dict_narrowed_keys_modules(output_dir: Path) -> None:
     )
     with _generated_package_module(output_dir, "grand_child") as module:
         get_type_hints(module.GrandChild)
+
+
+def test_functional_typed_dict_inherited_keys_modules(output_dir: Path, tmp_path: Path) -> None:
+    """Import the types of the keys a functional TypedDict copies from a base in another module (#6323).
+
+    The functional form, written for the key ``a-b``, writes no base, so it declares the key ``q`` of the base itself
+    and imports ``Foo`` from the module of the base, but no longer the base. The model accepts the documents of the
+    schema and rejects the others.
+    """
+    base = {
+        "$defs": {"Foo": {"type": "object", "properties": {"x": {"type": "string"}}}},
+        "type": "object",
+        "properties": {"q": {"$ref": "#/$defs/Foo"}},
+    }
+    child = {"allOf": [{"$ref": "base.json"}, {"type": "object", "properties": {"a-b": {"type": "string"}}}]}
+    (input_path := tmp_path / "functional_inherited_keys").mkdir()
+    (input_path / "base.json").write_text(json.dumps(base), encoding="utf-8")
+    (input_path / "child.json").write_text(json.dumps(child), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--output-model-type", "typing.TypedDict"],
+    )
+    validator = Draft202012Validator(
+        child, registry=Registry().with_resource("base.json", DRAFT202012.create_resource(base))
+    )
+    documents = [{"q": {"x": "s"}, "a-b": "t"}, {}, {"q": {"x": 1}}, {"q": "s"}, {"a-b": 1}]
+    with _generated_package_module(output_dir, "child") as module:
+        get_type_hints(module.Model)
+        assert_output(
+            "".join(
+                f"{json.dumps(document)}: schema {'accepts' if validator.is_valid(document) else 'rejects'}, "
+                f"model {_verdict(module.Model, document)}\n"
+                for document in documents
+            ),
+            name="payloads",
+        )

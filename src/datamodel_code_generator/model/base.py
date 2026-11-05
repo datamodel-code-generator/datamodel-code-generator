@@ -2251,7 +2251,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     merge; a TypedDict merges the keys of its bases itself."""
     _KEEPS_INHERITED_FIELD_TYPES: ClassVar[bool] = False
     """Whether a subclass must declare an inherited field as its bases declare it, as type checkers hold a TypedDict
-    key: a model whose field narrows one declares the fields of its bases without them (`_narrows_inherited_field`)."""
+    key: a model whose field narrows one declares the fields of its bases itself (`_declares_inherited_fields`)."""
     REQUIRES_FIELD_DEPENDENCY_ORDERING: ClassVar[bool] = False
     REQUIRES_TAGGED_UNION_DISCRIMINATOR: ClassVar[bool] = False
     REQUIRES_UNIQUE_FIELD_ALIASES: ClassVar[bool] = False
@@ -2351,8 +2351,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def flatten_conflicting_base_layouts(self, view: BaseLayoutView, flatten: Callable[[DataModel], None]) -> None:
         """Flatten the model where the output cannot combine the layouts of its generated bases, as msgspec cannot."""
 
-    def _narrows_inherited_field(self) -> bool:  # noqa: PLR6301
-        """Return whether a field of the model declares an inherited one otherwise (`_KEEPS_INHERITED_FIELD_TYPES`)."""
+    def _declares_inherited_fields(self) -> bool:  # noqa: PLR6301
+        """Return whether the model declares the fields of its bases itself (`_KEEPS_INHERITED_FIELD_TYPES`)."""
         return False
 
     @staticmethod

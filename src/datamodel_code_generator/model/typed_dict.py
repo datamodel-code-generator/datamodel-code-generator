@@ -141,16 +141,19 @@ class TypedDict(DataModel):
     _KEEPS_INHERITED_FIELD_TYPES: ClassVar[bool] = True
 
     @override
-    def _narrows_inherited_field(self) -> bool:
-        """Return whether a key of the class declares a key of a generated base with another annotation.
+    def _declares_inherited_fields(self) -> bool:
+        """Return whether the TypedDict declares the keys of its generated bases without them.
 
-        A type checker holds a key that a subclass declares again to the type, the requiredness and the ``ReadOnly``
-        of the base's, which would lose the narrower declaration of the schema. Such a class takes the bases it is
-        configured with instead, so the bases it leaves must declare their keys in the output: generated TypedDicts or
-        ``TypedDict``. The functional form writes no base, and a custom template keeps the bases as they are.
+        The functional form writes no base, so it declares every key of its bases, naming their types from its own
+        module (#6323). A type checker holds a key that a subclass declares again to the type, the requiredness and
+        the ``ReadOnly`` of the base's, which would lose the narrower declaration of the schema; such a class takes the
+        bases it is configured with instead, so the bases it leaves must declare their keys in the output: generated
+        TypedDicts or ``TypedDict``. A custom template keeps the bases as they are.
         """
-        if not _find_base_classes(self) or self.is_functional_syntax or self._uses_custom_root_template:
+        if not _find_base_classes(self) or self._uses_custom_root_template:
             return False
+        if self.is_functional_syntax:
+            return True
         kept = {Import.from_full_path(base) for base in (self.BASE_CLASS, *self._configured_base_classes())}
         ancestors = linearize_data_models([self])
         if not all(_inherits_written_keys(model, kept) for model in ancestors):
