@@ -8,7 +8,6 @@ call them through the parser.
 from __future__ import annotations
 
 from collections import Counter
-from functools import partial
 from typing import TYPE_CHECKING, Any, Union
 
 from typing_extensions import Protocol, final
@@ -29,9 +28,9 @@ from datamodel_code_generator.parser._naming import Ordinal, Tag, composed_name
 from datamodel_code_generator.parser._schema_object import Discriminator, JsonSchemaObject
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Container, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Container, Iterable, Iterator, Mapping, Sequence
 
-    from datamodel_code_generator.parser._naming import Claim
+    from datamodel_code_generator.parser._naming import Claim, NamingScope
     from datamodel_code_generator.parser._schema_graph import _TargetNode
     from datamodel_code_generator.parser._schema_object import JsonSchemaLiteral
     from datamodel_code_generator.reference import ModelResolver, SchemaLocation
@@ -73,8 +72,8 @@ class UnionTagsHost(Protocol):
     def use_tag_as_union_variant_name(self) -> bool:
         """Whether union branches are named after their tags (``--use-tag-as-union-variant-name``)."""
 
-    def _claimed(self, claim: Claim, parse: Callable[[], DataType]) -> DataType:
-        """Return what ``parse`` returns, run in a naming frame that makes ``claim`` for the model it builds."""
+    def _claiming(self, claim: Claim | None) -> NamingScope:
+        """Return the naming frame that makes ``claim`` for the model its block builds, while L1 records them."""
 
     @property
     def _tag_key_variants(self) -> dict[SchemaLocation | None, tuple[str, str]]:
@@ -519,9 +518,6 @@ def parse_combined_schema_items(  # noqa: PLR0913, PLR0917
     data_types: list[DataType] = []
     for index, item in enumerate(combined_schemas):
         variant_name = variant_names[index] if variant_names else None
-        parse = partial(
-            parser.parse_item, variant_name or parent_name, item, [*path, str(index)], singular_name=False, parent=obj
-        )
         claim = (
             Ordinal(index + 1)
             if not variant_name
@@ -529,5 +525,12 @@ def parse_combined_schema_items(  # noqa: PLR0913, PLR0917
             if (tag := union_variant_tag(name, variant_name))
             else None
         )
-        data_types.append(parse() if claim is None else parser._claimed(claim, parse))  # noqa: SLF001
+        with parser._claiming(claim) as claimed:  # noqa: SLF001
+            data_types.append(
+                claimed.built(
+                    parser.parse_item(
+                        variant_name or parent_name, item, [*path, str(index)], singular_name=False, parent=obj
+                    )
+                )
+            )
     return data_types

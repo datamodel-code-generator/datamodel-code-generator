@@ -30,7 +30,6 @@ from functools import (
     lru_cache,
     partial,
     reduce,
-    wraps,
 )
 from itertools import chain, compress  # noqa: F401  # Preserve the established parser.jsonschema export.
 from operator import and_, is_not  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -285,7 +284,7 @@ from datamodel_code_generator.parser._intersection import (
     warn_untaken_patterns,
 )
 from datamodel_code_generator.parser._intersection import json_values_equal as _json_literal_values_equal
-from datamodel_code_generator.parser._naming import AllOfPart, Composed, composed_name
+from datamodel_code_generator.parser._naming import UNRECORDED, AllOfPart, Composed, NamingScope, composed_name
 from datamodel_code_generator.parser._null_facts import (
     NullFacts,
     NullMode,
@@ -918,48 +917,6 @@ def _mark_location_conflict(reference: Reference) -> None:
 def _ends_with(tokens: tuple[str, ...], container: tuple[str, ...]) -> bool:
     """Return whether ``tokens`` name an entry of ``container``, its tokens right before the last one."""
     return len(tokens) > len(container) and tokens[-1 - len(container) : -1] == container
-
-
-_BuilderT = TypeVar("_BuilderT", bound="Callable[..., Any]")
-_ClaimedT = TypeVar("_ClaimedT")
-
-
-def _builds_model(method: _BuilderT) -> _BuilderT:
-    """Run a model builder in a frame of the naming frames, while L1 records them (``Parser._naming_frames``).
-
-    The frame takes the model the builder returns when that model was recorded inside it, so the innermost such frame
-    of another model names the model whose parse built it (``BuildRecord.owner``).
-    """
-
-    @wraps(method)
-    def build(self: JsonSchemaParser, *args: Any, **kwargs: Any) -> Any:
-        if (frames := self._naming_frames) is None:
-            return method(self, *args, **kwargs)
-        frame = frames.open()
-        try:
-            result = method(self, *args, **kwargs)
-        finally:
-            frames.close()
-        frames.built(frame, result)
-        return result
-
-    return cast("_BuilderT", build)
-
-
-def _parses_document(method: _BuilderT) -> _BuilderT:
-    """Run a document parse with no naming frame open, so its models are roots whatever parse reached it."""
-
-    @wraps(method)
-    def parse(self: JsonSchemaParser, *args: Any, **kwargs: Any) -> Any:
-        if (frames := self._naming_frames) is None:
-            return method(self, *args, **kwargs)
-        stack = frames.detach()
-        try:
-            return method(self, *args, **kwargs)
-        finally:
-            frames.attach(stack)
-
-    return cast("_BuilderT", parse)
 
 
 @snooper_to_methods()  # noqa: PLR0904
@@ -2594,12 +2551,24 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if (frames := self._naming_frames) is not None:
             frames.record(reference, definition=self._is_definition_location(location))
 
-    def _claimed(self, claim: Claim, parse: Callable[[], _ClaimedT]) -> _ClaimedT:
-        """Return what ``parse`` returns, run in a naming frame that makes ``claim`` for the model it builds.
+    def _model_frame(self) -> NamingScope:
+        """Return the naming frame a model builder runs its body in, opened only while L1 records naming frames.
 
-        The frame is opened only while L1 records naming frames (``Parser._naming_frames``).
+        The frame takes the model the builder returns (``NamingScope.built``) when that model was recorded inside it, so
+        the innermost such frame of another model names the model whose parse built it (``BuildRecord.owner``).
         """
-        return parse() if (frames := self._naming_frames) is None else frames.claimed(claim, parse)
+        return UNRECORDED if (frames := self._naming_frames) is None else NamingScope(frames)
+
+    def _claiming(self, claim: Claim | None) -> NamingScope:
+        """Return the naming frame that makes ``claim`` for the model its block builds, while L1 records naming frames.
+
+        No claim opens no frame.
+        """
+        return UNRECORDED if claim is None or (frames := self._naming_frames) is None else NamingScope(frames, claim)
+
+    def _detached_naming_frames(self) -> AbstractContextManager[None]:
+        """Return the context of a document parse: no naming frame is open, so the document's models are roots."""
+        return nullcontext() if (frames := self._naming_frames) is None else frames.detached()
 
     def _is_definition_location(self, location: SchemaLocation | None) -> bool:
         """Return whether ``location`` is an entry of a definitions container of its document's schema paths.
@@ -4502,7 +4471,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self, reference_path, name, obj, path, fields, base_classes, include_property_count=include_property_count
         )
 
-    @_builds_model
     def _parse_object_common_part(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         self,
         name: str,
@@ -4515,145 +4483,147 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         required: list[str],
         nullable: bool = False,
     ) -> DataType:
-        if self.generate_schema_validators:
-            obj = self._merge_conditional_properties(obj)
-        self._preload_property_refs_for_rw_models(obj)
-        inherited_fields: dict[str, DataModelFieldBase] = {}
-        inherited_properties: dict[str, tuple[JsonSchemaObject | bool, str]] = {}
-        inherited_required_names: frozenset[str] = frozenset()
-        if base_classes:
-            base_classes[:] = _inherited_schemas.sort_inherited_base_classes_for_mro(self, base_classes)
-            inherited_fields = self._get_inherited_field_map(base_classes)
-            inherited_properties = self._get_inherited_property_map(base_classes)
-            inherited_required_names = self._get_inherited_required_names(base_classes)
-        python_overrides = obj.python_field_overrides
-        if python_overrides:
-            inherited_properties = {
-                key: value for key, value in inherited_properties.items() if key not in python_overrides
-            }
-            inherited_required_names = inherited_required_names.difference(python_overrides)
-        scope = self.model_resolver.class_scope("predicted", name, self.model_resolver.join_path(tuple(path)))
-        if obj.properties:
-            fields.extend(
-                _inherited_schemas.parse_fields_beside_parents(
-                    self, obj, base_classes, inherited_properties, path, scope
+        with self._model_frame() as frame:  # noqa: PLR1702
+            if self.generate_schema_validators:
+                obj = self._merge_conditional_properties(obj)
+            self._preload_property_refs_for_rw_models(obj)
+            inherited_fields: dict[str, DataModelFieldBase] = {}
+            inherited_properties: dict[str, tuple[JsonSchemaObject | bool, str]] = {}
+            inherited_required_names: frozenset[str] = frozenset()
+            if base_classes:
+                base_classes[:] = _inherited_schemas.sort_inherited_base_classes_for_mro(self, base_classes)
+                inherited_fields = self._get_inherited_field_map(base_classes)
+                inherited_properties = self._get_inherited_property_map(base_classes)
+                inherited_required_names = self._get_inherited_required_names(base_classes)
+            python_overrides = obj.python_field_overrides
+            if python_overrides:
+                inherited_properties = {
+                    key: value for key, value in inherited_properties.items() if key not in python_overrides
+                }
+                inherited_required_names = inherited_required_names.difference(python_overrides)
+            scope = self.model_resolver.class_scope("predicted", name, self.model_resolver.join_path(tuple(path)))
+            if obj.properties:
+                fields.extend(
+                    _inherited_schemas.parse_fields_beside_parents(
+                        self, obj, base_classes, inherited_properties, path, scope
+                    )
                 )
-            )
-        if base_classes:
-            reserved_names = {field.name for field in fields if field.name}
-            collected_inherited_fields: list[DataModelFieldBase] | None = None
-            for index, field in enumerate(fields):
-                field_name = _field_source_name(field)
-                if field_name in python_overrides:
-                    parent_name = python_overrides[cast("str", field_name)]
-                    parent_field = inherited_fields.get(parent_name)
-                    if parent_field is None and parent_name != field_name:
-                        for resolved_ref in self._linearize_inherited_schema_refs(base_classes):
-                            parent_schema = self._load_inherited_schema_object(resolved_ref)
-                            parent_name = parent_schema.python_field_overrides.get(parent_name, parent_name)
-                        if collected_inherited_fields is None:
-                            collected_inherited_fields = self._collect_inherited_fields_for_request_response(
-                                base_classes
+            if base_classes:
+                reserved_names = {field.name for field in fields if field.name}
+                collected_inherited_fields: list[DataModelFieldBase] | None = None
+                for index, field in enumerate(fields):
+                    field_name = _field_source_name(field)
+                    if field_name in python_overrides:
+                        parent_name = python_overrides[cast("str", field_name)]
+                        parent_field = inherited_fields.get(parent_name)
+                        if parent_field is None and parent_name != field_name:
+                            for resolved_ref in self._linearize_inherited_schema_refs(base_classes):
+                                parent_schema = self._load_inherited_schema_object(resolved_ref)
+                                parent_name = parent_schema.python_field_overrides.get(parent_name, parent_name)
+                            if collected_inherited_fields is None:
+                                collected_inherited_fields = self._collect_inherited_fields_for_request_response(
+                                    base_classes
+                                )
+                            parent_field = next(
+                                (
+                                    candidate
+                                    for candidate in collected_inherited_fields
+                                    if _field_source_name(candidate) == parent_name
+                                ),
+                                None,
                             )
-                        parent_field = next(
-                            (
-                                candidate
-                                for candidate in collected_inherited_fields
-                                if _field_source_name(candidate) == parent_name
-                            ),
-                            None,
-                        )
-                    if parent_field is not None:
-                        alias = field_name if parent_field.name != field_name else None
-                        self._graph_builder.set_field_identity(
-                            field, {"name": parent_field.name, "alias": alias}, inherits=True
-                        )
-                    continue
-                inherited_field = inherited_fields.get(field_name) if field_name is not None else None
-                if (
-                    field_name in inherited_required_names or (inherited_field is not None and inherited_field.required)
-                ) and not self.force_optional_for_required_fields:
-                    self._graph_builder.require_field(field, use_default_with_required=False)
-                if field_name is None or _DEFERRED_INHERITED_TYPE_KEY not in field.__dict__:
+                        if parent_field is not None:
+                            alias = field_name if parent_field.name != field_name else None
+                            self._graph_builder.set_field_identity(
+                                field, {"name": parent_field.name, "alias": alias}, inherits=True
+                            )
+                        continue
+                    inherited_field = inherited_fields.get(field_name) if field_name is not None else None
+                    if (
+                        field_name in inherited_required_names
+                        or (inherited_field is not None and inherited_field.required)
+                    ) and not self.force_optional_for_required_fields:
+                        self._graph_builder.require_field(field, use_default_with_required=False)
+                    if field_name is None or _DEFERRED_INHERITED_TYPE_KEY not in field.__dict__:
+                        if inherited_field is not None:
+                            self._prepare_required_inherited_field(
+                                field,
+                                inherited_field,
+                                overriding_field=field,
+                            )
+                        continue
                     if inherited_field is not None:
-                        self._prepare_required_inherited_field(
-                            field,
-                            inherited_field,
-                            overriding_field=field,
-                        )
-                    continue
-                if inherited_field is not None:
-                    resolved_field = _rw_split.overlay_inherited_field(self, field, inherited_field, reserved_names)
-                    if resolved_field is None:  # pragma: no cover
+                        resolved_field = _rw_split.overlay_inherited_field(self, field, inherited_field, reserved_names)
+                        if resolved_field is None:  # pragma: no cover
+                            continue
+                        if self.model_resolver.default_value_overrides:
+                            self._apply_inherited_field_default(
+                                resolved_field,
+                                _rw_split.inherited_default_source(self.allof_merge_mode, field, inherited_field),
+                                scope=scope,
+                            )
+                        fields[index] = resolved_field
                         continue
                     if self.model_resolver.default_value_overrides:
-                        self._apply_inherited_field_default(
-                            resolved_field,
-                            _rw_split.inherited_default_source(self.allof_merge_mode, field, inherited_field),
-                            scope=scope,
+                        field.__dict__[_DEFERRED_INHERITED_CLASS_KEY] = scope
+                    self._graph_builder.replace_field_type(field, self.data_type())
+            original_class_name = name
+            name = self._apply_title_as_name(name, obj)  # pragma: no cover
+            reference = self.model_resolver.add(path, name, class_name=True, loaded=True)
+            extra_field = _object_maps.get_typed_additional_properties_field(self, reference, reference.name, obj, path)
+            # ignore an undetected object
+            if (
+                ignore_duplicate_model
+                and not fields
+                and extra_field is None
+                and len(base_classes) == 1
+                and not (self.generate_schema_validators and self._has_schema_validator_constraints(obj))
+            ):
+                with self.model_resolver.current_base_path_context(self.model_resolver._base_path):  # noqa: SLF001
+                    self.model_resolver.delete(path)
+                    return frame.built(self.data_type(reference=base_classes[0]))
+            if required_names := list(dict.fromkeys([*required, *obj.required])):
+                field_name_to_field = {_field_source_name(field): field for field in fields}
+                for required_name in required_names:
+                    if self.force_optional_for_required_fields:
+                        continue
+                    if field := field_name_to_field.get(required_name):
+                        use_default = self.apply_default_values_for_required_fields
+                        self._graph_builder.require_field(
+                            field,
+                            use_default_with_required=uses_default_with_required(
+                                required=True, has_default=field.has_default, use_default=use_default
+                            ),
                         )
-                    fields[index] = resolved_field
-                    continue
-                if self.model_resolver.default_value_overrides:
-                    field.__dict__[_DEFERRED_INHERITED_CLASS_KEY] = scope
-                self._graph_builder.replace_field_type(field, self.data_type())
-        original_class_name = name
-        name = self._apply_title_as_name(name, obj)  # pragma: no cover
-        reference = self.model_resolver.add(path, name, class_name=True, loaded=True)
-        extra_field = _object_maps.get_typed_additional_properties_field(self, reference, reference.name, obj, path)
-        # ignore an undetected object
-        if (
-            ignore_duplicate_model
-            and not fields
-            and extra_field is None
-            and len(base_classes) == 1
-            and not (self.generate_schema_validators and self._has_schema_validator_constraints(obj))
-        ):
-            with self.model_resolver.current_base_path_context(self.model_resolver._base_path):  # noqa: SLF001
-                self.model_resolver.delete(path)
-                return self.data_type(reference=base_classes[0])
-        if required_names := list(dict.fromkeys([*required, *obj.required])):
-            field_name_to_field = {_field_source_name(field): field for field in fields}
-            for required_name in required_names:
-                if self.force_optional_for_required_fields:
-                    continue
-                if field := field_name_to_field.get(required_name):
-                    use_default = self.apply_default_values_for_required_fields
-                    self._graph_builder.require_field(
-                        field,
-                        use_default_with_required=uses_default_with_required(
-                            required=True, has_default=field.has_default, use_default=use_default
-                        ),
+                        continue
+                    field = self._build_missing_required_field(
+                        required_name,
+                        excludes={field.name for field in fields if field.name},
+                        base_classes=base_classes,
+                        scope=scope,
+                        inherited_fields=inherited_fields,
                     )
-                    continue
-                field = self._build_missing_required_field(
-                    required_name,
-                    excludes={field.name for field in fields if field.name},
-                    base_classes=base_classes,
-                    scope=scope,
-                    inherited_fields=inherited_fields,
-                )
-                fields.append(field)
-                field_name_to_field[required_name] = field
-        for field in fields:
-            self.data_model_type.finalize_required_inherited_field(field)
-        self._apply_final_class_field_aliases(
-            fields,
-            self.model_resolver.class_scope("reference-name", reference, reference.path),
-            class_key("predicted", original_class_name),
-            base_classes,
-        )
-        if extra_field is not None:
-            extra_field.target_python_version = self.target_python_version
-            fields.insert(0, extra_field)
-        self._record_schema_object(reference, obj)
-        if self.generate_schema_validators:
-            self._add_schema_validators(reference.path, reference.name, obj, path, fields, base_classes)
+                    fields.append(field)
+                    field_name_to_field[required_name] = field
+            for field in fields:
+                self.data_model_type.finalize_required_inherited_field(field)
+            self._apply_final_class_field_aliases(
+                fields,
+                self.model_resolver.class_scope("reference-name", reference, reference.path),
+                class_key("predicted", original_class_name),
+                base_classes,
+            )
+            if extra_field is not None:
+                extra_field.target_python_version = self.target_python_version
+                fields.insert(0, extra_field)
+            self._record_schema_object(reference, obj)
+            if self.generate_schema_validators:
+                self._add_schema_validators(reference.path, reference.name, obj, path, fields, base_classes)
 
-        _rw_split.register_object_model(
-            self, reference, obj, fields, base_classes, model_type=self.data_model_type, nullable=nullable
-        )
-        return self.data_type(reference=reference)
+            _rw_split.register_object_model(
+                self, reference, obj, fields, base_classes, model_type=self.data_model_type, nullable=nullable
+            )
+            return frame.built(self.data_type(reference=reference))
 
     def _append_missing_required_fields(
         self,
@@ -5140,8 +5110,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             else self.parse_root_type(name, merged_root, path)
         )
 
-    @_builds_model
-    def parse_all_of(  # noqa: PLR0911
+    def parse_all_of(  # noqa: PLR0911, PLR0914
         self,
         name: str,
         obj: JsonSchemaObject,
@@ -5149,143 +5118,156 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ignore_duplicate_model: bool = False,  # noqa: FBT001, FBT002
     ) -> DataType:
         """Parse allOf schema into a single data type with combined properties."""
-        if self._contains_false_schema(obj.allOf):
-            _all_of_values.raise_unsatisfiable_schema(self, obj, path, "allOf")
-        if "legacy-all-of-site-form" not in self._legacy_intersection:
-            self._satisfiable_all_of_value_parts(obj)
+        with self._model_frame() as frame:
+            if self._contains_false_schema(obj.allOf):
+                _all_of_values.raise_unsatisfiable_schema(self, obj, path, "allOf")
+            if "legacy-all-of-site-form" not in self._legacy_intersection:
+                self._satisfiable_all_of_value_parts(obj)
 
-        single_ref_result = self._parse_all_of_single_ref(name, obj, path)
-        if single_ref_result is not None:
-            return single_ref_result
+            single_ref_result = self._parse_all_of_single_ref(name, obj, path)
+            if single_ref_result is not None:
+                return frame.built(single_ref_result)
 
-        if merged_root := self._merge_all_of_root_schema(obj):
-            if self.generate_schema_validators and hasattr(self.data_model_root_type, "add_literal_validation"):
-                return self._parse_all_of_root_value(name, merged_root.with_schema_location(obj.schema_location), path)
-            return self._parse_all_of_merged_root(name, merged_root.with_schema_location(obj.schema_location), path)
+            if merged_root := self._merge_all_of_root_schema(obj):
+                if self.generate_schema_validators and hasattr(self.data_model_root_type, "add_literal_validation"):
+                    return frame.built(
+                        self._parse_all_of_root_value(name, merged_root.with_schema_location(obj.schema_location), path)
+                    )
+                return frame.built(
+                    self._parse_all_of_merged_root(name, merged_root.with_schema_location(obj.schema_location), path)
+                )
 
-        nullable = self._object_nullable(obj)
-        merged_all_of_obj = self._merge_all_of_object(obj)
-        if merged_all_of_obj:
-            return self._parse_object_common_part(
-                name,
-                merged_all_of_obj.with_schema_location(obj.schema_location),
-                path,
-                ignore_duplicate_model=ignore_duplicate_model,
-                fields=[],
-                base_classes=[],
-                required=[],
-                nullable=nullable,
-            )
+            nullable = self._object_nullable(obj)
+            merged_all_of_obj = self._merge_all_of_object(obj)
+            if merged_all_of_obj:
+                return frame.built(
+                    self._parse_object_common_part(
+                        name,
+                        merged_all_of_obj.with_schema_location(obj.schema_location),
+                        path,
+                        ignore_duplicate_model=ignore_duplicate_model,
+                        fields=[],
+                        base_classes=[],
+                        required=[],
+                        nullable=nullable,
+                    )
+                )
 
-        root_model_result = self._handle_allof_root_model_with_constraints(name, obj, path)
-        if root_model_result is not None:
-            return root_model_result
-        reads_values = "legacy-value-union-members-unread" not in self._legacy_intersection
-        if (
-            not (ignore_duplicate_model and not reads_values and self._all_of_names_one_base(obj))
-            and (value_union := _all_of_values.all_of_value_union_site(self, obj, objects_admitted=reads_values))
-            is not None
-        ):
-            return self._parse_all_of_merged_root(name, value_union.with_schema_location(obj.schema_location), path)
+            root_model_result = self._handle_allof_root_model_with_constraints(name, obj, path)
+            if root_model_result is not None:
+                return frame.built(root_model_result)
+            reads_values = "legacy-value-union-members-unread" not in self._legacy_intersection
+            if (
+                not (ignore_duplicate_model and not reads_values and self._all_of_names_one_base(obj))
+                and (value_union := _all_of_values.all_of_value_union_site(self, obj, objects_admitted=reads_values))
+                is not None
+            ):
+                return frame.built(
+                    self._parse_all_of_merged_root(name, value_union.with_schema_location(obj.schema_location), path)
+                )
 
-        fields: list[DataModelFieldBase] = []
-        base_classes: list[Reference] = []
-        required: list[str] = []
-        union_parts: list[list[Reference]] = []
-        self._parse_all_of_item(
-            name,
-            obj,
-            path,
-            fields,
-            base_classes,
-            required,
-            union_parts,
-            self._all_of_declared_property_names(obj),
-            conjunctions=_inherited_schemas.read_through_property_conjunctions(self, obj),
-            written=set(),
-        )
-        union_models = [model for part in union_parts for model in part]
-        if not (fields or required or union_models) and (
-            value_root := _all_of_values.merge_all_of_value_schema(self, obj, path, base_classes)
-            or (
-                _all_of_values.reference_site_schema(self, obj)
-                if ignore_duplicate_model and len(base_classes) == 1
-                else _all_of_values.all_of_root_value_schema(self, obj)
-                or _all_of_values.all_of_enum_site_schema(self, obj)
-            )
-        ):
-            return self._parse_all_of_merged_root(name, value_root.with_schema_location(obj.schema_location), path)
-        if not union_models:
-            return self._parse_object_common_part(
+            fields: list[DataModelFieldBase] = []
+            base_classes: list[Reference] = []
+            required: list[str] = []
+            union_parts: list[list[Reference]] = []
+            self._parse_all_of_item(
                 name,
                 obj,
                 path,
-                ignore_duplicate_model=ignore_duplicate_model,
-                fields=fields,
-                base_classes=base_classes,
-                required=required,
-                nullable=nullable,
+                fields,
+                base_classes,
+                required,
+                union_parts,
+                self._all_of_declared_property_names(obj),
+                conjunctions=_inherited_schemas.read_through_property_conjunctions(self, obj),
+                written=set(),
             )
-        reference = self.model_resolver.add(path, name, class_name=True, loaded=True)
-        self._record_schema_object(reference, obj)
-        values = _all_of_values.all_of_value_variants(self, obj) if reads_values else []
-        all_of_data_type = self._claimed(
-            AllOfPart(0),
-            partial(
-                self._parse_object_common_part,
-                name,
-                obj,
-                get_special_path("allOf", path),
-                ignore_duplicate_model=ignore_duplicate_model,
-                fields=fields,
-                base_classes=base_classes,
-                required=required,
-            ),
-        )
-        assert all_of_data_type.reference is not None
-        data_type = build_union(
-            self.data_type,
-            [
-                *(
-                    self._claimed(
-                        AllOfPart(index + 1, branches),
-                        partial(
-                            self._parse_all_of_union_model,
-                            name,
-                            obj,
-                            get_special_path(f"union_model-{index}", path),
-                            (*branches, all_of_data_type.reference),
-                            ignore_duplicate_model=ignore_duplicate_model,
-                        ),
+            union_models = [model for part in union_parts for model in part]
+            if not (fields or required or union_models) and (
+                value_root := _all_of_values.merge_all_of_value_schema(self, obj, path, base_classes)
+                or (
+                    _all_of_values.reference_site_schema(self, obj)
+                    if ignore_duplicate_model and len(base_classes) == 1
+                    else _all_of_values.all_of_root_value_schema(self, obj)
+                    or _all_of_values.all_of_enum_site_schema(self, obj)
+                )
+            ):
+                return frame.built(
+                    self._parse_all_of_merged_root(name, value_root.with_schema_location(obj.schema_location), path)
+                )
+            if not union_models:
+                return frame.built(
+                    self._parse_object_common_part(
+                        name,
+                        obj,
+                        path,
+                        ignore_duplicate_model=ignore_duplicate_model,
+                        fields=fields,
+                        base_classes=base_classes,
+                        required=required,
+                        nullable=nullable,
                     )
-                    for index, branches in enumerate(self._all_of_union_combinations(obj, union_parts))
-                ),
-                *(
-                    self.parse_any_of(
-                        name, self._schema_object({"anyOf": values}), get_special_path("union_values", path)
+                )
+            reference = self.model_resolver.add(path, name, class_name=True, loaded=True)
+            self._record_schema_object(reference, obj)
+            values = _all_of_values.all_of_value_variants(self, obj) if reads_values else []
+            with self._claiming(AllOfPart(0)) as claimed:
+                all_of_data_type = claimed.built(
+                    self._parse_object_common_part(
+                        name,
+                        obj,
+                        get_special_path("allOf", path),
+                        ignore_duplicate_model=ignore_duplicate_model,
+                        fields=fields,
+                        base_classes=base_classes,
+                        required=required,
                     )
-                    if values
-                    else ()
-                ),
-                *self._all_of_union_null(obj),
-            ],
-        )
-        field = self.get_object_field(
-            field_name=None,
-            field=obj,
-            required=True,
-            field_type=data_type,
-            alias=None,
-            original_field_name=None,
-        )
-        self._register_root_model(
-            reference=reference,
-            fields=[field],
-            obj=obj,
-            custom_base_class_name=class_key("predicted", name),
-            description=obj.description if self.use_schema_description else None,
-        )
-        return self.data_type(reference=reference)
+                )
+            assert all_of_data_type.reference is not None
+            union_members: list[DataType] = []
+            for index, branches in enumerate(self._all_of_union_combinations(obj, union_parts)):
+                with self._claiming(AllOfPart(index + 1, branches)) as claimed:
+                    union_members.append(
+                        claimed.built(
+                            self._parse_all_of_union_model(
+                                name,
+                                obj,
+                                get_special_path(f"union_model-{index}", path),
+                                (*branches, all_of_data_type.reference),
+                                ignore_duplicate_model=ignore_duplicate_model,
+                            )
+                        )
+                    )
+            data_type = build_union(
+                self.data_type,
+                [
+                    *union_members,
+                    *(
+                        self.parse_any_of(
+                            name, self._schema_object({"anyOf": values}), get_special_path("union_values", path)
+                        )
+                        if values
+                        else ()
+                    ),
+                    *self._all_of_union_null(obj),
+                ],
+            )
+            field = self.get_object_field(
+                field_name=None,
+                field=obj,
+                required=True,
+                field_type=data_type,
+                alias=None,
+                original_field_name=None,
+            )
+            self._register_root_model(
+                reference=reference,
+                fields=[field],
+                obj=obj,
+                custom_base_class_name=class_key("predicted", name),
+                description=obj.description if self.use_schema_description else None,
+            )
+            return frame.built(self.data_type(reference=reference))
 
     def _all_of_declared_property_names(self, obj: JsonSchemaObject) -> frozenset[str]:
         """Return the names of the properties that ``obj`` and its inline allOf members, at any depth, declare."""
@@ -5717,7 +5699,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         return obj.model_copy(update=updates) if updates else obj
 
-    @_builds_model
     def parse_object(
         self,
         name: str,
@@ -5727,67 +5708,72 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         unique: bool = True,  # noqa: FBT001, FBT002
     ) -> DataType:
         """Parse object schema into a data model."""
-        merged_copy = _MERGED_REF_TARGET_KEY in obj.__dict__
-        if self.generate_schema_validators:
-            obj = self._merge_conditional_properties(obj)
-        if not unique:  # pragma: no cover
-            warn(
-                f"{self.__class__.__name__}.parse_object() ignore `unique` argument."
-                f"An object name must be unique."
-                f"This argument will be removed in a future version",
-                stacklevel=2,
+        with self._model_frame() as frame:
+            merged_copy = _MERGED_REF_TARGET_KEY in obj.__dict__
+            if self.generate_schema_validators:
+                obj = self._merge_conditional_properties(obj)
+            if not unique:  # pragma: no cover
+                warn(
+                    f"{self.__class__.__name__}.parse_object() ignore `unique` argument."
+                    f"An object name must be unique."
+                    f"This argument will be removed in a future version",
+                    stacklevel=2,
+                )
+            name = self._apply_title_as_name(name, obj)
+            reference = self.model_resolver.add(
+                path,
+                name,
+                class_name=True,
+                singular_name=singular_name,
+                loaded=True,
             )
-        name = self._apply_title_as_name(name, obj)
-        reference = self.model_resolver.add(
-            path,
-            name,
-            class_name=True,
-            singular_name=singular_name,
-            loaded=True,
-        )
-        class_name = class_key("reference-name", reference)
-        self.set_title(reference.path, obj)
-        self.set_schema_id(reference.path, obj)
-        self._preload_property_refs_for_rw_models(obj)
-        fields = self.parse_object_fields(
-            obj,
-            path,
-            _inherited_schemas.inferred_module_name(self, class_name),
-            class_name=class_name,
-            output_names=self.model_resolver.output_names(reference.path),
-        )
-        has_declared_fields = bool(fields)
-        if has_declared_fields and (
-            extra_field := _object_maps.get_typed_additional_properties_field(self, reference, class_name, obj, path)
-        ):
-            extra_field.target_python_version = self.target_python_version
-            fields.insert(0, extra_field)
-        should_parse_dict_root = not has_declared_fields and (
-            isinstance(obj.additionalProperties, JsonSchemaObject)
-            or _value_keywords.should_parse_empty_object_as_dict(self, obj)
-        )
-        if not should_parse_dict_root:
-            data_model_type_class = self.data_model_type
-        else:
-            fields.append(_object_maps.get_additional_properties_root_field(self, name, obj, path))
-            data_model_type_class = self.data_model_root_type
-
-        self._record_schema_object(reference, obj)
-        if self.generate_schema_validators:
-            self._add_schema_validators(
-                reference.path,
-                class_name,
+            class_name = class_key("reference-name", reference)
+            self.set_title(reference.path, obj)
+            self.set_schema_id(reference.path, obj)
+            self._preload_property_refs_for_rw_models(obj)
+            fields = self.parse_object_fields(
                 obj,
                 path,
-                fields,
-                [],
-                include_property_count=data_model_type_class is self.data_model_type,
+                _inherited_schemas.inferred_module_name(self, class_name),
+                class_name=class_name,
+                output_names=self.model_resolver.output_names(reference.path),
             )
+            has_declared_fields = bool(fields)
+            if has_declared_fields and (
+                extra_field := _object_maps.get_typed_additional_properties_field(
+                    self, reference, class_name, obj, path
+                )
+            ):
+                extra_field.target_python_version = self.target_python_version
+                fields.insert(0, extra_field)
+            should_parse_dict_root = not has_declared_fields and (
+                isinstance(obj.additionalProperties, JsonSchemaObject)
+                or _value_keywords.should_parse_empty_object_as_dict(self, obj)
+            )
+            if not should_parse_dict_root:
+                data_model_type_class = self.data_model_type
+            else:
+                fields.append(_object_maps.get_additional_properties_root_field(self, name, obj, path))
+                data_model_type_class = self.data_model_root_type
 
-        model = _rw_split.register_object_model(self, reference, obj, fields, None, model_type=data_model_type_class)
-        if merged_copy and model is not None:
-            self._merged_copies.add(model)
-        return self.data_type(reference=reference)
+            self._record_schema_object(reference, obj)
+            if self.generate_schema_validators:
+                self._add_schema_validators(
+                    reference.path,
+                    class_name,
+                    obj,
+                    path,
+                    fields,
+                    [],
+                    include_property_count=data_model_type_class is self.data_model_type,
+                )
+
+            model = _rw_split.register_object_model(
+                self, reference, obj, fields, None, model_type=data_model_type_class
+            )
+            if merged_copy and model is not None:
+                self._merged_copies.add(model)
+            return frame.built(self.data_type(reference=reference))
 
     def parse_pattern_properties(
         self,
@@ -6862,7 +6848,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             declares=bool(non_array_types and constraints),
         )
 
-    @_builds_model
     def parse_array(
         self,
         name: str,
@@ -6871,60 +6856,60 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         original_name: str | None = None,
     ) -> DataType:
         """Parse array schema into a root model with array type."""
-        name = self._apply_title_as_name(name, obj)
-        reference = self.model_resolver.add(path, name, loaded=True, class_name=True)
-        self._record_schema_object(reference, obj)
-        field = self.parse_array_fields(original_name or name, obj, [*path, name])
+        with self._model_frame() as frame:
+            name = self._apply_title_as_name(name, obj)
+            reference = self.model_resolver.add(path, name, loaded=True, class_name=True)
+            self._record_schema_object(reference, obj)
+            field = self.parse_array_fields(original_name or name, obj, [*path, name])
 
-        non_array_types = self._get_array_union_non_array_types(obj)
-        direct_data_types = field.data_type.data_types
-        if (
-            not self._should_localize_array_union_constraints(obj, non_array_types)
-            and direct_data_types
-            and any(
-                data_type.reference is reference
-                for data_type in direct_data_types[0].all_data_types
-                if data_type.reference
+            non_array_types = self._get_array_union_non_array_types(obj)
+            direct_data_types = field.data_type.data_types
+            if (
+                not self._should_localize_array_union_constraints(obj, non_array_types)
+                and direct_data_types
+                and any(
+                    data_type.reference is reference
+                    for data_type in direct_data_types[0].all_data_types
+                    if data_type.reference
+                )
+                and (len(direct_data_types) > 1 or not non_array_types)
+            ):
+                # self-reference
+                recursive_tuple_item_count = direct_data_types[0].tuple_item_count
+                declares_type_list_unique = declares_type_list_unique_items(field)
+                field = self._build_field(
+                    "root",
+                    build_union(
+                        self.data_type,
+                        [
+                            self.data_type(
+                                data_types=direct_data_types[1:],
+                                is_list=recursive_tuple_item_count is None,
+                                is_tuple=recursive_tuple_item_count is not None,
+                                tuple_item_count=recursive_tuple_item_count,
+                            ),
+                            *direct_data_types[1:],
+                        ],
+                    ),
+                    default=field.default,
+                    required=field.required,
+                    constraints=field.constraints,
+                    nullable=field.nullable,
+                    extras=field.extras,
+                    original_name=None,
+                    has_default=field.has_default,
+                )
+                with_type_list_unique_items(field, declares=declares_type_list_unique)
+
+            self._register_root_model(
+                reference=reference,
+                fields=[field],
+                obj=obj,
+                custom_base_class_name=class_key("predicted", name),
+                description=obj.description if self.use_schema_description else None,
             )
-            and (len(direct_data_types) > 1 or not non_array_types)
-        ):
-            # self-reference
-            recursive_tuple_item_count = direct_data_types[0].tuple_item_count
-            declares_type_list_unique = declares_type_list_unique_items(field)
-            field = self._build_field(
-                "root",
-                build_union(
-                    self.data_type,
-                    [
-                        self.data_type(
-                            data_types=direct_data_types[1:],
-                            is_list=recursive_tuple_item_count is None,
-                            is_tuple=recursive_tuple_item_count is not None,
-                            tuple_item_count=recursive_tuple_item_count,
-                        ),
-                        *direct_data_types[1:],
-                    ],
-                ),
-                default=field.default,
-                required=field.required,
-                constraints=field.constraints,
-                nullable=field.nullable,
-                extras=field.extras,
-                original_name=None,
-                has_default=field.has_default,
-            )
-            with_type_list_unique_items(field, declares=declares_type_list_unique)
+            return frame.built(self.data_type(reference=reference))
 
-        self._register_root_model(
-            reference=reference,
-            fields=[field],
-            obj=obj,
-            custom_base_class_name=class_key("predicted", name),
-            description=obj.description if self.use_schema_description else None,
-        )
-        return self.data_type(reference=reference)
-
-    @_builds_model
     def parse_root_type(
         self,
         name: str,
@@ -6932,7 +6917,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         path: list[str],
     ) -> DataType:
         """Parse a root-level type into a root model."""
-        return JsonSchemaParser._parse_root_type_with_context(self, name, obj, path)
+        with self._model_frame() as frame:
+            return frame.built(JsonSchemaParser._parse_root_type_with_context(self, name, obj, path))
 
     @contextmanager
     def _temporarily_enable_field_constraints(self) -> Generator[None, None, None]:
@@ -7561,7 +7547,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return _semantic_value_text(enum_part["const"])
         return f"value_{index}"
 
-    @_builds_model
     def parse_enum(  # noqa: PLR0912, PLR0914, PLR0915
         self,
         name: str,
@@ -7571,156 +7556,160 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         unique: bool = True,  # noqa: FBT001, FBT002
     ) -> DataType:
         """Parse enum schema into an Enum class."""
-        if not unique:  # pragma: no cover
-            warn(
-                f"{self.__class__.__name__}.parse_enum() ignore `unique` argument."
-                f"An object name must be unique."
-                f"This argument will be removed in a future version",
-                stacklevel=2,
-            )
-        enum_fields: list[DataModelFieldBase] = []
-
-        written_obj, obj = obj, self._literal_view(obj)
-        named_values = obj.enum
-        msgspec_null_alias = self.use_msgspec_nullable_enum_alias and not self.data_model_type.SUPPORTS_NULL_ENUM_MEMBER
-        if (enum_null := self._null_facts(obj, "enum")).rule == "enum-null-as-nullable":
-            nullable: bool = True
-            enum_times = named_values = [e for e in obj.enum if e is not None]
-        elif enum_null.rule == "enum-null-member" and (msgspec_null_alias or self._enum_class_has_value_base(obj)):
-            enum_times = [e for e in obj.enum if e is not None]
-            nullable = msgspec_null_alias or not enum_times
-        else:
-            enum_times = obj.enum
-            nullable = False
-
-        exclude_field_names: set[str] = set()
-
-        enum_names = obj.x_enum_varnames or obj.x_enum_names
-        enum_descriptions = obj.x_enum_descriptions
-
-        for i, enum_part in enumerate(named_values):
-            match enum_part:
-                case str():
-                    default = EnumMemberValue(enum_part)
-                case None:
-                    default = NULL_ENUM_MEMBER_VALUE
-                case _:
-                    default = _safe_non_finite_value(enum_part)
-            if obj.type == "string" or isinstance(enum_part, str):
-                field_name = (
-                    enum_names[i]
-                    if enum_names and i < len(enum_names) and enum_names[i]
-                    else _semantic_value_text(enum_part)
+        with self._model_frame() as frame:
+            if not unique:  # pragma: no cover
+                warn(
+                    f"{self.__class__.__name__}.parse_enum() ignore `unique` argument."
+                    f"An object name must be unique."
+                    f"This argument will be removed in a future version",
+                    stacklevel=2,
                 )
-            elif enum_names and i < len(enum_names) and enum_names[i]:
-                field_name = enum_names[i]
-            elif isinstance(enum_part, dict):
-                field_name = self._get_field_name_from_dict_enum(enum_part, i)
+            enum_fields: list[DataModelFieldBase] = []
+
+            written_obj, obj = obj, self._literal_view(obj)
+            named_values = obj.enum
+            msgspec_null_alias = (
+                self.use_msgspec_nullable_enum_alias and not self.data_model_type.SUPPORTS_NULL_ENUM_MEMBER
+            )
+            if (enum_null := self._null_facts(obj, "enum")).rule == "enum-null-as-nullable":
+                nullable: bool = True
+                enum_times = named_values = [e for e in obj.enum if e is not None]
+            elif enum_null.rule == "enum-null-member" and (msgspec_null_alias or self._enum_class_has_value_base(obj)):
+                enum_times = [e for e in obj.enum if e is not None]
+                nullable = msgspec_null_alias or not enum_times
             else:
-                prefix = obj.type if isinstance(obj.type, str) else type(enum_part).__name__
-                field_name = f"{prefix}_{_semantic_value_text(enum_part)}"
-            field_name = self.model_resolver.get_valid_field_name(
-                cast("str", field_name), excludes=exclude_field_names, model_type=ModelType.ENUM
-            )
-            exclude_field_names.add(field_name)
-            if enum_part is None and None not in enum_times:
-                continue
-            field_extras: dict[str, Any] = {}
-            if enum_descriptions and i < len(enum_descriptions) and enum_descriptions[i]:
-                field_extras["description"] = enum_descriptions[i]
-            enum_fields.append(
-                self._build_field(
-                    "enum-member",
-                    self.data_type_manager.get_data_type(
-                        Types.any,
-                    ),
-                    name=field_name,
-                    default=default,
-                    required=True,
-                    has_default=obj.has_default,
-                    extras=field_extras,
-                    original_name=None,
+                enum_times = obj.enum
+                nullable = False
+
+            exclude_field_names: set[str] = set()
+
+            enum_names = obj.x_enum_varnames or obj.x_enum_names
+            enum_descriptions = obj.x_enum_descriptions
+
+            for i, enum_part in enumerate(named_values):
+                match enum_part:
+                    case str():
+                        default = EnumMemberValue(enum_part)
+                    case None:
+                        default = NULL_ENUM_MEMBER_VALUE
+                    case _:
+                        default = _safe_non_finite_value(enum_part)
+                if obj.type == "string" or isinstance(enum_part, str):
+                    field_name = (
+                        enum_names[i]
+                        if enum_names and i < len(enum_names) and enum_names[i]
+                        else _semantic_value_text(enum_part)
+                    )
+                elif enum_names and i < len(enum_names) and enum_names[i]:
+                    field_name = enum_names[i]
+                elif isinstance(enum_part, dict):
+                    field_name = self._get_field_name_from_dict_enum(enum_part, i)
+                else:
+                    prefix = obj.type if isinstance(obj.type, str) else type(enum_part).__name__
+                    field_name = f"{prefix}_{_semantic_value_text(enum_part)}"
+                field_name = self.model_resolver.get_valid_field_name(
+                    cast("str", field_name), excludes=exclude_field_names, model_type=ModelType.ENUM
                 )
-            )
+                exclude_field_names.add(field_name)
+                if enum_part is None and None not in enum_times:
+                    continue
+                field_extras: dict[str, Any] = {}
+                if enum_descriptions and i < len(enum_descriptions) and enum_descriptions[i]:
+                    field_extras["description"] = enum_descriptions[i]
+                enum_fields.append(
+                    self._build_field(
+                        "enum-member",
+                        self.data_type_manager.get_data_type(
+                            Types.any,
+                        ),
+                        name=field_name,
+                        default=default,
+                        required=True,
+                        has_default=obj.has_default,
+                        extras=field_extras,
+                        original_name=None,
+                    )
+                )
 
-        if not enum_fields and not nullable:
-            return self.data_type_manager.get_data_type(Types.null)
+            if not enum_fields and not nullable:
+                return frame.built(self.data_type_manager.get_data_type(Types.null))
 
-        def create_enum(reference_: Reference) -> DataType:
-            """Build the enum model; the ``use_subclass_enum`` check is kept for parser subclasses (see above)."""
-            enum_cls, type_ = self._get_enum_model_class(self._get_enum_type(obj), enum_times)
-            self._record_schema_object(reference_, obj)
+            def create_enum(reference_: Reference) -> DataType:
+                """Build the enum model; the ``use_subclass_enum`` check is kept for parser subclasses (see above)."""
+                enum_cls, type_ = self._get_enum_model_class(self._get_enum_type(obj), enum_times)
+                self._record_schema_object(reference_, obj)
 
-            enum = self._new_model(
-                enum_cls,
-                reference=reference_,
-                fields=enum_fields,
-                path=self.current_source_path,
-                description=obj.description if self.use_schema_description else None,
-                custom_template_dir=self.custom_template_dir,
-                extra_template_data=self._extra_template_data_for_reference(reference_),
-                type_=type_ if self.use_subclass_enum else None,
-                default=obj.default if obj.has_default else UNDEFINED,
-                treat_dot_as_module=self.treat_dot_as_module,
-            )
-            if (values_as_written := obj.__dict__.get(VALUES_AS_WRITTEN_KEY)) is not None:
-                self._graph_builder.record_values_as_written(enum, values_as_written)
-            self._graph_builder.register_model(enum)
-            return self.data_type(reference=reference_)
+                enum = self._new_model(
+                    enum_cls,
+                    reference=reference_,
+                    fields=enum_fields,
+                    path=self.current_source_path,
+                    description=obj.description if self.use_schema_description else None,
+                    custom_template_dir=self.custom_template_dir,
+                    extra_template_data=self._extra_template_data_for_reference(reference_),
+                    type_=type_ if self.use_subclass_enum else None,
+                    default=obj.default if obj.has_default else UNDEFINED,
+                    treat_dot_as_module=self.treat_dot_as_module,
+                )
+                if (values_as_written := obj.__dict__.get(VALUES_AS_WRITTEN_KEY)) is not None:
+                    self._graph_builder.record_values_as_written(enum, values_as_written)
+                self._graph_builder.register_model(enum)
+                return self.data_type(reference=reference_)
 
-        name = self._apply_title_as_name(name, obj)
-        reference = self.model_resolver.add(
-            path,
-            name,
-            class_name=True,
-            singular_name=singular_name,
-            singular_name_suffix="Enum",
-            loaded=True,
-            model_type="enum",
-        )
-        if enum_fields:
-            self._note_const_narrowing(reference, written_obj)
-            if not nullable:
-                return create_enum(reference)
-
-        self._record_schema_object(reference, obj)
-        if not enum_fields:
-            data_type = self.data_type_manager.get_data_type(Types.null)
-            custom_base_class_name = class_key("predicted", name)
-        else:
-            enum_reference = self.model_resolver.add(
-                [*path, "Enum"],
-                composed_name(reference.name, "enum"),
+            name = self._apply_title_as_name(name, obj)
+            reference = self.model_resolver.add(
+                path,
+                name,
                 class_name=True,
                 singular_name=singular_name,
                 singular_name_suffix="Enum",
                 loaded=True,
                 model_type="enum",
             )
-            if message := _shifted_enum_entries_message(enum_reference.name, obj, named_values):
-                warn(message, stacklevel=2)
-            data_type = self._claimed(Composed(reference, "enum"), partial(create_enum, enum_reference))
-            custom_base_class_name = class_key("reference-name", reference)
+            if enum_fields:
+                self._note_const_narrowing(reference, written_obj)
+                if not nullable:
+                    return frame.built(create_enum(reference))
 
-        self._register_root_model(
-            reference=reference,
-            fields=[
-                self._build_field(
-                    "root",
-                    data_type,
-                    default=obj.default,
-                    required=False,
-                    nullable=True,
-                    extras=self.get_field_extras(obj),
-                    original_name=None,
-                    has_default=obj.has_default,
+            self._record_schema_object(reference, obj)
+            if not enum_fields:
+                data_type = self.data_type_manager.get_data_type(Types.null)
+                custom_base_class_name = class_key("predicted", name)
+            else:
+                enum_reference = self.model_resolver.add(
+                    [*path, "Enum"],
+                    composed_name(reference.name, "enum"),
+                    class_name=True,
+                    singular_name=singular_name,
+                    singular_name_suffix="Enum",
+                    loaded=True,
+                    model_type="enum",
                 )
-            ],
-            obj=obj,
-            custom_base_class_name=custom_base_class_name,
-            default=obj.default if obj.has_default else UNDEFINED,
-        )
-        return self.data_type(reference=reference)
+                if message := _shifted_enum_entries_message(enum_reference.name, obj, named_values):
+                    warn(message, stacklevel=2)
+                with self._claiming(Composed(reference, "enum")) as claimed:
+                    data_type = claimed.built(create_enum(enum_reference))
+                custom_base_class_name = class_key("reference-name", reference)
+
+            self._register_root_model(
+                reference=reference,
+                fields=[
+                    self._build_field(
+                        "root",
+                        data_type,
+                        default=obj.default,
+                        required=False,
+                        nullable=True,
+                        extras=self.get_field_extras(obj),
+                        original_name=None,
+                        has_default=obj.has_default,
+                    )
+                ],
+                obj=obj,
+                custom_base_class_name=custom_base_class_name,
+                default=obj.default if obj.has_default else UNDEFINED,
+            )
+            return frame.built(self.data_type(reference=reference))
 
     def _get_ref_body(self, resolved_ref: str) -> dict[str, YamlValue]:
         """Get the body of a reference from URL or remote file."""
@@ -8922,7 +8911,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     ) -> Iterator[tuple[str, YamlValue, list[str]]]:
         return _schema_documents.iter_schema_definition_entries(self, definitions, base_path)
 
-    @_parses_document
     def _parse_file(  # noqa: PLR0913
         self,
         raw: dict[str, Any],
@@ -8935,93 +8923,101 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ref: str | None = None,
     ) -> None:
         """Parse a file containing JSON Schema definitions and references."""
-        object_paths = [o for o in object_paths or [] if o]
-        reference_paths = [r for r in reference_paths or [] if r]
-        path = (
-            self._pointer_parse_path(path_parts, tokens)
-            if (tokens := self._pointer_path_tokens(ref, reference_paths or object_paths))
-            else path_parts
-        )
-        with self.model_resolver.current_root_context(path_parts):
-            prepared = self._prepare_schema_resources(raw, path_parts)
-            if self.raw_obj is raw:
-                self.raw_obj = prepared
-            raw = prepared
-            self._schema_resource_path_parts[self._schema_resource_document(path_parts)] = path_parts
-            obj_name = self.model_resolver.add(
-                path,
-                obj_name,
-                unique=False,
-                class_name=True,
-                preserve_class_name=preserve_root_class_name,
-            ).name
-            with self.root_id_context(raw):
-                # parse $id before parsing $ref
-                root_obj = self._validate_schema_object(string_keyed(raw) if object_paths else raw, path_parts or ["#"])
-                if (
-                    self.config.generate_schema_validators
-                    and raw is self.raw_obj
-                    and root_obj.patternProperties
-                    and not _schema_validators.customizes_models(self.config)
-                ):
-                    self._pattern_validation_document_root = root_obj
-                self._cache_ref_data_type_facts(self.model_resolver.join_path(tuple(path_parts or ["#"])), root_obj)
-                self.parse_id(root_obj, [*path_parts, "#"] if path_parts else ["#"])
-                self._build_anchor_indexes(root_obj, path_parts)
-                definitions: dict[str, YamlValue] = {}
-                schema_path = ""
-                for schema_path_candidate, split_schema_path in self._document_schema_paths:
-                    if definitions := cast("dict[str, YamlValue]", get_model_by_path(raw, split_schema_path)):
-                        schema_path = schema_path_candidate
-                        break
-
-                definition_entries = list(self._iter_schema_definition_entries(definitions, [*path_parts, schema_path]))
-                definition_metadata_entries = [
-                    *((str(key), model, [*path_parts, schema_path, str(key)]) for key, model in definitions.items()),
-                    *definition_entries,
-                ]
-                seen_definition_metadata_paths: set[tuple[str, ...]] = set()
-                validated_definition_objects: dict[tuple[str, ...], JsonSchemaObject] = {}
-                for _key, model, definition_path in definition_metadata_entries:
-                    if (definition_path_key := tuple(definition_path)) in seen_definition_metadata_paths:
-                        continue
-                    seen_definition_metadata_paths.add(definition_path_key)
-                    obj = self._validate_member(
-                        model,
-                        definition_path,
-                        self._member_location(definitions, *definition_path[len(path_parts) + 1 :]),
+        with self._detached_naming_frames():  # noqa: PLR1702
+            object_paths = [o for o in object_paths or [] if o]
+            reference_paths = [r for r in reference_paths or [] if r]
+            path = (
+                self._pointer_parse_path(path_parts, tokens)
+                if (tokens := self._pointer_path_tokens(ref, reference_paths or object_paths))
+                else path_parts
+            )
+            with self.model_resolver.current_root_context(path_parts):
+                prepared = self._prepare_schema_resources(raw, path_parts)
+                if self.raw_obj is raw:
+                    self.raw_obj = prepared
+                raw = prepared
+                self._schema_resource_path_parts[self._schema_resource_document(path_parts)] = path_parts
+                obj_name = self.model_resolver.add(
+                    path,
+                    obj_name,
+                    unique=False,
+                    class_name=True,
+                    preserve_class_name=preserve_root_class_name,
+                ).name
+                with self.root_id_context(raw):
+                    # parse $id before parsing $ref
+                    root_obj = self._validate_schema_object(
+                        string_keyed(raw) if object_paths else raw, path_parts or ["#"]
                     )
-                    validated_definition_objects[definition_path_key] = obj
-                    self._cache_ref_data_type_facts(self.model_resolver.join_path(tuple(definition_path)), obj)
-                    self.parse_id(obj, definition_path)
-                    self._build_anchor_indexes(obj, definition_path)
+                    if (
+                        self.config.generate_schema_validators
+                        and raw is self.raw_obj
+                        and root_obj.patternProperties
+                        and not _schema_validators.customizes_models(self.config)
+                    ):
+                        self._pattern_validation_document_root = root_obj
+                    self._cache_ref_data_type_facts(self.model_resolver.join_path(tuple(path_parts or ["#"])), root_obj)
+                    self.parse_id(root_obj, [*path_parts, "#"] if path_parts else ["#"])
+                    self._build_anchor_indexes(root_obj, path_parts)
+                    definitions: dict[str, YamlValue] = {}
+                    schema_path = ""
+                    for schema_path_candidate, split_schema_path in self._document_schema_paths:
+                        if definitions := cast("dict[str, YamlValue]", get_model_by_path(raw, split_schema_path)):
+                            schema_path = schema_path_candidate
+                            break
 
-                if object_paths:
-                    models = (
-                        get_model_by_path(raw, object_paths)
-                        if ref is None
-                        else self._get_model_by_json_pointer(raw, object_paths, ref)
+                    definition_entries = list(
+                        self._iter_schema_definition_entries(definitions, [*path_parts, schema_path])
                     )
-                    model_name = object_paths[-1]
-                    self.parse_obj(model_name, self._validate_pointer_target(raw, object_paths, models, path), path)
-                elif not self.skip_root_model:
-                    self.parse_obj(obj_name, root_obj, path_parts or ["#"])
-                for key, model, path in definition_entries:
-                    reference = self.model_resolver.references.get(self.model_resolver.join_path(tuple(path)))
-                    if reference is None:
-                        reference = self.model_resolver.get(path)
-                    if not reference or not reference.loaded:
-                        with self._value_held_at(
-                            model, self._member_location(definitions, *path[len(path_parts) + 1 :])
-                        ):
-                            self._parse_raw_or_validated_obj(
-                                key,
-                                model,
-                                path,
-                                validated_definition_objects.get(tuple(path)),
-                            )
+                    definition_metadata_entries = [
+                        *(
+                            (str(key), model, [*path_parts, schema_path, str(key)])
+                            for key, model in definitions.items()
+                        ),
+                        *definition_entries,
+                    ]
+                    seen_definition_metadata_paths: set[tuple[str, ...]] = set()
+                    validated_definition_objects: dict[tuple[str, ...], JsonSchemaObject] = {}
+                    for _key, model, definition_path in definition_metadata_entries:
+                        if (definition_path_key := tuple(definition_path)) in seen_definition_metadata_paths:
+                            continue
+                        seen_definition_metadata_paths.add(definition_path_key)
+                        obj = self._validate_member(
+                            model,
+                            definition_path,
+                            self._member_location(definitions, *definition_path[len(path_parts) + 1 :]),
+                        )
+                        validated_definition_objects[definition_path_key] = obj
+                        self._cache_ref_data_type_facts(self.model_resolver.join_path(tuple(definition_path)), obj)
+                        self.parse_id(obj, definition_path)
+                        self._build_anchor_indexes(obj, definition_path)
 
-                self._parse_reserved_targets(raw, path_parts)
+                    if object_paths:
+                        models = (
+                            get_model_by_path(raw, object_paths)
+                            if ref is None
+                            else self._get_model_by_json_pointer(raw, object_paths, ref)
+                        )
+                        model_name = object_paths[-1]
+                        self.parse_obj(model_name, self._validate_pointer_target(raw, object_paths, models, path), path)
+                    elif not self.skip_root_model:
+                        self.parse_obj(obj_name, root_obj, path_parts or ["#"])
+                    for key, model, path in definition_entries:
+                        reference = self.model_resolver.references.get(self.model_resolver.join_path(tuple(path)))
+                        if reference is None:
+                            reference = self.model_resolver.get(path)
+                        if not reference or not reference.loaded:
+                            with self._value_held_at(
+                                model, self._member_location(definitions, *path[len(path_parts) + 1 :])
+                            ):
+                                self._parse_raw_or_validated_obj(
+                                    key,
+                                    model,
+                                    path,
+                                    validated_definition_objects.get(tuple(path)),
+                                )
+
+                    self._parse_reserved_targets(raw, path_parts)
 
     def _parse_reserved_targets(self, raw: dict[str, Any], path_parts: list[str]) -> None:
         """Parse the targets the document at ``path_parts`` reserves from its prepared tree, while it reserves more."""

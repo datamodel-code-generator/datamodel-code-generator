@@ -7,7 +7,6 @@ to these functions (``parser/jsonschema.py``), and these functions call them thr
 
 from __future__ import annotations
 
-from functools import partial
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 from typing_extensions import Protocol
@@ -23,13 +22,13 @@ from datamodel_code_generator.reference import unique_items_of
 from datamodel_code_generator.types import ANY, Types, build_union
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator, Sequence
+    from collections.abc import Iterable, Iterator, Sequence
 
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.model import DataModel, DataModelFieldBase
     from datamodel_code_generator.model.output import OutputModelContext
-    from datamodel_code_generator.parser._naming import Claim
+    from datamodel_code_generator.parser._naming import Claim, NamingScope
     from datamodel_code_generator.parser._null_facts import NullFacts, NullSite
     from datamodel_code_generator.reference import ModelResolver, Reference
     from datamodel_code_generator.types import DataType, DataTypeManager
@@ -115,8 +114,8 @@ class ObjectMapsHost(Protocol):
     def _legacy_object_maps(self) -> frozenset[str]:
         """The rows of 0.86.0 object maps kept."""
 
-    def _claimed(self, claim: Claim, parse: Callable[[], DataType]) -> DataType:
-        """Return what ``parse`` returns, run in a naming frame that makes ``claim`` for the model it builds."""
+    def _claiming(self, claim: Claim | None) -> NamingScope:
+        """Return the naming frame that makes ``claim`` for the model its block builds, while L1 records them."""
 
     @property
     def _output_model_context(self) -> OutputModelContext:
@@ -329,15 +328,16 @@ def get_typed_additional_properties_field(
         return None
     additional_props = parser._add_nullable_combined_schema_branches(additional_props)  # noqa: SLF001
     additional_property_name = composed_name(class_name, "additional-property")
-    parse_value = partial(
-        parser._parse_additional_properties_value,  # noqa: SLF001
-        additional_property_name,
-        [*path, "additionalProperties"],
-        obj,
-        additional_properties=additional_props,
-        constrained_name=additional_property_name,
-    )
-    extra_value_type = parser._claimed(Composed(reference, "additional-property"), parse_value)  # noqa: SLF001
+    with parser._claiming(Composed(reference, "additional-property")) as claimed:  # noqa: SLF001
+        extra_value_type = claimed.built(
+            parser._parse_additional_properties_value(  # noqa: SLF001
+                additional_property_name,
+                [*path, "additionalProperties"],
+                obj,
+                additional_properties=additional_props,
+                constrained_name=additional_property_name,
+            )
+        )
     dict_key = parser._object_map_key_type(obj.propertyNames, "extra-field")  # noqa: SLF001
 
     location = additional_props.schema_location
