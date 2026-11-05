@@ -3900,7 +3900,7 @@ def test_main_relative_base_class_and_type_override_paths(output_dir: Path, outp
     """Import a relative ``--base-class``, ``--base-class-map`` and ``--type-overrides`` path as given (#6224).
 
     Each module writes the relative module after ``from`` as 0.88.0 did, so models generated into a subpackage can
-    inherit a base class of a package above it.
+    inherit a base class of a package above it; spaces around a relative type override are no part of its path.
     """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / "dot_notation_inheritance.yaml",
@@ -3914,7 +3914,7 @@ def test_main_relative_base_class_and_type_override_paths(output_dir: Path, outp
             "--base-class-map",
             '{"v0.Properties": ["...base.BaseClass", "..mixins.Hooks"]}',
             "--type-overrides",
-            '{"Animal.species": "..types.Species"}',
+            '{"Animal.species": " ..types.Species "}',
             "--disable-timestamp",
             "--formatters",
             "builtin",

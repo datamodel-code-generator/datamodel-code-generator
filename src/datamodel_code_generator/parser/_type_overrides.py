@@ -400,8 +400,9 @@ def _override_expression(parser: TypeOverridesHost, path: str) -> PythonTypeExpr
         PythonTypeQualifiedName,
     )
 
-    if "[" not in path and is_dotted_python_name(path.lstrip("."), parser.target_python_version):
-        if "." in path or not (
+    name = path.strip() if path.strip().startswith(".") else path
+    if "[" not in name and is_dotted_python_name(name.lstrip("."), parser.target_python_version):
+        if "." in name or not (
             parser._is_target_python_builtin_type(path)  # noqa: SLF001
             or parser._resolve_type_import(path)  # noqa: SLF001
         ):

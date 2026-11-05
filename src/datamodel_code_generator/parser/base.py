@@ -1276,7 +1276,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.type_overrides: dict[str, str] = config.type_overrides or {}
         self._unavailable_imports: dict[tuple[str | None, str], str] = {}
         self._type_override_imports: dict[str, Import] = {
-            key: Import.from_full_path(self._get_emitted_python_type_path(value))
+            key: Import.from_full_path(self._get_emitted_python_type_path(value.strip() or value))
             for key, value in self.type_overrides.items()
         }
         self._model_type_override_imports: dict[str, Import] = {
