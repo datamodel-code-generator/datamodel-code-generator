@@ -845,6 +845,22 @@ def _excluded_null_members(
     return null_members if len(null_members) < len(members) else []
 
 
+def _declared_value_types(schema: JsonSchemaObject) -> tuple[str, ...]:
+    """Return the types a schema's ``type`` declares, with null where its ``nullable`` is true."""
+    types = declared_types(schema.type)
+    return (*types, "null") if schema.nullable is True and "null" not in types else types
+
+
+def _types_exclude(types: Sequence[str], branch: JsonSchemaObject | bool) -> bool:  # noqa: FBT001
+    """Return whether an inline ``branch`` declares a ``type`` that admits none of ``types`` (``intersect_types``)."""
+    return (
+        isinstance(branch, JsonSchemaObject)
+        and not branch.ref
+        and bool(branch_types := _declared_value_types(branch))
+        and not intersect_types(types, branch_types)
+    )
+
+
 def _is_directory_read_error(exc: OSError, path: Path) -> bool:
     """Recognize the platform-specific errors raised when reading a directory."""
     return isinstance(exc, IsADirectoryError) or (isinstance(exc, PermissionError) and path.is_dir())
@@ -3987,9 +4003,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         A member is mixed with the keywords of its parent (``all_of_member_row``), so it is read with them where it is
         parsed (``parse_item`` gets the parent as its parent), and a member that is a ``$ref`` is merged with its
-        siblings first and stays as it is. A member that is false, a null the ``type`` beside it excludes or a local
-        ``$ref`` to false is no branch. The request/response walk reads the same branches
-        (``_typed_model_children``).
+        siblings first and stays as it is. A member that is false, a null the ``type`` beside it excludes, a member the
+        other combinator beside it leaves no branch of (``_combined_branch_outers``) or a local ``$ref`` to false is no
+        branch. The request/response walk reads the same branches (``_typed_model_children``).
         """
         default_left_off = self.config.keep_field_defaults_off_branch_roots and obj.has_default
         base_object = obj.model_dump(
@@ -4005,12 +4021,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         refs = []
         use_builtin_false_ref_facts: bool | None = None
         items = getattr(obj, target_attribute_name, [])
-        dropped = {
-            id(member)
-            for member in _excluded_null_members(
-                obj, [item for item in items if not self._is_false_schema_item(item)], self._null_mode
-            )
-        }
+        members = [item for item in items if not self._is_false_schema_item(item)]
+        dropped = {id(member) for member in _excluded_null_members(obj, members, self._null_mode)}
+        outers = self._combined_branch_outers(
+            obj, target_attribute_name, [member for member in members if id(member) not in dropped], base_object
+        )
+        dropped.update(member_id for member_id, outer in outers.items() if outer is None)
         dropped_before = 0
         for index, target_attribute in enumerate(items):
             if self._is_false_schema_item(target_attribute):
@@ -4053,7 +4069,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                             target_attribute,
                             self._schema_object(
                                 self._combined_branch_row(
-                                    base_object,
+                                    outers.get(id(target_attribute)) or base_object,
                                     member.model_dump(exclude_unset=True, by_alias=True),
                                     named_location(target_attribute.schema_location, target_attribute_name),
                                     target_attribute_name,
@@ -4088,6 +4104,48 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         conjunction.__dict__[_CONJUNCTION_PARTS_KEY] = True
         merged = self._merge_ref_with_schema(conjunction)
         return None if merged.ref else merged
+
+    def _combined_branch_outers(
+        self,
+        obj: JsonSchemaObject,
+        keyword: str,
+        members: Sequence[JsonSchemaObject | bool],
+        outer: dict[str, Any],
+    ) -> dict[int, dict[str, Any] | None]:
+        """Return, by member id, the keywords beside ``keyword`` that a member's row reads where they are not ``outer``.
+
+        A schema with both ``anyOf`` and ``oneOf`` admits the values both admit, so the row of a member holds the other
+        one beside it (``_combined_branch_row``). Unless ``legacy-combined-branch-row`` is kept, a branch of it whose
+        ``type`` admits none of the types the member's ``type`` declares (``_types_exclude``) has no value in common
+        with the member, and the member's row keeps the other branches. A member left with no branch that holds a value
+        is no branch (None), unless every member is one: the schema keeps them rather than admit no value, as
+        ``_excluded_null_members`` does. A member that writes its own ``anyOf`` or ``oneOf``, a ``$ref`` or no
+        ``type``, and one whose kept branches are all ``$ref`` beside false ones, keep ``outer``.
+        """
+        other = "oneOf" if keyword == "anyOf" else "anyOf"
+        if "legacy-combined-branch-row" in self._legacy_intersection or not (branches := getattr(obj, other)):
+            return {}
+        outers: dict[int, dict[str, Any] | None] = {}
+        for member in members:
+            if (
+                not isinstance(member, JsonSchemaObject)
+                or member.ref
+                or member.anyOf
+                or member.oneOf
+                or not (types := _declared_value_types(member))
+            ):
+                continue
+            kept = [position for position, branch in enumerate(branches) if not _types_exclude(types, branch)]
+            if len(kept) == len(branches):
+                continue
+            holders = [branches[position] for position in kept if not self._is_false_schema_item(branches[position])]
+            if not holders:
+                outers[id(member)] = None
+            elif any(isinstance(holder, bool) or not holder.ref for holder in holders):
+                outers[id(member)] = {**outer, other: [outer[other][position] for position in kept]}
+        if len(outers) == len(members) and all(value is None for value in outers.values()):
+            return {}
+        return outers
 
     def _combined_branch_row(
         self, outer: dict[str, Any], branch: dict[str, Any], where: str, keyword: str

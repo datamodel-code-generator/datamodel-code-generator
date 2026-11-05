@@ -1,0 +1,336 @@
+pydantic_v2.BaseModel default common "s" accepted
+pydantic_v2.BaseModel default common true rejected
+pydantic_v2.BaseModel default common 1 rejected
+pydantic_v2.BaseModel default every 1 accepted
+pydantic_v2.BaseModel default every "s" accepted
+pydantic_v2.BaseModel default every true accepted
+pydantic_v2.BaseModel default every 1.5 rejected
+pydantic_v2.BaseModel default untyped "ab" accepted
+pydantic_v2.BaseModel default untyped true accepted
+pydantic_v2.BaseModel default untyped "a" rejected
+pydantic_v2.BaseModel default untyped 1 accepted
+pydantic_v2.BaseModel default nulls null accepted
+pydantic_v2.BaseModel default nulls "s" rejected
+pydantic_v2.BaseModel default nulls 1 rejected
+pydantic_v2.BaseModel default nulls true rejected
+pydantic_v2.BaseModel default objects {"a": "x", "b": 1} accepted
+pydantic_v2.BaseModel default objects {"a": "x"} rejected
+pydantic_v2.BaseModel default objects {"b": 1} rejected
+pydantic_v2.BaseModel default objects "s" rejected
+pydantic_v2.BaseModel default objects [] rejected
+pydantic_v2.BaseModel default false_branch "s" accepted
+pydantic_v2.BaseModel default false_branch 1 rejected
+pydantic_v2.BaseModel default ref_branch "s" accepted
+pydantic_v2.BaseModel default ref_branch 1 accepted
+pydantic_v2.BaseModel default ref_branch true accepted
+pydantic_v2.BaseModel default disjoint 1 accepted
+pydantic_v2.BaseModel default disjoint "s" accepted
+pydantic_v2.BaseModel default disjoint true accepted
+pydantic_v2.dataclass default common "s" accepted
+pydantic_v2.dataclass default common true rejected
+pydantic_v2.dataclass default common 1 rejected
+pydantic_v2.dataclass default every 1 accepted
+pydantic_v2.dataclass default every "s" accepted
+pydantic_v2.dataclass default every true accepted
+pydantic_v2.dataclass default every 1.5 rejected
+pydantic_v2.dataclass default untyped "ab" accepted
+pydantic_v2.dataclass default untyped true accepted
+pydantic_v2.dataclass default untyped "a" rejected
+pydantic_v2.dataclass default untyped 1 accepted
+pydantic_v2.dataclass default nulls null accepted
+pydantic_v2.dataclass default nulls "s" rejected
+pydantic_v2.dataclass default nulls 1 rejected
+pydantic_v2.dataclass default nulls true rejected
+pydantic_v2.dataclass default objects {"a": "x", "b": 1} accepted
+pydantic_v2.dataclass default objects {"a": "x"} rejected
+pydantic_v2.dataclass default objects {"b": 1} rejected
+pydantic_v2.dataclass default objects "s" rejected
+pydantic_v2.dataclass default objects [] rejected
+pydantic_v2.dataclass default false_branch "s" accepted
+pydantic_v2.dataclass default false_branch 1 rejected
+pydantic_v2.dataclass default ref_branch "s" accepted
+pydantic_v2.dataclass default ref_branch 1 accepted
+pydantic_v2.dataclass default ref_branch true accepted
+pydantic_v2.dataclass default disjoint 1 accepted
+pydantic_v2.dataclass default disjoint "s" accepted
+pydantic_v2.dataclass default disjoint true accepted
+msgspec.Struct default common "s" accepted
+msgspec.Struct default common true rejected
+msgspec.Struct default common 1 rejected
+msgspec.Struct default every 1 accepted
+msgspec.Struct default every "s" accepted
+msgspec.Struct default every true rejected
+msgspec.Struct default every 1.5 rejected
+msgspec.Struct default untyped "ab" accepted
+msgspec.Struct default untyped true accepted
+msgspec.Struct default untyped "a" rejected
+msgspec.Struct default untyped 1 rejected
+msgspec.Struct default nulls null accepted
+msgspec.Struct default nulls "s" rejected
+msgspec.Struct default nulls 1 rejected
+msgspec.Struct default nulls true rejected
+msgspec.Struct default objects {"a": "x", "b": 1} accepted
+msgspec.Struct default objects {"a": "x"} rejected
+msgspec.Struct default objects {"b": 1} rejected
+msgspec.Struct default objects "s" rejected
+msgspec.Struct default objects [] rejected
+msgspec.Struct default false_branch "s" accepted
+msgspec.Struct default false_branch 1 rejected
+msgspec.Struct default ref_branch "s" accepted
+msgspec.Struct default ref_branch 1 rejected
+msgspec.Struct default ref_branch true accepted
+msgspec.Struct default disjoint 1 rejected
+msgspec.Struct default disjoint "s" accepted
+msgspec.Struct default disjoint true accepted
+pydantic_v2.BaseModel --field-constraints common "s" accepted
+pydantic_v2.BaseModel --field-constraints common true rejected
+pydantic_v2.BaseModel --field-constraints common 1 rejected
+pydantic_v2.BaseModel --field-constraints every 1 accepted
+pydantic_v2.BaseModel --field-constraints every "s" accepted
+pydantic_v2.BaseModel --field-constraints every true accepted
+pydantic_v2.BaseModel --field-constraints every 1.5 rejected
+pydantic_v2.BaseModel --field-constraints untyped "ab" accepted
+pydantic_v2.BaseModel --field-constraints untyped true accepted
+pydantic_v2.BaseModel --field-constraints untyped "a" rejected
+pydantic_v2.BaseModel --field-constraints untyped 1 accepted
+pydantic_v2.BaseModel --field-constraints nulls null accepted
+pydantic_v2.BaseModel --field-constraints nulls "s" rejected
+pydantic_v2.BaseModel --field-constraints nulls 1 rejected
+pydantic_v2.BaseModel --field-constraints nulls true rejected
+pydantic_v2.BaseModel --field-constraints objects {"a": "x", "b": 1} accepted
+pydantic_v2.BaseModel --field-constraints objects {"a": "x"} rejected
+pydantic_v2.BaseModel --field-constraints objects {"b": 1} rejected
+pydantic_v2.BaseModel --field-constraints objects "s" rejected
+pydantic_v2.BaseModel --field-constraints objects [] rejected
+pydantic_v2.BaseModel --field-constraints false_branch "s" accepted
+pydantic_v2.BaseModel --field-constraints false_branch 1 rejected
+pydantic_v2.BaseModel --field-constraints ref_branch "s" accepted
+pydantic_v2.BaseModel --field-constraints ref_branch 1 accepted
+pydantic_v2.BaseModel --field-constraints ref_branch true accepted
+pydantic_v2.BaseModel --field-constraints disjoint 1 accepted
+pydantic_v2.BaseModel --field-constraints disjoint "s" accepted
+pydantic_v2.BaseModel --field-constraints disjoint true accepted
+pydantic_v2.BaseModel --use-annotated common "s" accepted
+pydantic_v2.BaseModel --use-annotated common true rejected
+pydantic_v2.BaseModel --use-annotated common 1 rejected
+pydantic_v2.BaseModel --use-annotated every 1 accepted
+pydantic_v2.BaseModel --use-annotated every "s" accepted
+pydantic_v2.BaseModel --use-annotated every true accepted
+pydantic_v2.BaseModel --use-annotated every 1.5 rejected
+pydantic_v2.BaseModel --use-annotated untyped "ab" accepted
+pydantic_v2.BaseModel --use-annotated untyped true accepted
+pydantic_v2.BaseModel --use-annotated untyped "a" rejected
+pydantic_v2.BaseModel --use-annotated untyped 1 accepted
+pydantic_v2.BaseModel --use-annotated nulls null accepted
+pydantic_v2.BaseModel --use-annotated nulls "s" rejected
+pydantic_v2.BaseModel --use-annotated nulls 1 rejected
+pydantic_v2.BaseModel --use-annotated nulls true rejected
+pydantic_v2.BaseModel --use-annotated objects {"a": "x", "b": 1} accepted
+pydantic_v2.BaseModel --use-annotated objects {"a": "x"} rejected
+pydantic_v2.BaseModel --use-annotated objects {"b": 1} rejected
+pydantic_v2.BaseModel --use-annotated objects "s" rejected
+pydantic_v2.BaseModel --use-annotated objects [] rejected
+pydantic_v2.BaseModel --use-annotated false_branch "s" accepted
+pydantic_v2.BaseModel --use-annotated false_branch 1 rejected
+pydantic_v2.BaseModel --use-annotated ref_branch "s" accepted
+pydantic_v2.BaseModel --use-annotated ref_branch 1 accepted
+pydantic_v2.BaseModel --use-annotated ref_branch true accepted
+pydantic_v2.BaseModel --use-annotated disjoint 1 accepted
+pydantic_v2.BaseModel --use-annotated disjoint "s" accepted
+pydantic_v2.BaseModel --use-annotated disjoint true accepted
+pydantic_v2.BaseModel --collapse-root-models common "s" accepted
+pydantic_v2.BaseModel --collapse-root-models common true rejected
+pydantic_v2.BaseModel --collapse-root-models common 1 rejected
+pydantic_v2.BaseModel --collapse-root-models every 1 accepted
+pydantic_v2.BaseModel --collapse-root-models every "s" accepted
+pydantic_v2.BaseModel --collapse-root-models every true accepted
+pydantic_v2.BaseModel --collapse-root-models every 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models untyped "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models untyped true accepted
+pydantic_v2.BaseModel --collapse-root-models untyped "a" rejected
+pydantic_v2.BaseModel --collapse-root-models untyped 1 accepted
+pydantic_v2.BaseModel --collapse-root-models nulls null accepted
+pydantic_v2.BaseModel --collapse-root-models nulls "s" rejected
+pydantic_v2.BaseModel --collapse-root-models nulls 1 rejected
+pydantic_v2.BaseModel --collapse-root-models nulls true rejected
+pydantic_v2.BaseModel --collapse-root-models objects {"a": "x", "b": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models objects {"a": "x"} rejected
+pydantic_v2.BaseModel --collapse-root-models objects {"b": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models objects "s" rejected
+pydantic_v2.BaseModel --collapse-root-models objects [] rejected
+pydantic_v2.BaseModel --collapse-root-models false_branch "s" accepted
+pydantic_v2.BaseModel --collapse-root-models false_branch 1 rejected
+pydantic_v2.BaseModel --collapse-root-models ref_branch "s" accepted
+pydantic_v2.BaseModel --collapse-root-models ref_branch 1 accepted
+pydantic_v2.BaseModel --collapse-root-models ref_branch true accepted
+pydantic_v2.BaseModel --collapse-root-models disjoint 1 accepted
+pydantic_v2.BaseModel --collapse-root-models disjoint "s" accepted
+pydantic_v2.BaseModel --collapse-root-models disjoint true accepted
+msgspec.Struct --collapse-root-models common "s" accepted
+msgspec.Struct --collapse-root-models common true rejected
+msgspec.Struct --collapse-root-models common 1 rejected
+msgspec.Struct --collapse-root-models every 1 accepted
+msgspec.Struct --collapse-root-models every "s" accepted
+msgspec.Struct --collapse-root-models every true rejected
+msgspec.Struct --collapse-root-models every 1.5 rejected
+msgspec.Struct --collapse-root-models untyped "ab" accepted
+msgspec.Struct --collapse-root-models untyped true accepted
+msgspec.Struct --collapse-root-models untyped "a" rejected
+msgspec.Struct --collapse-root-models untyped 1 rejected
+msgspec.Struct --collapse-root-models nulls null accepted
+msgspec.Struct --collapse-root-models nulls "s" rejected
+msgspec.Struct --collapse-root-models nulls 1 rejected
+msgspec.Struct --collapse-root-models nulls true rejected
+msgspec.Struct --collapse-root-models objects {"a": "x", "b": 1} accepted
+msgspec.Struct --collapse-root-models objects {"a": "x"} rejected
+msgspec.Struct --collapse-root-models objects {"b": 1} rejected
+msgspec.Struct --collapse-root-models objects "s" rejected
+msgspec.Struct --collapse-root-models objects [] rejected
+msgspec.Struct --collapse-root-models false_branch "s" accepted
+msgspec.Struct --collapse-root-models false_branch 1 rejected
+msgspec.Struct --collapse-root-models ref_branch "s" accepted
+msgspec.Struct --collapse-root-models ref_branch 1 rejected
+msgspec.Struct --collapse-root-models ref_branch true accepted
+msgspec.Struct --collapse-root-models disjoint 1 rejected
+msgspec.Struct --collapse-root-models disjoint "s" accepted
+msgspec.Struct --collapse-root-models disjoint true accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs common "s" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs common true rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs common 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs every 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs every "s" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs every true accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs every 1.5 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped "ab" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped true accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped "a" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs untyped 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nulls null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nulls "s" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nulls 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nulls true rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs objects {"a": "x", "b": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs objects {"a": "x"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs objects {"b": 1} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs objects "s" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs objects [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs false_branch "s" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs false_branch 1 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_branch "s" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_branch 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ref_branch true accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint 1 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint "s" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs disjoint true accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs common "s" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs common true rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs common 1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs every 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs every "s" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs every true accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs every 1.5 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped "ab" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped true accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped "a" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs untyped 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nulls null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nulls "s" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nulls 1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nulls true rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs objects {"a": "x", "b": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs objects {"a": "x"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs objects {"b": 1} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs objects "s" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs objects [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs false_branch "s" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs false_branch 1 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_branch "s" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_branch 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ref_branch true accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint 1 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint "s" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs disjoint true accepted
+msgspec.Struct --use-site-models-for-constrained-refs common "s" accepted
+msgspec.Struct --use-site-models-for-constrained-refs common true rejected
+msgspec.Struct --use-site-models-for-constrained-refs common 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs every 1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs every "s" accepted
+msgspec.Struct --use-site-models-for-constrained-refs every true rejected
+msgspec.Struct --use-site-models-for-constrained-refs every 1.5 rejected
+msgspec.Struct --use-site-models-for-constrained-refs untyped "ab" accepted
+msgspec.Struct --use-site-models-for-constrained-refs untyped true accepted
+msgspec.Struct --use-site-models-for-constrained-refs untyped "a" rejected
+msgspec.Struct --use-site-models-for-constrained-refs untyped 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs nulls null accepted
+msgspec.Struct --use-site-models-for-constrained-refs nulls "s" rejected
+msgspec.Struct --use-site-models-for-constrained-refs nulls 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs nulls true rejected
+msgspec.Struct --use-site-models-for-constrained-refs objects {"a": "x", "b": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs objects {"a": "x"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs objects {"b": 1} rejected
+msgspec.Struct --use-site-models-for-constrained-refs objects "s" rejected
+msgspec.Struct --use-site-models-for-constrained-refs objects [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs false_branch "s" accepted
+msgspec.Struct --use-site-models-for-constrained-refs false_branch 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_branch "s" accepted
+msgspec.Struct --use-site-models-for-constrained-refs ref_branch 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs ref_branch true accepted
+msgspec.Struct --use-site-models-for-constrained-refs disjoint 1 rejected
+msgspec.Struct --use-site-models-for-constrained-refs disjoint "s" accepted
+msgspec.Struct --use-site-models-for-constrained-refs disjoint true accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs common "s" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs common true rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs common 1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs every 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs every "s" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs every true accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs every 1.5 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped "ab" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped true accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped "a" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs untyped 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nulls null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nulls "s" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nulls 1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nulls true rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs objects {"a": "x", "b": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs objects {"a": "x"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs objects {"b": 1} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs objects "s" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs objects [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs false_branch "s" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs false_branch 1 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_branch "s" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_branch 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ref_branch true accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint 1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint "s" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs disjoint true accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs common "s" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs common true rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs common 1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs every 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs every "s" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs every true accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs every 1.5 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped "ab" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped true accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped "a" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs untyped 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nulls null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nulls "s" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nulls 1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nulls true rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs objects {"a": "x", "b": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs objects {"a": "x"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs objects {"b": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs objects "s" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs objects [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs false_branch "s" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs false_branch 1 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_branch "s" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_branch 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ref_branch true accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint 1 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint "s" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs disjoint true accepted

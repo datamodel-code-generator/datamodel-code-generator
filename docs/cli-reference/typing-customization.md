@@ -2627,13 +2627,15 @@ branch is parsed with them merged in, and the branch's value of a keyword wins: 
 each branch is their intersection as `--intersect-allof-keywords` writes it: the tightest bound, the conjunction of
 the `pattern`s, the common `multipleOf`, the `type` and `enum` values both admit, and nested `properties` alike; the
 `nullable` beside the `anyOf` stays with the branch. Where parts meet, an `enum` also loses the values the merged
-`type` rejects. A branch whose keywords no value meets together keeps its earlier merge with a warning. A property
-that overrides an inherited one merges its `properties` name by name, so a nested property named `default` or
-`nullable` stays; an override that narrows the inherited `type` (to `null`, to one of its types, or in a nested
-schema) is the intersection instead of the inherited type; and under `--allof-merge-mode none` the type shape keeps
-the length of a closed tuple. An `allOf` member reads the siblings of its `$ref` as a part where the dialect does
-(2019-09 and later, OpenAPI 3.1), a member naming a `$ref` alias takes the alias's target as its base, and the union
-an `allOf` member's `anyOf` or `oneOf` gives admits null where every part of the `allOf` does.
+`type` rejects. A branch whose keywords no value meets together keeps its earlier merge with a warning. Where an
+`anyOf` and a `oneOf` stand side by side, a branch of one keeps the branches of the other whose `type` admits one of
+its types, and a branch that keeps none is left out, unless every branch is. A property that overrides an inherited
+one merges its `properties` name by name, so a nested property named `default` or `nullable` stays; an override that
+narrows the inherited `type` (to `null`, to one of its types, or in a nested schema) is the intersection instead of
+the inherited type; and under `--allof-merge-mode none` the type shape keeps the length of a closed tuple. An `allOf`
+member reads the siblings of its `$ref` as a part where the dialect does (2019-09 and later, OpenAPI 3.1), a member
+naming a `$ref` alias takes the alias's target as its base, and the union an `allOf` member's `anyOf` or `oneOf` gives
+admits null where every part of the `allOf` does.
 
 **Option relationships:**
 

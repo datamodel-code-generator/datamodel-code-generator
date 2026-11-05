@@ -1,0 +1,3 @@
+msgspec.Meta does not take min_length on Untyped1 | bool; Untyped is generated without this constraint.
+msgspec checks all str members of a union against the constraints of each of them, so min_length of one member would reject values another member accepts; Model.untyped is generated without this constraint.
+msgspec cannot decode the union Model.objects: its Struct types Objects, Objects1, Objects2 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.

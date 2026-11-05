@@ -8058,5 +8058,92 @@
         ]
       }
     }
+  },
+  "combined_any_of_one_of": {
+    "model": "Model",
+    "fields": {
+      "common": {
+        "valid": [
+          "s"
+        ],
+        "invalid": [
+          true,
+          1
+        ]
+      },
+      "every": {
+        "valid": [
+          1,
+          "s"
+        ],
+        "invalid": [
+          true,
+          1.5
+        ]
+      },
+      "untyped": {
+        "valid": [
+          "ab",
+          true
+        ],
+        "invalid": [
+          "a",
+          1
+        ]
+      },
+      "nulls": {
+        "valid": [
+          null
+        ],
+        "invalid": [
+          "s",
+          1,
+          true
+        ]
+      },
+      "objects": {
+        "valid": [
+          {
+            "a": "x",
+            "b": 1
+          }
+        ],
+        "invalid": [
+          {
+            "a": "x"
+          },
+          {
+            "b": 1
+          },
+          "s",
+          []
+        ]
+      },
+      "false_branch": {
+        "valid": [
+          "s"
+        ],
+        "invalid": [
+          1
+        ]
+      },
+      "ref_branch": {
+        "valid": [
+          "s"
+        ],
+        "invalid": [
+          1,
+          true
+        ]
+      },
+      "disjoint": {
+        "valid": [],
+        "invalid": [
+          1,
+          "s",
+          true
+        ]
+      }
+    }
   }
 }
