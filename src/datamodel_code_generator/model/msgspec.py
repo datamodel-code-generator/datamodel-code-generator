@@ -18,6 +18,7 @@ from datamodel_code_generator import Error
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._container_kinds import ARRAYS, MAPPINGS
 from datamodel_code_generator._document_reader import as_mapping
+from datamodel_code_generator._graph import reach
 from datamodel_code_generator._graph_links import clear_parents, link_members
 from datamodel_code_generator._mro import resolve_members
 from datamodel_code_generator._python_syntax import call_text, holds_lone_surrogate, keyword_argument, subscript_text
@@ -341,7 +342,8 @@ _SCALAR_VALUE_TYPES: Mapping[str, tuple[type, ...]] = MappingProxyType({
 def _takes_default(data_type: DataType, default: object, seen: frozenset[int] = frozenset()) -> bool:  # noqa: PLR0911
     """Return whether ``msgspec.convert`` takes a default for a type, by the JSON kind of the default at every level.
 
-    A Struct takes an object that holds the Struct's tag where it holds its tag field; a type alias, what the type it
+    A Struct takes an object that holds the Struct's tag where it holds its tag field, or, where msgspec reads it from
+    an array (``_reads_arrays``), an array that starts with its tag where it has one; a type alias, what the type it
     names takes besides itself (``seen`` holds the aliases followed since the last value read), and None where it
     writes None; a union, what one of its members takes; an array type, an array whose items its item types take; a
     mapping, an object whose values its value types take; a Literal, its values; str, int, float, bool and None, values
@@ -363,10 +365,7 @@ def _takes_default(data_type: DataType, default: object, seen: frozenset[int] = 
                     or _takes_default(fields[0].data_type, default, seen | {id(source)})
                 )
             )
-        return not isinstance(source, Struct) or (
-            isinstance(default, dict)
-            and ((tag := source.discriminator_tag) is None or default.get(tag[0], tag[1]) == tag[1])
-        )
+        return not isinstance(source, Struct) or _struct_takes_default(source, default)
     if (array := data_type in ARRAYS) or data_type in MAPPINGS:
         values: Iterable[object] = ()
         match default:
@@ -384,6 +383,25 @@ def _takes_default(data_type: DataType, default: object, seen: frozenset[int] = 
     if data_type.literals:
         return any(type(literal) is type(default) and literal == default for literal in data_type.literals)
     return (kinds := _SCALAR_VALUE_TYPES.get(data_type.type or "")) is None or type(default) in kinds
+
+
+def _struct_takes_default(struct: Struct, default: object) -> bool:
+    """Return whether ``msgspec.convert`` takes a default for a Struct, by its JSON kind (``_takes_default``)."""
+    tag = struct.discriminator_tag
+    if _reads_arrays(struct):
+        return isinstance(default, list) and (tag is None or (bool(default) and default[0] == tag[1]))
+    return isinstance(default, dict) and (tag is None or default.get(tag[0], tag[1]) == tag[1])
+
+
+def _reads_arrays(struct: Struct) -> bool:
+    """Return whether msgspec reads a struct from an array, not an object (``array_like``).
+
+    The option is that of the first struct that sets it among the struct and the generated structs it inherits from,
+    each before its bases, in the order the bases are listed.
+    """
+    ancestry = reach((struct,), lambda current: reversed(_struct_bases(current)), key=id)
+    options = (_user_struct_options(current).get("array_like") for current in ancestry)
+    return next((value in {True, "True"} for value in options if value is not None), False)
 
 
 def _is_instance_field(field: DataModelFieldBase) -> bool:

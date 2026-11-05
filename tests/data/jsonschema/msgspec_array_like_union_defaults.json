@@ -1,0 +1,9 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "rowBesideString": {"anyOf": [{"$ref": "#/$defs/Row"}, {"type": "string"}], "default": ["x"]},
+    "rowsBesideString": {"anyOf": [{"type": "array", "items": {"$ref": "#/$defs/Row"}}, {"type": "string"}], "default": [["y"]]}
+  },
+  "$defs": {"Row": {"type": "object", "properties": {"a": {"type": "string"}}}}
+}
