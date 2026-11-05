@@ -39269,7 +39269,8 @@ and an input document that declares none is read as it is on its own. Here the d
 beside its allOf `$ref`, as draft 7 says, and the 2020-12 root keeps it. An OpenAPI 3.1 document reads the keywords
 beside a `$ref` as JSON Schema 2020-12 does, and the property-count rule of `--generate-schema-validators` leaves out a
 `minProperties` beside an allOf `$ref` of a draft-07 document. An explicit `--schema-version` reads every document by
-that version, with or without the option.""",
+that version, with or without the option, except that without it the schema validators of
+`--generate-schema-validators` read an OpenAPI or AsyncAPI document as draft 7.""",
     input_schema="jsonschema/schema_version_per_document_refs/root.json",
     cli_args=["--read-schema-version-per-document"],
     golden_output="main/jsonschema/main_jsonschema/read_schema_version_per_document[per-document].py",

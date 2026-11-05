@@ -1536,7 +1536,8 @@ _flag(
     "version says: a 2020-12 file of a directory read after a draft-07 one keeps the maximum beside an allOf $ref, an "
     "OpenAPI 3.1 document reads $ref siblings as JSON Schema 2020-12 does, and a draft-07 document sets no "
     "property-count rule for a minProperties beside an allOf $ref. Without it the version of the document parsed "
-    "first applies to every document, as in 0.88.0. No effect with an explicit --schema-version.",
+    "first applies to every document, as in 0.88.0. An explicit --schema-version gives every document its version; "
+    "the schema validators then read an OpenAPI or AsyncAPI document by it only with the option, else as draft 7.",
 )
 _flag(
     base_options,
