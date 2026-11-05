@@ -30,6 +30,14 @@ decision = "#4495"
 release_note = "an allOf whose anyOf or oneOf members hold only values, such as allOf: [{anyOf: [{type: string}, {type: integer}]}, {minLength: 2}], is written as the union of the intersections, RootModel[constr(min_length=2) | int], instead of a model without fields that rejected every value; the numbered classes such a site left are no longer written"
 
 [[accepted]]
+input = "tests/data/jsonschema/schema_intersection"
+aspects = [ "numbered-name-removed", "name-removed", "type", "kind", "constraints", "bases", "default", "required", "constructor-order" ]
+match = "^\\[[a-z-]+\\] allof_value_unions:"
+reason = "the module allof_value_unions of the directory input is the document allof_value_unions.json, whose allOf sites with anyOf or oneOf members of values were written as models without fields that reject every value (the entry above)"
+decision = "#4495"
+release_note = "an allOf whose anyOf or oneOf members hold only values is written as the union of the intersections instead of a model without fields that rejected every value (see above)"
+
+[[accepted]]
 input = "tests/data/jsonschema/reserved_target_rewritten_document"
 aspects = [ "name-removed", "type" ]
 match = "^\\[name-removed\\] box:ItemModel: removed$|^\\[type\\] (?:box:Other|holder:Model:(?:item|other)): .*\\b(?:Any|ItemModel)\\b.* -> .*$"
