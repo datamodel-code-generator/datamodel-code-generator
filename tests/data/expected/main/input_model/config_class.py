@@ -379,6 +379,7 @@ class BaseGenerateConfig(TypedDict):
     dedupe_request_response_variants: NotRequired[bool]
     use_status_code_in_response_name: NotRequired[bool]
     keep_first_character_of_path_keys: NotRequired[bool]
+    keep_content_parameter_refs: NotRequired[bool]
     name_converted_payloads_by_message: NotRequired[bool]
     all_exports_scope: NotRequired[AllExportsScope | None]
     all_exports_collision_strategy: NotRequired[AllExportsCollisionStrategy | None]

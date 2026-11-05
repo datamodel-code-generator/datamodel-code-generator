@@ -168,12 +168,12 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 230 | Shared generation options. |
-| `GenerateConfig` | 245 | Public `generate()` configuration. |
+| `BaseGenerateConfig` | 231 | Shared generation options. |
+| `GenerateConfig` | 246 | Public `generate()` configuration. |
 | `ParserConfig` | 192 | Base parser dependency injection and parser options. |
 | `JSONSchemaParserConfig` | 194 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 202 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 204 | AsyncAPI-specific parser options. |
+| `OpenAPIParserConfig` | 203 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 205 | AsyncAPI-specific parser options. |
 | `XMLSchemaParserConfig` | 195 | XML Schema-specific parser options. |
 | `ProtobufParserConfig` | 195 | Protocol Buffers-specific parser options. |
 | `AvroParserConfig` | 194 | Avro-specific parser options. |
@@ -1611,6 +1611,7 @@ is a new named row, never an anonymous `if`.
 | `legacy-reparse-for-final-names` | the L1 rows read the name a model is created under; when a yielding name changed and an L1 key names the created or the final name, the whole input is parsed again with the final names | keep |
 | `legacy-number-before-case` | under `--capitalise-enum-members` a member whose capitalized name is taken is numbered without its casing (`a_1` beside `A`, `FieldNameResolver.get_valid_name`), unless `--capitalise-numbered-enum-members` cases it too (`A_1`) | keep |
 | `legacy-first-character-of-path-key` | a paths key loses its first character when its operation models are named, a leading slash or not (`pets` names `EtsGetResponse`, `OpenAPIParser._process_path_items`), unless `--keep-first-character-of-path-keys` strips only a leading slash, as for webhook names | keep |
+| `legacy-content-parameter-copy` | a parameter whose `content` media schema is a Reference Object reads a copy of the schema it names: an object gets a model of its own (`Page1Request` beside `PageRequest` under `--read-only-write-only-model-type request-response`), a scalar its inline type with the default and description of the target (`OpenAPIParser._content_parameter_schema`), unless `--keep-content-parameter-refs` keeps the `$ref`, as a parameter's own schema does | #6322 |
 | `legacy-converter-placeholder-title` | an AsyncAPI payload in Avro or XML Schema that names no type of its own takes the converter's title `Model` (`convert_avro_schema_data`, `_convert_xml_schema_data`), which its field writes and `--use-title-as-name` names its class by, unless `--name-converted-payloads-by-message` drops it, so the payload is named after its message as a JSON Schema payload is | keep |
 | `legacy-whole-name-singular` | the item model of an array is named by singularizing its whole name as one word (`actions_caches` names `ActionsCach`, `ModelResolver._singular_name`), unless `--singularize-last-word-of-item-names` singularizes only its last word (`ActionsCache`) | keep |
 | `legacy-module-suffix-model` | the `module` scheme of L3 `replace_duplicate_name_in_module` gives a taken name the suffix `Model` without reading the `--duplicate-name-suffix` map, unless `--use-duplicate-name-suffix-for-every-collision` reads it (row `map-or-model`) | keep |

@@ -1296,6 +1296,8 @@ openapi/const_optional_values_31.yaml::components.schemas.ConstOptionalValues	pa
 openapi/content_in_parameters.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/content_in_parameters.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/content_in_parameters.yaml::components.schemas.PetForm	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/content_parameter_refs.yaml::components.schemas.Count	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/content_parameter_refs.yaml::components.schemas.Page	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/custom_id.yaml::components.schemas.CustomId	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/dataclass_inheritance_field_ordering.yaml::components.schemas.ParentWithDefault	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/dataclass_optional_metadata_defaults.yaml::components.schemas.Nested	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3307,6 +3309,8 @@ openapi/const_optional_values_31.yaml::components.schemas.ConstOptionalValues	pa
 openapi/content_in_parameters.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/content_in_parameters.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/content_in_parameters.yaml::components.schemas.PetForm	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/content_parameter_refs.yaml::components.schemas.Count	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/content_parameter_refs.yaml::components.schemas.Page	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/custom_id.yaml::components.schemas.CustomId	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/dataclass_inheritance_field_ordering.yaml::components.schemas.ParentWithDefault	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/dataclass_optional_metadata_defaults.yaml::components.schemas.Nested	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

@@ -934,6 +934,10 @@
       "not_recommended": "preset",
       "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
+    "keep_content_parameter_refs": {
+      "not_recommended": "preset",
+      "reason": "OpenAPI parameters scope only: set by the 20261106 presets; the recommendation starts from a preset."
+    },
     "keep_first_character_of_path_keys": {
       "not_recommended": "preset",
       "reason": "OpenAPI paths scope only: set by the 20261104 presets; the recommendation starts from a preset."

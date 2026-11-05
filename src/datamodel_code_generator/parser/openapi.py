@@ -476,6 +476,7 @@ class OpenAPIParser(JsonSchemaParser):
         self.include_path_parameters: bool = self.config.include_path_parameters
         self.use_status_code_in_response_name: bool = self.config.use_status_code_in_response_name
         self.keep_first_character_of_path_keys: bool = self.config.keep_first_character_of_path_keys
+        self.keep_content_parameter_refs: bool = self.config.keep_content_parameter_refs
         self.openapi_include_paths: list[str] | None = self.config.openapi_include_paths
         self.openapi_include_info_version: bool = self.config.openapi_include_info_version
         self.openapi_info_version: str | None = None
@@ -1169,6 +1170,20 @@ class OpenAPIParser(JsonSchemaParser):
         camel_path_name = snake_to_upper_camel(normalized, target_python_version=target)
         return f"{camel_path_name}{method.capitalize()}{suffix}"
 
+    def _content_parameter_schema(self, source: MediaSchemaSource, path: list[str]) -> JsonSchemaObject:
+        """Return the schema a parameter reads from the media schema of its content, at ``path``.
+
+        Row ``legacy-content-parameter-copy``: a media schema that is a Reference Object reads as a copy of the schema
+        it names, which gets a model of its own or, for a scalar, the inline type, default and description of the
+        target; under --keep-content-parameter-refs it stays the ``$ref``, as a parameter's own schema does.
+        """
+        schema = source.schema
+        if isinstance(schema, bool):
+            return self._site_schema(_locate(self._validate_schema_object(schema, path), source.location))
+        if isinstance(schema, ReferenceObject) and self.keep_content_parameter_refs:
+            return _locate(JsonSchemaObject.model_validate({"$ref": schema.ref}), source.location)
+        return self._site_schema(self.resolve_object(schema, JsonSchemaObject))
+
     def parse_all_parameters(  # noqa: PLR0912, PLR0914, PLR0915
         self,
         name: str,
@@ -1228,11 +1243,7 @@ class OpenAPIParser(JsonSchemaParser):
                     schema_path = self._media_schema_path(
                         [*path, name, parameter_name, media_type], from_item_schema=schema_result.from_item_schema
                     )
-                    field_schema = self._site_schema(
-                        _locate(self._validate_schema_object(schema_result.schema, schema_path), schema_result.location)
-                        if isinstance(schema_result.schema, bool)
-                        else self.resolve_object(schema_result.schema, JsonSchemaObject)
-                    )
+                    field_schema = self._content_parameter_schema(schema_result, schema_path)
                     data_types.append(self.parse_item(field_name, field_schema, schema_path))
                     field_schemas.append((field_schema, schema_path))
                 if not data_types:

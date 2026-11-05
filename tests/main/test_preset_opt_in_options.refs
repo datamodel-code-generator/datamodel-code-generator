@@ -31,6 +31,8 @@ intersect-combined-schema-keywords-practical	main/preset_opt_in_options/preset_s
 intersect-combined-schema-keywords-standard	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-combined-schema-keywords-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[intersect-combined-schema-keywords-practical].py
 keep-constrained-root-models-in-every-container-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-root-models-in-every-container-practical].py
 keep-constrained-root-models-in-every-container-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-root-models-in-every-container-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-root-models-in-every-container-practical].py
+keep-content-parameter-refs-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-content-parameter-refs-practical].py
+keep-content-parameter-refs-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-content-parameter-refs-standard].py
 keep-enum-literal-aliases-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-enum-literal-aliases-practical].py
 keep-enum-literal-aliases-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-enum-literal-aliases-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-enum-literal-aliases-practical].py
 keep-enum-member-values-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-enum-member-values-practical].py

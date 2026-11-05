@@ -1417,6 +1417,12 @@ paths-and-request-bodies	main/openapi/openapi_item_schema_beside_null_schema.py	
 	main/openapi/main_openapi/json_pointer_integer_keys.py
 [test_main_openapi_json_pointer_through_scalar]
 	main/openapi/openapi_json_pointer_through_scalar.py
+[test_main_openapi_keep_content_parameter_refs]
+all-kept	main/openapi/main_openapi/keep_content_parameter_refs[all-kept].py
+kept	main/openapi/main_openapi/keep_content_parameter_refs[kept].py
+released	main/openapi/main_openapi/keep_content_parameter_refs[released].py
+request-response	main/openapi/main_openapi/keep_content_parameter_refs[request-response].py
+request-response-kept	main/openapi/main_openapi/keep_content_parameter_refs[request-response-kept].py
 [test_main_openapi_keep_first_character_of_path_keys]
 pydantic_v2	main/openapi/main_openapi/keep_first_character_of_path_keys[pydantic_v2].py
 pydantic_v2-kept	main/openapi/main_openapi/keep_first_character_of_path_keys[pydantic_v2-kept].py
