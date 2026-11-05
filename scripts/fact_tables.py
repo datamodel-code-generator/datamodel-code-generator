@@ -1113,6 +1113,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     AttributeFact(
         "Reference", "SCHEMA_PATH_KEY", FactKind.BOOKKEEPING, (), Phase.MODULES, None, access=Access.DICT_KEY
     ),
+    AttributeFact("Reference", "BUILD_RECORD_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY),
     AttributeFact(
         "Parser",
         "results",

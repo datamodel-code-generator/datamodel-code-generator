@@ -948,6 +948,20 @@ class ClassName(NamedTuple):
     duplicate_name: str | None
 
 
+NAME_REQUEST_KEY: Final = "_name_request"
+"""The key of the ``NameRequest`` of a model on its reference, while the resolver records them."""
+
+
+class NameRequest(NamedTuple):
+    """What a model asked the resolver for when it was named: the name, and how a class name is made of it."""
+
+    original_name: str
+    singular_name: bool = False
+    singular_name_suffix: str | None = None
+    model_type: str = "model"
+    preserve_class_name: bool = False
+
+
 class _YieldingName(NamedTuple):
     """A reference whose name moves aside when a reference that does not yield asks for it."""
 
@@ -1132,6 +1146,7 @@ class ModelResolver:  # noqa: PLR0904
         self._model_name_keys: ModelNameKeys | None = None
         self._reserved_names: Mapping[str, frozenset[str]] = {}
         self.model_name_record: ModelNameRecord | None = None
+        self._records_name_requests = False
 
         # Default value overrides from external JSON file
         self.default_value_overrides: Mapping[str, Any] = (
@@ -1205,6 +1220,7 @@ class ModelResolver:  # noqa: PLR0904
         self.__dict__.setdefault("_reserved_names", {})
         self.__dict__.setdefault("model_name_record", None)
         self.__dict__.setdefault("singularize_last_word_of_item_names", False)
+        self.__dict__.setdefault("_records_name_requests", False)
         for name, value in slot_state.items():
             setattr(self, name, value)
 
@@ -1846,6 +1862,8 @@ class ModelResolver:  # noqa: PLR0904
             name=name,
             loaded=False,
         )
+        if self._records_name_requests:
+            reference.__dict__[NAME_REQUEST_KEY] = NameRequest(original_name)
 
         self.references[path] = reference
         self._update_reference_name(None, reference.name, unique=use_unique)
@@ -2065,6 +2083,10 @@ class ModelResolver:  # noqa: PLR0904
             )
             self.references[joined_path] = reference
             self._update_reference_name(None, name, unique=unique)
+        if class_name and self._records_name_requests:
+            reference.__dict__[NAME_REQUEST_KEY] = NameRequest(
+                original_name, singular_name, singular_name_suffix, model_type, preserve_class_name
+            )
         if yields:
             self._yielding_names[name] = _YieldingName(
                 reference,

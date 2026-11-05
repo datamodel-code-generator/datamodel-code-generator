@@ -174,7 +174,7 @@ from datamodel_code_generator.parser._model_shapes import (
     ShapeRow,
     stdout_fingerprint,  # noqa: F401  # Preserve the established parser.base export.
 )
-from datamodel_code_generator.parser._naming import NamingPlan
+from datamodel_code_generator.parser._naming import NamingFrames, NamingPlan
 from datamodel_code_generator.parser._passes import _shared, _state, settle, structure
 from datamodel_code_generator.parser._passes import modules as _modules
 from datamodel_code_generator.parser._passes import plans as _plans
@@ -1076,6 +1076,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.reuse_model: bool = config.reuse_model
         self._reuse_groups = ReuseGroups()
         self._naming_plan = NamingPlan()
+        self._naming_frames: NamingFrames | None = None
+        """The naming frames and claims L1 records (``_start_naming_frames``), else None."""
         self._const_narrowed_references: list[tuple[Reference, _ConstNarrowing]] = []
         self._const_narrowed_values: dict[int, tuple[DataType, _ConstNarrowing]] = {}
         self._enum_admits_other_values: list[tuple[DataModelFieldBase, _ConstNarrowing]] = []
@@ -2743,6 +2745,18 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
     def _report_parse_diagnostics(self) -> None:
         """Report diagnostics collected while parsing the input schema."""
+
+    def _records_naming_claims(self) -> bool:  # noqa: PLR6301
+        """Return whether L1 records the naming frames and claims of the models, which a naming rule reads.
+
+        No rule of the legacy naming policy, the only one, reads them (``parser/_naming.py``).
+        """
+        return False
+
+    def _start_naming_frames(self) -> None:
+        """Open the naming frames before L1 when it records them, and let the resolver record the names models ask."""
+        self._naming_frames = NamingFrames() if self._records_naming_claims() else None
+        self.model_resolver._records_name_requests = self._naming_frames is not None  # noqa: SLF001
 
     def _run_with_suppressed_warnings(self, callback: Callable[[], None]) -> None:  # noqa: PLR6301
         """Invoke one retry hook without repeating user-visible warnings."""
