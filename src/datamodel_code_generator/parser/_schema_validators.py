@@ -45,6 +45,7 @@ from datamodel_code_generator.parser._intersection import (
     intersect_enum_values,
 )
 from datamodel_code_generator.parser._intersection import json_values_equal as _json_literal_values_equal
+from datamodel_code_generator.parser._naming import composed_name
 from datamodel_code_generator.parser._passes._shared import (
     CollapseRootModelsHost,
     DataModelTypeHost,
@@ -1853,7 +1854,7 @@ def collect_pattern_property_validators(
     source_index, source, additional_properties = additional_property
     if _is_false_all_of(additional_properties):
         return pattern_value_types, rejected_patterns, None, False
-    additional_property_name = f"{name}AdditionalProperty"
+    additional_property_name = composed_name(name, "additional-property")
     additional_property_type = parser._parse_additional_properties_value(  # noqa: SLF001
         additional_property_name,
         get_special_path(f"schemaValidators/additionalProperties/{source_index}", path),

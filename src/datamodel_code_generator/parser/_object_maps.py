@@ -13,6 +13,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator._regex_syntax import literal_pattern_value
 from datamodel_code_generator._url_redaction import named_location
+from datamodel_code_generator.parser._naming import composed_name
 from datamodel_code_generator.parser._origins import with_field_origin, with_type_origin
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import _merges_ref_siblings, _object_map_other_types
@@ -300,7 +301,7 @@ def get_typed_additional_properties_field(
     if (additional_props := parser._typed_extra_field_schema(obj)) is None:  # noqa: SLF001
         return None
     additional_props = parser._add_nullable_combined_schema_branches(additional_props)  # noqa: SLF001
-    additional_property_name = f"{class_name}AdditionalProperty"
+    additional_property_name = composed_name(class_name, "additional-property")
     extra_value_type = parser._parse_additional_properties_value(  # noqa: SLF001
         additional_property_name,
         [*path, "additionalProperties"],

@@ -24,6 +24,7 @@ from datamodel_code_generator.model._decisions.tag_value import (
     union_tag_values,
 )
 from datamodel_code_generator.model.base import sanitize_module_name
+from datamodel_code_generator.parser._naming import composed_name
 from datamodel_code_generator.parser._schema_object import Discriminator, JsonSchemaObject
 
 if TYPE_CHECKING:
@@ -491,12 +492,14 @@ def parse_combined_schema_items(  # noqa: PLR0913, PLR0917
     variant_keys: Mapping[int, str],
 ) -> list[DataType]:
     """Parse the branches of a union, recording the key and name of each branch named after its key by its node."""
+    parent_name = composed_name(name, "variant-parent")
     if variant_names:
         for index, key in variant_keys.items():
-            parser._tag_key_variants[combined_schemas[index].schema_location] = (key, variant_names[index] or name)  # noqa: SLF001
+            location = combined_schemas[index].schema_location
+            parser._tag_key_variants[location] = (key, variant_names[index] or parent_name)  # noqa: SLF001
     return [
         parser.parse_item(
-            (variant_names[index] or name) if variant_names else name,
+            (variant_names[index] or parent_name) if variant_names else parent_name,
             item,
             [*path, str(index)],
             singular_name=False,
