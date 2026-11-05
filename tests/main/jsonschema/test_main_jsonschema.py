@@ -60,6 +60,7 @@ from datamodel_code_generator import (
     InvalidFileFormatError,
     PythonVersion,
     PythonVersionMin,
+    SchemaResourceRefWarning,
     SchemaValidatorType,
     TargetPydanticVersion,
     VersionMode,
@@ -1653,6 +1654,81 @@ def test_main_jsonschema_anchor_in_one_of(output_file: Path) -> None:
         input_file_type="jsonschema",
         extra_args=["--disable-timestamp"],
         force_exec_validation=True,
+    )
+
+
+def test_main_jsonschema_anchor_of_a_document_loaded_by_reference(output_dir: Path) -> None:
+    """Resolve a plain name of a document that a reference loads before the document is parsed as an input (#6216).
+
+    `int_list.json`, parsed first, loads `list.json` through its `$ref`; the `items` of `list.json` name its
+    `$defs/wrapper` by the `$anchor` `#wrapper`, which resolves through the anchors of `list.json` as loaded, where up
+    to 0.89.0 it stopped with "Unresolved $id reference" because the walk of the definitions of `list.json` had not
+    run yet.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "dynamic_ref_anchor_reference",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp"],
+    )
+    assert_generated_model_json_validation(
+        output_dir / "int_list.py",
+        module_name="jsonschema_anchor_of_a_document_loaded_by_reference",
+        model_name="IntList",
+        valid_json='[{"value": 1}]',
+        invalid_json='[{"value": "one"}]',
+        expected_error_type="int_parsing",
+    )
+
+
+def test_main_jsonschema_anchor_at_any_position(output_file: Path) -> None:
+    """Resolve a reference to a plain name to the schema that declares it, wherever that schema is (#6216).
+
+    A `$ref` names a `$dynamicAnchor` as it names an `$anchor`; an `$anchor` under `contains`, `not`, `if`,
+    `dependentSchemas` or a `$defs` inside a property, and one inside the embedded resource `https://example.com/box`
+    that the `$dynamicRef` of that resource names, resolve as one in `$defs` does, and a `$dynamicRef` to an `$anchor`
+    under `items` generates its target as a `$ref` does. Up to 0.89.0 each stopped with "Unresolved $id reference".
+    The `$dynamicRef` of `https://example.com/crate`, which declares no `$dynamicAnchor`, names the document's first.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "anchor_at_any_position.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="jsonschema_anchor_at_any_position",
+        model_name="Holder",
+        valid_json=(
+            '{"first": {"id": 1}, "contained": {"count": 2}, "negated": {"flag": true}, "conditional": {"name": "a"},'
+            ' "dependent": {"value": 1.5}, "nested": {"label": "b"}, "listed": {"size": 3},'
+            ' "box": {"thing": {"weight": 2.5}}}'
+        ),
+        invalid_json='{"box": {"thing": {"weight": "heavy"}}}',
+        expected_error_type="float_parsing",
+    )
+
+
+def test_main_jsonschema_anchor_declared_twice(output_file: Path) -> None:
+    """Warn when a reference names a plain name that two schemas of its document declare (#5131).
+
+    JSON Schema leaves such a reference undefined; the `$ref` names the last `$anchor` and the `$dynamicRef` the first
+    `$dynamicAnchor`, as in 0.89.0, and each name warns once.
+    """
+    with pytest.warns(SchemaResourceRefWarning) as warning_records:
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "anchor_declared_twice.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp"],
+        )
+    assert_warnings_contain(
+        warning_records,
+        "The anchor 'T' is declared by more than one schema in anchor_declared_twice.json ('#/$defs/First', "
+        "'#/$defs/Second'), so a reference to '#T' names one of them, which JSON Schema leaves undefined.",
+        "The anchor 'D' is declared by more than one schema in anchor_declared_twice.json ('#/$defs/Third', "
+        "'#/$defs/Fourth')",
     )
 
 
@@ -36613,18 +36689,26 @@ def test_main_jsonschema_one_of_without_member_types_beside_properties() -> None
 
 
 def test_main_jsonschema_reserved_target_of_a_rewritten_document(tmp_path: Path) -> None:
-    """A target another file reserves in a document whose embedded `$id` rewrites a reference is read as loaded.
+    """A target another file reserves in a document whose embedded `$id` rewrites a reference is read as prepared.
 
-    `box.json` is parsed before `holder.json` reserves `#/definitions/Box/properties/item` in it. The embedded
-    resource rewrites that `$ref` in the prepared tree, so the target is read from a fresh load of `box.json`, as
-    before the schema graph: there `#/definitions/Item` names no value of the document and stays dangling.
+    `box.json` is parsed before `holder.json` reserves `#/definitions/Box/properties/item` in it. The target is read
+    from the prepared tree of `box.json`, where the embedded resource `https://example.com/box.json` rewrote its
+    `$ref` to `#/definitions/Box/definitions/Item`, so both properties are the string `Item` (#5126); up to 0.89.0 it
+    was read from a fresh load of `box.json`, where `#/definitions/Item` names nothing, and became an `Any` model.
     """
-    with pytest.warns(DanglingRefWarning, match="#/definitions/Item"):
-        run_main_and_assert(
-            input_path=JSON_SCHEMA_DATA_PATH / "reserved_target_rewritten_document",
-            output_path=tmp_path / "model",
-            input_file_type="jsonschema",
-        )
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "reserved_target_rewritten_document",
+        output_path=tmp_path / "model",
+        input_file_type="jsonschema",
+    )
+    assert_generated_model_json_validation(
+        tmp_path / "model" / "box.py",
+        module_name="jsonschema_reserved_target_of_a_rewritten_document",
+        model_name="Other",
+        valid_json='"bolt"',
+        invalid_json="123",
+        expected_error_type="string_type",
+    )
 
 
 def test_main_jsonschema_shared_schema_with_cyclic_extension() -> None:

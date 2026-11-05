@@ -1994,6 +1994,8 @@ def iter_inherited_schema_objects(
         resolved_ref = base.path
         try:
             parent_schema = parser._load_inherited_schema_object(resolved_ref)  # noqa: SLF001
+        except RecursionError:  # pragma: no cover
+            raise
         except Exception:  # pragma: no cover  # noqa: BLE001, S112
             continue
         if (node := _schema_node(parent_schema, resolved_ref)) in visited:  # pragma: no cover

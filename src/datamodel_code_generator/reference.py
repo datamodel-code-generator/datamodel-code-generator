@@ -1602,6 +1602,10 @@ class ModelResolver:  # noqa: PLR0904
         """Register an identifier mapping to a resolved reference path."""
         self.ids[self._current_root_id][id_] = self.resolve_ref(path)
 
+    def registered_id(self, id_: str) -> str | None:
+        """Return the resolved reference path an identifier is registered for in the current scope, if any."""
+        return self.ids.get(self._current_root_id, {}).get(id_)
+
     def _get_path_absolute_local_file(self, ref: str) -> tuple[Path, str] | None:
         """Return the local file path for a path-absolute URI ref."""
         if not (self.root_id and self.current_base_path and self.current_root and ref.startswith("/")):

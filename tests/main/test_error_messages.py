@@ -39,6 +39,7 @@ from tests.main.conftest import (
     DATA_PATH,
     OPEN_API_DATA_PATH,
     InputFileTypeLiteral,
+    assert_generated_model_json_validation,
     run_generate_file_and_assert,
     run_main_and_assert,
     run_main_with_args,
@@ -1717,12 +1718,6 @@ _DEDUPE_HINT = (
             id="allof-child-before-base",
         ),
         pytest.param(
-            MALFORMED_DATA_PATH / "request_response_dynamic_ref_in_id_defs.json",
-            "jsonschema",
-            f"Known $id values: https://example.com/node.{_DEDUPE_HINT}",
-            id="dynamic-ref-in-id-defs",
-        ),
-        pytest.param(
             OPEN_API_DATA_PATH / "recursive_ref_discriminator.yaml",
             "openapi",
             "[class: recursive_ref_discriminator.yaml#/components/schemas/CompoundFilter/properties/"
@@ -1743,8 +1738,8 @@ def test_request_response_legacy_error_names_dedupe_option(
 
     Without the option the facts of a key come from a temporary parse and the walk reads every reference of a key, as in
     0.86.0: an allOf child defined before its base put the inline model of the base's property at no owner path (#5266),
-    a ``$dynamicRef`` whose scope the walk could not resolve stopped it (#5556), and a recursive discriminated union
-    left classes that cannot be ordered (#5570, #5613), whose references the message lists in sorted order.
+    and a recursive discriminated union left classes that cannot be ordered (#5570, #5613), whose references the
+    message lists in sorted order.
     """
     run_main_and_assert(
         input_path=input_path,
@@ -1793,6 +1788,37 @@ def test_request_response_dedupe_generates_legacy_stops(
             "--formatters",
             "builtin",
         ],
+    )
+
+
+def test_request_response_dynamic_ref_to_its_resource_anchor(output_file: Path) -> None:
+    """Generate the request and response models of a `$dynamicRef` to its own resource's `$dynamicAnchor` (#6216).
+
+    The walk of the read/write facts resolves `#node` through the anchors of `https://example.com/node` without
+    --dedupe-request-response-variants too, so the run gives the models the option gives; up to 0.89.0 the walk
+    stopped with "Unresolved $id reference" (#5556).
+    """
+    run_main_and_assert(
+        input_path=MALFORMED_DATA_PATH / "request_response_dynamic_ref_in_id_defs.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--read-only-write-only-model-type",
+            "request-response",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="request_response_dynamic_ref_to_its_resource_anchor",
+        model_name="TreeResponse",
+        valid_json='{"id": "a", "child": {"id": "b", "next": {"id": "c"}}}',
+        invalid_json='{"child": {"next": {"id": 1}}}',
+        expected_error_type="string_type",
     )
 
 
