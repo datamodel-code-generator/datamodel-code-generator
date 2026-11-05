@@ -701,8 +701,9 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     def unconstrain_union_members(self, options: ConstraintOptions | None = None) -> bool | None:
         """Write union members without the constraints the output model cannot check on one member alone.
 
-        ``options`` are the constraint options of the run (``DataTypeManager.constraint_options``). Return False when
-        the field stayed as it was; None, which an override that returns nothing gives, counts as a change.
+        ``options`` are the constraint options of the run (``DataTypeManager.constraint_options``), given only under
+        ``--read-msgspec-union-bounds-exactly``. Return False when the field stayed as it was; None, which an override
+        that returns nothing gives, counts as a change.
         """
 
     def inherit_unconstrained_union_members(self, source: DataModelFieldBase) -> None:

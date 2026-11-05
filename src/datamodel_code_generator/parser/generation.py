@@ -1868,9 +1868,15 @@ class GenerationStore:  # noqa: PLR0904
 
         The hook replaces members inside the lists, so every holder of a list sees them. When the hook changed the
         field, what reads its type is bumped and the new sites of the field's model are overridden. ``options`` are the
-        constraint options the hook reads.
+        constraint options the hook reads, passed only under ``--read-msgspec-union-bounds-exactly``, the option it
+        reads them for, so an override that takes no options, as in 0.89.0, runs as before.
         """
-        if field_.unconstrain_union_members(options) is False:
+        changed = (
+            field_.unconstrain_union_members(options)
+            if options is not None and options.read_msgspec_union_bounds_exactly
+            else field_.unconstrain_union_members()
+        )
+        if changed is False:
             return
         self._state_model_sites("drop_union_member_constraints", field_.parent)
         _bump_field_tree(field_)

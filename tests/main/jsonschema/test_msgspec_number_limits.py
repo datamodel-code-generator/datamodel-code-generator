@@ -95,6 +95,42 @@ def test_msgspec_number_limits(output_file: Path, recwarn: pytest.WarningsRecord
     assert_output(_payload_verdicts(output_file, payloads), name="payloads")
 
 
+def test_msgspec_union_member_hook_that_takes_no_options(recwarn: pytest.WarningsRecorder) -> None:
+    """Run an ``unconstrain_union_members`` override that takes no options, as in 0.89.0, on a msgspec union.
+
+    The parser passes the constraint options to the hook only under ``--read-msgspec-union-bounds-exactly``, so the
+    override writes the int members of the unions without the bounds that would reject an integer, and warns, as the
+    default field does.
+    """
+    from datamodel_code_generator import DataModelType
+    from datamodel_code_generator.format import Formatter, PythonVersion
+    from datamodel_code_generator.model import get_data_model_types
+    from datamodel_code_generator.model.msgspec import DataModelField
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    class NoOptionsField(DataModelField):
+        def unconstrain_union_members(self) -> bool:
+            return super().unconstrain_union_members()
+
+    types = get_data_model_types(DataModelType.MsgspecStruct, PythonVersion.PY_310)
+    parser = JsonSchemaParser(
+        NUMBER_LIMITS / "union_integer_bounds.json",
+        data_model_type=types.data_model,
+        data_model_root_type=types.root_model,
+        data_model_field_type=NoOptionsField,
+        data_type_manager_type=types.data_type_manager,
+        dump_resolve_reference_action=types.dump_resolve_reference_action,
+        field_constraints=True,
+        use_annotated=True,
+        target_python_version=PythonVersion.PY_310,
+        formatters=[Formatter.BUILTIN],
+    )
+    assert_output(str(parser.parse()))
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recwarn if warning.category is UserWarning), name="warnings"
+    )
+
+
 def _payload_verdicts(output_file: Path, payloads: dict[str, Any]) -> str:
     """Return whether the generated ``Model`` decodes each valid payload and each invalid change of the first one."""
     documents = [
