@@ -1858,11 +1858,7 @@ def _model_settings(model: DataModel, backend: BackendName) -> dict[str, Backend
     internal: dict[str, object] = model._internal_template_data  # pyright: ignore[reportPrivateUsage] # noqa: SLF001
     match backend:
         case "dataclass" | "pydantic_dataclass":
-            return {
-                name: _backend_value(value)
-                for name, value in model.dataclass_arguments.items()  # pyright: ignore[reportAttributeAccessIssue]
-                if value is not False and value is not None
-            }
+            return {name: _backend_value(value) for name, value in model.written_dataclass_arguments.items()}
         case "msgspec":
             raw = model.extra_template_data.get("base_class_kwargs", {})
             adopted = cast("dict[str, str]", internal.get("base_class_kwargs", {}))

@@ -335,7 +335,9 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     ),
     **_opts(
         _C.MODEL,
-        "--strip-default-none --dataclass-arguments --use-msgspec-tagged-unions --tag-msgspec-by-payload-name",
+        "--strip-default-none --dataclass-arguments",
+        "--keep-false-dataclass-arguments --no-keep-false-dataclass-arguments",
+        "--use-msgspec-tagged-unions --tag-msgspec-by-payload-name",
         "--no-tag-msgspec-by-payload-name",
         "--use-msgspec-nullable-enum-alias --use-msgspec-meta-for-map-keys --no-use-msgspec-meta-for-map-keys",
     ),

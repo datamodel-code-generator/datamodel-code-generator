@@ -502,6 +502,7 @@ class BaseGenerateConfig(BaseModel):
     duplicate_name_suffix: dict[str, str] | None = None
     use_duplicate_name_suffix_for_every_collision: bool = False
     dataclass_arguments: DataclassArguments | None = None
+    keep_false_dataclass_arguments: bool = False
     disable_future_imports: bool = False
     import_overrides: dict[str, str] | None = None
     type_mappings: list[str] | None = None

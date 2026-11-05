@@ -244,12 +244,10 @@ class _DataclassReuseMixin:
 
         ``unsafe_hash`` hashes the values of its fields as ``frozen`` does; one that compares by value without either
         sets ``__hash__`` to None, and ``eq=False`` keeps the identity hash. Its decorator alone decides, whatever its
-        bases, read as the template writes it: an argument set to None or False is left out, so it takes its default.
+        bases, read as it writes them (``written_dataclass_arguments``): an argument it leaves out takes its default.
         """
         model = cast("DataModel", self)
-        arguments = {
-            name: value for name, value in model.dataclass_arguments.items() if value is not None and value is not False
-        }
+        arguments = model.written_dataclass_arguments
         return model._compared_class_hash(  # noqa: SLF001
             compares_by_value=bool(arguments.get("eq", True)),
             frozen=bool(arguments.get("frozen")) or bool(arguments.get("unsafe_hash")),

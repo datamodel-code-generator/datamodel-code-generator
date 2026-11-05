@@ -81,7 +81,7 @@ OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
 )
 """The options the 20261104 presets set beyond the 20261027 presets."""
 
-OPT_IN_OPTIONS_20261106: tuple[str, ...] = ()
+OPT_IN_OPTIONS_20261106: tuple[str, ...] = ("--keep-false-dataclass-arguments",)
 """The options the 20261106 presets set beyond the 20261104 presets."""
 
 PRESET_RELEASES: dict[str, tuple[str, tuple[str, ...]]] = {
@@ -268,7 +268,14 @@ CASES_20261104: tuple[pytest.ParameterSet, ...] = (
 )
 """The inputs each opt-in option of the 20261104 presets changes."""
 
-CASES_20261106: tuple[pytest.ParameterSet, ...] = ()
+CASES_20261106: tuple[pytest.ParameterSet, ...] = (
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "keep_false_dataclass_arguments.json",
+        "jsonschema",
+        ["--output-model-type", "dataclasses.dataclass", "--dataclass-arguments", '{"eq": false}'],
+        id="keep-false-dataclass-arguments",
+    ),
+)
 """The inputs each opt-in option of the 20261106 presets changes."""
 
 

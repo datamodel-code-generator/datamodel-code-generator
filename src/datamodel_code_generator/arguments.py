@@ -569,6 +569,13 @@ model_options.add_argument(
         "Overrides --frozen-dataclasses and similar flags."
     ),
 )
+_toggle(
+    model_options,
+    "--keep-false-dataclass-arguments",
+    help="Write every dataclass decorator argument set to false, such as eq=False from --dataclass-arguments "
+    "'{\"eq\": false}', so the dataclass compares by identity as asked; without it an argument set to false is left "
+    "out and takes its default (eq=True), as in 0.89.0",
+)
 _flag(
     model_options,
     "--use-msgspec-tagged-unions",
