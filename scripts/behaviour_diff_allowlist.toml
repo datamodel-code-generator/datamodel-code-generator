@@ -126,6 +126,22 @@ decision = "#6163"
 release_note = "with --use-unique-items-as-set, every array whose own schema declares uniqueItems is written as a set, also the member of an anyOf or oneOf, the items of an array, the values of a map and a lone allOf member, where a model merged into its model declares it too"
 
 [[accepted]]
+input = [
+  "*allof_partial_override_unique_items*",
+  "*mapping_schema_validators*",
+  "*unique_items_nested_merged*",
+  "*unique_items_schema_validators*",
+  "*unique_items_union_enum_root*",
+  "*unique_items_union_mapping_shapes*",
+]
+backends = [ "typing.TypedDict", "dataclasses.dataclass" ]
+aspects = [ "type" ]
+match = "^\\[type\\] (?:Person:tags: list\\[str\\] -> set\\[str\\]|(?:Nested:nested|Labels:values|Tags:values|UniqueItemsPayload:mapping|UniqueItemsUnionEnumRoot|UniqueItemsUnionMappingShapes:mapping(?:ImpossibleBranch|EnumScalar)): (?P<pre>.*)dict\\[str, list\\[(?P<item>object|int)\\]\\](?P<post>.*) -> (?P=pre)dict\\[str, set\\[(?P=item)\\]\\](?P=post))$"
+reason = "with --use-unique-items-as-set (the practical presets), in TypedDict and dataclass output the values of a map, the map member of a union and a field that a TypedDict merged by allOf redeclares, whose own schema declares uniqueItems, were lists; they are sets now, as in the other outputs (owner decision: default under the option)"
+decision = "#6163"
+release_note = "with --use-unique-items-as-set, every array whose own schema declares uniqueItems is written as a set, also the member of an anyOf or oneOf, the items of an array, the values of a map and a lone allOf member, where a model merged into its model declares it too"
+
+[[accepted]]
 input = "*allof_with_required_inherited_*"
 aspects = [ "type" ]
 match = "^\\[type\\] (?:Projected)?(?:Entity|EdgeCases):allof_(?:with_unique|unique_items): (?:Union\\[(?:None, )?)?list\\[str\\](?:, msgspec\\.UnsetType)?\\]? -> (?:Union\\[(?:None|msgspec\\.UnsetType), )?set\\[str\\]\\]?$"
@@ -257,6 +273,7 @@ release_note = "with --use-unique-items-as-set, a uniqueItems array of models wh
 
 [[accepted]]
 input = "*unique_items_collapsed_root_items*"
+backends = [ "pydantic_v2.BaseModel" ]
 aspects = [ "type" ]
 match = "^\\[type\\] Root:(?:tags|objects|tag_sets): Union\\[None, set\\[(?:list\\[str\\]|dict\\[str, int\\])\\]\\] -> Union\\[None, set\\[(?:Tags|Object)\\]\\]$"
 reason = "with --collapse-root-models --use-unique-items-as-set (the practical presets), a root model of a list or a dict inlined into the items of a set gave set[list[str]] or set[dict[str, int]], which rejects every non-empty array; the root model stays named there, as without collapse, and hashes by identity (crash-class fix)"
@@ -265,6 +282,7 @@ release_note = "with --collapse-root-models and --use-unique-items-as-set, a roo
 
 [[accepted]]
 input = "*unique_items_frozen_set*"
+backends = [ "pydantic_v2.BaseModel" ]
 aspects = [ "type" ]
 match = "^\\[type\\] Holder:groups: Union\\[None, frozenset\\[(?:list|set)\\[int\\]\\]\\] -> Union\\[None, frozenset\\[Group\\]\\]$"
 reason = "with --collapse-root-models (the presets), a root model of an array inlined into the items of a frozen set gave frozenset[list[int]] or frozenset[set[int]], which rejects every non-empty array; the root model stays named there and hashes by identity (crash-class fix)"
@@ -273,6 +291,7 @@ release_note = "with --collapse-root-models and --use-unique-items-as-set, a roo
 
 [[accepted]]
 input = "*prefix_items_unique_items_sequence*"
+backends = [ "pydantic_v2.BaseModel" ]
 aspects = [ "type" ]
 match = "^\\[type\\] PrefixItemsUniqueItemsSequence:pairs: Union\\[None, set\\[list\\[Union\\[int, str\\]\\]\\]\\] -> Union\\[None, set\\[Pair\\]\\]$"
 reason = "with --collapse-root-models --use-unique-items-as-set (the practical presets), the root model of a closed prefixItems pair inlined into the items of a set gave set[list[int | str]], which rejects every non-empty array; the root model stays named there and hashes by identity (crash-class fix)"
@@ -305,6 +324,41 @@ match = "^\\[type\\] Root:(?:tags|pairs): Union\\[msgspec\\.UnsetType, set\\[lis
 reason = "with --use-unique-items-as-set (the practical presets), a uniqueItems array of arrays was set[list[...]], which rejects every non-empty array; it stays a list (crash-class fix)"
 decision = "#6190"
 release_note = "with --use-unique-items-as-set, a uniqueItems array whose items can never be set members (objects, arrays, a tuple holding an array) stays a list instead of a set that rejects every non-empty array, and a list default that cannot be a set keeps its list"
+
+[[accepted]]
+input = [ "*unique_items_by_value.json", "*unique_items_collapsed_root_items*" ]
+backends = [ "typing.TypedDict", "dataclasses.dataclass", "pydantic_v2.dataclass" ]
+aspects = [ "type" ]
+match = "^\\[type\\] Root:(?:tags|objects|tag_sets): (?P<pre>(?:Union\\[None, )?)set\\[(?P<item>list\\[str\\]|dict\\[str, int\\])\\](?P<post>\\]?) -> (?P=pre)list\\[(?P=item)\\](?P=post)$"
+reason = "with --use-unique-items-as-set (the practical presets), a uniqueItems array of arrays or objects, also of a root model of one that a TypedDict or dataclass output writes as its root type, was set[list[str]] or set[dict[str, int]], which rejects every non-empty array (Pydantic set_item_not_hashable); it stays a list (crash-class fix)"
+decision = "#6190"
+release_note = "with --use-unique-items-as-set, a uniqueItems array whose items can never be set members (objects, arrays, a tuple holding an array) stays a list instead of a set that rejects every non-empty array, and a list default that cannot be a set keeps its list"
+
+[[accepted]]
+input = [
+  "*api_constrained.yaml",
+  "*unique_items_by_value.json",
+  "*unique_items_collapsed_root_items*",
+  "*unique_items_enum_set*",
+  "*unique_items_model_items*",
+  "*unique_items_schema_validators*",
+  "*unique_model_sets*",
+]
+backends = [ "typing.TypedDict", "dataclasses.dataclass", "pydantic_v2.dataclass" ]
+aspects = [ "type" ]
+match = "^\\[type\\] (?:\\w+:)?(?:Pets|Root:(?:pets|settings|limits|points)|Container:items|UniqueItemsPayload:objects): (?P<pre>(?:Union\\[None, |Annotated\\[)?)set\\[(?P<item>Pet|Settings|Limits|Point|Item|UniqueObject)\\](?P<post>(?:\\]|, MinLen\\(min_length=1\\),MaxLen\\(max_length=10\\)\\])?) -> (?P=pre)list\\[(?P=item)\\](?P=post)$"
+reason = "with --use-unique-items-as-set (the practical presets), a uniqueItems array of TypedDicts (which hold dicts) or of non-frozen dataclasses and Pydantic dataclasses (which compare by value, so never hash) was a set of them, which rejects every non-empty array (Pydantic set_item_not_hashable); such items keep a list (crash-class fix)"
+decision = "#6266"
+release_note = "with --use-unique-items-as-set, a uniqueItems array of models whose class can never hash its instances (TypedDict, non-frozen dataclasses and msgspec Structs, RootModel aliases) stays a list instead of a set that rejects every non-empty array, and the models of a type alias that a set names take the set item hash"
+
+[[accepted]]
+input = "*unique_items_model_items*"
+backends = [ "dataclasses.dataclass", "pydantic_v2.dataclass" ]
+aspects = [ "default" ]
+match = "^\\[default\\] Root:pets: '(?P<pre>(?:FieldInfo\\(annotation=NoneType, required=False, )?)(?P<key>factory:|default_factory=)set(?P<post>(?:, validate_default=True\\))?)' -> '(?P=pre)(?P=key)list(?P=post)'$"
+reason = "the array default of a uniqueItems array of dataclasses that stays a list (#6266) is the list the schema declares, as the default of any list, instead of an empty set"
+decision = "#6266"
+release_note = "with --use-unique-items-as-set, a uniqueItems array of models whose class can never hash its instances (TypedDict, non-frozen dataclasses and msgspec Structs, RootModel aliases) stays a list instead of a set that rejects every non-empty array, and the models of a type alias that a set names take the set item hash"
 
 [[accepted]]
 input = "*well_known_wrappers*"
