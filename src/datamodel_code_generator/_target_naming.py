@@ -45,7 +45,7 @@ __all__ = (
 
 _WORDS_SOURCE: Final = r"(?:(?!_)\w)+"
 _WORDS: Final = re.compile(_WORDS_SOURCE)
-_PREFIXED: Final = frozenset({NamingStrategy.ParentPrefixed, NamingStrategy.FullPath})
+_PREFIXED: Final = frozenset({NamingStrategy.ParentPrefixed, NamingStrategy.FullPath, NamingStrategy.EnclosingModel})
 _DECLARED_FIRST: Final = frozenset({NamingStrategy.PrimaryFirst, NamingStrategy.DefinitionsFirst})
 WINDOWS_DEVICES: Final = frozenset({
     "aux",
@@ -211,8 +211,9 @@ class TargetNames:
         """Claim derived names in their scope, in order, telling a name the scope already holds apart as models do.
 
         `numbered` suffixes it; `parent-prefixed` first prefixes it with its innermost enclosing scope, `full-path`
-        with every enclosing scope; `primary-first` and `definitions-first` claim the names declared in the root
-        document before those another document declares, as models claim primary definitions before external ones.
+        and `enclosing-model` with every enclosing scope; `primary-first` and `definitions-first` claim the names
+        declared in the root document before those another document declares, as models claim primary definitions
+        before external ones.
         A class takes the duplicate class suffix.
         """
         order: Iterable[int] = range(len(candidates))

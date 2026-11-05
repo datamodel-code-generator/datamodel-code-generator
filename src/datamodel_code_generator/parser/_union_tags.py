@@ -25,7 +25,7 @@ from datamodel_code_generator.model._decisions.tag_value import (
     union_tag_values,
 )
 from datamodel_code_generator.model.base import sanitize_module_name
-from datamodel_code_generator.parser._naming import Ordinal, composed_name
+from datamodel_code_generator.parser._naming import Ordinal, Tag, composed_name
 from datamodel_code_generator.parser._schema_object import Discriminator, JsonSchemaObject
 
 if TYPE_CHECKING:
@@ -188,6 +188,16 @@ def _get_union_variant_name(name: str, literal: JsonSchemaLiteral) -> str | None
         return None
     variant_name = f"{class_name or name}_{literal_name}"
     return f"{module_name}{separator}{variant_name}" if module_name else variant_name
+
+
+def union_variant_tag(name: str, variant_name: str) -> str | None:
+    """Return the part of a branch name that ``_get_union_variant_name`` gave after the union's name ``name``.
+
+    None for a name it did not compose from ``name``.
+    """
+    module_name, separator, class_name = name.rpartition(".")
+    prefix = f"{module_name}{separator}{class_name or name}_" if module_name else f"{class_name or name}_"
+    return variant_name.removeprefix(prefix) if variant_name.startswith(prefix) else None
 
 
 def get_single_literal_value(
@@ -499,7 +509,7 @@ def parse_combined_schema_items(  # noqa: PLR0913, PLR0917
     """Parse the branches of a union, recording the key and name of each branch named after its key by its node.
 
     A branch without a name of its own takes the union's name, and its position as its claim while L1 records naming
-    frames (``Ordinal``).
+    frames (``Ordinal``); a branch named after its tag claims the part of its name the tag gives (``Tag``).
     """
     parent_name = composed_name(name, "variant-parent")
     if variant_names:
@@ -512,5 +522,12 @@ def parse_combined_schema_items(  # noqa: PLR0913, PLR0917
         parse = partial(
             parser.parse_item, variant_name or parent_name, item, [*path, str(index)], singular_name=False, parent=obj
         )
-        data_types.append(parse() if variant_name else parser._claimed(Ordinal(index + 1), parse))  # noqa: SLF001
+        claim = (
+            Ordinal(index + 1)
+            if not variant_name
+            else Tag(tag)
+            if (tag := union_variant_tag(name, variant_name))
+            else None
+        )
+        data_types.append(parse() if claim is None else parser._claimed(claim, parse))  # noqa: SLF001
     return data_types

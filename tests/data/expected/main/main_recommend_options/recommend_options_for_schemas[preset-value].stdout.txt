@@ -29,11 +29,11 @@ Add (5 options)
       measured: OpenAI API description: 503 problem names with titles off, 544 with titles on
       measured: Stripe API description: 17% of component titles changed in four months; class names
       from keys renamed 0.0% of locations
-  --naming-strategy full-path   [naming.qualify-shared-inline-names]
+  --naming-strategy enclosing-model   [naming.qualify-shared-inline-names]
       Inline schemas under different parents share property names (names: 4, e.g. status x3, owner
       x3, state x2, total x2; inline names equal to a component name: 0). Numbered names (Status,
-      Status1) depend on parse order and shift when the schema grows; full-path names each inline
-      model after its parent.
+      Status1) depend on parse order and shift when the schema grows; enclosing-model names each
+      inline model after the model it is built for, once, and leaves definitions their own names.
       measured: GitHub REST API description: numbered names 663 -> 53; locations renamed between two
       versions 17% -> 0.0%
       measured: Petstore: Status and Status1 became OrderStatus and PetStatus
@@ -84,13 +84,13 @@ Your configuration
   --preset practical-py314-20261017: a newer preset is available, practical-py314-20261104
 
 Command
-  datamodel-codegen --enum-field-as-literal all --input api.yaml --naming-strategy full-path --preset practical-py314-20261017 --no-treat-dot-as-module --use-tag-as-union-variant-name --no-use-title-as-name
+  datamodel-codegen --enum-field-as-literal all --input api.yaml --naming-strategy enclosing-model --preset practical-py314-20261017 --no-treat-dot-as-module --use-tag-as-union-variant-name --no-use-title-as-name
 
 pyproject.toml
   [tool.datamodel-codegen]
   enum-field-as-literal = "all"
   input = "api.yaml"
-  naming-strategy = "full-path"
+  naming-strategy = "enclosing-model"
   preset = "practical-py314-20261017"
   treat-dot-as-module = false
   use-tag-as-union-variant-name = true

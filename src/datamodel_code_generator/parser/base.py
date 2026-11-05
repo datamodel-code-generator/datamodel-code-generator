@@ -441,7 +441,10 @@ def _naming_rules_of(naming_strategy: NamingStrategy | None, resolver_class: typ
     A resolver class outside the package that overrides how ``ModelResolver`` names models keeps the names it gives:
     the rules stay off, with a warning that names the strategy.
     """
-    rules = NamingRules(definitions_first=naming_strategy is NamingStrategy.DefinitionsFirst)
+    rules = NamingRules(
+        definitions_first=naming_strategy is NamingStrategy.DefinitionsFirst,
+        enclosing_model=naming_strategy is NamingStrategy.EnclosingModel,
+    )
     if rules.legacy or not (
         overridden := [
             name

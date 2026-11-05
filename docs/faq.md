@@ -646,6 +646,42 @@ class Package(BaseModel):
     name: str | None = None
 ```
 
+### `--naming-strategy enclosing-model`
+
+| | |
+|---|---|
+| Option | `--naming-strategy enclosing-model` |
+| Preset | none; `--recommend-options` recommends it where inline schemas under different parents share names |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#4855](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4855), [#4845](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4845), [#4826](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4826), [#5666](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5666) |
+
+**Affects:** the nested models under `--naming-strategy full-path` and `parent-prefixed`. They are prefixed with the name of the closest model registered above them when they are named, not the model they are built for: the model of an `allOf` property finds none (`Issue1`, `Issue2`), a union branch without a name of its own takes the union's name and is prefixed with it again (`StreamEventStreamEvent`), a branch named after its tag too (`PetPetCat`), a definition parsed after the root model takes the root's name (`ModelCustomer`), and `--parent-scoped-naming` adds a second prefix (`OrderOrderOtherOrderOrderOtherItem`). With the value every model built for another model takes that model's final name once, then its own part: its property key, its singular item name, its title or tag, or its position as a branch without a name (`StreamEvent1`); the model of a nullable enum, of extra properties or a request or response variant keeps the word of its role. A definition, a document root and an operation model take their own names. A name another model takes first is numbered, with `_` after a name that ends in a digit (`StreamEvent1_1`).
+
+Schema: the component `IssueClosed` with an `allOf` property `issue`, and a `oneOf` `StreamEvent` of two inline objects.
+
+Without the option (same as 0.89.0, with `--naming-strategy full-path`):
+
+```python
+class Issue1(Issue):
+    state: str | None = None
+
+
+class StreamEventStreamEvent(BaseModel):
+    delta: str | None = None
+```
+
+With the option:
+
+```python
+class IssueClosedIssue(Issue):
+    state: str | None = None
+
+
+class StreamEvent1(BaseModel):
+    delta: str | None = None
+```
+
 ### `--read-schema-version-per-document`
 
 | | |

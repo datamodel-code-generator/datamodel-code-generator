@@ -298,6 +298,7 @@ jsonschema/dynamic_ref_documents/shared.json	payloads/native_numeric_empty_error
 jsonschema/dynamic_ref_documents/thing.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/empty_items_array.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/empty_original_field_delimiter.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/enclosing_model.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/encoding_test.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/entry_point_constraints.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_builtin_conflict.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -1564,6 +1565,10 @@ openapi/duplicate_models2.yaml::components.schemas.Pet	payloads/native_numeric_e
 openapi/dynamic_ref_anchor_and_dynamic_anchor.yaml::components.schemas.First	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/empty_dict_default.yaml::components.schemas.ObjectMeta	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/empty_list_default.yaml::components.schemas.Container	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/enclosing_model.yaml::components.schemas.Issue	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/enclosing_model.yaml::components.schemas.Order	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/enclosing_model.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/enclosing_model.yaml::components.schemas.StreamEvent	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/enum_builtin_conflict.yaml::components.schemas.StringMethodEnum	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/enum_const_nullable.yaml::components.schemas.Kind	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/enum_const_nullable.yaml::components.schemas.NullableKind	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2290,6 +2295,7 @@ jsonschema/dynamic_ref_documents/shared.json	payloads/native_numeric_empty_error
 jsonschema/dynamic_ref_documents/thing.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/empty_items_array.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/empty_original_field_delimiter.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/enclosing_model.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/encoding_test.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/entry_point_constraints.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/enum_builtin_conflict.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3548,6 +3554,10 @@ openapi/duplicate_models2.yaml::components.schemas.Pet	payloads/native_numeric_e
 openapi/dynamic_ref_anchor_and_dynamic_anchor.yaml::components.schemas.First	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/empty_dict_default.yaml::components.schemas.ObjectMeta	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/empty_list_default.yaml::components.schemas.Container	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/enclosing_model.yaml::components.schemas.Issue	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/enclosing_model.yaml::components.schemas.Order	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/enclosing_model.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/enclosing_model.yaml::components.schemas.StreamEvent	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/enum_builtin_conflict.yaml::components.schemas.StringMethodEnum	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/enum_const_nullable.yaml::components.schemas.Kind	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/enum_const_nullable.yaml::components.schemas.NullableKind	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

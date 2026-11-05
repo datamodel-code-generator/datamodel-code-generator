@@ -188,6 +188,8 @@ class NamingStrategy(Enum):
     primary_first: Prioritize primary schema definitions, others get suffix.
     definitions_first: Give a definition its own name before any other model that asks for it, in every document, and
         number the model that took it first; the models are numbered as by numbered otherwise.
+    enclosing_model: Prefix every nested model with the final name of the model it is built for, once (CompanyAddress,
+        StreamEvent1 for the first branch of the union StreamEvent); a definition keeps its own name.
     """
 
     Numbered = "numbered"
@@ -195,6 +197,7 @@ class NamingStrategy(Enum):
     FullPath = "full-path"
     PrimaryFirst = "primary-first"
     DefinitionsFirst = "definitions-first"
+    EnclosingModel = "enclosing-model"
 
 
 class ClassNameAffixScope(Enum):

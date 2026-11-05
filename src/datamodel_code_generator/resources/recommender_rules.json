@@ -115,19 +115,10 @@
           }
         ]
       },
-      "contested_when": {
-        "ratio": [
-          "inline_union_variants",
-          "shared_inline_names"
-        ],
-        "op": ">=",
-        "value": 10
-      },
-      "contested_reason": "Inline union variants are named after their parent property ({inline_union_variants} variants), and full-path prefixes the parent again on those (doubled names such as EnvFileEnvFile), so whether it helps depends on the schema.",
       "set": {
-        "naming_strategy": "full-path"
+        "naming_strategy": "enclosing-model"
       },
-      "reason": "Inline schemas under different parents share property names (names: {shared_inline_names}, e.g. {shared_inline_name_examples}; inline names equal to a component name: {inline_names_equal_component}). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; full-path names each inline model after its parent.",
+      "reason": "Inline schemas under different parents share property names (names: {shared_inline_names}, e.g. {shared_inline_name_examples}; inline names equal to a component name: {inline_names_equal_component}). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; enclosing-model names each inline model after the model it is built for, once, and leaves definitions their own names.",
       "evidence": [
         "GitHub REST API description: numbered names 663 -> 53; locations renamed between two versions 17% -> 0.0%",
         "Petstore: Status and Status1 became OrderStatus and PetStatus",

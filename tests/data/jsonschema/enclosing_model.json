@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "order": {"$ref": "#/definitions/Order"},
+    "meta": {"type": "object", "properties": {"id": {"type": "string"}}}
+  },
+  "definitions": {
+    "Order": {"type": "object", "properties": {"note": {"type": "string"}}},
+    "Customer": {"type": "object", "properties": {"name": {"type": "string"}}},
+    "ShippingAddress": {"type": "object", "properties": {"street": {"type": "string"}}},
+    "Shipping": {"type": "object", "properties": {"address": {"$ref": "#/definitions/ShippingAddress"}}}
+  }
+}

@@ -48,6 +48,9 @@ Optional (policy; not in the command)
       rejected (5.0 as an integer); with float bool, 2 accepted ("5" and true as integers) and none
       rejected
 
+Your configuration
+  --naming-strategy is set to "full-path"; the rules suggest "enclosing-model"   [naming.qualify-shared-inline-names]
+
 Notes
   - The rules were calibrated on the 20261017 presets.
 

@@ -975,6 +975,12 @@
     "config": {"body_arguments": "both"},
     "modules": false
   },
+  "naming-enclosing-model": {
+    "input": "naming.yaml",
+    "model": {"naming_strategy": "enclosing-model"},
+    "config": {"body_arguments": "both"},
+    "modules": false
+  },
   "naming-primary-first": {
     "input": "naming-refs.yaml",
     "references": ["naming-refs-shared.yaml"],

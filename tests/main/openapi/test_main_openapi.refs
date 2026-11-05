@@ -1551,6 +1551,15 @@ pydantic_v2-definitions-first-request-response	main/openapi/main_openapi/naming_
 pydantic_v2-definitions-first-titles	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2-definitions-first-titles].py
 pydantic_v2-primary-first	main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2-primary-first].py	= main/openapi/main_openapi/naming_strategy_definitions_first[pydantic_v2].py
 typed_dict-definitions-first	main/openapi/main_openapi/naming_strategy_definitions_first[typed_dict-definitions-first].py
+[test_main_openapi_naming_strategy_enclosing_model]
+dataclass-enclosing-model	main/openapi/main_openapi/naming_strategy_enclosing_model[dataclass-enclosing-model].py
+msgspec-enclosing-model	main/openapi/main_openapi/naming_strategy_enclosing_model[msgspec-enclosing-model].py
+pydantic_v2-enclosing-model	main/openapi/main_openapi/naming_strategy_enclosing_model[pydantic_v2-enclosing-model].py
+pydantic_v2-enclosing-model-parent-scoped	main/openapi/main_openapi/naming_strategy_enclosing_model[pydantic_v2-enclosing-model-parent-scoped].py	= main/openapi/main_openapi/naming_strategy_enclosing_model[pydantic_v2-enclosing-model].py
+pydantic_v2-enclosing-model-tags	main/openapi/main_openapi/naming_strategy_enclosing_model[pydantic_v2-enclosing-model-tags].py
+pydantic_v2-full-path	main/openapi/main_openapi/naming_strategy_enclosing_model[pydantic_v2-full-path].py
+pydantic_v2-full-path-tags	main/openapi/main_openapi/naming_strategy_enclosing_model[pydantic_v2-full-path-tags].py
+typed_dict-enclosing-model	main/openapi/main_openapi/naming_strategy_enclosing_model[typed_dict-enclosing-model].py
 [test_main_openapi_no_file]
 	main/openapi/no_file.py	= main_kr/main_no_file/output.py
 [test_main_openapi_non_operations_and_security]
