@@ -30158,6 +30158,43 @@ def test_main_jsonschema_generate_schema_validators_required_branch_constraints(
     )
 
 
+def test_main_jsonschema_generate_schema_validators_conditional_const_beside_enum(output_file: Path) -> None:
+    """Match an ``if`` property by the values its ``const`` and ``enum`` both admit (#5936).
+
+    ``{"const": "a", "enum": ["a", "b"]}`` matches ``"a"`` only, ``{"const": 1, "enum": [1.0, 2]}`` matches ``1``, and
+    ``{"const": "a", "enum": ["b"]}`` matches no value, so its ``then`` never applies and the model has no rule.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "schema_validators_conditional_const_beside_enum.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--generate-schema-validators",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="output_conditional_const_beside_enum",
+        model_name="Root",
+        valid_json='{"kind": "b", "never": {"kind": "a"}, "count": {"n": 2}}',
+        invalid_json='{"kind": "a"}',
+        expected_error_type="value_error",
+        expected_attribute_path=("never", "kind"),
+        expected_attribute_value="a",
+    )
+    assert_generated_model_json_invalid(
+        output_file,
+        module_name="output_conditional_const_beside_enum_count",
+        model_name="Root",
+        invalid_json='{"count": {"n": 1}}',
+        expected_error_type="value_error",
+    )
+
+
 @pytest.mark.parametrize(
     "schema_validator_args",
     [
