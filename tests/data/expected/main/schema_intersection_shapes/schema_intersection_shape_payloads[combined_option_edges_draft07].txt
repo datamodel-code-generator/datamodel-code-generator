@@ -1,0 +1,48 @@
+pydantic_v2.BaseModel default ignored_sibling null rejected
+pydantic_v2.BaseModel default ignored_sibling {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel default ignored_sibling {"x": "s"} rejected
+pydantic_v2.BaseModel default ignored_sibling {"y": 1} rejected
+pydantic_v2.dataclass default ignored_sibling null rejected
+pydantic_v2.dataclass default ignored_sibling {"y": "s", "x": 1} accepted
+pydantic_v2.dataclass default ignored_sibling {"x": "s"} rejected
+pydantic_v2.dataclass default ignored_sibling {"y": 1} rejected
+msgspec.Struct default ignored_sibling null rejected
+msgspec.Struct default ignored_sibling {"y": "s", "x": 1} accepted
+msgspec.Struct default ignored_sibling {"x": "s"} rejected
+msgspec.Struct default ignored_sibling {"y": 1} rejected
+pydantic_v2.BaseModel --field-constraints ignored_sibling null rejected
+pydantic_v2.BaseModel --field-constraints ignored_sibling {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --field-constraints ignored_sibling {"x": "s"} rejected
+pydantic_v2.BaseModel --field-constraints ignored_sibling {"y": 1} rejected
+pydantic_v2.BaseModel --use-annotated ignored_sibling null rejected
+pydantic_v2.BaseModel --use-annotated ignored_sibling {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --use-annotated ignored_sibling {"x": "s"} rejected
+pydantic_v2.BaseModel --use-annotated ignored_sibling {"y": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models ignored_sibling null rejected
+pydantic_v2.BaseModel --collapse-root-models ignored_sibling {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models ignored_sibling {"x": "s"} rejected
+pydantic_v2.BaseModel --collapse-root-models ignored_sibling {"y": 1} rejected
+msgspec.Struct --collapse-root-models ignored_sibling null rejected
+msgspec.Struct --collapse-root-models ignored_sibling {"y": "s", "x": 1} accepted
+msgspec.Struct --collapse-root-models ignored_sibling {"x": "s"} rejected
+msgspec.Struct --collapse-root-models ignored_sibling {"y": 1} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ignored_sibling null rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ignored_sibling {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ignored_sibling {"x": "s"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs ignored_sibling {"y": 1} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ignored_sibling null rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ignored_sibling {"y": "s", "x": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ignored_sibling {"x": "s"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs ignored_sibling {"y": 1} rejected
+msgspec.Struct --use-site-models-for-constrained-refs ignored_sibling null rejected
+msgspec.Struct --use-site-models-for-constrained-refs ignored_sibling {"y": "s", "x": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs ignored_sibling {"x": "s"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs ignored_sibling {"y": 1} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ignored_sibling null rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ignored_sibling {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ignored_sibling {"x": "s"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs ignored_sibling {"y": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ignored_sibling null rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ignored_sibling {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ignored_sibling {"x": "s"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs ignored_sibling {"y": 1} rejected

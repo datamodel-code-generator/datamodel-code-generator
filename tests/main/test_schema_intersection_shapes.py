@@ -172,6 +172,9 @@ COMBINED_DOCUMENTS: tuple[str, ...] = (
     "inherited_tuple_shape_oas31",
     "allof_member_parts",
     "allof_member_parts_draft07",
+    "combined_option_edges",
+    "combined_option_edges_draft04",
+    "combined_option_edges_draft07",
 )
 """The documents whose output --intersect-combined-schema-keywords changes, pinned with ``COMBINED_OPTION_ARGS`` too."""
 

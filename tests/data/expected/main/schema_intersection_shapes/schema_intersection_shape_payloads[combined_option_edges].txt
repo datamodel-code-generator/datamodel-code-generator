@@ -1,0 +1,84 @@
+pydantic_v2.BaseModel default false_branch {"q": "s", "x": 1} accepted
+pydantic_v2.BaseModel default false_branch null rejected
+pydantic_v2.BaseModel default false_branch {"x": "s"} rejected
+pydantic_v2.BaseModel default shared null rejected
+pydantic_v2.BaseModel default shared {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel default shared {"x": "s"} rejected
+pydantic_v2.BaseModel default shared {"y": 1} rejected
+pydantic_v2.dataclass default false_branch {"q": "s", "x": 1} accepted
+pydantic_v2.dataclass default false_branch null rejected
+pydantic_v2.dataclass default false_branch {"x": "s"} rejected
+pydantic_v2.dataclass default shared null rejected
+pydantic_v2.dataclass default shared {"y": "s", "x": 1} accepted
+pydantic_v2.dataclass default shared {"x": "s"} rejected
+pydantic_v2.dataclass default shared {"y": 1} rejected
+msgspec.Struct default false_branch {"q": "s", "x": 1} accepted
+msgspec.Struct default false_branch null rejected
+msgspec.Struct default false_branch {"x": "s"} rejected
+msgspec.Struct default shared null rejected
+msgspec.Struct default shared {"y": "s", "x": 1} accepted
+msgspec.Struct default shared {"x": "s"} rejected
+msgspec.Struct default shared {"y": 1} rejected
+pydantic_v2.BaseModel --field-constraints false_branch {"q": "s", "x": 1} accepted
+pydantic_v2.BaseModel --field-constraints false_branch null rejected
+pydantic_v2.BaseModel --field-constraints false_branch {"x": "s"} rejected
+pydantic_v2.BaseModel --field-constraints shared null rejected
+pydantic_v2.BaseModel --field-constraints shared {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --field-constraints shared {"x": "s"} rejected
+pydantic_v2.BaseModel --field-constraints shared {"y": 1} rejected
+pydantic_v2.BaseModel --use-annotated false_branch {"q": "s", "x": 1} accepted
+pydantic_v2.BaseModel --use-annotated false_branch null rejected
+pydantic_v2.BaseModel --use-annotated false_branch {"x": "s"} rejected
+pydantic_v2.BaseModel --use-annotated shared null rejected
+pydantic_v2.BaseModel --use-annotated shared {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --use-annotated shared {"x": "s"} rejected
+pydantic_v2.BaseModel --use-annotated shared {"y": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models false_branch {"q": "s", "x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models false_branch null rejected
+pydantic_v2.BaseModel --collapse-root-models false_branch {"x": "s"} rejected
+pydantic_v2.BaseModel --collapse-root-models shared null rejected
+pydantic_v2.BaseModel --collapse-root-models shared {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models shared {"x": "s"} rejected
+pydantic_v2.BaseModel --collapse-root-models shared {"y": 1} rejected
+msgspec.Struct --collapse-root-models false_branch {"q": "s", "x": 1} accepted
+msgspec.Struct --collapse-root-models false_branch null rejected
+msgspec.Struct --collapse-root-models false_branch {"x": "s"} rejected
+msgspec.Struct --collapse-root-models shared null rejected
+msgspec.Struct --collapse-root-models shared {"y": "s", "x": 1} accepted
+msgspec.Struct --collapse-root-models shared {"x": "s"} rejected
+msgspec.Struct --collapse-root-models shared {"y": 1} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs false_branch {"q": "s", "x": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs false_branch null rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs false_branch {"x": "s"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs shared null rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs shared {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs shared {"x": "s"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs shared {"y": 1} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs false_branch {"q": "s", "x": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs false_branch null rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs false_branch {"x": "s"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs shared null rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs shared {"y": "s", "x": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs shared {"x": "s"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs shared {"y": 1} rejected
+msgspec.Struct --use-site-models-for-constrained-refs false_branch {"q": "s", "x": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs false_branch null rejected
+msgspec.Struct --use-site-models-for-constrained-refs false_branch {"x": "s"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs shared null rejected
+msgspec.Struct --use-site-models-for-constrained-refs shared {"y": "s", "x": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs shared {"x": "s"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs shared {"y": 1} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs false_branch {"q": "s", "x": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs false_branch null rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs false_branch {"x": "s"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs shared null rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs shared {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs shared {"x": "s"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs shared {"y": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs false_branch {"q": "s", "x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs false_branch null rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs false_branch {"x": "s"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs shared null rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs shared {"y": "s", "x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs shared {"x": "s"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs shared {"y": 1} rejected

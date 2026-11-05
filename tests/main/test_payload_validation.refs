@@ -1583,6 +1583,7 @@ openapi/external_ref_mapping_all_of/shared.yaml::components.schemas.Unused	paylo
 openapi/external_ref_mapping_all_of_grandchild/shared.yaml::components.schemas.Leaf	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/external_ref_mapping_all_of_grandchild/sub/shared.yaml::components.schemas.Leaf	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/external_ref_mapping_all_of_modules/d.yaml::components.schemas.Leafy	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/external_ref_mapping_all_of_union/api.yaml::components.schemas.Plot	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/false_all_of_keywords.yaml::components.schemas.Names	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/false_all_of_keywords.yaml::components.schemas.Tail	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/false_all_of_keywords.yaml::paths./maps.put.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3532,6 +3533,7 @@ openapi/external_ref_mapping_all_of/shared.yaml::components.schemas.Unused	paylo
 openapi/external_ref_mapping_all_of_grandchild/shared.yaml::components.schemas.Leaf	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/external_ref_mapping_all_of_grandchild/sub/shared.yaml::components.schemas.Leaf	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/external_ref_mapping_all_of_modules/d.yaml::components.schemas.Leafy	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/external_ref_mapping_all_of_union/api.yaml::components.schemas.Plot	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/false_all_of_keywords.yaml::components.schemas.Names	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/false_all_of_keywords.yaml::components.schemas.Tail	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/false_all_of_keywords.yaml::paths./maps.put.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

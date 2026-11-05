@@ -332,6 +332,7 @@ openapi/external_ref_mapping_all_of_modules/a.yaml	yaml_fast_constructor/parity.
 openapi/external_ref_mapping_all_of_modules/b.yaml	yaml_fast_constructor/parity.txt
 openapi/external_ref_mapping_all_of_modules/c.yaml	yaml_fast_constructor/parity.txt
 openapi/external_ref_mapping_all_of_modules/d.yaml	yaml_fast_constructor/parity.txt
+openapi/external_ref_mapping_all_of_union/api.yaml	yaml_fast_constructor/parity.txt
 openapi/external_ref_with_transitive_local_ref/openapi.yaml	yaml_fast_constructor/parity.txt
 openapi/external_ref_with_transitive_local_ref/schemas/feedback.yaml	yaml_fast_constructor/parity.txt
 openapi/external_relative_ref/model_a/types.openapi.yaml	yaml_fast_constructor/parity.txt

@@ -5084,29 +5084,65 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return []
         return [self.data_type_manager.get_data_type(Types.null)]
 
-    def _all_of_part_admits_null(self, part: JsonSchemaObject | bool, seen: frozenset[str] = frozenset()) -> bool:  # noqa: FBT001
+    def _all_of_part_admits_null(self, part: JsonSchemaObject | bool) -> bool:  # noqa: FBT001
         """Return whether a part of an allOf admits null, the site itself included (site ``all-of-union``).
 
-        Its own keywords decide (``parser/_null_facts.py``), and so do the target of its ``$ref``, one branch each of
-        its ``anyOf`` and ``oneOf``, and each of its own ``allOf`` members, read the same way; a reference the walk has
-        passed admits none.
+        Its own keywords decide (``parser/_null_facts.py``; a ``const`` only where its version has the keyword, and the
+        keywords beside a ``$ref`` only where they are parts of it, ``_ref_siblings_are_parts_of``), and so do the
+        target of its ``$ref``, one branch each of its ``anyOf`` and ``oneOf``, and each of its own ``allOf`` members,
+        read the same way. A false schema, a reference the walk has passed and one ``--external-ref-mapping`` maps,
+        whose document the walk does not read, admit none. The walk reads each reference once, unless a reference it
+        had passed cut its answer short.
         """
-        if not isinstance(part, JsonSchemaObject):
-            return part
-        if part.ref and (
-            (path := self._ref_path(part.ref)) in seen
-            or not self._all_of_part_admits_null(self._load_ref_schema_object(part.ref), seen | {path})
-        ):
-            return False
-        return (
-            bool(self._null_facts(part, "all-of-union").admits_null)
-            and all(
-                any(self._all_of_part_admits_null(branch, seen) for branch in branches)
-                for branches in (part.anyOf, part.oneOf)
-                if branches
-            )
-            and all(self._all_of_part_admits_null(member, seen) for member in part.allOf)
-        )
+        known: dict[str, bool] = {}
+
+        def target_admits(ref: str, seen: frozenset[str]) -> tuple[bool, bool]:
+            """Return ``admits`` of the schema ``ref`` names, read once per walk unless a cut shortened its answer."""
+            if self._resolve_external_ref_mapping(ref) is not None:
+                return False, False
+            if (path := self._ref_path(ref)) in seen:
+                return False, True
+            if (answer := known.get(path)) is not None:
+                return answer, False
+            answer, cut = admits(self._load_ref_schema_object(ref), seen | {path})
+            if not cut:
+                known[path] = answer
+            return answer, cut
+
+        def first(parts: Iterable[JsonSchemaObject | bool], seen: frozenset[str], *, answer: bool) -> tuple[bool, bool]:
+            """Return whether one of ``parts`` gives ``answer``, read up to it, and whether a cut shortened a read."""
+            cut = False
+            for item in parts:
+                item_answer, item_cut = admits(item, seen)
+                cut = cut or item_cut
+                if item_answer is answer:
+                    return True, cut
+            return False, cut
+
+        def admits(part: JsonSchemaObject | bool, seen: frozenset[str]) -> tuple[bool, bool]:  # noqa: FBT001
+            """Return whether ``part`` admits null, and whether a reference the walk had passed cut the answer short."""
+            if not isinstance(part, JsonSchemaObject) or part.is_boolean_schema_false:
+                return part is True, False
+            cut = False
+            if part.ref:
+                answer, cut = target_admits(part.ref, seen)
+                if not answer or not self._ref_siblings_are_parts_of(part):
+                    return answer, cut
+            sources = _null_sources(part, "all-of-union", self._type_has_null)
+            if sources.const_set and not self._features_at(part).const_support:
+                sources = replace(sources, const_set=False, const_null=False)
+            if not resolve_null_facts(sources, "all-of-union", self._null_mode).admits_null:
+                return False, cut
+            for branches in (part.anyOf, part.oneOf):
+                if branches:
+                    found, branch_cut = first(branches, seen, answer=True)
+                    cut = cut or branch_cut
+                    if not found:
+                        return False, cut
+            rejected, member_cut = first(part.allOf, seen, answer=False)
+            return not rejected, cut or member_cut
+
+        return admits(part, frozenset())[0]
 
     def _parse_all_of_union_model(
         self,

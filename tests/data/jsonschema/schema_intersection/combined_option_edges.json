@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "$defs": {
+    "P": {"properties": {"x": {"type": "integer"}}},
+    "F": false,
+    "Shared": {"allOf": [{"$ref": "#/$defs/P"}]},
+    "NullOrObject": {"anyOf": [{"type": "object", "properties": {"y": {"type": "string"}}}, {"type": "null"}]}
+  },
+  "properties": {
+    "false_branch": {
+      "allOf": [
+        {
+          "anyOf": [{"$ref": "#/$defs/F"}, {"type": "object", "properties": {"q": {"type": "string"}}}]
+        },
+        {"$ref": "#/$defs/P"}
+      ]
+    },
+    "shared": {"allOf": [{"$ref": "#/$defs/NullOrObject"}, {"$ref": "#/$defs/Shared"}, {"allOf": [{"$ref": "#/$defs/Shared"}]}]}
+  },
+  "required": ["false_branch", "shared"]
+}

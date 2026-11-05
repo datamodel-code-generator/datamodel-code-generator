@@ -7210,5 +7210,95 @@
         ]
       }
     }
+  },
+  "combined_option_edges": {
+    "model": "Model",
+    "base": {
+      "false_branch": {
+        "q": "s"
+      },
+      "shared": {
+        "y": "s"
+      }
+    },
+    "fields": {
+      "false_branch": {
+        "valid": [
+          {
+            "q": "s",
+            "x": 1
+          }
+        ],
+        "invalid": [
+          null,
+          {
+            "x": "s"
+          }
+        ]
+      },
+      "shared": {
+        "valid": [
+          null,
+          {
+            "y": "s",
+            "x": 1
+          }
+        ],
+        "invalid": [
+          {
+            "x": "s"
+          },
+          {
+            "y": 1
+          }
+        ]
+      }
+    }
+  },
+  "combined_option_edges_draft04": {
+    "model": "Model",
+    "base": {
+      "const_part": null
+    },
+    "fields": {
+      "const_part": {
+        "valid": [
+          null,
+          {
+            "y": "s"
+          }
+        ],
+        "invalid": [
+          {
+            "y": 1
+          }
+        ]
+      }
+    }
+  },
+  "combined_option_edges_draft07": {
+    "model": "Model",
+    "base": {
+      "ignored_sibling": null
+    },
+    "fields": {
+      "ignored_sibling": {
+        "valid": [
+          null,
+          {
+            "y": "s",
+            "x": 1
+          }
+        ],
+        "invalid": [
+          {
+            "x": "s"
+          },
+          {
+            "y": 1
+          }
+        ]
+      }
+    }
   }
 }
