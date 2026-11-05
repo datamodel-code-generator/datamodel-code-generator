@@ -8445,6 +8445,54 @@ def test_main_unique_items_as_set_alias_items_merged(
     )
 
 
+@pytest.mark.parametrize(
+    ("extra_args", "expected_repr"),
+    [
+        pytest.param([], "Holder(xs=[{1, 2}])", id="sets"),
+        pytest.param(["--use-generic-container-types"], "Holder(xs=frozenset({frozenset({1, 2})}))", id="frozen-sets"),
+    ],
+)
+def test_main_unique_items_as_set_union_items_sets(
+    extra_args: list[str], expected_repr: str, tmp_path: Path, output_file: Path
+) -> None:
+    """Decide a uniqueItems array whose items are a union of uniqueItems arrays from the sets those arrays become.
+
+    The array member of ``xs`` and both arrays of its items' anyOf declare ``uniqueItems`` in nested schemas, so one
+    plan decides them, the arrays of the items first. Under --use-generic-container-types they become frozen sets,
+    which hash, so the array that holds them becomes a frozen set too; plain sets do not hash, so it keeps its list.
+    """
+    unique = {"uniqueItems": True}
+    members = [{"type": "array", "items": {"type": kind}, **unique} for kind in ("integer", "string")]
+    input_file = tmp_path / "unique_items_union_items_sets.json"
+    input_file.write_text(
+        json.dumps({
+            "title": "Holder",
+            "type": "object",
+            "properties": {
+                "xs": {"anyOf": [{"type": "array", "items": {"anyOf": members}, **unique}, {"type": "string"}]}
+            },
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=["--use-unique-items-as-set", *extra_args, "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="unique_items_union_items_sets",
+        model_name="Holder",
+        valid_json='{"xs": [[1, 2]]}',
+        invalid_json='{"xs": [[1.5]]}',
+        expected_error_type="int_from_float",
+        expected_repr=expected_repr,
+    )
+
+
 @pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "msgspec.Struct"])
 def test_main_unique_items_as_set_unhashable_items(output_model: str, tmp_path: Path, output_file: Path) -> None:
     """Keep a uniqueItems array a list where no value of its items hashes, or where its list default cannot be a set.

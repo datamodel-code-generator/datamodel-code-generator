@@ -9320,6 +9320,9 @@ subclass	main/jsonschema/unique_items_as_set_type_list_merged.py	= main/jsonsche
 [test_main_unique_items_as_set_unhashable_items]
 msgspec.Struct	main/jsonschema/unique_items_as_set_unhashable_items.py
 pydantic_v2.BaseModel	main/jsonschema/unique_items_as_set_unhashable_items.py	= main/jsonschema/unique_items_as_set_unhashable_items~main_unique_items_as_set_unhashable_items[pydantic_v2.BaseModel].py
+[test_main_unique_items_as_set_union_items_sets]
+frozen-sets	main/jsonschema/unique_items_as_set_union_items_sets.py
+sets	main/jsonschema/unique_items_as_set_union_items_sets.py	= main/jsonschema/unique_items_as_set_union_items_sets~main_unique_items_as_set_union_items_sets[sets].py
 [test_main_url_jsonschema_relative_ref_without_fragment]
 	main/jsonschema/remote_relative_ref.py
 [test_main_url_with_relative_root_id_resolves_relative_refs]
