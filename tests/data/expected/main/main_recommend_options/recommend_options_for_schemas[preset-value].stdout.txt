@@ -18,7 +18,17 @@ Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
 Start from  --preset practical-py314-20261017
   already sets --reuse-model --collapse-reuse-models   [reuse.identical-inline-shapes]
 
-Add (4 options)
+Add (5 options)
+  --no-use-title-as-name   [titles.keys-when-titles-collide]
+      Titles do not identify the schemas (shared titles: 0, covering 0 components; titles equal to
+      another component's key: 0; most repeated inline title: 5; titles that repeat their own key: 0
+      of 0). Titles as class names would number components, or rename them when a title changes;
+      names from the keys avoid both.
+      measured: GitHub REST API description: 53 shared component titles numbered components
+      (page-deployment became GitHubPages1, Actor2)
+      measured: OpenAI API description: 503 problem names with titles off, 544 with titles on
+      measured: Stripe API description: 17% of component titles changed in four months; class names
+      from keys renamed 0.0% of locations
   --naming-strategy full-path   [naming.qualify-shared-inline-names]
       Inline schemas under different parents share property names (names: 4, e.g. status x3, owner
       x3, state x2, total x2; inline names equal to a component name: 0). Numbered names (Status,
@@ -72,10 +82,9 @@ Optional (policy; not in the command)
 
 Your configuration
   --preset practical-py314-20261017: a newer preset is available, practical-py314-20261104
-  practical-py314-20261017 sets --use-title-as-name to true; no option sets it to false   [titles.keys-when-titles-collide]
 
 Command
-  datamodel-codegen --enum-field-as-literal all --input api.yaml --naming-strategy full-path --preset practical-py314-20261017 --no-treat-dot-as-module --use-tag-as-union-variant-name
+  datamodel-codegen --enum-field-as-literal all --input api.yaml --naming-strategy full-path --preset practical-py314-20261017 --no-treat-dot-as-module --use-tag-as-union-variant-name --no-use-title-as-name
 
 pyproject.toml
   [tool.datamodel-codegen]
@@ -85,3 +94,4 @@ pyproject.toml
   preset = "practical-py314-20261017"
   treat-dot-as-module = false
   use-tag-as-union-variant-name = true
+  use-title-as-name = false

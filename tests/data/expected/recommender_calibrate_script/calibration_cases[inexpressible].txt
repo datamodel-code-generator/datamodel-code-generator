@@ -147,7 +147,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
 |---|---|---|---|---|
 | `naming_strategy="full-path"` | 0/1 | 0/1 | config +0, shop +0 | not proposed |
 | `enum_field_as_literal="all"` | 1/1 | 1/1 | - | proposed |
-| `use_subclass_enum=false` | 0/0 | 0/0 | - | not proposed |
+| `wrap_string_literal=false` | 0/0 | 0/0 | - | not proposed |
 | `use_title_as_name=true` | 0/1 | 0/1 | shop +2 | not proposed |
 
 ## Import check
@@ -273,7 +273,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
   "grid": [
     {
       "enum_field_as_literal": "one",
-      "use_subclass_enum": false
+      "wrap_string_literal": false
     },
     {
       "enum_field_as_literal": "one",
@@ -285,7 +285,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
     },
     {
       "enum_field_as_literal": "all",
-      "use_subclass_enum": false
+      "wrap_string_literal": false
     },
     {
       "enum_field_as_literal": "all",
@@ -298,7 +298,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
     {
       "enum_field_as_literal": "one",
       "naming_strategy": "full-path",
-      "use_subclass_enum": false
+      "wrap_string_literal": false
     },
     {
       "enum_field_as_literal": "one",
@@ -313,7 +313,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
     {
       "enum_field_as_literal": "all",
       "naming_strategy": "full-path",
-      "use_subclass_enum": false
+      "wrap_string_literal": false
     },
     {
       "enum_field_as_literal": "all",
@@ -454,7 +454,7 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "losses": {},
       "status": "not proposed",
       "values": {
-        "use_subclass_enum": false
+        "wrap_string_literal": false
       },
       "wins": {
         "calibration": [
@@ -494,13 +494,13 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "grid": [
         {
           "arguments": [
-            "--no-use-subclass-enum"
+            "--no-wrap-string-literal"
           ],
           "delta": {
-            "use_subclass_enum": false
+            "wrap_string_literal": false
           },
           "preset": "standard-py310-20261104",
-          "rejected": "unrecognized arguments: --no-use-subclass-enum"
+          "rejected": "unrecognized arguments: --no-wrap-string-literal"
         },
         {
           "arguments": [],
@@ -570,14 +570,14 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "arguments": [
             "--enum-field-as-literal",
             "all",
-            "--no-use-subclass-enum"
+            "--no-wrap-string-literal"
           ],
           "delta": {
             "enum_field_as_literal": "all",
-            "use_subclass_enum": false
+            "wrap_string_literal": false
           },
           "preset": "standard-py310-20261104",
-          "rejected": "unrecognized arguments: --no-use-subclass-enum"
+          "rejected": "unrecognized arguments: --no-wrap-string-literal"
         },
         {
           "arguments": [
@@ -655,14 +655,14 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "arguments": [
             "--naming-strategy",
             "full-path",
-            "--no-use-subclass-enum"
+            "--no-wrap-string-literal"
           ],
           "delta": {
             "naming_strategy": "full-path",
-            "use_subclass_enum": false
+            "wrap_string_literal": false
           },
           "preset": "standard-py310-20261104",
-          "rejected": "unrecognized arguments: --no-use-subclass-enum"
+          "rejected": "unrecognized arguments: --no-wrap-string-literal"
         },
         {
           "arguments": [
@@ -742,15 +742,15 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "full-path",
             "--enum-field-as-literal",
             "all",
-            "--no-use-subclass-enum"
+            "--no-wrap-string-literal"
           ],
           "delta": {
             "enum_field_as_literal": "all",
             "naming_strategy": "full-path",
-            "use_subclass_enum": false
+            "wrap_string_literal": false
           },
           "preset": "standard-py310-20261104",
-          "rejected": "unrecognized arguments: --no-use-subclass-enum"
+          "rejected": "unrecognized arguments: --no-wrap-string-literal"
         },
         {
           "arguments": [
@@ -1270,13 +1270,13 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
       "grid": [
         {
           "arguments": [
-            "--no-use-subclass-enum"
+            "--no-wrap-string-literal"
           ],
           "delta": {
-            "use_subclass_enum": false
+            "wrap_string_literal": false
           },
           "preset": "standard-py310-20261104",
-          "rejected": "unrecognized arguments: --no-use-subclass-enum"
+          "rejected": "unrecognized arguments: --no-wrap-string-literal"
         },
         {
           "arguments": [],
@@ -1346,14 +1346,14 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "arguments": [
             "--enum-field-as-literal",
             "all",
-            "--no-use-subclass-enum"
+            "--no-wrap-string-literal"
           ],
           "delta": {
             "enum_field_as_literal": "all",
-            "use_subclass_enum": false
+            "wrap_string_literal": false
           },
           "preset": "standard-py310-20261104",
-          "rejected": "unrecognized arguments: --no-use-subclass-enum"
+          "rejected": "unrecognized arguments: --no-wrap-string-literal"
         },
         {
           "arguments": [
@@ -1431,14 +1431,14 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
           "arguments": [
             "--naming-strategy",
             "full-path",
-            "--no-use-subclass-enum"
+            "--no-wrap-string-literal"
           ],
           "delta": {
             "naming_strategy": "full-path",
-            "use_subclass_enum": false
+            "wrap_string_literal": false
           },
           "preset": "standard-py310-20261104",
-          "rejected": "unrecognized arguments: --no-use-subclass-enum"
+          "rejected": "unrecognized arguments: --no-wrap-string-literal"
         },
         {
           "arguments": [
@@ -1518,15 +1518,15 @@ A value is proposed for a new dated preset when it wins on at least 70% of the c
             "full-path",
             "--enum-field-as-literal",
             "all",
-            "--no-use-subclass-enum"
+            "--no-wrap-string-literal"
           ],
           "delta": {
             "enum_field_as_literal": "all",
             "naming_strategy": "full-path",
-            "use_subclass_enum": false
+            "wrap_string_literal": false
           },
           "preset": "standard-py310-20261104",
-          "rejected": "unrecognized arguments: --no-use-subclass-enum"
+          "rejected": "unrecognized arguments: --no-wrap-string-literal"
         },
         {
           "arguments": [

@@ -37,9 +37,12 @@ def option_flag(field: str, *, negative: bool = False) -> str:
     return f"--{'no-' if negative else ''}{field.replace('_', '-')}"
 
 
-def option_flags(field: str) -> tuple[str, ...]:
-    """Return the options of a config field: its own, then those of the aliases ``FIELD_ALIASES`` gives it."""
-    return (option_flag(field), *(option_flag(alias) for alias, name in FIELD_ALIASES.items() if name == field))
+def option_flags(field: str, *, negative: bool = False) -> tuple[str, ...]:
+    """Return the options of a config field, or their --no- forms: its own, then those of its ``FIELD_ALIASES``."""
+    return (
+        option_flag(field, negative=negative),
+        *(option_flag(alias, negative=negative) for alias, name in FIELD_ALIASES.items() if name == field),
+    )
 
 
 def field_name(key: str) -> str:

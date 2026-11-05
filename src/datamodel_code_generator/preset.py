@@ -17,7 +17,7 @@ from datamodel_code_generator._format_types import (
     Formatter,
     PythonVersion,
 )
-from datamodel_code_generator._option_names import option_flag, option_flags, toml_value
+from datamodel_code_generator._option_names import option_flags, toml_value
 from datamodel_code_generator._option_rules import implied_options
 from datamodel_code_generator._registry_render import _render_registry_json
 from datamodel_code_generator._requirements import python_target_meets
@@ -307,6 +307,17 @@ class PresetOptionGroup:
     output_model_types: frozenset[DataModelType] = frozenset()
     requires_python_strenum: bool = False
 
+    def __post_init__(self) -> None:
+        """Check that the command line can turn off every option the group turns on, unless it is deprecated."""
+        for item in self.config.items():
+            if (
+                item.value is True
+                and _documented_option(item.field_name, negative=True) is None
+                and not CLI_OPTION_META[_config_item_to_cli_option(item)].deprecated
+            ):  # pragma: no cover
+                msg = f"Preset option {_config_item_to_cli_option(item)} has no --no- form to turn it off"
+                raise PresetError(msg)
+
     @property
     def options(self) -> tuple[str, ...]:
         """Return documented CLI options derived from typed config fields."""
@@ -389,9 +400,14 @@ def _ensure_preset_enum_config_value(
     raise PresetError(msg)  # pragma: no cover
 
 
+def _documented_option(field_name: str, *, negative: bool = False) -> str | None:
+    """Return the spelling the CLI reference documents of the option of a config field, or of its --no- form."""
+    return next((flag for flag in option_flags(field_name, negative=negative) if flag in CLI_OPTION_META), None)
+
+
 def _config_item_to_cli_option(item: PresetConfigItem) -> str:
     """Translate a typed config field name to the spelling of its CLI options that the CLI reference documents."""
-    option = next((flag for flag in option_flags(item.field_name) if flag in CLI_OPTION_META), None)
+    option = _documented_option(item.field_name)
     if option is None:  # pragma: no cover
         msg = f"Preset field {stable_repr(item.field_name)} does not map to a documented CLI option"
         raise PresetError(msg)
@@ -402,8 +418,7 @@ def _config_item_to_cli_option(item: PresetConfigItem) -> str:
     if item.value:
         return f"{option} {' '.join(str(value.value) for value in item.value)}"
 
-    negative_option = option_flag(item.field_name, negative=True)
-    if negative_option not in CLI_OPTION_META:  # pragma: no cover
+    if (negative_option := _documented_option(item.field_name, negative=True)) is None:  # pragma: no cover
         msg = f"Preset field {stable_repr(item.field_name)} does not map to a documented negative CLI option"
         raise PresetError(msg)
     return negative_option
@@ -1192,7 +1207,9 @@ def render_presets_markdown() -> str:
         "```",
         "",
         (
-            "Use documented `--no-*` options for boolean settings that support negation. "
+            "Use the `--no-*` form of a boolean option to turn it off; every boolean option a preset turns on has one, "
+            "such as `--no-read-length-keywords-by-type`, and `false` beside the preset in pyproject.toml, such as "
+            "`read-length-keywords-by-type = false`, turns it off the same way. "
             "For value options, pass the replacement value explicitly, such as `--enum-field-as-literal none`. "
             "A list option replaces the whole list a preset sets, such as `--openapi-as-definitions paths-bodies`; "
             "in pyproject.toml an empty list, such as `openapi-as-definitions = []`, turns off every value the preset "

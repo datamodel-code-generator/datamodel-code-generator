@@ -16975,8 +16975,8 @@ that select the variant by a tag it does not keep, and a warning says so. With `
 field is a `Literal` of every tag the unions give it, so each union decodes the documents it selects the variant by; a
 union then also accepts the tags the other unions give the variant. A tag that the pattern of the tag field rejects is
 left out, as the schema rejects the documents it selects the variant by. A variant keeps the first union's tags where a
-union would then give two of its variants one tag, a nested one included, as crossing mappings do, and msgspec Structs,
-which take one tag, are unchanged.""",
+union listing it, or nesting a union that lists it, would then read one of its tags on another variant, as crossing
+mappings do, and msgspec Structs, which take one tag, are unchanged.""",
     input_schema="openapi/discriminator_merged_variant_tags.yaml",
     cli_args=["--merge-shared-variant-tags"],
     golden_output="main/openapi/main_openapi/merge_shared_variant_tags[pydantic_v2-merged].py",
@@ -17089,6 +17089,78 @@ def test_main_openapi_merge_shared_variant_tags_nested(output_file: Path, output
         invalid_json=json.dumps({"outer": {"kind": "fox"}}),
         expected_error_type="union_tag_invalid",
     )
+
+
+MERGED_NESTED_CLASH_PAYLOAD = {
+    "outer": {"kind": "Cat"},
+    "byKey": {"kind": "bird"},
+    "inline": {"kind": "Dog"},
+    "top": {"kind": "Fox"},
+    "herd": {"kind": "hen"},
+    "pond": {"kind": "Duck"},
+    "coast": {"kind": "Seal"},
+    "pinniped": {"kind": "seal"},
+    "tank": {"kind": "kit"},
+    "stream": {"kind": "Trout"},
+}
+"""A document of each union of ``discriminator_merged_variant_tags_nested_clash.yaml`` that it selects a variant by."""
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2"),
+        pytest.param("pydantic_v2.dataclass", [], id="pydantic_v2_dataclass"),
+        pytest.param("pydantic_v2.BaseModel", ["--collapse-root-models"], id="pydantic_v2-collapse_root_models"),
+    ],
+)
+def test_main_openapi_merge_shared_variant_tags_nested_clash(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Read every union that nests a union listing a shared variant where ``--merge-shared-variant-tags`` merges tags.
+
+    ``ByKey`` maps ``Cat`` to ``Dog``, which ``Outer`` and ``inline`` hold through a nested union beside ``Cat``, so
+    ``Dog`` keeps ``Dog``, with the warning, and both stay discriminated as without the option (#6233), while ``Bird``
+    takes ``Bird`` and ``bird``. ``Herd`` maps ``Fox`` to ``Cow``, which ``Top`` holds two unions down beside ``Fox``,
+    and ``Farm`` maps ``Duck`` to ``Pig``, which ``Pond`` lists beside the nested ``Duck``: ``Cow`` and ``Pig`` keep
+    one union's tags, and ``Hen`` and ``Goose`` still take both of theirs. ``Coast`` and ``Tank`` have tags only
+    through the unions they nest, and give ``Seal`` and ``Trout`` other tags than ``Pinniped`` and ``Stream`` do, so
+    ``Seal`` and ``Trout`` take both.
+    """
+    with pytest.warns(
+        UserWarning, match=r"is a variant of discriminated unions that map 'kind' to different tags"
+    ) as records:
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator_merged_variant_tags_nested_clash.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                *("--output-model-type", output_model_type, "--merge-shared-variant-tags"),
+                *extra_args,
+                *("--disable-timestamp", "--formatters", "builtin"),
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(f"{record.message}\n" for record in records if record.category is UserWarning), name="warnings"
+    )
+    module_name = f"merge_shared_variant_tags_nested_clash_{output_model_type.replace('.', '_')}"
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=module_name,
+        model_name="Holder",
+        valid_json=json.dumps(MERGED_NESTED_CLASH_PAYLOAD),
+        invalid_json=json.dumps({"outer": {"kind": "zzz"}}),
+        expected_error_type="union_tag_invalid",
+    )
+    for property_name in ("inline", "top", "pond", "coast", "tank", "stream"):
+        assert_generated_model_json_invalid(
+            output_file,
+            module_name=module_name,
+            model_name="Holder",
+            invalid_json=json.dumps({property_name: {"kind": "zzz"}}),
+            expected_error_type="union_tag_invalid",
+        )
 
 
 MERGED_VARIANT_TAG_LIMIT_PAYLOADS: dict[str, dict[str, list[dict[str, Any]]]] = {

@@ -530,6 +530,11 @@ def test_recommend_options_requires_the_remote_lock(tmp_path: Path, capsys: pyte
             ["--preset", "standard-py314-20261015", "--output-format", "json"],
             id="preset-argument-json",
         ),
+        pytest.param(
+            "project_inexpressible",
+            ["--preset", "practical-py314-20261104"],
+            id="inexpressible-under-preset-argument",
+        ),
     ],
 )
 def test_recommend_options_for_projects(
@@ -537,7 +542,9 @@ def test_recommend_options_for_projects(
 ) -> None:
     """Recommend changes to the pyproject.toml table the command reads, keeping what it already sets.
 
-    An empty profile name selects no profile, so its command and table are those of a run without one.
+    An empty profile name selects no profile, so its command and table are those of a run without one. A value of the
+    table that a preset on the command line leaves alone, the rules change and no option can set, such as
+    infer-union-variant-names = true, is reported with the rule instead of recommended.
     """
     _recommend(
         tmp_path,

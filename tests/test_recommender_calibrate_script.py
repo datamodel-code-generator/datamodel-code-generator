@@ -158,7 +158,7 @@ def test_calibration_run(tmp_path: Path) -> None:
         pytest.param((), ["--fetch-only", "--only", "pets", "nope"], False, id="unknown_id"),
         pytest.param((), ["--check-manifest", "--check-upstream"], False, id="upstream_without_out"),
         pytest.param(
-            (("title-source = [", "title-source = [{ use_subclass_enum = false }, "),),
+            (("title-source = [", "title-source = [{ wrap_string_literal = false }, "),),
             [
                 *("--only", "shop", "config", "--import-check", "--target-python-version", "3.10"),
                 *("--calibration", str(FIXTURES / "none.json")),

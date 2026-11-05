@@ -424,7 +424,7 @@ The opt-in options of 0.90.0, listed as in [Opt-in behaviour changes in 0.87.0](
 | Release | 0.90.0 |
 | Issue | [#5361](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5361), [#4666](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4666) |
 
-**Affects:** a variant that several discriminated unions tag differently, for example one by its schema name and one by a `mapping` key. A variant has one tag field, so it keeps the tag of the first union that tags it, and the other union rejects the documents that select the variant by a tag it does not keep, with a warning. With the option its tag field takes every tag the unions give it that the pattern of the tag field admits. A variant keeps the first union's tag where a union would then give two of its variants one tag, a nested one included, and msgspec Structs, which take one tag, are unchanged.
+**Affects:** a variant that several discriminated unions tag differently, for example one by its schema name and one by a `mapping` key. A variant has one tag field, so it keeps the tag of the first union that tags it, and the other union rejects the documents that select the variant by a tag it does not keep, with a warning. With the option its tag field takes every tag the unions give it that the pattern of the tag field admits. A variant keeps the first union's tag where a union listing it, or nesting a union that lists it, would then read one of its tags on another variant, and msgspec Structs, which take one tag, are unchanged.
 
 Schema: `ByName` is a `oneOf` of `Cat` and `Dog` discriminated by `kind` without a mapping, and `ByKey` lists the same variants with the mapping `{"cat": "#/components/schemas/Cat", "dog": "#/components/schemas/Dog"}`.
 
@@ -786,11 +786,11 @@ named: dict[Annotated[str, Meta(pattern="^[a-z]+$")], str] | UnsetType = UNSET
 | Release | 0.90.0 |
 | Issue | [#6067](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6067) |
 
-**Affects:** modular output where a package's `__init__.py` defines a class named like one of its submodules, such as the class `Warn` of `pkg.Warn` beside the module `pkg/Warn.py` of `pkg.Warn.Detail`. Importing the module binds the name `Warn` of the package to the module in place of the class, so the models that name either fail to decode. With the option the module, with the modules below it, takes the first free name with trailing underscores (`pkg/Warn_.py`, `pkg/Warn__.py` beside a module `pkg/Warn_.py`), also where the directories of a directory input name it; the class keeps its name.
+**Affects:** modular output where a package's `__init__.py` defines a class named like one of its submodules, such as the class `Warn` of `pkg.Warn` beside the module `pkg/Warn.py` of `pkg.Warn.Detail`. Importing the module binds the name `Warn` of the package to the module in place of the class, so the models that name either fail to decode. With the option the module, with the modules below it, takes the first free name with trailing underscores (`pkg/Warn_.py`, `pkg/Warn__.py` beside a module `pkg/Warn_.py`), also where the directories of a directory input name it; the class keeps its name. The class names are the final ones: where a later rename gives a class the name of a submodule (`--field-type-collision-strategy rename-type`, an import that shadows the class, `--collapse-root-models-name-strategy parent`), the run is parsed again and renames that submodule.
 
 Schema: `$defs` with `pkg.Warn`, `pkg.Warn.Detail`, `pkg.Report` (a `$ref` to `pkg.Warn`) and `pkg.api.Order` (a `$ref` to `pkg.Warn.Detail`), with `--output`.
 
-Without the option (same as 0.89.0), `pkg/api.py` beside `pkg/Warn.py`:
+In 0.89.0, `pkg/api.py` beside `pkg/Warn.py`; without the option generation now stops with an error that names the class and the module instead:
 
 ```python
 from . import Warn

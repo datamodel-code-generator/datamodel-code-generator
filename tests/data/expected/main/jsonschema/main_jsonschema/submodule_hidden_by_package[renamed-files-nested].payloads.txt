@@ -1,0 +1,4 @@
+{"detail": {"message": "m", "note": {"text": "t"}}, "warn": {"count": 1}}: accepted Order(warn=Warn(count=1, level=None), detail=Deep(message='m', note=Note(text='t', size=None)))
+{"detail": {"note": 1}}: rejected ValidationError
+{"count": 1, "level": "high"}: accepted Warn(count=1, level='high')
+{"level": 2}: rejected ValidationError

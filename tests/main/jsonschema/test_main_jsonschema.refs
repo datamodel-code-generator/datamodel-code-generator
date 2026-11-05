@@ -6947,6 +6947,13 @@ pydantic-dataclass-self-named-pydantic-2	main/jsonschema/field_type_collision_ru
 pydantic-dataclass-self-named-pydantic-2	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
 pydantic-dataclass-subclass	main/jsonschema/field_type_collision_runtime/pydantic_dataclass_subclass.py
 pydantic-dataclass-subclass	payloads/field_type_collision_runtime/runtime.txt	= main/jsonschema/optional_nested_factory_requirements/explicit.txt
+[test_main_jsonschema_forwarded_class_beside_loaded_submodule]
+dataclasses.dataclass	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[dataclasses.dataclass].payloads.txt
+dataclasses.dataclass	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[dataclasses.dataclass]/
+msgspec.Struct	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[msgspec.Struct].payloads.txt
+msgspec.Struct	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[msgspec.Struct]/
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[dataclasses.dataclass].payloads.txt
+pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/forwarded_class_beside_loaded_submodule[pydantic_v2.BaseModel]/
 [test_main_jsonschema_forwarding_reference_collapse_root]
 	main/jsonschema/forwarding_reference//*.py
 [test_main_jsonschema_generate_schema_validators]
@@ -7764,10 +7771,20 @@ module-import-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by
 module-import-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[module-import-msgspec.Struct]/
 module-import-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[module-import-pydantic_v2.BaseModel].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[module-import-dataclasses.dataclass].payloads.txt
 module-import-pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/submodule_hidden_by_package[module-import-pydantic_v2.BaseModel]/
+renamed-after-collapse-rename	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-after-collapse-rename].payloads.txt
+renamed-after-collapse-rename	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-after-collapse-rename]/
+renamed-after-import-rename	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-after-import-rename].payloads.txt
+renamed-after-import-rename	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-after-import-rename]/
+renamed-after-type-rename	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-after-type-rename].payloads.txt
+renamed-after-type-rename	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-after-type-rename]/
 renamed-dataclasses.dataclass	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-dataclasses.dataclass].payloads.txt
 renamed-dataclasses.dataclass	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-dataclasses.dataclass]/
 renamed-files	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-files].payloads.txt
 renamed-files	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-files]/
+renamed-files-nested	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-files-nested].payloads.txt
+renamed-files-nested	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-files-nested]/
+renamed-forwarded	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-forwarded].payloads.txt
+renamed-forwarded	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-forwarded]/
 renamed-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-msgspec.Struct].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-dataclasses.dataclass].payloads.txt
 renamed-msgspec.Struct	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-msgspec.Struct]/
 renamed-nothing	main/jsonschema/main_jsonschema/submodule_hidden_by_package[renamed-nothing].payloads.txt	= main/jsonschema/main_jsonschema/submodule_hidden_by_package[future-dataclasses.dataclass].payloads.txt

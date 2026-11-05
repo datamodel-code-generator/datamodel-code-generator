@@ -232,9 +232,12 @@ def _deprecated_flag(group: _ArgumentGroup, name: str) -> None:
     _flag(group, name, help=f"Deprecated: {cli_deprecations()[name]}")
 
 
-def _toggle(group: _ArgumentGroup, name: str, *, help: str) -> None:  # noqa: A002
-    """Add a --name / --no-name flag whose default is unset (None), so that a configuration file can supply it."""
-    group.add_argument(name, action=BooleanOptionalAction, default=None, help=help)
+def _toggle(group: _ArgumentGroup, *names: str, help: str) -> None:  # noqa: A002
+    """Add a flag with a --no- form for each of its names, whose default is unset (None).
+
+    An unset default lets a configuration file or a preset supply the value, which the --no- form turns off.
+    """
+    group.add_argument(*names, action=BooleanOptionalAction, default=None, help=help)
 
 
 def _package_options(kind: str) -> None:
@@ -468,14 +471,14 @@ model_options.add_argument(
     choices=_values(CollapseRootModelsNameStrategy),
     default=None,
 )
-_flag(
+_toggle(
     model_options,
     "--collapse-shared-parent-wrappers",
     help="Under --collapse-root-models-name-strategy parent, make every model that references a wrapper reference "
     "the inner model that takes its name, as its first model does; without it, where --field-type-collision-strategy "
     "rename-type can rename the wrapper apart from the inner model in their module, the later models keep the wrapper",
 )
-_flag(
+_toggle(
     model_options,
     "--collapse-reuse-models",
     help="When used with --reuse-model, collapse duplicate models by replacing references instead of creating "
@@ -491,14 +494,14 @@ _flag(
 _flag(
     model_options, "--disable-appending-item-suffix", help="Disable appending `Item` suffix to model name in an array"
 )
-_flag(
+_toggle(
     model_options,
     "--singularize-last-word-of-item-names",
     help="Name the item model of an array by singularizing only the last word of its name (actions_caches gives "
     "ActionsCache, payment_status gives PaymentStatusItem); without it the whole name is singularized as one word "
     "(ActionsCach, PaymentStatu), as in 0.88.0",
 )
-_flag(model_options, "--disable-timestamp", help="Disable timestamp on file headers")
+_toggle(model_options, "--disable-timestamp", help="Disable timestamp on file headers")
 _flag(model_options, "--enable-faux-immutability", help="Enable faux immutability")
 _flag(model_options, "--enable-version-header", help="Enable package version on file headers")
 _flag(model_options, "--enable-command-header", help="Enable command-line options on file headers for reproducibility")
@@ -552,7 +555,7 @@ _flag(
     "it the 0.83.0 form is kept, which tags only a variant whose discriminator is a single literal and keeps the "
     "other discriminators as Literal fields.",
 )
-_flag(
+_toggle(
     model_options,
     "--tag-msgspec-by-payload-name",
     help="msgspec.Struct output only: tag the structs of a discriminated union with the property name the document "
@@ -560,7 +563,7 @@ _flag(
     "looks for in the payload. --use-msgspec-tagged-unions already tags by the document's property name. Without "
     "either option the Python name is kept.",
 )
-_flag(
+_toggle(
     model_options,
     "--use-msgspec-meta-for-map-keys",
     help="msgspec.Struct output only: write the keys of a map whose keys propertyNames or patternProperties "
@@ -575,7 +578,7 @@ _flag(
     "which msgspec cannot decode; an IntEnum or --use-subclass-enum enum, which cannot hold it, is written without it "
     "and, as its one type rejects null, without the alias.",
 )
-_flag(
+_toggle(
     model_options, "--reuse-model", help="Reuse models on the field when a module has the model with the same content"
 )
 model_options.add_argument(
@@ -619,7 +622,7 @@ model_options.add_argument(
     choices=_values(AliasGenerator),
     default=None,
 )
-_flag(
+_toggle(
     model_options,
     "--pin-aliases-with-alias-generator",
     help="pydantic_v2.BaseModel and pydantic_v2.dataclass output: decide a field's alias by the alias generator its "
@@ -641,7 +644,7 @@ _toggle(
     "This applies only to automatic inference and does not override --treat-dot-as-module or "
     "--no-treat-dot-as-module.",
 )
-_flag(
+_toggle(
     model_options,
     "--rename-submodules-hidden-by-classes",
     help="Rename a submodule named like a class of its package, such as pkg/Warn.py beside the class Warn of "
@@ -655,8 +658,8 @@ _flag(
     help="Generate a shared base class with model configuration (e.g., extra='forbid') "
     "instead of repeating the configuration in each model. Keeps code DRY.",
 )
-_flag(model_options, "--use-schema-description", help="Use schema description to populate class docstring")
-_flag(model_options, "--use-title-as-name", help="use titles as class names of models")
+_toggle(model_options, "--use-schema-description", help="Use schema description to populate class docstring")
+_toggle(model_options, "--use-title-as-name", help="use titles as class names of models")
 _flag(
     model_options,
     "--infer-union-variant-names",
@@ -723,14 +726,14 @@ model_options.add_argument(
     type=str,
     default=None,
 )
-_flag(
+_toggle(
     model_options,
     "--use-duplicate-name-suffix-for-every-collision",
     help="Give the --duplicate-name-suffix suffix also to a model renamed because its name is taken in its module, "
     "by another model or by a name the module imports (an inline Item beside a definition Item, a definition AnyUrl "
     "beside a uri field); without it such a model takes the suffix Model, as in 0.88.0",
 )
-_flag(
+_toggle(
     model_options,
     "--name-converted-payloads-by-message",
     help="AsyncAPI only: name a payload that an Avro or XML Schema converter gives no name of its own, such as an "
@@ -801,7 +804,7 @@ _flag(
     "--ignore-enum-constraints",
     help="Ignore enum constraints and use the base type (e.g., str, int) instead of generating Enum classes",
 )
-_flag(
+_toggle(
     typing_options,
     "--use-single-value-enum-as-const",
     help="Treat `enum` with a single value as `const` with that value, which JSON Schema defines as equal: "
@@ -810,7 +813,7 @@ _flag(
     "value is typed Literal[...] instead of a one-member Enum, except one with `nullable: true` and a value other "
     "than null, which is read as written",
 )
-_flag(
+_toggle(
     typing_options,
     "--read-const-beside-enum",
     help="Read a `const` beside an `enum` as JSON Schema does: a value whose schema names the enum is typed by the "
@@ -818,14 +821,14 @@ _flag(
     "values the const excludes, and under --use-single-value-enum-as-const an `enum` that admits its `const` is read "
     "as that `const` instead of an Enum, except one with `nullable: true` and a value other than null",
 )
-_flag(
+_toggle(
     typing_options,
     "--filter-literal-values",
     help="Keep only the values of a `const` or an `enum` that meet the `minLength`, `maxLength`, `pattern`, bound and "
     "`multipleOf` constraints beside them in its `Literal` or Enum, as JSON Schema validates them; a schema none of "
     "whose values meets them stays as written with a warning",
 )
-_flag(
+_toggle(
     typing_options,
     "--intersect-allof-keywords",
     help="Combine the keywords of every part of an `allOf`, of a `$ref` with sibling keywords and of an inherited "
@@ -834,7 +837,7 @@ _flag(
     "the constraints of the root, item and map value positions of an `allOf`. "
     "Without it, the keyword of the last part wins where the parts disagree",
 )
-_flag(
+_toggle(
     typing_options,
     "--intersect-combined-schema-keywords",
     help="Combine the keywords of every part of a combined schema as JSON Schema validates them, as "
@@ -846,13 +849,13 @@ _flag(
     "rejects. Without it these keep the output of 0.88.0",
 )
 _flag(typing_options, "--field-constraints", help="Use field constraints and not con* annotations")
-_flag(
+_toggle(
     typing_options,
     "--omit-redundant-constraints",
     help="Do not write a constraint again beside a type that already enforces it: the bound of a zero-bound class "
     "such as NonNegativeInt, and the length and number constraints a const or enum Literal meets by its values",
 )
-_flag(
+_toggle(
     typing_options,
     "--read-length-keywords-by-type",
     help="Read minLength, maxLength and pattern for strings only and minItems, maxItems and uniqueItems for arrays "
@@ -860,7 +863,7 @@ _flag(
     "string leaves the string unbounded; without it a declared array writes minLength/maxLength and a declared "
     "string minItems/maxItems as their length bounds, as in 0.88.0",
 )
-_flag(
+_toggle(
     typing_options,
     "--read-msgspec-union-bounds-exactly",
     help="msgspec.Struct output only: decide whether the int member of a union with a number member drops its Meta "
@@ -868,7 +871,7 @@ _flag(
     "float it is written as, so the int member can keep a bound that rejects an integer the number member accepts, "
     "as in 0.88.0",
 )
-_flag(
+_toggle(
     typing_options,
     "--use-site-models-for-constrained-refs",
     help="Give an allOf of $ref members whose other parts add constraints, an enum or a type its own model of the "
@@ -892,7 +895,7 @@ _flag(
     "--use-serialize-as-any",
     help="Use pydantic.SerializeAsAny for fields with types that have subtypes (Pydantic v2 only)",
 )
-_flag(
+_toggle(
     typing_options,
     "--use-serialize-as-any-for-every-subclass",
     help="Under --use-serialize-as-any, wrap a field in SerializeAsAny when any subclass of its model in the generated "
@@ -917,14 +920,14 @@ _flag(
     help="Use condecimal instead of confloat for float/number fields with multipleOf constraint "
     "(Pydantic only). Avoids floating-point precision issues in validation.",
 )
-_flag(
+_toggle(
     typing_options,
     "--use-decimal-in-field-forms",
     help="Under --use-decimal-for-multiple-of, also write Decimal for a number with multipleOf in the field forms "
     "(--field-constraints, --use-annotated), with the constraints in Field(), and make the Decimal strict under "
     "--strict-types float (Pydantic only)",
 )
-_flag(
+_toggle(
     typing_options,
     "--use-encoded-str-for-constrained-base64",
     help="Write a format: byte string with pattern, minLength or maxLength in the field forms (--field-constraints, "
@@ -938,7 +941,7 @@ _flag(
     "--use-enum-values-in-discriminator",
     help="Use enum member literals in discriminator fields instead of string literals",
 )
-_flag(
+_toggle(
     typing_options,
     "--merge-shared-variant-tags",
     help="Give a variant that several discriminated unions tag differently (for example one by a mapping key, one by "
@@ -952,7 +955,7 @@ _toggle(
     "--use-standard-collections",
     help="Use standard collections for type hinting (list, dict). Default: enabled",
 )
-_flag(
+_toggle(
     typing_options,
     "--use-object-type",
     help="Use object instead of Any for unspecified JSON Schema object and array values",
@@ -964,26 +967,26 @@ _flag(
     "[object, null] or [object], with additionalProperties, as their schema says, with a model for object values. "
     "Without it the 0.83.0 form is kept, dict[str, Any] | None, or dict[str, Any] without null.",
 )
-_flag(
+_toggle(
     typing_options,
     "--use-typed-map-values-beside-other-types",
     help="With --use-typed-nullable-map-values, also type the map values of type arrays that list object beside "
     "other types, such as [object, string], as dict[str, int] | str instead of dict[str, Any] | str",
 )
-_flag(
+_toggle(
     typing_options,
     "--read-unevaluated-properties",
     help="Read a schema-valued unevaluatedProperties as additionalProperties where no applicator evaluates the "
     "object in place, so it types the extra keys of a model and makes an object without properties a map",
 )
-_flag(
+_toggle(
     typing_options,
     "--use-single-dict-for-object-maps",
     help="Type an object map, an object without properties whose keys patternProperties or propertyNames constrain, "
     "as one dict whose keys are those of every key class and whose value is the union of their values, beside the "
     "null and the other types of its type array",
 )
-_flag(
+_toggle(
     typing_options,
     "--use-subclass-enum",
     help="Define generic Enum class as subclass with field type when enum has type (int, float, bytes, str)",
@@ -993,7 +996,7 @@ _toggle(
     "--use-specialized-enum",
     help="Use specialized Enum class (StrEnum, IntEnum). Requires --target-python-version 3.11+",
 )
-_flag(
+_toggle(
     typing_options,
     "--keep-enum-member-values",
     help="Write an enum as a plain Enum where the value base of --use-specialized-enum or --use-subclass-enum "
@@ -1001,17 +1004,17 @@ _flag(
     "0.86.0",
 )
 _toggle(typing_options, "--use-union-operator", help="Use | operator for Union type (PEP 604). Default: enabled")
-_flag(
+_toggle(
     typing_options,
     "--use-unique-items-as-set",
     help="define field type as `set` when the field attribute has `uniqueItems`",
 )
-_flag(
+_toggle(
     typing_options,
     "--use-tuple-for-fixed-items",
     help="Generate tuple types for arrays with items array syntax when minItems equals maxItems equals items length",
 )
-_flag(
+_toggle(
     typing_options,
     "--use-tuple-for-closed-arrays",
     help="Generate tuple types for positional arrays that no other item can follow: a closed prefixItems tail "
@@ -1096,7 +1099,7 @@ typing_options.add_argument(
 # Customization options for generated model fields
 # ======================================================================================
 _flag(field_options, *option_flags("capitalise_enum_members"), help="Capitalize field names on enum")
-_flag(
+_toggle(
     field_options,
     *option_flags("capitalise_numbered_enum_members"),
     help="Under --capitalise-enum-members, capitalize also the number a member takes when its capitalized name is "
@@ -1151,14 +1154,14 @@ field_options.add_argument(
     help="Set field name prefix when first character can't be used as Python field name (default:  `field`)",
     default=None,
 )
-_flag(field_options, "--strict-nullable", help="Treat default field as a non-nullable field")
-_flag(
+_toggle(field_options, "--strict-nullable", help="Treat default field as a non-nullable field")
+_toggle(
     field_options,
     "--omit-redundant-reference-null",
     help="Do not write None again where a field, item or member references a model that holds null itself (a root "
     "model or type alias whose type admits None, or an enum with a None member), so that a null parses to that model",
 )
-_flag(
+_toggle(
     field_options,
     "--keep-reference-null-on-merged-models",
     help="Keep the null that the schema of a field, item or member admits where the model it references is merged "
@@ -1173,7 +1176,7 @@ _flag(
     "None only when the type admits None)",
 )
 _flag(field_options, "--use-default", help="Use default value even if a field is required")
-_flag(
+_toggle(
     field_options,
     "--use-default-kwarg",
     help="Use `default=` instead of a positional argument for Fields that have default values.",
@@ -1186,28 +1189,30 @@ _flag(
     "require with this option. Supports pydantic_v2.BaseModel and pydantic_v2.dataclass, whose server and client "
     "generation requires it.",
 )
-_flag(
+_toggle(
     field_options,
     "--read-nullable-beside-type-list",
     help="Write the null that `nullable: true` declares beside a `type` list with an object into the root model of "
     "that schema under --strict-nullable or --use-missing-sentinel, as a declared field does; without it only a "
     "`type` list holding null makes that root admit None",
 )
-_flag(
+_toggle(
     field_options,
     "--keep-field-defaults-off-branch-roots",
     help="Leave the default of a property off the root models extracted from the branches of its `anyOf` or `oneOf`, "
     "which then require their value; without it each such root takes the property's default",
 )
-_flag(field_options, "--use-field-description", help="Use schema description to populate field docstring")
-_flag(field_options, "--use-field-description-example", help="Use schema example to populate field docstring")
+_toggle(field_options, "--use-field-description", help="Use schema description to populate field docstring")
+_toggle(field_options, "--use-field-description-example", help="Use schema example to populate field docstring")
 _flag(field_options, "--use-attribute-docstrings", help="Set use_attribute_docstrings=True in Pydantic v2 ConfigDict")
 _flag(
     field_options,
     "--use-inline-field-description",
     help="Use schema description to populate field docstring as inline docstring",
 )
-_flag(field_options, "--use-single-line-docstring", help="Use single-line docstrings when the content fits on one line")
+_toggle(
+    field_options, "--use-single-line-docstring", help="Use single-line docstrings when the content fits on one line"
+)
 field_options.add_argument(
     "--union-mode",
     help="Union mode for only pydantic v2 field",
@@ -1343,7 +1348,7 @@ _flag(
     help="Generate Pydantic v2 model validators for JSON Schema rules that cannot be represented as type hints "
     "(experimental).",
 )
-_flag(
+_toggle(
     template_options,
     "--check-pattern-maps-strictly",
     help="Under --generate-schema-validators, count every key that a pattern of patternProperties admits, check "
@@ -1486,7 +1491,7 @@ openapi_options.add_argument(
     choices=_values(ReadOnlyWriteOnlyModelType),
     default=None,
 )
-_flag(
+_toggle(
     openapi_options,
     "--dedupe-request-response-variants",
     help="Decide Request/Response variants from the schema graph and build each inline model once, without the "
@@ -1497,7 +1502,7 @@ _flag(
     "--use-status-code-in-response-name",
     help="Include HTTP status code in response model names (e.g., ResourceGetResponse200, ResourceGetResponseDefault)",
 )
-_flag(
+_toggle(
     openapi_options,
     "--keep-first-character-of-path-keys",
     help="Strip only a leading slash from a paths key when naming its operation models, as webhook names are, so "
@@ -1527,7 +1532,7 @@ base_options.add_argument(
     choices=_values(VersionMode),
     default=None,
 )
-_flag(
+_toggle(
     base_options,
     "--read-schema-version-per-document",
     help="Read each document by the schema version it declares ($schema, or the openapi or asyncapi field); a "
@@ -1539,7 +1544,7 @@ _flag(
     "first applies to every document, as in 0.88.0. An explicit --schema-version gives every document its version; "
     "the schema validators then read an OpenAPI or AsyncAPI document by it only with the option, else as draft 7.",
 )
-_flag(
+_toggle(
     base_options,
     "--ignore-ref-siblings-by-schema-version",
     help="Read a $ref as its target alone where the schema version ignores the keywords beside it (JSON Schema "

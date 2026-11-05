@@ -135,11 +135,14 @@ class ImportCycleSeeds:
 
     ``merges`` are the modules, by module path, that merge into an ``_internal`` module beside the merges that the
     references between models make; ``base_class_module`` is the module path of the module that holds the generic
-    base class.
+    base class. ``package_classes`` holds, by the module path of each package whose submodules
+    --rename-submodules-hidden-by-classes renamed otherwise than the names its ``__init__.py`` binds in the output, the
+    names it bound there in every earlier attempt, which the renames of the submodules then read.
     """
 
     merges: tuple[frozenset[ModulePath], ...] = ()
     base_class_module: ModulePath | None = None
+    package_classes: tuple[tuple[ModulePath, frozenset[str]], ...] = ()
 
 
 NO_IMPORT_CYCLE_SEEDS: Final = ImportCycleSeeds()

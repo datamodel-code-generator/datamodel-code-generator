@@ -2,7 +2,7 @@
   "version": 1,
   "format": "json",
   "kind": "cli-command",
-  "content": "datamodel-codegen --input \"schema with spaces.json\" --no-use-closed-typed-dict --no-use-union-operator",
+  "content": "datamodel-codegen --no-disable-timestamp --input \"schema with spaces.json\" --no-use-closed-typed-dict --no-use-union-operator",
   "config": {
     "disable-timestamp": false,
     "input": "schema with spaces.json",
@@ -11,6 +11,7 @@
   },
   "arguments": [
     "datamodel-codegen",
+    "--no-disable-timestamp",
     "--input",
     "schema with spaces.json",
     "--no-use-closed-typed-dict",

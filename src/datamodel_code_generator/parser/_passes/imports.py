@@ -119,6 +119,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator._target_unicode import ModulePartRow
     from datamodel_code_generator._user_keys import ConstructionKeys
+    from datamodel_code_generator.config import ParserConfig
     from datamodel_code_generator.enums import AllExportsScope
     from datamodel_code_generator.imports import Imports, _ImportKey
     from datamodel_code_generator.model._render_plan import RenderReady
@@ -296,7 +297,13 @@ class RenderHost(
     model_metadata_identities: tuple[str, ...]
     import_cycle_seeds_to_apply: ImportCycleSeeds | None
     fails_to_import: bool
+    hidden_class_refusal: str | None
+    _hidden_submodule_renames: tuple[tuple[ModulePath, str], ...]
     _written_imports: list[tuple[ModulePath, Imports]]
+
+    @property
+    def config(self) -> ParserConfig:
+        """The parser configuration."""
 
     @property
     def _self_named_root_models(self) -> list[DataModel]:
@@ -2090,22 +2097,39 @@ def record_model_placement(
     )
 
 
-def reject_class_named_like_submodule(
+def _package_bindings(
+    contexts: Iterable[ModuleContextView], forwarder_map: ForwarderMap, *, treat_dot_as_module: bool | None
+) -> list[tuple[ModulePath, ModuleContextView, tuple[str, ...]]]:
+    """Return each module that writes a package's ``__init__.py``, by its written path, with the names it binds.
+
+    It binds the class names of its models, or where an import cycle merge moved them, the names its forwarder
+    re-exports (``Forwarder.names``).
+    """
+    bindings: list[tuple[ModulePath, ModuleContextView, tuple[str, ...]]] = []
+    for ctx in contexts:
+        if not is_package_init((path := written_path(ctx.module, treat_dot_as_module=treat_dot_as_module))[-1]):
+            continue
+        if ctx.models:
+            bindings.append((path, ctx, tuple(model.class_name for model in ctx.models)))
+        elif (forwarder := forwarder_map.get(ctx.module_key)) is not None:
+            bindings.append((path, ctx, tuple(bound for _, _, bound in forwarder.names)))
+    return sorted(bindings, key=operator.itemgetter(0))
+
+
+def _class_named_like_submodule(
     contexts: Sequence[ModuleContextView],
+    bindings: Sequence[tuple[ModulePath, ModuleContextView, tuple[str, ...]]],
+    forwarder_map: ForwarderMap,
     *,
     treat_dot_as_module: bool | None,
     all_exports_scope: AllExportsScope | None,
-) -> None:
-    """Refuse a package whose ``__init__.py`` defines a class named like a module or package below it.
+) -> tuple[ModulePath, str, tuple[str, ...], tuple[str, ...]] | None:
+    """Return the first class a package's ``__init__.py`` binds beside a module of its name that replaces it, or None.
 
-    Loading ``pkg.Warn`` binds ``Warn`` in ``pkg`` over the class ``Warn`` of ``pkg/__init__.py``, so the models that
-    name the class then fail to import or decode, and ``from . import Warn`` gives the class, so a model of the module
-    (``Warn.Detail``) fails too. It is judged on the final class names and import plans, where the modules are
-    written. It holds where the ``__init__.py`` loads the module while its imports run, before its classes are
-    defined (it imports from the module or below it, a module it imports does, or ``--all-exports-scope`` re-exports a
-    module of it): the class takes the name after, and no later import rebinds it
-    (``submodules_hidden_by_packages``). Renaming the class or the module changes names that the models and the files
-    go by, so the run fails and names both.
+    The module replaces the class where the ``__init__.py`` does not load it while its imports run, before its classes
+    are defined (``reject_class_named_like_submodule``); a forwarder loads the modules it re-exports from
+    (``Forwarder.names``) and what they load. The class comes with the written path of the ``__init__.py``, the
+    module's parts and the path of its file.
     """
     written = sorted(
         ((written_path(ctx.module, treat_dot_as_module=treat_dot_as_module), ctx) for ctx in contexts if ctx.models),
@@ -2117,28 +2141,135 @@ def reject_class_named_like_submodule(
         for size in range(1, len(parts) + 1):
             submodules.setdefault(parts[:size], path if size == len(parts) else (*parts[:size], "__init__.py"))
     clashes = [
-        (path, model, module, file)
-        for path, ctx in written
-        if is_package_init(path[-1])
-        for model in ctx.models
-        if (file := submodules.get(module := (*path[:-1], model.class_name))) is not None
+        (path, name, module, file)
+        for path, _, names in bindings
+        for name in names
+        if (file := submodules.get(module := (*path[:-1], name))) is not None
     ]
     if not clashes:
-        return
+        return None
     edges = module_import_edges(contexts, treat_dot_as_module=treat_dot_as_module, all_exports_scope=all_exports_scope)
-    for path, model, module, file in clashes:
-        loaded = reach([dotted_module(path)], lambda importer: edges.get(importer, ()))
-        if not any(is_within_name(name, ".".join(module)) for name in loaded):
-            package = ".".join(path[:-1])
-            where = f"the package {stable_repr(package)}" if package else "the root package"
-            msg = (
-                f"Cannot write the class {stable_repr(model.class_name)} in {where} beside the module "
-                f"{stable_repr('.'.join(module))} ({'/'.join(file)}): importing the module binds its name in the "
-                "package over the class, so the models that use the class fail to import or decode. Rename the class "
-                "or the module in the input; the coming option --rename-submodules-hidden-by-classes will rename the "
-                "module."
+    written_modules = {
+        ctx.module_key: dotted_module(written_path(ctx.module, treat_dot_as_module=treat_dot_as_module))
+        for ctx in contexts
+    }
+    for ctx in contexts:
+        if not ctx.models and (forwarder := forwarder_map.get(ctx.module_key)) is not None:
+            edges.setdefault(written_modules[ctx.module_key], set()).update(
+                written_modules[source] for source, _, _ in forwarder.names
             )
-            raise Error(msg)
+    for path, name, module, file in clashes:
+        loaded = reach([dotted_module(path)], lambda importer: edges.get(importer, ()))
+        if not any(is_within_name(loaded_name, ".".join(module)) for loaded_name in loaded):
+            return path, name, module, file
+    return None
+
+
+def _hidden_class_refusal(
+    hidden: tuple[ModulePath, str, tuple[str, ...], tuple[str, ...]], config: ParserConfig
+) -> str:
+    """Return the refusal of a class that a module of its name replaces (``_class_named_like_submodule``).
+
+    It names what renames the class or the module: --rename-submodules-hidden-by-classes renames the modules of the
+    module structure, not the shared module that tree-scope reuse adds, which ``--shared-module-name`` names.
+    """
+    path, name, module, file = hidden
+    package = ".".join(path[:-1])
+    where = f"the package {stable_repr(package)}" if package else "the root package"
+    if not config.rename_submodules_hidden_by_classes:
+        hint = (
+            "Rename the class or the module in the input, or pass --rename-submodules-hidden-by-classes to rename the "
+            "module."
+        )
+    else:
+        shared = config.reuse_model and config.reuse_scope == ReuseScope.Tree and module == (config.shared_module_name,)
+        hint = (
+            "--rename-submodules-hidden-by-classes renames only the modules that the schema names and the input files "
+            "give: rename the class in the input or give the module another name"
+            f"{' (--shared-module-name)' if shared else ''}."
+        )
+    return (
+        f"Cannot write the class {stable_repr(name)} in {where} beside the module {stable_repr('.'.join(module))} "
+        f"({'/'.join(file)}): importing the module binds its name in the package over the class, so the models that "
+        f"use the class fail to import or decode. {hint}"
+    )
+
+
+def _final_class_seeds(
+    parser: RenderHost[Any, Any, Any],
+    contexts: Iterable[ModuleContextView],
+    forwarder_map: ForwarderMap,
+    bindings: Iterable[tuple[ModulePath, ModuleContextView, tuple[str, ...]]],
+) -> ImportCycleSeeds | None:
+    """Return the seeds of a parse again that renames the submodules of a package by the names it binds, or None.
+
+    A package disagrees with the renames of --rename-submodules-hidden-by-classes where a name its ``__init__.py``
+    binds in the output names a module below it, as a later pass gave a class that name, or where it no longer binds a
+    name a submodule was renamed for (``Parser._hidden_submodule_renames``). Its names join the names it bound in the
+    earlier attempts of the run (``ImportCycleSeeds.package_classes``, by the module path of the module structure):
+    those only grow, and the run is parsed again only where they grow.
+    """
+    modules = {
+        ctx.module_key[:size]
+        for ctx in contexts
+        if ctx.models or ctx.module_key in forwarder_map
+        for size in range(1, len(ctx.module_key) + 1)
+    }
+    bound = {ctx.module_key: frozenset(names) for _, ctx, names in bindings}
+    disagreeing = {package for package, names in bound.items() if any((*package, name) in modules for name in names)}
+    disagreeing.update(
+        package
+        for package, hidden in parser._hidden_submodule_renames  # noqa: SLF001
+        if hidden not in bound.get(package, ())
+    )
+    seeds = parser._import_cycle_seeds  # noqa: SLF001
+    seeded = dict(seeds.package_classes)
+    grown = {
+        **seeded,
+        **{package: seeded.get(package, frozenset()) | bound.get(package, frozenset()) for package in disagreeing},
+    }
+    if grown == seeded:
+        return None
+    return dataclasses.replace(seeds, package_classes=tuple(sorted(grown.items(), key=operator.itemgetter(0))))
+
+
+def reject_class_named_like_submodule(
+    parser: RenderHost[Any, Any, Any],
+    contexts: Sequence[ModuleContextView],
+    forwarder_map: ForwarderMap,
+    *,
+    all_exports_scope: AllExportsScope | None,
+) -> None:
+    """Refuse a package whose ``__init__.py`` binds a class named like a module or package below it.
+
+    Loading ``pkg.Warn`` binds ``Warn`` in ``pkg`` over the class ``Warn`` of ``pkg/__init__.py``, so the models that
+    name the class then fail to import or decode, and ``from . import Warn`` gives the class, so a model of the module
+    (``Warn.Detail``) fails too; a class that an import cycle merge moved into ``_internal`` and the ``__init__.py``
+    re-exports is bound alike. It is judged on the final class names and import plans, where the modules are
+    written. It holds where the ``__init__.py`` loads the module while its imports run, before its classes are
+    defined or re-exported (it imports from the module or below it, a module it imports does, or
+    ``--all-exports-scope`` re-exports a module of it): the class takes the name after, and no later import rebinds it
+    (``submodules_hidden_by_packages``). Renaming the class or the module changes names that the models and the files
+    go by, so the run fails and names both. Under --rename-submodules-hidden-by-classes, where the renames of the
+    submodules disagree with the names the packages bind here (``_final_class_seeds``), the run is parsed again with
+    those names instead, and the refusal is kept for the run (``Parser.hidden_class_refusal``), which raises it if
+    the parse again does not import.
+    """
+    config, treat_dot_as_module = parser.config, parser.treat_dot_as_module
+    bindings = _package_bindings(contexts, forwarder_map, treat_dot_as_module=treat_dot_as_module)
+    hidden = _class_named_like_submodule(
+        contexts, bindings, forwarder_map, treat_dot_as_module=treat_dot_as_module, all_exports_scope=all_exports_scope
+    )
+    refusal = None if hidden is None else _hidden_class_refusal(hidden, config)
+    if (
+        config.rename_submodules_hidden_by_classes
+        and (seeds := _final_class_seeds(parser, contexts, forwarder_map, bindings)) is not None
+    ):
+        parser.import_cycle_seeds_to_apply = seeds
+        parser.hidden_class_refusal = refusal
+        parser.fails_to_import = refusal is not None
+    elif refusal is not None:
+        raise Error(refusal)
 
 
 def reject_unimportable_imports(
@@ -2219,9 +2350,7 @@ def render_modules(  # noqa: PLR0913
     ):
         contexts = [ctx._replace(module=expanded_path(ctx.module)) for ctx in contexts]
 
-    reject_class_named_like_submodule(
-        contexts, treat_dot_as_module=parser.treat_dot_as_module, all_exports_scope=config.all_exports_scope
-    )
+    reject_class_named_like_submodule(parser, contexts, forwarder_map, all_exports_scope=config.all_exports_scope)
     for ctx in contexts:
         result = parser._generate_module_output(  # noqa: SLF001
             ctx, config, contexts, forwarder_map, require_update, future_imports_str
@@ -2371,7 +2500,8 @@ def check_import_reads(  # noqa: PLR0913
     class as it is defined, so its annotations count even where the module defers them. Where a module fails to
     import (``failing_import_reads``, ``fails_to_import``), the parse again moves the generic base class where its
     import ran into the failure, or merges the modules of that import cycle into an ``_internal`` module
-    (``import_cycle_seeds``); an output whose every module imports is parsed once.
+    (``import_cycle_seeds``), beside the names of the packages that ``reject_class_named_like_submodule`` seeded; an
+    output whose every module imports is parsed once.
     """
     treat_dot_as_module = parser.treat_dot_as_module
 
@@ -2416,10 +2546,13 @@ def check_import_reads(  # noqa: PLR0913
     if not (failures := failing_import_reads(dataclasses.replace(plan, reads=reads))):
         return
     parser.fails_to_import = True
-    parser.import_cycle_seeds_to_apply = import_cycle_seeds(
-        failures,
-        plan,
-        parser._import_cycle_seeds,  # noqa: SLF001
-        _structure_modules(contexts, forwarder_map, written_module),
-        _generic_base_class_placement(parser._generic_base_model, contexts, plan, written_module),  # noqa: SLF001
+    parser.import_cycle_seeds_to_apply = (
+        import_cycle_seeds(
+            failures,
+            plan,
+            parser.import_cycle_seeds_to_apply or parser._import_cycle_seeds,  # noqa: SLF001
+            _structure_modules(contexts, forwarder_map, written_module),
+            _generic_base_class_placement(parser._generic_base_model, contexts, plan, written_module),  # noqa: SLF001
+        )
+        or parser.import_cycle_seeds_to_apply
     )

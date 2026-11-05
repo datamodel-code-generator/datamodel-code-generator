@@ -1,0 +1,4 @@
+[tool.datamodel-codegen]
+input = "api.yaml"
+input-file-type = "openapi"
+infer-union-variant-names = true

@@ -1069,6 +1069,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.final_name_keys_to_assign: tuple[tuple[str, tuple[str, ...]], ...] = ()
         self.import_cycle_seeds_to_apply: ImportCycleSeeds | None = None
         self.fails_to_import = False
+        self.hidden_class_refusal: str | None = None
+        self._hidden_submodule_renames: tuple[tuple[ModulePath, str], ...] = ()
+        self._renamed_module_inputs: dict[Path, Path] = {}
         self._written_imports: list[tuple[ModulePath, Imports]] = []
         self.typed_nullable_map_reference_ids: set[ModelKey] = set()
         self._literal_under_all_enum_reference_ids: set[ModelKey] = set()
@@ -2497,7 +2500,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         require_update: Collection[ModelKey],
         future_imports_str: str,
     ) -> Result | None:
-        """Generate output for a single module."""
+        """Generate output for a single module.
+
+        Its header names the input file of its first model, which a module that --rename-submodules-hidden-by-classes
+        renamed keeps (``_renamed_module_inputs``).
+        """
         result: list[str] = []
         export_imports: Imports | None = None
         module_future_imports_str = self._get_module_future_imports(ctx, config, future_imports_str)
@@ -2558,10 +2565,11 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if not result and not ctx.is_init:
             return None
 
+        file_path = ctx.models[0].file_path if ctx.models else None
         return Result(
             body=self._formatted_body("\n".join(result), config),
             future_imports=module_future_imports_str,
-            source=ctx.models[0].file_path if ctx.models else None,
+            source=None if file_path is None else self._renamed_module_inputs.get(file_path, file_path),
         )
 
     def _reject_unimportable_imports(self, module: ModulePath, imports: Imports, *, is_init: bool) -> None:
