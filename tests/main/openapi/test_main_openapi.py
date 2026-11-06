@@ -12982,6 +12982,51 @@ def test_main_openapi_read_only_write_only_ref(output_file: Path) -> None:
 
 
 @pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--openapi-scopes", "paths", "parameters"], id="paths-parameters"),
+        pytest.param(
+            ["--openapi-scopes", "paths", "parameters", "--dedupe-request-response-variants"],
+            id="paths-parameters-dedupe",
+        ),
+        pytest.param(["--openapi-scopes", "schemas", "paths", "parameters"], id="schemas-paths-parameters"),
+    ],
+)
+def test_main_openapi_read_only_write_only_parameters(output_file: Path, extra_args: list[str]) -> None:
+    """Name the Request variants of the models that parameter schemas use under ``request-response``.
+
+    A parameter model holds what a request sends, so a parameter whose schema is, holds or nests a model that splits
+    into variants takes its Request variant, also through a ``$ref`` to a component parameter and through ``content``
+    (#6213); before, the parameter model named the model the split leaves out and generation stopped.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "read_only_write_only_parameters.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--read-only-write-only-model-type",
+            "request-response",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            *extra_args,
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"read_only_write_only_parameters_{'_'.join(extra_args).replace('-', '_')}",
+        model_name="NestedGetParametersQuery",
+        valid_json=json.dumps({"holder": {"filter": {"q": "x", "secret": "s"}}}),
+        invalid_json=json.dumps({"holder": {"filter": {"q": 1}}}),
+        expected_error_type="string_type",
+        expected_repr="NestedGetParametersQuery(holder=HolderRequest(filter=FilterRequest(q='x', secret='s')))",
+    )
+
+
+@pytest.mark.parametrize(
     ("input_name", "read_write_mode"),
     [
         pytest.param("api.yaml", "request-response", id="request-response"),

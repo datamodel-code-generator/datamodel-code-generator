@@ -302,6 +302,9 @@ class UserResponse(BaseModel):
 
 Use `all` instead of `request-response` when you also need the base model with all fields.
 
+With `request-response`, a parameter model of `--openapi-scopes parameters` names the Request variants of the models
+its parameters use, such as `filter: UserRequest | None = None`, as a request sends its parameters.
+
 ### Values
 
 | Value | Description |
