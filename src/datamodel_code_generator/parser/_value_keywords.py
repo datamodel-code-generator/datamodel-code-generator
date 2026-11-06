@@ -12,6 +12,7 @@ from functools import partial
 from itertools import compress
 from operator import and_
 from typing import TYPE_CHECKING, Any, ClassVar, Final, cast
+from warnings import warn
 
 from typing_extensions import Protocol
 
@@ -39,6 +40,7 @@ from datamodel_code_generator._constraint_applicability import (
 from datamodel_code_generator._container_kinds import ARRAYS, CONTAINERS, MAPPINGS
 from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._json_schema import SCHEMA_MAP_KEYS, SCHEMA_VALUE_KEYS, non_null_types
+from datamodel_code_generator._url_redaction import named_location
 from datamodel_code_generator.imports import IMPORT_ANY, _import_path
 from datamodel_code_generator.model._decisions.enum_kind import enum_as_literal, is_literal_kind, literal_value_kind
 from datamodel_code_generator.model._decisions.literal_default import const_type
@@ -1147,6 +1149,33 @@ def get_fixed_positional_items(
         for schema in [*items, *(get_list_item_schemas(parser, obj) or [True])]
     )
     return None if all(other == first for other in others) else items
+
+
+def warn_unchecked_prefix_positions(parser: ValueKeywordsHost, obj: JsonSchemaObject) -> None:
+    """Warn that the list an array with ``prefixItems`` is written as checks no position (#4849).
+
+    The list holds the union of the position types, or any item, so an item in the wrong position is accepted. It is
+    exact, and no warning is written, where every position and the tail accept the same values.
+    """
+    read_ref = parser.model_resolver.resolve_ref
+    first, *others = (
+        get_position_validation_keywords(parser, schema, read_ref)
+        for schema in [*(obj.prefixItems or ()), *(get_list_item_schemas(parser, obj) or [True])]
+    )
+    if all(other == first for other in others):
+        return
+    hint = ""
+    if not parser.use_tuple_for_closed_arrays and (length := get_effective_array_length(type(parser), obj)) is not None:
+        hint = (
+            f" --use-tuple-for-closed-arrays writes it as a tuple of {length} positions, whose length "
+            "the bounds of the schema fix."
+        )
+    warn(
+        f"{named_location(obj.schema_location, 'schema')}: the positions of prefixItems are not checked, since the "
+        "array is written as a list, which accepts an item of any position's type at every position."
+        f"{hint}",
+        stacklevel=2,
+    )
 
 
 def get_position_validation_keywords(
