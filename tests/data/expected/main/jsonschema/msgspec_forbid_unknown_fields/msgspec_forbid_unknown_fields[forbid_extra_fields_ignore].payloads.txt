@@ -1,0 +1,6 @@
+valid: accepted
+invalid {"closed": {"a": "x", "z": 1}}: accepted
+invalid {"pattern_keys": {"a": "x", "zzz": 1}}: accepted
+invalid {"by_member": {"b": "y", "z": 1}}: accepted
+invalid {"child": {"a": "x", "z": 1}}: accepted
+invalid {"extra": 1}: accepted

@@ -66,6 +66,7 @@ from datamodel_code_generator.model._render_plan import (
     written_text,
 )
 from datamodel_code_generator.model.base import (
+    _FORBID_UNKNOWN_FIELDS_TEMPLATE_DATA_KEY,
     UNDEFINED,
     BaseClassDataType,
     BaseLayoutView,
@@ -684,6 +685,22 @@ class Struct(DataModel):
         self._set_internal_template_data("base_class_kwargs", {})
         if self.keyword_only:
             self.add_base_class_kwarg("kw_only", "True")
+        if self._forbids_unknown_fields():
+            self.add_base_class_kwarg("forbid_unknown_fields", "True")
+
+    def _forbids_unknown_fields(self) -> bool:
+        """Return whether the struct rejects unknown fields: its schema admits no property but its own.
+
+        The parser marks such a model under --use-msgspec-forbid-unknown-fields; --extra-fields allow or ignore,
+        --allow-extra-fields and a forbid_unknown_fields of the struct's own options keep their choice.
+        """
+        data = self.extra_template_data
+        return bool(
+            data.get(_FORBID_UNKNOWN_FIELDS_TEMPLATE_DATA_KEY)
+            and data.get("extra_fields") not in {"allow", "ignore"}
+            and not data.get("allow_extra_fields")
+            and "forbid_unknown_fields" not in _user_struct_options(self)
+        )
 
     @classmethod
     @override

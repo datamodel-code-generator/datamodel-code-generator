@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Closed": {
+      "type": "object",
+      "properties": {"a": {"type": "string"}},
+      "additionalProperties": false
+    },
+    "PatternKeys": {
+      "type": "object",
+      "properties": {"a": {"type": "string"}},
+      "patternProperties": {"^x-": {"type": "string"}},
+      "additionalProperties": false
+    },
+    "ClosedByMember": {
+      "allOf": [
+        {"type": "object", "properties": {"b": {"type": "string"}}, "additionalProperties": false}
+      ]
+    },
+    "Child": {
+      "allOf": [
+        {"$ref": "#/$defs/Closed"},
+        {"type": "object", "properties": {"c": {"type": "string"}}}
+      ]
+    },
+    "Open": {
+      "type": "object",
+      "properties": {"d": {"type": "string"}}
+    }
+  },
+  "type": "object",
+  "properties": {
+    "closed": {"$ref": "#/$defs/Closed"},
+    "pattern_keys": {"$ref": "#/$defs/PatternKeys"},
+    "by_member": {"$ref": "#/$defs/ClosedByMember"},
+    "child": {"$ref": "#/$defs/Child"},
+    "open": {"$ref": "#/$defs/Open"}
+  },
+  "additionalProperties": false
+}

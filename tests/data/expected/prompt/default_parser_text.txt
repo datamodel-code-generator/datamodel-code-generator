@@ -218,6 +218,7 @@
 - `--no-use-default-kwarg`
 - `--no-use-duplicate-name-suffix-for-every-collision`
 - `--no-use-frozen-field`
+- `--no-use-msgspec-forbid-unknown-fields`
 - `--no-use-msgspec-meta-for-map-keys`
 - `--no-use-serialize-as-any-for-every-subclass`
 - `--no-use-subclass-enum`
@@ -244,6 +245,7 @@
 - `--use-frozen-field`: Generate frozen (immutable) field definitions for readOnly properties.
 - `--use-generic-base-class`: Generate a shared base class with model configuration to avoid repetition (DRY).
 - `--use-missing-sentinel`: Use Pydantic's MISSING sentinel for unset optional BaseModel or dataclass fields.
+- `--use-msgspec-forbid-unknown-fields`: Reject the unknown fields of a msgspec Struct whose schema admits no pr...
 - `--use-msgspec-meta-for-map-keys`: Check the keys of a msgspec map whose keys propertyNames or patternProperti...
 - `--use-msgspec-nullable-enum-alias`: Write a msgspec.Struct enum that lists null as an Enum and a nullable alias.
 - `--use-msgspec-tagged-unions`: Write a msgspec.Struct discriminated union as tagged structs as a whole.

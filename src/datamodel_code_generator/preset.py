@@ -1072,6 +1072,15 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "20261027 presets also those of a type array that lists object beside other types."
         ),
     ),
+    PresetOptionGroup(
+        title="Unknown fields forbidden by closed msgspec Structs",
+        config=PresetConfig(use_msgspec_forbid_unknown_fields=True),
+        description=(
+            "Write forbid_unknown_fields=True on a msgspec Struct whose schema admits no property but its own "
+            "(additionalProperties: false without patternProperties), so msgspec rejects the unknown fields the "
+            "schema rejects."
+        ),
+    ),
 )
 """The 20261104 groups and the opt-in options of the release after 0.90.0."""
 
@@ -1418,7 +1427,9 @@ def render_presets_markdown() -> str:
             "its `additionalProperties` say (`dict[str, int] | None`) instead of `dict[str, Any] | None`, which also "
             "makes `--use-typed-map-values-beside-other-types`, set by the 20261027 presets but acting only together "
             "with it, type the map values of a type array that lists object beside other types (`dict[str, int] | "
-            "str`)."
+            "str`), and `--use-msgspec-forbid-unknown-fields`: a msgspec Struct whose schema admits no property but "
+            "its own (`additionalProperties: false` without `patternProperties`) is written with "
+            "`forbid_unknown_fields=True`, so it rejects the unknown fields the schema rejects."
         ),
         "",
         "## Override Preset Options",

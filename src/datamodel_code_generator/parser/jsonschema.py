@@ -199,6 +199,7 @@ from datamodel_code_generator.model._decisions.tag_value import (
     union_tag_values,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
 from datamodel_code_generator.model.base import (
+    _FORBID_UNKNOWN_FIELDS_TEMPLATE_DATA_KEY,
     UNDEFINED,
     _field_source_name,
     get_inherited_fields,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -2538,8 +2539,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         This is controlled by use_closed_typed_dict option. When disabled,
         the additionalProperties constraint is not converted to PEP 728 syntax; a boolean one is stored all the same,
         for the outputs that read it as their closedness (the TypedDict reads the option).
-        The additionalProperties are those of the model (``_model_additional_properties``).
+        The additionalProperties are those of the model (``_model_additional_properties``). Under
+        --use-msgspec-forbid-unknown-fields a model whose schema or an inline allOf member of it admits no property but
+        its own, without patternProperties beside its additionalProperties: false, is marked for msgspec's
+        forbid_unknown_fields.
         """
+        if self.use_msgspec_forbid_unknown_fields and _all_of_values.inline_sources_close(self, (obj,)):
+            self.extra_template_data[path][_FORBID_UNKNOWN_FIELDS_TEMPLATE_DATA_KEY] = True
         additional_properties = self._model_additional_properties(obj)
         if isinstance(additional_properties, bool):
             self._output_model_context.store_additional_properties_value(

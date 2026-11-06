@@ -1403,6 +1403,10 @@
       "not_recommended": "runtime-behaviour",
       "reason": "MISSING instead of None for absent fields; changes field values."
     },
+    "use_msgspec_forbid_unknown_fields": {
+      "not_recommended": "preset",
+      "reason": "msgspec.Struct output only: set by the 20261106 presets; the recommendation starts from a preset."
+    },
     "use_msgspec_meta_for_map_keys": {
       "not_recommended": "preset",
       "reason": "msgspec.Struct output only: set by the 20261104 presets; the recommendation starts from a preset."

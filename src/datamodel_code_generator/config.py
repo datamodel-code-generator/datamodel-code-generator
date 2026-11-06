@@ -320,6 +320,7 @@ class ParserConfig(BaseModel):
     use_msgspec_tagged_unions: bool = False
     tag_msgspec_by_payload_name: bool = False
     use_msgspec_nullable_enum_alias: bool = False
+    use_msgspec_forbid_unknown_fields: bool = False
     use_typed_nullable_map_values: bool = False
     use_typed_map_values_beside_other_types: bool = False
     use_single_dict_for_object_maps: bool = False
