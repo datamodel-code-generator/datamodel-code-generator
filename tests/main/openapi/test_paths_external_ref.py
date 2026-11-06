@@ -1,5 +1,4 @@
-"""``--treat-dot-as-module`` must not crash on an OpenAPI input whose path
-items live in external files.
+"""Do not crash on an OpenAPI input whose path items live in external files.
 
 The postprocessor that seeds ``__init__.py`` from an existing package init
 used ``next(...)`` on a generator of matching results. When the input has no
@@ -11,14 +10,16 @@ result so generation proceeds.
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from datamodel_code_generator.__main__ import Exit
-
 from tests.main.conftest import (
     DATA_PATH,
     run_main_and_assert,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 OPEN_API_DATA_PATH: Path = DATA_PATH / "openapi"
 EXTERNAL_REF = "paths_external_ref"
