@@ -20676,6 +20676,43 @@ def test_main_jsonschema_type_alias_recursive_container(
 
 
 @pytest.mark.parametrize(
+    ("input_file", "output_model_type"),
+    [
+        ("head_backward", "pydantic_v2.BaseModel"),
+        ("head_backward", "pydantic_v2.dataclass"),
+        ("non_head_backward", "pydantic_v2.BaseModel"),
+        ("reached_before_head", "pydantic_v2.BaseModel"),
+    ],
+)
+def test_main_jsonschema_type_alias_recursive_container_head(
+    output_file: Path, input_file: str, output_model_type: str
+) -> None:
+    """Quote a container that references its alias cycle both ways as one string when it names the cycle's head (#6312).
+
+    ``Link`` holds ``Chain``, the first alias of the cycle, and ``Knot``, which follows it, so ``Chain`` and ``Link``
+    write their containers as strings, which mypy and pyright both resolve. A container whose backward reference names
+    another alias of the cycle (``Twig``), or a cycle that an alias before its head reaches (``Entry``), keeps its names
+    quoted one by one.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"type_alias_recursive_{input_file}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--use-type-alias",
+            "--output-model-type",
+            output_model_type,
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
     ("output_model_type", "options"),
     [
         ("pydantic_v2.BaseModel", ()),

@@ -10,12 +10,13 @@ satisfies structurally. Constructor ordering also runs early, in the module body
 from __future__ import annotations
 
 import dataclasses
-from itertools import chain
+from itertools import chain, takewhile
 from typing import TYPE_CHECKING, Any, Final, cast
 
 from typing_extensions import Protocol
 
 from datamodel_code_generator._container_kinds import GENERIC_CONTAINERS, SETS
+from datamodel_code_generator._graph import reaching
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
@@ -868,20 +869,51 @@ def deferrable_alias_cycles(models: Sequence[DataModel], model_index: Mapping[st
     """Find the container cycles among aliases that quoted containers resolve for mypy and pyright alike.
 
     mypy cannot resolve a cycle of aliases that only reference each other as container items, unless
-    the containers holding the forward references are strings. pyright cannot resolve an alias declared
-    earlier on the cycle from inside such a string, so a cycle with a container that references it both
-    forward and backward keeps its names quoted one by one.
+    the containers holding the forward references are strings. pyright cannot resolve, from inside such a string,
+    an alias of the cycle that it is still resolving through another string. The head of a cycle, its first alias
+    in the module, is resolved at its own statement when no model before it reaches the cycle, so a container that
+    references the cycle both forward and backward is a string too when every backward reference names that head;
+    any other such container keeps the names of its cycle quoted one by one.
     """
     cycles = _alias_reference_cycles(models)
+    heads: dict[int, DataModel] = {}
+    for model in models:
+        if (cycle := cycles.get(id(model))) is not None:
+            heads.setdefault(cycle, model)
     unresolvable: set[int] = set()
+    reached_before_head: dict[int, bool] = {}
     for index, model in enumerate(models):
-        if (cycle := cycles.get(id(model))) is None:
+        if (cycle := cycles.get(id(model))) is None or cycle in unresolvable:
             continue
         for field in model.fields:
             forward = {id(data_type) for data_type, _ in field_forward_references(field, model, model_index, index)}
-            if any(len(kinds) > 1 for *_, kinds in _iter_cycle_containers(field.data_type, cycle, cycles, forward)):
-                unresolvable.add(cycle)
+            for container, _, kinds in _iter_cycle_containers(field.data_type, cycle, cycles, forward):
+                if len(kinds) == 1:
+                    continue
+                if cycle not in reached_before_head:
+                    reached_before_head[cycle] = _reached_before_head(models, heads[cycle], cycles, cycle)
+                if reached_before_head[cycle] or any(
+                    nested.reference.source is not heads[cycle]
+                    for nested in container.all_data_types
+                    if nested.reference
+                    and cycles.get(id(nested.reference.source)) == cycle
+                    and id(nested) not in forward
+                ):
+                    unresolvable.add(cycle)
     return {alias: cycle for alias, cycle in cycles.items() if cycle not in unresolvable}
+
+
+def _reached_before_head(models: Sequence[DataModel], head: DataModel, cycles: Mapping[int, int], cycle: int) -> bool:
+    """Return whether a model the module defines before ``head`` reaches an alias of the cycle, through any field."""
+    reached = reaching(
+        (alias for alias, member in cycles.items() if member == cycle),
+        (
+            (id(model), (id(nested.reference.source) for nested in field.data_type.all_data_types if nested.reference))
+            for model in models
+            for field in model.fields
+        ),
+    )
+    return any(id(model) in reached for model in takewhile(lambda model: model is not head, models))
 
 
 def defer_recursive_containers(  # noqa: PLR0913
