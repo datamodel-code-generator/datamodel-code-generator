@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
+import pytest
+
 from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser, _find_json_schema_anchor_pointer
 from datamodel_code_generator.reference import ModelResolver
@@ -14,8 +16,6 @@ from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_fil
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-    import pytest
 
 
 def test_main_jsonschema_external_anchor_with_legacy_shorthand(output_file: Path) -> None:
@@ -27,6 +27,25 @@ def test_main_jsonschema_external_anchor_with_legacy_shorthand(output_file: Path
         assert_func=assert_file_content,
         expected_file="external_anchor.py",
         extra_args=["--disable-timestamp", "--target-python-version", "3.10"],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize("output_kind", ["file", "modules"])
+def test_main_jsonschema_external_anchor_in_subdirectory(output_kind: str, output_file: Path, output_dir: Path) -> None:
+    """Resolve a plain-name anchor of the document beside one in a subdirectory against that subdirectory once.
+
+    ``sub/anchor.json`` names an anchor and a shorthand pointer of ``sub/defs.json`` before that document is read,
+    ``sub/pointer.json`` reads it first through a JSON pointer, so the anchors it declares are registered before the
+    others name them; the directory input reads ``sub/defs.json`` as an input too. Up to 0.89.0 each of them looked
+    for ``sub/sub/defs.json``.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "external_anchor_subdirectory"
+    run_main_and_assert(
+        input_path=input_path / "root.json" if output_kind == "file" else input_path,
+        output_path=output_file if output_kind == "file" else output_dir,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--formatters", "builtin"],
         force_exec_validation=True,
     )
 

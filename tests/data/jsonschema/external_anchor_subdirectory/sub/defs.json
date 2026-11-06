@@ -1,0 +1,6 @@
+{
+  "$defs": {
+    "Label": {"$anchor": "Label", "type": "string", "maxLength": 3},
+    "Count": {"type": "integer", "minimum": 0}
+  }
+}

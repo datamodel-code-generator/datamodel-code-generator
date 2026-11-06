@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "properties": {
+    "pointer": {"$ref": "sub/pointer.json"},
+    "anchor": {"$ref": "sub/anchor.json"},
+    "label": {"$ref": "sub/defs.json#Label"}
+  }
+}

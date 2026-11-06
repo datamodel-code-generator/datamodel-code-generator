@@ -129,6 +129,8 @@ def test_infer_input_type() -> None:  # noqa: PLR0912
             continue
         if "schema_version_per_document_dynamic_scope" in file.parts and file.name == "leaf.json":
             continue
+        if "external_anchor_subdirectory" in file.parts and file.name == "defs.json":
+            continue
         assert_infer_input_type(file, InputFileType.JsonSchema)
     for file in (DATA_PATH / "openapi").rglob("*"):
         if "allof_no_merge_external_relative" in file.parts and file.name != "openapi.yaml":
