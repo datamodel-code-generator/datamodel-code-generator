@@ -90,6 +90,8 @@ class DecisionOptions:
     """--additional-imports may shadow the builtin annotations that hashability reads."""
     decodes_value_unions: bool = True
     """The output decodes a union of any value types; msgspec decodes one array-like member only."""
+    meta_field_keys: frozenset[str] = frozenset()
+    """The keys of a field the output writes as metadata beside its type (msgspec's ``Meta()`` arguments)."""
 
 
 @final
