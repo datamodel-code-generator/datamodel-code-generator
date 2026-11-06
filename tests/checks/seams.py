@@ -97,6 +97,7 @@ SEAMS: Final = (
         "write_additional_properties_sets",
         "parse.write_additional_properties_sets",
     ),
+    Seam(f"{_PACKAGE}.parser._phases", "_DecisionWriter", "write_members_as_lists", "parse.write_members_as_lists"),
     Seam(
         f"{_PASSES}._shared",
         None,

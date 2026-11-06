@@ -21,7 +21,6 @@ from datamodel_code_generator.types import _copy_data_type
 
 if TYPE_CHECKING:
     from datamodel_code_generator.config import ParserConfig
-    from datamodel_code_generator.model.output import OutputModelContext
     from datamodel_code_generator.parser._passes._state import FinishRun
     from datamodel_code_generator.parser._phases import DecisionPass
     from datamodel_code_generator.parser._pipeline import Runner
@@ -40,10 +39,6 @@ class DecideHost(ReplacedRootsHost, GenerationStoreHost, TargetPythonVersionHost
     @property
     def data_type_manager(self) -> DataTypeManager:
         """The type manager of the output model."""
-
-    @property
-    def _output_model_context(self) -> OutputModelContext:
-        """The capabilities of the output model types."""
 
     @property
     def use_tuple_for_closed_arrays(self) -> bool:
@@ -66,9 +61,7 @@ def decide(parser: DecideHost, runner: Runner, run: FinishRun[Any, Any, Any]) ->
         modules,
         lambda data_type, model_of: keywords(data_type, version, model_of),
         DecisionOptions(
-            keeps_tuples=parser.use_tuple_for_closed_arrays,
-            user_imports=bool(parser.config.additional_imports),
-            decodes_value_unions=parser._output_model_context.decodes_value_unions,  # noqa: SLF001
+            keeps_tuples=parser.use_tuple_for_closed_arrays, user_imports=bool(parser.config.additional_imports)
         ),
     )
     writer = _DecisionWriter(parser._graph_builder, _copy_data_type)  # noqa: SLF001

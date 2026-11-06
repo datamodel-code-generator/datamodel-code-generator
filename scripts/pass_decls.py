@@ -1863,5 +1863,30 @@ DECISION_DECLS: Final[dict[str, PassDecl]] = {
         ),
         condition="--use-unique-items-as-set-by-value",
     ),
+    "list_set_alias_members": PassDecl(
+        "list_set_alias_members",
+        Phase.DECIDE,
+        Scope.GLOBAL,
+        PassKind.TRANSFORM,
+        reads=frozenset({
+            Fact.FIELD_TYPES,
+            Fact.CONTAINERS,
+            Fact.CONSTRAINTS,
+            Fact.MODEL_KIND,
+            Fact.METADATA,
+        }),
+        writes=frozenset({Fact.CONTAINERS, Fact.FIELD_TYPES}),
+        summary=(
+            "Writes a msgspec union member that names a type alias of a set as the set's list where the union then"
+            " holds one array-like type."
+        ),
+        after=(
+            After("omit_held_null", "reads the union members after the None omission rewrote them"),
+            After("serialize_as_any_for_every_subclass", "rewrites the unions after the SerializeAsAny marks"),
+            After("omit_untaken_union_constraints", "reads the alias constraints the union decision wrote"),
+            After("write_unique_items_as_sets", "reads the sets the decision on the final types wrote"),
+        ),
+        condition="--use-unique-items-as-set",
+    ),
 }
 """The declaration of each decision of the decision registries (``parser/_phases.py``), by the name its spec gives."""

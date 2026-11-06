@@ -3,7 +3,8 @@
   "type": "object",
   "properties": {
     "holder": {"$ref": "#/$defs/Holder"},
-    "refused": {"$ref": "#/$defs/Refused"}
+    "refused": {"$ref": "#/$defs/Refused"},
+    "kept": {"$ref": "#/$defs/Kept"}
   },
   "$defs": {
     "Holder": {
@@ -17,6 +18,22 @@
         },
         "besideString": {
           "anyOf": [{"type": "array", "items": {"type": "integer"}, "uniqueItems": true}, {"type": "string"}]
+        },
+        "besideListAndPet": {
+          "anyOf": [
+            {"type": "array", "items": {"type": "integer"}, "uniqueItems": true},
+            {"type": "array", "items": {"type": "integer"}},
+            {"$ref": "#/$defs/Pet"}
+          ]
+        },
+        "nestedLists": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {"type": "array", "items": {"type": "integer"}, "uniqueItems": true},
+              {"type": "array", "items": {"type": "integer"}}
+            ]
+          }
         },
         "pet": {"$ref": "#/$defs/Pet"}
       }
@@ -34,6 +51,43 @@
         }
       }
     },
+    "Kept": {
+      "type": "object",
+      "properties": {
+        "boundedBesideList": {
+          "anyOf": [
+            {"type": "array", "items": {"type": "integer"}, "uniqueItems": true, "minItems": 1},
+            {"type": "array", "items": {"type": "integer"}}
+          ]
+        },
+        "besideOtherItems": {
+          "anyOf": [
+            {"type": "array", "items": {"type": "integer"}, "uniqueItems": true},
+            {"type": "array", "items": {"type": "string"}}
+          ]
+        },
+        "besideListAndMixed": {
+          "anyOf": [
+            {"type": "array", "items": {"type": "integer"}, "uniqueItems": true},
+            {"type": "array", "items": {"type": "integer"}},
+            {"$ref": "#/$defs/Mixed"}
+          ]
+        },
+        "besideListAlias": {
+          "anyOf": [
+            {"type": "array", "items": {"type": "integer"}, "uniqueItems": true},
+            {"$ref": "#/$defs/IntList"},
+            {"type": "array", "items": {"type": "integer"}}
+          ]
+        },
+        "nullableBesideList": {
+          "anyOf": [{"$ref": "#/$defs/NullableTags"}, {"type": "array", "items": {"type": "string"}}]
+        }
+      }
+    },
+    "Mixed": {"anyOf": [{"$ref": "#/$defs/Pet"}, {"type": "array", "items": {"type": "integer"}}, {"type": "string"}]},
+    "IntList": {"type": "array", "items": {"type": "integer"}},
+    "NullableTags": {"anyOf": [{"type": "array", "items": {"type": "string"}, "uniqueItems": true}, {"type": "null"}]},
     "Pet": {"type": "object", "properties": {"name": {"type": "string"}}},
     "Tags": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
   }

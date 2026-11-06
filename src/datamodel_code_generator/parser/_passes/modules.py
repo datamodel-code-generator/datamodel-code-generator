@@ -148,7 +148,6 @@ from datamodel_code_generator.parser._passes._shared import (
     merge_duplicate,
     merged_models,
     module_members,
-    names_alias_beside_arrays,
     removes_reuse_duplicate,
     replace_model_in_list,
     require_update_action,
@@ -158,7 +157,6 @@ from datamodel_code_generator.parser._passes._shared import (
     takes_hashable_value,
     unhashable_unique_sets,
     unique_items_plan,
-    without_own_unique_sets,
     without_stand_ins,
 )
 from datamodel_code_generator.parser._passes._state import (
@@ -216,7 +214,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.config import ParserConfig
     from datamodel_code_generator.enums import DataclassArguments
     from datamodel_code_generator.imports import Imports
-    from datamodel_code_generator.model.output import OutputModelContext
     from datamodel_code_generator.parser._field_rows import FieldFacts, FieldRow
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
     from datamodel_code_generator.parser._passes._shared import UniqueItemsPlan
@@ -324,10 +321,6 @@ class ModulesHost(
     @property
     def _python_import_target_paths(self) -> set[str]:
         """The paths of the models parsed for schemas whose ``x-python-import`` types their uses."""
-
-    @property
-    def _output_model_context(self) -> OutputModelContext:
-        """The capabilities of the output model types."""
 
     @property
     def _const_narrowed_values(self) -> dict[int, tuple[DataType, _ConstNarrowing]]:
@@ -1101,12 +1094,7 @@ def replace_unique_list_to_set(parser: ModulesHost, models: list[DataModel]) -> 
     for model in aliases_first(models):
         for model_field in model.fields:
             if (
-                plan := _sets_beside_arrays_kept(
-                    parser,
-                    model,
-                    model_field,
-                    unique_items_plan(model_field, keeps_tuples=parser.use_tuple_for_closed_arrays, sources="field"),
-                )
+                plan := unique_items_plan(model_field, keeps_tuples=parser.use_tuple_for_closed_arrays, sources="field")
             ).sets:
                 _write_unique_sets(parser, model_field, plan)
 
@@ -1135,16 +1123,11 @@ def replace_merged_unique_list_to_set(parser: ModulesHost, models: list[DataMode
         merged = merged_models(parser, model)
         for model_field in model.fields:
             if (
-                plan := _sets_beside_arrays_kept(
-                    parser,
-                    model,
+                plan := unique_items_plan(
                     model_field,
-                    unique_items_plan(
-                        model_field,
-                        keeps_tuples=keeps_tuples,
-                        sources="merged",
-                        merged=[_field_named(other, model_field.name) for other in merged],
-                    ),
+                    keeps_tuples=keeps_tuples,
+                    sources="merged",
+                    merged=[_field_named(other, model_field.name) for other in merged],
                 )
             ).sets:
                 _write_unique_sets(parser, model_field, plan)
@@ -1157,35 +1140,6 @@ def replace_merged_unique_list_to_set(parser: ModulesHost, models: list[DataMode
             )
         ).sets:
             _write_additional_properties_nodes(parser, model, plan.sets, _unique_set_of(parser))
-
-
-def _sets_beside_arrays_kept(
-    parser: ModulesHost, model: DataModel, model_field: DataModelFieldBase, plan: UniqueItemsPlan
-) -> UniqueItemsPlan:
-    """Return the plan of a field without its own sets where every site of its type alias names it beside an array.
-
-    The field is the value of a type alias whose every site names it in a union beside an array-like member that keeps
-    its lists (``names_alias_beside_arrays``). Only an output that decodes a union of one member of each kind
-    (msgspec) keeps them lists, so the union decodes where the set would split it from a member written alike; the
-    sites are the store's references to the alias.
-    """
-    if (
-        not plan.sets
-        or parser._output_model_context.decodes_value_unions  # noqa: SLF001
-        or not isinstance(model, TypeAliasBase)
-    ):
-        return plan
-    index = parser.generation_store.index
-    sites = (
-        (
-            cast("DataModel", index.owner_model_for_data_type(fact.data_type))
-            .fields[cast("int", fact.owner_field_index)]
-            .data_type,
-            fact.data_type,
-        )
-        for fact in index.data_type_facts_for_reference(model.reference)
-    )
-    return without_own_unique_sets(model_field, plan) if names_alias_beside_arrays(sites) else plan
 
 
 def _field_named(model: DataModel, name: str | None) -> DataModelFieldBase | None:

@@ -9165,20 +9165,24 @@ def test_main_unique_items_as_set_by_value_recursive_aliases(output_file: Path) 
 
 @pytest.mark.parametrize(
     "extra_args",
-    [pytest.param([], id="without-option"), pytest.param(["--use-unique-items-as-set-by-value"], id="by-value")],
+    [
+        pytest.param([], id="without-option"),
+        pytest.param(["--use-unique-items-as-set-by-value"], id="by-value"),
+        pytest.param(["--target-python-version", "3.12", "--use-type-alias"], id="type-statement"),
+    ],
 )
 def test_main_unique_items_as_set_msgspec_alias_beside_arrays(extra_args: list[str], output_file: Path) -> None:
-    """Keep the uniqueItems list of a msgspec type alias that every site names in a union beside a list a list.
+    """Write a msgspec union member naming a type alias of a set as its list where the union then holds one array.
 
-    msgspec decodes a union of one array-like member only: ``BesideList`` as a set would split it from the list beside
-    it, so it stays a list and ``Holder`` decodes; ``BesideString`` sits beside no array and stays a set. ``Tags`` is
-    also named alone, and ``BesideUniqueList`` beside a list that becomes a set too, so both stay sets and msgspec
-    cannot decode their unions, which generation warns about.
+    msgspec decodes a union of one array-like type only: ``BesideList | list[int]`` is written ``list[int]`` there, also
+    beside a Struct and as the items of an array, so ``Holder`` decodes, while ``BesideList`` itself stays a set.
+    ``BesideString`` sits beside no array and ``Tags`` is also named alone, which keeps its set. The unions of ``Kept``
+    (an alias that writes ``Meta()``, other items, an alias of a union holding a list, an alias admitting None) and
+    ``BesideUniqueList`` beside a set keep their members, and generation warns that msgspec cannot decode them.
     """
     name = "msgspec_unique_alias_beside_arrays"
     with pytest.warns(
-        UserWarning,
-        match=r"msgspec cannot decode the union Refused\.(sharedBesideList|besideUniqueList): it holds the array-like",
+        UserWarning, match=r"msgspec cannot decode the union (Refused|Kept)\.\w+: it holds the array-like"
     ):
         run_main_and_assert(
             input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
@@ -9194,11 +9198,17 @@ def test_main_unique_items_as_set_msgspec_alias_beside_arrays(extra_args: list[s
                 "--disable-timestamp",
             ],
         )
+    if "--target-python-version" in extra_args and sys.version_info < (3, 12):
+        pytest.skip("the output targets Python 3.12 or later")
     with _generated_model(output_file, name, "Holder") as model:
         decoded = msgspec.json.decode(
-            b'{"besideList": [1, 1], "besideString": [2, 2], "pet": {"name": "a"}}', type=model
+            b'{"besideList": [1, 1], "besideString": [2, 2], "besideListAndPet": [3, 3], "nestedLists": [[4, 4]],'
+            b' "pet": {"name": "a"}}',
+            type=model,
         )
-        results = {field: type(getattr(decoded, field)).__name__ for field in model.__struct_fields__}
+        results = {field: repr(getattr(decoded, field)) for field in model.__struct_fields__}
+    with _generated_model(output_file, name, "BesideList") as alias:
+        results["BesideList"] = repr(msgspec.convert([1, 1], type=alias))
     assert_output(f"{json.dumps(results, indent=2)}\n")
 
 

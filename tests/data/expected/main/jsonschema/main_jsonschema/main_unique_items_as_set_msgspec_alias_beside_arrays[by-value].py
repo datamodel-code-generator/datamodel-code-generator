@@ -3,20 +3,47 @@
 
 from __future__ import annotations
 
-from typing import TypeAlias
+from typing import Annotated, TypeAlias
 
-from msgspec import UNSET, Struct, UnsetType
+from msgspec import UNSET, Meta, Struct, UnsetType
 
-BesideList: TypeAlias = list[int]
+BesideList: TypeAlias = set[int]
 
 
 BesideString: TypeAlias = set[int]
+
+
+BesideListAndPet: TypeAlias = set[int]
+
+
+NestedLists: TypeAlias = set[int]
 
 
 BesideUniqueList: TypeAlias = set[int]
 
 
 BesideUniqueList1: TypeAlias = set[str]
+
+
+BoundedBesideList: TypeAlias = Annotated[set[int], Meta(min_length=1)]
+
+
+BesideOtherItems: TypeAlias = set[int]
+
+
+BesideListAndMixed: TypeAlias = set[int]
+
+
+BesideListAlias: TypeAlias = set[int]
+
+
+IntList: TypeAlias = list[int]
+
+
+NullableTags1: TypeAlias = set[str]
+
+
+NullableTags: TypeAlias = NullableTags1 | None
 
 
 class Pet(Struct):
@@ -27,17 +54,31 @@ Tags: TypeAlias = set[str]
 
 
 class Holder(Struct):
-    besideList: BesideList | list[int] | UnsetType = UNSET
+    besideList: list[int] | UnsetType = UNSET
     besideString: BesideString | str | UnsetType = UNSET
+    besideListAndPet: list[int] | Pet | UnsetType = UNSET
+    nestedLists: list[list[int]] | UnsetType = UNSET
     pet: Pet | UnsetType = UNSET
 
 
 class Refused(Struct):
-    sharedBesideList: Tags | list[str] | UnsetType = UNSET
+    sharedBesideList: list[str] | UnsetType = UNSET
     shared: Tags | UnsetType = UNSET
     besideUniqueList: BesideUniqueList | BesideUniqueList1 | UnsetType = UNSET
+
+
+Mixed: TypeAlias = Pet | list[int] | str
+
+
+class Kept(Struct):
+    boundedBesideList: BoundedBesideList | list[int] | UnsetType = UNSET
+    besideOtherItems: BesideOtherItems | list[str] | UnsetType = UNSET
+    besideListAndMixed: BesideListAndMixed | list[int] | Mixed | UnsetType = UNSET
+    besideListAlias: BesideListAlias | IntList | list[int] | UnsetType = UNSET
+    nullableBesideList: NullableTags | list[str] | UnsetType = UNSET
 
 
 class Model(Struct):
     holder: Holder | UnsetType = UNSET
     refused: Refused | UnsetType = UNSET
+    kept: Kept | UnsetType = UNSET
