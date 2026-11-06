@@ -164,9 +164,7 @@ def _list_set_alias_members(facts: FinalFacts, writer: SetAliasMembersWriter) ->
 
     Every pick is read before the first write, so a union reads the aliases' sets as their models write them.
     """
-    from datamodel_code_generator.model.msgspec import DataModelField  # noqa: PLC0415
-
-    aliases = _Aliases(facts, DataModelField._META_FIELD_KEYS)  # noqa: SLF001
+    aliases = _Aliases(facts, facts.options.meta_field_keys)
     if not aliases.sets:
         return
     picks = [
