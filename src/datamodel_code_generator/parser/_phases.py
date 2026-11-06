@@ -104,12 +104,15 @@ class FinalFacts:
     ``live_models`` are the models of every module that render, in module order; unused models, which leave their
     modules later, are not among them. ``member_keywords`` gives the type-dependent keywords the value of a union
     member takes in the output model, with the models a reference names (``DataTypeManager.member_constraint_keywords``
-    at the target Python version).
+    at the target Python version). ``constrained_member`` gives the type that holds keywords in place of a plain string
+    member, as the output writes a constrained string inside a type, or None for any other member
+    (``DataTypeManager.constrained_string_member``).
     """
 
     modules: tuple[ModuleFacts, ...]
     live_models: tuple[ModelView, ...]
     member_keywords: Callable[[DataTypeView, Callable[[ReferenceView], ModelView | None]], frozenset[str] | None]
+    constrained_member: Callable[[DataTypeView, Mapping[str, object]], object | None]
     options: DecisionOptions = DecisionOptions()
 
 
@@ -162,8 +165,24 @@ class _DecisionWriter:
         self._store.replace_field_type(field, copied)
         self._changed[id(model)] = cast("DataModel", model)
 
-    def drop_field_constraints(self, model: ModelView, field: FieldView, keywords: frozenset[str]) -> None:
-        """Write the constraints of ``field`` of ``model`` without ``keywords`` (``UnionConstraintsWriter``)."""
+    def drop_field_constraints(
+        self,
+        model: ModelView,
+        field: FieldView,
+        keywords: frozenset[str],
+        members: Sequence[tuple[DataTypeView, object]],
+    ) -> None:
+        """Write the constraints of ``field`` of ``model`` without ``keywords`` (``UnionConstraintsWriter``).
+
+        Each member of ``members``, a type of the field, is written as the type paired with it, which holds the
+        keywords in its place; the field takes a copy of its type tree with them (``rewrite_copied_type``), and the
+        nodes stay as the other fields see them.
+        """
+        if members:
+            rewrites = {id(member): lambda _target, written=written: written for member, written in members}
+            self._store.replace_field_type(
+                field, rewrite_copied_type(self._store, self._copy, field.data_type, rewrites)
+            )
         constraints: Any = field.constraints
         values = {
             key: value

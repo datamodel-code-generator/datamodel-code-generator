@@ -1437,17 +1437,20 @@ class GenerationStore:  # noqa: PLR0904
         modules: Iterable[tuple[tuple[str, ...], Iterable[DataModel]]],
         member_keywords: Callable[[DataTypeView, Callable[[ReferenceView], ModelView | None]], frozenset[str] | None],
         options: DecisionOptions,
+        constrained_member: Callable[[DataTypeView, Mapping[str, object]], object | None],
     ) -> FinalFacts:
         """Return the facts final at B1 for the decision phase: the live models of ``modules``, in module order.
 
         A decision reads each model as its view (``model/_views.py``), and the keywords of a union member through
-        ``member_keywords``. This is the only construction of ``FinalFacts``.
+        ``member_keywords``, and the type that holds keywords in place of a member through ``constrained_member``. This
+        is the only construction of ``FinalFacts``.
         """
         module_facts = tuple(ModuleFacts(module, tuple(models)) for module, models in modules)
         return FinalFacts(
             module_facts,
             tuple(model for facts in module_facts for model in facts.live_models),
             member_keywords,
+            constrained_member,
             options,
         )
 

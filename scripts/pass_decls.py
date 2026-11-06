@@ -1856,10 +1856,14 @@ DECISION_DECLS: Final[dict[str, PassDecl]] = {
         Scope.GLOBAL,
         PassKind.TRANSFORM,
         reads=frozenset({Fact.FIELD_TYPES, Fact.CONSTRAINTS, Fact.MODEL_KIND, Fact.BASES}),
-        writes=frozenset({Fact.CONSTRAINTS}),
+        writes=frozenset({Fact.CONSTRAINTS, Fact.FIELD_TYPES}),
         summary=(
             "Drops the keywords beside a union that a member cannot take when every member keeps the check without"
-            " them."
+            " them, or writes them on a plain string member that would lose them."
+        ),
+        after=(
+            After("omit_held_null", "reads the member types after the None omission rewrote them"),
+            After("serialize_as_any_for_every_subclass", "copies the field types after the subclass marking"),
         ),
         condition="--field-constraints",
     ),

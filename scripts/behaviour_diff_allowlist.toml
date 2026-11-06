@@ -410,3 +410,12 @@ match = "^\\[probe\\] (?:[\\w]+:)?ContainerDefaults: accept -> reject$"
 reason = "the probe example of ContainerDefaults reaches the depth cap of the recursive Node one level deeper once its recursive field, which has an Avro default, is Node instead of Node | None under the 20261104 presets, and writes data: null there, which the Avro schema rejects too (bytes is required); the model accepts every payload the schema accepts"
 decision = "#6394"
 release_note = "--ignore-ref-siblings-by-schema-version keeps the default and annotations of an Avro field, XML Schema element or Protocol Buffers field typed by a named type (also in an AsyncAPI payload), which 0.90.0 left out because the converted schema declares draft 7"
+
+[[accepted]]
+input = "tests/data/jsonschema/field_constraint_sites"
+backends = [ "pydantic_v2.BaseModel" ]
+aspects = [ "constraints" ]
+match = "^\\[constraints\\] (?:union_root_kept_keywords:)?Model:text: Annotated\\[Union\\[(Item, None, str|None, Item, str|Item, str, None)\\], MaxLen\\(max_length=3\\)\\] -> Union\\[Annotated\\[str, StringConstraints\\(max_length=3\\)\\], Item, None\\]$"
+reason = "under --collapse-root-models with --field-constraints or --use-annotated (as in the presets), a maxLength beside a union of a model and a string type was written on the whole union (Annotated[Item | str | None, Field(max_length=3)]), so Pydantic applied it to the model member too and raised TypeError for every object value; the keyword is written on the string member (Item | Annotated[str, StringConstraints(max_length=3)] | None), so object values parse and strings are checked as before (crash fix: class names, field names and the parsed values of valid payloads stay)"
+decision = "#6053"
+release_note = "a length keyword beside a union of a model and a string type that --collapse-root-models inlines, under --field-constraints or --use-annotated (as in the presets), is written on the string member (Item | Annotated[str, StringConstraints(max_length=3)]) instead of the whole union, where Pydantic raised TypeError for every object value"

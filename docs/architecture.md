@@ -922,7 +922,8 @@ model; the None it writes itself stays. `omit_untaken_union_constraints` (`parse
 union writes as a `Field()` argument (`written_constraints`, what the renderer writes), leaves the field when the value
 of a member cannot take it (`DataTypeManager.member_constraint_keywords`) and every member keeps the check without it
 in the output (the call of its own field writes the keyword, the keyword applies to none of its values, or it is
-None); otherwise the field keeps it. `serialize_as_any_for_every_subclass` (`parser/_serialize_as_any.py`,
+None), or a member that would lose the check is a plain string, which then holds it in place
+(`FinalFacts.constrained_member`, `O | constr(max_length=3)`, #6053); otherwise the field keeps it. `serialize_as_any_for_every_subclass` (`parser/_serialize_as_any.py`,
 `--use-serialize-as-any-for-every-subclass`, #5673): every live model is marked by whether a live model below it in the
 class hierarchy, at any depth and by the bases final at B1, declares fields of its own
 (`GenerationStore.mark_serialized_as_any`); a type that names a marked model, by its name or through its module, is
@@ -934,7 +935,8 @@ writes (a `DecisionWriter`), `run(facts, writer)` and, for a decision behind an 
 runs, `GenerationStore.seal_facts` builds the one `FinalFacts` of the parse: per output module, the models that render
 (unused models, which leave their modules later, are left out), as the read-only views of `model/_views.py`
 (`ModelView`, `FieldView`, `DataTypeView`, `ReferenceView`), and the keywords the value of a union member takes in the
-output model (`member_keywords`). The views list the facts final at B1 and rendered
+output model (`member_keywords`), with the type that holds keywords in place of a plain string member
+(`constrained_member`). The views list the facts final at B1 and rendered
 nullability through `admits_none`, never the `is_optional` that render preparation writes; presentation attributes are
 not part of them, and type checking rejects writes through a view. Every decision writes through `_DecisionWriter`, the
 one implementation of the writer protocols over the store, which records the models it changes (`DecisionOutcome`). A

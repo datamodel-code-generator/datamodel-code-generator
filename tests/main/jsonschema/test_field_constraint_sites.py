@@ -81,6 +81,8 @@ MODELS_WITHOUT_LENGTH = pytest.mark.filterwarnings(
         ),
         ("union_array_string_lengths", []),
         ("union_array_string_lengths", ["--collapse-root-models"]),
+        ("union_member_in_place", ["--field-constraints", "--collapse-root-models"]),
+        ("union_member_in_place", ["--use-annotated", "--collapse-root-models"]),
     ],
 )
 def test_field_constraint_sites(output_file: Path, name: str, extra_args: list[str]) -> None:
@@ -98,9 +100,11 @@ def test_field_constraint_sites(output_file: Path, name: str, extra_args: list[s
     does. A keyword beside a union leaves the field that holds the union when a member cannot take it and every member
     keeps the check without it in the output (the class or type alias of a branch whose call writes it, a value it does
     not apply to, None), so a valid value raises no ``TypeError`` (#6022), also where a root model collapses into a
-    union of one member. Where a member would lose the check, as a string, a ``str`` enum or an ``AnyUrl`` that writes
-    no copy of it, the field keeps today's output, whose ``TypeError`` for the other members stays (#6053); the payloads
-    of those fields use the members that keep the check. A keyword that no member's value takes, all of them instances
+    union of one member. A plain string member that would lose the check, as a root model of a string collapses into
+    one, holds it in place (``O | constr(max_length=3)``), so a model member validates and a long string is rejected
+    (#6053). Where another member would lose the check, as a ``str`` enum or an ``AnyUrl`` that writes no copy of it,
+    the field keeps today's output, whose ``TypeError`` for the other members stays; the payloads of those fields use
+    the members that keep the check. A keyword that no member's value takes, all of them instances
     of models (the root model of a branch and one that names itself again), is left out with a warning, as each raised
     ``TypeError`` (#6035). Without ``--field-constraints``, a string length beside a union of an array and a string
     limits the string only, at a property and at the items of an array, as 0.88.0 wrote it (#6189).
