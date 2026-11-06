@@ -19,4 +19,5 @@ Repeated = TypeAliasType(
 @dataclass(config=ConfigDict(regex_engine="python-re"))
 class Model:
     referenced: Repeated | None = None
+    inline: Literal['aa', 'b'] | None = Field(None, pattern='(a)\\1')
     fixed: Literal['aa'] | None = Field(None, pattern='(a)\\1')

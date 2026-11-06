@@ -7,6 +7,7 @@
   },
   "properties": {
     "referenced": {"$ref": "#/$defs/Repeated"},
+    "inline": {"type": "string", "enum": ["aa", "b"], "pattern": "(a)\\1"},
     "fixed": {"type": "string", "const": "aa", "pattern": "(a)\\1"}
   }
 }

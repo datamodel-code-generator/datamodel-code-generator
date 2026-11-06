@@ -14,4 +14,5 @@ class Model(BaseModel):
         regex_engine="python-re",
     )
     referenced: Literal['aa', 'b'] | None = Field(None, pattern='(a)\\1')
+    inline: Literal['aa', 'b'] | None = Field(None, pattern='(a)\\1')
     fixed: Literal['aa'] | None = Field(None, pattern='(a)\\1')
