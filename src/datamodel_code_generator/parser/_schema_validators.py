@@ -550,23 +550,37 @@ def _is_empty_property_schema(item: JsonSchemaObject, *, allowed_keywords: froze
 
 
 def _get_conditional_property_values(item: JsonSchemaObject | bool | None) -> tuple[object, ...] | None:  # noqa: FBT001
-    """Extract a presence predicate or literals without discarding property constraints."""
+    """Extract a presence predicate or literals without discarding property constraints.
+
+    The literals are the values that ``const``, ``enum`` and ``type`` all admit: a ``const`` beside an ``enum`` is the
+    value when the enum holds it. A property that admits no value never matches, so the predicate has none (None).
+    """
     if item is None or item is True:
         return ()
     if not isinstance(item, JsonSchemaObject):
         return None
-    if "const" in item.extras:
-        keyword, values = "const", (item.extras["const"],)
-    elif item.enum:
-        keyword, values = "enum", tuple(item.enum)
-    else:
+    declared = {
+        keyword: values
+        for keyword, values in (
+            ("const", (item.extras["const"],) if "const" in item.extras else ()),
+            ("enum", tuple(item.enum or ())),
+        )
+        if values
+    }
+    if not declared:
         return () if _is_empty_property_schema(item) else None
-    if not _is_empty_property_schema(item, allowed_keywords=frozenset({keyword, "type"})):
+    if not _is_empty_property_schema(item, allowed_keywords=frozenset({"type", *declared})):
         return None
-    if item.type is None:
-        return values
-    schema_types = admitted_types(declared_types(item.type))
-    return tuple(value for value in values if _json_value_admitted(schema_types, value)) or None
+    first, *others = declared.values()
+    values = tuple(
+        value
+        for value in first
+        if all(any(_json_literal_values_equal(value, other) for other in admitted) for admitted in others)
+    )
+    if item.type is not None:
+        schema_types = admitted_types(declared_types(item.type))
+        values = tuple(value for value in values if _json_value_admitted(schema_types, value))
+    return values or None
 
 
 def _input_names(names_by_property: Mapping[str, tuple[str, ...]] | None, name: str) -> tuple[str, ...]:
