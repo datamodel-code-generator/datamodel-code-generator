@@ -1,0 +1,12 @@
+{
+  "valid": [
+    {"names": ["a"], "label": "x", "alias": ["b"], "listed": [["c"]], "mapped": {"k": ["d"]}, "first": {"n": "p"}},
+    {"names": null, "label": null, "alias": null, "listed": [null], "mapped": {"k": null}, "first": null, "second": null}
+  ],
+  "invalid": [
+    {"names": "a", "label": "x"},
+    {"names": [1], "label": "x"},
+    {"names": ["a"], "label": 1},
+    {"names": ["a"], "label": "x", "listed": [1]}
+  ]
+}

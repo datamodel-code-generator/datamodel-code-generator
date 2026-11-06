@@ -807,6 +807,13 @@ Model customization:
                         asked; without it an argument set to false is left out
                         and takes its default (eq=True), as in 0.89.0
   --keep-model-order    Keep generated models' order
+  --keep-reference-null-on-collapsed-root-models, --no-keep-reference-null-on-collapsed-root-models
+                        Under --collapse-root-models, keep the null of a root
+                        model that admits null where a field, item or map
+                        value that names it takes its type (an OpenAPI 3.0
+                        `nullable: true` root: `list[str] | None`), as the
+                        root model admits it; without it the inlined type
+                        rejects null, as in 0.89.0
   --keyword-only        Defined models as keyword only (for example
                         dataclass(kw_only=True)).
   --model-name-map MODEL_NAME_MAP

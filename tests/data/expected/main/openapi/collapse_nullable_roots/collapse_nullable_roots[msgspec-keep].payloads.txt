@@ -1,0 +1,6 @@
+valid {"names": ["a"], "label": "x", "alias": ["b"], "listed": [["c"]], "mapped": {"k": ["d"]}, "first": {"n": "p"}}: accepted
+valid {"names": null, "label": null, "alias": null, "listed": [null], "mapped": {"k": null}, "first": null, "second": null}: accepted
+invalid {"names": "a", "label": "x"}: rejected
+invalid {"names": [1], "label": "x"}: rejected
+invalid {"names": ["a"], "label": 1}: rejected
+invalid {"names": ["a"], "label": "x", "listed": [1]}: rejected

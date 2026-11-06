@@ -81,6 +81,7 @@ reviewed-safe keep_enum_member_values
 reviewed-safe keep_false_dataclass_arguments
 reviewed-safe keep_field_defaults_off_branch_roots
 reviewed-safe keep_model_order
+reviewed-safe keep_reference_null_on_collapsed_root_models
 reviewed-safe keep_reference_null_on_merged_models
 reviewed-safe keyword_only
 reviewed-safe known_third_party

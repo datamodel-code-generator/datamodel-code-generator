@@ -505,6 +505,10 @@ class CollapseHost(
         """Whether a type alias of the Literal of an enum stays named under collapse."""
 
     @property
+    def keep_reference_null_on_collapsed_root_models(self) -> bool:
+        """Whether a site that collapse gives the type of a root model admitting null keeps that null."""
+
+    @property
     def _const_narrowed_values(self) -> dict[int, tuple[DataType, _ConstNarrowing]]:
         """The values typed by an enum that a const narrows, by data type id, with that const."""
 
@@ -1701,6 +1705,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                             retire_root(parser, root_type_model, inner_model, model_path_to_module_name)
                     graph_builder.collapse_root_data_type(data_type, inner_reference)
                     carry_const_narrowings(parser, root_type_field.data_type, data_type)
+                    keep_root_null(parser, root_type_field, data_type)
 
                     redirected_holders.append((
                         model,
@@ -1844,6 +1849,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                         )
 
                 parser._import_ledger.remove_referenced_imports(imports, root_type_model.path, producer)  # noqa: SLF001
+                keep_root_null(parser, root_type_field, copied_data_type)
                 if (
                     not has_remaining_root_references
                     and model_key_of(root_type_model.reference) not in rule_named_roots
@@ -1861,6 +1867,21 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
         internal_modules=internal_modules,
         row="collapse-root-models",
     )
+
+
+def keep_root_null(parser: CollapseHost, root_field: DataModelFieldBase, site: DataType) -> None:
+    """Put the type that collapse gave ``site`` inside a type admitting null, where the root model admits null.
+
+    Under --keep-reference-null-on-collapsed-root-models. The null is the root field's own (``nullable``, as an
+    OpenAPI 3.0 ``nullable: true`` root reads), which the root type inlined at ``site`` does not write; a type that
+    is optional itself already writes its null.
+    """
+    if not parser.keep_reference_null_on_collapsed_root_models or root_field.nullable is not True or site.is_optional:
+        return
+    graph_builder = parser._graph_builder  # noqa: SLF001
+    holder = type(site)(is_optional=True)
+    graph_builder.swap_data_type(site, holder)
+    graph_builder.set_nested_data_types(holder, [site])
 
 
 def carry_const_narrowings(parser: CollapseHost, source: DataType, copied: DataType) -> None:
@@ -1986,11 +2007,12 @@ def settle_kept_parent_roots(parser: CollapseHost, run: ModulesRun) -> None:
                 )
             continue
         retire_root(parser, root_model, inner_model, model_path_to_module_name)
-        root_data_type = root_model.fields[0].data_type
+        root_field = root_model.fields[0]
         holders_by_module: dict[int, tuple[ModuleContextView, list[tuple[DataModel, DataType, Import | None]]]] = {}
         for holder in kept_root.holders:
             graph_builder.collapse_root_data_type(holder.data_type, inner_model.reference)
-            carry_const_narrowings(parser, root_data_type, holder.data_type)
+            carry_const_narrowings(parser, root_field.data_type, holder.data_type)
+            keep_root_null(parser, root_field, holder.data_type)
             if (ctx := contexts.get(id(holder.model))) is not None:
                 holders_by_module.setdefault(id(ctx), (ctx, []))[1].append((
                     holder.model,

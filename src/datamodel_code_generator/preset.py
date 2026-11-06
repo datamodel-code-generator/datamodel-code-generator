@@ -1081,6 +1081,14 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "schema rejects."
         ),
     ),
+    PresetOptionGroup(
+        title="Reference null kept on collapsed root models",
+        config=PresetConfig(keep_reference_null_on_collapsed_root_models=True),
+        description=(
+            "Under --collapse-root-models, keep the null of a root model that admits null where a field, item or "
+            "map value that names it takes its type."
+        ),
+    ),
 )
 """The 20261104 groups and the opt-in options of the release after 0.90.0."""
 
@@ -1429,7 +1437,9 @@ def render_presets_markdown() -> str:
             "with it, type the map values of a type array that lists object beside other types (`dict[str, int] | "
             "str`), and `--use-msgspec-forbid-unknown-fields`: a msgspec Struct whose schema admits no property but "
             "its own (`additionalProperties: false` without `patternProperties`) is written with "
-            "`forbid_unknown_fields=True`, so it rejects the unknown fields the schema rejects."
+            "`forbid_unknown_fields=True`, so it rejects the unknown fields the schema rejects, and "
+            "`--keep-reference-null-on-collapsed-root-models`: under `--collapse-root-models` a field, item or map "
+            "value that takes the type of a root model admitting null keeps that null (`list[str] | None`)."
         ),
         "",
         "## Override Preset Options",
