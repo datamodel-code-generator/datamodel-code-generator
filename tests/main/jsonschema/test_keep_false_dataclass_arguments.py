@@ -95,9 +95,11 @@ REFUSED = {
         "pydantic_v2.dataclass",
         {"init": True, "eq": False, "order": True, "match_args": False, "weakref_slot": False},
         "3.11",
-        "@dataclass(init=True, eq=False, order=True, match_args=False, weakref_slot=False): Pydantic dataclasses take "
-        "no match_args; Pydantic dataclasses take no weakref_slot; Pydantic dataclasses take only init=False; "
-        "order=True needs eq=True",
+        (
+            "@dataclass(init=True, eq=False, order=True, match_args=False, weakref_slot=False): Pydantic dataclasses take "
+            "no match_args; Pydantic dataclasses take no weakref_slot; Pydantic dataclasses take only init=False; "
+            "order=True needs eq=True"
+        ),
     ),
 }
 """Decorator arguments that ``dataclass()`` refuses when the module is imported, and why the generation stops."""
