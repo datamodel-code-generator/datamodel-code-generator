@@ -2002,6 +2002,11 @@ msgspec-last-word	main/openapi/main_openapi/singularize_last_word_of_item_names[
 pydantic_v2	main/openapi/main_openapi/singularize_last_word_of_item_names[pydantic_v2].py
 pydantic_v2-last-word	main/openapi/main_openapi/singularize_last_word_of_item_names[pydantic_v2-last-word].py
 pydantic_v2-last-word-full-path	main/openapi/main_openapi/singularize_last_word_of_item_names[pydantic_v2-last-word-full-path].py
+[test_main_openapi_skip_path_extension_keys]
+msgspec-skipped	main/openapi/main_openapi/skip_path_extension_keys[msgspec-skipped].py
+pydantic_v2	main/openapi/main_openapi/skip_path_extension_keys[pydantic_v2].py
+pydantic_v2-no-skip	main/openapi/main_openapi/skip_path_extension_keys[pydantic_v2-no-skip].py	= main/openapi/main_openapi/skip_path_extension_keys[pydantic_v2].py
+pydantic_v2-skipped	main/openapi/main_openapi/skip_path_extension_keys[pydantic_v2-skipped].py
 [test_main_openapi_strict_types_field_constraints_msgspec]
 	main/openapi/strict_types_field_constraints_msgspec.py
 [test_main_openapi_strict_types_field_constraints_pydantic_v2]

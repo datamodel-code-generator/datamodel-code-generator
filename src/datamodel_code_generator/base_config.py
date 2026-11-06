@@ -513,6 +513,7 @@ class BaseGenerateConfig(BaseModel):
     use_status_code_in_response_name: bool = False
     keep_first_character_of_path_keys: bool = False
     keep_content_parameter_refs: bool = False
+    skip_path_extension_keys: bool = False
     name_converted_payloads_by_message: bool = False
     all_exports_scope: AllExportsScope | None = None
     all_exports_collision_strategy: AllExportsCollisionStrategy | None = None

@@ -1157,6 +1157,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Model generation for readOnly/writeOnly fields:
                         'request-response' = Request/Response models only (no
                         base model), 'all' = Base + Request + Response models.
+  --skip-path-extension-keys, --no-skip-path-extension-keys
+                        In the paths scope, skip a key of paths that begins
+                        with x-, a specification extension and no path item,
+                        as the api scope does; without it such a key that
+                        holds an object is read as a path and its operations
+                        get models, as in 0.89.0
   --use-operation-id-as-name
                         use operation id of OpenAPI as class names of models
   --use-status-code-in-response-name

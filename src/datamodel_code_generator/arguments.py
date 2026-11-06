@@ -1611,6 +1611,13 @@ _toggle(
     "takes a copy of the referenced schema (a model of its own name, or the inline type of a scalar, with its "
     "default and description), as in 0.89.0",
 )
+_toggle(
+    openapi_options,
+    "--skip-path-extension-keys",
+    help="In the paths scope, skip a key of paths that begins with x-, a specification extension and no path item, as "
+    "the api scope does; without it such a key that holds an object is read as a path and its operations get models, "
+    "as in 0.89.0",
+)
 # ======================================================================================
 # Schema version options (for both JSON Schema and OpenAPI)
 # ======================================================================================

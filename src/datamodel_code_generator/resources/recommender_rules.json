@@ -1241,6 +1241,10 @@
       "not_recommended": "command",
       "reason": "Scope of --install-skill."
     },
+    "skip_path_extension_keys": {
+      "not_recommended": "preset",
+      "reason": "OpenAPI paths scope only: set by the 20261106 presets; the recommendation starts from a preset."
+    },
     "skip_root_model": {
       "not_recommended": "style",
       "reason": "Skips the model of the JSON Schema root; the project decides whether it needs it."

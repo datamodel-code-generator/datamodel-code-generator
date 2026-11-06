@@ -468,6 +468,7 @@ openapi/parameter_field_policy.yaml	yaml_fast_constructor/parity.txt
 openapi/parameter_header_case.yaml	yaml_fast_constructor/parity.txt
 openapi/parameter_without_name.yaml	yaml_fast_constructor/parity.txt
 openapi/path_parameter_override.yaml	yaml_fast_constructor/parity.txt
+openapi/paths_extension_keys.yaml	yaml_fast_constructor/parity.txt
 openapi/paths_external_ref/openapi.yaml	yaml_fast_constructor/parity.txt
 openapi/paths_external_ref/schemas/cat.yaml	yaml_fast_constructor/parity.txt
 openapi/paths_key_without_leading_slash.yaml	yaml_fast_constructor/parity.txt

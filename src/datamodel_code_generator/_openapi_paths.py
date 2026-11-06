@@ -35,6 +35,7 @@ __all__ = [
     "inherited_security",
     "operation_responses",
     "path_item_operations",
+    "path_key_row",
     "path_selected",
     "rooted_path",
 ]
@@ -55,7 +56,7 @@ FIXED_HTTP_METHODS: Final = frozenset(method.upper() for method in PATH_ITEM_MET
 PATHS_PARAMETERS: Final = "parameters"
 """The key of ``paths`` that holds the parameters of every path; it is not a path item."""
 _EXTENSION_PREFIX: Final = "x-"
-PathKeyRow: TypeAlias = Literal["openapi", "legacy-object-extension-paths"]
+PathKeyRow: TypeAlias = Literal["openapi", "legacy-object-extension-paths", "legacy-object-parameters-path"]
 
 
 def _is_extension(key: object) -> bool:
@@ -69,11 +70,18 @@ def holds_path_item(key: str, value: object, row: PathKeyRow = "openapi") -> boo
     A path item is under a path template. OpenAPI reads a key that begins with ``x-`` as an extension of ``paths``, and
     ``PATHS_PARAMETERS`` holds the parameters of every path, so row ``openapi`` (the API walk) skips both. Row
     ``legacy-object-extension-paths`` (the paths scope's walk) reads such a key that holds an object as a path, as it
-    always has, and skips the rest, which no path item can be.
+    always has, and skips the rest, which no path item can be. Row ``legacy-object-parameters-path`` (that walk under
+    ``--skip-path-extension-keys``) skips every ``x-`` key, as row ``openapi`` does, and reads only a
+    ``PATHS_PARAMETERS`` key that holds an object as a path.
     """
-    return not (key == PATHS_PARAMETERS or _is_extension(key)) or (
-        row == "legacy-object-extension-paths" and isinstance(value, dict)
-    )
+    if _is_extension(key):
+        return row == "legacy-object-extension-paths" and isinstance(value, dict)
+    return key != PATHS_PARAMETERS or (row != "openapi" and isinstance(value, dict))
+
+
+def path_key_row(*, skip_extension_keys: bool) -> PathKeyRow:
+    """Return the row by which the paths scope's walk reads the keys of ``paths`` (``--skip-path-extension-keys``)."""
+    return "legacy-object-parameters-path" if skip_extension_keys else "legacy-object-extension-paths"
 
 
 def operation_responses(responses: Mapping[_K, _T]) -> dict[_K, _T]:

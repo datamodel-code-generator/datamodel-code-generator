@@ -243,6 +243,7 @@ def _measure(document: dict[str, Any], kind: SchemaKind, config: Any) -> Signals
             kind,
             openapi_scopes=frozenset(scope.value for scope in config.openapi_scopes or ()) or frozenset({"schemas"}),
             include_paths=config.openapi_include_paths or (),
+            skip_path_extension_keys=config.skip_path_extension_keys,
         )
 
 
