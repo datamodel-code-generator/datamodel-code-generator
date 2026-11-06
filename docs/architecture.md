@@ -377,7 +377,9 @@ stand for the intersection of their parts: the earlier merge (`parser/_intersect
 the common `type` and `enum` values, the union of `required` and a `false` that a part sets where the merge does not;
 nested schemas follow the same rule. Under `--intersect-combined-schema-keywords` each inline branch of an `anyOf` or
 `oneOf` is the intersection of its keywords and those beside it in the same way (`JsonSchemaParser._combined_branch_row`,
-its `nullable` left out of the parts), and where parts meet an `enum` loses the values the merged `type` rejects. Where the document's dialect (draft 7 or earlier, OpenAPI 3.0) does not read
+its `nullable` left out of the parts); beside the other of the two, a branch keeps the branches of it whose `type` admits
+one of the branch's types and is no branch where it keeps none, unless every branch is
+(`JsonSchemaParser._combined_branch_outers`); and where parts meet an `enum` loses the values the merged `type` rejects. Where the document's dialect (draft 7 or earlier, OpenAPI 3.0) does not read
 `$ref` siblings as parts, a sibling `enum` that the document writes does not narrow the referenced schema (the legacy
 sibling enum row; an inherited property override is a part in every dialect). Null comes from the site's own `nullable`, `type` list or `null` value, else only
 if every part admits it (`parser/_null_facts.py`, site `all-of-parts`). A keyword whose parts have no value in common keeps the earlier value and warns

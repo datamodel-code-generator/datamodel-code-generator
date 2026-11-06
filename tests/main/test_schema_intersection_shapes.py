@@ -180,6 +180,7 @@ COMBINED_DOCUMENTS: tuple[str, ...] = (
     "combined_option_edges",
     "combined_option_edges_draft04",
     "combined_option_edges_draft07",
+    "combined_any_of_one_of",
 )
 """The documents whose output --intersect-combined-schema-keywords changes, pinned with ``COMBINED_OPTION_ARGS`` too."""
 DISTRIBUTE_OPTION_ARGS: tuple[str, ...] = ("--distribute-allof-over-unions",)
@@ -268,12 +269,13 @@ def test_schema_intersection_shape_output_with_combined_option(
 
     Each branch of an ``anyOf`` or ``oneOf`` is the intersection of its keywords and the keywords beside it (the
     tightest bound, the conjoined patterns, the common multiple, the types and values both admit, nested properties
-    alike), the ``nullable`` copied into it kept, and an ``enum`` loses the values the merged ``type`` rejects. An
-    inherited override merges a map of named schemas name by name, an override that narrows the inherited type (to
-    ``null``, to one of its types, or in a nested schema) is the intersection instead of a copy of the inherited field,
-    and the type shape of ``--allof-merge-mode none`` keeps the length of a closed tuple. An allOf member reads the
-    siblings of its ``$ref`` as a part where the dialect does (2020-12, not draft 7), names the target of a ``$ref``
-    alias as its base, and an allOf union admits null where every part does.
+    alike), the ``nullable`` copied into it kept, and an ``enum`` loses the values the merged ``type`` rejects; beside
+    a ``oneOf``, an ``anyOf`` branch keeps the ``oneOf`` branches whose ``type`` admits one of its types, and one that
+    keeps none is left out. An inherited override merges a map of named schemas name by name, an override that narrows
+    the inherited type (to ``null``, to one of its types, or in a nested schema) is the intersection instead of a copy
+    of the inherited field, and the type shape of ``--allof-merge-mode none`` keeps the length of a closed tuple. An
+    allOf member reads the siblings of its ``$ref`` as a part where the dialect does (2020-12, not draft 7), names the
+    target of a ``$ref`` alias as its base, and an allOf union admits null where every part does.
     """
     _assert_shape_output(output_file, stem, backend, options, COMBINED_OPTION_ARGS)
 
