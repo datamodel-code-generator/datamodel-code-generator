@@ -75,6 +75,29 @@ def test_msgspec_forbid_unknown_fields(output_file: Path, option_set: str) -> No
         )
 
 
+def test_msgspec_forbid_unknown_fields_flattened_bases(output_file: Path) -> None:
+    """Write forbid_unknown_fields=True on a Struct that takes the fields of a closed and an open base as its own.
+
+    msgspec takes no two bases with fields of their own, so ``Both`` is written with their fields and takes the option
+    of ``Closed`` as ``Closed`` writes it, a bool, and rejects an unknown field as the schema does.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "msgspec_forbid_unknown_fields_flattened_bases.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--output-model-type", "msgspec.Struct", "--formatters", "builtin", "--disable-timestamp"),
+            "--use-msgspec-forbid-unknown-fields",
+        ],
+    )
+    documents = {"valid": {"both": {"a": 1, "b": "x"}}, "unknown field": {"both": {"a": 1, "c": 2}}}
+    with _generated_model(output_file, "msgspec_forbid_unknown_fields_flattened_bases_model", "Model") as model:
+        assert_output(
+            "".join(f"{label}: {_verdict(model, document)}\n" for label, document in documents.items()),
+            name="payloads",
+        )
+
+
 def _verdict(model: Any, document: object) -> str:
     """Return whether the generated model decodes a JSON document."""
     try:

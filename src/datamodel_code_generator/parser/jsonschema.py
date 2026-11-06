@@ -199,9 +199,9 @@ from datamodel_code_generator.model._decisions.tag_value import (
     union_tag_values,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
 from datamodel_code_generator.model.base import (
-    _FORBID_UNKNOWN_FIELDS_TEMPLATE_DATA_KEY,
     UNDEFINED,
     _field_source_name,
+    _mark_forbids_unknown_fields,
     get_inherited_fields,  # noqa: F401  # Preserve the established parser.jsonschema export.
     sanitize_module_name,
 )
@@ -2554,7 +2554,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         forbid_unknown_fields.
         """
         if self.use_msgspec_forbid_unknown_fields and _all_of_values.inline_sources_close(self, (obj,)):
-            self.extra_template_data[path][_FORBID_UNKNOWN_FIELDS_TEMPLATE_DATA_KEY] = True
+            _mark_forbids_unknown_fields(self.extra_template_data[path])
         additional_properties = self._model_additional_properties(obj)
         if isinstance(additional_properties, bool):
             self._output_model_context.store_additional_properties_value(
