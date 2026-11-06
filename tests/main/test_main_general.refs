@@ -419,6 +419,7 @@ minimal-kept	main/main_general/all_exports_export_displaced_by_a_prefixed_name_t
 20261106-practical-314-formatters206	main/formatter_policy/practical-314-ruff-check.py
 20261106-practical-315-formatters207	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 20261106-practical-315-formatters207	main/formatter_policy/practical-315-builtin.py	= main/formatter_policy/practical-314-black.py
+20261106-practical-315-formatters208	main/formatter_policy/practical-315-black.py	= main/formatter_policy/practical-314-black.py
 20261106-practical-315-formatters209	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 20261106-practical-315-formatters209	main/formatter_policy/practical-315-ruff-check.py	= main/formatter_policy/practical-314-ruff-check.py
 20261106-standard-310-formatters174	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
@@ -453,6 +454,7 @@ minimal-kept	main/main_general/all_exports_export_displaced_by_a_prefixed_name_t
 20261106-standard-314-formatters188	main/formatter_policy/standard-314-ruff-check.py
 20261106-standard-315-formatters189	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 20261106-standard-315-formatters189	main/formatter_policy/standard-315-builtin.py	= main/formatter_policy/standard-314-black.py
+20261106-standard-315-formatters190	main/formatter_policy/standard-315-black.py	= main/formatter_policy/standard-314-black.py
 20261106-standard-315-formatters191	main/formatter_policy/no_warning.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 20261106-standard-315-formatters191	main/formatter_policy/standard-315-ruff-check.py	= main/formatter_policy/standard-314-ruff-check.py
 [test_check_directory_extra_file]
