@@ -1,0 +1,36 @@
+asyncapi: 3.0.0
+info:
+  title: Trait headers from an inline and a referenced trait
+  version: 1.0.0
+channels:
+  c:
+    address: c
+    messages:
+      inlineFirst:
+        payload:
+          type: string
+        traits:
+          - headers:
+              type: object
+              properties:
+                a:
+                  type: string
+          - $ref: '#/components/messageTraits/H'
+      refFirst:
+        payload:
+          type: string
+        traits:
+          - $ref: '#/components/messageTraits/H'
+          - headers:
+              type: object
+              properties:
+                a:
+                  type: string
+components:
+  messageTraits:
+    H:
+      headers:
+        type: object
+        properties:
+          b:
+            type: integer
