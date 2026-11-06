@@ -1177,6 +1177,12 @@ pydantic_v2.dataclass-optional_args3-discriminator/force_optional_pydantic_v2_da
 --use-annotated-discriminator/pattern_use_annotated.py	main/openapi/discriminator/pattern_use_annotated.py
 [test_main_openapi_discriminator_pattern_mismatch]
 	main/openapi/discriminator/pattern_mismatch.py
+	main/openapi/main_openapi/discriminator_pattern_mismatch.warnings.txt
+[test_main_openapi_discriminator_pattern_mismatch_field_constraints]
+pydantic_v2.BaseModel	main/openapi/main_openapi/discriminator_pattern_mismatch_field_constraints[pydantic_v2.BaseModel].py
+pydantic_v2.BaseModel	main/openapi/main_openapi/discriminator_pattern_mismatch_field_constraints[pydantic_v2.BaseModel].warnings.txt	= main/openapi/main_openapi/discriminator_pattern_mismatch.warnings.txt
+pydantic_v2.dataclass	main/openapi/main_openapi/discriminator_pattern_mismatch_field_constraints[pydantic_v2.dataclass].py
+pydantic_v2.dataclass	main/openapi/main_openapi/discriminator_pattern_mismatch_field_constraints[pydantic_v2.dataclass].warnings.txt	= main/openapi/main_openapi/discriminator_pattern_mismatch.warnings.txt
 [test_main_openapi_discriminator_pattern_nested_choices]
 	main/openapi/discriminator/pattern_nested_choices.py
 	main/openapi/discriminator/pattern_nested_choices_decoded.txt

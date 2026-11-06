@@ -1858,27 +1858,80 @@ def test_main_openapi_discriminator_pattern(option: str, expected_file: str, out
 
 
 def test_main_openapi_discriminator_pattern_mismatch(output_file: Path) -> None:
-    """Keep the patterns of a union whose tag is outside its pattern, as the schema rejects that variant.
+    """Drop the patterns of a union whose tag is outside its pattern, and warn that the variant never validates.
 
-    The `const` tag `cat` and the mapped tags `parrot` and `shark` do not match their patterns, so each union keeps the
-    patterns that hide its tags from Pydantic, as before, and only its source is compared.
+    The `const` tag `cat` and the mapped tags `parrot` and `shark` do not match their patterns. A pattern beside a tag
+    `Literal` hides it from Pydantic's discriminator, so the module would not import; each union writes its tags
+    without patterns, and a warning names each tag the schema accepts no variant with (#6238).
     """
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "discriminator_pattern_mismatch.yaml",
-        output_path=output_file,
-        input_file_type="openapi",
-        assert_func=assert_file_content,
-        expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / "pattern_mismatch.py",
-        extra_args=[
-            "--target-python-version",
-            "3.10",
-            "--output-model-type",
-            "pydantic_v2.BaseModel",
-            "--formatters",
-            "builtin",
-            "--use-annotated",
-        ],
-        skip_code_validation=True,
+    with pytest.warns(UserWarning, match="of its tag field rejects") as records:
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator_pattern_mismatch.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            expected_file=EXPECTED_OPENAPI_PATH / "discriminator" / "pattern_mismatch.py",
+            extra_args=[
+                "--target-python-version",
+                "3.10",
+                "--output-model-type",
+                "pydantic_v2.BaseModel",
+                "--formatters",
+                "builtin",
+                "--use-annotated",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in records if record.category is UserWarning)
+        ),
+        name="warnings",
+    )
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"])
+def test_main_openapi_discriminator_pattern_mismatch_field_constraints(
+    output_model_type: str, output_file: Path
+) -> None:
+    """Write the tags of a union without patterns under ``--field-constraints`` too, so each union decodes by its tag.
+
+    A tag outside its pattern is warned about, and the union still selects the variant by the tag (#6238).
+    """
+    with pytest.warns(UserWarning, match="of its tag field rejects") as records:
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "discriminator_pattern_mismatch.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                "--output-model-type",
+                output_model_type,
+                "--formatters",
+                "builtin",
+                "--field-constraints",
+                "--disable-timestamp",
+            ],
+            force_exec_validation=True,
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in records if record.category is UserWarning)
+        ),
+        name="warnings",
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"discriminator_pattern_mismatch_{output_model_type.replace('.', '_')}",
+        model_name="Pets",
+        valid_json=json.dumps({
+            "constTag": {"type": "dog"},
+            "mappedTag": {"type": "bee"},
+            "oneOfMappedTags": {"type": "frog"},
+        }),
+        invalid_json=json.dumps({"oneOfMappedTags": {"type": "toad"}}),
+        expected_error_type="union_tag_invalid",
     )
 
 

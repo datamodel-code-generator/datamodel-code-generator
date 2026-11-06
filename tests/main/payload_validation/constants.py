@@ -193,7 +193,7 @@ EXCLUDED_CASES: dict[str, str] = {
     ),
     "openapi/discriminator_pattern_mismatch.yaml::components.schemas.Cat": (
         "its const tag is outside its pattern, so the schema accepts no payload; "
-        "test_main_openapi_discriminator_pattern_mismatch pins its source"
+        "test_main_openapi_discriminator_pattern_mismatch pins its output and warnings"
     ),
     "jsonschema/number_constraints_on_mapped_formats.json": (
         "the boolean numeric format needs --type-mappings; "
