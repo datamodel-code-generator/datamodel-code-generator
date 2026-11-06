@@ -752,16 +752,44 @@ class SchemaFetchError(Error):
 _COMMENT_ONLY_HEADER_FAST_PATH_LIMIT = 4096
 
 
-def get_first_file(path: Path) -> Path:  # pragma: no cover
-    """Find and return the first file in a path (file or directory)."""
-    if path.is_file():
-        return path
+def get_first_file(path: Path) -> Path:
+    """Find and return the first file in a path: the path itself unless it is a directory, else its first file."""
     if path.is_dir():
         for child in path.rglob("*"):
             if child.is_file():
                 return child
+    elif path.exists():
+        return path
     msg = f"No file found in: {path}"
     raise FileNotFoundError(msg)
+
+
+def _read_once_input(input_: _GenerationInput) -> tuple[Path, bytes] | None:
+    """Return a path input with its bytes when it can be read only once: neither a directory nor a regular file.
+
+    A pipe or a device yields its bytes to the first read only, so generation reads it before anything else and every
+    later read of the input takes these bytes.
+    """
+    import stat  # noqa: PLC0415
+
+    if not isinstance(input_, Path):
+        return None
+    try:
+        mode = input_.stat().st_mode
+    except OSError:
+        return None
+    if stat.S_ISDIR(mode) or stat.S_ISREG(mode):
+        return None
+    return input_, input_.read_bytes()
+
+
+def _read_input_text(path: Path, encoding: str, data: bytes | None) -> str:
+    """Return the text of an input file as reading it as text does, decoding `data` when the file was read already."""
+    if data is None:
+        return path.read_text(encoding=encoding)
+    from datamodel_code_generator._python_syntax import normalize_newlines  # noqa: PLC0415
+
+    return normalize_newlines(data.decode(encoding))
 
 
 def _is_comment_only_source(source: str) -> bool:
@@ -1196,6 +1224,7 @@ def _normalize_raw_input(  # noqa: PLR0912
     input_text: str | None,
     input_file_type: InputFileType,
     config: GenerateConfig,
+    read_once_data: bytes | None,
 ) -> str | None:
     if input_file_type not in RAW_DATA_TYPES or input_file_type == InputFileType.GraphQL:
         return input_text
@@ -1222,17 +1251,22 @@ def _normalize_raw_input(  # noqa: PLR0912
                     raise ValueError(msg) from None
                 return {key: value for key, value in first_row.items() if key is not None}
 
-            if isinstance(input_, Path):
+            if isinstance(input_, Path) and read_once_data is None:
                 with input_.open(encoding=config.encoding) as f:
                     obj = get_header_and_first_line(f)
             else:
                 import io  # noqa: PLC0415
 
-                obj = get_header_and_first_line(io.StringIO(input_text))
+                text = (
+                    _read_input_text(input_, config.encoding, read_once_data)
+                    if isinstance(input_, Path)
+                    else input_text
+                )
+                obj = get_header_and_first_line(io.StringIO(text))
         elif input_file_type == InputFileType.Dict and isinstance(input_, Mapping):
             obj = input_
         elif input_file_type in {InputFileType.Yaml, InputFileType.Json, InputFileType.Dict}:
-            text = input_.read_text(encoding=config.encoding) if isinstance(input_, Path) else input_text
+            text = _read_input_text(input_, config.encoding, read_once_data) if isinstance(input_, Path) else input_text
             assert text is not None
             if input_file_type == InputFileType.Yaml:
                 obj = load_yaml(text)
@@ -1262,6 +1296,7 @@ def _convert_mcp_tools(
     input_text: str | None,
     config: GenerateConfig,
     remote_text_cache: DefaultPutDict[str, str],
+    read_once_data: bytes | None,
 ) -> tuple[Mapping[str, Any] | None, InputFileType, bool]:
     import json  # noqa: PLC0415
 
@@ -1272,7 +1307,7 @@ def _convert_mcp_tools(
             case Mapping() | list():
                 return input_
             case Path():
-                return load_text_data(input_.read_text(encoding=config.encoding), mapping=False)
+                return load_text_data(_read_input_text(input_, config.encoding, read_once_data), mapping=False)
         assert input_text is not None
         return load_text_data(input_text, mapping=False)
 
@@ -2174,7 +2209,8 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
     config = _prepare_directory_input(input_, config)
     source_override: Mapping[str, Any] | None = None
     diagnostic_source_path: Path | None = None
-    prefetched_source: tuple[Path, bytes] | None = None
+    prefetched_source = _read_once_input(input_)
+    read_once_data = None if prefetched_source is None else prefetched_source[1]
     if input_file_type == InputFileType.Auto:
         try:
             match input_:
@@ -2189,7 +2225,7 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
                     prefetched_source = (detected_input_path, input_data)
                     input_text_ = input_data.decode(config.encoding)
                 case Path() as input_path:
-                    input_text_ = get_first_file(input_path).read_text(encoding=config.encoding)
+                    input_text_ = _read_input_text(get_first_file(input_path), config.encoding, read_once_data)
                 case [Path(), *_] as input_paths:
                     detected_input_path = get_first_file(input_paths[0])
                     input_data = detected_input_path.read_bytes()
@@ -2215,12 +2251,12 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
             )
             # Reuse already-read text for single Path file to avoid re-reading
             # Only for OpenAPI/JsonSchema (RAW_DATA_TYPES are transformed by genson)
-            if isinstance(input_, Path) and input_.is_file() and input_file_type not in RAW_DATA_TYPES:
+            if isinstance(input_, Path) and not input_.is_dir() and input_file_type not in RAW_DATA_TYPES:
                 input_text = input_text_
                 diagnostic_source_path = Path(input_.name)
 
     with _warn_on_input_string_path_failure(input_):
-        input_text = _normalize_raw_input(input_, input_text, input_file_type, config)
+        input_text = _normalize_raw_input(input_, input_text, input_file_type, config, read_once_data)
 
     if input_file_type == InputFileType.MCPTools:
         with _warn_on_input_string_path_failure(input_):
@@ -2229,6 +2265,7 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
                 input_text,
                 config,
                 remote_text_cache,
+                read_once_data,
             )
 
     if isinstance(input_, ParseResult) and input_file_type not in RAW_DATA_TYPES:
