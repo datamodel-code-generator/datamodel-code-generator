@@ -2035,6 +2035,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "use_standard_primitive_types",
         "use_duplicate_name_suffix_for_every_collision",
         "name_converted_payloads_by_message",
+        "merge_message_trait_headers",
         "use_single_value_enum_as_const",
         "read_const_beside_enum",
         "filter_literal_values",

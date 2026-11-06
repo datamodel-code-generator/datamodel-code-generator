@@ -203,6 +203,7 @@
 - `--keep-self-referencing-array-items`: Keep the items of an array whose items name the array itself.
 - `--keep-shared-members-on-collapsed-root-models`: Keep each member of a root type that collapse inlined at sev...
 - `--keyword-only`: Generate dataclasses with keyword-only fields (Python 3.10+).
+- `--merge-message-trait-headers`: Give an AsyncAPI message the headers of all its traits, merged in order, and ...
 - `--model-extra-keys`: Add model-level schema extensions to ConfigDict json_schema_extra.
 - `--model-extra-keys-without-x-prefix`: Strip x- prefix from model-level schema extensions and add to ConfigDic...
 - `--model-name-map`: Rename generated model classes from a JSON mapping.
@@ -223,6 +224,7 @@
 - `--no-keep-reference-null-on-merged-models`
 - `--no-keep-self-referencing-array-items`
 - `--no-keep-shared-members-on-collapsed-root-models`
+- `--no-merge-message-trait-headers`
 - `--no-name-converted-payloads-by-message`
 - `--no-omit-incomplete-model-defaults`
 - `--no-omit-redundant-reference-null`

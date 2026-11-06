@@ -1520,6 +1520,7 @@ def _build_parser(  # noqa: PLR0911, PLR0913
                 **_openapi_shared_options(config),
                 "asyncapi_version": asyncapi_version,
                 "name_converted_payloads_by_message": config.name_converted_payloads_by_message,
+                "merge_message_trait_headers": config.merge_message_trait_headers,
                 **additional_options,
             }
             parser_config = _create_parser_config(config, asyncapi_additional_options)

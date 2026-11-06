@@ -23,6 +23,14 @@ null	main/asyncapi/main_asyncapi/components_that_are_not_an_object[null].py	= ma
 	main/asyncapi/edge_cases.py
 [test_main_asyncapi_external_message_ref]
 	main/asyncapi/external_message_ref.py
+[test_main_asyncapi_merge_message_trait_headers]
+null-merged	main/asyncapi/main_asyncapi/merge_message_trait_headers[null-merged].py
+v2-merged	main/asyncapi/main_asyncapi/merge_message_trait_headers[v2-merged].py
+v2-released	main/asyncapi/main_asyncapi/merge_message_trait_headers[v2-released].py
+v3-merged	main/asyncapi/main_asyncapi/merge_message_trait_headers[v3-merged].py
+v3-released	main/asyncapi/main_asyncapi/merge_message_trait_headers[v3-released].py
+[test_main_asyncapi_merge_message_trait_headers_of_two_inline_traits]
+	main/asyncapi/main_asyncapi/merge_message_trait_headers_of_two_inline_traits.py
 [test_main_asyncapi_multi_format_schema_objects]
 	main/asyncapi/multi_format_schemas.py
 [test_main_asyncapi_name_converted_payloads_by_message]

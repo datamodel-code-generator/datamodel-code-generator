@@ -61,6 +61,8 @@ keep-self-referencing-array-items-practical	main/preset_opt_in_options/preset_se
 keep-self-referencing-array-items-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-self-referencing-array-items-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-self-referencing-array-items-practical].py
 keep-shared-members-on-collapsed-root-models-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-shared-members-on-collapsed-root-models-practical].py
 keep-shared-members-on-collapsed-root-models-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-shared-members-on-collapsed-root-models-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-shared-members-on-collapsed-root-models-practical].py
+merge-message-trait-headers-practical	main/preset_opt_in_options/preset_sets_opt_in_option[merge-message-trait-headers-practical].py
+merge-message-trait-headers-standard	main/preset_opt_in_options/preset_sets_opt_in_option[merge-message-trait-headers-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[merge-message-trait-headers-practical].py
 merge-shared-variant-tags-practical	main/preset_opt_in_options/preset_sets_opt_in_option[merge-shared-variant-tags-practical].py
 merge-shared-variant-tags-standard	main/preset_opt_in_options/preset_sets_opt_in_option[merge-shared-variant-tags-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[merge-shared-variant-tags-practical].py
 name-allof-union-members-after-branches-practical	main/preset_opt_in_options/preset_sets_opt_in_option[name-allof-union-members-after-branches-practical].py

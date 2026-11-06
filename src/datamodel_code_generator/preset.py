@@ -1184,6 +1184,14 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "that default, so input that leaves the property out is valid instead of failing on the default."
         ),
     ),
+    PresetOptionGroup(
+        title="AsyncAPI message trait headers merged",
+        config=PresetConfig(merge_message_trait_headers=True),
+        description=(
+            "Give an AsyncAPI message the headers of all its traits, merged in order as JSON Merge Patches, inline "
+            "and referenced traits alike, and then its own headers, which win."
+        ),
+    ),
 )
 """The 20261104 groups and the opt-in options of the release after 0.90.0."""
 
@@ -1565,7 +1573,9 @@ def render_presets_markdown() -> str:
             "inherits from lists as required keeps the default its schema gives it (`a: str = 'x'`), as one the schema "
             "lists as required itself does, and `--omit-incomplete-model-defaults`: a property whose object default "
             "lacks required fields of its model (`default: {}`) is written without that default (`spec: PodSpec | "
-            "None = None`), so input that leaves it out is valid instead of failing on the default."
+            "None = None`), so input that leaves it out is valid instead of failing on the default, and "
+            "`--merge-message-trait-headers`: an AsyncAPI message takes the headers of all its traits, merged in order "
+            "as JSON Merge Patches, and then its own, instead of only its own or those of its one inline trait."
         ),
         "",
         "## Override Preset Options",

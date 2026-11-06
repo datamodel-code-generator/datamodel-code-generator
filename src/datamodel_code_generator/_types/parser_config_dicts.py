@@ -302,6 +302,7 @@ class AsyncAPIParserConfigDict(JSONSchemaParserConfigDict, closed=True):
     openapi_version: NotRequired[OpenAPIVersion | None]
     asyncapi_version: NotRequired[AsyncAPIVersion | None]
     name_converted_payloads_by_message: NotRequired[bool]
+    merge_message_trait_headers: NotRequired[bool]
 
 
 class ProtobufParserConfigDict(JSONSchemaParserConfigDict, closed=True):

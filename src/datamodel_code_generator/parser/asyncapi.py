@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from dataclasses import replace
-from functools import partial
+from functools import partial, reduce
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
@@ -155,6 +155,27 @@ def _iter_trait_items(traits: Any, path: list[str]) -> Iterator[tuple[dict[str, 
         if not isinstance(trait, dict):
             continue
         yield trait, [*path, str(index)] if is_trait_list else path
+
+
+def _merge_patch(target: YamlValue, patch: YamlValue, *, deref: Callable[[YamlValue], YamlValue]) -> YamlValue:
+    """Return ``target`` with ``patch`` applied as a JSON Merge Patch (RFC 7386), reading references by ``deref``.
+
+    Where both are objects, each is read as the object a reference names, the members of ``patch`` replace those of
+    ``target`` member by member, and a member of ``patch`` that is null removes it. A value that meets no object of
+    ``target`` is kept as written, so it keeps its location in its document.
+    """
+    if not isinstance(patch, dict) or not isinstance(target, dict):
+        return patch
+    read_target, read_patch = deref(target), deref(patch)
+    if read_target is not target or read_patch is not patch:
+        return _merge_patch(read_target, read_patch, deref=deref)
+    merged = dict(target)
+    for key, value in patch.items():
+        if value is None:
+            merged.pop(key, None)
+        else:
+            merged[key] = _merge_patch(merged.get(key), value, deref=deref)
+    return merged
 
 
 def _path_to_string(path: list[str]) -> str:
@@ -591,6 +612,11 @@ class AsyncAPIParser(OpenAPIParser):
         path: list[str],
         seen_paths: set[tuple[str, ...]] | None = None,
     ) -> list[AsyncAPISchema]:
+        """Return the schemas of a message: its payload, its headers, those of its traits and its bindings.
+
+        Under ``--merge-message-trait-headers`` the headers of a message with two or more sources of them are those of
+        its traits and its own merged in order (``_message_headers``); else row ``legacy-one-inline-trait-headers``.
+        """
         if (schemas := self._follow(message, name, seen_paths, self._iter_message_payload_schemas)) is not None:
             return schemas
         if isinstance(one_of := message.get("oneOf"), list):
@@ -602,13 +628,59 @@ class AsyncAPIParser(OpenAPIParser):
         schemas = self._member_format_schemas(
             message, "payload", _make_model_name(name, "Payload"), path, payload_schema_format
         )
-        headers_name = None if "headers" in message else _make_model_name(name, "Headers")
-        schemas.extend(self._member_format_schemas(message, "headers", _make_model_name(name, "Headers"), path))
+        headers_name = _make_model_name(name, "Headers")
+        trait_headers_name = None if "headers" in message else headers_name
+        if self.config.merge_message_trait_headers and len(headers := self._message_headers(message, path)) > 1:
+            trait_headers_name = None
+            if (merged := reduce(partial(_merge_patch, deref=self._dereferenced), headers)) is not None:
+                schemas.extend(self._merged_headers_schemas(headers_name, merged, message, path))
+        else:
+            schemas.extend(self._member_format_schemas(message, "headers", headers_name, path))
         schemas.extend(
-            _member_schemas(message, "traits", self._iter_trait_schemas, name, path, seen_paths, headers_name)
+            _member_schemas(message, "traits", self._iter_trait_schemas, name, path, seen_paths, trait_headers_name)
         )
         schemas.extend(_member_schemas(message, "bindings", self._iter_binding_schemas, name, path, seen_paths))
         return schemas
+
+    def _message_headers(self, message: dict[str, Any], path: list[str]) -> list[YamlValue]:
+        """Return the headers of each trait of a message that defines them, in order, then the message's own.
+
+        Under ``--merge-message-trait-headers`` they are merged in this order, as the traits of AsyncAPI 2 and 3 are
+        (a JSON Merge Patch each, the message's own fields winning); a trait that is a reference is its target.
+        """
+        headers: list[YamlValue] = []
+        for trait, _ in _iter_trait_items(message.get("traits"), [*path, "traits"]):
+            if isinstance(resolved := self._dereferenced(trait, siblings=True), dict) and "headers" in resolved:
+                headers.append(resolved["headers"])
+        if "headers" in message:
+            headers.append(message["headers"])
+        return headers
+
+    def _merged_headers_schemas(
+        self, name: str, merged: YamlValue, message: dict[str, Any], path: list[str]
+    ) -> list[AsyncAPISchema]:
+        """Return the schemas of the merged headers of a message, located where the message's own headers are."""
+        location = self._member_location(message, "headers")
+        if isinstance(merged, dict):
+            merged = self._mount_converted_schema(merged, location)
+        return self._iter_schema_format_schemas(name, merged, [*path, "headers"], location=location)
+
+    def _dereferenced(
+        self, value: YamlValue, seen_paths: frozenset[tuple[str, ...]] = frozenset(), *, siblings: bool = False
+    ) -> YamlValue:
+        """Return the value a reference names, following references to references, else ``value``.
+
+        An object that holds ``$ref`` alone is a reference, and with ``siblings`` one beside other keywords too, as a
+        trait is read; a reference to one already met ends there.
+        """
+        if (
+            not isinstance(value, dict)
+            or (len(value) > 1 and not siblings)
+            or (resolved := self._resolve_ref_object(value, set(seen_paths))) is None
+        ):
+            return value
+        with self._asyncapi_context(resolved.context):
+            return self._dereferenced(resolved.value, seen_paths | {tuple(resolved.path)}, siblings=siblings)
 
     def _iter_binding_schemas(
         self,

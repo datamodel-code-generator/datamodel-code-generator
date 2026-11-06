@@ -888,6 +888,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         member, or `Any` where no member is left, as in 0.90.0
   --keyword-only        Defined models as keyword only (for example
                         dataclass(kw_only=True)).
+  --merge-message-trait-headers, --no-merge-message-trait-headers
+                        AsyncAPI only: give a message the headers of all its
+                        traits, merged in order as AsyncAPI 2 and 3 apply
+                        traits (a JSON Merge Patch each, a trait that is a
+                        $ref read as its target), and then its own headers,
+                        which win; without it the message's own headers, else
+                        those of its one inline trait that defines them, are
+                        its headers, and a second inline trait with headers is
+                        an error, as in 0.90.0
   --model-name-map MODEL_NAME_MAP
                         Rename generated model classes by schema ref or
                         current generated class name using a JSON object or

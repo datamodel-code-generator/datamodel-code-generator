@@ -528,6 +528,7 @@ def _baseline_generate(
     skip_path_extension_keys: bool = False,
     use_enum_field_as_literal_in_operations: bool = False,
     name_converted_payloads_by_message: bool = False,
+    merge_message_trait_headers: bool = False,
     all_exports_scope: AllExportsScope | None = None,
     all_exports_collision_strategy: AllExportsCollisionStrategy | None = None,
     field_type_collision_strategy: FieldTypeCollisionStrategy | None = None,
