@@ -10729,6 +10729,9 @@ forms on the text, and a target Pydantic older than 2.10 warns so.""",
     [
         pytest.param(["--use-annotated"], id="use_annotated_released"),
         pytest.param(["--field-constraints"], id="field_constraints_released"),
+        pytest.param(["--strict-types", "str"], id="strict_released"),
+        pytest.param(["--use-annotated", "--strict-types", "str"], id="use_annotated_strict_released"),
+        pytest.param(["--field-constraints", "--strict-types", "str"], id="field_constraints_strict_released"),
         *(
             pytest.param([*args, "--use-encoded-str-for-constrained-base64"], id=id_)
             for args, id_ in (
@@ -10736,6 +10739,10 @@ forms on the text, and a target Pydantic older than 2.10 warns so.""",
                 (["--use-annotated"], "use_annotated"),
                 (["--field-constraints"], "field_constraints"),
                 (["--field-constraints", "--strict-types", "str"], "field_constraints_strict"),
+                (
+                    ["--use-annotated", "--strict-types", "str", "--target-pydantic-version", "2"],
+                    "strict_target_pydantic_2",
+                ),
                 (["--use-annotated", "--collapse-root-models"], "collapse_root_models"),
                 (["--output-model-type", "pydantic_v2.dataclass", "--use-annotated"], "dataclass_annotated"),
                 (["--use-annotated", "--target-pydantic-version", "2"], "target_pydantic_2"),
@@ -10752,7 +10759,9 @@ def test_main_encoded_str_for_constrained_base64(output_file: Path, extra_args: 
     ``Annotated[str, Field(...), EncodedStr(encoder=Base64Encoder)]`` at a property, a nullable property, an item, a map
     value, a root, a union member and a collapsed root, so the payloads valid by their text are accepted and those
     invalid by their text rejected; an unconstrained string stays ``Base64Str``. A target Pydantic older than 2.10 warns
-    that it does not check them.
+    that it does not check them. Under ``--strict-types str`` the decoded string is ``StrictStr`` in every form, so a
+    valid text given as bytes is rejected, as a strict string refuses bytes; Pydantic before 2.10 accepts it, and a
+    target that old warns so.
     """
     name = "encoded_str_for_constrained_base64"
     with warnings.catch_warnings(record=True) as records:
@@ -10777,17 +10786,30 @@ def test_main_encoded_str_for_constrained_base64(output_file: Path, extra_args: 
     verdicts = []
     with _generated_model(output_file, name, "EncodedStrForConstrainedBase64") as model:
         validate = _model_json_validator(model)
+        validate_python = getattr(model, "model_validate", None) or TypeAdapter(model).validate_python
         validate(json.dumps(payloads["base"]))
         for field_name, values in payloads["cases"].items():
-            for kind, value in values.items():
+            for kind, value in (*values.items(), ("text-valid-bytes", _as_bytes(values["text-valid"]))):
                 try:
-                    validate(json.dumps(payloads["base"] | {field_name: value}))
+                    if kind == "text-valid-bytes":
+                        validate_python(payloads["base"] | {field_name: value})
+                    else:
+                        validate(json.dumps(payloads["base"] | {field_name: value}))
                 except ValidationError:
                     verdict = "rejected"
                 else:
                     verdict = "accepted"
                 verdicts.append(f"{field_name} {kind}: {verdict}")
     assert_output("\n".join(verdicts) + "\n", name="verdicts")
+
+
+def _as_bytes(value: Any) -> Any:
+    """Return a payload string, list of strings or map of strings with each string given as bytes."""
+    if isinstance(value, str):
+        return value.encode()
+    if isinstance(value, list):
+        return [_as_bytes(item) for item in value]
+    return {key: _as_bytes(item) for key, item in value.items()}
 
 
 @pytest.mark.cli_doc(

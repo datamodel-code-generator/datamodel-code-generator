@@ -178,6 +178,7 @@ string_kwargs: tuple[str, ...] = _applicability.STRING_LENGTH_KEYWORD_ORDER
 _ANNOTATED_STRING_IMPORTS = (IMPORT_ANNOTATED,)
 _ENCODED_BYTES_IMPORTS = (IMPORT_ANNOTATED, IMPORT_FIELD, IMPORT_ENCODED_BYTES, IMPORT_BASE64_ENCODER)
 _ENCODED_STR_IMPORTS = (IMPORT_ANNOTATED, IMPORT_FIELD, IMPORT_ENCODED_STR, IMPORT_BASE64_ENCODER)
+_STRICT_ENCODED_STR_IMPORTS = (IMPORT_ANNOTATED, IMPORT_STRICT_STR, IMPORT_ENCODED_STR, IMPORT_BASE64_ENCODER)
 
 bytes_kwargs: tuple[str, ...] = _applicability.LENGTH_KEYWORD_ORDER
 _FLOAT_TYPES: frozenset[Types] = frozenset({Types.float, Types.double, Types.number, Types.time})
@@ -487,9 +488,11 @@ class DataTypeManager(_DataTypeManagerBase):
     def _encoded_str_type(self, kwargs: Mapping[str, Any]) -> DataType | None:
         """Return a string decoded from base64 text with the string constraints of ``kwargs``, or None without any.
 
-        It writes them in front of the decoding ``EncodedStr``, so Pydantic checks them on the text.
+        It writes them in front of the decoding ``EncodedStr``, so Pydantic checks them on the text. Under
+        ``--strict-types str`` it is the strict string that ``EncodedStr`` decodes, with or without constraints.
         """
-        if not (data_type_kwargs := self.transform_kwargs(dict(kwargs), _applicability.STRING_KEYWORD_ORDER)):
+        data_type_kwargs = self.transform_kwargs(dict(kwargs), _applicability.STRING_KEYWORD_ORDER)
+        if not (strict := StrictTypes.str in self.strict_types) and not data_type_kwargs:
             return None
         if self.PATTERN_KEY in data_type_kwargs:
             data_type_kwargs[self.PATTERN_KEY] = _get_regex_literal(data_type_kwargs[self.PATTERN_KEY])
@@ -504,8 +507,12 @@ class DataTypeManager(_DataTypeManagerBase):
             self.use_union_operator,
             self.treat_dot_as_module,
             self.use_serialize_as_any,
-        ).from_import(IMPORT_ENCODED_STR, kwargs=data_type_kwargs)
-        data_type._set_runtime_expression_imports(_ENCODED_STR_IMPORTS)  # noqa: SLF001
+        ).from_import(IMPORT_ENCODED_STR, kwargs=data_type_kwargs or None, strict=strict)
+        data_type._set_runtime_expression_imports(  # noqa: SLF001
+            (*_STRICT_ENCODED_STR_IMPORTS, *((IMPORT_FIELD,) if data_type_kwargs else ()))
+            if strict
+            else _ENCODED_STR_IMPORTS
+        )
         return data_type
 
     @override
@@ -574,13 +581,17 @@ class DataTypeManager(_DataTypeManagerBase):
         """
         if self._non_finite_multiple_of(types, kwargs) is not None:
             kwargs = {key: value for key, value in kwargs.items() if key != "multipleOf"}
+        if (
+            types == Types.byte
+            and (
+                encoded := self._encoded_str_type(
+                    kwargs if field_constraints and self.encodes_constrained_base64 else {}
+                )
+            )
+            is not None
+        ):
+            return encoded
         if field_constraints:
-            if (
-                types == Types.byte
-                and self.encodes_constrained_base64
-                and (encoded := self._encoded_str_type(kwargs)) is not None
-            ):
-                return encoded
             if _applicability.decimal_field_form(
                 options := self.constraint_options,
                 decimal_for_multiple_of=self.use_decimal_for_multiple_of,
@@ -724,18 +735,30 @@ class EncodedTextDataType(_RuntimeAnnotatedDataType):
     @property
     @override
     def type_hint(self) -> str:
-        """Render the constraints and the base64 decoding inside an Annotated subscript."""
-        keywords = (
-            keyword_argument(name, represent_python_value(value)) for name, value in (self.kwargs or {}).items()
+        """Render the decoded type, its constraints and the base64 decoding inside an Annotated subscript."""
+        constraints = (
+            (
+                call_text(
+                    self._binding("Field"),
+                    (keyword_argument(name, represent_python_value(value)) for name, value in kwargs.items()),
+                ),
+            )
+            if (kwargs := self.kwargs)
+            else ()
         )
         return subscript_text(
             self._binding("Annotated"),
             (
-                self.encoded_base,
-                call_text(self._binding("Field"), keywords),
+                self._decoded_base,
+                *constraints,
                 f"{self._binding(self.encoder)}(encoder={self._binding('Base64Encoder')})",
             ),
         )
+
+    @property
+    def _decoded_base(self) -> str:
+        """The type the decoding writes."""
+        return self.encoded_base
 
 
 class EncodedBytesDataType(EncodedTextDataType):
@@ -753,3 +776,9 @@ class EncodedStrDataType(EncodedTextDataType):
 
     encoded_base: ClassVar[str] = "str"
     encoder: ClassVar[str] = "EncodedStr"
+
+    @property
+    @override
+    def _decoded_base(self) -> str:
+        """``StrictStr`` for a strict string, which Pydantic 2.10 or later refuses bytes for, else ``str``."""
+        return self._binding("StrictStr") if self.strict else self.encoded_base
