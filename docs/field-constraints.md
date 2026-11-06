@@ -243,6 +243,14 @@ with it, `A` is a root model that holds them. In Pydantic `BaseModel` output, th
 aliases as it inlined the arrays before, and the aliases keep the counts: a property `a` that names a definition `A`,
 `{"anyOf": [{"type": "array", "maxItems": 1}, {"type": "array", "minItems": 3}]}`, is `a: A1 | A2`.
 
+A map of no properties (`additionalProperties`, `propertyNames` or none) that is the items of an array or the value of
+a map writes its `minProperties` and `maxProperties` on a type alias of its own the same way, with or without
+`--field-constraints`, which writes no root model for it: `{"type": "array", "items": {"type": "object",
+"additionalProperties": {"type": "string"}, "maxProperties": 2}}` at a property `tags` is `tags: list[Tag]` with
+`Tag = TypeAliasType("Tag", Annotated[dict[str, str], Field(max_length=2)])`, and the items of an object whose
+`additionalProperties` is `false` take `max_length=0`. A map that is a member of an `anyOf` or `oneOf` keeps the dict
+it shares with the other maps of the union.
+
 A `typing` alias, an abstract collection, `Annotated[T, ...]`, `Final[T]` and `Literal` are read as for number
 keywords, so `typing.List[int]`, `collections.abc.Sequence[int]` and `Annotated[list[int], ...]` take the keywords of
 `list`, and `Literal["a", "bb", None]` and `Literal[b"a", b"bb"]` take those of `str` and `bytes` in Pydantic models.

@@ -2,9 +2,20 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel, constr
+from typing_extensions import TypeAliasType
+
+VAdditionalProperty = TypeAliasType(
+    "VAdditionalProperty", Annotated[dict[str, Any], Field(max_length=0)]
+)
+
+
+RItem = TypeAliasType("RItem", Annotated[dict[str, Any], Field(max_length=0)])
+
+
+IItem = TypeAliasType("IItem", Annotated[dict[str, Any], Field(max_length=0)])
 
 
 class Empty(BaseModel):
@@ -20,7 +31,7 @@ class Nothing(RootModel[list[Any]]):
 class Model(BaseModel):
     m: dict[str, Any] | None = Field(None, max_length=0)
     n: dict[constr(pattern=r'^a'), Any] | None = Field(None, max_length=0)
-    v: dict[str, dict[str, Any]] | None = None
+    v: dict[str, VAdditionalProperty] | None = None
     u: dict[str, Any] | None = None
     p: dict[constr(pattern=r'^x'), str] | None = None
     w: dict[str, Any] | None = None
@@ -28,5 +39,5 @@ class Model(BaseModel):
     t: list[str] | None = Field(None, max_length=1)
     e: Empty | None = None
     s: Nothing | None = None
-    r: list[dict[str, Any]] | None = None
-    i: list[dict[str, Any]] | None = None
+    r: list[RItem] | None = None
+    i: list[IItem] | None = None

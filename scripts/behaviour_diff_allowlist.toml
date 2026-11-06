@@ -233,6 +233,22 @@ decision = "#6171"
 release_note = "without --field-constraints, the minItems and maxItems of an array that has no field of its own (the member of an anyOf or oneOf, the items of an array, the values of a map) are written on a type alias of the array (Annotated[list[int], Field(min_length=2)]) instead of being dropped"
 
 [[accepted]]
+input = "*object_maps"
+aspects = [ "constraints" ]
+match = "^\\[constraints\\] false_(?:all_of_)?values:Model:[vri]: Union\\[.* -> Union\\[.*Annotated\\[dict\\[str, (?:Any|object)\\], (?:MaxLen|Meta)\\(max_length=0\\)\\].*\\]$"
+reason = "the items of an array and the values of a map that are objects closed by additionalProperties: false (no property) took a plain dict, which accepted every object, while the schema admits only the empty one; the map keeps its maxProperties 0 on a type alias of its own, as a nested array keeps its item counts (#6171) (schema-mismatch fix)"
+decision = "#6321"
+release_note = "the minProperties and maxProperties of a map of no properties that is the items of an array or the value of a map are written on a type alias of the map (Annotated[dict[str, str], Field(max_length=2)]) instead of being dropped, also under --field-constraints"
+
+[[accepted]]
+input = "*additional_properties_value_constraints_annotated*"
+aspects = [ "constraints" ]
+match = "^\\[constraints\\] Payload:objectValueMap: dict\\[str, dict\\[str, str\\]\\] -> dict\\[str, Annotated\\[dict\\[str, str\\], MinLen\\(min_length=1\\)\\]\\]$"
+reason = "without --use-annotated, the minProperties of a map that is the value of a map was dropped without a warning in the Pydantic outputs, which --use-annotated and msgspec already wrote on a type alias; the value keeps it on a type alias of its own (schema-mismatch fix)"
+decision = "#6321"
+release_note = "the minProperties and maxProperties of a map of no properties that is the items of an array or the value of a map are written on a type alias of the map (Annotated[dict[str, str], Field(max_length=2)]) instead of being dropped, also under --field-constraints"
+
+[[accepted]]
 input = "*allof_scalar_roots*"
 aspects = [ "constraints", "type" ]
 match = "^\\[(?:constraints\\] (?:Cat|Described|Named|Pet):nickname: .* -> .*(?:MaxLen\\(max_length=8\\)|Meta\\(max_length=8\\)).*|type\\] Nickname1: str -> Annotated\\[str, Meta\\(max_length=8\\)\\])$"

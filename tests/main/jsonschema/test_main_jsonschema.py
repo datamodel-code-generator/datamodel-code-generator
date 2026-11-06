@@ -9400,6 +9400,76 @@ def test_main_all_of_value_site_keywords(
         )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel"], id="pydantic_v2.BaseModel"),
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"], id="field_constraints"),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass"], id="pydantic_v2.dataclass"),
+        pytest.param(["--output-model-type", "msgspec.Struct"], id="msgspec.Struct"),
+    ],
+)
+def test_main_nested_map_property_counts(extra_args: list[str], tmp_path: Path, output_file: Path) -> None:
+    """Write the property counts of a map that is an item of an array on a type alias of its own (#6321).
+
+    As the item counts of a nested array, also under --field-constraints, which writes no root model for a map: the
+    items of an array, a map whose additionalProperties is false (no property) and one beside propertyNames take
+    ``Annotated[dict[...], Field(max_length=...)]``. A map value of a map, which msgspec wrote so already, takes it in
+    the Pydantic outputs too; a map that is a member of a union keeps the dict it shares with the other maps of the
+    union. Up to 0.89.0 these counts were dropped without a warning, so the model accepted maps the schema rejects.
+    """
+
+    def counted(**counts: Any) -> dict[str, Any]:
+        return {"type": "object", "additionalProperties": {"type": "integer"}, **counts}
+
+    input_file = tmp_path / "map_counts.json"
+    input_file.write_text(
+        json.dumps({
+            "title": "Model",
+            "type": "object",
+            "properties": {
+                "items": {"type": "array", "items": counted(maxProperties=2)},
+                "values": {"type": "object", "additionalProperties": counted(minProperties=1)},
+                "empty_items": {"type": "array", "items": {"type": "object", "additionalProperties": False}},
+                "named_items": {
+                    "type": "array",
+                    "items": {"type": "object", "propertyNames": {"pattern": "^a"}, "maxProperties": 1},
+                },
+                "member": {"anyOf": [counted(maxProperties=1), {"type": "string"}]},
+            },
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[*extra_args, "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    if "msgspec.Struct" in extra_args:
+        return
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="nested_map_property_counts",
+        model_name="Model",
+        valid_json=(
+            '{"items": [{"a": 1, "b": 2}], "values": {"k": {"a": 1}}, "empty_items": [{}], "named_items": [{"ab": 1}],'
+            ' "member": {"a": 1}}'
+        ),
+        invalid_json='{"items": [{"a": 1, "b": 2, "c": 3}]}',
+        expected_error_type="too_long",
+        expected_attribute_path=("items",),
+        expected_attribute_value=[{"a": 1, "b": 2}],
+        invalid_keyword_arguments=[
+            ({"values": {"k": {}}}, "too_short"),
+            ({"empty_items": [{"a": 1}]}, "too_long"),
+            ({"named_items": [{"ab": 1, "ac": 2}]}, "too_long"),
+        ],
+    )
+
+
 def _validation_verdict(validate: ABCCallable[[Any], object], value: object) -> str:
     """Say whether ``validate`` accepts ``value``; the tests below record both verdicts."""
     try:

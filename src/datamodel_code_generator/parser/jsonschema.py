@@ -506,6 +506,15 @@ def _update_false_schema_refs(
     return false_schema_refs
 
 
+def _is_counted_map(item: JsonSchemaObject) -> bool:
+    """Return whether a schema is a map whose property counts the type alias of a nested site holds.
+
+    An object or a ``propertyNames`` schema that no array type joins; ``_has_effective_constraints`` gives the counts
+    and leaves out one with properties, pattern properties or required names, which a model or a union of maps types.
+    """
+    return (item.is_object or item.propertyNames is not None) and not item.is_array
+
+
 _EXTERNAL_REF_MAPPING_IMPORT = ImportProducer("external-ref-mapping")
 _X_PYTHON_IMPORT = ImportProducer("x-python-import")
 _DEFAULT_LEFT_OFF_KEY = "_default_left_off"
@@ -6409,17 +6418,18 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return self._parse_item_root(site, preserve_constraints=self._has_materialized_container_constraints(site.obj))
 
     def _writes_item_counts_on_alias(self, item: JsonSchemaObject) -> bool:
-        """Return whether a nested array writes its item counts on a type alias of its own, as no field holds them.
+        """Return whether a nested array or map writes its counts on a type alias of its own, as no field holds them.
 
         Without --field-constraints, under which a nested array writes them on a root model of its own, an output that
         writes constraints in ``Annotated`` (``supports_internal_annotated_constraints``) gives the array the
         ``Annotated`` form a member of a type list takes, where it declares item counts (``_has_effective_constraints``)
         that its type does not fix itself, as a fixed-length tuple does, and no type list or enum its own build writes.
+        A map of no properties (``additionalProperties`` or ``propertyNames``) takes the form for its property counts
+        alike, which no output writes elsewhere at such a site, also under --field-constraints.
         """
         return bool(
-            not self.field_constraints
+            ((item.is_array and not self.field_constraints) or _is_counted_map(item))
             and self._output_model_context.supports_internal_annotated_constraints
-            and item.is_array
             and not item.enum
             and not self._get_array_union_non_array_types(item)
             and self._has_effective_constraints(item)
@@ -6427,8 +6437,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
 
     def _types_item_counts_by_alias(self, site: _Site) -> bool:
-        """Return whether a union member or the items of an array (a site with a parent) take an item-count alias."""
-        return site.parent is not None and self._writes_item_counts_on_alias(site.obj)
+        """Return whether a union member or the items of an array (a site with a parent) take an item-count alias.
+
+        A map takes one as the items of an array only: a union member that is a map keeps the type it shares with the
+        other maps of the union, as a union that holds two maps cannot be decoded by msgspec.
+        """
+        return (
+            site.parent is not None
+            and (site.parent.is_array or not _is_counted_map(site.obj))
+            and self._writes_item_counts_on_alias(site.obj)
+        )
 
     def _parse_item_counts_alias(self, site: _Site) -> DataType:
         """Parse a nested array as the type alias that holds its item counts, marked as an item-count site.

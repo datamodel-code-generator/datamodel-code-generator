@@ -35,6 +35,11 @@ PItemsPatternProperty = TypeAliasType(
 )
 
 
+PObjCountPatternProperty = TypeAliasType(
+    "PObjCountPatternProperty", Annotated[dict[str, int], Field(min_length=1)]
+)
+
+
 Pos = TypeAliasType("Pos", Annotated[int, Field(ge=1)])
 
 
@@ -56,7 +61,7 @@ class Model:
         dict[constr(pattern=r'^a|^b'), PSamePatternProperty | PSamePatternProperty1] | None
     ) = None
     pItems: dict[constr(pattern=r'^i'), PItemsPatternProperty] | None = None
-    pObjCount: dict[constr(pattern=r'^o'), dict[str, int]] | None = None
+    pObjCount: dict[constr(pattern=r'^o'), PObjCountPatternProperty] | None = None
     pOther: dict[str, conint(ge=0) | constr(max_length=2)] | None = None
     pEnumKeys: dict[Literal['a1', 'zz'], conint(ge=0)] | None = None
     pAny: dict[constr(pattern=r'^a|^b'), Any] | None = None
