@@ -37,6 +37,11 @@ Branch: TypeAlias = Branch1 | Branch2
 
 
 @dataclass
+class Nullable:
+    id: int | None = None
+
+
+@dataclass
 class Member(A):
     id: int = field()
 
@@ -52,7 +57,25 @@ class Item(A):
 
 
 @dataclass
+class NullableMember(Nullable):
+    id: int = field()
+
+
+@dataclass
+class NullableSibling(Nullable):
+    id: int = field()
+
+
+@dataclass
+class ObjectSite(Nullable):
+    id: int = field()
+
+
+@dataclass
 class Model:
+    nullable_member: NullableMember | None
+    nullable_sibling: NullableSibling | None
+    object_site: ObjectSite
     member: Member | None = None
     sibling: Sibling | None = None
     items: list[Item] | None = None

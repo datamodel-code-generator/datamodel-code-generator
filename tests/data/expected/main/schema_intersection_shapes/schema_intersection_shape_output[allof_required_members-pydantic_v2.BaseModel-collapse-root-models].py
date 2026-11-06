@@ -23,8 +23,15 @@ class Branch(RootModel[A | B]):
     root: A | B
 
 
+class Nullable(BaseModel):
+    id: int | None = None
+
+
 class Model(BaseModel):
     member: A | None = None
     sibling: A | None = None
     items: list[A] | None = None
     kept: Required | None = None
+    nullable_member: Nullable | None
+    nullable_sibling: Nullable | None
+    object_site: Nullable | None

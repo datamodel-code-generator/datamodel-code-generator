@@ -8372,6 +8372,17 @@
   },
   "allof_required_members": {
     "model": "Model",
+    "base": {
+      "nullable_member": {
+        "id": 1
+      },
+      "nullable_sibling": {
+        "id": 1
+      },
+      "object_site": {
+        "id": 1
+      }
+    },
     "fields": {
       "member": {
         "valid": [
@@ -8425,6 +8436,39 @@
           }
         ],
         "invalid": [
+          {}
+        ]
+      },
+      "nullable_member": {
+        "valid": [
+          null,
+          {
+            "id": 1
+          }
+        ],
+        "invalid": [
+          {}
+        ]
+      },
+      "nullable_sibling": {
+        "valid": [
+          null,
+          {
+            "id": 1
+          }
+        ],
+        "invalid": [
+          {}
+        ]
+      },
+      "object_site": {
+        "valid": [
+          {
+            "id": 1
+          }
+        ],
+        "invalid": [
+          null,
           {}
         ]
       }

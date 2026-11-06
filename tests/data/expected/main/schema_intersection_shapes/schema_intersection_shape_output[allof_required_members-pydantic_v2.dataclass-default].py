@@ -27,7 +27,15 @@ Branch = TypeAliasType("Branch", A | B)
 
 
 @dataclass
+class Nullable:
+    id: int | None = None
+
+
+@dataclass
 class Model:
+    nullable_member: Nullable | None
+    nullable_sibling: Nullable | None
+    object_site: Nullable | None
     member: A | None = None
     sibling: A | None = None
     items: list[A] | None = None

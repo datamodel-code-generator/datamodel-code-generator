@@ -2,6 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Model",
   "type": "object",
+  "required": [
+    "nullable_member",
+    "nullable_sibling",
+    "object_site"
+  ],
   "properties": {
     "member": {
       "allOf": [
@@ -51,6 +56,39 @@
           ]
         }
       ]
+    },
+    "nullable_member": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Nullable"
+        },
+        {
+          "required": [
+            "id"
+          ]
+        }
+      ]
+    },
+    "nullable_sibling": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Nullable"
+        }
+      ],
+      "required": [
+        "id"
+      ]
+    },
+    "object_site": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/Nullable"
+        }
+      ],
+      "required": [
+        "id"
+      ]
     }
   },
   "$defs": {
@@ -99,6 +137,17 @@
       "required": [
         "id"
       ]
+    },
+    "Nullable": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        }
+      }
     }
   }
 }

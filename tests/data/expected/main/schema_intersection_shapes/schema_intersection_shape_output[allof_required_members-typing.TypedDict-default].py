@@ -24,8 +24,15 @@ class Required(TypedDict):
 Branch: TypeAlias = A | B
 
 
+class Nullable(TypedDict):
+    id: NotRequired[int]
+
+
 class Model(TypedDict):
     member: NotRequired[A]
     sibling: NotRequired[A]
     items: NotRequired[list[A]]
     kept: NotRequired[Required]
+    nullable_member: Nullable | None
+    nullable_sibling: Nullable | None
+    object_site: Nullable | None

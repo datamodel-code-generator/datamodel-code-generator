@@ -24,7 +24,14 @@ class Required(Struct):
 Branch: TypeAlias = A | B
 
 
+class Nullable(Struct):
+    id: int | UnsetType = UNSET
+
+
 class Model(Struct):
+    nullable_member: Nullable | None
+    nullable_sibling: Nullable | None
+    object_site: Nullable | None
     member: A | UnsetType = UNSET
     sibling: A | UnsetType = UNSET
     items: list[A] | UnsetType = UNSET

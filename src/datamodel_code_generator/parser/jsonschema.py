@@ -3773,18 +3773,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Build the effective raw property map once in inherited C3 order."""
         return _inherited_schemas.get_inherited_property_map(self, base_classes)
 
-    def _site_checks_beside_base(
-        self, obj: JsonSchemaObject, required_names: list[str], base_required: frozenset[str]
-    ) -> bool:
-        """Return whether a site whose allOf names one model, and adds no field to it, checks what that model does not.
-
-        A schema validator rule of the site does, and so do the ``required`` names it adds (``_adds_required_names``);
-        the site is then a model of its own, not the model it names.
-        """
-        return (
-            self.generate_schema_validators and self._has_schema_validator_constraints(obj)
-        ) or self._adds_required_names(required_names, base_required)
-
     def _adds_required_names(
         self, names: Iterable[str], base_required: frozenset[str] | Callable[[], frozenset[str]]
     ) -> bool:
@@ -4713,11 +4701,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 and not fields
                 and extra_field is None
                 and len(base_classes) == 1
-                and not self._site_checks_beside_base(obj, [*required, *obj.required], inherited_required_names)
+                and not (self.generate_schema_validators and self._has_schema_validator_constraints(obj))
             ):
-                with self.model_resolver.current_base_path_context(self.model_resolver._base_path):  # noqa: SLF001
-                    self.model_resolver.delete(path)
-                    return frame.built(self.data_type(reference=base_classes[0]))
+                if not self._adds_required_names([*required, *obj.required], inherited_required_names):
+                    with self.model_resolver.current_base_path_context(self.model_resolver._base_path):  # noqa: SLF001
+                        self.model_resolver.delete(path)
+                        return frame.built(self.data_type(reference=base_classes[0]))
+                nullable = nullable or (
+                    not _types_exclude(("null",), obj)
+                    and self._object_nullable(self._load_inherited_schema_object(base_classes[0].path))
+                )
             if required_names := list(dict.fromkeys([*required, *obj.required])):
                 field_name_to_field = {_field_source_name(field): field for field in fields}
                 for required_name in required_names:
