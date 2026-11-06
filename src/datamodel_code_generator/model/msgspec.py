@@ -50,6 +50,7 @@ from datamodel_code_generator.model._render_plan import (
     NESTED_MODEL_FACTORY,
     PLAIN_ANNOTATION,
     REQUIRED_FIELD,
+    TYPE_OVERRIDE,
     UNTAKEN_BY_TYPE,
     CallArguments,
     CallPlan,
@@ -1210,7 +1211,8 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
     def _declared_render_items(self) -> frozenset[str]:
         """Return the items the field declares that its plan must write or omit.
 
-        They are its ``field()`` and ``Meta()`` metadata, its alias and its constraints.
+        They are its ``field()`` and ``Meta()`` metadata, its alias, its constraints and the constraints that leave with
+        the type ``--type-overrides`` replaces.
         """
         items = {f"extra:{key}" for key in self.extras if key in self._FIELD_KEYS or key in self._META_FIELD_KEYS}
         if self.alias is not None:
@@ -1219,6 +1221,8 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             items.update(
                 f"constraint:{key}" for key, value in self.constraints.model_dump().items() if value is not None
             )
+        if self.overridden_constraints:
+            items.add("override")
         return frozenset(items)
 
     @property
@@ -1400,6 +1404,11 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
                 args.put(key, value, Why(_META_ARGUMENT, key), (f"extra:{key}",))
         unset = [cast("Kwarg", args.take(entry.name)) for entry in args.kwargs() if entry.value is None]
         omitted.extend(Omitted(item, None, "none-value", _NONE_VALUE) for entry in unset for item in entry.items)
+        if (overridden := self.overridden_constraints) is not None:
+            replaced, count = overridden
+            omitted.append(
+                Omitted("override", count, "override-type-does-not-take", TYPE_OVERRIDE, warns=True, detail=replaced)
+            )
         if self.constraints is not None:
             declared = {k: v for k, v in self.constraints.model_dump().items() if v is not None}
             if (blocked := self._constraints_blocked_by()) is not None:
@@ -1707,10 +1716,16 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
     def dropped_constraints_warning(self) -> str | None:
         """Return a warning naming the constraints left out because msgspec.Meta does not take or check them exactly.
 
-        Those of the field's own ``Meta(...)`` are the omitted items of its render plan that warn.
+        Those of the field's own ``Meta(...)`` are the omitted items of its render plan that warn, with the counts of
+        the array or map ``--type-overrides`` replaces that leave with it.
         """
         omitted = self._render_plan().omitted
         reasons: list[str] = []
+        overridden = next((o for o in omitted if o.reason == "override-type-does-not-take"), None)
+        if overridden is not None:
+            reasons.append(
+                f"--type-overrides writes {self._annotated_base_data_type().type_hint} in place of {overridden.detail}"
+            )
         untaken = frozenset(cast("str", o.why.keyword) for o in omitted if o.reason == "untaken-by-type" and o.warns)
         inexact = next((o for o in omitted if o.reason == "inexact-float-divisor" and o.warns), None)
         beyond = {cast("str", o.why.keyword): o.value for o in omitted if o.why.rule == _INT64_LIMIT}
@@ -1750,7 +1765,9 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             return None
         return self._generated_without_constraints(
             "; ".join(reasons),
-            len(untaken | frozenset(beyond) | union_keywords | integer_keywords) + (inexact is not None),
+            len(untaken | frozenset(beyond) | union_keywords | integer_keywords)
+            + (inexact is not None)
+            + (0 if overridden is None else cast("int", overridden.value)),
         )
 
     def _get_meta_string(self) -> str | None:

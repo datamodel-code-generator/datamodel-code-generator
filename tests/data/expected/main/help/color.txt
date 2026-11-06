@@ -379,6 +379,17 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         "my_app.types.MyType"}' replaces all references.
                         Scoped: '{"User.field": "my_app.Type"}' replaces
                         specific field only.
+  --type-overrides-replace-whole-type, --no-type-overrides-replace-whole-type
+                        Make every --type-overrides value of a field replace
+                        the field's whole type: a class path replaces an
+                        object map itself, as an annotation already does (dict
+                        for builtins.dict, not dict[str, dict]), and the item
+                        counts of an array and the property counts of a map it
+                        replaces stay only where the new type counts the same
+                        (a sequence its items, a mapping class its keys), with
+                        a warning otherwise; without it a class path keeps the
+                        dict of a map around the class and every override
+                        keeps those counts whatever its type, as in 0.89.0
   --use-annotated, --no-use-annotated
                         Use typing.Annotated for Field(). Also, `--field-
                         constraints` option will be enabled. Will become

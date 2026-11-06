@@ -11,16 +11,20 @@ override them; ``Parser._resolve_type_import_from_defs``, which ``JsonSchemaPars
 from __future__ import annotations
 
 from functools import partial
-from typing import TYPE_CHECKING, Any
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, Final
 
 from typing_extensions import Protocol
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._constraint_applicability import (
+    ITEM_COUNT_KEYWORDS,
+    LENGTH_KEYWORDS,
     overridden_declared_constraints,
     resplit_overridden_constraints,
     untaken_minimums,
 )
+from datamodel_code_generator._container_kinds import ARRAYS, CONTAINER_FLAGS, MAPPINGS
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._requirements import REQUIREMENTS, python_target_meets
@@ -35,10 +39,10 @@ from datamodel_code_generator.parser._passes._shared import (
     enum_site_override_import,
 )
 from datamodel_code_generator.python_literal import message_repr
-from datamodel_code_generator.types import _copy_data_type
+from datamodel_code_generator.types import _copy_data_type, _value_members
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Callable, Iterable, Mapping, Sequence
 
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
@@ -96,6 +100,10 @@ class TypeOverridesHost(TypeOverrideHost, Protocol):
     @property
     def target_python_version(self) -> PythonVersion:
         """The Python version the output targets."""
+
+    @property
+    def type_overrides_replace_whole_type(self) -> bool:
+        """Whether an override replaces a field's whole type and counts (``--type-overrides-replace-whole-type``)."""
 
     @property
     def _graph_builder(self) -> GraphBuilder:
@@ -470,6 +478,11 @@ def apply_override_to_field(parser: TypeOverridesHost, field: DataModelFieldBase
     The arguments of a ``con*`` call stay on an override the generator does not know, which may be a factory such
     as ``pydantic.conint``; a known class takes none, so they are left out, and so are those of the nested types the
     override replaces. An output model that writes ``Field()`` arguments warns about the ones it leaves out.
+
+    Row ``legacy-class-override-keeps-container``: without ``--type-overrides-replace-whole-type`` a class keeps the
+    container of the field's own type node, so the override of an object map is written as its values
+    (``dict[str, X]``, ``_override_node``), and every override keeps the item or property counts of the array or map
+    it replaces (``_untaken_container_counts``).
     """
     if (
         data_type := parser._override_annotation(override_import, is_optional=field.data_type.is_optional)  # noqa: SLF001
@@ -485,7 +498,7 @@ def apply_override_to_field(parser: TypeOverridesHost, field: DataModelFieldBase
         is_known_python_type_path,
     )
 
-    data_type = _copy_data_type(field.data_type)
+    data_type = _override_node(field.data_type, whole_type=parser.type_overrides_replace_whole_type)
     data_type.import_ = override_import
     data_type.alias = override_import.import_
     path = _import_path(override_import)
@@ -499,6 +512,50 @@ def apply_override_to_field(parser: TypeOverridesHost, field: DataModelFieldBase
     parser._graph_builder.replace_field_type(field, data_type)  # noqa: SLF001
     parser._graph_builder.detach_data_type_ref(field.data_type)  # noqa: SLF001
     parser._graph_builder.set_nested_data_types(field.data_type, [])  # noqa: SLF001
+
+
+_COUNT_KEYWORDS: Final[frozenset[str]] = LENGTH_KEYWORDS | ITEM_COUNT_KEYWORDS
+"""The keywords a field's constraints write the counts of a map or an array it holds under."""
+
+_WITHOUT_CONTAINER: Final[Mapping[str, Any]] = MappingProxyType({
+    **dict.fromkeys(CONTAINER_FLAGS.values(), False),
+    "data_types": (),
+    "dict_key": None,
+    "tuple_item_count": None,
+})
+"""The values of a type node that holds no container: no container slot, member, dict key or tuple length."""
+
+
+def _override_node(data_type: DataType, *, whole_type: bool) -> DataType:
+    """Return the copy of a field's own type node that a class override is written on, with its nullability.
+
+    With ``whole_type`` the copy holds none of the container it replaces (``_WITHOUT_CONTAINER``), so an object map
+    gives the class itself; the members of any other copy leave once the override replaces the type.
+    """
+    return _copy_data_type(data_type.model_copy(update=_WITHOUT_CONTAINER) if whole_type else data_type)
+
+
+def _untaken_container_counts(
+    field: DataModelFieldBase, keys: Iterable[str], keywords: Callable[..., frozenset[str]]
+) -> list[str]:
+    """Return the lengths among ``keys`` that count the map or the array an override replaces and it does not count.
+
+    The lengths and item counts (``minItems``, as msgspec's constraints name a length) of a field whose every value is
+    a map are its property counts, and of one whose every value is an array its item counts, as no string length is
+    written beside them; the override counts the keys when it takes the lengths as a map's
+    (``keywords(counts_keys=True)``: a mapping class, or a type the generator cannot classify) and the items when it
+    takes the array's counts (a sequence). The lengths of any other field are not decided here (row
+    ``legacy-override-keeps-string-keywords``).
+    """
+    if not (lengths := [key for key in keys if key in _COUNT_KEYWORDS]) or not (
+        members := [*_value_members(field.data_type)]
+    ):
+        return []
+    if all(member in MAPPINGS for member in members):
+        return [] if keywords(counts_keys=True) >= LENGTH_KEYWORDS else lengths
+    if all(member in ARRAYS for member in members):
+        return [] if keywords() >= ITEM_COUNT_KEYWORDS else lengths
+    return []
 
 
 def record_overridden_constraints(
@@ -529,8 +586,11 @@ def decide_overridden_constraints(
 
     An output model that writes constraints as ``Field()`` arguments also decides the number constraints of a
     declared number and the string constraints the replaced type left out this way, and remembers the ones it
-    leaves out to warn about them. The untaken constraints of the members, items and values that collapsing inlines
-    into the field leave with the type the override replaces.
+    leaves out to warn about them. Under ``--type-overrides-replace-whole-type`` every output model leaves out the
+    item or property counts of the array or map the override replaces that the override type does not count
+    (``_untaken_container_counts``), which warn as the constraints that leave with the replaced type. The untaken
+    constraints of the members, items and values that collapsing inlines into the field leave with the type the
+    override replaces.
     """
     type_dependent = field.__dict__.get(_TYPE_DEPENDENT_CONSTRAINTS_KEY) or {}
     constraints = field.constraints
@@ -545,8 +605,17 @@ def decide_overridden_constraints(
         if parser.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS
         else {}
     )
-    if not type_dependent and not declared:
+    counts = (
+        _untaken_container_counts(field, (key for key in values if key not in type_dependent), keywords)
+        if parser.type_overrides_replace_whole_type
+        else []
+    )
+    if not type_dependent and not declared and not counts:
         return
+    if counts:
+        values = {key: value for key, value in values.items() if key not in counts}
+        replaced, count = field.overridden_constraints or (field.data_type.type_hint, 0)
+        field.record_overridden_constraints(replaced, count + len(counts))
     values, untaken = resplit_overridden_constraints(
         values,
         type_dependent=type_dependent,

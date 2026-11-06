@@ -53,6 +53,7 @@
 - `--no-keep-enum-member-values`
 - `--no-read-const-beside-enum`
 - `--no-read-unevaluated-properties`
+- `--no-type-overrides-replace-whole-type`
 - `--no-use-annotated`
 - `--no-use-closed-typed-dict`: Disable PEP 728 TypedDict closed/extra_items generation.
 - `--no-use-decimal-in-field-forms`
@@ -77,6 +78,7 @@
 - `--strict-types`: Enable strict type validation for specified Python types.
 - `--type-mappings`: Override default type mappings for schema formats.
 - `--type-overrides`: Replace schema model types with custom Python types via JSON mapping.
+- `--type-overrides-replace-whole-type`: Make every `--type-overrides` value of a field replace the field's whol...
 - `--use-annotated`: Use typing.Annotated for Field() with constraints.
 - `--use-closed-typed-dict`: Generate TypedDict with PEP 728 closed/extra_items (default: enabled).
 - `--use-decimal-for-multiple-of`: Generate Decimal types for fields with multipleOf constraint.
@@ -738,6 +740,17 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         "my_app.types.MyType"}' replaces all references.
                         Scoped: '{"User.field": "my_app.Type"}' replaces
                         specific field only.
+  --type-overrides-replace-whole-type, --no-type-overrides-replace-whole-type
+                        Make every --type-overrides value of a field replace
+                        the field's whole type: a class path replaces an
+                        object map itself, as an annotation already does (dict
+                        for builtins.dict, not dict[str, dict]), and the item
+                        counts of an array and the property counts of a map it
+                        replaces stay only where the new type counts the same
+                        (a sequence its items, a mapping class its keys), with
+                        a warning otherwise; without it a class path keeps the
+                        dict of a map around the class and every override
+                        keeps those counts whatever its type, as in 0.89.0
   --use-annotated, --no-use-annotated
                         Use typing.Annotated for Field(). Also, `--field-
                         constraints` option will be enabled. Will become

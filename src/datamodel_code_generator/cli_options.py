@@ -493,7 +493,11 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     ),
     **_opts(_C.TYPING, "--use-total-false-for-typed-dict --use-closed-typed-dict --no-use-closed-typed-dict"),
     **_opts(_C.TYPING, "--import-overrides", group=_G.IMPORTS),
-    **_opts(_C.TYPING, "--type-mappings --type-overrides", group=_G.TYPE_MAPPING),
+    **_opts(
+        _C.TYPING,
+        "--type-mappings --type-overrides --type-overrides-replace-whole-type --no-type-overrides-replace-whole-type",
+        group=_G.TYPE_MAPPING,
+    ),
     **_opts(
         _C.TYPING,
         "--use-specialized-enum",

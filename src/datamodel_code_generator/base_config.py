@@ -506,6 +506,7 @@ class BaseGenerateConfig(BaseModel):
     import_overrides: dict[str, str] | None = None
     type_mappings: list[str] | None = None
     type_overrides: dict[str, str] | None = None
+    type_overrides_replace_whole_type: bool = False
     read_only_write_only_model_type: ReadOnlyWriteOnlyModelType | None = None
     dedupe_request_response_variants: bool = False
     use_status_code_in_response_name: bool = False

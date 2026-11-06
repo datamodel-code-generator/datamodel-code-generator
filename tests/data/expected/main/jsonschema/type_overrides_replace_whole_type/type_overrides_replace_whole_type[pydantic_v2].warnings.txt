@@ -1,0 +1,2 @@
+--type-overrides writes dict[constr(max_length=2), Mapping] in place of dict[constr(max_length=2), str]; Inventory.keyed is generated without this constraint.
+--type-overrides writes bytes in place of constr(min_length=2); Inventory.code is generated without this constraint.
