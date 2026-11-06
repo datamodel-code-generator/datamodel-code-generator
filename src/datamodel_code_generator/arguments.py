@@ -1230,6 +1230,13 @@ _toggle(
     "Optional[Literal['a', 'b']], as one spelled X | Y already is; without it such a union is ignored where the "
     "schema declares one type, and the field takes the schema's type, as in 0.89.0",
 )
+_toggle(
+    typing_options,
+    "--use-bytes-for-content-media-type",
+    help="Type a string of an OpenAPI document that has a contentMediaType and no contentEncoding as bytes, as a "
+    "format: binary string is: OpenAPI 3.1 writes raw binary content so, and the generated clients and servers "
+    "already send and receive it as a file; without it the string is str, as in 0.90.0",
+)
 
 # ======================================================================================
 # Customization options for generated model fields

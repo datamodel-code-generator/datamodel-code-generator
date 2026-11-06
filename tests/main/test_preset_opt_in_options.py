@@ -92,6 +92,7 @@ OPT_IN_OPTIONS_20261106: tuple[str, ...] = (
     "--keep-reference-null-on-collapsed-root-models",
     "--read-allof-parents-in-mro-order",
     "--apply-field-options-to-every-field",
+    "--use-bytes-for-content-media-type",
 )
 """The options the 20261106 presets set beyond the 20261104 presets."""
 
@@ -336,6 +337,12 @@ CASES_20261106: tuple[pytest.ParameterSet, ...] = (
         "openapi",
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="apply-field-options-to-every-field",
+    ),
+    pytest.param(
+        OPEN_API_DATA_PATH / "content_media_type_bytes.yaml",
+        "openapi",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="use-bytes-for-content-media-type",
     ),
 )
 """The inputs each opt-in option of the 20261106 presets changes."""

@@ -1206,10 +1206,26 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         return _get_type(type_, format_, data_formats)
 
+    def _get_schema_type(self, obj: JsonSchemaObject, type_: str, format_: str) -> Types:
+        """Get the Types enum for a type and format of ``obj``, applying custom type mappings.
+
+        Under --use-bytes-for-content-media-type a string of plain text format that holds raw octets for its content
+        media type (``_holds_content_media_type_octets``) is bytes, as a ``format: binary`` string is. Row
+        ``legacy-content-media-type-string-is-text``: without it the string is ``str``.
+        """
+        types = self._get_type_with_mappings(type_, format_)
+        if (
+            self.use_bytes_for_content_media_type
+            and types == Types.string
+            and self._holds_content_media_type_octets(obj, type_)
+        ):
+            return Types.binary
+        return types
+
     def _get_format_data_type(self, obj: JsonSchemaObject, type_: str) -> DataType:
         """Map a type and the format of ``obj`` without constraints."""
         format_ = obj.format or "default"
-        types = self._get_type_with_mappings(type_, format_)
+        types = self._get_schema_type(obj, type_, format_)
         data_type = self.data_type_manager.get_data_type(types, **self._get_format_type_kwargs(type_, format_, types))
         return self._with_binary_content(data_type, obj, type_, format_, types)
 
@@ -1225,13 +1241,22 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if type_ == "string" and (
             self._format_bytes(types, type_, format_) == "raw"
             if types == Types.binary
-            else types == Types.string
-            and "contentMediaType" in obj.extras
-            and "contentEncoding" not in obj.extras
-            and self._content_media_type_is_octets
+            else types == Types.string and self._holds_content_media_type_octets(obj, type_)
         ):
             data_type.__dict__[BINARY_CONTENT_KEY] = True
         return data_type
+
+    def _holds_content_media_type_octets(self, obj: JsonSchemaObject, type_: str) -> bool:
+        """Whether a string of ``obj`` names a content media type without a content encoding where that is raw octets.
+
+        It is where the specification reads so (``_content_media_type_is_octets``).
+        """
+        return (
+            type_ == "string"
+            and "contentMediaType" in obj.extras
+            and "contentEncoding" not in obj.extras
+            and self._content_media_type_is_octets
+        )
 
     @property
     def _content_media_type_is_octets(self) -> bool:
@@ -2228,7 +2253,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         a string.
         """
         format_ = obj.format or "default"
-        types = self._get_type_with_mappings(type_, format_)
+        types = self._get_schema_type(obj, type_, format_)
         by_type = length_keywords_by_type(self.data_type_manager.constraint_options)
         keyword_order = constrained_type_keyword_order(
             types.name,

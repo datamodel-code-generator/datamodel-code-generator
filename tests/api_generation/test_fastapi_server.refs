@@ -170,6 +170,8 @@ bound_parts	main/generation_platform/cross/bound_parts.txt
 bound_parts_variants	main/generation_platform/cross/bound_parts_variants.txt
 bound_texts	main/generation_platform/cross/bound_texts.txt
 bound_texts_reuse	main/generation_platform/cross/bound_texts_reuse.txt
+content_media_type	main/generation_platform/cross/content_media_type.txt
+content_media_type_bytes	main/generation_platform/cross/content_media_type_bytes.txt
 extras	main/generation_platform/cross/extras.txt
 forms	main/generation_platform/cross/forms.txt
 forms_30	main/generation_platform/cross/forms_30.txt
