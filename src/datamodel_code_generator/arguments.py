@@ -419,6 +419,14 @@ _toggle(
     "field with an alias keeps its Python type (deque[int], frozenset[str], ...) like one without; without it an "
     "aliased field of a Pydantic dataclass takes the type its JSON Schema spells (list[int]), as in 0.89.0",
 )
+_toggle(
+    base_options,
+    "--reuse-every-reached-input-model-type",
+    help="With --input-model-ref-strategy reuse-all or reuse-foreign, reach the types to reuse through the fields of "
+    "every model kind, dataclasses, TypedDicts and msgspec Structs too, and import a type that the Python type of a "
+    "field already imports instead of writing an unused copy of it; without it reuse descends through Pydantic models "
+    "only and such a copy is written (ItemModel beside Mapping[str, Item]), as in 0.89.0",
+)
 
 # ======================================================================================
 # Customization options for generated models

@@ -1114,6 +1114,17 @@ released	input_model/read_dataclass_fields_by_alias[released].txt	= input_model/
 	main/input_model/pydantic_basemodel.py	= main/input_model/path_format.py
 [test_input_model_restores_cwd_package_modules]
 	main/input_model/pydantic_basemodel.py	= main/input_model/path_format.py
+[test_input_model_reuse_every_reached_input_model_type]
+order-reuse-all	input_model/reuse_every_reached_input_model_type[order-reuse-all].txt
+order-reuse-all-option	input_model/reuse_every_reached_input_model_type[order-reuse-all-option].txt
+order-reuse-foreign	input_model/reuse_every_reached_input_model_type[order-reuse-foreign].txt
+order-reuse-foreign-no-option	input_model/reuse_every_reached_input_model_type[order-reuse-foreign-no-option].txt	= input_model/reuse_every_reached_input_model_type[order-reuse-foreign].txt
+order-reuse-foreign-option	input_model/reuse_every_reached_input_model_type[order-reuse-foreign-option].txt
+order-reuse-foreign-preset	input_model/reuse_every_reached_input_model_type[order-reuse-foreign-preset].txt
+outer-plain-reuse-foreign	input_model/reuse_every_reached_input_model_type[outer-plain-reuse-foreign].txt
+outer-plain-reuse-foreign-option	input_model/reuse_every_reached_input_model_type[outer-plain-reuse-foreign-option].txt
+outer-reuse-foreign	input_model/reuse_every_reached_input_model_type[outer-reuse-foreign].txt
+outer-reuse-foreign-option	input_model/reuse_every_reached_input_model_type[outer-reuse-foreign-option].txt
 [test_input_model_single_multi_level_inheritance]
 	main/input_model/multi_level_inheritance.py
 [test_input_model_single_no_inheritance]

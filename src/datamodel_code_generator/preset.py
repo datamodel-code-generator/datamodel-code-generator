@@ -1045,6 +1045,15 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "item, as the api scope does, so its operations get no models."
         ),
     ),
+    PresetOptionGroup(
+        title="Every reached input model type reused",
+        config=PresetConfig(reuse_every_reached_input_model_type=True),
+        description=(
+            "With --input-model-ref-strategy reuse-all or reuse-foreign, reach the types to reuse through the fields "
+            "of every model kind, dataclasses too, and import a type the Python type of a field already imports "
+            "instead of writing an unused copy of it."
+        ),
+    ),
 )
 """The 20261104 groups and the opt-in options of the release after 0.90.0."""
 
@@ -1381,7 +1390,9 @@ def render_presets_markdown() -> str:
             "content media schema is a `$ref` is typed by the model the `$ref` names (`PageRequest` under "
             "`--read-only-write-only-model-type request-response`) instead of a copy of the referenced schema, and "
             "`--skip-path-extension-keys`: the paths scope skips an `x-` key of `paths`, a specification extension, as "
-            "the api scope does."
+            "the api scope does, and `--reuse-every-reached-input-model-type`: with `--input-model` and a reuse "
+            "strategy, the types reached through dataclass fields are reused too, and no unused copy of a type a "
+            "field's Python type imports is written."
         ),
         "",
         "## Override Preset Options",

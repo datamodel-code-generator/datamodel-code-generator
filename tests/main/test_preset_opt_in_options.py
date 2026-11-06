@@ -85,6 +85,7 @@ OPT_IN_OPTIONS_20261106: tuple[str, ...] = (
     "--keep-false-dataclass-arguments",
     "--keep-content-parameter-refs",
     "--skip-path-extension-keys",
+    "--reuse-every-reached-input-model-type",
 )
 """The options the 20261106 presets set beyond the 20261104 presets."""
 

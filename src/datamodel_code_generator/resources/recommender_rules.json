@@ -1140,6 +1140,10 @@
       "not_recommended": "preset",
       "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
     },
+    "reuse_every_reached_input_model_type": {
+      "not_recommended": "preset",
+      "reason": "--input-model only: set by the 20261106 presets; the recommendation starts from a preset."
+    },
     "reuse_model": {
       "rules": [
         "reuse.identical-inline-shapes"

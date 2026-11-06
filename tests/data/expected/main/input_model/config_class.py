@@ -315,6 +315,7 @@ class BaseGenerateConfig(TypedDict):
     read_length_keywords_by_type: NotRequired[bool]
     read_msgspec_union_bounds_exactly: NotRequired[bool]
     read_input_model_dataclass_fields_by_alias: NotRequired[bool]
+    reuse_every_reached_input_model_type: NotRequired[bool]
     use_site_models_for_constrained_refs: NotRequired[bool]
     use_one_model_per_ref_site: NotRequired[bool]
     original_field_name_delimiter: NotRequired[str | None]
