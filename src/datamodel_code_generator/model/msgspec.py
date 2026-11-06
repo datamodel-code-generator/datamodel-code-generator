@@ -1400,16 +1400,19 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         """Return the constraint keywords msgspec.Meta takes on a type.
 
         Numbers take bounds, sized types take lengths and str takes a pattern, as the msgspec type table lists;
-        a mapping takes lengths, a fixed tuple and a union take none, and an unclassified type keeps them all. A
-        referenced type alias takes what its type takes (``_meta_type``); any other referenced model, such as an enum
-        or a Struct, takes none.
+        a mapping and a mapping class msgspec decodes as a dict (``DataTypeManager.MAPPING_CLASS_PATHS``, also
+        subscripted, as ``counts_keys`` reads it) take lengths, which count their keys, a fixed tuple and a union take
+        none, and an unclassified type keeps them all. A referenced type alias takes what its type takes
+        (``_meta_type``); any other referenced model, such as an enum or a Struct, takes none.
         """
         if (target := self._meta_type(data_type)) is None:
             return _applicability.NO_KEYWORDS
         if (keywords := self._shape_meta_keywords(target)) is not None:
             return keywords
+        version = self.target_version_key(target)
         return _applicability.meta_keywords(
-            DataTypeManager.constraint_keywords(target, self.target_version_key(target))
+            DataTypeManager.constraint_keywords(target, version)
+            | DataTypeManager.constraint_keywords(target, version, counts_keys=True)
         )
 
     def _shape_meta_keywords(self, data_type: DataType) -> frozenset[str] | None:
@@ -2075,6 +2078,7 @@ class DataTypeManager(_DataTypeManager):
     FIXED_TUPLES_TAKE_LENGTH: ClassVar[bool] = _applicability.MSGSPEC_OUTPUT.fixed_tuples_take_length
     LITERALS_TAKE_CONSTRAINTS: ClassVar[bool] = _applicability.MSGSPEC_OUTPUT.literals_take
     REFUSED_LITERAL_TYPES: ClassVar[tuple[type, ...]] = _applicability.MSGSPEC_OUTPUT.refused_literal_types
+    MAPPING_CLASS_PATHS: ClassVar[frozenset[str]] = _applicability.MSGSPEC_OUTPUT.mapping_classes
 
     @property
     @override

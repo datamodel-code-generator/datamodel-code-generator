@@ -5,10 +5,16 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
+import msgspec
 import pytest
 
 from tests.conftest import assert_output
-from tests.main.conftest import JSON_SCHEMA_DATA_PATH, assert_generated_model_json_validation, run_main_and_assert
+from tests.main.conftest import (
+    JSON_SCHEMA_DATA_PATH,
+    _generated_model,
+    assert_generated_model_json_validation,
+    run_main_and_assert,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -26,6 +32,9 @@ OVERRIDES = json.dumps({
     "Inventory.code": "builtins.bytes",
 })
 """A class or an annotation for each map and array of the schema, and a class for its string."""
+
+MSGSPEC_PAYLOADS = ({"labels": {"a": "b"}}, {"labels": {}}, {"sized": {}})
+"""A payload the schema accepts, then one for each map whose minProperties the schema rejects it by."""
 
 
 @pytest.mark.cli_doc(
@@ -60,6 +69,7 @@ new type does not count is left out with a warning.""",
             True,
             id="pydantic_dataclass-replaced",
         ),
+        pytest.param("msgspec.Struct", [], False, id="msgspec"),
         pytest.param("msgspec.Struct", ["--type-overrides-replace-whole-type"], False, id="msgspec-replaced"),
         pytest.param("typing.TypedDict", ["--type-overrides-replace-whole-type"], False, id="typed_dict-replaced"),
     ],
@@ -74,7 +84,8 @@ def test_type_overrides_replace_whole_type(
     keeps its ``minProperties`` and ``labels``, an annotation, too, as a dict counts its keys, and ``tags`` keeps its
     ``minItems`` on a tuple; ``amounts`` and ``notes`` leave their counts out with a warning, as ``Any`` counts no keys
     and a ``str`` no items. The lengths of the string ``code`` stay where the field writes them, as without the option.
-    msgspec checks no count on a class its table does not list.
+    msgspec checks the property counts of ``sized`` and ``labels`` as the length of the dict, with or without the
+    option, so it rejects the payloads whose maps the schema rejects (#6308); each verdict line follows a payload.
     """
     run_main_and_assert(
         input_path=INPUT_PATH,
@@ -103,3 +114,15 @@ def test_type_overrides_replace_whole_type(
             invalid_json=json.dumps({"sized": {}}),
             expected_error_type="too_short",
         )
+    if output_model_type == "msgspec.Struct":
+        verdicts = []
+        with _generated_model(output_file, "type_overrides_replace_whole_type_msgspec", "Inventory") as model:
+            for payload in MSGSPEC_PAYLOADS:
+                try:
+                    msgspec.json.decode(json.dumps(payload), type=model)
+                except msgspec.ValidationError:
+                    verdict = "rejected"
+                else:
+                    verdict = "accepted"
+                verdicts.append(f"{json.dumps(payload)}: {verdict}\n")
+        assert_output("".join(verdicts), name="verdicts")

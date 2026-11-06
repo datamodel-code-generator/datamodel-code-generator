@@ -271,7 +271,15 @@ _MAPPING_CLASS_PATHS: Final[frozenset[str]] = frozenset({
     "typing.Counter",
 })
 """The classes, by the path that classifies them, whose length counts their keys and on which Pydantic checks one:
-the classes that take the property counts of a map (``key_count_keywords``)."""
+the classes that take the property counts of a map (``key_count_keywords``, ``OutputKeywords.mapping_classes``)."""
+_MSGSPEC_MAPPING_CLASS_PATHS: Final[frozenset[str]] = _MAPPING_CLASS_PATHS - {
+    "collections.OrderedDict",
+    "typing.OrderedDict",
+    "collections.Counter",
+    "typing.Counter",
+}
+"""The mapping classes msgspec decodes as a dict, on which ``msgspec.Meta`` checks the number of keys as a length;
+``Meta`` refuses a length on an ``OrderedDict`` or a ``Counter``."""
 ITEM_COUNT_KEYWORDS: Final[frozenset[str]] = frozenset({"minItems", "maxItems"})
 """The keywords that count the items of an array, which a type that takes them takes as the lengths of the array."""
 
@@ -368,7 +376,8 @@ class OutputKeywords:
     takes what every member takes (else none), ``fixed_tuples_take_length`` that a fixed tuple takes the sequence
     keywords, and ``literals_take`` that a ``Literal`` takes the keywords its values take. ``zero_bound_classes`` maps
     a class built for one zero bound to the keyword it enforces itself (row ``legacy-consumed-at-object-property``),
-    and ``writes_constrained_types`` tells that the type manager writes scalar constraints into ``con*`` types.
+    ``writes_constrained_types`` tells that the type manager writes scalar constraints into ``con*`` types, and
+    ``mapping_classes`` are the classes whose length counts their keys and on which the output checks one.
 
     The number rows say which values the output writes: ``int_values`` is the range of the ints it takes as a number
     constraint, an ``Enum`` or ``Literal`` value or a tag (None when it takes every int), and
@@ -384,6 +393,7 @@ class OutputKeywords:
     literals_take: bool
     zero_bound_classes: Mapping[str, tuple[str, ...]]
     writes_constrained_types: bool
+    mapping_classes: frozenset[str]
     int_values: range | None
     drops_non_finite_bounds: bool
     refused_literal_types: tuple[type, ...]
@@ -398,6 +408,7 @@ BASE_OUTPUT: Final = OutputKeywords(
     literals_take=True,
     zero_bound_classes=MappingProxyType({}),
     writes_constrained_types=False,
+    mapping_classes=_MAPPING_CLASS_PATHS,
     int_values=None,
     drops_non_finite_bounds=False,
     refused_literal_types=(),
@@ -420,6 +431,7 @@ MSGSPEC_OUTPUT: Final = replace(
     annotation_unions_take=False,
     fixed_tuples_take_length=False,
     literals_take=False,
+    mapping_classes=_MSGSPEC_MAPPING_CLASS_PATHS,
     int_values=range(-(2**63), 2**63),
     drops_non_finite_bounds=True,
     refused_literal_types=(float, bytes),
@@ -802,13 +814,14 @@ def shape_keywords(
     return TYPE_DEPENDENT_KEYWORDS if reference else None
 
 
-def key_count_keywords(path: str, keywords: frozenset[str]) -> frozenset[str]:
+def key_count_keywords(path: str, keywords: frozenset[str], mapping_classes: AbstractSet[str]) -> frozenset[str]:
     """Return the keywords a type takes as the property counts of a map, from its path and the ``keywords`` it takes.
 
-    A mapping class (``_MAPPING_CLASS_PATHS``) takes the lengths, which count its keys, and a type the generator cannot
-    classify, which takes every keyword, keeps them all; any other type takes none.
+    A mapping class of the output (``mapping_classes``, ``OutputKeywords.mapping_classes``) takes the lengths, which
+    count its keys, and a type the generator cannot classify, which takes every keyword, keeps them all; any other type
+    takes none.
     """
-    if path in _MAPPING_CLASS_PATHS:
+    if path in mapping_classes:
         return LENGTH_KEYWORDS
     return keywords if keywords >= TYPE_DEPENDENT_KEYWORDS else NO_KEYWORDS
 

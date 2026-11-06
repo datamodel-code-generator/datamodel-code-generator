@@ -12,10 +12,10 @@ from msgspec import UNSET, Meta, Struct, UnsetType
 
 class Inventory(Struct):
     counts: dict | UnsetType = UNSET
-    sized: dict | UnsetType = UNSET
+    sized: Annotated[dict, Meta(min_length=1)] | UnsetType = UNSET
     amounts: Any | UnsetType = UNSET
     keyed: Mapping | UnsetType = UNSET
-    labels: dict[str, str] | UnsetType = UNSET
+    labels: Annotated[dict[str, str], Meta(min_length=1)] | UnsetType = UNSET
     tags: Annotated[tuple, Meta(min_length=1)] | UnsetType = UNSET
     notes: str | UnsetType = UNSET
     code: Annotated[bytes, Meta(min_length=2)] | UnsetType = UNSET
