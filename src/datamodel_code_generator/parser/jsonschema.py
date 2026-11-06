@@ -948,7 +948,7 @@ def _ends_with(tokens: tuple[str, ...], container: tuple[str, ...]) -> bool:
     return len(tokens) > len(container) and tokens[-1 - len(container) : -1] == container
 
 
-@snooper_to_methods()  # noqa: PLR0904
+@snooper_to_methods()
 def _admits_pattern_properties(obj: JsonSchemaObject) -> bool:
     """Return whether a schema object has patternProperties that admit at least one pattern."""
     if not obj.patternProperties:
