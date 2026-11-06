@@ -1,0 +1,243 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "#/$defs/Base"
+    },
+    {
+      "properties": {
+        "mid": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "properties": {
+        "mid": {
+          "maxLength": 3
+        }
+      }
+    }
+  ],
+  "properties": {
+    "nested": {
+      "$ref": "#/$defs/Nested"
+    },
+    "inherited": {
+      "$ref": "#/$defs/Inherited"
+    },
+    "kept_default": {
+      "$ref": "#/$defs/KeptDefault"
+    },
+    "child": {
+      "$ref": "#/$defs/Child"
+    },
+    "field_site": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "properties": {
+            "ratio": {
+              "type": "number"
+            }
+          }
+        },
+        {
+          "properties": {
+            "ratio": {
+              "exclusiveMaximum": 1
+            }
+          }
+        }
+      ]
+    },
+    "reference": {
+      "$ref": "#/$defs/Reference"
+    },
+    "positional": {
+      "$ref": "#/$defs/Positional"
+    }
+  },
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        }
+      }
+    },
+    "Nested": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "allOf": [
+            {
+              "properties": {
+                "n": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            {
+              "properties": {
+                "n": {
+                  "type": "integer",
+                  "maximum": 9,
+                  "multipleOf": 3
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "Inherited": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "properties": {
+            "code": {
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "properties": {
+            "code": {
+              "pattern": "^[A-Z]"
+            },
+            "label": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "KeptDefault": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "properties": {
+            "tag": {
+              "type": "string",
+              "default": "ab"
+            }
+          }
+        },
+        {
+          "properties": {
+            "tag": {
+              "type": "string",
+              "maxLength": 2,
+              "description": "At most two characters."
+            }
+          }
+        }
+      ]
+    },
+    "Members": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "properties": {
+            "mid": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "properties": {
+            "mid": {
+              "maxLength": 3
+            }
+          }
+        }
+      ]
+    },
+    "Child": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Members"
+        },
+        {
+          "properties": {
+            "mid": {
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    },
+    "Code": {
+      "type": "string",
+      "minLength": 2
+    },
+    "Reference": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "properties": {
+            "ref": {
+              "$ref": "#/$defs/Code"
+            }
+          }
+        },
+        {
+          "properties": {
+            "ref": {
+              "type": "string",
+              "maxLength": 4
+            }
+          }
+        }
+      ]
+    },
+    "Positional": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Base"
+        },
+        {
+          "properties": {
+            "pair": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string"
+                }
+              ],
+              "minItems": 1
+            }
+          }
+        },
+        {
+          "properties": {
+            "pair": {
+              "type": "array",
+              "maxItems": 1
+            }
+          }
+        }
+      ]
+    }
+  }
+}

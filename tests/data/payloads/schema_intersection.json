@@ -8145,5 +8145,123 @@
         ]
       }
     }
+  },
+  "allof_member_declarations": {
+    "model": "Model",
+    "fields": {
+      "mid": {
+        "valid": [
+          "abc"
+        ],
+        "invalid": [
+          "abcd"
+        ]
+      },
+      "nested": {
+        "valid": [
+          {
+            "n": 3
+          }
+        ],
+        "invalid": [
+          {
+            "n": 12
+          },
+          {
+            "n": 4
+          },
+          {
+            "n": -3
+          }
+        ]
+      },
+      "inherited": {
+        "valid": [
+          {
+            "code": "Ab"
+          }
+        ],
+        "invalid": [
+          {
+            "code": ""
+          },
+          {
+            "code": "ab"
+          }
+        ]
+      },
+      "kept_default": {
+        "valid": [
+          {
+            "tag": "ab"
+          },
+          {}
+        ],
+        "invalid": [
+          {
+            "tag": "abc"
+          }
+        ]
+      },
+      "child": {
+        "valid": [
+          {
+            "mid": "ab"
+          }
+        ],
+        "invalid": [
+          {
+            "mid": ""
+          },
+          {
+            "mid": "abcd"
+          }
+        ]
+      },
+      "field_site": {
+        "valid": [
+          {
+            "ratio": 0.5
+          }
+        ],
+        "invalid": [
+          {
+            "ratio": 1
+          }
+        ]
+      },
+      "reference": {
+        "valid": [
+          {
+            "ref": "ab"
+          }
+        ],
+        "invalid": [
+          {
+            "ref": "a"
+          },
+          {
+            "ref": "abcde"
+          }
+        ]
+      },
+      "positional": {
+        "valid": [
+          {
+            "pair": [
+              "a"
+            ]
+          }
+        ],
+        "invalid": [
+          {
+            "pair": [
+              "a",
+              "b"
+            ]
+          }
+        ]
+      }
+    }
   }
 }

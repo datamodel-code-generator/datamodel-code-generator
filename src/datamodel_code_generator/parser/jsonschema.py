@@ -10,7 +10,7 @@ import json
 import math  # Preserve the established parser.jsonschema export.
 import re
 from collections import (
-    Counter,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    Counter,  # Preserve the established parser.jsonschema export.
     defaultdict,
     deque,
 )
@@ -4740,13 +4740,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         declared_property_names: frozenset[str],
         inherited_parent_refs: Iterable[Reference] = (),
         *,
-        conjunctions: Mapping[str, JsonSchemaObject],
-        written: set[str],
+        conjunctions: Mapping[str, Sequence[JsonSchemaObject | None]],
+        written: Counter[str],
     ) -> None:
         """Parse the members of an allOf into its fields, base classes, required names and union parts.
 
-        A property of ``conjunctions`` is parsed once, as its conjunction, where a member first declares it
-        (``_inherited_schemas.with_conjoined_properties``); ``written`` holds those parsed so far.
+        Each declaration of a property of ``conjunctions`` is parsed as its entry says, left out where it is None
+        (``_inherited_schemas.with_conjoined_properties``); ``written`` counts the declarations parsed so far.
         """
         parent_refs = self._get_allof_parent_references(
             obj,
@@ -5256,8 +5256,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 required,
                 union_parts,
                 self._all_of_declared_property_names(obj),
-                conjunctions=_inherited_schemas.read_through_property_conjunctions(self, obj),
-                written=set(),
+                conjunctions=_inherited_schemas.property_conjunctions(self, obj),
+                written=Counter(),
             )
             union_models = [model for part in union_parts for model in part]
             if not (fields or required or union_models) and (

@@ -1784,6 +1784,9 @@ without-option	main/openapi/main_openapi/read_nullable_beside_type_list[without-
 	main/openapi/openapi_read_only_write_only_all_reentrant_additional_properties_default.py
 [test_main_openapi_read_only_write_only_allof]
 	main/openapi/read_only_write_only_allof.py
+[test_main_openapi_read_only_write_only_allof_member_declarations]
+all	main/openapi/main_openapi/read_only_write_only_allof_member_declarations[all].py
+request-response	main/openapi/main_openapi/read_only_write_only_allof_member_declarations[request-response].py
 [test_main_openapi_read_only_write_only_allof_order]
 	main/openapi/read_only_write_only_allof_order.py
 [test_main_openapi_read_only_write_only_allof_parent_inline_models]

@@ -12947,6 +12947,41 @@ def test_main_openapi_read_only_write_only_allof_request_response(output_file: P
     )
 
 
+@pytest.mark.parametrize("model_type", ["request-response", "all"])
+def test_main_openapi_read_only_write_only_allof_member_declarations(output_file: Path, model_type: str) -> None:
+    """Each declaration of a property that two allOf members declare checks the bounds of both (#6276).
+
+    The model ``Members`` writes the first declaration and the request and response models the last, as 0.89.0 does;
+    each takes the bounds of the other, also in the variants of ``Child``, which reads ``Members`` before its model is
+    built. ``Members`` itself keeps one field of the two declarations, with the warning of 0.89.0.
+    """
+    with (
+        pytest.warns(UserWarning, match="Field name `mid` is duplicated on Members")
+        if model_type == "all"
+        else contextlib.nullcontext()
+    ):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "allof_member_declarations_rw.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                "--read-only-write-only-model-type",
+                model_type,
+                "--disable-timestamp",
+                "--formatters",
+                "builtin",
+            ],
+        )
+    for invalid_json, error_type in (('{"mid": ""}', "string_too_short"), ('{"mid": "abcd"}', "string_too_long")):
+        assert_generated_model_json_invalid(
+            output_file,
+            module_name=f"allof_member_declarations_rw_{model_type.replace('-', '_')}",
+            model_name="ChildRequest",
+            invalid_json=invalid_json,
+            expected_error_type=error_type,
+        )
+
+
 def test_main_openapi_read_only_write_only_collision(output_file: Path) -> None:
     """Test readOnly/writeOnly with name collision (UserRequest already exists)."""
     run_main_and_assert(
