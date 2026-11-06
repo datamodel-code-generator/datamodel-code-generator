@@ -376,6 +376,7 @@ class BaseGenerateConfig(TypedDict):
     type_mappings: NotRequired[list[str] | None]
     type_overrides: NotRequired[dict[str, str] | None]
     type_overrides_replace_whole_type: NotRequired[bool]
+    use_x_python_type_unions: NotRequired[bool]
     read_only_write_only_model_type: NotRequired[ReadOnlyWriteOnlyModelType | None]
     dedupe_request_response_variants: NotRequired[bool]
     use_status_code_in_response_name: NotRequired[bool]

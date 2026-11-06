@@ -86,6 +86,7 @@ OPT_IN_OPTIONS_20261106: tuple[str, ...] = (
     "--keep-content-parameter-refs",
     "--skip-path-extension-keys",
     "--reuse-every-reached-input-model-type",
+    "--use-x-python-type-unions",
 )
 """The options the 20261106 presets set beyond the 20261104 presets."""
 
@@ -294,6 +295,12 @@ CASES_20261106: tuple[pytest.ParameterSet, ...] = (
         "openapi",
         ["--output-model-type", "pydantic_v2.BaseModel", "--openapi-scopes", "schemas", "paths", "parameters"],
         id="skip-path-extension-keys",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "x_python_type_unions.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="use-x-python-type-unions",
     ),
 )
 """The inputs each opt-in option of the 20261106 presets changes."""

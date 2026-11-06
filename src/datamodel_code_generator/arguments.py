@@ -1197,6 +1197,13 @@ _toggle(
     "(a sequence its items, a mapping class its keys), with a warning otherwise; without it a class path keeps the "
     "dict of a map around the class and every override keeps those counts whatever its type, as in 0.89.0",
 )
+_toggle(
+    typing_options,
+    "--use-x-python-type-unions",
+    help="Type a field by its x-python-type when that is a union spelled Optional[...] or Union[...], such as "
+    "Optional[Literal['a', 'b']], as one spelled X | Y already is; without it such a union is ignored where the "
+    "schema declares one type, and the field takes the schema's type, as in 0.89.0",
+)
 
 # ======================================================================================
 # Customization options for generated model fields

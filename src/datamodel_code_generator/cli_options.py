@@ -498,7 +498,8 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(_C.TYPING, "--import-overrides", group=_G.IMPORTS),
     **_opts(
         _C.TYPING,
-        "--type-mappings --type-overrides --type-overrides-replace-whole-type --no-type-overrides-replace-whole-type",
+        "--type-mappings --type-overrides --type-overrides-replace-whole-type --no-type-overrides-replace-whole-type "
+        "--use-x-python-type-unions --no-use-x-python-type-unions",
         group=_G.TYPE_MAPPING,
     ),
     **_opts(

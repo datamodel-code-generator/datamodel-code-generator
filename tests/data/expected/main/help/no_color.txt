@@ -558,6 +558,13 @@ Typing customization:
                         sets are decided before root models collapse, set item
                         models hash by identity and such models merge, as in
                         0.89.0
+  --use-x-python-type-unions, --no-use-x-python-type-unions
+                        Type a field by its x-python-type when that is a union
+                        spelled Optional[...] or Union[...], such as
+                        Optional[Literal['a', 'b']], as one spelled X | Y
+                        already is; without it such a union is ignored where
+                        the schema declares one type, and the field takes the
+                        schema's type, as in 0.89.0
 
 Field customization:
   --capitalise-enum-members, --capitalize-enum-members

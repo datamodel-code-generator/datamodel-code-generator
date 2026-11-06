@@ -11,7 +11,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 | [Imports](#imports) | 2 | Generated imports and type-checking import behavior. |
 | [Collection Types](#collection-types) | 8 | Collection and tuple/set generation. |
 | [Type Alias](#type-alias) | 4 | TypeAlias and root-model alias output. |
-| [Type Mapping](#type-mapping) | 16 | Scalar, date/time, and custom type mapping. |
+| [Type Mapping](#type-mapping) | 17 | Scalar, date/time, and custom type mapping. |
 | [Type Syntax](#type-syntax) | 3 | Modern annotation syntax and Annotated usage. |
 
 ## Imports {#imports}
@@ -71,6 +71,7 @@ Scalar, date/time, and custom type mapping.
 | [`--use-standard-primitive-types`](../typing-customization.md#use-standard-primitive-types) | Use Python standard library types for string formats instead of str. |
 | [`--use-typed-map-values-beside-other-types`](../typing-customization.md#use-typed-map-values-beside-other-types) | Type the map values of type arrays that list object beside other types. |
 | [`--use-typed-nullable-map-values`](../typing-customization.md#use-typed-nullable-map-values) | Type the values of nullable maps as their schemas say instead of Any. |
+| [`--use-x-python-type-unions`](../typing-customization.md#use-x-python-type-unions) | Type a field by an `x-python-type` union spelled `Optional\[...\]` or `Union\[...\]`... |
 
 ## Type Syntax {#type-syntax}
 
