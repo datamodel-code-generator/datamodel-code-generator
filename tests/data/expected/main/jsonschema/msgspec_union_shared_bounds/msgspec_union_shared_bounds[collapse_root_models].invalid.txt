@@ -33,3 +33,5 @@ prefixed "ba": rejected
 ranked 0: rejected
 ranked -1: rejected
 ranked_or_decimal true: rejected
+chained "b": accepted
+chained "zz": accepted

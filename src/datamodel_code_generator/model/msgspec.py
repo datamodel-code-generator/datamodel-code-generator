@@ -175,11 +175,10 @@ def _admits_integers_of(
     )
 
 
-_LOOSEST_LENGTHS: Mapping[str, Callable[[Iterable[Any]], Any]] = MappingProxyType({
-    "min_length": min,
-    "max_length": max,
-})
-"""The length keywords of ``Meta`` with the function that picks the loosest of several values."""
+_LOOSEST_LENGTHS: Mapping[str, tuple[Callable[[Iterable[Any]], Any], Callable[[Iterable[Any]], Any]]] = (
+    MappingProxyType({"min_length": (min, max), "max_length": (max, min)})
+)
+"""The length keywords of ``Meta`` with the functions that pick the loosest and the tightest of several values."""
 _ROUTED_KINDS: Mapping[str, tuple[str, ...]] = MappingProxyType({"float": ("int", "Decimal")})
 """The other kinds whose values msgspec decodes as a kind: a JSON float such as ``-1.0``, valid for an integer member,
 goes to the float member, and so does every number a Decimal member, which takes no ``Meta`` bound, admits."""
@@ -200,8 +199,8 @@ def _loosest_shared(constraint_sets: Sequence[tuple[tuple[str, Any], ...]]) -> t
     """Return the ``Meta`` constraints that every one of ``constraint_sets`` implies, as loose as the loosest set.
 
     A side that every set bounds keeps the loosest of their bounds (``ge`` over ``gt`` at one value), ``min_length``
-    the least and ``max_length`` the greatest where every set writes one, and any other keyword the value every set
-    writes alike. A set without a keyword leaves it out.
+    the least and ``max_length`` the greatest where every set writes one, a set that writes one several times by the
+    tightest of them, and any other keyword the value every set writes alike. A set without a keyword leaves it out.
     """
     kept: list[tuple[str, Any]] = []
     for side in ("ge", "le"):
@@ -211,11 +210,9 @@ def _loosest_shared(constraint_sets: Sequence[tuple[tuple[str, Any], ...]]) -> t
         ]
         if None not in bounds:
             kept.append(min(cast("list[tuple[str, Any]]", bounds), key=_bound_tightness))
-    for name, loosest in _LOOSEST_LENGTHS.items():
-        if len(
-            values := [value for constraints in constraint_sets for key, value in constraints if key == name]
-        ) == len(constraint_sets):
-            kept.append((name, loosest(values)))
+    for name, (loosest, tightest) in _LOOSEST_LENGTHS.items():
+        if all(values := [[value for key, value in constraints if key == name] for constraints in constraint_sets]):
+            kept.append((name, loosest(map(tightest, values))))
     first, *others = constraint_sets
     kept.extend(
         constraint

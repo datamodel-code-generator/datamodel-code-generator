@@ -11,6 +11,12 @@ from msgspec import UNSET, Struct, UnsetType
 Parted: TypeAlias = str
 
 
+Short: TypeAlias = str
+
+
+Longer: TypeAlias = Short
+
+
 class Bounds(Struct):
     apart: str | UnsetType = UNSET
     bounded: int | UnsetType = UNSET
@@ -29,3 +35,4 @@ class Bounds(Struct):
     prefixed: str | UnsetType = UNSET
     ranked: int | UnsetType = UNSET
     ranked_or_decimal: int | Decimal | UnsetType = UNSET
+    chained: Longer | str | UnsetType = UNSET
