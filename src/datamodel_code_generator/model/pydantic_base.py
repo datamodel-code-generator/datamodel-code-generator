@@ -144,6 +144,7 @@ class DataModelField(DataModelFieldBase):
 
     SUPPORTS_FIELD_CONSTRAINTS: ClassVar[bool] = True
     _FREEZES_RENDER_PLAN: ClassVar[bool] = True
+    VALIDATES_STRUCTURED_DEFAULTS: ClassVar[bool] = True
     _EXCLUDE_FIELD_KEYS: ClassVar[set[str]] = {
         "alias",
         "default",

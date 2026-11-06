@@ -9839,25 +9839,30 @@ def test_main_openapi_structured_field_render_plan(
     expected_suffix: str,
     extra_args: list[str],
 ) -> None:
-    """Render defaults and syntax-like user values without parsing generated fields."""
-    run_main_and_assert(
-        input_path=OPEN_API_DATA_PATH / "field_render_plan.yaml",
-        output_path=output_file,
-        input_file_type="openapi",
-        assert_func=assert_file_content,
-        expected_file=f"output_model_types/field_render_plan_{expected_suffix}.py",
-        extra_args=[
-            "--output-model-type",
-            output_model_type,
-            "--use-default-kwarg",
-            "--use-default-factory-for-optional-nested-models",
-            "--field-extra-keys",
-            "x-render-marker",
-            "x-is-classvar",
-            *extra_args,
-        ],
-        force_exec_validation=True,
-    )
+    """Render defaults and syntax-like user values without parsing generated fields.
+
+    The default {} of empty_nested_convert lacks the required field of its model, which every output here validates,
+    so generation warns about it.
+    """
+    with pytest.warns(UserWarning, match=r"^The default of RenderPlan\.empty_nested_convert \(\{\} lacks 'value'"):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "field_render_plan.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            assert_func=assert_file_content,
+            expected_file=f"output_model_types/field_render_plan_{expected_suffix}.py",
+            extra_args=[
+                "--output-model-type",
+                output_model_type,
+                "--use-default-kwarg",
+                "--use-default-factory-for-optional-nested-models",
+                "--field-extra-keys",
+                "x-render-marker",
+                "x-is-classvar",
+                *extra_args,
+            ],
+            force_exec_validation=True,
+        )
 
 
 @pytest.mark.parametrize(
