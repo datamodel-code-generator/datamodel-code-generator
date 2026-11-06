@@ -207,11 +207,11 @@ decision = "#6171"
 release_note = "without --field-constraints, the minItems and maxItems of an array that has no field of its own (the member of an anyOf or oneOf, the items of an array, the values of a map) are written on a type alias of the array (Annotated[list[int], Field(min_length=2)]) instead of being dropped"
 
 [[accepted]]
-input = "*collapse_root_models_item_count_aliases*"
+input = [ "*collapse_root_models_item_count_aliases*", "*collapse_root_models_item_count_alias_reuse*" ]
 backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
 aspects = [ "constraints", "type" ]
-match = "^\\[(?:constraints|type)\\] (?:Model:\\w+|Color|Grid|Listing|Mixed|Nullable|Pairs|Single|Through): .* -> .*Annotated\\[list\\[.*\\], M(?:in|ax)Len\\(.*$"
-reason = "without --field-constraints, the minItems and maxItems of the members of an anyOf, the items of an array and the values of a map were dropped without a warning; they are kept on a type alias of the array (schema-mismatch fix), and under --collapse-root-models the root models that name those aliases are inlined as before (#6383), which this fixture pins"
+match = "^\\[(?:constraints|type)\\] (?:Model:\\w+|A|C|Color|Grid|Listing|Mixed|Nullable|Pairs|Single|Through): .* -> .*Annotated\\[list\\[.*\\], M(?:in|ax)Len\\(.*$"
+reason = "without --field-constraints, the minItems and maxItems of the members of an anyOf, the items of an array and the values of a map were dropped without a warning; they are kept on a type alias of the array (schema-mismatch fix), and under --collapse-root-models the root models that name those aliases are inlined as before (#6383) and reuse leaves the models 0.89.0 wrote apart from those aliases (#6384), which these fixtures pin"
 decision = "#6171"
 release_note = "without --field-constraints, the minItems and maxItems of an array that has no field of its own (the member of an anyOf or oneOf, the items of an array, the values of a map) are written on a type alias of the array (Annotated[list[int], Field(min_length=2)]) instead of being dropped"
 

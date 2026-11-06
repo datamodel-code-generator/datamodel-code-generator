@@ -62,7 +62,7 @@ from datamodel_code_generator._graph import reaching
 from datamodel_code_generator._internal_utils import HashableComparable
 from datamodel_code_generator._internal_utils import get_most_of_parent as _get_most_of_parent
 from datamodel_code_generator._json_pointer import fragment_tokens
-from datamodel_code_generator._model_keys import ModelKey, model_key_of
+from datamodel_code_generator._model_keys import ModelKey, is_item_counts_site, model_key_of
 from datamodel_code_generator._module_paths import (
     dotted_module,
     expanded_path,
@@ -591,16 +591,23 @@ class _ModelShapeSource:
     def render(self, model: DataModel, class_name: str | None) -> tuple[str, Hashable, tuple[Hashable, ...]]:
         """Return the model rendered under a class name, its imports and its values as written, uncached."""
         rendered, imports, *written = model._fresh_dedup_key(class_name)  # noqa: SLF001
-        return rendered, imports, (*written, *self._unique_items(model))
+        return rendered, imports, (*written, *self._key_facts(model))
 
     def dedup_key(self, model: DataModel, slot: KeySlot) -> tuple[Any, ...]:
         """Return the dedup key the memo keeps for the model in a slot, rendering and keeping it for an empty slot."""
         class_name, use_default = slot
-        return (*model.get_dedup_key(class_name, use_default=use_default), *self._unique_items(model))
+        return (*model.get_dedup_key(class_name, use_default=use_default), *self._key_facts(model))
 
-    def _unique_items(self, model: DataModel) -> tuple[Hashable, ...]:
-        """Return what the keys add to the rendering: the uniqueItems positions of the fields, if they hold any."""
-        return (("unique-items", unique_items_positions(model)),) if self.unique_items else ()
+    def _key_facts(self, model: DataModel) -> tuple[Hashable, ...]:
+        """Return what the keys add to the rendering: the mark of an item-count alias and the uniqueItems positions.
+
+        The type alias of an item-count site (``ITEM_COUNTS_SITE_KEY``), an array that was inline up to 0.89.0, is
+        compared only with other such aliases, so deduplication and reuse group the models those releases wrote as
+        they did: none of them becomes a duplicate of such an alias, which a root model naming it would then reach.
+        The uniqueItems positions of the fields are added where they hold any (``unique_items``).
+        """
+        site = (("item-counts-site",),) if is_item_counts_site(model.reference) else ()
+        return (*site, ("unique-items", unique_items_positions(model))) if self.unique_items else site
 
     def forget_dedup_keys(self, model: DataModel) -> None:  # noqa: PLR6301
         """Drop the dedup keys the parse's memo keeps for the model."""

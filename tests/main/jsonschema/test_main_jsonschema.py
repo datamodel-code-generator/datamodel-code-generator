@@ -23674,6 +23674,40 @@ def test_main_jsonschema_collapse_root_models_item_count_aliases(
     )
 
 
+@pytest.mark.parametrize(
+    "reuse_args",
+    [
+        pytest.param(["--reuse-model"], id="reuse-model"),
+        pytest.param(["--reuse-model", "--collapse-reuse-models"], id="collapse-reuse-models"),
+    ],
+)
+def test_main_jsonschema_collapse_root_models_item_count_alias_reuse(reuse_args: list[str], output_file: Path) -> None:
+    """Keep the root model of a type list whose alias renders as the item-count alias of an anyOf member.
+
+    Reuse compares the type alias that holds the item counts of a nested array only with other such aliases, so the
+    alias of ``B``, which 0.89.0 wrote, stays a model of its own and ``B`` keeps its class, while ``A`` is inlined and
+    the alias of ``C`` duplicates the alias of ``A``.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_item_count_alias_reuse.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=["--collapse-root-models", *reuse_args, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="collapse_root_models_item_count_alias_reuse",
+        model_name="Model",
+        valid_json='{"a": ["x"], "b": ["x"], "c": ["y"]}',
+        invalid_json='{"a": []}',
+        expected_error_type="too_short",
+        expected_repr="Model(a=['x'], b=B(root=['x']), c=['y'])",
+        invalid_keyword_arguments=[({"b": []}, "int_type"), ({"c": []}, "too_short")],
+    )
+
+
 def test_main_jsonschema_collapse_root_models_array_item_union_self_reference(output_file: Path) -> None:
     """Keep an array field's own constraints when its items collapse into a self-referencing union."""
     run_main_and_assert(
