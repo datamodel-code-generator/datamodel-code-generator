@@ -8350,6 +8350,10 @@ pydantic_v2-suffix	main/jsonschema/main_jsonschema/main_naming_strategy_definiti
 [test_main_naming_strategy_enclosing_model]
 enclosing-model	main/jsonschema/main_jsonschema/main_naming_strategy_enclosing_model[enclosing-model].py
 full-path	main/jsonschema/main_jsonschema/main_naming_strategy_enclosing_model[full-path].py
+[test_main_naming_strategy_enclosing_model_modules]
+default	main/jsonschema/main_jsonschema/main_naming_strategy_enclosing_model_modules[default]/
+enclosing-model	main/jsonschema/main_jsonschema/main_naming_strategy_enclosing_model_modules[enclosing-model]/
+taken	main/jsonschema/main_jsonschema/main_naming_strategy_enclosing_model_modules[taken]/
 [test_main_naming_strategy_full_path]
 	main/jsonschema/naming_strategy/full_path/output.py	= main/jsonschema/naming_strategy/parent_prefixed/output.py
 [test_main_naming_strategy_parent_prefixed]

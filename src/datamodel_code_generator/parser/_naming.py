@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from types import TracebackType
 
 _ResultT = TypeVar("_ResultT")
+_NamedModelT = TypeVar("_NamedModelT", bound="_NamedModel")
 
 __all__ = [
     "BUILD_RECORD_KEY",
@@ -48,6 +49,7 @@ __all__ = [
     "Composed",
     "ComposedRole",
     "NameClaim",
+    "NameRestore",
     "Namer",
     "NamingFrames",
     "NamingPlan",
@@ -398,7 +400,9 @@ class NamingRules:
     definitions before the other models: a model built for another one, its owner, takes the owner's final class
     joined once with its own part (the name it asked for, its position as a union branch named as the union, or the
     word of a composed role), and a definition, a document root or an operation model takes its own name (#4855,
-    #4845, #4826, #5666); a name another model takes first is numbered, with ``_`` where it ends in a digit.
+    #4845, #4826, #5666); a name another model takes first is numbered, with ``_`` where it ends in a digit. Where L3
+    gives a numbered model its name back in its module, a model whose name was composed from the numbered one takes
+    the name composed from the name given back, where the module leaves it free (#6299).
 
     ``allof_union_members`` (``--name-allof-union-members-after-branches``): the classes an allOf gives the branches
     of a oneOf or anyOf it holds take the holder's name and the branch's part (its tag, the class of a ``$ref`` branch,
@@ -434,8 +438,22 @@ class PlannedName:
     base: str
 
 
+@final
+@dataclass(frozen=True, slots=True)
+class NameRestore:
+    """The class a model takes in its module where L3 gives back their bases to the models its planned name reads.
+
+    ``reads`` holds each model whose numbered name the planned name was composed from, with the class it holds once
+    L3 gave it back; ``order`` puts a model after the models it reads.
+    """
+
+    cls: str
+    reads: tuple[tuple[ModelKey, str], ...]
+    order: int
+
+
 class _NamedModel(Protocol):
-    """What ``NamingPlan.base_of`` reads of a model."""
+    """What ``NamingPlan.base_of`` and ``NamingPlan.restores_in`` read of a model."""
 
     @property
     def reference(self) -> object:
@@ -449,10 +467,15 @@ class _NamedModel(Protocol):
 @final
 @dataclass(frozen=True, slots=True)
 class NamingPlan:
-    """The names planned after the last claim under ``rules``, by model key; a model it leaves out keeps its name."""
+    """The names planned after the last claim under ``rules``, by model key; a model it leaves out keeps its name.
+
+    ``restores`` holds, under ``enclosing_model``, the class each model whose name reads a numbered name takes where L3
+    gives the numbered models back their bases (``restores_in``).
+    """
 
     rules: NamingRules = field(default_factory=NamingRules)
     names: Mapping[ModelKey, PlannedName] = field(default_factory=dict)
+    restores: Mapping[ModelKey, NameRestore] = field(default_factory=dict)
 
     def base_of(self, model: _NamedModel) -> str:
         """Return the name ``model`` was numbered from: its planned base, else the name it asked for, or ``""``.
@@ -462,6 +485,19 @@ class NamingPlan:
         """
         planned = self.names.get(model_key_of(model.reference)) if self.names else None
         return model.duplicate_class_name if planned is None else planned.base
+
+    def restores_in(self, models: Iterable[_NamedModelT]) -> list[tuple[_NamedModelT, NameRestore]]:
+        """Return the models of ``models`` that have a restore, with it, each after the models it reads."""
+        if not self.restores:
+            return []
+        return sorted(
+            (
+                (model, restore)
+                for model in models
+                if (restore := self.restores.get(model_key_of(model.reference))) is not None
+            ),
+            key=lambda item: item[1].order,
+        )
 
 
 class Namer(Protocol):
@@ -685,25 +721,29 @@ def _allof_name(
     return module, f"{name}{own}"
 
 
-def _enclosing_model(claims: Sequence[NameClaim], namer: Namer, parts: _AllOfParts) -> dict[ModelKey, PlannedName]:
+def _enclosing_model(
+    claims: Sequence[NameClaim], namer: Namer, parts: _AllOfParts
+) -> tuple[dict[ModelKey, PlannedName], dict[ModelKey, NameRestore]]:
     """Return the names the enclosing-model rule gives: every claim, owners first, definitions before the others.
 
     A keyed claim keeps its name, which children compose from as it is. The allOf ``parts`` take the names of the
-    allOf rule, made of the names before affixes.
+    allOf rule, made of the names before affixes. A claim whose name is composed from a numbered name, recursively,
+    also gets the restore of the name composed from the base of each (``NameRestore``), which L3 gives it in its
+    module once it gave them their bases back (#6299).
     """
     by_key = {claim.key: claim for claim in claims}
     stems: dict[ModelKey, tuple[str, str]] = {claim.key: (claim.module, claim.cls) for claim in claims if claim.keyed}
     allocation = _Allocation(namer, Counter(claim.name for claim in claims if claim.key not in stems))
     names: dict[ModelKey, PlannedName] = {}
 
-    def wanted(claim: NameClaim) -> tuple[str, str]:
+    def wanted(claim: NameClaim, name_of: Callable[[NameClaim], tuple[str, str]]) -> tuple[str, str]:
         if (part := parts.get(claim.key)) is not None:
-            return _allof_name(claim, part, by_key, final, namer)
+            return _allof_name(claim, part, by_key, name_of, namer)
         if claim.role == "composed" and (base := by_key.get(cast("ModelKey", claim.composed_from))) is not None:
-            module, stem = final(base)
+            module, stem = name_of(base)
             return module, namer.composed(claim, stem, affixed=False)[1]
         if claim.role in {"owned", "ordinal", "tagged"} and (owner := by_key.get(cast("ModelKey", claim.owner))):
-            module, stem = final(owner)
+            module, stem = name_of(owner)
             return module, f"{stem}{claim.position}" if claim.role == "ordinal" else namer.prefixed(claim, stem)
         return namer.own(claim)
 
@@ -711,7 +751,7 @@ def _enclosing_model(claims: Sequence[NameClaim], namer: Namer, parts: _AllOfPar
         if (stem := stems.get(claim.key)) is not None:
             return stem
         stems[claim.key] = (claim.module, claim.cls)
-        module, stem = wanted(claim)
+        module, stem = wanted(claim, final)
         numbered, _ = first_free(
             stem,
             lambda candidate: allocation.taken(module, namer.affixed(claim, candidate), claim.path),
@@ -722,9 +762,31 @@ def _enclosing_model(claims: Sequence[NameClaim], namer: Namer, parts: _AllOfPar
         stems[claim.key] = module, numbered
         return stems[claim.key]
 
-    for claim in sorted(claims, key=lambda claim: (claim.role != "definition", claim.document, claim.order)):
+    restored_stems = {claim.key: stems[claim.key] for claim in claims if claim.keyed}
+    restores: dict[ModelKey, NameRestore] = {}
+
+    def restored(claim: NameClaim) -> tuple[str, str]:
+        if (stem := restored_stems.get(claim.key)) is not None:
+            return stem
+        restored_stems[claim.key] = final(claim)
+        reads: list[tuple[ModelKey, str]] = []
+
+        def read(other: NameClaim) -> tuple[str, str]:
+            if (stem := restored(other)) != final(other):
+                reads.append((other.key, namer.affixed(other, stem[1])))
+            return stem
+
+        restored_stems[claim.key] = module, stem = wanted(claim, read)
+        if reads:
+            restores[claim.key] = NameRestore(namer.affixed(claim, stem), tuple(reads), len(restores))
+        return module, stem
+
+    ordered = sorted(claims, key=lambda claim: (claim.role != "definition", claim.document, claim.order))
+    for claim in ordered:
         final(claim)
-    return names
+    for claim in ordered:
+        restored(claim)
+    return names, restores
 
 
 def plan_names(rules: NamingRules, claims: Sequence[NameClaim], namer: Namer) -> NamingPlan:
@@ -741,7 +803,7 @@ def plan_names(rules: NamingRules, claims: Sequence[NameClaim], namer: Namer) ->
     by_key = {claim.key: claim for claim in claims}
     parts = _allof_parts(claims) if rules.allof_union_members else {}
     if rules.enclosing_model:
-        return _planned(rules, _enclosing_model(claims, namer, parts), by_key)
+        return _planned(rules, *_enclosing_model(claims, namer, parts), by_key)
     touched = {
         key: first
         for key, first in (_definitions_first(claims) if rules.definitions_first else {}).items()
@@ -784,13 +846,16 @@ def plan_names(rules: NamingRules, claims: Sequence[NameClaim], namer: Namer) ->
             base = names[other]
             _, cls = cast("tuple[str, str]", _named_from(claim, kind, f"{base.module}{base.cls}", namer))
             names[key] = allocation.give(claim.module, allocation.first_free(claim, cls), cls)
-    return _planned(rules, names, by_key)
+    return _planned(rules, names, {}, by_key)
 
 
 def _planned(
-    rules: NamingRules, names: Mapping[ModelKey, PlannedName], claims: Mapping[ModelKey, NameClaim]
+    rules: NamingRules,
+    names: Mapping[ModelKey, PlannedName],
+    restores: Mapping[ModelKey, NameRestore],
+    claims: Mapping[ModelKey, NameClaim],
 ) -> NamingPlan:
-    """Return the plan of the names that differ from those L1 gave, in module, class or base."""
+    """Return the plan of the names that differ from those L1 gave, in module, class or base, and the restores."""
     return NamingPlan(
         rules,
         {
@@ -798,4 +863,5 @@ def _planned(
             for key, planned in names.items()
             if (planned.module, planned.cls, planned.base) != (claims[key].module, claims[key].cls, claims[key].base)
         },
+        restores,
     )

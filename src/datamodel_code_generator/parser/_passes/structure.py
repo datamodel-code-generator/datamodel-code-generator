@@ -420,7 +420,9 @@ def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataMod
     """Make class names unique within a module.
 
     Row ``legacy-module-restore``: once the classes are unique, a model the resolver numbered takes back the name it
-    asked for (``NamingPlan.base_of``) where the module leaves it free, the first such model first.
+    asked for (``NamingPlan.base_of``) where the module leaves it free, the first such model first. Then a model
+    whose planned name reads models of the module that now hold their bases takes the name composed from those
+    (``NamingPlan.restores_in``) where the module leaves it free, a model after the models it reads.
     Renames change the rendered type hints of referencing models, so cached dedup keys of the
     module are dropped whenever a model is renamed. Models of typed map values come last, so the other
     models keep the names they had before values were typed. A stand-in, which is never written, neither takes nor
@@ -471,18 +473,25 @@ def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataMod
             renamed = True
         model_names[model.class_name] = model
 
+    def give_back(model: DataModel, name: str) -> bool:
+        if name in model_names or scoped_model_resolver.reserved_for_another(name, model.path):
+            return False
+        del model_names[model.class_name]
+        parser._graph_builder.rename_model(model, class_name=name, scheme="module")  # noqa: SLF001
+        model_names[name] = model
+        return True
+
+    plan = parser._naming_plan  # noqa: SLF001
     for model in models:
-        duplicate_name = parser._naming_plan.base_of(model)  # noqa: SLF001
-        # check only first desired name
-        if (
-            duplicate_name
-            and duplicate_name not in model_names
-            and not scoped_model_resolver.reserved_for_another(duplicate_name, model.path)
-        ):
-            del model_names[model.class_name]
-            parser._graph_builder.rename_model(model, class_name=duplicate_name, scheme="module")  # noqa: SLF001
-            model_names[duplicate_name] = model
+        if (duplicate_name := plan.base_of(model)) and give_back(model, duplicate_name):
             renamed = True
+    if restores := plan.restores_in(models):
+        by_key = {model_key_of(model.reference): model for model in models}
+        for model, restore in restores:
+            if all(
+                (read := by_key.get(key)) is not None and read.class_name == cls for key, cls in restore.reads
+            ) and give_back(model, restore.cls):
+                renamed = True
 
     if not renamed:
         return
