@@ -1370,7 +1370,7 @@ def _partition_inherited_fields(
             or (child_wire in required_names) != (parent_wire in parent_required)
         ):
             overrides[child_wire] = parent_wire
-        elif child_wire in parent_fields:
+        else:
             inherited_names.add(child_wire)
     return (
         {k: v for k, v in original_props.items() if k not in inherited_names},

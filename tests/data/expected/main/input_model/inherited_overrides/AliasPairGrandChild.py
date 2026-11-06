@@ -11,7 +11,6 @@ class AliasParent(BaseModel):
 
 
 class AliasPairParent(AliasParent):
-    old: int = Field(1, title='Old')
     old_other: int = Field(4, title='Old Other')
 
 
