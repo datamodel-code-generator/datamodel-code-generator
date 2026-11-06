@@ -380,6 +380,10 @@
   "security-roles-30": {
     "input": "auth-roles-30.yaml"
   },
+  "security-roles-read-as-30": {
+    "input": "auth-roles.yaml",
+    "model": {"schema_version": "3.0"}
+  },
   "references": {
     "input": "references.yaml",
     "files": [

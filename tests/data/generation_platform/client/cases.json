@@ -2454,6 +2454,11 @@
   "auth-roles-30": {
     "input": "auth-roles-30.yaml"
   },
+  "auth-roles-30-read-as-31": {
+    "input": "auth-roles-30.yaml",
+    "model": {"schema_version": "3.1"},
+    "modules": [["client", "_generated", "security.py"]]
+  },
   "auth-wire-conflicts": {
     "input": "auth-wire-conflicts.yaml"
   },

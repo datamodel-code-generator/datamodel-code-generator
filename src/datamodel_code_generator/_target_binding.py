@@ -112,7 +112,7 @@ from datamodel_code_generator._target_types import (
     untyped,
     unwrapped,
 )
-from datamodel_code_generator.enums import DataclassArguments
+from datamodel_code_generator.enums import DataclassArguments, OpenAPIVersion
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import, _import_path, _stored_import
 from datamodel_code_generator.model import dataclass as dataclass_model
 from datamodel_code_generator.model import msgspec, pydantic_v2, typed_dict
@@ -183,7 +183,7 @@ _HEADER_ROLES: Final[frozenset[TypeUseRole]] = frozenset({
     "request_encoding_header",
     "response_encoding_header",
 })
-_DOCUMENT_FACTS: Final = ("openapi", "info", "tags", "servers")
+_DOCUMENT_FACTS: Final = ("info", "tags", "servers")
 _DEFAULT_KINDS: Final = cast(
     "dict[type, Literal['bool', 'int', 'float', 'str']]", {kind: kind.__name__ for kind in (bool, int, float, str)}
 )
@@ -414,12 +414,15 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.object_facts: dict[SchemaLocation | None, _ObjectFacts] = {}
         self.nullable_fields: dict[int, DataModelFieldBase] = {}
         self.document_facts: dict[str, tuple[tuple[str, FrozenLiteral], ...]] = {}
+        self.document_versions: dict[str, OpenAPIVersion] = {}
         self._walked_items: list[_WalkedPathItem] = []
         self._walked_operations: list[int] = []
         self._visits: list[_WalkedHolder] = []
         self._callback_origin: SchemaLocation | None = None
         super().__init__(source, config=config)
-        self._reader = _Reader(self._site_facts, siblings=lambda: self._ref_siblings_are_parts)
+        self._reader = _Reader(
+            self._site_facts, siblings=lambda location: self._ref_siblings_apply_to(location, legacy="parsed-document")
+        )
 
     def _resolve_local_ref_path(self, path: Path, ref: str) -> Path:
         """Refuse a local file that a served source document would publish, before reading it.
@@ -604,8 +607,10 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.left_out[key] = tuple(source_fields), tuple(field for field in source_fields if id(field) not in kept)
 
     def _parse_specification(self, specification: dict[str, YamlValue], path_parts: list[str]) -> None:
-        """Record the info, tags and servers of each walked document before walking it."""
-        self.document_facts["/".join(path_parts)] = _keywords(self._document_as_written(specification), _DOCUMENT_FACTS)
+        """Record the OpenAPI version the parser reads each walked document by, and its info, tags and servers."""
+        key = "/".join(path_parts)
+        self.document_facts[key] = _keywords(self._document_as_written(specification), _DOCUMENT_FACTS)
+        self.document_versions[key] = cast("OpenAPIVersion", self._read_dialect(specification).version)
         super()._parse_specification(specification, path_parts)
 
     def get_object_field(self, **options: Any) -> DataModelFieldBase:  # pyright: ignore[reportIncompatibleMethodOverride]
@@ -738,6 +743,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.object_facts.clear()
         self.nullable_fields.clear()
         self.document_facts.clear()
+        self.document_versions.clear()
         self._walked_items.clear()
         self._walked_operations.clear()
         self._visits.clear()
@@ -1993,11 +1999,14 @@ def _wire_name(field: DataModelFieldBase) -> str:
 class _Reader:
     """Read the loaded API documents by declaration while the walk reads them, recording what the models do not say.
 
-    It reads the site of each location (``ApiOpenAPIParser._site_facts``), and the keywords beside a reference as parts
-    of the schema where the parser does (``siblings``, the parser's ``_ref_siblings_are_parts``).
+    It reads the site of each location (``ApiOpenAPIParser._site_facts``), and the keywords beside a reference at a
+    location as parts of the schema where the parser does (``siblings``, the parser's ``_ref_siblings_apply_to``, by
+    the version of the location's document under --read-schema-version-per-document).
     """
 
-    def __init__(self, site: Callable[[SchemaLocation], SiteFacts], *, siblings: Callable[[], bool]) -> None:
+    def __init__(
+        self, site: Callable[[SchemaLocation], SiteFacts], *, siblings: Callable[[SchemaLocation], bool]
+    ) -> None:
         self.site = site
         self.siblings = siblings
 
@@ -2007,14 +2016,14 @@ class _Reader:
         The schema a chain leads to gives its own, and the keywords beside each reference, where they are parts of the
         schema as in OpenAPI 3.1, add theirs, the nearer one's first; in OpenAPI 3.0 they say nothing.
         """
-        site = self.site(declaration)
+        location, site = declaration, self.site(declaration)
         seen = {declaration}
         found: dict[str, YamlValue] = {}
         while (target := site.ref) is not None and target not in seen:
-            if self.siblings():
+            if self.siblings(location):
                 found = {**site.annotations, **found}
             seen.add(target)
-            site = self.site(target)
+            location, site = target, self.site(target)
         return {**site.annotations, **found}
 
     def record(self, declaration: SchemaLocation, role: TypeUseRole) -> _SchemaRecord:
@@ -3918,7 +3927,8 @@ def bind_operations(
             fields,
             security_schemes,
             api_scope=True,
-            document_facts=parser.document_facts.get(next(iter(documents.ids), ""), ()),
+            openapi=parser.document_versions.get(root := next(iter(documents.ids), ""), OpenAPIVersion.V31),
+            document_facts=parser.document_facts.get(root, ()),
             hint_type=builder.binder.hints.hint_type,
             hint_imports=tuple(builder.binder.hints.fixed),
             names=TargetNames.of(parser.model_resolver),

@@ -52,6 +52,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "auth-errors",
         "auth-roles",
         "auth-roles-30",
+        "auth-roles-30-read-as-31",
         "auth-context",
         "auth-wire-conflicts",
         "credential-name-errors",

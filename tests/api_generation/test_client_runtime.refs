@@ -16,8 +16,8 @@ allowreserved-path-31	main/generation_platform/client/runtime/allowreserved-path
 allowreserved-path-31-shorthand	main/generation_platform/client/packages/allowreserved-path-31/pydantic_v2_BaseModel//*.py
 allowreserved-path-31-shorthand	main/generation_platform/client/runtime/allowreserved-path-31.txt
 allowreserved-path-32	main/generation_platform/client/runtime/allowreserved-path-32.txt
-allowreserved-path-32-unknown	main/generation_platform/client/packages/allowreserved-path-32/pydantic_v2_BaseModel//*.py
-allowreserved-path-32-unknown	main/generation_platform/client/runtime/allowreserved-path-32.txt
+allowreserved-path-32-unknown	main/generation_platform/client/packages/allowreserved-path-32/pydantic_v2_BaseModel//*.py	= main/generation_platform/client/packages/allowreserved-path-32/pydantic_v2_BaseModel~client_runtime[allowreserved-path-32-unknown]//*.py
+allowreserved-path-32-unknown	main/generation_platform/client/runtime/allowreserved-path-32.txt	= main/generation_platform/client/runtime/allowreserved-path-32~client_runtime[allowreserved-path-32-unknown].txt
 auth-errors	main/generation_platform/client/runtime/auth-errors.txt
 auth-flows	main/generation_platform/client/runtime/auth-flows.txt
 auth-values	main/generation_platform/client/runtime/auth-values.txt

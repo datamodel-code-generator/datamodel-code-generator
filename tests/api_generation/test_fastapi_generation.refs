@@ -107,6 +107,8 @@ security-roles	main/generation_platform/fastapi/packages/security-roles/
 security-roles	main/generation_platform/fastapi/security-roles.txt
 security-roles-30	main/generation_platform/fastapi/packages/security-roles-30/	= main/generation_platform/fastapi/packages/info/
 security-roles-30	main/generation_platform/fastapi/security-roles-30.txt
+security-roles-read-as-30	main/generation_platform/fastapi/packages/security-roles-read-as-30/	= main/generation_platform/fastapi/packages/info/
+security-roles-read-as-30	main/generation_platform/fastapi/security-roles-read-as-30.txt
 selector-errors	main/generation_platform/fastapi/packages/selector-errors/
 selector-errors	main/generation_platform/fastapi/selector-errors.txt
 serialize-as-any-aliases	main/generation_platform/fastapi/packages/serialize-as-any-aliases/

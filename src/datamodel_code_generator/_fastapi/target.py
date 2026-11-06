@@ -61,7 +61,7 @@ class FastAPITarget:
             ) from None
         raise_selected(wire.diagnostics, (operation.contract.id for operation in plan.operations))
         _check_links(plan, request)
-        source = SourceDocument(request.lease)
+        source = SourceDocument(request.lease, request.batch.openapi)
         document = source.text(spec.contract for spec in plan.operations)
         dependencies = _dependencies(plan, request.model_imports)
         renderer = ServerRenderer(
