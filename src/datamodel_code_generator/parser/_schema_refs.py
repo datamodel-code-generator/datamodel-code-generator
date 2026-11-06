@@ -631,10 +631,15 @@ UNREAD_MAPPED_SCHEMA: Final = MappingProxyType({"type": "object"})
 class RefDocumentNotFoundError(Error):
     """The local document a reference names does not exist."""
 
-    def __init__(self, path: Path) -> None:
-        """Name the missing ``path`` as the error of a missing ``$ref`` file always has."""
+    def __init__(self, path: Path, document: str) -> None:
+        """Name the missing ``path`` as the error of a missing ``$ref`` file always has.
+
+        ``document`` is the key ``--external-ref-mapping`` gives the document: its ``file`` URI as written, else its
+        path.
+        """
         super().__init__(f"$ref file not found: {path}")
         self.path = path
+        self.document = document
 
 
 def reads_as_unread_mapped_document(parser: SchemaRefsHost, error: RefDocumentNotFoundError) -> bool:
@@ -642,7 +647,7 @@ def reads_as_unread_mapped_document(parser: SchemaRefsHost, error: RefDocumentNo
 
     Under --strict-refs it is an error, as before.
     """
-    if parser.strict_refs or (document := str(error.path)) not in parser._external_ref_mapping:  # noqa: SLF001
+    if parser.strict_refs or (document := error.document) not in parser._external_ref_mapping:  # noqa: SLF001
         return False
     parser._unread_mapped_documents.add(document)  # noqa: SLF001
     return True
