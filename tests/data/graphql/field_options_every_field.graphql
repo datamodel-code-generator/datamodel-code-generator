@@ -1,0 +1,8 @@
+type Owner {
+  address: Address
+  name: String
+}
+
+type Address {
+  city: String
+}

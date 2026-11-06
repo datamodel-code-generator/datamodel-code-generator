@@ -1676,6 +1676,11 @@ openapi/false_values.yaml::paths./maps.put.responses.200.content.application/jso
 openapi/field_model_name_collision.yaml::components.schemas.Field	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/field_model_name_collision.yaml::components.schemas.PerPage	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/field_model_name_collision.yaml::components.schemas.Update	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/field_options_every_field.yaml::components.schemas.Address	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/field_options_every_field.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/field_options_every_field.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/field_options_every_field.yaml::components.schemas.Dog	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/field_options_every_field.yaml::components.schemas.Flags	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/field_property_name_collision.yaml::components.schemas.Holder	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/field_property_name_collision.yaml::components.schemas.PerPage	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/field_render_plan.yaml::components.schemas.Nested	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3708,6 +3713,11 @@ openapi/false_values.yaml::paths./maps.put.responses.200.content.application/jso
 openapi/field_model_name_collision.yaml::components.schemas.Field	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/field_model_name_collision.yaml::components.schemas.PerPage	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/field_model_name_collision.yaml::components.schemas.Update	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/field_options_every_field.yaml::components.schemas.Address	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/field_options_every_field.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/field_options_every_field.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/field_options_every_field.yaml::components.schemas.Dog	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/field_options_every_field.yaml::components.schemas.Flags	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/field_property_name_collision.yaml::components.schemas.Holder	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/field_property_name_collision.yaml::components.schemas.PerPage	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/field_render_plan.yaml::components.schemas.Nested	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

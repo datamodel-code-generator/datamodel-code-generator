@@ -2072,6 +2072,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "omit_redundant_reference_null",
         "keep_reference_null_on_merged_models",
         "use_default_kwarg",
+        "apply_field_options_to_every_field",
         "read_nullable_beside_type_list",
         "keep_field_defaults_off_branch_roots",
         "use_field_description",

@@ -11,6 +11,7 @@ reviewed-safe allow_private_network
 reviewed-safe allow_remote_refs
 reviewed-safe allow_responses_without_content
 reviewed-safe apply_default_values_for_required_fields
+reviewed-safe apply_field_options_to_every_field
 guarded base_class
 guarded base_class_map
 reviewed-safe base_path

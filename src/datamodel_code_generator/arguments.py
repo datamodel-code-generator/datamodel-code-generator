@@ -1317,6 +1317,14 @@ _toggle(
     "--use-default-kwarg",
     help="Use `default=` instead of a positional argument for Fields that have default values.",
 )
+_toggle(
+    field_options,
+    "--apply-field-options-to-every-field",
+    help="Apply the field options to every kind of field: a GraphQL field, a property whose schema is `true` or "
+    "`false`, a required name without a property and the tag field a discriminator appends take the field options "
+    "the other fields take, such as --use-default-kwarg, --use-annotated and "
+    "--use-default-factory-for-optional-nested-models; without it they leave them out, as in 0.90.0",
+)
 _flag(
     field_options,
     "--use-missing-sentinel",

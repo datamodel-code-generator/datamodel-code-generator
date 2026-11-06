@@ -156,9 +156,9 @@ from datamodel_code_generator.parser._field_copies import (
     _merge_data_type_modifiers,  # noqa: F401  # Preserve the established parser.base export.
 )
 from datamodel_code_generator.parser._field_rows import (
-    FIELD_OPTIONS_LEFT_OUT,
     FIELD_ROWS_BUILT_WITHOUT_VALIDATION,
     FIELD_ROWS_WITHOUT_VALIDATION_ALIASES,
+    field_options_left_out,
     uses_default_with_required,
 )
 from datamodel_code_generator.parser._graph_ids import (
@@ -831,7 +831,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         for a field with a ``name`` and the ``source_name`` it is read from.
         """
         options = self._field_option_kwargs
-        if left_out := FIELD_OPTIONS_LEFT_OUT[row]:
+        if left_out := field_options_left_out(row, every_field=self.apply_field_options_to_every_field):
             options = {key: value for key, value in options.items() if key not in left_out}
         aliases: dict[str, Any] = {}
         if "alias" in facts:
@@ -1144,6 +1144,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.use_inline_field_description: bool = config.use_inline_field_description
         self.use_single_line_docstring: bool = config.use_single_line_docstring
         self.use_default_kwarg: bool = config.use_default_kwarg
+        self.apply_field_options_to_every_field: bool = config.apply_field_options_to_every_field
         self.use_missing_sentinel: bool = config.use_missing_sentinel
         self.deserialize_default_value_types: frozenset[DefaultValueType] = frozenset(config.deserialize_default_values)
         self._decimal_default_warning_count = 0

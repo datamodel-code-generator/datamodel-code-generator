@@ -364,6 +364,7 @@ openapi/false_all_of_values.yaml	yaml_fast_constructor/parity.txt
 openapi/false_keywords.yaml	yaml_fast_constructor/parity.txt
 openapi/false_values.yaml	yaml_fast_constructor/parity.txt
 openapi/field_model_name_collision.yaml	yaml_fast_constructor/parity.txt
+openapi/field_options_every_field.yaml	yaml_fast_constructor/parity.txt
 openapi/field_property_name_collision.yaml	yaml_fast_constructor/parity.txt
 openapi/field_render_plan.yaml	yaml_fast_constructor/parity.txt
 openapi/field_type_collision_dotted_module.yaml	yaml_fast_constructor/parity.txt

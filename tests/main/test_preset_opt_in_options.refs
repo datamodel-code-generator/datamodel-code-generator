@@ -13,6 +13,8 @@ read-length-keywords-by-type-pyproject	main/preset_opt_in_options/preset_option_
 use-typed-nullable-map-values-command-line	main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-command-line].py
 use-typed-nullable-map-values-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-command-line].py
 [test_preset_sets_opt_in_option]
+apply-field-options-to-every-field-practical	main/preset_opt_in_options/preset_sets_opt_in_option[apply-field-options-to-every-field-practical].py
+apply-field-options-to-every-field-standard	main/preset_opt_in_options/preset_sets_opt_in_option[apply-field-options-to-every-field-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[apply-field-options-to-every-field-practical].py
 capitalise-numbered-enum-members-practical	main/preset_opt_in_options/preset_sets_opt_in_option[capitalise-numbered-enum-members-practical].py	= main/preset_opt_in_options/preset_sets_opt_in_option[capitalise-numbered-enum-members-standard].py
 capitalise-numbered-enum-members-standard	main/preset_opt_in_options/preset_sets_opt_in_option[capitalise-numbered-enum-members-standard].py
 check-pattern-maps-strictly-practical	main/preset_opt_in_options/preset_sets_opt_in_option[check-pattern-maps-strictly-practical].py
