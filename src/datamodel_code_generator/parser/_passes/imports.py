@@ -727,6 +727,7 @@ _MSGSPEC_KIND_ASIDES: Final[Mapping[str, str]] = {
     "dict": " (its Struct types count as one)",
     "array": "",
     "str": " (str and Literal str values count as one)",
+    "number": "",
 }
 """The kinds of which a msgspec union holds one member, besides the Enums of ``_msgspec_enum_clashes``, with what
 counts as one member of the kind."""
@@ -800,7 +801,21 @@ def _msgspec_member_slots(leaf: DataType) -> tuple[tuple[str, object], ...]:
         and (leaf.type == "str" or leaf.type in _MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS)
     ):
         slot = "str", leaf.type
-    return () if slot is None else (slot,)
+    number = _msgspec_number_slot(leaf)
+    return (*(() if slot is None else (slot,)), *(() if number is None else (number,)))
+
+
+def _msgspec_number_slot(leaf: DataType) -> tuple[str, object] | None:
+    """Return the number kind of an int ``Literal`` and of ``float``, which msgspec cannot tell apart in a union.
+
+    msgspec sends every JSON integer to the int ``Literal`` member of a union that also holds ``float``, so an integer
+    that is not one of the values is refused although ``float`` admits it.
+    """
+    if leaf.data_types or leaf.enum_member_literals:
+        return None
+    if leaf.literals:
+        return ("number", "int Literal") if any(literal_value_kind(item) == "int" for item in leaf.literals) else None
+    return ("number", "float") if leaf.type == "float" else None
 
 
 def _msgspec_kind_clashes(
@@ -843,6 +858,12 @@ def _msgspec_refused_union_kinds(
 def _msgspec_kind_union_message(name: str, clash: _MsgspecKindClash) -> str:
     """Describe a union that msgspec refuses to decode because it holds more than one member of a kind."""
     kind, members = clash
+    if kind == "number":
+        return (
+            f"msgspec cannot decode every integer of the union {name}: its members {', '.join(members)} hold an int "
+            "Literal beside float, and msgspec sends every integer to the Literal, so an integer that is not one of "
+            "its values is refused although float admits it."
+        )
     return (
         f"msgspec cannot decode the union {name}: it holds the {kind}-like members {', '.join(members)}, while a "
         f"msgspec union holds only one {kind}-like member{_MSGSPEC_KIND_ASIDES[kind]}."

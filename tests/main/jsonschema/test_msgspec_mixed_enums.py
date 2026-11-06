@@ -204,3 +204,20 @@ def _verdict(model: Any, document: object) -> str:
     except TypeError:
         return "type refused by msgspec"
     return "accepted"
+
+
+def test_msgspec_int_literal_beside_float(output_file: Path, recwarn: pytest.WarningsRecorder) -> None:
+    """Warn about the union of an int ``Literal`` and ``float``, which msgspec decodes for no other integer (#4740).
+
+    msgspec sends every JSON integer to the int ``Literal`` member, so ``6`` fails with ``Invalid enum value 6`` where
+    ``float`` alone decodes it. The output is the one written without the warning; a str ``Literal``, ``int`` and
+    ``float`` alone are not warned about.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "msgspec_int_literal_beside_float.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--output-model-type", "msgspec.Struct"],
+    )
+    warnings = dict.fromkeys(str(warning.message) for warning in recwarn if warning.category is UserWarning)
+    assert_output("".join(f"{message}\n" for message in warnings), name="warnings")
