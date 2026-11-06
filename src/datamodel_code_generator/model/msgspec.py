@@ -486,7 +486,8 @@ def _attribute_default(data_type: DataType, value: object, seen: frozenset[int] 
     an object: the object is written as ``SimpleNamespace(**{...})`` (``_struct_attribute_default``). A type alias
     reads the value by the type it names (``seen`` holds the aliases followed since the last value read), a union by
     its first member that takes it (``_first_attribute_default``), an array type its items and a mapping its values by
-    the first of their types that take them. A value with no such object is returned as it is.
+    the first of their types that take them. A value with no such object is returned as it is, as is the value of a
+    tuple, whose positions ``_takes_default`` reads as alternatives.
     """
     if (reference := data_type.reference) is not None:
         match source := reference.source:
@@ -498,7 +499,7 @@ def _attribute_default(data_type: DataType, value: object, seen: frozenset[int] 
     if (array := data_type in ARRAYS) or data_type in MAPPINGS:
         entries = (
             dict(enumerate(value))
-            if array and isinstance(value, list)
+            if array and not data_type.is_tuple and isinstance(value, list)
             else value
             if not array and isinstance(value, dict)
             else {}
