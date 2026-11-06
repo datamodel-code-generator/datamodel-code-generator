@@ -1136,6 +1136,14 @@ _flag(
     help="Use type alias format for RootModel (e.g., Foo = RootModel[Bar]) "
     "instead of class inheritance (Pydantic v2 only)",
 )
+_toggle(
+    typing_options,
+    "--use-plain-alias-for-recursive-models",
+    help="Pydantic output only: write a type alias whose whole value is a model that names itself as "
+    "`Alias: TypeAlias = Node`, which Pydantic builds for every model that uses it; without it the alias is "
+    '`TypeAliasType("Alias", Node)` (or `type Alias = Node`) as in 0.89.0, which Pydantic 2 refuses once two models '
+    "use it. The alias then has no entry of its own in `model_json_schema()` `$defs`",
+)
 _flag(typing_options, "--disable-future-imports", help="Disable __future__ imports")
 typing_options.add_argument(
     "--import-overrides",

@@ -1,0 +1,2 @@
+Pydantic refuses the type alias Alias of the class Node, which names itself, in the second of the classes that use it (A, B): the module fails to import, or that class fails to validate. Pass --use-plain-alias-for-recursive-models to write it as a plain TypeAlias.
+Pydantic refuses the type alias Described of the class Node, which names itself, in the second of the classes that use it (A, B): the module fails to import, or that class fails to validate. Pass --use-plain-alias-for-recursive-models to write it as a plain TypeAlias.

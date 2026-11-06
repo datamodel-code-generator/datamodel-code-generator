@@ -159,6 +159,7 @@ reviewed-safe use_one_literal_as_default
 reviewed-safe use_one_model_per_ref_site
 reviewed-safe use_operation_id_as_name
 reviewed-safe use_pendulum
+reviewed-safe use_plain_alias_for_recursive_models
 reviewed-safe use_root_model_sequence_interface
 reviewed-safe use_schema_description
 reviewed-safe use_serialization_alias

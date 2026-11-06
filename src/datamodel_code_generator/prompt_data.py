@@ -231,6 +231,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--use-one-model-per-ref-site": "Give an object `$ref` with sibling keywords one model per place it is written.",
     "--use-operation-id-as-name": "Use OpenAPI operationId as the generated function/class name.",
     "--use-pendulum": "Use pendulum types for date, time, and duration fields.",
+    "--use-plain-alias-for-recursive-models": "Write the type alias of a model that names itself as a plain alias i...",
     "--use-root-model-sequence-interface": "Make non-null sequence-like Pydantic v2 RootModel classes implement col...",
     "--use-root-model-type-alias": "Generate RootModel as type alias format for better mypy support.",
     "--use-schema-description": "Use schema description as class docstring.",

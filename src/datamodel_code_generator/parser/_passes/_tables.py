@@ -94,7 +94,7 @@ class PipelineHost(
     settle.ParseHost,
     naming.NamingHost,
     structure.StructureHost,
-    modules.RuleAliasHost,
+    modules.PlainAliasHost,
     plans.PlansHost,
     modules.ModulesHost,
     modules.ReuseHost,
@@ -600,6 +600,11 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
                 when=lambda self, _: (
                     bool(self._self_named_root_models) and imports.alias_loop_failure(self.data_model_type) is None
                 ),
+            ),
+            PassSpec(
+                "write_plain_aliases_for_recursive_models",
+                late(modules.write_plain_aliases_for_recursive_models),
+                when=lambda self, _: self.data_model_type._READ_BY_PYDANTIC,  # noqa: SLF001
             ),
         ),
     ),

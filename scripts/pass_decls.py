@@ -863,6 +863,25 @@ TYPE_USERS_OF_DROPPED_ROOT_MODELS_BY_ANY = PassDecl(
         After("settle_discriminated_unions", "both retype once every module is processed"),
     ),
 )
+WRITE_PLAIN_ALIASES_FOR_RECURSIVE_MODELS = PassDecl(
+    "write_plain_aliases_for_recursive_models",
+    Phase.MODULES,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(Fact.MODELS_EXIST, Fact.MODEL_KIND, Fact.FIELD_TYPES, RenderFact.MODULE_MEMBERSHIP),
+    writes=_facts(Fact.MODEL_KIND, RenderFact.STDERR),
+    summary=(
+        "After every module is processed: writes each Pydantic type alias whose whole value is a class that names "
+        "itself as a plain `TypeAlias` under --use-plain-alias-for-recursive-models, and warns about each one two or "
+        "more classes use without it."
+    ),
+    condition="Pydantic output",
+    after=(
+        After("write_rule_aliases_as_classes", "reads the aliases that stay aliases once those with rules are classes"),
+        After("name_inner_models_in_rules", "reads the alias values once the rules name their inner models"),
+        After("type_users_of_dropped_root_models_by_any", "reads the alias values once every user is typed"),
+    ),
+)
 TAG_FIELDS_OF_TAGGED_BASES = PassDecl(
     "tag_fields_of_tagged_bases",
     Phase.CROSS_MODULE,

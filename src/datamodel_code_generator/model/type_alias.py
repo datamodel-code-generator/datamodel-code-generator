@@ -37,6 +37,8 @@ class TypeAliasBase(DataModel):
     FIELD_DOCSTRING_INDENT: ClassVar[int] = 0
     _FREEZES_FIELD_RENDER_PLANS: ClassVar[bool] = True
     """A field that renders from a plan (Pydantic's) writes the alias from its frozen plan; others build none."""
+    _WRITES_REFERENCE_ALIAS_TYPE: ClassVar[bool] = False
+    """Whether an alias whose value is another model or alias is a ``TypeAliasType`` too."""
 
     @override
     def _class_hash(self, generic_base_config: Mapping[str, Any] | None) -> SetItemHash:
@@ -70,7 +72,6 @@ class TypeAliasTypeBackport(TypeAliasBase):
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_TYPE_ALIAS_TYPE,)
     DEFERS_RECURSIVE_TYPE_HINT: ClassVar[bool] = True
     _WRITES_REFERENCE_ALIAS_TYPE: ClassVar[bool] = True
-    """Whether an alias whose value is another model or alias is a ``TypeAliasType`` too."""
 
     def _aliases_reference(self) -> bool:
         """Return whether the alias's value is another model or alias."""
@@ -92,4 +93,5 @@ class TypeStatement(TypeAliasBase):
     """
 
     TEMPLATE_FILE_PATH: ClassVar[str] = "TypeStatement.jinja2"
+    _WRITES_REFERENCE_ALIAS_TYPE: ClassVar[bool] = True
     _PYDANTIC_FORM: ClassVar[PydanticConstruct | None] = "pydantic.type_statement"

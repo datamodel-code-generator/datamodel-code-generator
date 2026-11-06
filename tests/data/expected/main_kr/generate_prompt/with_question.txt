@@ -62,6 +62,7 @@ How do I convert enums to Literal types?
 - `--no-use-decimal-in-field-forms`
 - `--no-use-encoded-str-for-constrained-base64`
 - `--no-use-object-type`
+- `--no-use-plain-alias-for-recursive-models`
 - `--no-use-single-dict-for-object-maps`
 - `--no-use-single-value-enum-as-const`
 - `--no-use-specialized-enum`: Disable specialized Enum classes for Python 3.11+ code generation.
@@ -89,6 +90,7 @@ How do I convert enums to Literal types?
 - `--use-non-positive-negative-number-constrained-types`: Use NonPositive/NonNegative types for number constraints.
 - `--use-object-type`: Use object instead of Any for unspecified object and array values.
 - `--use-pendulum`: Use pendulum types for date, time, and duration fields.
+- `--use-plain-alias-for-recursive-models`: Write the type alias of a model that names itself as a plain alias i...
 - `--use-root-model-type-alias`: Generate RootModel as type alias format for better mypy support.
 - `--use-single-dict-for-object-maps`: Type an object map as one dict instead of a union of dicts.
 - `--use-single-value-enum-as-const`: Treat `enum` with a single value as `const` with that value.
@@ -792,6 +794,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         nesting; without it each path that reaches the place
                         gets a model of its own (N(N-1)/2 site models for a
                         chain of N definitions), as in 0.89.0.
+  --use-plain-alias-for-recursive-models, --no-use-plain-alias-for-recursive-models
+                        Pydantic output only: write a type alias whose whole
+                        value is a model that names itself as `Alias:
+                        TypeAlias = Node`, which Pydantic builds for every
+                        model that uses it; without it the alias is
+                        `TypeAliasType("Alias", Node)` (or `type Alias =
+                        Node`) as in 0.89.0, which Pydantic 2 refuses once two
+                        models use it. The alias then has no entry of its own
+                        in `model_json_schema()` `$defs`
   --use-root-model-type-alias
                         Use type alias format for RootModel (e.g., Foo =
                         RootModel[Bar]) instead of class inheritance (Pydantic

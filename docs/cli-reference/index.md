@@ -9,7 +9,7 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 18 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 49 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 50 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 38 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 61 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
@@ -27,7 +27,7 @@ Use these pages when you know the workflow area but not the exact option name.
 |-------|---------|--------|
 | [Model Customization](topics/model-customization.md) | 29 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 23 | Custom Templates, Generated Output, Imports, Output Formatting |
-| [Typing Customization](topics/typing-customization.md) | 31 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
+| [Typing Customization](topics/typing-customization.md) | 32 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 10 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
 
 ## 🔗 Option Relationships
@@ -401,6 +401,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-one-model-per-ref-site`](field-customization.md#use-one-model-per-ref-site)
 - [`--use-operation-id-as-name`](openapi-only-options.md#use-operation-id-as-name)
 - [`--use-pendulum`](typing-customization.md#use-pendulum)
+- [`--use-plain-alias-for-recursive-models`](typing-customization.md#use-plain-alias-for-recursive-models)
 - [`--use-root-model-sequence-interface`](model-customization.md#use-root-model-sequence-interface)
 - [`--use-root-model-type-alias`](typing-customization.md#use-root-model-type-alias)
 - [`--use-schema-description`](field-customization.md#use-schema-description)

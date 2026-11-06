@@ -1,0 +1,49 @@
+{
+  "$defs": {
+    "Node": {
+      "type": "object",
+      "properties": {
+        "next": {"$ref": "#/$defs/Node"}
+      }
+    },
+    "Nodes": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/Node"}
+    },
+    "MaybeNode": {
+      "anyOf": [{"$ref": "#/$defs/Node"}, {"type": "null"}]
+    },
+    "Leaf": {
+      "type": "object",
+      "properties": {
+        "value": {"type": "integer"}
+      }
+    },
+    "LeafAlias": {"$ref": "#/$defs/Leaf"},
+    "Chain": {
+      "type": "object",
+      "properties": {
+        "next": {"$ref": "#/$defs/ChainAlias"}
+      }
+    },
+    "ChainAlias": {"$ref": "#/$defs/Chain"},
+    "A": {
+      "type": "object",
+      "properties": {
+        "nodes": {"$ref": "#/$defs/Nodes"},
+        "maybe": {"$ref": "#/$defs/MaybeNode"},
+        "leaf": {"$ref": "#/$defs/LeafAlias"},
+        "chain": {"$ref": "#/$defs/ChainAlias"}
+      }
+    },
+    "B": {
+      "type": "object",
+      "properties": {
+        "nodes": {"$ref": "#/$defs/Nodes"},
+        "maybe": {"$ref": "#/$defs/MaybeNode"},
+        "leaf": {"$ref": "#/$defs/LeafAlias"},
+        "chain": {"$ref": "#/$defs/ChainAlias"}
+      }
+    }
+  }
+}

@@ -72,6 +72,7 @@ from datamodel_code_generator.model.base import (
     inherited_root_field,
 )
 from datamodel_code_generator.model.enum import Enum, Member, _enum_class, enum_value_base, get_raw_enum_member_value
+from datamodel_code_generator.model.type_alias import TypeAlias as PlainTypeAlias
 from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._graph_ids import UNRESOLVED_MODEL_KEY, keyed_models
 from datamodel_code_generator.parser._imports_plan import ImportProducer
@@ -232,6 +233,7 @@ __all__ = [
     "ModuleStateView",
     "ModulesHost",
     "ModulesRun",
+    "PlainAliasHost",
     "ReuseHost",
     "RuleAliasHost",
     "apply_base_class_type_overrides",
@@ -264,6 +266,7 @@ __all__ = [
     "type_const_narrowed_values",
     "type_dict_keys_by_root_types",
     "type_users_of_dropped_root_models_by_any",
+    "write_plain_aliases_for_recursive_models",
     "write_rule_aliases_as_classes",
 ]
 
@@ -616,6 +619,14 @@ class RuleAliasHost(ImportFromHost, DataModelTypeHost, Protocol):
 
     def _create_data_model(self, model_type: type[DataModel] | None = None, **kwargs: Any) -> DataModel:
         """Create a model of ``model_type``, the model type of the output by default."""
+
+
+class PlainAliasHost(RuleAliasHost, Protocol):
+    """The option of the parser that writing the aliases of self-referencing classes as plain aliases reads."""
+
+    @property
+    def use_plain_alias_for_recursive_models(self) -> bool:
+        """Whether a Pydantic alias whose value is a class that names itself is a plain ``TypeAlias``."""
 
 
 class ModuleStateView(ModuleScopeView, Protocol):
@@ -2896,6 +2907,109 @@ def settle_update_actions(parser: RecursionFactsHost, listed_paths: Iterable[str
     )
 
 
+def _replace_aliases(
+    parser: RuleAliasHost,
+    run: ProcessingRun[Any, ModuleContextView, Any],
+    aliases: Sequence[DataModel],
+    replacements: Mapping[int, DataModel],
+) -> None:
+    """Put each replacement of ``aliases``, by the id of the alias, in its place in every model list of the run."""
+    for model_list in chain(
+        (ctx.models for ctx in run.contexts),
+        (models for _, models in run.module_models),
+        (prepared.model_list for prepared in parser._prepared_modules),  # noqa: SLF001
+        (prepared.model_list_before_override_removal for prepared in parser._prepared_modules),  # noqa: SLF001
+    ):
+        model_list[:] = [replacements.get(id(model), model) for model in model_list]
+    for model in aliases:
+        parser._graph_builder.replace_model(model, replacements[id(model)])  # noqa: SLF001
+    if (identities := run.model_identities) is not None:
+        run.model_identities = {replacements.get(id(model), model): identity for model, identity in identities.items()}
+
+
+def _recursive_class_of_alias(model: DataModel) -> DataModel | None:
+    """Return the class that a ``TypeAliasType`` alias writes as its whole value, where the class names itself.
+
+    The value may carry metadata (``Annotated``). A class whose fields name the alias as well builds it through its own
+    cycle; it is no such class.
+    """
+    if not isinstance(model, TypeAliasBase) or not model._WRITES_REFERENCE_ALIAS_TYPE or len(model.fields) != 1:  # noqa: SLF001
+        return None
+    data_type = model.fields[0].data_type
+    if (
+        (reference := data_type.reference) is None
+        or not isinstance(target := reference.source, DataModel)
+        or target.IS_ALIAS
+        or model.fields[0].type_hint.strip("\"'") != (data_type.alias or reference.short_name)
+    ):
+        return None
+    named = {id(nested.reference) for field in target.fields for nested in field.data_type.all_data_types}
+    return target if id(reference) in named and id(model.reference) not in named else None
+
+
+def write_plain_aliases_for_recursive_models(
+    parser: PlainAliasHost, run: ProcessingRun[Any, ModuleContextView, Any]
+) -> None:
+    """Write each Pydantic type alias whose whole value is a class that names itself as a plain ``TypeAlias``.
+
+    Pydantic 2 builds the schema of such a ``TypeAliasType`` (or ``type`` statement) for the first model that uses
+    it and refuses it in the next one: as a circular reference (``circular-reference-schema``), so the module fails to
+    import, or, where the value carries metadata, as a recursion loop as that model validates. A plain alias is the
+    class itself, which every model builds; the module order writes it after the class, as it writes every alias
+    after the models its value names. With ``--use-plain-alias-for-recursive-models`` every such alias takes that
+    form; without it, each one that two or more classes use is warned about. Every module is processed: the alias
+    values that collapse and reuse rewrite, and the aliases written as classes, are final.
+    """
+    written = run_unused_models(run).written(_context_models(run.contexts))
+    if not (aliases := [(alias, target) for alias in written if (target := _recursive_class_of_alias(alias))]):
+        return
+    if not parser.use_plain_alias_for_recursive_models:
+        for alias, target in aliases:
+            users = [
+                model.class_name
+                for model in written
+                if not model.IS_ALIAS
+                and any(
+                    nested.reference is alias.reference
+                    for field in model.fields
+                    for nested in field.data_type.all_data_types
+                )
+            ]
+            if len(users) > 1:
+                warn_as_parser_base(
+                    _recursive_alias_message(alias.class_name, target.class_name, users), UserWarning, stacklevel=2
+                )
+        return
+    replacements = {
+        id(alias): parser._create_data_model(  # noqa: SLF001
+            model_type=PlainTypeAlias,
+            reference=alias.reference,
+            fields=alias.fields,
+            decorators=alias.decorators,
+            custom_base_class=alias.custom_base_class,
+            custom_template_dir=parser.custom_template_dir,
+            extra_template_data=defaultdict(dict, {alias.path: alias.extra_template_data}),
+            path=alias.file_path,
+            description=alias.description,
+            nullable=alias.nullable,
+            keyword_only=parser.keyword_only,
+            treat_dot_as_module=parser.treat_dot_as_module,
+            dataclass_arguments=parser.dataclass_arguments,
+        )
+        for alias, _ in aliases
+    }
+    _replace_aliases(parser, run, [alias for alias, _ in aliases], replacements)
+
+
+def _recursive_alias_message(alias: str, target: str, users: Sequence[str]) -> str:
+    """Describe a type alias of a self-referencing class that Pydantic refuses in the second class that uses it."""
+    return (
+        f"Pydantic refuses the type alias {alias} of the class {target}, which names itself, in the second of the "
+        f"classes that use it ({', '.join(users)}): the module fails to import, or that class fails to validate. Pass "
+        "--use-plain-alias-for-recursive-models to write it as a plain TypeAlias."
+    )
+
+
 def write_rule_aliases_as_classes(parser: RuleAliasHost, run: ProcessingRun[Any, ModuleContextView, Any]) -> None:
     """Write each alias that holds schema validator rules and that collapse left written as the RootModel class.
 
@@ -2935,17 +3049,7 @@ def write_rule_aliases_as_classes(parser: RuleAliasHost, run: ProcessingRun[Any,
         )
         for model in aliases
     }
-    for model_list in chain(
-        (ctx.models for ctx in run.contexts),
-        (models for _, models in run.module_models),
-        (prepared.model_list for prepared in parser._prepared_modules),  # noqa: SLF001
-        (prepared.model_list_before_override_removal for prepared in parser._prepared_modules),  # noqa: SLF001
-    ):
-        model_list[:] = [replacements.get(id(model), model) for model in model_list]
-    for model in aliases:
-        parser._graph_builder.replace_model(model, replacements[id(model)])  # noqa: SLF001
-    if (identities := run.model_identities) is not None:
-        run.model_identities = {replacements.get(id(model), model): identity for model, identity in identities.items()}
+    _replace_aliases(parser, run, aliases, replacements)
     classes = {id(model) for model in replacements.values()}
     for ctx in run.contexts:
         members = keyed_models(module_members(parser, ctx.models), "module members")

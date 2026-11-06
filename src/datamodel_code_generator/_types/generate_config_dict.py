@@ -213,6 +213,7 @@ class BaseGenerateConfig(TypedDict):
     use_type_alias: NotRequired[bool]
     use_type_alias_type: NotRequired[bool]
     use_root_model_type_alias: NotRequired[bool]
+    use_plain_alias_for_recursive_models: NotRequired[bool]
     special_field_name_prefix: NotRequired[str | None]
     remove_special_field_name_prefix: NotRequired[bool]
     capitalise_enum_members: NotRequired[bool]
