@@ -1,0 +1,4 @@
+a.Rank {"x": 1}: schema rejects, model rejects
+a.Rank {"x": "s"}: schema accepts, model accepts
+c.Rank {"x": 1}: schema accepts, model accepts
+c.Rank {"x": "s"}: schema rejects, model rejects

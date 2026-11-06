@@ -1,0 +1,23 @@
+openapi: 3.1.0
+info:
+  title: Tree-scope canonical models of one name
+  version: "1"
+paths: {}
+components:
+  schemas:
+    a.Item:
+      type: object
+      additionalProperties:
+        type: string
+    a.Rank:
+      type: object
+      additionalProperties:
+        type: string
+    c.Item:
+      type: object
+      additionalProperties:
+        type: integer
+    c.Rank:
+      type: object
+      additionalProperties:
+        type: integer

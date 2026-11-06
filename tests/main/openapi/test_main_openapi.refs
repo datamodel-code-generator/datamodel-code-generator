@@ -1907,6 +1907,15 @@ cross-module-users-dataclasses	main/openapi/main_openapi/reuse_scope_tree_import
 cross-module-users-pydantic_v2	main/openapi/main_openapi/reuse_scope_tree_imports[cross-module-users-pydantic_v2]/
 modular-dataclasses	main/openapi/main_openapi/reuse_scope_tree_imports[modular-dataclasses]/
 modular-pydantic_v2	main/openapi/main_openapi/reuse_scope_tree_imports[modular-pydantic_v2]/
+[test_main_openapi_reuse_scope_tree_shared_class_names]
+dataclasses	main/openapi/main_openapi/reuse_scope_tree_shared_class_names[dataclasses].txt
+dataclasses	main/openapi/main_openapi/reuse_scope_tree_shared_class_names[dataclasses]/
+msgspec	main/openapi/main_openapi/reuse_scope_tree_shared_class_names[msgspec].txt
+msgspec	main/openapi/main_openapi/reuse_scope_tree_shared_class_names[msgspec]/
+pydantic_v2	main/openapi/main_openapi/reuse_scope_tree_shared_class_names[pydantic_v2].txt	= main/openapi/main_openapi/reuse_scope_tree_shared_class_names[dataclasses].txt
+pydantic_v2	main/openapi/main_openapi/reuse_scope_tree_shared_class_names[pydantic_v2]/
+pydantic_v2-single	main/openapi/main_openapi/reuse_scope_tree_shared_class_names[pydantic_v2-single].txt	= main/openapi/main_openapi/reuse_scope_tree_shared_class_names[msgspec].txt
+pydantic_v2-single	main/openapi/main_openapi/reuse_scope_tree_shared_class_names[pydantic_v2-single]/
 [test_main_openapi_root_model_default_primitive]
 	main/openapi/root_model_default_primitive.py
 [test_main_openapi_same_name_objects]

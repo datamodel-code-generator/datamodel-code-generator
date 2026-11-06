@@ -3,8 +3,8 @@
 
 from __future__ import annotations
 
-from ._internal import Item
+from ._internal import Item_1
 
 
-class Rank(Item):
+class Rank(Item_1):
     pass

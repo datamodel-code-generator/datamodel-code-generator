@@ -298,17 +298,24 @@ REUSE_MODEL_TREE_SCOPE = PassDecl(
     Phase.STRUCTURE,
     Scope.GLOBAL,
     PassKind.TRANSFORM,
-    reads=_facts(*Fact, RenderFact.FIELD_ORDER, RenderFact.MODULE_MEMBERSHIP, RenderFact.PLANS),
+    reads=_facts(*Fact, RenderFact.FIELD_ORDER, RenderFact.CLASS_NAMES, RenderFact.MODULE_MEMBERSHIP, RenderFact.PLANS),
     writes=_facts(
-        Fact.MODELS_EXIST, Fact.BASES, Fact.FIELD_SET, Fact.FIELD_TYPES, Fact.NULLABLE, RenderFact.MODULE_MEMBERSHIP
+        Fact.MODELS_EXIST,
+        Fact.BASES,
+        Fact.FIELD_SET,
+        Fact.FIELD_TYPES,
+        Fact.NULLABLE,
+        RenderFact.MODULE_MEMBERSHIP,
+        RenderFact.CLASS_NAMES,
     ),
     after=(
         After("apply_forced_invalid_dotted_stdout_repair", "shares the duplicates of the repaired module layout"),
         After("rename_submodules_hidden_by_classes", "shares the duplicates of the renamed submodules"),
     ),
     summary=(
-        "Moves models duplicated across modules into a shared module; every user names the subclass of a duplicate "
-        "in an import cycle that an earlier attempt found to fail."
+        "Moves models duplicated across modules into a shared module, whose canonicals of one name take distinct "
+        "names (the last keeps it); every user names the subclass of a duplicate in an import cycle that an earlier "
+        "attempt found to fail."
     ),
     condition="reuse_model with the tree scope",
 )
