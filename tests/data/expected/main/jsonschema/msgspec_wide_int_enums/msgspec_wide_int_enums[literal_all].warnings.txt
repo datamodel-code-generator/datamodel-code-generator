@@ -1,3 +1,4 @@
+a Literal of the output model cannot hold the value 1e+19, so it is written as its type, which admits other values; Model.typed is generated without this constraint.
 msgspec cannot decode Model.wide: its Literal value 9223372036854775808 is beyond the 64-bit range, while msgspec decodes Enum and Literal ints only from -2**63 to 2**63 - 1.
 msgspec cannot decode Model.negative: its Literal value -9223372036854775809 is beyond the 64-bit range, while msgspec decodes Enum and Literal ints only from -2**63 to 2**63 - 1.
 msgspec cannot decode Model.constant: its Literal value 18446744073709551616 is beyond the 64-bit range, while msgspec decodes Enum and Literal ints only from -2**63 to 2**63 - 1.

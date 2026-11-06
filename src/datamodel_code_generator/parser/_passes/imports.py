@@ -19,10 +19,10 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar, cast
 from typing_extensions import Protocol
 
 from datamodel_code_generator import DefaultValueTypeWarning, Error, ReuseScope
-from datamodel_code_generator._constraint_applicability import MSGSPEC_OUTPUT, int_beyond_values
+from datamodel_code_generator._constraint_applicability import MSGSPEC_OUTPUT, WIDENED_VALUES_KEY, int_beyond_values
 from datamodel_code_generator._container_kinds import ARRAYS, ITEM_CONTAINERS, MAPPINGS, SLOT_CLASSES
 from datamodel_code_generator._graph import reach
-from datamodel_code_generator._message_text import counted, for_count, listed_with_more
+from datamodel_code_generator._message_text import counted, english_list, for_count, listed_with_more
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import (
     dotted_module,
@@ -1050,6 +1050,30 @@ def warn_about_decimal_defaults(parser: FinishHost) -> None:
     warn_as_parser_base(message, DefaultValueTypeWarning, stacklevel=2)
 
 
+def widened_values_warning(field: DataModelFieldBase) -> str | None:
+    """Return a warning for the enum or const values a field's type is written in place of, as no Literal holds them.
+
+    The parser keeps them on the type (``record_widened_values``), which admits other values of their types.
+    """
+    if not (
+        widened := (
+            *dict.fromkeys(
+                stable_repr(value)
+                for data_type in field.data_type.all_data_types
+                for value in data_type.__dict__.get(WIDENED_VALUES_KEY, ())
+            ),
+        )
+    ):
+        return None
+    count = len(widened)
+    return field._generated_without_constraints(  # ruff: ignore[private-member-access]
+        f"a Literal of the output model cannot hold the {for_count(count, 'value')} {english_list(widened, 'and')}, "
+        f"so {for_count(count, 'it is', 'they are')} written as {for_count(count, 'its type', 'their types')}, "
+        f"which {for_count(count, 'admits', 'admit')} other values",
+        1,
+    )
+
+
 def warn_about_dropped_constraints(parser: FinishHost, contexts: Sequence[ModuleContextView]) -> None:
     """Warn once per field whose constraints the output model leaves out on its type, and keep each warning."""
     fields: set[tuple[ModulePath, str]] = set()
@@ -1057,7 +1081,14 @@ def warn_about_dropped_constraints(parser: FinishHost, contexts: Sequence[Module
         for model in ctx.models:
             for field in model.fields:
                 if message := " ".join(
-                    filter(None, (field.dropped_constraints_warning, tuple_unique_items_warning(parser, field)))
+                    filter(
+                        None,
+                        (
+                            field.dropped_constraints_warning,
+                            widened_values_warning(field),
+                            tuple_unique_items_warning(parser, field),
+                        ),
+                    )
                 ):
                     warn_as_parser_base(message, UserWarning, stacklevel=2)
                     fields.add((ctx.module, message))

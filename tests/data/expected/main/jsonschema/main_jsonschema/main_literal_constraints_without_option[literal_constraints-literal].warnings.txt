@@ -1,0 +1,1 @@
+a Literal of the output model cannot hold the values 0.5, 1.5 and 4.5, so they are written as their types, which admit other values; LiteralConstraints.step is generated without this constraint.

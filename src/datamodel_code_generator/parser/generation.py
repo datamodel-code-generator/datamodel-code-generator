@@ -55,6 +55,7 @@ from datamodel_code_generator._constraint_applicability import (
     TYPE_DEPENDENT_CONSTRAINTS_KEY,
     UNION_SIBLING_CONSTRAINTS_KEY,
     VALUES_AS_WRITTEN_KEY,
+    WIDENED_VALUES_KEY,
 )
 from datamodel_code_generator._graph_links import (
     add_child,
@@ -181,6 +182,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "name_reference",
     "record_dropped_multiple_of",
     "record_values_as_written",
+    "record_widened_values",
     "rename_field",
     "rename_model",
     "replace_model",
@@ -1518,6 +1520,16 @@ class GenerationStore:  # noqa: PLR0904
         bump_node(data_type)
 
     @staticmethod
+    @deprecated("Use GenerationStore.builder().record_widened_values() instead.", category=None)
+    def record_widened_values(data_type: DataType, values: Sequence[object]) -> None:
+        """Keep on a new type of an enum or a const the values it is written in place of, which no Literal holds.
+
+        The field holding the type warns that it is generated without them (``widened_values_warning``).
+        """
+        data_type.__dict__[WIDENED_VALUES_KEY] = tuple(values)
+        bump_node(data_type)
+
+    @staticmethod
     @deprecated("Use GenerationStore.builder().restore_required_inherited_field() instead.", category=None)
     def restore_required_inherited_field(model: DataModel, field_: DataModelFieldBase) -> bool:
         """Run the model's ``restore_required_inherited_field_state`` hook for a field; return what it returns.
@@ -2650,6 +2662,10 @@ class GraphBuilder:
     def record_values_as_written(self, owner: DataModel | DataType, values: Sequence[Any]) -> None:
         """Keep on a new enum model or Literal type the values as written of the enum or const it holds some of."""
         self._store.record_values_as_written(owner, values)  # ty: ignore[deprecated]
+
+    def record_widened_values(self, data_type: DataType, values: Sequence[object]) -> None:
+        """Keep on a new type of an enum or a const the values it is written in place of, which no Literal holds."""
+        self._store.record_widened_values(data_type, values)  # ty: ignore[deprecated]
 
     def redirect_model_reference_users(
         self, model: DataModel, models: list[DataModel], new_reference: Reference, *, keeps_named: bool = False

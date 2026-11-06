@@ -6,7 +6,7 @@ default	main/jsonschema/msgspec_mixed_enums/msgspec_mixed_enums[default].py
 default	main/jsonschema/msgspec_mixed_enums/msgspec_mixed_enums[default].warnings.txt
 literal_all	main/jsonschema/msgspec_mixed_enums/msgspec_mixed_enums[literal_all].payloads.txt
 literal_all	main/jsonschema/msgspec_mixed_enums/msgspec_mixed_enums[literal_all].py
-literal_all	main/jsonschema/msgspec_mixed_enums/msgspec_mixed_enums[literal_all].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+literal_all	main/jsonschema/msgspec_mixed_enums/msgspec_mixed_enums[literal_all].warnings.txt
 literal_one	main/jsonschema/msgspec_mixed_enums/msgspec_mixed_enums[literal_one].payloads.txt	= main/jsonschema/msgspec_mixed_enums/msgspec_mixed_enums[default].payloads.txt
 literal_one	main/jsonschema/msgspec_mixed_enums/msgspec_mixed_enums[literal_one].py	= main/jsonschema/msgspec_mixed_enums/msgspec_mixed_enums[default].py
 literal_one	main/jsonschema/msgspec_mixed_enums/msgspec_mixed_enums[literal_one].warnings.txt	= main/jsonschema/msgspec_mixed_enums/msgspec_mixed_enums[default].warnings.txt

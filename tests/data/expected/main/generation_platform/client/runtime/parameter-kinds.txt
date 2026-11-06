@@ -266,6 +266,8 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-www-form-urlencoded, multipart/form-data, content-type: application/x-www-form-urlencoded, content-length: 108] b'amount=12345678901234567890.123&amounts=1.50&amounts=2&step=0.25&level=2&count=12&flag=true&mixed=5&either=5'
   read parts of text alone = Values(amount=None, amounts=None, step=None, level=None, count=None, flag=None, mixed='abc', either='abc')
 # parameter-kinds typing.TypedDict
+  warning UserWarning: a Literal of the output model cannot hold the values 2.2 and 0.5, so they are written as their types, which admit other values; ValuesGetQueryRatioParameter is generated without this constraint.
+  warning UserWarning: a Literal of the output model cannot hold the values 2.2 and 0.5, so they are written as their types, which admit other values; ValuesGetResponse204XRatioHeader is generated without this constraint.
   > GET https://api.example.com/values?amount=12345678901234567890.123
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   send amount Decimal('12345678901234567890.123') = None

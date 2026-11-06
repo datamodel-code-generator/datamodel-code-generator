@@ -1543,7 +1543,7 @@ WARN_ABOUT_DROPPED_CONSTRAINTS = PassDecl(
     Scope.GLOBAL,
     PassKind.CHECK,
     writes=_facts(RenderFact.STDERR),
-    reads=_facts(Fact.CONSTRAINTS),
+    reads=_facts(Fact.CONSTRAINTS, Fact.FIELD_TYPES),
 )
 WARN_ABOUT_DECIMAL_DEFAULTS = PassDecl(
     "warn_about_decimal_defaults",

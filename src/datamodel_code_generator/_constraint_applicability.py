@@ -84,6 +84,7 @@ __all__ = [
     "TYPE_DEPENDENT_CONSTRAINTS_KEY",
     "TYPE_DEPENDENT_KEYWORDS",
     "UNION_SIBLING_CONSTRAINTS_KEY",
+    "WIDENED_VALUES_KEY",
     "ConstraintOptions",
     "DeclaredKinds",
     "OutputKeywords",
@@ -174,6 +175,9 @@ UNION_SIBLING_CONSTRAINTS_KEY: Final = "_union_sibling_constraints"
 """The key under which a field keeps the constraints it writes from the keywords a schema declares beside a union."""
 DROPPED_MULTIPLE_OF_KEY: Final = "_dropped_multiple_of"
 """The key under which a constrained type keeps the ``multipleOf`` it is written without, not being finite in it."""
+WIDENED_VALUES_KEY: Final = "_widened_values"
+"""The key under which the type of an enum or a const keeps the values it is written in place of, which no ``Literal``
+holds (``values_no_literal_holds``)."""
 
 _KEYWORD_KINDS: Final[tuple[tuple[frozenset[str], frozenset[str]], ...]] = (
     (frozenset({"string"}), STRING_KEYWORDS),

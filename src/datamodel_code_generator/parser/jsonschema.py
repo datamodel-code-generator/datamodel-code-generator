@@ -188,6 +188,7 @@ from datamodel_code_generator.model._decisions.enum_kind import (
     holds_member_value,  # noqa: F401  # Preserve the established parser.jsonschema export.
     is_literal_kind,  # noqa: F401  # Preserve the established parser.jsonschema export.
     literal_value_kind,  # noqa: F401  # Preserve the established parser.jsonschema export.
+    values_no_literal_holds,
 )
 from datamodel_code_generator.model._decisions.literal_default import const_type  # noqa: F401  # Preserve the established parser.jsonschema export.
 from datamodel_code_generator.model._decisions.tag_value import (
@@ -1605,9 +1606,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return a DataType for a JSON Schema const value: its Literal (``const_type``) or its value's type.
 
         With the schema ``obj``, a Literal const that does not meet the constraints beside it is kept as written, with
-        the unsatisfiable warning.
+        the unsatisfiable warning. A value type keeps the const it is written in place of (``_widened``).
         """
-        return _value_keywords.get_const_data_type(self, const, obj)
+        return self._widened(_value_keywords.get_const_data_type(self, const, obj), (const,))
+
+    def _widened(self, data_type: DataType, values: Sequence[object]) -> DataType:
+        """Return the type of enum or const values, keeping on it those it is written in place of, if any.
+
+        They are the values no Literal of the output holds (``values_no_literal_holds``), whose types admit others.
+        """
+        if widened := values_no_literal_holds(
+            values, bool_literals=self._output_model_context.supports_boolean_literals
+        ):
+            self._graph_builder.record_widened_values(data_type, widened)
+        return data_type
 
     def _collect_inherited_fields_for_request_response(
         self,
@@ -7480,7 +7492,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return self._enum_literal(obj)
 
     def _literal_values_type(self, values: list[Any]) -> DataType:
-        """Return the Literal type of enum values, joined with the types of values no Literal holds."""
+        """Return the Literal type of enum values, joined with the types of values no Literal holds (``_widened``)."""
         literal_values, non_literal_values, value_null = _value_keywords.partition_enum_values(self, values)
         has_null = bool(resolve_null_facts(NullSources(enum_null=value_null), "enum-literal").admits_null)
         if not non_literal_values:
@@ -7495,7 +7507,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         data_types.extend(self._get_data_type_from_json_value(i) for i in non_literal_values)
         if not data_types:  # pragma: no cover
             data_types.append(self.data_type_manager.get_data_type(Types.null))
-        return build_union(self.data_type, data_types, nullable=has_null)
+        return self._widened(build_union(self.data_type, data_types, nullable=has_null), non_literal_values)
 
     def _get_enum_model_class(self, type_: Types | None, enum_values: list[Any]) -> tuple[type[Enum], Types | None]:
         """Return the enum model class and the schema type whose value type it also subclasses, else None.

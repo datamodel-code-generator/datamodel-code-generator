@@ -1,0 +1,2 @@
+enum_refs_disjoint_str.json#/$defs/Disjoint: no value satisfies every part of this schema (its allOf members and its own keywords), since no value meets all of their `enum`; the generated code keeps its earlier `enum`.
+a Literal of the output model cannot hold the value 1.5, so it is written as its type, which admits other values; Mixed is generated without this constraint.
