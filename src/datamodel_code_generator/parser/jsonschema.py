@@ -7931,8 +7931,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 str(path), default_factory=lambda _: self._load_ref_data_from_path(path)
             )
         except FileNotFoundError:
-            msg = f"$ref file not found: {path}"
-            raise Error(msg) from None
+            raise _schema_refs.RefDocumentNotFoundError(path) from None
         except (IsADirectoryError, PermissionError) as exc:
             if not _is_directory_read_error(exc, path):
                 raise
@@ -8069,6 +8068,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._document_roles: dict[str, dict[str, None]] = {}
         self._roles_recorded_after_preparation = False
         self._resource_ref_warnings: set[str] = set()
+        self._unread_mapped_documents: set[str] = set()
+        """The documents --external-ref-mapping maps that do not exist, read as classes without known properties."""
         self._dynamic_anchors: dict[tuple[str, str], dict[str, str]] = registry.dynamic_anchors
         self._embedded_resources: dict[tuple[str, str], dict[str, str]] = registry.embedded
         self._dynamic_scope_pointer = ""
@@ -8715,15 +8716,38 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
 
     def _parse_base_stand_in(self, reference: Reference, file_path: Path | None) -> None:
-        """Parse the schema at the key of ``reference`` into its model, in its document and in the module of a model."""
+        """Parse the schema at the key of ``reference`` into its model, in its document and in the module of a model.
+
+        A mapped document that does not exist gives the model the schema of an object without properties
+        (``_schema_refs.UNREAD_MAPPED_SCHEMA``).
+        """
         source_path = self.current_source_path
         if source_path is not None:
             self.current_source_path = file_path
+        file_part = reference.path.partition("#")[0]
         try:
-            with self._ref_document_context(reference.path.partition("#")[0]) as (_, raw):
+            with self._ref_document_context(file_part) as (_, raw):
                 path_parts = list(self.model_resolver.current_root)
                 self.parse_json_pointer(raw, reference.path, path_parts)
                 self._parse_reserved_targets(raw, path_parts)
+        except _schema_refs.RefDocumentNotFoundError as exc:
+            if not _schema_refs.reads_as_unread_mapped_document(self, exc):
+                raise
+            with _schema_documents.referenced_document_context(
+                self, self._schema_document_context(_ref_path_parts(file_part))
+            ):
+                pointer = reference.path.partition("#")[2]
+                object_paths, reference_paths = _split_json_pointer({}, pointer, names=self._pointer_slash_names)
+                location = SchemaLocation(
+                    self._schema_resource_document(_ref_path_parts(file_part)), tuple(object_paths)
+                )
+                self._parse_pointer_target(
+                    _located(dict(_schema_refs.UNREAD_MAPPED_SCHEMA), location),
+                    reference.path,
+                    reference_paths,
+                    list(self.model_resolver.current_root),
+                    location,
+                )
         finally:
             self.current_source_path = source_path
 
@@ -8895,14 +8919,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             self.parse_obj(reference.name, self._validate_schema_object(raw, [ref]), [ref])
             return
         models = self._get_model_by_json_pointer(raw, object_paths, ref)
-        tokens = self._pointer_path_tokens(ref, reference_paths)
+        self._parse_pointer_target(models, ref, reference_paths, path_parts, self._member_location(raw, *object_paths))
 
-        self._parse_raw_at(
-            tokens[-1],
-            models,
-            self._pointer_parse_path(path_parts, tokens),
-            self._member_location(raw, *object_paths),
-        )
+    def _parse_pointer_target(
+        self,
+        models: YamlValue,
+        ref: str,
+        reference_paths: list[str],
+        path_parts: list[str],
+        location: SchemaLocation | None = None,
+    ) -> None:
+        """Parse the value a JSON pointer reference names, at the path and with the name its tokens give."""
+        tokens = self._pointer_path_tokens(ref, reference_paths)
+        self._parse_raw_at(tokens[-1], models, self._pointer_parse_path(path_parts, tokens), location)
 
     def _pointer_path_tokens(self, ref: str | None, reference_paths: list[str]) -> list[str]:
         """Return the tokens of the pointer of ``ref`` that its target's parse path and model name are made of.
@@ -8947,6 +8976,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         for message in sorted(self._resource_ref_warnings):
             warn(message, SchemaResourceRefWarning, stacklevel=stacklevel_at_parse_caller())
         self._resource_ref_warnings.clear()
+        for document in sorted(self._unread_mapped_documents):
+            warn(
+                f"The document {stable_repr(redact_url(document))} that --external-ref-mapping maps does not exist, so "
+                "the models that inherit a class it maps are written from their own keywords only, without the "
+                "properties its schema declares. Add the document to read them.",
+                DanglingRefWarning,
+                stacklevel=stacklevel_at_parse_caller(),
+            )
+        self._unread_mapped_documents.clear()
         for where in sorted({named_location(location, "schema") for location in self._empty_enum_locations}):
             warn(
                 f"The schema at {where} admits no value: its enum is empty. It is generated as if it had no enum.",

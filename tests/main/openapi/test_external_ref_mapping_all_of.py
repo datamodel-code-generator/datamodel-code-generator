@@ -17,6 +17,8 @@ import msgspec
 import pytest
 from pydantic import ValidationError
 
+from datamodel_code_generator import DanglingRefWarning
+from datamodel_code_generator.__main__ import Exit
 from tests.conftest import assert_output
 from tests.main.conftest import (
     OPEN_API_DATA_PATH,
@@ -309,6 +311,42 @@ def test_external_ref_mapping_all_of_union_branch(output_file: Path) -> None:
             "--intersect-combined-schema-keywords",
             *COMMON_ARGS,
         ],
+    )
+
+
+@pytest.mark.parametrize("output_model_type", OUTPUT_MODEL_TYPES)
+def test_external_ref_mapping_all_of_missing_document(output_model_type: str, output_file: Path) -> None:
+    """Inherit the class the mapping imports where the mapped document of an allOf member does not exist (#6277).
+
+    The mapped schema describes the class the mapping imports, so no document is needed: each model is written from
+    its own keywords, a property it requires that the missing schema would declare included (``Grove.twigs``), and
+    the run warns once that the document does not exist. Up to 0.89.0 generation failed with "$ref file not found",
+    while a field that names the schema (``Holder.twig``) never read the document.
+    """
+    with pytest.warns(DanglingRefWarning, match=r"shared\.yaml' that --external-ref-mapping maps does not exist"):
+        run_main_and_assert(
+            input_path=OPEN_API_DATA_PATH / "external_ref_mapping_all_of_missing.yaml",
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                "--output-model-type",
+                output_model_type,
+                "--external-ref-mapping",
+                "absent/shared.yaml=mapped.models",
+                *COMMON_ARGS,
+            ],
+        )
+
+
+def test_external_ref_mapping_all_of_missing_document_strict_refs(capsys: pytest.CaptureFixture[str]) -> None:
+    """Keep the missing mapped document an error under --strict-refs, as before."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "external_ref_mapping_all_of_missing.yaml",
+        input_file_type="openapi",
+        extra_args=["--external-ref-mapping", "absent/shared.yaml=mapped.models", "--strict-refs", *COMMON_ARGS],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains="$ref file not found:",
     )
 
 

@@ -1,0 +1,27 @@
+openapi: 3.0.3
+info:
+  title: allOf members that name a schema of a mapped document that does not exist
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Branch:
+      allOf:
+        - $ref: 'absent/shared.yaml#/components/schemas/Twig'
+        - type: object
+          properties:
+            name:
+              type: string
+    Grove:
+      allOf:
+        - $ref: 'absent/shared.yaml#/components/schemas/Twig'
+        - type: object
+          required:
+            - twigs
+    Holder:
+      type: object
+      properties:
+        twig:
+          $ref: 'absent/shared.yaml#/components/schemas/Twig'
+        branch:
+          $ref: '#/components/schemas/Branch'

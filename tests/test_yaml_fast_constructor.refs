@@ -343,6 +343,7 @@ openapi/external_ref_mapping_all_of_grandchild/shared.yaml	yaml_fast_constructor
 openapi/external_ref_mapping_all_of_grandchild/sub/extra_items.yaml	yaml_fast_constructor/parity.txt
 openapi/external_ref_mapping_all_of_grandchild/sub/shared.yaml	yaml_fast_constructor/parity.txt
 openapi/external_ref_mapping_all_of_grandchild/subdirectory.yaml	yaml_fast_constructor/parity.txt
+openapi/external_ref_mapping_all_of_missing.yaml	yaml_fast_constructor/parity.txt
 openapi/external_ref_mapping_all_of_modules/a.yaml	yaml_fast_constructor/parity.txt
 openapi/external_ref_mapping_all_of_modules/b.yaml	yaml_fast_constructor/parity.txt
 openapi/external_ref_mapping_all_of_modules/c.yaml	yaml_fast_constructor/parity.txt
