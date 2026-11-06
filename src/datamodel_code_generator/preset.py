@@ -199,6 +199,19 @@ class PresetName(str, Enum):
     PracticalPy31420261104 = "practical-py314-20261104"
     PracticalPy31520261104 = "practical-py315-20261104"
 
+    StandardPy31020261106 = "standard-py310-20261106"
+    StandardPy31120261106 = "standard-py311-20261106"
+    StandardPy31220261106 = "standard-py312-20261106"
+    StandardPy31320261106 = "standard-py313-20261106"
+    StandardPy31420261106 = "standard-py314-20261106"
+    StandardPy31520261106 = "standard-py315-20261106"
+    PracticalPy31020261106 = "practical-py310-20261106"
+    PracticalPy31120261106 = "practical-py311-20261106"
+    PracticalPy31220261106 = "practical-py312-20261106"
+    PracticalPy31320261106 = "practical-py313-20261106"
+    PracticalPy31420261106 = "practical-py314-20261106"
+    PracticalPy31520261106 = "practical-py315-20261106"
+
 
 @dataclass(frozen=True, slots=True)
 class PresetContext:
@@ -568,7 +581,8 @@ _PRACTICAL_20261104_EXTRA_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
 )
 """The practical extras of the 20261104 presets: the naming strategy comes from the standard groups."""
 _PRACTICAL_EXTRA_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
-    "20261104": _PRACTICAL_20261104_EXTRA_OPTION_GROUPS
+    "20261104": _PRACTICAL_20261104_EXTRA_OPTION_GROUPS,
+    "20261106": _PRACTICAL_20261104_EXTRA_OPTION_GROUPS,
 }
 """The practical extras of the dates whose extras are not those of 20260619."""
 
@@ -1005,6 +1019,9 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
     ),
 )
 
+_STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (*_STANDARD_20261104_OPTION_GROUPS,)
+"""The 20261104 groups and the opt-in options of the release after 0.90.0."""
+
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
     "20260619": _STANDARD_20260619_OPTION_GROUPS,
     "20260826": _STANDARD_20260826_OPTION_GROUPS,
@@ -1013,6 +1030,7 @@ _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
     "20261017": _STANDARD_20261017_OPTION_GROUPS,
     "20261027": _STANDARD_20261027_OPTION_GROUPS,
     "20261104": _STANDARD_20261104_OPTION_GROUPS,
+    "20261106": _STANDARD_20261106_OPTION_GROUPS,
 }
 
 
@@ -1217,13 +1235,13 @@ def render_presets_markdown() -> str:
         "  --input schema.json \\",
         "  --input-file-type jsonschema \\",
         "  --output-model-type pydantic_v2.BaseModel \\",
-        "  --preset standard-py312-20261104 \\",
+        "  --preset standard-py312-20261106 \\",
         "  --output model.py",
         "```",
         "",
         (
-            "Use `standard-py312-20261104` for the project-recommended modern Python 3.12 baseline. "
-            "Use `practical-py312-20261104` when you also want schema-authored names, model reuse, and schema "
+            "Use `standard-py312-20261106` for the project-recommended modern Python 3.12 baseline. "
+            "Use `practical-py312-20261106` when you also want schema-authored names, model reuse, and schema "
             "descriptions embedded in the generated code."
         ),
         "",
@@ -1330,6 +1348,8 @@ def render_presets_markdown() -> str:
             "place it is written instead of one per path that reaches it."
         ),
         "",
+        "The 20261106 presets keep the 20261104 options.",
+        "",
         "## Override Preset Options",
         "",
         "Preset options are defaults, not locks. Explicit options override preset-supplied values.",
@@ -1337,7 +1357,7 @@ def render_presets_markdown() -> str:
         "```bash",
         "datamodel-codegen \\",
         "  --input schema.json \\",
-        "  --preset standard-py312-20261104 \\",
+        "  --preset standard-py312-20261106 \\",
         "  --no-snake-case-field \\",
         "  --no-use-annotated \\",
         "  --enum-field-as-literal none",
@@ -1363,7 +1383,7 @@ def render_presets_markdown() -> str:
         "```bash",
         "datamodel-codegen \\",
         "  --input schema.json \\",
-        "  --preset standard-py312-20261104 \\",
+        "  --preset standard-py312-20261106 \\",
         "  --extra-fields forbid \\",
         "  --use-title-as-name \\",
         "  --output model.py",
@@ -1379,12 +1399,12 @@ def render_presets_markdown() -> str:
         '```toml title="pyproject.toml"',
         "[tool.datamodel-codegen]",
         'output-model-type = "pydantic_v2.BaseModel"',
-        'preset = "standard-py312-20261104"',
+        'preset = "standard-py312-20261106"',
         "",
         "[tool.datamodel-codegen.profiles.api]",
         'input = "schemas/api.json"',
         'output = "src/models/api.py"',
-        'preset = "practical-py312-20261104"',
+        'preset = "practical-py312-20261106"',
         'extra-fields = "forbid"',
         "",
         "[tool.datamodel-codegen.profiles.events]",
@@ -1413,7 +1433,7 @@ def render_presets_markdown() -> str:
         "  --input schema.json \\",
         "  --output model.py \\",
         "  --output-model-type pydantic_v2.BaseModel \\",
-        "  --preset practical-py312-20261104 \\",
+        "  --preset practical-py312-20261106 \\",
         "  --extra-fields forbid \\",
         "  --generate-pyproject-config",
         "```",

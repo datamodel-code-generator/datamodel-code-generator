@@ -16,7 +16,7 @@ Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
   integer/number/boolean schemas   5
   root schema                      object model 1, title words 0
 
-Start from  --preset standard-py314-20261104
+Start from  --preset standard-py314-20261106
 
 Add (1 option)
   --class-name Catalog   [root.class-name-for-root-object]
@@ -82,11 +82,11 @@ Notes
   - The rules were calibrated on the 20261017 presets.
 
 Command
-  datamodel-codegen --class-name Catalog --preset standard-py314-20261104 --target-python-version 3.14 --url https://api.example.com/specs/catalog.json
+  datamodel-codegen --class-name Catalog --preset standard-py314-20261106 --target-python-version 3.14 --url https://api.example.com/specs/catalog.json
 
 pyproject.toml
   [tool.datamodel-codegen]
   class-name = "Catalog"
-  preset = "standard-py314-20261104"
+  preset = "standard-py314-20261106"
   target-python-version = "3.14"
   url = "https://api.example.com/specs/catalog.json"

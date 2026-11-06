@@ -15,7 +15,7 @@ Schema  AsyncAPI 3.0.0
   formats                          2 (date-time x2), decimal 0; int32/int64 0, ranges not enforced
   integer/number/boolean schemas   1
 
-Start from  --preset standard-py314-20261104
+Start from  --preset standard-py314-20261106
 
 Add  nothing on top of the preset
 
@@ -35,10 +35,10 @@ Notes
   - The rules were calibrated on the 20261017 presets.
 
 Command
-  datamodel-codegen --input multi_format_extension.yaml --preset standard-py314-20261104 --target-python-version 3.14
+  datamodel-codegen --input multi_format_extension.yaml --preset standard-py314-20261106 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
   input = "multi_format_extension.yaml"
-  preset = "standard-py314-20261104"
+  preset = "standard-py314-20261106"
   target-python-version = "3.14"
