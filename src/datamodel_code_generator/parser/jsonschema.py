@@ -199,6 +199,7 @@ from datamodel_code_generator.model._decisions.tag_value import (
     union_tag_values,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
 from datamodel_code_generator.model.base import (
+    ALL_MODEL,
     UNDEFINED,
     _field_source_name,
     _mark_forbids_unknown_fields,
@@ -518,6 +519,7 @@ def _is_counted_map(item: JsonSchemaObject) -> bool:
 
 _EXTERNAL_REF_MAPPING_IMPORT = ImportProducer("external-ref-mapping")
 _X_PYTHON_IMPORT = ImportProducer("x-python-import")
+_EXTRA_FIELDS_KEYS = ("extra_fields", "allow_extra_fields")
 _DEFAULT_LEFT_OFF_KEY = "_default_left_off"
 _BRANCH_REFERENCE_KEY = "_branch_reference"
 """Marks the ``$ref`` branch ``_parse_ref_branch_model`` reads as an allOf member with the class its site types it as,
@@ -1056,6 +1058,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._documents_as_written: dict[int, tuple[dict[str, YamlValue], dict[str, YamlValue]]] = {}
         self._held_value: tuple[YamlValue, SchemaLocation] | None = None
         self._inexact_object_maps: set[str] = set()
+        self._closed_pattern_properties: set[str] = set()
         self._dynamic_anchor_index: dict[tuple[str, ...], dict[str, str]] = {}
         self._recursive_anchor_index: dict[tuple[str, ...], list[str]] = {}
         self._ref_data_type_facts: dict[str, tuple[Any, bool]] = {}
@@ -2578,6 +2581,40 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     reference_classes_required=context.requires_additional_properties_reference_classes,
                     target_python_version=self.target_python_version,
                 )
+
+    def _warn_closed_pattern_properties(self, path: str, obj: JsonSchemaObject) -> None:
+        """Warn once per schema object whose closed model rejects the keys its patternProperties admit.
+
+        A model with fields (not a dict root) keeps the closedness of the schema's additionalProperties, final at L1,
+        so the output that writes it (``extra='forbid'``, ``closed=True``) rejects every key the patterns admit. Only
+        pydantic_v2.BaseModel output checks them exactly, with --generate-schema-validators. Patterns whose schemas are
+        all ``false`` admit no key, so the caller warns only where one pattern's schema is not ``false``.
+        """
+        data_model_type = self.data_model_type
+        if (
+            not data_model_type.WRITES_CLOSED_ADDITIONAL_PROPERTIES
+            or (data_model_type.SUPPORTS_TYPED_DICT_TOTAL_FALSE and not self.use_closed_typed_dict)
+            or self.generate_schema_validators
+            or any(
+                self.extra_template_data.get(key, {}).get(name)
+                for key in (ALL_MODEL, path)
+                for name in _EXTRA_FIELDS_KEYS
+            )
+        ):
+            return
+        where = named_location(obj.schema_location, path)
+        if first_report(self._closed_pattern_properties, where):
+            hint = (
+                " With --output-model-type pydantic_v2.BaseModel, "
+                "--generate-schema-validators writes the pattern key rule that accepts them."
+                if data_model_type.SUPPORTS_SCHEMA_RUNTIME_VALIDATION
+                else ""
+            )
+            warn(
+                f"{where}: additionalProperties is false beside patternProperties, so the generated model rejects "
+                f"the keys the patterns admit.{hint}",
+                stacklevel=2,
+            )
 
     def set_unevaluated_properties(self, path: str, obj: JsonSchemaObject) -> None:
         """Set unevaluated properties flag in extra template data."""
@@ -6028,6 +6065,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 data_model_type_class = self.data_model_root_type
 
             self._record_schema_object(reference, obj)
+            if (
+                obj.additionalProperties is False
+                and not should_parse_dict_root
+                and any(not self._is_false_schema_item(value) for value in (obj.patternProperties or {}).values())
+            ):
+                self._warn_closed_pattern_properties(reference.path, obj)
             if self.generate_schema_validators:
                 self._add_schema_validators(
                     reference.path,

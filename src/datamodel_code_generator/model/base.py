@@ -2303,6 +2303,8 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     _FREEZES_FIELD_RENDER_PLANS: ClassVar[bool] = False
     """Whether the parse freezes a render plan for each field at B2 (``model/_render_plan.py``)."""
     SUPPORTS_SCHEMA_RUNTIME_VALIDATION: ClassVar[bool] = False
+    WRITES_CLOSED_ADDITIONAL_PROPERTIES: ClassVar[bool] = False
+    """Whether ``additionalProperties: false`` is written as closedness (``extra='forbid'``, ``closed=True``)."""
     ROOT_MODEL_CONSTRAINTS_FALLBACK: ClassVar[
         Callable[[Path | None], Callable[[list[DataModelFieldBase]], type[DataModel] | None] | None] | None
     ] = None

@@ -1736,6 +1736,8 @@ def _value_hash_facts(data_type: DataType) -> ValueHashFacts:
 class _PydanticV2Model(DataModel):
     """The config items, constructs, type alias users and forward references of the Pydantic BaseModel and dataclass."""
 
+    WRITES_CLOSED_ADDITIONAL_PROPERTIES: ClassVar[bool] = True
+
     @override
     def assigns_forward_reference_field(
         self, field: DataModelFieldBase, positions: Mapping[str, int], index: int
