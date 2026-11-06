@@ -354,30 +354,32 @@ def test_msgspec_array_like_struct_object_defaults(output_file: Path) -> None:
 
 
 def test_msgspec_array_like_tuple_defaults(output_file: Path) -> None:
-    """Keep the default of a tuple a value inside an array, a type alias or a Struct, so it builds as JSON decodes.
+    """Keep a default the value msgspec decodes from it as JSON where an array_like Struct would read it as attributes.
 
     ``Row`` takes ``array_like=True`` from the template data. The positions of a tuple of ``Entry``, whose ``row`` is
     a ``Row``, and ``Totals``, whose ``row`` is a map, are read as alternatives, so the object for ``Totals`` is not
-    read as attributes for ``Entry``: ``Model()`` equals the model decoded from the defaults as explicit JSON.
+    read as attributes for ``Entry``, inside an array, a type alias or a Struct; an object beside ``Row`` and a type
+    alias of a map stays the dict msgspec decodes. ``Model()`` equals the model decoded from the defaults as JSON.
     """
     (template_data := output_file.parent / "array_like.json").write_text(
         json.dumps({"Row": {"base_class_kwargs": {"array_like": True}}}), encoding="utf-8"
     )
     input_path = JSON_SCHEMA_DATA_PATH / "msgspec_array_like_tuple_defaults.json"
-    run_main_and_assert(
-        input_path=input_path,
-        output_path=output_file,
-        input_file_type="jsonschema",
-        extra_args=[
-            "--output-model-type",
-            "msgspec.Struct",
-            "--extra-template-data",
-            str(template_data),
-            "--formatters",
-            "builtin",
-            "--disable-timestamp",
-        ],
-    )
+    with pytest.warns(UserWarning, match=r"msgspec cannot decode the union Model\.rowOrLabels"):
+        run_main_and_assert(
+            input_path=input_path,
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--output-model-type",
+                "msgspec.Struct",
+                "--extra-template-data",
+                str(template_data),
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+            ],
+        )
     properties = json.loads(input_path.read_text(encoding="utf-8"))["properties"]
     written = json.dumps({name: schema["default"] for name, schema in properties.items()})
     with _generated_model(output_file, "msgspec_array_like_tuple_defaults_model", "Model") as model:
