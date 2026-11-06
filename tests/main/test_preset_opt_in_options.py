@@ -90,6 +90,7 @@ OPT_IN_OPTIONS_20261106: tuple[str, ...] = (
     "--use-typed-nullable-map-values",
     "--use-msgspec-forbid-unknown-fields",
     "--keep-reference-null-on-collapsed-root-models",
+    "--read-allof-parents-in-mro-order",
 )
 """The options the 20261106 presets set beyond the 20261104 presets."""
 
@@ -322,6 +323,12 @@ CASES_20261106: tuple[pytest.ParameterSet, ...] = (
         "openapi",
         ["--output-model-type", "msgspec.Struct", "--collapse-root-models"],
         id="keep-reference-null-on-collapsed-root-models",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "allof_inherited_property_nearer_base.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="read-allof-parents-in-mro-order",
     ),
 )
 """The inputs each opt-in option of the 20261106 presets changes."""

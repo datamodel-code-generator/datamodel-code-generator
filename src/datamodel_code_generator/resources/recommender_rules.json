@@ -1094,6 +1094,10 @@
       "not_recommended": "command",
       "reason": "Selects a pyproject.toml profile; the recommendation keeps it."
     },
+    "read_allof_parents_in_mro_order": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261106 presets; the recommendation starts from a preset."
+    },
     "read_const_beside_enum": {
       "rules": [
         "enums.read-as-their-const"

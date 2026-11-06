@@ -933,6 +933,15 @@ _toggle(
     "only the `properties` and `required` beside it, a body drops the union, and value branches are read only where "
     "the `allOf` would be a model without fields, as in 0.89.0",
 )
+_toggle(
+    typing_options,
+    "--read-allof-parents-in-mro-order",
+    help="Read the allOf parents of every inherited schema in the order of the class bases (the MRO), so a property "
+    "that several bases declare takes the nearer base's constraints and description, as the class does, also where "
+    "an allOf lists a base before its own descendant (allOf: [A, B] with B = allOf: [A, ...]); without it the parents "
+    "of an inner allOf are read in document order and the property can take the farther base's looser constraints, "
+    "as in 0.90.0",
+)
 _flag(typing_options, "--field-constraints", help="Use field constraints and not con* annotations")
 _toggle(
     typing_options,

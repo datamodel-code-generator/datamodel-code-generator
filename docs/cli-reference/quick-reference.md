@@ -58,6 +58,7 @@ datamodel-codegen [OPTIONS]
 | [`--no-use-union-operator`](typing-customization.md#no-use-union-operator) | Use Union[X, Y] / Optional[X] instead of X | Y union operator. |
 | [`--output-date-class`](typing-customization.md#output-date-class) | Specify date class type for date schema fields. |
 | [`--output-datetime-class`](typing-customization.md#output-datetime-class) | Specify datetime class type for date-time schema fields. |
+| [`--read-allof-parents-in-mro-order`](typing-customization.md#read-allof-parents-in-mro-order) | Read the allOf parents of every inherited schema in the order of the class bases... |
 | [`--read-const-beside-enum`](typing-customization.md#read-const-beside-enum) | Read a `const` beside an `enum` as JSON Schema does. |
 | [`--read-unevaluated-properties`](typing-customization.md#read-unevaluated-properties) | Read a schema-valued `unevaluatedProperties` as `additionalProperties`. |
 | [`--strict-types`](typing-customization.md#strict-types) | Enable strict type validation for specified Python types. |
@@ -508,6 +509,7 @@ All options sorted alphabetically:
 - [`--pin-aliases-with-alias-generator`](model-customization.md#pin-aliases-with-alias-generator) - Decide a field's alias by the alias generator its model appl...
 - [`--preset`](base-options.md#preset) - Apply an immutable built-in option preset.
 - [`--profile`](utility-options.md#profile) - Use a named profile from pyproject.toml
+- [`--read-allof-parents-in-mro-order`](typing-customization.md#read-allof-parents-in-mro-order) - Read the allOf parents of every inherited schema in the orde...
 - [`--read-const-beside-enum`](typing-customization.md#read-const-beside-enum) - Read a `const` beside an `enum` as JSON Schema does.
 - [`--read-dynamic-anchors-in-document-order`](base-options.md#read-dynamic-anchors-in-document-order) - Resolve a `$dynamicRef` to the first `$dynamicAnchor` of its...
 - [`--read-escaped-ref-pointers`](base-options.md#read-escaped-ref-pointers) - Read the escapes of a `$ref` JSON pointer as the characters ...

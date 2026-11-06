@@ -55,6 +55,7 @@
 - `--no-intersect-allof-keywords`
 - `--no-intersect-combined-schema-keywords`
 - `--no-keep-enum-member-values`
+- `--no-read-allof-parents-in-mro-order`
 - `--no-read-const-beside-enum`
 - `--no-read-unevaluated-properties`
 - `--no-type-overrides-replace-whole-type`
@@ -79,6 +80,7 @@
 - `--no-use-x-python-type-unions`
 - `--output-date-class`: Specify date class type for date schema fields.
 - `--output-datetime-class`: Specify datetime class type for date-time schema fields.
+- `--read-allof-parents-in-mro-order`: Read the allOf parents of every inherited schema in the order of the clas...
 - `--read-const-beside-enum`: Read a `const` beside an `enum` as JSON Schema does.
 - `--read-unevaluated-properties`: Read a schema-valued `unevaluatedProperties` as `additionalProperties`.
 - `--strict-types`: Enable strict type validation for specified Python types.
@@ -718,6 +720,16 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         such as NonNegativeInt, and the length and number
                         constraints a const or enum Literal meets by its
                         values
+  --read-allof-parents-in-mro-order, --no-read-allof-parents-in-mro-order
+                        Read the allOf parents of every inherited schema in
+                        the order of the class bases (the MRO), so a property
+                        that several bases declare takes the nearer base's
+                        constraints and description, as the class does, also
+                        where an allOf lists a base before its own descendant
+                        (allOf: [A, B] with B = allOf: [A, ...]); without it
+                        the parents of an inner allOf are read in document
+                        order and the property can take the farther base's
+                        looser constraints, as in 0.90.0
   --read-const-beside-enum, --no-read-const-beside-enum
                         Read a `const` beside an `enum` as JSON Schema does: a
                         value whose schema names the enum is typed by the

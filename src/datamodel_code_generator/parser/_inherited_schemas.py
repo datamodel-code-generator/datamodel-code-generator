@@ -16,7 +16,7 @@ import operator
 from collections import Counter
 from functools import partial, reduce
 from itertools import islice
-from typing import TYPE_CHECKING, Any, Final, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
 
 from typing_extensions import Protocol, Sentinel
 
@@ -114,6 +114,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.reference import ModelResolver, ModelType, SchemaLocation
 
 __all__ = [
+    "InheritedParentRow",
     "InheritedSchemasHost",
     "ModelDeclarations",
     "all_of_members",
@@ -146,6 +147,7 @@ __all__ = [
     "inferred_module_name",
     "inherited_node",
     "inherited_override_schema",
+    "inherited_schema_parents",
     "is_inherited_type_narrowing",
     "is_partial_inherited_nested_value",
     "is_partial_inherited_property",
@@ -198,6 +200,8 @@ _INHERITED_OVERRIDE_KEY = "_inherited_override"
 _READ_THROUGH_KEY = "_all_of_read_through"
 """Marks a member ``all_of_members`` reads in place of a ``$ref``, or within one, with the locations read through."""
 ModelDeclarations: TypeAlias = "tuple[dict[str, JsonSchemaObject | None], frozenset[str]]"
+InheritedParentRow: TypeAlias = Literal["class-bases", "legacy-document-order"]
+"""The order the allOf parents of an inherited schema are read in (``inherited_schema_parents``)."""
 """The property declarations of a model, None for one it merges, and the names it requires (``model_declarations``)."""
 _CHECK_KEYWORDS: Final = NUMBER_KEYWORDS | STRING_KEYWORDS | ITEM_COUNT_KEYWORDS
 """The keywords that narrow the values of the type a schema is written as, never that type: bounds and pattern."""
@@ -298,6 +302,10 @@ class InheritedSchemasHost(Protocol):
     @property
     def use_tuple_for_closed_arrays(self) -> bool:
         """Whether closed arrays are written as tuples (``--use-tuple-for-closed-arrays``)."""
+
+    @property
+    def _inherited_parent_row(self) -> InheritedParentRow:
+        """The order the allOf parents of an inherited schema are read in (``inherited_schema_parents``)."""
 
     @property
     def _legacy_intersection(self) -> frozenset[str]:
@@ -1984,10 +1992,27 @@ def sort_inherited_base_classes_for_mro(parser: InheritedSchemasHost, base_class
     )
 
 
+def inherited_schema_parents(parser: InheritedSchemasHost, ref: str) -> list[str]:
+    """Return the allOf parents of the inherited schema at ``ref`` in the order the C3 merge reads them.
+
+    Row ``class-bases`` (``--read-allof-parents-in-mro-order``) orders them descendants first like the bases of its
+    class, so a property each declares takes the nearer base's declaration, as the class does. Row
+    ``legacy-document-order`` keeps the document order of its allOf references, as in 0.90.0: with
+    ``allOf: [A, B]`` and ``B = allOf: [A, ...]`` the merge finds no free head and takes the farther base ``A`` first.
+    """
+    parents = [
+        parser._ref_path(parent)  # noqa: SLF001
+        for parent in iter_allof_refs(parser, parser._load_inherited_schema_object(ref))  # noqa: SLF001
+    ]
+    if parser._inherited_parent_row == "legacy-document-order":  # noqa: SLF001
+        return parents
+    return sort_descendants_first(parents, lambda path: path, partial(get_inherited_schema_ancestor_paths, parser))
+
+
 def linearize_inherited_schema_refs(parser: InheritedSchemasHost, base_classes: list[Reference]) -> tuple[str, ...]:
     """Return raw inherited schemas in the same C3 order as generated models.
 
-    The parents of each schema are its allOf references, ordered descendants first like the bases of its class.
+    The parents of each schema are those ``inherited_schema_parents`` reads.
     """
     direct_refs = tuple(
         base.path
@@ -1999,14 +2024,7 @@ def linearize_inherited_schema_refs(parser: InheritedSchemasHost, base_classes: 
             linearize(
                 list(direct_refs),
                 lambda ref: ref,
-                lambda ref: sort_descendants_first(
-                    [
-                        parser._ref_path(parent)  # noqa: SLF001
-                        for parent in iter_allof_refs(parser, parser._load_inherited_schema_object(ref))  # noqa: SLF001
-                    ],
-                    lambda path: path,
-                    partial(get_inherited_schema_ancestor_paths, parser),
-                ),
+                partial(inherited_schema_parents, parser),
                 lambda ref: _schema_node(parser._load_inherited_schema_object(ref), ref),  # noqa: SLF001
             )
         )

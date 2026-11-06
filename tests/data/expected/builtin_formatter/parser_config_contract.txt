@@ -98,6 +98,7 @@ reviewed-safe order_constructor_fields_by
 reviewed-safe original_field_name_delimiter
 reviewed-safe parent_scoped_naming
 reviewed-safe pin_aliases_with_alias_generator
+reviewed-safe read_allof_parents_in_mro_order
 reviewed-safe read_const_beside_enum
 reviewed-safe read_dynamic_anchors_in_document_order
 reviewed-safe read_escaped_ref_pointers

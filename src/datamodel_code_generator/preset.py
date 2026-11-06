@@ -1089,6 +1089,14 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "map value that names it takes its type."
         ),
     ),
+    PresetOptionGroup(
+        title="allOf parents read in MRO order",
+        config=PresetConfig(read_allof_parents_in_mro_order=True),
+        description=(
+            "Read the allOf parents of every inherited schema in the order of the class bases, so a property that "
+            "several bases declare takes the nearer base's constraints and description, as the class does."
+        ),
+    ),
 )
 """The 20261104 groups and the opt-in options of the release after 0.90.0."""
 
@@ -1439,7 +1447,10 @@ def render_presets_markdown() -> str:
             "its own (`additionalProperties: false` without `patternProperties`) is written with "
             "`forbid_unknown_fields=True`, so it rejects the unknown fields the schema rejects, and "
             "`--keep-reference-null-on-collapsed-root-models`: under `--collapse-root-models` a field, item or map "
-            "value that takes the type of a root model admitting null keeps that null (`list[str] | None`)."
+            "value that takes the type of a root model admitting null keeps that null (`list[str] | None`), and "
+            "`--read-allof-parents-in-mro-order`: a property that several bases of an allOf declare takes the "
+            "nearer base's constraints, as the class bases do, also where an allOf lists a base before its own "
+            "descendant (`max_length=3` of `B` instead of `max_length=5` of `A`)."
         ),
         "",
         "## Override Preset Options",
