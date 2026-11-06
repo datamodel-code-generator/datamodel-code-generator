@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 from collections import Counter, defaultdict
+from copy import copy
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, get_args
 
@@ -20,6 +21,7 @@ from datamodel_code_generator._document_reader import (
     as_mapping,
     descend,
     is_multi_format_schema_object,
+    schema_format_media_type,
     string_key,
     string_keys,
 )
@@ -252,9 +254,29 @@ def _dereferenced(document: Mapping[str, Any], node: object) -> object:
     return _resolve_local(document, node["$ref"]) if isinstance(node, dict) and "$ref" in node else node
 
 
-def _unwrap(node: object) -> object:
-    """Return the schema of an AsyncAPI multi-format schema object, or the schema itself."""
-    return as_mapping(node).get("schema") if is_multi_format_schema_object(node) else node
+class _ConvertedDocument(dict[str, Any]):  # noqa: FURB189
+    """A JSON Schema document converted from an AsyncAPI schema in another format, whose references name its schemas."""
+
+
+def _unwrap(node: object, schema_format: object = None) -> object:
+    """Return the schema of an AsyncAPI value as generation reads it: in JSON Schema, from a multi-format object too.
+
+    The ``schemaFormat`` of a multi-format object, or else the one it inherits (a message's, for its payload), selects
+    the format; generation converts an Avro schema to a JSON Schema document of its own, and so does this.
+    """
+    if is_multi_format_schema_object(node):
+        wrapper = as_mapping(node)
+        schema_format = wrapper.get("schemaFormat") or schema_format
+        node = wrapper.get("schema")
+    if node is None or not isinstance(schema_format, str):
+        return node
+    from datamodel_code_generator.parser.asyncapi import SCHEMA_FORMAT_KIND_BY_MEDIA_TYPE  # noqa: PLC0415
+
+    if SCHEMA_FORMAT_KIND_BY_MEDIA_TYPE.get(schema_format_media_type(schema_format)) != "avro":
+        return node
+    from datamodel_code_generator.parser.avro import convert_avro_schema_data  # noqa: PLC0415
+
+    return _ConvertedDocument(convert_avro_schema_data(cast("Any", node), placeholder_title=False))
 
 
 def _uses_definitions(kind: SchemaKind) -> bool:
@@ -446,8 +468,9 @@ def _message_schemas(document: Mapping[str, Any]) -> Iterator[tuple[str, object]
     for name, message in messages:
         variants = as_mapping(message).get("oneOf")
         for index, variant in enumerate(variants if isinstance(variants, list) else [message]):
-            for part in ("payload", "headers"):
-                yield f"{name} {index} {part}", _unwrap(as_mapping(variant).get(part))
+            parts = as_mapping(variant)
+            yield f"{name} {index} payload", _unwrap(parts.get("payload"), parts.get("schemaFormat"))
+            yield f"{name} {index} headers", _unwrap(parts.get("headers"))
 
 
 def _operation_message(channel: object, operation: str) -> object:
@@ -550,6 +573,7 @@ class _Walker:
         self.variant_tags: defaultdict[tuple[str, str], set[frozenset[str]]] = defaultdict(set)
         self.component_keys = frozenset(refs.values())
         self.max_depth = 0
+        self.converted_components: dict[str, Any] = {}
 
     def shape(self, node: object) -> int:
         """Return an interned id of a schema's structure, ignoring documentation keywords."""
@@ -620,9 +644,26 @@ class _Walker:
         Subschemas reached without a property (array items, union branches, allOf parts) are named after the
         schema itself, so they get an empty name and do not count as names shared with other parents.
         """
-        if isinstance(node, dict) and not self.count_reference(node, key):
+        if isinstance(node, _ConvertedDocument):
+            self.walk_converted(key, node)
+        elif isinstance(node, dict) and not self.count_reference(node, key):
             self.count_keywords(node)
             self.walk_children(node, parent=key, name="", depth=0, component=key)
+
+    def walk_converted(self, key: str, document: _ConvertedDocument) -> None:
+        """Walk a converted document as generation parses it: its root as the named schema, then the schemas it uses.
+
+        Its references are read in the document alone; the definitions walked are named schemas beside the components.
+        """
+        definitions = definition_schemas(document)
+        walker = copy(self)
+        walker.document = document
+        walker.refs = _component_refs("jsonschema", definitions)
+        walker.component_keys = frozenset(definitions)
+        walker.references = defaultdict(set)
+        walker.walk_named(key, {name: value for name, value in document.items() if name not in DEFINITION_KEYS})
+        self.converted_components.update(_walk_components(walker, definitions, [key]))
+        self.max_depth = max(self.max_depth, walker.max_depth)
 
     def record_name(self, name: str, parent: str, parents: defaultdict[str, set[str]]) -> None:
         """Record the parent of an inline model named after a property."""
@@ -876,6 +917,7 @@ def measure_signals(
     for key, node in extra:
         walker.walk_named(key, node)
     components = _walk_components(walker, all_components, None if whole else [key for key, _ in extra])
+    components = dict(sorted({**walker.converted_components, **components}.items()))
     named = {key: node for key, node in components.items() if isinstance(node, dict)}
     counts["component_enums"] = sum(_is_enum(node) for node in named.values())
     titles = {key: title for key, node in named.items() if (title := _title(node))}
@@ -923,5 +965,5 @@ def measure_signals(
             "root_title": root_title,
             "format_examples": _example_text(walker.formats),
         },
-        component_names=frozenset(normalize_name(key) for key in all_components),
+        component_names=frozenset(normalize_name(key) for key in (*all_components, *walker.converted_components)),
     )

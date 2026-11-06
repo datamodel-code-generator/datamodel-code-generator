@@ -20,6 +20,7 @@ from datamodel_code_generator._document_reader import (
     CHANNEL_OPERATIONS,
     as_mapping,
     is_multi_format_schema_object,
+    schema_format_media_type,
     string_keys,
 )
 from datamodel_code_generator._json_pointer import escape_token
@@ -203,10 +204,6 @@ def _escape_context_path_part(part: str) -> str:
     return escape_token(part.removeprefix("#/"))
 
 
-def _schema_format_media_type(schema_format: str) -> str:
-    return schema_format.split(";", maxsplit=1)[0].strip().lower()
-
-
 def _parse_multi_format_schema_object(
     raw_schema: YamlValue,
     path: list[str],
@@ -238,7 +235,7 @@ def _unsupported_schema_format_error(schema_format: str, path: list[str]) -> Err
 def _schema_format_kind(schema_format: str | None, path: list[str]) -> str:
     if schema_format is None:
         return "asyncapi"
-    media_type = _schema_format_media_type(schema_format)
+    media_type = schema_format_media_type(schema_format)
     if kind := SCHEMA_FORMAT_KIND_BY_MEDIA_TYPE.get(media_type):
         return kind
     raise _unsupported_schema_format_error(schema_format, path)

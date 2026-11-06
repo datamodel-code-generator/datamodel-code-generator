@@ -272,6 +272,8 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
         ),
         pytest.param("blank_union_titles.json", [], id="blank-union-titles"),
         pytest.param("multi_format_extension.yaml", [], id="asyncapi-multi-format-extension"),
+        pytest.param("avro_payload.yaml", [], id="asyncapi-avro-payload"),
+        pytest.param("avro_messages.yaml", [], id="asyncapi-avro-messages"),
         pytest.param("schema_key_component.yaml", [], id="openapi-schema-key-component"),
     ],
 )
@@ -287,6 +289,8 @@ def test_recommend_options_for_schemas(
     once. A definition under an integer key is named by its text, a schema under one that no selected scope reads is not
     an error, and a blank title is no title of a union variant. An AsyncAPI multi-format schema object counts as its
     schema whatever ``x-`` extensions it has, and an OpenAPI component with a ``schema`` key counts as the schema it is.
+    An AsyncAPI schema in Avro, by its own ``schemaFormat`` or its message's, counts as the JSON Schema generation
+    converts it to: its root as the schema, and the named types it reaches as components.
     A constraint a const decides counts as redundant on the root schema as it does on any other. The api scope reads the
     operations of a path item as its walk does: the ``query`` operation and ``additionalOperations`` from OpenAPI 3.2,
     and no ``x-`` key of ``paths``; the paths scope reads the methods before OpenAPI 3.2 and an ``x-`` key that holds

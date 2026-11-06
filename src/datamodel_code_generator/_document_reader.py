@@ -42,6 +42,7 @@ __all__ = [
     "member",
     "member_key",
     "nesting_limit",
+    "schema_format_media_type",
     "string_key",
     "string_keyed",
     "string_keys",
@@ -203,6 +204,11 @@ def is_multi_format_schema_object(value: object) -> bool:
     return "schemaFormat" in value or {key for key in value if isinstance(key, str) and not key.startswith("x-")} == {
         "schema"
     }
+
+
+def schema_format_media_type(schema_format: str) -> str:
+    """Return the media type an AsyncAPI ``schemaFormat`` names: its text before any parameter, lowercased."""
+    return schema_format.split(";", maxsplit=1)[0].strip().lower()
 
 
 def discriminator_mapping_ref(value: str) -> str:

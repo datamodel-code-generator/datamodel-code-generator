@@ -1,0 +1,42 @@
+asyncapi: 2.6.0
+info: {title: Avro messages, version: "1"}
+channels:
+  ev:
+    subscribe:
+      message:
+        schemaFormat: application/vnd.apache.avro;version=1.9.0
+        payload:
+          type: record
+          name: Created
+          namespace: shop
+          fields:
+            - name: kind
+              type: {type: enum, name: Kind, symbols: [A, B]}
+            - name: parent
+              type: ["null", Created]
+    publish:
+      message:
+        $ref: "#/components/messages/Tick"
+components:
+  messages:
+    Ping:
+      schemaFormat: application/vnd.apache.avro+json;version=1.9.0
+      headers:
+        type: object
+        properties:
+          trace: {type: string}
+    Tick:
+      schemaFormat: application/schema+json;version=draft-07
+      payload:
+        type: object
+        properties:
+          at: {type: integer}
+  schemas:
+    Point:
+      schemaFormat: application/vnd.apache.avro;version=1.9.0
+      schema:
+        type: record
+        name: Point
+        fields:
+          - {name: x, type: long}
+          - {name: y, type: long}
