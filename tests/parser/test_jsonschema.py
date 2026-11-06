@@ -5647,6 +5647,56 @@ def test_set_additional_properties_schema_keeps_typed_dict_extra_items_metadata(
     }
 
 
+def test_set_additional_properties_schema_preserves_non_array_types_in_typed_dict_extra_items() -> None:
+    """Test schema-valued additionalProperties preserves non-array types for TypedDict extra_items (#6375)."""
+    parser = JsonSchemaParser(
+        "",
+        use_closed_typed_dict=True,
+        target_python_version=PythonVersion.PY_312,
+        use_standard_collections=True,
+        use_union_operator=True,
+    )
+    parser.extra_template_data["#/Model"] = {}
+
+    parser.set_additional_properties(
+        "#/Model",
+        JsonSchemaObject.model_validate({
+            "additionalProperties": {
+                "type": ["array", "string"],
+                "items": {"type": "integer"},
+            }
+        }),
+    )
+
+    assert parser.extra_template_data["#/Model"] == {
+        "additionalProperties": True,
+        "additionalPropertiesType": "str | list[int]",
+        "use_typeddict_backport": True,
+    }
+
+
+def test_typed_dict_extra_items_preserves_non_array_types_e2e() -> None:
+    """Test TypedDict extra_items with array and scalar union generates expected type (#6375)."""
+    from datamodel_code_generator.model.typed_dict import TypedDict
+
+    schema = {
+        "title": "M",
+        "type": "object",
+        "properties": {"p": {"type": ["array", "string"], "items": {"type": "integer"}}},
+        "additionalProperties": {"type": ["array", "string"], "items": {"type": "integer"}},
+    }
+    parser = JsonSchemaParser(
+        json.dumps(schema),
+        data_model_type=TypedDict,
+        target_python_version=PythonVersion.PY_312,
+        use_closed_typed_dict=True,
+        use_standard_collections=True,
+        use_union_operator=True,
+    )
+    result = parser.parse()
+    assert "class M(TypedDict, extra_items=str | list[int]):" in result
+
+
 def test_set_unevaluated_properties_schema_allows_extra_without_typed_runtime() -> None:
     """Test schema-valued unevaluatedProperties allows extras without typed extra validation."""
     parser = JsonSchemaParser("")
