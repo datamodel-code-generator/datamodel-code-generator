@@ -23,6 +23,15 @@ decision = "#6067"
 release_note = "generation stops with an error instead of writing a class in a package beside a module of the same name, which importing the module replaced, so the models that use the class failed to import or decode"
 
 [[accepted]]
+input = "tests/data/jsonschema/module_named_like_module_import.json"
+backends = [ "msgspec.Struct" ]
+aspects = [ "import-path-removed" ]
+match = "^\\[import-path-removed\\] pkg\\.api:Literal: from pkg\\.api import Literal$"
+reason = "the module pkg.api imported its sibling module pkg.Literal by name beside typing.Literal, so the name Literal of pkg.api was the module and the Struct Order that reads Literal['order'] failed (under the py314 presets, which write no `from __future__ import annotations`, the release's Order records only that error, no field that names the module); the module imports Kind from pkg.Literal now and Literal is typing.Literal again, which is no name of the output (import-crash fix)"
+decision = "#6105"
+release_note = "a module that imports a sibling module by a name another import of the module also binds, such as `from . import Literal` beside `typing.Literal`, imports the models of that module directly instead, so the module no longer fails at import or decode"
+
+[[accepted]]
 input = "tests/data/jsonschema/schema_intersection/allof_value_unions.json"
 aspects = [ "numbered-name-removed", "name-removed", "type", "kind", "constraints", "bases", "default", "required", "constructor-order" ]
 reason = "an allOf whose anyOf or oneOf members admit only values was written as a model without fields, which rejects every value the schema accepts in every output form; it is the union of the intersections of one branch of each with the other parts now (rejects-all fix, as #5406 did for an allOf of values), and the numbered classes such a site left, the default factory of its fields, the empty class --reuse-model merged others into and the names --collapse-root-models now inlines go with that model"
@@ -184,7 +193,7 @@ release_note = "without --field-constraints, the minItems and maxItems of an arr
 [[accepted]]
 input = "*one_of_with_sub_schema_array_item*"
 aspects = [ "constraints" ]
-match = "^\\[constraints\\] SpatialPlan:officialDocument: Union\\[None, list\\[pydantic\\.AnyUrl\\], str\\] -> Union\\[Annotated\\[list\\[pydantic\\.AnyUrl\\], MinLen\\(min_length=1\\)\\], None, str\\]$"
+match = "^\\[constraints\\] (?:SpatialPlan|Payload):officialDocument: Union\\[None, list\\[pydantic\\.AnyUrl\\], str\\] -> Union\\[Annotated\\[list\\[pydantic\\.AnyUrl\\], MinLen\\(min_length=1\\)\\], None, str\\]$"
 reason = "without --field-constraints, the minItems of the array member of a oneOf was dropped without a warning; it is kept on a type alias of the member (schema-mismatch fix)"
 decision = "#6171"
 release_note = "without --field-constraints, the minItems and maxItems of an array that has no field of its own (the member of an anyOf or oneOf, the items of an array, the values of a map) are written on a type alias of the array (Annotated[list[int], Field(min_length=2)]) instead of being dropped"
@@ -194,6 +203,15 @@ input = "*read_only_write_only_constrained_item*"
 aspects = [ "constraints" ]
 match = "^\\[constraints\\] Wrapping:rows: Union\\[None, list\\[list\\[Item\\]\\]\\] -> Union\\[None, list\\[Annotated\\[list\\[Item\\], MinLen\\(min_length=1\\)\\]\\]\\]$"
 reason = "without --field-constraints, the minItems of the items of an array were dropped without a warning; they are kept on a type alias of the item array (schema-mismatch fix)"
+decision = "#6171"
+release_note = "without --field-constraints, the minItems and maxItems of an array that has no field of its own (the member of an anyOf or oneOf, the items of an array, the values of a map) are written on a type alias of the array (Annotated[list[int], Field(min_length=2)]) instead of being dropped"
+
+[[accepted]]
+input = "project:posthog/schema"
+backends = [ "pydantic_v2.BaseModel" ]
+aspects = [ "constraints", "probe" ]
+match = "^\\[constraints\\] (?:FunnelTimeToConvertResults:bins: list\\[list\\[int\\]\\] -> list\\[Annotated\\[list\\[int\\], MinLen\\(min_length=2\\),MaxLen\\(max_length=2\\)\\]\\]|SessionEventsItem:events: list\\[list\\[Any\\]\\] -> list\\[Annotated\\[list\\[Any\\], MinLen\\(min_length=0\\),MaxLen\\(max_length=0\\)\\]\\])$|^\\[probe\\] SessionEventsItem: accept -> reject$"
+reason = "without --field-constraints, the minItems and maxItems of the items of an array (the pairs of FunnelTimeToConvertResults.bins, the empty rows of SessionEventsItem.events) were dropped without a warning; they are kept on a type alias of the item array (schema-mismatch fix; the probe example breaks the count)"
 decision = "#6171"
 release_note = "without --field-constraints, the minItems and maxItems of an array that has no field of its own (the member of an anyOf or oneOf, the items of an array, the values of a map) are written on a type alias of the array (Annotated[list[int], Field(min_length=2)]) instead of being dropped"
 
@@ -214,9 +232,13 @@ decision = "#6171"
 release_note = "an allOf of value parts that keeps the form it is written in writes the keywords of its parts on its root, so a lone allOf member's minItems, maxLength or bounds are no longer dropped"
 
 [[accepted]]
-input = "*compound_property_names"
+input = [
+  "*compound_property_names",
+  "payload:jsonschema/compound_property_names/allof_branch_title.json",
+  "payload:jsonschema/compound_property_names/unsupported_allof.json",
+]
 aspects = [ "constraints", "type", "probe" ]
-match = "^\\[(?:(?:constraints|type)\\] (?:allof_branch_title|unsupported_allof):Root\\d*: .* -> .*(?:StringConstraints|Meta)\\(min_length=2,pattern='\\^a'\\).*|probe\\] (?:allof_branch_title|unsupported_allof):Root: accept -> reject)$"
+match = "^\\[(?:(?:constraints|type)\\] (?:(?:allof_branch_title|unsupported_allof):Root|Payload)\\d*: .* -> .*(?:StringConstraints|Meta)\\(min_length=2,pattern='\\^a'\\).*|probe\\] (?:(?:allof_branch_title|unsupported_allof):Root|Payload): accept -> reject)$"
 reason = "the allOf of a propertyNames schema that keeps the form it is written in dropped the minLength and pattern of its parts, so the map accepted keys the schema rejects; its keys write them now (schema-mismatch fix; the probe example key breaks them)"
 decision = "#6171"
 release_note = "an allOf of value parts that keeps the form it is written in writes the keywords of its parts on its root, so a lone allOf member's minItems, maxLength or bounds are no longer dropped"
@@ -240,15 +262,15 @@ release_note = "an allOf of value parts that keeps the form it is written in wri
 [[accepted]]
 input = "*reuse_scope_tree_root_key*"
 aspects = [ "constraints", "type", "probe" ]
-match = "^\\[(?:(?:constraints|type)\\] (?:[ab]:)?(?:Settings|Limits)\\d*: .* -> .*(?:StringConstraints|Meta)\\(min_length=2,pattern='\\^k'\\).*|probe\\] (?:[ab]:)?(?:Settings|Limits): accept -> reject)$"
+match = "^\\[(?:(?:constraints|type)\\] (?:[ab]:)?(?:Settings|Limits|Payload)\\d*: .* -> .*(?:StringConstraints|Meta)\\(min_length=2,pattern='\\^k'\\).*|probe\\] (?:[ab]:)?(?:Settings|Limits|Payload)\\d*: accept -> reject)$"
 reason = "the allOf of a propertyNames schema that keeps the form it is written in dropped the minLength and pattern of its parts, so the map accepted keys the schema rejects; its keys write them now (schema-mismatch fix; the probe example key breaks them)"
 decision = "#6171"
 release_note = "an allOf of value parts that keeps the form it is written in writes the keywords of its parts on its root, so a lone allOf member's minItems, maxLength or bounds are no longer dropped"
 
 [[accepted]]
-input = "*schema_intersection"
+input = [ "*schema_intersection", "payload:jsonschema/schema_intersection/allof_value_parts.json" ]
 aspects = [ "constraints", "type" ]
-match = "^\\[(?:constraints|type)\\] allof_value(?:_part)?s:\\w+(?::\\w+)?: .* -> .*(?:MinLen|Ge\\(|Le\\(|MultipleOf|Meta\\(|list\\[[A-Z]\\w*\\]).*$"
+match = "^\\[(?:constraints|type)\\] (?:allof_value(?:_part)?s:\\w+(?::\\w+)?|(?:Multiple|Outer)(?:Item|Prop)|Payload:outer_(?:prop|items)): .* -> .*(?:MinLen|Ge\\(|Le\\(|MultipleOf|Meta\\(|list\\[[A-Z]\\w*\\]).*$"
 reason = "an allOf value site that keeps the form it is written in (without --intersect-allof-keywords) took its root's constraints from the allOf site, so the bounds, lengths and multipleOf of its parts were dropped without a warning; the root writes them now (schema-mismatch fix)"
 decision = "#6171"
 release_note = "an allOf of value parts that keeps the form it is written in writes the keywords of its parts on its root, so a lone allOf member's minItems, maxLength or bounds are no longer dropped"
