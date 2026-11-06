@@ -372,6 +372,7 @@ TYPE_ORIGIN_KEY: Final = "_type_origin"
 BINARY_CONTENT_KEY: Final = "_binary_content"
 UNIQUE_ITEMS_KEY: Final = "_unique_items"
 ENUM_LITERAL_KEY: Final = "_enum_literal"
+SUBTYPE_REF_KEY: Final = "_subtype_ref"
 
 
 @record
@@ -445,6 +446,16 @@ def enum_literal_of(data_type: object) -> bool:
     Enum class, whatever the options; a copy of a node keeps it.
     """
     return ENUM_LITERAL_KEY in data_type.__dict__
+
+
+def subtype_ref_of(data_type: object) -> str | None:
+    """Return the ``$ref``, with its edge, of the schema a member of a discriminator's expansion stands for (L1).
+
+    The OpenAPI parser records it on each member of the union it types a ``$ref`` to a discriminated schema as, when
+    it builds the member; ``--distribute-allof-over-unions`` reads it right after the build, where the union is a
+    branch of a site that distributes its ``allOf`` members.
+    """
+    return data_type.__dict__.get(SUBTYPE_REF_KEY)
 
 
 _NODE_RECORDS: Final = (TYPE_ORIGIN_KEY, BINARY_CONTENT_KEY, UNIQUE_ITEMS_KEY, ENUM_LITERAL_KEY)

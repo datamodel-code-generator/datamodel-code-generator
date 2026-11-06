@@ -16778,6 +16778,17 @@ def test_external_discriminator_parent_load_order(output_file: Path, entrypoint:
                 )
 
 
+def test_external_discriminator_base_distributed(output_file: Path) -> None:
+    """Give the subtypes of an external discriminated ``$ref`` branch the allOf members beside its union."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "external_discriminator_base" / "distributed.json",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--disable-timestamp", "--distribute-allof-over-unions"],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
 def test_numeric_union_preserves_nullable_warning(output_file: Path, entrypoint: str) -> None:
     """Keep strict OpenAPI nullable diagnostics when numeric bounds belong to the field."""

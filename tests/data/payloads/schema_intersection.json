@@ -8507,5 +8507,74 @@
         ]
       }
     }
+  },
+  "allof_beside_discriminated_branch": {
+    "model": "Holder",
+    "dialect": "https://json-schema.org/draft/2020-12/schema",
+    "fields": {
+      "owned": {
+        "valid": [
+          {
+            "petType": "Cat",
+            "owner": "o"
+          },
+          {
+            "fins": 1,
+            "owner": "o"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "Cat"
+          },
+          {
+            "petType": "Cat",
+            "owner": "o",
+            "meow": "abcd"
+          }
+        ]
+      },
+      "nested": {
+        "valid": [
+          {
+            "petType": "Cat",
+            "owner": "o"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "Cat"
+          }
+        ]
+      },
+      "based": {
+        "valid": [
+          {
+            "id": "i",
+            "kind": "sq",
+            "side": 1
+          }
+        ],
+        "invalid": [
+          {
+            "kind": "sq",
+            "side": 1
+          }
+        ]
+      },
+      "field": {
+        "valid": [
+          {
+            "petType": "Dog",
+            "owner": "o"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "Dog"
+          }
+        ]
+      }
+    }
   }
 }

@@ -231,3 +231,43 @@ match = "^\\[type\\] \\w+:\\w+: Literal\\[<(\\w+)\\.(\\w+): ('[^']*')>\\] -> Lit
 reason = "with --use-enum-values-in-discriminator, the tag Literal[Kind.a] of a plain Enum member made the discriminated union reject every payload, as such a member equals no value a payload carries; the tag now holds the value beside the member, Literal[Kind.a, 'a'], so the union parses payloads and still takes the member a Python caller passes (rejects-all fix)"
 decision = "#6390"
 release_note = "with --use-enum-values-in-discriminator, a variant tagged by a member of a plain Enum (no --use-subclass-enum) is written Literal[PetType.cat, 'cat'] instead of Literal[PetType.cat], so the discriminated union accepts the payloads its schema accepts instead of rejecting every one, and Python callers passing PetType.cat keep working"
+
+[[accepted]]
+input = "tests/data/openapi/schema_intersection"
+aspects = [
+  "bases",
+  "config",
+  "constraints",
+  "constructor-order",
+  "default",
+  "field-added",
+  "field-removed",
+  "numbered-name-removed",
+  "required",
+  "type",
+]
+match = "^\\[[\\w-]+\\] allof_beside_discriminated_branch:\\w+(?::\\w+)?: .+$"
+reason = "the module allof_beside_discriminated_branch of a run over its whole directory takes the changes its file takes alone: with --distribute-allof-over-unions (the 20261104 presets) each subtype a discriminated $ref branch stands for takes the allOf members beside or around its union as its own class (Owned1(Cat), Owned2(Dog), Owned3(Fish)), and the classes of later branches are renumbered in union order (owner decision: fix inside the option released in 0.90.0; the default output is unchanged)"
+decision = "#6283"
+release_note = "--distribute-allof-over-unions (and the 20261104 presets): each subtype a discriminated $ref branch stands for takes the allOf members beside or around its union as a class of its own (Owned1(Cat), Owned2(Dog)), so it requires the members' properties; the classes of the branches after it are renumbered in union order (Owned1(Fish) becomes Owned3(Fish)), and in an allOf that holds the union the subtypes are no longer dropped"
+
+[[accepted]]
+input = [
+  "tests/data/openapi/schema_intersection/allof_beside_discriminated_branch.yaml",
+  "tests/data/openapi/external_discriminator_base/distributed.json",
+]
+aspects = [
+  "bases",
+  "config",
+  "constraints",
+  "constructor-order",
+  "default",
+  "field-added",
+  "field-removed",
+  "numbered-name-removed",
+  "required",
+  "type",
+]
+reason = "with --distribute-allof-over-unions (the 20261104 presets), a $ref branch whose schema has an OpenAPI discriminator was written as the subtypes it stands for without the allOf members beside its union (Cat | Dog | Owned1(Fish)), so they accepted payloads without the required owner and dropped it, and in an allOf holding the union the branch was left out; each subtype now takes the members as its own class (Owned1(Cat), Owned2(Dog), Owned3(Fish)), as the union listing those subtypes does, and the classes of later branches are renumbered in union order (owner decision: fix inside the option released in 0.90.0; the default output is unchanged)"
+decision = "#6283"
+release_note = "--distribute-allof-over-unions (and the 20261104 presets): each subtype a discriminated $ref branch stands for takes the allOf members beside or around its union as a class of its own (Owned1(Cat), Owned2(Dog)), so it requires the members' properties; the classes of the branches after it are renumbered in union order (Owned1(Fish) becomes Owned3(Fish)), and in an allOf that holds the union the subtypes are no longer dropped"
