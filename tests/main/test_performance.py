@@ -525,6 +525,50 @@ def test_perf_local_reference_file_resolution(local_reference_file_cache_perform
     assert result.endswith("    value_499: First")
 
 
+@pytest.fixture(scope="module")
+def mapped_reference_users_performance_input(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Prepare a wide model of fields typed by the import of a mapped document, outside CodSpeed's measured call."""
+    schema_directory = tmp_path_factory.mktemp("mapped-reference-users")
+    (schema_directory / "shared.json").write_text(
+        json.dumps({
+            "$defs": {
+                "Twig": {
+                    "type": "object",
+                    "properties": {"kids": {"type": "array", "items": {"$ref": "#/$defs/Twig"}}},
+                }
+            }
+        }),
+        encoding="utf-8",
+    )
+    (root := schema_directory / "root.json").write_text(
+        json.dumps({
+            "title": "MappedReferenceUsersPerformance",
+            "x-group": {"Shrub": {"$ref": "shared.json#/$defs/Twig", "minProperties": 1}},
+            "type": "object",
+            "properties": {f"value_{index}": {"$ref": "#/x-group/Shrub"} for index in range(2000)},
+        }),
+        encoding="utf-8",
+    )
+    return root
+
+
+@pytest.mark.perf
+@pytest.mark.benchmark
+def test_perf_mapped_reference_users(mapped_reference_users_performance_input: Path) -> None:
+    """Type the many fields of one model that name a definition --external-ref-mapping imports in linear time."""
+    result = generate(
+        mapped_reference_users_performance_input,
+        input_file_type=InputFileType.JsonSchema,
+        output_model_type=DataModelType.PydanticV2BaseModel,
+        external_ref_mapping={"shared.json": "mapped.models"},
+        formatters=[],
+        disable_timestamp=True,
+    )
+    assert isinstance(result, str)
+    assert "from mapped.models import Twig" in result
+    assert result.endswith("    value_1999: Twig | None = None")
+
+
 @pytest.mark.perf
 @pytest.mark.benchmark
 def test_perf_ordinary_array_constraint_generation(

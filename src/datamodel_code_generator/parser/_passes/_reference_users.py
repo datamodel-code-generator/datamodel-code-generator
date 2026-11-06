@@ -66,13 +66,17 @@ def type_reference_users(
 ) -> None:
     """Type each user of ``reference`` in a field, a type or a dict key by its own ``new_type()``.
 
-    Bases keep it, and so do the types of the models whose ids ``kept_owners`` holds.
+    Bases keep it, and so do the types of the models whose ids ``kept_owners`` holds. The users are read before any
+    is typed, as each change makes the index read the owner's types again.
     """
     builder = host._graph_builder  # noqa: SLF001
     index = host.generation_store.index
-    for fact in index.data_type_facts_for_reference(reference):
-        if fact.role == "base" or id(index.owner_of(fact)) in kept_owners:
-            continue
+    users = [
+        fact
+        for fact in index.data_type_facts_for_reference(reference)
+        if fact.role != "base" and not (kept_owners and id(index.owner_of(fact)) in kept_owners)
+    ]
+    for fact in users:
         builder.detach_data_type_ref(fact.data_type)
         if fact.role == "dict_key":
             builder.replace_nested_data_type(cast("DataType", fact.data_type.parent), fact.data_type, new_type())
