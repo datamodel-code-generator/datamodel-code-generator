@@ -188,6 +188,9 @@ EXCLUDED_CASES: dict[str, str] = {
         "each const is none of its enum values, so no payload holds those properties; "
         "test_main_jsonschema_enum_const_unsatisfiable pins its output and warnings"
     ),
+    "openapi/empty_enum.yaml::components.schemas.Size": (
+        "its enum is empty, so the schema accepts no payload; test_empty_enum_warning pins its output and warnings"
+    ),
     "openapi/discriminator_pattern_mismatch.yaml::components.schemas.Cat": (
         "its const tag is outside its pattern, so the schema accepts no payload; "
         "test_main_openapi_discriminator_pattern_mismatch pins its source"

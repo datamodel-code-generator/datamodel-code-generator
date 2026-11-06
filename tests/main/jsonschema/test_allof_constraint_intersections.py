@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from contextlib import nullcontext
 from typing import TYPE_CHECKING
 
 import pytest
@@ -126,28 +127,36 @@ def test_allof_constraint_intersections(
 def test_allof_empty_enum_intersection(
     output_file: Path, fixture: str, entry_point: str, *, schema_validators: bool
 ) -> None:
-    """Keep optional properties usable when their enum intersection has no values."""
+    """Keep optional properties usable when their enum intersection has no values.
+
+    An ``enum`` written empty is reported where it is written.
+    """
     input_path = DATA_PATH / "parser/jsonschema/allof_constraint_intersections" / f"{fixture}.json"
     expected_file = f"allof_constraint_intersections/{fixture}.py"
-    if entry_point == "api":
-        run_generate_file_and_assert(
-            input_path=input_path,
-            output_path=output_file,
-            input_file_type=InputFileType.JsonSchema,
-            disable_timestamp=True,
-            generate_schema_validators=schema_validators,
-            assert_func=assert_file_content,
-            expected_file=expected_file,
-        )
-    else:
-        run_main_and_assert(
-            input_path=input_path,
-            output_path=output_file,
-            input_file_type="jsonschema",
-            extra_args=["--disable-timestamp", *(["--generate-schema-validators"] if schema_validators else [])],
-            assert_func=assert_file_content,
-            expected_file=expected_file,
-        )
+    with (
+        pytest.warns(UserWarning, match=r"admits no value: its enum is empty")
+        if fixture == "empty_enums"
+        else nullcontext()
+    ):
+        if entry_point == "api":
+            run_generate_file_and_assert(
+                input_path=input_path,
+                output_path=output_file,
+                input_file_type=InputFileType.JsonSchema,
+                disable_timestamp=True,
+                generate_schema_validators=schema_validators,
+                assert_func=assert_file_content,
+                expected_file=expected_file,
+            )
+        else:
+            run_main_and_assert(
+                input_path=input_path,
+                output_path=output_file,
+                input_file_type="jsonschema",
+                extra_args=["--disable-timestamp", *(["--generate-schema-validators"] if schema_validators else [])],
+                assert_func=assert_file_content,
+                expected_file=expected_file,
+            )
     payloads = json.loads((DATA_PATH / "payloads/allof_constraint_intersection_empty.json").read_text())
     Draft202012Validator(json.loads(input_path.read_text())).validate(payloads["valid"])
     assert_generated_model_json_validation(

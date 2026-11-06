@@ -43,6 +43,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "DEFAULT_FIELD_KEYS",
+    "EMPTY_ENUM_CONTEXT",
     "EXCLUDE_FIELD_KEYS",
     "EXCLUDE_FIELD_KEYS_IN_JSON_SCHEMA",
     "IGNORED_REF_SIBLINGS_CONTEXT",
@@ -264,6 +265,8 @@ READ_UNEVALUATED_PROPERTIES_CONTEXT: Final = "read_unevaluated_properties"
 IGNORED_REF_SIBLINGS_CONTEXT: Final = "ignored_ref_siblings"
 """The context key of ``--ignore-ref-siblings-by-schema-version``: whether a location's version ignores ``$ref``
 siblings."""
+EMPTY_ENUM_CONTEXT: Final = "empty_enum"
+"""The context key of the set that collects the location of each schema object whose ``enum`` lists no value."""
 
 
 _PROPERTY_EVALUATING_KEYWORDS: Final = frozenset({
@@ -444,6 +447,25 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
         if not values.get("properties") and _is_false_all_of(unevaluated_properties):
             return {**values, "unevaluatedProperties": False}
         return {**values, "additionalProperties": unevaluated_properties}
+
+    @model_validator(mode="before")
+    @classmethod
+    def collect_empty_enum(cls, values: Any, info: ValidationInfo) -> Any:
+        """Collect a schema object of a document whose ``enum`` lists no value, so that no value is valid against it.
+
+        The parser passes the set of their locations in the validation context (``EMPTY_ENUM_CONTEXT``) and reports
+        them after the schema parsing. The schema object of the document decides, as written: a dump or a merge the
+        parser validates again is not collected, nor an ``enum`` beside a ``$ref`` that
+        ``read_ref_alone_where_its_siblings_are_ignored``, which runs before it, leaves out.
+        """
+        if (
+            isinstance(values, dict)
+            and values.get("enum") == []
+            and (locations := (info.context or {}).get(EMPTY_ENUM_CONTEXT)) is not None
+            and _is_document_object(values)
+        ):
+            locations.add(_source_location(values))
+        return values
 
     @model_validator(mode="before")
     @classmethod
