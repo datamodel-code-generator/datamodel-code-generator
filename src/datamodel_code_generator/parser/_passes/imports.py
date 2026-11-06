@@ -35,6 +35,7 @@ from datamodel_code_generator._module_paths import (
     normalized_path,
     written_path,
 )
+from datamodel_code_generator._python_syntax import holds_lone_surrogate
 from datamodel_code_generator._python_target_names import is_builtin_type_name
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph, walk_graph
 from datamodel_code_generator._requirements import pydantic_floor
@@ -107,6 +108,7 @@ from datamodel_code_generator.parser._passes._state import _PYDANTIC_FLOORS, Con
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser._tag_plan import TagPlanHost
 from datamodel_code_generator.python_literal import stable_repr
+from datamodel_code_generator.reference import field_origin_of, named_schema_location, type_origin_of
 from datamodel_code_generator.types import union_members, written_union_members
 
 if TYPE_CHECKING:
@@ -163,6 +165,7 @@ __all__ = [
     "record_pydantic_floor",
     "refresh_sequence_interface_after_renames",
     "reject_class_named_like_submodule",
+    "reject_lone_surrogates_pydantic_reads",
     "reject_unimportable_imports",
     "remap_import_overrides",
     "remove_unused_imports",
@@ -1287,6 +1290,70 @@ def reject_alias_cycles_without_schema(
                     "Python cannot evaluate as the module runs",
                     parser._folded_ref_chains,  # noqa: SLF001
                 )
+
+
+def _lone_surrogate_held(model: DataModel, field: DataModelFieldBase) -> tuple[str, str] | None:
+    """Return the first text of a field that Pydantic reads as UTF-8 and that holds a lone surrogate, and its location.
+
+    The texts are the aliases of the field, the str values of its ``Literal`` types and the str values of the enums
+    its types validate as classes, read through the type aliases they name; a ``Literal`` of enum members holds the
+    members, not their values. The text is written as the message writes it (its ``repr``, after what it is), and the
+    location as the message names it: that of the type that holds the value, else of the field, else of the model; an
+    enum's own.
+    """
+    origin = None if (built := field_origin_of(field)) is None else built.location
+    aliases = (
+        ("alias", field.alias),
+        *(("validation alias", alias) for alias in field.validation_aliases or ()),
+        ("serialization alias", field.serialization_alias),
+    )
+    if held := next(((kind, alias) for kind, alias in aliases if alias and holds_lone_surrogate(alias)), None):
+        return f"its {held[0]} {stable_repr(held[1])}", named_schema_location(origin, model.reference)
+    pending = [*field.data_type.all_data_types]
+    seen: set[int] = set()
+    while pending:
+        data_type = pending.pop()
+        if value := next((v for v in data_type.literals if isinstance(v, str) and holds_lone_surrogate(v)), None):
+            location = type_origin_of(data_type) or origin
+            return f"the Literal value {stable_repr(value)}", named_schema_location(location, model.reference)
+        if data_type.enum_member_literals or (reference := data_type.reference) is None:
+            continue
+        if id(source := reference.source) in seen:
+            continue
+        seen.add(id(source))
+        if isinstance(source, Enum):
+            values = (get_raw_enum_member_value(member.default) for member in source.fields)
+            if value := next((v for v in values if isinstance(v, str) and holds_lone_surrogate(v)), None):
+                return (
+                    f"the value {stable_repr(value)} of the enum {source.class_name}",
+                    named_schema_location(None, source.reference),
+                )
+        elif isinstance(source, TypeAliasBase):
+            pending.extend(source.all_data_types)
+    return None
+
+
+def reject_lone_surrogates_pydantic_reads(parser: FinishHost, contexts: Sequence[ModuleContextView]) -> None:
+    """Refuse output whose Pydantic models hold a lone surrogate in a text that Pydantic reads as UTF-8.
+
+    pydantic-core cannot build the validator or serializer of such a text, so the module would fail to import: an
+    alias of a field (``AliasChoices`` too), a str value of a ``Literal``, and a str value of an enum that a type
+    validates as a class (``_lone_surrogate_held``). The module writes each text as its escape, which keeps it; an enum
+    or a type alias that no model reaches, and a text Pydantic stores as it is (a description, a default), keep their
+    output. The error names the field and the schema location of the text.
+    """
+    for model in _context_models(contexts):
+        if not model._READ_BY_PYDANTIC:  # noqa: SLF001
+            continue
+        for field in model.fields:
+            if not field.is_class_var and (held := _lone_surrogate_held(model, field)) is not None:
+                text, location = held
+                msg = (
+                    f"Pydantic cannot build {site_display_name(parser, model, field)}: {text} at {location} holds a "
+                    "lone surrogate, which no Pydantic validator holds, so the module would fail to import. Remove the "
+                    "lone surrogate from the schema or use another --output-model-type."
+                )
+                raise Error(msg)
 
 
 def record_pydantic_floor(parser: FinishHost, contexts: Sequence[ModuleContextView]) -> None:

@@ -9,6 +9,7 @@ import pytest
 from jsonschema import Draft7Validator
 from jsonschema import ValidationError as SchemaValidationError
 
+from datamodel_code_generator.__main__ import Exit
 from tests.main.conftest import JSON_SCHEMA_DATA_PATH, assert_generated_model_json_validation, run_main_and_assert
 
 if TYPE_CHECKING:
@@ -257,5 +258,137 @@ def test_lone_surrogate_comment_text(output_file: Path) -> None:
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--formatters", "builtin", "--extra-template-data", str(data_path)],
+        force_exec_validation=True,
+    )
+
+
+SURROGATE_DEFINITIONS = {
+    "Kind": {"type": "string", "enum": ["v\ud800x", "p"]},
+    "Tag": {"const": "t\ud800"},
+    "Kinds": {"type": "array", "items": {"$ref": "#/$defs/Kind"}},
+}
+REFUSED_SURROGATES = {
+    "alias": (
+        {"k\ud800y": {"type": "string"}},
+        [],
+        "Surrogate.k_y: its alias 'k\\ud800y' at surrogate_refused.json#/properties/k\\ud800y",
+    ),
+    "enum": (
+        {"kind": {"type": "string", "enum": ["v\ud800x", "p"]}},
+        [],
+        "Surrogate.kind: the value 'v\\ud800x' of the enum Kind at surrogate_refused.json#/properties/kind",
+    ),
+    "literal": (
+        {"tag": {"const": "t\ud800"}},
+        [],
+        "Surrogate.tag: the Literal value 't\\ud800' at surrogate_refused.json#/properties/tag",
+    ),
+    "type_alias_literal": (
+        {"tag": {"$ref": "#/$defs/Tag"}},
+        ["--use-type-alias"],
+        "Surrogate.tag: the Literal value 't\\ud800' at surrogate_refused.json#/$defs/Tag",
+    ),
+    "type_alias_enum": (
+        {"kinds": {"$ref": "#/$defs/Kinds"}},
+        ["--use-type-alias"],
+        "Surrogate.kinds: the value 'v\\ud800x' of the enum Kind at surrogate_refused.json#/$defs/Kind",
+    ),
+}
+
+
+@pytest.mark.parametrize("output_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"])
+@pytest.mark.parametrize("case", REFUSED_SURROGATES)
+def test_lone_surrogate_refused_by_pydantic(
+    output_file: Path, capsys: pytest.CaptureFixture[str], output_type: str, case: str
+) -> None:
+    """Fail for a lone surrogate in an alias, a ``Literal`` value or an enum value of a Pydantic model (#5983).
+
+    pydantic-core cannot build a validator that holds one, so the generated module failed to import. A type alias is
+    read through, as Pydantic builds it into the model. The error names the field and the schema location, its lone
+    surrogates written as escapes. The schema is written here, as a YAML parser rejects the escape of a lone surrogate
+    in a fixture file.
+    """
+    properties, extra_args, site = REFUSED_SURROGATES[case]
+    schema = {"title": "Surrogate", "type": "object", "properties": properties, "$defs": SURROGATE_DEFINITIONS}
+    (input_path := output_file.parent / "surrogate_refused.json").write_text(json.dumps(schema), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_type, *extra_args],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=f"Pydantic cannot build {site} holds a lone surrogate, which no Pydantic validator",
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("option", "aliases", "site"),
+    [
+        pytest.param("--aliases", {"name": ["name", "n\ud800"]}, "its validation alias 'n\\ud800'", id="alias_choices"),
+        pytest.param(
+            "--serialization-aliases", {"name": "s\ud800"}, "its serialization alias 's\\ud800'", id="serialization"
+        ),
+    ],
+)
+def test_lone_surrogate_configured_alias_refused_by_pydantic(
+    output_file: Path, capsys: pytest.CaptureFixture[str], option: str, aliases: dict[str, object], site: str
+) -> None:
+    """Fail for a lone surrogate in an alias the options give a Pydantic field (#5983).
+
+    Neither an ``AliasChoices`` nor a serialization alias that holds one builds, so the module failed to import.
+    """
+    schema = {"title": "Surrogate", "type": "object", "properties": {"name": {"type": "string"}}}
+    (input_path := output_file.parent / "surrogate_alias.json").write_text(json.dumps(schema), encoding="utf-8")
+    (aliases_path := output_file.parent / "surrogate_aliases.json").write_text(json.dumps(aliases), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[option, str(aliases_path)],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=f"Surrogate.name: {site} at surrogate_alias.json#/properties/name holds a lone",
+        output_should_not_exist=True,
+    )
+
+
+def test_lone_surrogate_renamed_field_refused_by_msgspec(output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Fail for a msgspec field renamed to a name that holds a lone surrogate (#5983).
+
+    ``field(name=...)`` raised ``UnicodeEncodeError`` when the generated module was imported. An enum value and a
+    ``Literal`` value that hold one stay as written: msgspec builds the module.
+    """
+    schema = {"title": "Surrogate", "type": "object", "properties": {"k\ud800y": {"type": "string"}}}
+    (input_path := output_file.parent / "surrogate_renamed.json").write_text(json.dumps(schema), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "msgspec.Struct"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=(
+            "msgspec.Struct model 'Surrogate' cannot express its field 'k_y' named 'k\\ud800y' at "
+            "surrogate_renamed.json#/properties/k\\ud800y: msgspec refuses a renamed field name that contains a "
+            "backslash, a double quote, a control character or a lone surrogate."
+        ),
+        output_should_not_exist=True,
+    )
+
+
+def test_lone_surrogate_enum_unused_by_pydantic(output_file: Path) -> None:
+    """Keep an enum whose value holds a lone surrogate where no Pydantic model reaches it (#5983).
+
+    Pydantic builds no validator of the enum, so the module imports; its value is written as its escape.
+    """
+    schema = {"title": "Surrogate", "type": "string", "enum": ["v\ud800x", "p"]}
+    (input_path := output_file.parent / "surrogate_enum.json").write_text(json.dumps(schema), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin"],
         force_exec_validation=True,
     )

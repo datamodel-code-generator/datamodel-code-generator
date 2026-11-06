@@ -46,6 +46,7 @@ from datamodel_code_generator._format_types import (
 from datamodel_code_generator._free_names import Numbering, candidate_at, first_free, is_numbered
 from datamodel_code_generator._graph_links import data_type_children
 from datamodel_code_generator._json_pointer import is_pointer_fragment, join_pointer
+from datamodel_code_generator._message_text import printable_text
 from datamodel_code_generator._model_keys import MODEL_KEY_ATTRIBUTE
 from datamodel_code_generator._python_target_names import target_builtin_type_attributes
 from datamodel_code_generator._records import record
@@ -58,7 +59,7 @@ from datamodel_code_generator._target_unicode import (
     replace_non_word,
     upper,
 )
-from datamodel_code_generator._url_redaction import is_url, redact_path, redact_reference
+from datamodel_code_generator._url_redaction import is_url, named_location, redact_path, redact_reference
 from datamodel_code_generator._user_keys import (
     ClassScope,
     ModelNameRecord,
@@ -393,6 +394,15 @@ def field_origin_of(field: object) -> FieldOrigin | None:
     extension's, has none.
     """
     return field.__dict__.get(FIELD_ORIGIN_KEY)
+
+
+def named_schema_location(location: SchemaLocation | None, reference: Reference) -> str:
+    """Return how a message names a schema location, else that of the model of ``reference``, else its path.
+
+    The document URL is redacted (``named_location``), and a lone surrogate, which no stream that writes UTF-8 can
+    print, is written as its escape (``printable_text``).
+    """
+    return printable_text(named_location(location_of(reference) if location is None else location, reference.path))
 
 
 def type_origin_of(data_type: object) -> SchemaLocation | None:

@@ -20,7 +20,7 @@ from datamodel_code_generator._container_kinds import ARRAYS, MAPPINGS
 from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._graph_links import clear_parents, link_members
 from datamodel_code_generator._mro import resolve_members
-from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text
+from datamodel_code_generator._python_syntax import call_text, holds_lone_surrogate, keyword_argument, subscript_text
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._target_unicode import is_identifier
@@ -98,7 +98,7 @@ from datamodel_code_generator.python_literal import (
     represent_untrusted_python_value,
     stable_repr,
 )
-from datamodel_code_generator.reference import FieldNameResolver, ModelType
+from datamodel_code_generator.reference import FieldNameResolver, ModelType, field_origin_of, named_schema_location
 from datamodel_code_generator.types import (
     NONE,
     DataType,
@@ -195,8 +195,11 @@ _NEEDS_ANNOTATED = Why(RuleId("D11.msgspec.meta-needs-annotated"), option="--use
 
 
 def _renamed_field_name_refused(name: str) -> bool:
-    """Return whether msgspec refuses a renamed field name: a backslash, a double quote or a control character."""
-    return any(char in '\\"' or char < " " for char in name)
+    """Return whether msgspec refuses a renamed field name.
+
+    It refuses one that holds a backslash, a double quote, a control character or a lone surrogate.
+    """
+    return any(char in '\\"' or char < " " for char in name) or holds_lone_surrogate(name)
 
 
 @final
@@ -680,17 +683,20 @@ class Struct(DataModel):
             raise Error(msg)
 
     def _validate_renamed_field_names(self) -> None:
-        """Refuse a field that renames to a name msgspec refuses (``_renamed_field_name_refused``).
+        """Refuse a field that renames to a name msgspec refuses (``_renamed_field_name_refused``), naming where it is.
 
-        The generated module could not be imported: ``field(name=...)`` raises ``ValueError``.
+        The generated module could not be imported: ``field(name=...)`` raises ``ValueError``, or
+        ``UnicodeEncodeError`` for a lone surrogate.
         """
         for field in self.fields:
             if field.alias is not None and not field.is_class_var and _renamed_field_name_refused(field.alias):
+                origin = field_origin_of(field)
+                location = named_schema_location(None if origin is None else origin.location, self.reference)
                 msg = (
                     f"msgspec.Struct model {stable_repr(self.class_name)} cannot express its field "
-                    f"{stable_repr(field.name)} named {stable_repr(field.alias)}: msgspec refuses a renamed field name "
-                    "that contains a backslash, a double quote or a control character. Rename the property or use "
-                    "another --output-model-type."
+                    f"{stable_repr(field.name)} named {stable_repr(field.alias)} at {location}: msgspec refuses a "
+                    "renamed field name that contains a backslash, a double quote, a control character or a lone "
+                    "surrogate. Rename the property or use another --output-model-type."
                 )
                 raise Error(msg)
 
