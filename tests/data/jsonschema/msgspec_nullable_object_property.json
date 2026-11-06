@@ -1,0 +1,12 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "item": {"type": ["object", "null"], "properties": {"x": {"type": "integer"}}},
+    "ref": {"$ref": "#/$defs/NullItem"},
+    "refOrTextOrNull": {"anyOf": [{"$ref": "#/$defs/NullItem"}, {"type": "string"}, {"type": "null"}]}
+  },
+  "$defs": {
+    "NullItem": {"type": ["object", "null"], "properties": {"x": {"type": "integer"}}}
+  }
+}

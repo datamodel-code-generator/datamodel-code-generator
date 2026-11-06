@@ -1,0 +1,19 @@
+[
+  {
+    "item": null,
+    "ref": null,
+    "refOrTextOrNull": null
+  },
+  {
+    "item": {
+      "x": 1
+    },
+    "ref": {
+      "x": 2
+    },
+    "refOrTextOrNull": "t"
+  },
+  {},
+  "rejected",
+  "rejected"
+]

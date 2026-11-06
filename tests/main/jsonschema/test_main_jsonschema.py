@@ -14403,6 +14403,52 @@ def test_main_jsonschema_nullable_object(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--strict-nullable"], id="strict-nullable"),
+        pytest.param(["--use-annotated", "--field-constraints"], id="annotated"),
+    ],
+)
+def test_main_jsonschema_msgspec_nullable_object_property(output_file: Path, extra_args: list[str]) -> None:
+    """Write None once in the msgspec union of a property whose object schema, or the model it names, admits null.
+
+    The union adds None only where the property's type, without its own None, writes none, so a nullable object
+    property is ``Item | None | UnsetType``. The model decodes a null, an object and a missing property, and rejects
+    another value.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "msgspec_nullable_object_property.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            *extra_args,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    documents = [
+        {"item": None, "ref": None, "refOrTextOrNull": None},
+        {"item": {"x": 1}, "ref": {"x": 2}, "refOrTextOrNull": "t"},
+        {},
+        {"item": 1},
+        {"refOrTextOrNull": 2},
+    ]
+    with _generated_model(output_file, "msgspec_nullable_object_property_model", "Model") as model:
+
+        def decoded(document: object) -> object:
+            with suppress(msgspec.ValidationError):
+                return msgspec.to_builtins(msgspec.json.decode(json.dumps(document), type=model))
+            return "rejected"
+
+        results = [decoded(document) for document in documents]
+    assert_output(f"{json.dumps(results, indent=2)}\n")
+
+
 def test_main_jsonschema_ref_type_has_null(output_file: Path) -> None:
     """Test that type: [type, null] from $ref schema is propagated."""
     run_main_and_assert(
