@@ -3748,6 +3748,38 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Build the effective raw property map once in inherited C3 order."""
         return _inherited_schemas.get_inherited_property_map(self, base_classes)
 
+    def _site_checks_beside_base(
+        self, obj: JsonSchemaObject, required_names: list[str], base_required: frozenset[str]
+    ) -> bool:
+        """Return whether a site whose allOf names one model, and adds no field to it, checks what that model does not.
+
+        A schema validator rule of the site does, and so do the ``required`` names it adds (``_adds_required_names``);
+        the site is then a model of its own, not the model it names.
+        """
+        return (
+            self.generate_schema_validators and self._has_schema_validator_constraints(obj)
+        ) or self._adds_required_names(required_names, base_required)
+
+    def _adds_required_names(
+        self, names: Iterable[str], base_required: frozenset[str] | Callable[[], frozenset[str]]
+    ) -> bool:
+        """Return whether a site requires a name that the one model its allOf names does not, so it is no alias of it.
+
+        ``base_required`` holds the names that model requires, or reads them. False under ``--force-optional``, which
+        writes no required field, and under ``legacy-all-of-required-names-dropped``, where the site is that model.
+        """
+        if (
+            "legacy-all-of-required-names-dropped" in self._legacy_intersection
+            or self.force_optional_for_required_fields
+            or not (wanted := set(names))
+        ):
+            return False
+        return not wanted <= (base_required if isinstance(base_required, frozenset) else base_required())
+
+    def _ref_required_names(self, ref: str) -> frozenset[str]:
+        """Return the names the schema ``ref`` names requires, as its model requires them as a base."""
+        return _inherited_schemas.required_names_at(self, self._ref_path(ref))
+
     def _get_inherited_required_names(self, base_classes: list[Reference]) -> frozenset[str]:
         """Collect required names across the effective inherited allOf graph."""
         return _inherited_schemas.get_inherited_required_names(self, base_classes)
@@ -4656,7 +4688,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 and not fields
                 and extra_field is None
                 and len(base_classes) == 1
-                and not (self.generate_schema_validators and self._has_schema_validator_constraints(obj))
+                and not self._site_checks_beside_base(obj, [*required, *obj.required], inherited_required_names)
             ):
                 with self.model_resolver.current_base_path_context(self.model_resolver._base_path):  # noqa: SLF001
                     self.model_resolver.delete(path)
@@ -6482,17 +6514,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         if len(item.allOf) == 1 and not item.properties:
             single_item = item.allOf[0]
             if isinstance(single_item, JsonSchemaObject) and single_item.ref:
-                if (reference_site := _all_of_values.reference_site_schema(self, item)) is None:
+                if (reference_site := _all_of_values.reference_site_schema(self, item)) is not None:
+                    all_of_path = [self.model_resolver.resolve_ref(get_special_path("allOf", path))]
+                    with self.model_resolver.yielding_new_references():
+                        site_type = self._parse_all_of_merged_root(
+                            self.model_resolver.add(
+                                all_of_path, name, singular_name=singular_name, class_name=True
+                            ).name,
+                            reference_site.with_schema_location(item.schema_location),
+                            all_of_path,
+                        )
+                    self._site_model_keys.add(model_key_of(site_type.reference))
+                    return site_type
+                if not self._adds_required_names(item.required, partial(self._ref_required_names, single_item.ref)):
                     return self.get_ref_data_type(single_item.ref)
-                all_of_path = [self.model_resolver.resolve_ref(get_special_path("allOf", path))]
-                with self.model_resolver.yielding_new_references():
-                    site_type = self._parse_all_of_merged_root(
-                        self.model_resolver.add(all_of_path, name, singular_name=singular_name, class_name=True).name,
-                        reference_site.with_schema_location(item.schema_location),
-                        all_of_path,
-                    )
-                self._site_model_keys.add(model_key_of(site_type.reference))
-                return site_type
         all_of_path = [self.model_resolver.resolve_ref(get_special_path("allOf", path))]
         with (
             self.model_resolver.yielding_new_references()

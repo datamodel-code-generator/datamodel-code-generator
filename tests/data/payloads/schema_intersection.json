@@ -8369,5 +8369,65 @@
         ]
       }
     }
+  },
+  "allof_required_members": {
+    "model": "Model",
+    "fields": {
+      "member": {
+        "valid": [
+          {
+            "id": 1
+          },
+          {
+            "id": 1,
+            "name": "a"
+          }
+        ],
+        "invalid": [
+          {},
+          {
+            "name": "a"
+          }
+        ]
+      },
+      "sibling": {
+        "valid": [
+          {
+            "id": 1
+          }
+        ],
+        "invalid": [
+          {},
+          {
+            "name": "a"
+          }
+        ]
+      },
+      "items": {
+        "valid": [
+          [
+            {
+              "id": 1
+            }
+          ],
+          []
+        ],
+        "invalid": [
+          [
+            {}
+          ]
+        ]
+      },
+      "kept": {
+        "valid": [
+          {
+            "id": 1
+          }
+        ],
+        "invalid": [
+          {}
+        ]
+      }
+    }
   }
 }

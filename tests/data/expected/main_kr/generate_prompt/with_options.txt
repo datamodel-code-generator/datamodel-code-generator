@@ -688,9 +688,10 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         none, the `$ref` siblings of an `allOf` member where
                         the dialect reads them, an `allOf` member that names a
                         `$ref` alias, the null branch of an `allOf` member's
-                        `anyOf` or `oneOf`, and no `enum` value that the
-                        merged `type` rejects. Without it these keep the
-                        output of 0.88.0
+                        `anyOf` or `oneOf`, the `required` names an `allOf`
+                        adds to the one model it names at a field, an item or
+                        a branch, and no `enum` value that the merged `type`
+                        rejects. Without it these keep the output of 0.88.0
   --keep-enum-member-values, --no-keep-enum-member-values
                         Write an enum as a plain Enum where the value base of
                         --use-specialized-enum or --use-subclass-enum would

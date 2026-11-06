@@ -895,7 +895,8 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         description=(
             "Combine the keywords beside an anyOf or oneOf with each branch, merge an inherited override's nested "
             "properties name by name and by its narrowed type, read the $ref siblings, $ref aliases and null branches "
-            "of allOf members, and keep no enum value that the merged type rejects, as JSON Schema validates them."
+            "of allOf members and the required names an allOf adds to the one model it names, and keep no enum value "
+            "that the merged type rejects, as JSON Schema validates them."
         ),
     ),
     PresetOptionGroup(
@@ -1331,8 +1332,9 @@ def render_presets_markdown() -> str:
             "such as draft 7 or OpenAPI 3.0, is read as its target alone, and `--intersect-combined-schema-keywords`: "
             "the keywords beside an anyOf or oneOf are combined with each branch, an inherited override merges its "
             "nested properties name by name and by the type it narrows, an allOf member reads its $ref siblings, "
-            "$ref aliases and null branches, and no enum value that the merged type rejects is kept, as JSON Schema "
-            "validates them, and `--distribute-allof-over-unions`: an allOf of several anyOf and oneOf is one union "
+            "$ref aliases and null branches, an allOf that adds required names to the one model it names is a model "
+            "that requires them, and no enum value that the merged type rejects is kept, as JSON Schema validates "
+            "them, and `--distribute-allof-over-unions`: an allOf of several anyOf and oneOf is one union "
             "variant per combination of their branches, also through a $ref member and for value branches at a field "
             "and beside object branches, a $ref branch of an anyOf or oneOf "
             "takes the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an "

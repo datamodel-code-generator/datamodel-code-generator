@@ -181,6 +181,7 @@ COMBINED_DOCUMENTS: tuple[str, ...] = (
     "combined_option_edges_draft04",
     "combined_option_edges_draft07",
     "combined_any_of_one_of",
+    "allof_required_members",
 )
 """The documents whose output --intersect-combined-schema-keywords changes, pinned with ``COMBINED_OPTION_ARGS`` too."""
 DISTRIBUTE_OPTION_ARGS: tuple[str, ...] = ("--distribute-allof-over-unions",)
@@ -276,7 +277,8 @@ def test_schema_intersection_shape_output_with_combined_option(
     the inherited type (to ``null``, to one of its types, or in a nested schema) is the intersection instead of a copy
     of the inherited field, and the type shape of ``--allof-merge-mode none`` keeps the length of a closed tuple. An
     allOf member reads the siblings of its ``$ref`` as a part where the dialect does (2020-12, not draft 7), names the
-    target of a ``$ref`` alias as its base, and an allOf union admits null where every part does.
+    target of a ``$ref`` alias as its base, and an allOf union admits null where every part does. A field, an item
+    or a branch whose allOf adds ``required`` names to the one model it names is a model of its own that requires them.
     """
     _assert_shape_output(output_file, stem, backend, options, COMBINED_OPTION_ARGS)
 
