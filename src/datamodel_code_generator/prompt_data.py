@@ -226,6 +226,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--use-double-quotes": "Use double quotes for string literals in generated code.",
     "--use-duplicate-name-suffix-for-every-collision": "Give the `--duplicate-name-suffix` suffix to every model re...",
     "--use-encoded-str-for-constrained-base64": "Check the constraints of a `format: byte` string on its base64 tex...",
+    "--use-enum-field-as-literal-in-operations": "Write an operation body or response enum as a Literal root model ...",
     "--use-enum-values-in-discriminator": "Use enum values in discriminator mappings for union types.",
     "--use-exact-imports": "Import exact types instead of modules.",
     "--use-field-description": "Include schema descriptions as Field docstrings.",

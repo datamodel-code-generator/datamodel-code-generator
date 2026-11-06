@@ -424,6 +424,7 @@ class OpenAPIParserConfig(JSONSchemaParserConfig):
     keep_first_character_of_path_keys: bool = False
     keep_content_parameter_refs: bool = False
     skip_path_extension_keys: bool = False
+    use_enum_field_as_literal_in_operations: bool = False
     openapi_include_paths: list[str] | None = None
     openapi_include_info_version: bool = False
     openapi_as_definitions: Sequence[OpenAPIAsDefinitions] = ()
@@ -439,6 +440,7 @@ class AsyncAPIParserConfig(JSONSchemaParserConfig):
     keep_first_character_of_path_keys: bool = False
     keep_content_parameter_refs: bool = False
     skip_path_extension_keys: bool = False
+    use_enum_field_as_literal_in_operations: bool = False
     openapi_include_paths: list[str] | None = None
     openapi_include_info_version: bool = False
     openapi_as_definitions: Sequence[OpenAPIAsDefinitions] = ()

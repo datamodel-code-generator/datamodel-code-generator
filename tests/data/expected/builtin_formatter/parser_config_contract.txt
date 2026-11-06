@@ -223,6 +223,7 @@ reviewed-safe openapi_include_paths
 reviewed-safe openapi_scopes
 reviewed-safe openapi_version
 reviewed-safe skip_path_extension_keys
+reviewed-safe use_enum_field_as_literal_in_operations
 reviewed-safe use_status_code_in_response_name
 
 [AvroParserConfig]

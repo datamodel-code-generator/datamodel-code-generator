@@ -347,6 +347,8 @@ OpenAPI-specific generation behavior.
 - `--no-keep-content-parameter-refs`: Type a parameter whose content media schema is a $ref by the model the $ref names, its Request variant under --read-only-write-only-model-type request-response, as a schema parameter is; without it the parameter takes a copy of the referenced schema (a model of its own name, or the inline type of a scalar, with its default and description), as in 0.89.0
 - `--skip-path-extension-keys`: In the paths scope, skip a key of paths that begins with x-, a specification extension and no path item, as the api scope does; without it such a key that holds an object is read as a path and its operations get models, as in 0.89.0
 - `--no-skip-path-extension-keys`: In the paths scope, skip a key of paths that begins with x-, a specification extension and no path item, as the api scope does; without it such a key that holds an object is read as a path and its operations get models, as in 0.89.0
+- `--use-enum-field-as-literal-in-operations`: Write the enum of an operation's request body or response as a root model of a Literal where x-enum-field-as-literal, --enum-field-as-literal-map or --enum-field-as-literal would write a definition's enum so; without it such an enum stays an Enum class, as in 0.90.0
+- `--no-use-enum-field-as-literal-in-operations`: Write the enum of an operation's request body or response as a root model of a Literal where x-enum-field-as-literal, --enum-field-as-literal-map or --enum-field-as-literal would write a definition's enum so; without it such an enum stays an Enum class, as in 0.90.0
 
 ## GraphQL-only Options
 

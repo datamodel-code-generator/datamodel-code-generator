@@ -1219,6 +1219,7 @@ def _openapi_shared_options(config: GenerateConfig) -> OpenAPIParserConfigDict:
         "keep_first_character_of_path_keys": config.keep_first_character_of_path_keys,
         "keep_content_parameter_refs": config.keep_content_parameter_refs,
         "skip_path_extension_keys": config.skip_path_extension_keys,
+        "use_enum_field_as_literal_in_operations": config.use_enum_field_as_literal_in_operations,
         "openapi_include_paths": config.openapi_include_paths,
         "openapi_include_info_version": config.openapi_include_info_version,
         "openapi_as_definitions": config.openapi_as_definitions,

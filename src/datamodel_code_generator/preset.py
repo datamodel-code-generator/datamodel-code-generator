@@ -1150,6 +1150,15 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "plain member."
         ),
     ),
+    PresetOptionGroup(
+        title="Operation enums written as Literal like definitions",
+        config=PresetConfig(use_enum_field_as_literal_in_operations=True),
+        description=(
+            "Write the enum of an OpenAPI request body or response as a root model of a Literal where "
+            "x-enum-field-as-literal, --enum-field-as-literal-map or --enum-field-as-literal writes a definition's "
+            "enum so, instead of an Enum class."
+        ),
+    ),
 )
 """The 20261104 groups and the opt-in options of the release after 0.90.0."""
 
@@ -1520,7 +1529,10 @@ def render_presets_markdown() -> str:
             "items (`RootModel[list[Node | Leaf]]` instead of `RootModel[list]`), and "
             "`--keep-shared-members-on-collapsed-root-models`: under `--collapse-root-models` a recursive union "
             'keeps its plain member at every site that inlines it (`dict[str, Union["Entry", str]]` instead of '
-            '`dict[str, "Entry"]`).'
+            '`dict[str, "Entry"]`), and '
+            "`--use-enum-field-as-literal-in-operations`: the enum of an OpenAPI request body or response is a root "
+            "model of a `Literal` where `--enum-field-as-literal`, its map or `x-enum-field-as-literal` makes a "
+            "definition's enum one, instead of an `Enum` class."
         ),
         "",
         "## Override Preset Options",

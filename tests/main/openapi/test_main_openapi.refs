@@ -2128,6 +2128,12 @@ pydantic_v2.BaseModel-pydantic_v2_union_default_object.py	main/openapi/pydantic_
 	main/openapi/unquoted_null.py
 [test_main_openapi_use_default_with_default_values_parameters]
 	main/openapi/default_values_parameters_use_default.py
+[test_main_openapi_use_enum_field_as_literal_in_operations]
+msgspec-literal	main/openapi/main_openapi/use_enum_field_as_literal_in_operations[msgspec-literal].py
+pydantic_v2	main/openapi/main_openapi/use_enum_field_as_literal_in_operations[pydantic_v2].py
+pydantic_v2-literal	main/openapi/main_openapi/use_enum_field_as_literal_in_operations[pydantic_v2-literal].py
+pydantic_v2-map	main/openapi/main_openapi/use_enum_field_as_literal_in_operations[pydantic_v2-map].py
+pydantic_v2-no-literal	main/openapi/main_openapi/use_enum_field_as_literal_in_operations[pydantic_v2-no-literal].py	= main/openapi/main_openapi/use_enum_field_as_literal_in_operations[pydantic_v2].py
 [test_main_openapi_use_missing_sentinel_nullable_keyword]
 	main/openapi/missing_sentinel_nullable.py
 [test_main_openapi_use_msgspec_nullable_enum_alias]

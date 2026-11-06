@@ -261,6 +261,7 @@ datamodel-codegen [OPTIONS]
 | [`--openapi-scopes`](openapi-only-options.md#openapi-scopes) | Specify OpenAPI scopes to generate (schemas, paths, parameters). |
 | [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type) | Generate separate request and response models for readOnly/writeOnly fields. |
 | [`--skip-path-extension-keys`](openapi-only-options.md#skip-path-extension-keys) | Skip the `x-` keys of `paths` in the `paths` scope, as the `api` scope does. |
+| [`--use-enum-field-as-literal-in-operations`](openapi-only-options.md#use-enum-field-as-literal-in-operations) | Write an operation body or response enum as a Literal root model as a definition... |
 | [`--use-operation-id-as-name`](openapi-only-options.md#use-operation-id-as-name) | Use OpenAPI operationId as the generated function/class name. |
 | [`--use-status-code-in-response-name`](openapi-only-options.md#use-status-code-in-response-name) | Include HTTP status code in response model names. |
 | [`--validation`](openapi-only-options.md#validation) | Enable validation constraints (deprecated, use --field-constraints). |
@@ -590,6 +591,7 @@ All options sorted alphabetically:
 - [`--use-double-quotes`](template-customization.md#use-double-quotes) - Use double quotes for string literals in generated code.
 - [`--use-duplicate-name-suffix-for-every-collision`](model-customization.md#use-duplicate-name-suffix-for-every-collision) - Give the `--duplicate-name-suffix` suffix to every model ren...
 - [`--use-encoded-str-for-constrained-base64`](typing-customization.md#use-encoded-str-for-constrained-base64) - Check the constraints of a `format: byte` string on its base...
+- [`--use-enum-field-as-literal-in-operations`](openapi-only-options.md#use-enum-field-as-literal-in-operations) - Write an operation body or response enum as a Literal root m...
 - [`--use-enum-values-in-discriminator`](field-customization.md#use-enum-values-in-discriminator) - Use enum values in discriminator mappings for union types.
 - [`--use-exact-imports`](template-customization.md#use-exact-imports) - Import exact types instead of modules.
 - [`--use-field-description`](field-customization.md#use-field-description) - Include schema descriptions as Field docstrings.

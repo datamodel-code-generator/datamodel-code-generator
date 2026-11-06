@@ -392,6 +392,7 @@ class BaseGenerateConfig(TypedDict):
     keep_first_character_of_path_keys: NotRequired[bool]
     keep_content_parameter_refs: NotRequired[bool]
     skip_path_extension_keys: NotRequired[bool]
+    use_enum_field_as_literal_in_operations: NotRequired[bool]
     name_converted_payloads_by_message: NotRequired[bool]
     all_exports_scope: NotRequired[AllExportsScope | None]
     all_exports_collision_strategy: NotRequired[AllExportsCollisionStrategy | None]

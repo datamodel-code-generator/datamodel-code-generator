@@ -69,6 +69,7 @@ from datamodel_code_generator.parser.jsonschema import (
     _one_of_any_of_applies,
     _parse_all_of_site,
     _parse_combined_root,
+    _parse_root_type_site,
     _ref_applies,
     get_model_by_path,
 )
@@ -479,6 +480,7 @@ class OpenAPIParser(JsonSchemaParser):
         self.keep_first_character_of_path_keys: bool = self.config.keep_first_character_of_path_keys
         self.keep_content_parameter_refs: bool = self.config.keep_content_parameter_refs
         self.skip_path_extension_keys: bool = self.config.skip_path_extension_keys
+        self.use_enum_field_as_literal_in_operations: bool = self.config.use_enum_field_as_literal_in_operations
         self.openapi_include_paths: list[str] | None = self.config.openapi_include_paths
         self.openapi_include_info_version: bool = self.config.openapi_include_info_version
         self.openapi_info_version: str | None = None
@@ -1085,7 +1087,22 @@ class OpenAPIParser(JsonSchemaParser):
     def _operation_enum_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:
         return bool(site.obj.enum and not self.ignore_enum_constraints and not self._reads_enum_as_const(site.obj))
 
+    def _operation_literal_enum_applies(self, site: SchemaSite[JsonSchemaObject]) -> bool:
+        """Return whether a body or response enum is a root model of a Literal, as a definition's enum would be.
+
+        Only under ``--use-enum-field-as-literal-in-operations``, which reads ``x-enum-field-as-literal``,
+        ``--enum-field-as-literal-map`` and ``--enum-field-as-literal`` as ``_definition_enum_applies`` does.
+        """
+        return (
+            self.use_enum_field_as_literal_in_operations
+            and self._operation_enum_applies(site)
+            and self.should_parse_enum_as_literal(site.obj, property_name=site.name)
+        )
+
     def _build_operation_enum(self, site: SchemaSite[JsonSchemaObject]) -> DataType:
+        """Parse a body or response enum into an Enum class, as a definition's under the option, else as in 0.90.0."""
+        if self.use_enum_field_as_literal_in_operations:
+            return self._parse_enum_class(site.name, self._definition_enum(site.obj), site.path)
         return self.parse_enum(site.name, self._definition_enum(site.obj), site.path)
 
     _OPENAPI_OPERATION_TABLE: ClassVar[DispatchTable[OpenAPIParser, JsonSchemaObject, DataType]] = DispatchTable(
@@ -1096,6 +1113,7 @@ class OpenAPIParser(JsonSchemaParser):
             Row("one-of-any-of", _one_of_any_of_applies, _parse_combined_root),
             Row("object", _operation_object_applies, _build_operation_object),
             Row("inline-object-body", _operation_inline_object_body_applies, _build_operation_inline_object_body),
+            Row("literal-enum", _operation_literal_enum_applies, _parse_root_type_site),
             Row("enum", _operation_enum_applies, _build_operation_enum),
             Row("ref", _ref_applies, _get_ref_data_type_site),
         ),

@@ -523,6 +523,7 @@ def _baseline_generate(
     keep_first_character_of_path_keys: bool = False,
     keep_content_parameter_refs: bool = False,
     skip_path_extension_keys: bool = False,
+    use_enum_field_as_literal_in_operations: bool = False,
     name_converted_payloads_by_message: bool = False,
     all_exports_scope: AllExportsScope | None = None,
     all_exports_collision_strategy: AllExportsCollisionStrategy | None = None,

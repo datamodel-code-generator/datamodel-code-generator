@@ -17956,6 +17956,77 @@ def test_main_openapi_skip_path_extension_keys(
 
 
 @pytest.mark.cli_doc(
+    options=["--use-enum-field-as-literal-in-operations"],
+    option_description="""Write an operation body or response enum as a Literal root model as a definition's enum is.
+
+`--enum-field-as-literal`, `--enum-field-as-literal-map` and `x-enum-field-as-literal` write the enum of a definition
+as a root model of a `Literal` (`C`), but the enum of a request body or response schema written inline in an
+operation stays an `Enum` class (`APostRequest`). With `--use-enum-field-as-literal-in-operations` such an enum reads
+the three as a definition's enum does, so `APostRequest` and `APostResponse` are root models of a `Literal`, while
+`APostResponse1`, whose `x-enum-field-as-literal` is false, stays an `Enum` class.""",
+    input_schema="openapi/operation_enums_as_literal.yaml",
+    cli_args=[
+        *("--openapi-scopes", "schemas", "paths", "--enum-field-as-literal", "all"),
+        "--use-enum-field-as-literal-in-operations",
+    ],
+    golden_output="main/openapi/main_openapi/use_enum_field_as_literal_in_operations[pydantic_v2-literal].py",
+    comparison_output="main/openapi/main_openapi/use_enum_field_as_literal_in_operations[pydantic_v2].py",
+    related_options=["--enum-field-as-literal", "--enum-field-as-literal-map"],
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", ["--enum-field-as-literal", "all"], id="pydantic_v2"),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--enum-field-as-literal", "all", "--use-enum-field-as-literal-in-operations"],
+            id="pydantic_v2-literal",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            [
+                *("--enum-field-as-literal", "all"),
+                *("--use-enum-field-as-literal-in-operations", "--no-use-enum-field-as-literal-in-operations"),
+            ],
+            id="pydantic_v2-no-literal",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            [
+                *("--enum-field-as-literal-map", '{"APostResponse": "literal"}'),
+                "--use-enum-field-as-literal-in-operations",
+            ],
+            id="pydantic_v2-map",
+        ),
+        pytest.param(
+            "msgspec.Struct",
+            ["--enum-field-as-literal", "all", "--use-enum-field-as-literal-in-operations"],
+            id="msgspec-literal",
+        ),
+    ],
+)
+def test_main_openapi_use_enum_field_as_literal_in_operations(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Write the enum of a body or response as a Literal root model under the option, as a definition's (#5478).
+
+    Without the option ``APostRequest`` and ``APostResponse`` stay Enum classes under ``--enum-field-as-literal all``,
+    as in 0.90.0; ``APostResponse1``, whose ``x-enum-field-as-literal`` is false, stays one either way.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "operation_enums_as_literal.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", output_model_type, "--openapi-scopes", "schemas", "paths"),
+            *extra_args,
+            *("--disable-timestamp", "--formatters", "builtin"),
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.cli_doc(
     options=["--keep-first-character-of-path-keys"],
     option_description="""Strip only a leading slash from a paths key when naming its operation models.
 

@@ -113,6 +113,8 @@ use-duplicate-name-suffix-for-every-collision-practical	main/preset_opt_in_optio
 use-duplicate-name-suffix-for-every-collision-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-duplicate-name-suffix-for-every-collision-standard].py
 use-encoded-str-for-constrained-base64-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-encoded-str-for-constrained-base64-practical].py
 use-encoded-str-for-constrained-base64-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-encoded-str-for-constrained-base64-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-encoded-str-for-constrained-base64-practical].py
+use-enum-field-as-literal-in-operations-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-enum-field-as-literal-in-operations-practical].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-enum-field-as-literal-in-operations-standard].py
+use-enum-field-as-literal-in-operations-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-enum-field-as-literal-in-operations-standard].py
 use-msgspec-forbid-unknown-fields-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-msgspec-forbid-unknown-fields-practical].py	= main/jsonschema/msgspec_forbid_unknown_fields/msgspec_forbid_unknown_fields[forbid].py
 use-msgspec-forbid-unknown-fields-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-msgspec-forbid-unknown-fields-standard].py	= main/jsonschema/msgspec_forbid_unknown_fields/msgspec_forbid_unknown_fields[forbid].py
 use-msgspec-meta-for-map-keys-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-msgspec-meta-for-map-keys-practical].py	= main/jsonschema/msgspec_map_keys/msgspec_map_keys[meta].py
