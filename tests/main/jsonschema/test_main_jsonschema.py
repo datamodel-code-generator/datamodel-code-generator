@@ -9324,6 +9324,46 @@ def test_main_unique_items_as_set_by_value_unhashable_default(tmp_path: Path, ou
     )
 
 
+def test_main_unique_items_as_set_by_value_union_default_member(tmp_path: Path, output_file: Path) -> None:
+    """Write the default of a union by the first member whose items take it, not the first array-like member.
+
+    ``["a", "a"]`` is a ``Words`` list of strings, which ``Row``, a set of integers, does not take, so it stays the
+    list; ``[1, 1]`` is a ``Row`` and becomes its set. ``Model()`` holds the values that validating the defaults gives.
+    """
+    (input_file := tmp_path / "unique_items_by_value_union_default_member.json").write_text(
+        json.dumps({
+            "title": "Model",
+            "type": "object",
+            "properties": {
+                "words": {"anyOf": [{"$ref": "#/$defs/Row"}, {"$ref": "#/$defs/Words"}], "default": ["a", "a"]},
+                "row": {"anyOf": [{"$ref": "#/$defs/Words"}, {"$ref": "#/$defs/Row"}], "default": [1, 1]},
+            },
+            "$defs": {
+                "Row": {"type": "array", "uniqueItems": True, "items": {"type": "integer"}},
+                "Words": {"type": "array", "items": {"type": "string"}},
+            },
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--use-type-alias",
+            "--use-unique-items-as-set",
+            "--use-unique-items-as-set-by-value",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    with _generated_model(output_file, "unique_items_by_value_union_default_member", "Model") as model:
+        default = model()
+        classes = {field: _value_classes(getattr(default, field)) for field in ("words", "row")}
+    assert_output(f"{json.dumps(classes, indent=2)}\n")
+
+
 def _value_classes(value: object) -> object:
     """Return the class names of a value and of the items and values it holds, the items of a set sorted."""
     match value:

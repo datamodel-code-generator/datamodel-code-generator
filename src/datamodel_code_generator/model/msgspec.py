@@ -106,6 +106,7 @@ from datamodel_code_generator.python_literal import (
 )
 from datamodel_code_generator.reference import FieldNameResolver, ModelType, field_origin_of, named_schema_location
 from datamodel_code_generator.types import (
+    JSON_SCALAR_VALUE_TYPES,
     NONE,
     DataType,
     _copy_data_type,
@@ -423,16 +424,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.types import UnionIntFloat
 
 
-_SCALAR_VALUE_TYPES: Mapping[str, tuple[type, ...]] = MappingProxyType({
-    "str": (str,),
-    "int": (int,),
-    "float": (int, float),
-    "bool": (bool,),
-    NONE: (type(None),),
-})
-"""The Python types of the JSON values that ``msgspec.convert`` takes for each scalar type."""
-
-
 def _takes_default(  # noqa: PLR0911
     data_type: DataType, default: object, seen: frozenset[int] = frozenset(), *, attributes: bool = False
 ) -> bool:
@@ -480,7 +471,7 @@ def _takes_default(  # noqa: PLR0911
         return any(_takes_default(member, default, seen, attributes=attributes) for member in data_type.data_types)
     if data_type.literals:
         return any(type(literal) is type(default) and literal == default for literal in data_type.literals)
-    return (kinds := _SCALAR_VALUE_TYPES.get(data_type.type or "")) is None or type(default) in kinds
+    return (kinds := JSON_SCALAR_VALUE_TYPES.get(data_type.type or "")) is None or type(default) in kinds
 
 
 def _struct_takes_default(struct: Struct, default: object, *, attributes: bool) -> bool:

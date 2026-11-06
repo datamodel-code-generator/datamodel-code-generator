@@ -156,6 +156,14 @@ UNION_PATTERN: Pattern[str] = re.compile(r"\s*,\s*")
 UNION_OPERATOR_DELIMITER = " | "
 UNION_OPERATOR_PATTERN: Pattern[str] = re.compile(r"\s*\|\s*")
 NONE = "None"
+JSON_SCALAR_VALUE_TYPES: Mapping[str, tuple[type, ...]] = MappingProxyType({
+    "str": (str,),
+    "int": (int,),
+    "float": (int, float),
+    "bool": (bool,),
+    NONE: (type(None),),
+})
+"""The Python types of the JSON values that each scalar type takes, as a default or ``msgspec.convert`` reads them."""
 ANY = "Any"
 LITERAL = "Literal"
 SEQUENCE = "Sequence"

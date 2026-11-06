@@ -45,9 +45,10 @@ from datamodel_code_generator.parser._passes._shared import (
 )
 from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter
 from datamodel_code_generator.parser._set_alias_members import listed_members
+from datamodel_code_generator.types import JSON_SCALAR_VALUE_TYPES
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterator, Sequence
+    from collections.abc import Collection, Iterable, Iterator, Sequence
 
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.model._decisions.hashability import SetItemHash
@@ -250,8 +251,9 @@ class _ByValue:
     ) -> tuple[Any, Collection[int]] | None:
         """Return the array or mapping of ``members`` that takes an array or object value, with the sets of its tree.
 
-        The members of a union are read in order, a type alias as its value, with the lists its plan makes sets; a
-        member that ``left`` holds is read as the array the union writes it as, which a later member is.
+        The members of a union are read in order, a type alias as its value, with the lists its plan makes sets, and
+        the first that takes the value (``_takes``) is it; a member that ``left`` holds is read as the array the union
+        writes it as, which a later member is.
         """
         kind = MAPPINGS if isinstance(value, Mapping) else ARRAYS if isinstance(value, (list, tuple)) else None
         if kind is None:
@@ -267,10 +269,40 @@ class _ByValue:
                     followed.add(key)
                     pending.append((self.live[key].fields[0].data_type, self._alias_sets[key]))
             elif node in kind:
-                return node, node_sets
+                if self._takes(node, value):
+                    return node, node_sets
             elif node not in CONTAINERS:
                 pending.extend((member, node_sets) for member in reversed(node.data_types))
         return None
+
+    def _takes(self, node: Any, value: object, followed: frozenset[ModelKey] = frozenset()) -> bool:  # noqa: PLR0911
+        """Return whether a type takes a value of a default, by the JSON kind of the value at every level.
+
+        A type alias takes what its value takes (``followed`` holds the aliases read since the last value) and another
+        model any value; a union, what one of its members takes; an array, an array whose items its item types take,
+        a tuple by position; a mapping, an object whose values its value types take; a Literal, its values; str, int,
+        float, bool and None, values of their JSON kind; any other type any value.
+        """
+        if (reference := node.reference) is not None:
+            if self.class_hash.get(key := model_key_of(reference)) != "alias" or not (fields := self.live[key].fields):
+                return True
+            return key not in followed and self._takes(fields[0].data_type, value, followed | {key})
+        if node in ARRAYS or node in MAPPINGS:
+            match value:
+                case list() | tuple() if node in ARRAYS:
+                    items: Iterable[tuple[Sequence[Any], object]] = (
+                        (_item_types(node, index), item) for index, item in enumerate(value)
+                    )
+                case Mapping() if node in MAPPINGS:
+                    items = ((node.data_types, item) for item in value.values())
+                case _:
+                    return False
+            return all(not types or any(self._takes(type_, item) for type_ in types) for types, item in items)
+        if node.data_types:
+            return any(self._takes(member, value, followed) for member in node.data_types)
+        if node.literals:
+            return any(type(literal) is type(value) and literal == value for literal in node.literals)
+        return (kinds := JSON_SCALAR_VALUE_TYPES.get(node.type or "")) is None or type(value) in kinds
 
     def fields(self, model: ModelView) -> Iterator[FieldView]:
         """Yield the fields of a model and of the live models it inherits from, each model once and each name once.
