@@ -57,7 +57,7 @@
 | [`--use-union-operator`](#use-union-operator) | Use | operator for Union types (PEP 604). |
 | [`--use-unique-items-as-set`](#use-unique-items-as-set) | Generate set types for arrays with uniqueItems constraint. |
 | [`--use-unique-items-as-set-by-value`](#use-unique-items-as-set-by-value) | Write a uniqueItems set only where its final items hash by v... |
-| [`--use-x-python-type-unions`](#use-x-python-type-unions) | Type a field by an `x-python-type` union spelled `Optional[.... |
+| [`--use-x-python-type-as-written`](#use-x-python-type-as-written) | Type a field by an `x-python-type` union spelled `Optional[.... |
 
 ---
 
@@ -9836,7 +9836,7 @@ stays a list, and models whose arrays differ in `uniqueItems` are kept apart.
 
 ---
 
-## `--use-x-python-type-unions` {#use-x-python-type-unions}
+## `--use-x-python-type-as-written` {#use-x-python-type-as-written}
 
 Type a field by an `x-python-type` union spelled `Optional[...]` or `Union[...]`.
 
@@ -9849,10 +9849,10 @@ map value and a root.
 !!! tip "Usage"
 
     ```bash
-    datamodel-codegen --input x_python_type_unions.json --use-x-python-type-unions # (1)!
+    datamodel-codegen --input x_python_type_unions.json --use-x-python-type-as-written # (1)!
     ```
 
-    1. :material-arrow-left: `--use-x-python-type-unions` - the option documented here
+    1. :material-arrow-left: `--use-x-python-type-as-written` - the option documented here
 
 ??? example "Examples"
 

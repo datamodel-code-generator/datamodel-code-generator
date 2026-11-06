@@ -575,7 +575,7 @@ Typing customization:
                         sets are decided before root models collapse, set item
                         models hash by identity and such models merge, as in
                         0.89.0
-  --use-x-python-type-unions, --no-use-x-python-type-unions
+  --use-x-python-type-as-written, --no-use-x-python-type-as-written
                         Type a field by its x-python-type when that is a union
                         spelled Optional[...] or Union[...], such as
                         Optional[Literal['a', 'b']], as one spelled X | Y
