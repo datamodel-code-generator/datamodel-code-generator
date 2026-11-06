@@ -1498,6 +1498,11 @@ BIND_MODULE_FIELD_NAMES = PassDecl(
         After("alias_builtins_hidden_by_submodules", "binds field names against the aliases of hidden builtins"),
     ),
     removed_by="RP15b",
+    condition="a class takes a name its module imports, which ``change_imported_model_name`` reads",
+    summary=(
+        "Binds the names that a field name hides from the text of its class under aliases (``object_aliased``) "
+        "before the renames read the names the module imports; elsewhere the module render binds them."
+    ),
 )
 CHANGE_IMPORTED_MODEL_NAME = PassDecl(
     "change_imported_model_name",
@@ -1787,10 +1792,11 @@ RENDER_MODULES = PassDecl(
     Scope.GLOBAL,
     PassKind.TRANSFORM,
     reads=_facts(*Fact, *RenderFact),
-    writes=_facts(Fact.FIELD_TYPES),
+    writes=_facts(Fact.FIELD_TYPES, RenderFact.IMPORT_ALIASES, RenderFact.UNBOUND_FIELDS),
     summary=(
-        "L7: renders every module; writes the import of the Any an empty union renders as; seeds a parse again where "
-        "a module of a modular output fails to import, or where the names a package binds disagree with the renames of "
+        "L7: renders every module; writes the import of the Any an empty union renders as; binds the names that a "
+        "field name hides from the text it renders under aliases (``object_aliased``); seeds a parse again where a "
+        "module of a modular output fails to import, or where the names a package binds disagree with the renames of "
         "its submodules."
     ),
 )

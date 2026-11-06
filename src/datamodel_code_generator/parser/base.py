@@ -232,6 +232,7 @@ from datamodel_code_generator.parser._passes.imports import (
     _FUTURE_IMPORTS,
     builtin_name_bindings,
     reject_unimportable_imports,
+    render_module_models,
 )
 from datamodel_code_generator.parser._pipeline import PARSE_CALLER, Runner, parse_caller
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
@@ -479,7 +480,12 @@ def _naming_rules_of(
 
 def dump_templates(templates: list[DataModel]) -> str:
     """Join model templates into a single code string."""
-    return "\n\n\n".join(str(m) for m in templates)
+    return _joined_models(str(m) for m in templates)
+
+
+def _joined_models(texts: Iterable[str]) -> str:
+    """Join the rendered texts of models into a single code string."""
+    return "\n\n\n".join(texts)
 
 
 def _forward_root_model_aliases(models: Sequence[DataModel]) -> set[ModelKey]:
@@ -2685,6 +2691,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             )
 
         if ctx.models:
+            texts = render_module_models(
+                ctx.models, ctx.imports, self.imports, self._import_ledger, self.target_python_version.version_key
+            )
             if config.with_import:
                 module_imports = self._import_ledger.rendered(ctx.imports)
                 self._reject_unimportable_imports(ctx.module, module_imports, is_init=ctx.is_init)
@@ -2707,17 +2716,17 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 module_code_insertion_index = self.data_model_type.get_module_code_insertion_index(ctx.models)
                 if module_code_insertion_index:
                     result += [
-                        dump_templates(ctx.models[:module_code_insertion_index]),
+                        _joined_models(texts[:module_code_insertion_index]),
                         "",
                         "",
                         module_code,
                         "",
-                        dump_templates(ctx.models[module_code_insertion_index:]),
+                        _joined_models(texts[module_code_insertion_index:]),
                     ]
                 else:
-                    result += [module_code, "", dump_templates(ctx.models)]
+                    result += [module_code, "", _joined_models(texts)]
             else:
-                result += [dump_templates(ctx.models)]
+                result += [_joined_models(texts)]
 
             result += self.__get_resolve_reference_action_parts(
                 ctx.models,

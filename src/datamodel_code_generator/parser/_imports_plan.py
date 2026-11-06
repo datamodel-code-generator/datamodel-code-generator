@@ -146,7 +146,8 @@ ImportPass: TypeAlias = Literal[
   imported from the submodule instead of the module imports they replace.
 * ``hidden-submodule-import-bindings``: ``import_models_of_hidden_submodules``, aliases of the imports of a package that
   a submodule the output loads hides, which every bare use in the package follows.
-* ``field-name-bindings``: ``_bind_module_field_names``, aliases of imports that a field name hides.
+* ``field-name-bindings``: ``_bind_module_field_names``, aliases of imports that a field name hides in the text of its
+  class: ``bind_module_field_names`` where a class takes a name its module imports, else ``render_module_models`` (L7).
 * ``reused-variant-literal``: ``alias_reused_variant_literal``, the alias of ``typing.Literal`` beside a model named
   ``Literal``.
 * ``shadowed-imports``: ``alias_shadowed_imports`` (L6), aliases of structured imports that a field name hides.

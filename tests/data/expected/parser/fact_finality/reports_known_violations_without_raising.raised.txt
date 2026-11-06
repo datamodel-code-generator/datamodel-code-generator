@@ -1,9 +1,76 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from re import compile
+from typing import Annotated, Dict, List, Optional, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field, RootModel, StringConstraints
+from typing_extensions import TypeAliasType
 
 
-class Model(BaseModel):
-    field: Any = None
+class Code(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: Annotated[str, Field(max_length=8, pattern='^(?!bad)[a-z]+$')]
+
+
+class Dup(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: Annotated[str, Field(max_length=8, pattern='^(?!bad)[a-z]+$')]
+
+
+class Code1(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: Annotated[str, Field(pattern='^(?=x)[a-z]+$')]
+
+
+class Codes(RootModel[List[Code1]]):
+    root: List[Code1]
+
+
+MappingAdditionalProperty = TypeAliasType(
+    "MappingAdditionalProperty", Annotated[str, Field(pattern=compile('^[a-z]+(?<!z)$'))]
+)
+
+
+class Mapping(RootModel[Dict[str, MappingAdditionalProperty]]):
+    root: Dict[str, MappingAdditionalProperty]
+
+
+class Keys(RootModel[Dict[str, int]]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: Dict[Annotated[str, StringConstraints(pattern=r'^(?=key)[a-z0-9_]+$')], int]
+
+
+class Tags(RootModel[Dict[str, str]]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: Dict[Annotated[str, StringConstraints(pattern=r'^(?=t)')], str]
+
+
+class Either1(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: Annotated[str, Field(pattern='^(?!no)[a-z]+$')]
+
+
+class Either(RootModel[Union[Either1, int]]):
+    root: Union[Either1, int]
+
+
+class Holder(BaseModel):
+    code: Optional[Code] = None
+    dup: Optional[Dup] = None
+    codes: Optional[Codes] = None
+    mapping: Optional[Mapping] = None
+    keys: Optional[Keys] = None
+    tags: Optional[Tags] = None
+    either: Optional[Either] = None

@@ -95,13 +95,13 @@ def prepare_output_model_config(  # noqa: PLR0913, PLR0912
     return base_config
 
 
-def _model_field_name_collisions(model: DataModel, import_names: Collection[str]) -> set[str]:
-    """Find imported names hidden by assignments in the emitted model body."""
+def _model_field_name_collisions(model: DataModel, rendered: str | None, import_names: Collection[str]) -> set[str]:
+    """Find imported names hidden by assignments in the emitted model body, ``rendered`` or rendered now."""
     field_names = {field.name for field in model.fields if field.name is not None}
     candidates = field_names.intersection(import_names)
     if not candidates:
         return set()
-    tree, restore_name = _parsed(model.render())
+    tree, restore_name = _parsed(model.render() if rendered is None else rendered)
     if (class_body := next(_class_bodies(tree, restore_name, model.class_name), None)) is None:
         return set()
     fields = [

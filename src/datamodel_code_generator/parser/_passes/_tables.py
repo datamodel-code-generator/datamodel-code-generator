@@ -413,7 +413,7 @@ FINALIZE_SEGMENTS: tuple[StepLike[PipelineHost, _FinalizeState[Any]], ...] = (
                 late(imports.alias_builtins_hidden_by_submodules),
                 when=lambda _, state: state.with_import,
             ),
-            PassSpec("bind_module_field_names", late(imports.bind_module_field_names)),
+            PassSpec("bind_module_field_names", late(imports.bind_module_field_names), when=imports.import_names_class),
             PassSpec("change_imported_model_name", late(imports.change_imported_model_name)),
             PassSpec(
                 "import_models_of_hidden_submodules",
