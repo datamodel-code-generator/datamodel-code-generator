@@ -36,6 +36,9 @@ class LetterSeqEnum(Enum):
 Short = TypeAliasType("Short", list[int])
 
 
+Name = TypeAliasType("Name", str)
+
+
 @dataclass
 class LengthKeywordsByType:
     tags: list[str] | None = None
@@ -51,3 +54,4 @@ class LengthKeywordsByType:
     as_text: str | None = None
     count: int | None = None
     short: Short | None = None
+    named: str | None = None

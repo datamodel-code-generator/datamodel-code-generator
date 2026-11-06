@@ -11,6 +11,7 @@
     "by_key": {"two-items": {"k": [1, 2]}, "string-item": {"k": ["x"]}},
     "letters": {"three-items": ["xx", "yy", "xx"], "other-value": ["zz"]},
     "letter_seq": {"three-items": ["xx", "yy", "xx"], "other-value": ["zz"]},
-    "short": {"three-items": [1, 2, 3], "string-item": ["x"]}
+    "short": {"three-items": [1, 2, 3], "string-item": ["x"]},
+    "named": {"empty": "", "number": 1}
   }
 }

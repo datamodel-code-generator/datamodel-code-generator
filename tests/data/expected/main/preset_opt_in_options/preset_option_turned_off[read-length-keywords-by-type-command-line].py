@@ -35,6 +35,10 @@ class LetterSeqEnum(Enum):
     yy = 'yy'
 
 
+class Name(RootModel[str]):
+    root: str
+
+
 class LengthKeywordsByType(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
@@ -52,3 +56,4 @@ class LengthKeywordsByType(BaseModel):
     as_text: Annotated[str | None, Field(max_length=2)] = None
     count: int | None = None
     short: Annotated[list[int] | None, Field(max_length=2)] = None
+    named: Annotated[str | None, Field(min_length=1)] = None

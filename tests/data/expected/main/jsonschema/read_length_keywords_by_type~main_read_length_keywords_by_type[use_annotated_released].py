@@ -39,6 +39,10 @@ class Short(RootModel[list[int]]):
     root: Annotated[list[int], Field(max_length=2)]
 
 
+class Name(RootModel[str]):
+    root: str
+
+
 class LengthKeywordsByType(BaseModel):
     tags: Annotated[list[str] | None, Field(max_length=2, min_length=1)] = None
     counted: Annotated[list[str] | None, Field(max_length=3)] = None
@@ -53,3 +57,4 @@ class LengthKeywordsByType(BaseModel):
     as_text: Annotated[str | None, Field(max_length=2)] = None
     count: int | None = None
     short: Short | None = None
+    named: Annotated[str | None, Field(min_length=1)] = None

@@ -7,18 +7,22 @@ from collections.abc import Sequence
 from enum import Enum
 from typing import Annotated
 
-from pydantic import BaseModel, Field, RootModel, constr
+from pydantic import BaseModel, Field
 from typing_extensions import TypeAliasType
 
 EitherString = TypeAliasType("EitherString", Annotated[str, Field(max_length=2)])
 
 
-class Branch(RootModel[list[int]]):
-    root: list[int]
+Branch = TypeAliasType("Branch", list[int])
 
 
-class Branch1(RootModel[constr(max_length=3)]):
-    root: constr(max_length=3)
+Branch1 = TypeAliasType("Branch1", Annotated[str, Field(..., max_length=3)])
+
+
+NestedItem = TypeAliasType("NestedItem", list[int])
+
+
+ByKey = TypeAliasType("ByKey", list[int])
 
 
 class Letter(Enum):
@@ -31,21 +35,24 @@ class LetterSeqEnum(Enum):
     yy = 'yy'
 
 
-class Short(RootModel[list[int]]):
-    root: list[int] = Field(..., max_length=2)
+Short = TypeAliasType("Short", list[int])
+
+
+Name = TypeAliasType("Name", str)
 
 
 class LengthKeywordsByType(BaseModel):
-    tags: list[str] | None = Field(None, max_length=2, min_length=1)
+    tags: list[str] | None = None
     counted: list[str] | None = Field(None, max_length=3)
-    code: constr(min_length=1, max_length=2) | None = None
+    code: str | None = None
     either: EitherString | list[int] | None = None
     branch: Branch | Branch1 | None = None
-    untyped: list[int] | None = Field(None, max_length=2)
-    nested: list[list[int]] | None = None
-    by_key: dict[str, list[int]] | None = None
-    letters: list[Letter] | None = Field(None, max_length=2)
-    letter_seq: Sequence[LetterSeqEnum] | None = Field(None, max_length=2)
-    as_text: str | None = Field(None, max_length=2)
-    count: constr(max_length=2) | None = None
+    untyped: list[int] | None = None
+    nested: list[NestedItem] | None = None
+    by_key: dict[str, ByKey] | None = None
+    letters: list[Letter] | None = None
+    letter_seq: Sequence[LetterSeqEnum] | None = None
+    as_text: str | None = None
+    count: int | None = None
     short: Short | None = None
+    named: str | None = None

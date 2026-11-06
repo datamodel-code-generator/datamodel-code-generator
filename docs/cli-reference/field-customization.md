@@ -3467,10 +3467,12 @@ string is: at a property, an item, a map value, a root, the branches of a union 
         },
         "as_text": {"type": "array", "items": {"type": "integer"}, "maxLength": 2, "x-python-type": "str"},
         "count": {"type": "integer", "format": "int64", "maxLength": 2},
-        "short": {"$ref": "#/$defs/Short"}
+        "short": {"$ref": "#/$defs/Short"},
+        "named": {"$ref": "#/$defs/Name", "minItems": 1}
       },
       "$defs": {
-        "Short": {"type": "array", "items": {"type": "integer"}, "maxLength": 2}
+        "Short": {"type": "array", "items": {"type": "integer"}, "maxLength": 2},
+        "Name": {"type": "string"}
       }
     }
     ```
@@ -3523,6 +3525,10 @@ string is: at a property, an item, a map value, a root, the branches of a union 
             root: list[int]
 
 
+        class Name(RootModel[str]):
+            root: str
+
+
         class LengthKeywordsByType(BaseModel):
             tags: list[str] | None = None
             counted: Annotated[list[str] | None, Field(max_length=3)] = None
@@ -3537,6 +3543,7 @@ string is: at a property, an item, a map value, a root, the branches of a union 
             as_text: str | None = None
             count: int | None = None
             short: Short | None = None
+            named: str | None = None
         ```
 
         <!-- fmt: on -->
@@ -3587,6 +3594,10 @@ string is: at a property, an item, a map value, a root, the branches of a union 
             root: Annotated[list[int], Field(max_length=2)]
 
 
+        class Name(RootModel[str]):
+            root: str
+
+
         class LengthKeywordsByType(BaseModel):
             tags: Annotated[list[str] | None, Field(max_length=2, min_length=1)] = None
             counted: Annotated[list[str] | None, Field(max_length=3)] = None
@@ -3601,6 +3612,7 @@ string is: at a property, an item, a map value, a root, the branches of a union 
             as_text: Annotated[str | None, Field(max_length=2)] = None
             count: int | None = None
             short: Short | None = None
+            named: Annotated[str | None, Field(min_length=1)] = None
         ```
 
         <!-- fmt: on -->
