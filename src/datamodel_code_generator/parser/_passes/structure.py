@@ -362,7 +362,7 @@ def delete_duplicate_models(parser: StructureHost, models: list[DataModel]) -> N
                 continue
             _drop_root_model_bases(parser, model)
 
-        class_name = parser._naming_plan.base_of(model) or model.class_name  # noqa: SLF001
+        class_name = shapes.source.own_class_name(model) or model.class_name
         if (
             reuse_allowed
             and (original_model := model_class_names.get(class_name)) is not None

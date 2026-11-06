@@ -499,6 +499,8 @@ openapi/python_import_all_of/api.yaml	yaml_fast_constructor/parity.txt
 openapi/query_parameters.yaml	yaml_fast_constructor/parity.txt
 openapi/query_parameters_with_config.yaml	yaml_fast_constructor/parity.txt
 openapi/querystring_parameter_31.yaml	yaml_fast_constructor/parity.txt
+openapi/read_only_numbered_variants.yaml	yaml_fast_constructor/parity.txt
+openapi/read_only_numbered_variants_by_direction.yaml	yaml_fast_constructor/parity.txt
 openapi/read_only_write_only.yaml	yaml_fast_constructor/parity.txt
 openapi/read_only_write_only_allof.yaml	yaml_fast_constructor/parity.txt
 openapi/read_only_write_only_allof_order.yaml	yaml_fast_constructor/parity.txt

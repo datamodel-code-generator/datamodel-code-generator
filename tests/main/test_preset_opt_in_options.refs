@@ -23,6 +23,8 @@ collapse-constrained-root-models-as-annotated-practical	main/preset_opt_in_optio
 collapse-constrained-root-models-as-annotated-standard	main/preset_opt_in_options/preset_sets_opt_in_option[collapse-constrained-root-models-as-annotated-standard].py
 collapse-shared-parent-wrappers-practical	main/preset_opt_in_options/preset_sets_opt_in_option[collapse-shared-parent-wrappers-practical].py
 collapse-shared-parent-wrappers-standard	main/preset_opt_in_options/preset_sets_opt_in_option[collapse-shared-parent-wrappers-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[collapse-shared-parent-wrappers-practical].py
+dedupe-numbered-request-response-variants-practical	main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-numbered-request-response-variants-practical].py
+dedupe-numbered-request-response-variants-standard	main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-numbered-request-response-variants-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-numbered-request-response-variants-practical].py
 dedupe-request-response-variants-practical	main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-request-response-variants-practical].py
 dedupe-request-response-variants-standard	main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-request-response-variants-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-request-response-variants-practical].py
 distribute-allof-over-unions-practical	main/preset_opt_in_options/preset_sets_opt_in_option[distribute-allof-over-unions-practical].py

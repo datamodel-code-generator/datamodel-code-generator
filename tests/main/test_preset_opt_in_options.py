@@ -98,6 +98,7 @@ OPT_IN_OPTIONS_20261106: tuple[str, ...] = (
     "--keep-self-referencing-array-items",
     "--keep-shared-members-on-collapsed-root-models",
     "--use-enum-field-as-literal-in-operations",
+    "--dedupe-numbered-request-response-variants",
 )
 """The options the 20261106 presets set beyond the 20261104 presets."""
 
@@ -381,6 +382,15 @@ CASES_20261106: tuple[pytest.ParameterSet, ...] = (
             *("--enum-field-as-literal", "all"),
         ],
         id="use-enum-field-as-literal-in-operations",
+    ),
+    pytest.param(
+        OPEN_API_DATA_PATH / "read_only_numbered_variants.yaml",
+        "openapi",
+        [
+            *("--output-model-type", "pydantic_v2.BaseModel"),
+            *("--read-only-write-only-model-type", "request-response"),
+        ],
+        id="dedupe-numbered-request-response-variants",
     ),
 )
 """The inputs each opt-in option of the 20261106 presets changes."""

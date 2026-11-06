@@ -521,6 +521,7 @@ class BaseGenerateConfig(BaseModel):
     use_bytes_for_content_media_type: bool = False
     read_only_write_only_model_type: ReadOnlyWriteOnlyModelType | None = None
     dedupe_request_response_variants: bool = False
+    dedupe_numbered_request_response_variants: bool = False
     use_status_code_in_response_name: bool = False
     keep_first_character_of_path_keys: bool = False
     keep_content_parameter_refs: bool = False

@@ -251,6 +251,7 @@ datamodel-codegen [OPTIONS]
 
 | Option | Description |
 |--------|-------------|
+| [`--dedupe-numbered-request-response-variants`](openapi-only-options.md#dedupe-numbered-request-response-variants) | Deduplicate a Request or Response variant of a numbered model like the model. |
 | [`--dedupe-request-response-variants`](openapi-only-options.md#dedupe-request-response-variants) | Decide Request/Response variants from the schema graph and build each inline mod... |
 | [`--include-path-parameters`](openapi-only-options.md#include-path-parameters) | Include OpenAPI path parameters in generated parameter models. |
 | [`--keep-content-parameter-refs`](openapi-only-options.md#keep-content-parameter-refs) | Type a parameter whose content media schema is a `$ref` by the model the `$ref` ... |
@@ -406,6 +407,7 @@ All options sorted alphabetically:
 - [`--custom-template-dir`](template-customization.md#custom-template-dir) - Use custom Jinja2 templates for model generation.
 - [`--dataclass-arguments`](model-customization.md#dataclass-arguments) - Customize dataclass decorator arguments via JSON dictionary.
 - [`--debug`](utility-options.md#debug) - Show debug messages during code generation
+- [`--dedupe-numbered-request-response-variants`](openapi-only-options.md#dedupe-numbered-request-response-variants) - Deduplicate a Request or Response variant of a numbered mode...
 - [`--dedupe-request-response-variants`](openapi-only-options.md#dedupe-request-response-variants) - Decide Request/Response variants from the schema graph and b...
 - [`--default-values`](field-customization.md#default-values) - Override field default values via inline JSON or a JSON file...
 - [`--deserialize-default-values`](field-customization.md#deserialize-default-values) - Deserialize selected direct scalar field defaults into their...

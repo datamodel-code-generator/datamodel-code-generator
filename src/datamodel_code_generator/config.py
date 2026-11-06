@@ -379,6 +379,7 @@ class ParserConfig(BaseModel):
     use_bytes_for_content_media_type: bool = False
     read_only_write_only_model_type: ReadOnlyWriteOnlyModelType | None = None
     dedupe_request_response_variants: bool = False
+    dedupe_numbered_request_response_variants: bool = False
     field_type_collision_strategy: FieldTypeCollisionStrategy | None = None
     target_pydantic_version: TargetPydanticVersion | None = None
     default_value_overrides: Mapping[str, Any] | None = None

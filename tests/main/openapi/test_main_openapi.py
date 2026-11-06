@@ -18027,6 +18027,83 @@ def test_main_openapi_use_enum_field_as_literal_in_operations(
 
 
 @pytest.mark.cli_doc(
+    options=["--dedupe-numbered-request-response-variants"],
+    option_description="""Deduplicate a Request or Response variant of a numbered model like the model.
+
+An inline object that renders as a component gets a numbered name (`Page1`) and merges into the component (`Page`),
+but its read/write variants keep names of their own (`Page1Request`, `Page1Response`): under
+`--read-only-write-only-model-type request-response` the fields of `HolderRequest` and `HolderResponse` name them, and
+under `all` an unused `Page1Request` is written. With `--dedupe-numbered-request-response-variants` such a variant is
+deduplicated by the variant name of the name its model was numbered from, so it merges into `PageRequest` or
+`PageResponse` where it renders the same.""",
+    input_schema="openapi/read_only_numbered_variants.yaml",
+    cli_args=["--read-only-write-only-model-type", "request-response", "--dedupe-numbered-request-response-variants"],
+    golden_output=(
+        "main/openapi/main_openapi/"
+        "dedupe_numbered_request_response_variants[request-response-deduped-read_only_numbered_variants].py"
+    ),
+    comparison_output=(
+        "main/openapi/main_openapi/"
+        "dedupe_numbered_request_response_variants[request-response-no-dedupe-read_only_numbered_variants].py"
+    ),
+    related_options=["--read-only-write-only-model-type", "--dedupe-request-response-variants"],
+)
+@pytest.mark.parametrize("input_name", ["read_only_numbered_variants", "read_only_numbered_variants_by_direction"])
+@pytest.mark.parametrize(
+    ("output_model_type", "mode", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", "request-response", [], id="request-response"),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            "request-response",
+            ["--dedupe-numbered-request-response-variants"],
+            id="request-response-deduped",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            "request-response",
+            ["--dedupe-numbered-request-response-variants", "--no-dedupe-numbered-request-response-variants"],
+            id="request-response-no-dedupe",
+        ),
+        pytest.param("pydantic_v2.BaseModel", "all", [], id="all"),
+        pytest.param("pydantic_v2.BaseModel", "all", ["--dedupe-numbered-request-response-variants"], id="all-deduped"),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            "all",
+            ["--dedupe-numbered-request-response-variants", "--reuse-model"],
+            id="all-deduped-reuse-model",
+        ),
+        pytest.param(
+            "msgspec.Struct",
+            "request-response",
+            ["--dedupe-numbered-request-response-variants"],
+            id="msgspec-request-response-deduped",
+        ),
+    ],
+)
+def test_main_openapi_dedupe_numbered_request_response_variants(
+    output_file: Path, input_name: str, output_model_type: str, mode: str, extra_args: list[str]
+) -> None:
+    """Merge the read/write variants of a numbered inline copy into those of the model it was numbered from (#6370).
+
+    Without the option ``Page1Request`` and ``Page1Response`` stay, as in 0.90.0. In the second input the component
+    is the numbered copy (``Holder`` comes first), and only the variants that render the same merge: ``OtherRequest``
+    names ``PageRequest``, while ``Page2Response``, whose ``cursor`` is an integer, stays.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{input_name}.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", output_model_type, "--read-only-write-only-model-type", mode),
+            *extra_args,
+            *("--disable-timestamp", "--formatters", "builtin"),
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.cli_doc(
     options=["--keep-first-character-of-path-keys"],
     option_description="""Strip only a leading slash from a paths key when naming its operation models.
 

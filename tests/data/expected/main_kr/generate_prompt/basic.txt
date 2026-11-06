@@ -307,10 +307,12 @@
 - `--wrap-string-literal`: Wrap long string literals across multiple lines.
 
 ### OpenAPI-only Options
+- `--dedupe-numbered-request-response-variants`: Deduplicate a Request or Response variant of a numbered model l...
 - `--dedupe-request-response-variants`: Decide Request/Response variants from the schema graph and build each in...
 - `--include-path-parameters`: Include OpenAPI path parameters in generated parameter models.
 - `--keep-content-parameter-refs`: Type a parameter whose content media schema is a `$ref` by the model the `$re...
 - `--keep-first-character-of-path-keys`: Strip only a leading slash from a paths key when naming its operation m...
+- `--no-dedupe-numbered-request-response-variants`
 - `--no-dedupe-request-response-variants`
 - `--no-keep-content-parameter-refs`
 - `--no-keep-first-character-of-path-keys`
@@ -1597,6 +1599,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         later)
 
 [36;1mOpenAPI-only options[0m:
+  --dedupe-numbered-request-response-variants, --no-dedupe-numbered-request-response-variants
+                        Deduplicate a Request or Response variant of a
+                        numbered model (Page1Request of an inline copy Page1
+                        of Page) by the variant name of the name its model was
+                        numbered from, so it merges into PageRequest where it
+                        renders the same; without it such a variant stays a
+                        class of its own, as in 0.90.0
   --dedupe-request-response-variants, --no-dedupe-request-response-variants
                         Decide Request/Response variants from the schema graph
                         and build each inline model once, without the

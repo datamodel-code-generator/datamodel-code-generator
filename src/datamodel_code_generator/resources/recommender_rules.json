@@ -659,6 +659,10 @@
       "not_recommended": "debug",
       "reason": "Debug messages."
     },
+    "dedupe_numbered_request_response_variants": {
+      "not_recommended": "preset",
+      "reason": "--read-only-write-only-model-type only: set by the 20261106 presets; the recommendation starts from a preset."
+    },
     "dedupe_request_response_variants": {
       "not_recommended": "preset",
       "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
