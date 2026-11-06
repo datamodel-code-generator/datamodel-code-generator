@@ -95,6 +95,7 @@ OPT_IN_OPTIONS_20261106: tuple[str, ...] = (
     "--use-bytes-for-content-media-type",
     "--collapse-constrained-root-models-as-annotated",
     "--remove-unused-models-beside-type-overrides",
+    "--keep-self-referencing-array-items",
 )
 """The options the 20261106 presets set beyond the 20261104 presets."""
 
@@ -357,6 +358,12 @@ CASES_20261106: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--type-overrides", '{"Other": "collections.OrderedDict"}'],
         id="remove-unused-models-beside-type-overrides",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "self_referencing_array_items.json",
+        "jsonschema",
+        [],
+        id="keep-self-referencing-array-items",
     ),
 )
 """The inputs each opt-in option of the 20261106 presets changes."""

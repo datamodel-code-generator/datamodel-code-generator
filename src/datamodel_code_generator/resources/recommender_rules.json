@@ -938,6 +938,10 @@
       "not_recommended": "preset",
       "reason": "With model-level --type-overrides only: set by the 20261106 presets; the recommendation starts from a preset."
     },
+    "keep_self_referencing_array_items": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261106 presets; the recommendation starts from a preset."
+    },
     "keep_enum_member_values": {
       "not_recommended": "preset",
       "reason": "Set by the 20261027 presets; the recommendation starts from a preset."

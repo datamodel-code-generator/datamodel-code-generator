@@ -312,6 +312,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--keep-reference-null-on-collapsed-root-models --no-keep-reference-null-on-collapsed-root-models",
         "--collapse-constrained-root-models-as-annotated --no-collapse-constrained-root-models-as-annotated",
         "--remove-unused-models-beside-type-overrides --no-remove-unused-models-beside-type-overrides",
+        "--keep-self-referencing-array-items --no-keep-self-referencing-array-items",
         group=_G.ROOT_MODEL,
     ),
     **_opts(_C.MODEL, "--collapse-reuse-models --no-collapse-reuse-models", group=_G.MODEL_REUSE),

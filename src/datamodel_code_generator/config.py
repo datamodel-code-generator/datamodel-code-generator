@@ -303,6 +303,7 @@ class ParserConfig(BaseModel):
     keep_reference_null_on_collapsed_root_models: bool = False
     collapse_constrained_root_models_as_annotated: bool = False
     remove_unused_models_beside_type_overrides: bool = False
+    keep_self_referencing_array_items: bool = False
     collapse_reuse_models: bool = False
     skip_root_model: bool = False
     use_root_model_sequence_interface: bool = False
