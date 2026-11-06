@@ -1,0 +1,18 @@
+msgspec cannot decode the union Model.listOrAnnotatedList: it holds the array-like members list[int], list[str], while a msgspec union holds only one array-like member.
+msgspec cannot decode the union Model.listOrTypingList: it holds the array-like members list[int], List[str], while a msgspec union holds only one array-like member.
+msgspec cannot decode the union Model.listOrAnnotatedSequence: it holds the array-like members list[int], Sequence[str], while a msgspec union holds only one array-like member.
+msgspec cannot decode the union Model.mapOrAnnotatedMap: it holds the dict-like members dict[str, int], dict[str, str], while a msgspec union holds only one dict-like member (its Struct types count as one).
+msgspec cannot decode the union Model.listOrAnnotatedOptionalList: it holds the array-like members list[int], list[str] | None, while a msgspec union holds only one array-like member.
+msgspec cannot decode the union Model.listsByPattern: it holds the array-like members list[int], list[str], while a msgspec union holds only one array-like member.
+msgspec cannot decode the union Model.structsByPattern: its Struct types Spec, Other are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.listsByPosition: it holds the array-like members list[int], list[str], while a msgspec union holds only one array-like member.
+listOrAnnotatedList: refused by msgspec
+listOrTypingList: refused by msgspec
+listOrAnnotatedSequence: refused by msgspec
+mapOrAnnotatedMap: refused by msgspec
+listOrAnnotatedOptionalList: refused by msgspec
+listOrAnnotatedMap: decoded
+listsByPattern: refused by msgspec
+structsByPattern: refused by msgspec
+listsByPosition: refused by msgspec
+listAndTextByPattern: decoded

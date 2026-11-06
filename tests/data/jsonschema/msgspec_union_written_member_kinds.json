@@ -1,0 +1,53 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "listOrAnnotatedList": {
+      "anyOf": [{"type": "array", "items": {"type": "integer"}}, {"type": "string", "x-python-type": "list[str]"}]
+    },
+    "listOrTypingList": {
+      "anyOf": [{"type": "array", "items": {"type": "integer"}}, {"type": "string", "x-python-type": "typing.List[str]"}]
+    },
+    "listOrAnnotatedSequence": {
+      "anyOf": [
+        {"type": "array", "items": {"type": "integer"}},
+        {"type": "string", "x-python-type": "collections.abc.Sequence[str]"}
+      ]
+    },
+    "mapOrAnnotatedMap": {
+      "anyOf": [
+        {"type": "object", "additionalProperties": {"type": "integer"}},
+        {"type": "integer", "x-python-type": "dict[str, str]"}
+      ]
+    },
+    "listOrAnnotatedOptionalList": {
+      "anyOf": [{"type": "array", "items": {"type": "integer"}}, {"type": "string", "x-python-type": "list[str] | None"}]
+    },
+    "listOrAnnotatedMap": {
+      "anyOf": [{"type": "array", "items": {"type": "integer"}}, {"type": "string", "x-python-type": "dict[str, int]"}]
+    },
+    "listsByPattern": {
+      "type": "object",
+      "patternProperties": {
+        "^i_": {"type": "array", "items": {"type": "integer"}},
+        "^s_": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "structsByPattern": {
+      "type": "object",
+      "patternProperties": {"^a_": {"$ref": "#/$defs/Spec"}, "^b_": {"$ref": "#/$defs/Other"}}
+    },
+    "listsByPosition": {
+      "type": "array",
+      "items": [{"type": "array", "items": {"type": "integer"}}, {"type": "array", "items": {"type": "string"}}]
+    },
+    "listAndTextByPattern": {
+      "type": "object",
+      "patternProperties": {"^i_": {"type": "array", "items": {"type": "integer"}}, "^s_": {"type": "string"}}
+    }
+  },
+  "$defs": {
+    "Spec": {"type": "object", "properties": {"x": {"type": "string"}}},
+    "Other": {"type": "object", "properties": {"y": {"type": "integer"}}}
+  }
+}

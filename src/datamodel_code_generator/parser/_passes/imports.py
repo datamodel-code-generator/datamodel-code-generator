@@ -20,7 +20,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator import DefaultValueTypeWarning, Error, ReuseScope
 from datamodel_code_generator._constraint_applicability import MSGSPEC_OUTPUT, int_beyond_values
-from datamodel_code_generator._container_kinds import ARRAYS, MAPPINGS
+from datamodel_code_generator._container_kinds import ARRAYS, ITEM_CONTAINERS, MAPPINGS, SLOT_CLASSES
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._message_text import counted, for_count, listed_with_more
 from datamodel_code_generator._model_keys import model_key_of
@@ -115,6 +115,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._model_keys import ModelKey
+    from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator._target_unicode import ModulePartRow
     from datamodel_code_generator._user_keys import ConstructionKeys
@@ -575,6 +576,18 @@ def _msgspec_refused_member_structs(data_types: Iterable[DataType]) -> _MsgspecR
     )
 
 
+def _msgspec_union_members(data_type: DataType) -> Sequence[DataType]:
+    """Return the members of the union a type writes: its own, or the items of a list, set or map of several types.
+
+    Such a container writes its items as a union inside it; the items of a tuple are its positions instead.
+    """
+    if members := union_members(data_type):
+        return members
+    if len(data_type.data_types) > 1 and (data_type in ITEM_CONTAINERS or data_type in MAPPINGS):
+        return data_type.data_types
+    return ()
+
+
 def _iter_union_alias_roots(data_type: DataType) -> Iterator[DataType]:
     """Yield the root types of the aliases a union names."""
     for member in written_union_members(data_type.data_types):
@@ -590,7 +603,7 @@ def _iter_union_alias_roots(data_type: DataType) -> Iterator[DataType]:
 def _msgspec_refused_union_structs(data_type: DataType) -> _MsgspecRefusal:
     """Return the Struct types of a union msgspec refuses, unless an alias it names is refused on its own."""
     if (
-        not (members := union_members(data_type))
+        not (members := _msgspec_union_members(data_type))
         or not (refusal := _msgspec_refused_member_structs(members))[0]
         or any(_msgspec_refused_member_structs((root,))[0] for root in _iter_union_alias_roots(data_type))
     ):
@@ -676,7 +689,9 @@ def _msgspec_refused_union_enums(
     data_type: DataType, literal_enum_ids: Collection[ModelKey]
 ) -> tuple[_MsgspecEnumClash, ...]:
     """Return each kind of a union msgspec refuses for an Enum, unless an alias it names is refused for that kind."""
-    if not (members := union_members(data_type)) or not (clashes := _msgspec_enum_clashes(members, literal_enum_ids)):
+    if not (members := _msgspec_union_members(data_type)) or not (
+        clashes := _msgspec_enum_clashes(members, literal_enum_ids)
+    ):
         return ()
     covered = {
         clash[0]
@@ -711,15 +726,54 @@ _MSGSPEC_KIND_ASIDES: Final[Mapping[str, str]] = {
 counts as one member of the kind."""
 
 
-def _msgspec_member_slot(leaf: DataType) -> tuple[str, object] | None:
-    """Return the kind of a union member that msgspec counts and the member it counts as, or None.
+_MSGSPEC_ANNOTATION_KINDS: Final[Mapping[str, str]] = {
+    **{
+        name: "dict" if slot in MAPPINGS.slots else "array"
+        for slot, written in SLOT_CLASSES.items()
+        for name in (written.name, written.typing_name)
+    },
+    **dict.fromkeys(("str", *_MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS), "str"),
+}
+"""The kind that msgspec counts of each class a Python type annotation writes, by its name: the container classes
+(``SLOT_CLASSES``), str and the other str-like types."""
+
+
+def _msgspec_annotation_slots(expression: PythonTypeExpr) -> Iterator[tuple[str, object]]:
+    """Yield the kind msgspec counts of each member a Python type annotation writes, and the member it counts as.
+
+    The items of a union annotation are members of their own; a class counts by its name
+    (``_MSGSPEC_ANNOTATION_KINDS``), a container as its written type and a str-like type as its name.
+    """
+    from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
+        is_union_python_type_expr,
+        python_type_expr_arguments,
+        python_type_expr_base_name,
+        render_python_type_expr,
+    )
+
+    if is_union_python_type_expr(expression):
+        for item in python_type_expr_arguments(expression):
+            yield from _msgspec_annotation_slots(item)
+    elif (kind := _MSGSPEC_ANNOTATION_KINDS.get(name := python_type_expr_base_name(expression))) is not None:
+        yield kind, name if kind == "str" else render_python_type_expr(expression)
+
+
+def _msgspec_member_slots(leaf: DataType) -> tuple[tuple[str, object], ...]:
+    """Return each kind of a union member that msgspec counts, with the member it counts as.
 
     The Struct types of a union count as one dict-like member, and str with the str values of a Literal as one
     str-like member; an Enum of str values is one str-like member of its own. A type that only holds one member
-    counts as that member.
+    counts as that member, and one a Python type annotation types as the members the annotation writes, where it
+    writes any msgspec counts (``_msgspec_annotation_slots``).
     """
     while leaf._writes_nothing_of_its_own and len(leaf.data_types) == 1:  # noqa: SLF001
         leaf = leaf.data_types[0]
+    if (
+        leaf.python_type is not None
+        and leaf.reference is None
+        and (annotated := (*_msgspec_annotation_slots(leaf.python_type.expression),))
+    ):
+        return annotated
     slot: tuple[str, object] | None = None
     if (source := leaf.reference.source if leaf.reference else None) is not None:
         if isinstance(source, Enum):
@@ -740,7 +794,7 @@ def _msgspec_member_slot(leaf: DataType) -> tuple[str, object] | None:
         and (leaf.type == "str" or leaf.type in _MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS)
     ):
         slot = "str", leaf.type
-    return slot
+    return () if slot is None else (slot,)
 
 
 def _msgspec_kind_clashes(
@@ -757,8 +811,7 @@ def _msgspec_kind_clashes(
     members = (*written_union_members(data_types),)
     for member in members:
         for leaf, _, _ in _iter_discriminator_data_types((member,)):
-            if (slot := _msgspec_member_slot(leaf)) is not None:
-                kind, counted_as = slot
+            for kind, counted_as in _msgspec_member_slots(leaf):
                 slots[kind][counted_as] = None
                 names[kind][member.type_hint] = None
     covered = {clash[0] for clash in _msgspec_enum_clashes(members, literal_enum_ids)}
@@ -769,7 +822,9 @@ def _msgspec_refused_union_kinds(
     data_type: DataType, literal_enum_ids: Collection[ModelKey]
 ) -> tuple[_MsgspecKindClash, ...]:
     """Return each kind a union msgspec refuses for more than one member of, unless an alias it names is refused so."""
-    if not (members := union_members(data_type)) or not (clashes := _msgspec_kind_clashes(members, literal_enum_ids)):
+    if not (members := _msgspec_union_members(data_type)) or not (
+        clashes := _msgspec_kind_clashes(members, literal_enum_ids)
+    ):
         return ()
     covered = {
         clash[0]
