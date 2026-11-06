@@ -4,7 +4,7 @@
   "properties": {
     "holder": {"$ref": "#/$defs/Holder"},
     "refused": {"$ref": "#/$defs/Refused"},
-    "kept": {"$ref": "#/$defs/Kept"}
+    "varied": {"$ref": "#/$defs/Varied"}
   },
   "$defs": {
     "Holder": {
@@ -35,7 +35,10 @@
             ]
           }
         },
-        "pet": {"$ref": "#/$defs/Pet"}
+        "pet": {"$ref": "#/$defs/Pet"},
+        "nestedAnyOf": {
+          "anyOf": [{"anyOf": [{"$ref": "#/$defs/UniqueInts"}]}, {"type": "array", "items": {"type": "integer"}}]
+        }
       }
     },
     "Refused": {
@@ -51,7 +54,7 @@
         }
       }
     },
-    "Kept": {
+    "Varied": {
       "type": "object",
       "properties": {
         "boundedBesideList": {
@@ -89,6 +92,7 @@
     "IntList": {"type": "array", "items": {"type": "integer"}},
     "NullableTags": {"anyOf": [{"type": "array", "items": {"type": "string"}, "uniqueItems": true}, {"type": "null"}]},
     "Pet": {"type": "object", "properties": {"name": {"type": "string"}}},
+    "UniqueInts": {"type": "array", "items": {"type": "integer"}, "uniqueItems": true},
     "Tags": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
   }
 }
