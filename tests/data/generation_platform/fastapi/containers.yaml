@@ -1,0 +1,28 @@
+openapi: 3.1.0
+info: {title: Container type spellings, version: "1"}
+paths:
+  /routes:
+    get:
+      operationId: getRoute
+      parameters:
+        - name: stops
+          in: query
+          schema: {type: array, items: {$ref: "#/components/schemas/Stop"}, x-python-type: "tuple[int, ...]"}
+        - name: names
+          in: query
+          schema: {type: array, items: {type: string}, x-python-type: "MutableSequence[str]"}
+      responses:
+        "200":
+          description: The route.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Route"}
+components:
+  schemas:
+    Stop: {type: integer, minimum: 1}
+    Route:
+      type: object
+      required: [stops]
+      properties:
+        stops: {type: array, items: {$ref: "#/components/schemas/Stop"}, x-python-type: "tuple[Stop, ...]"}
+        counts: {type: object, additionalProperties: {type: integer}, x-python-type: "MutableMapping[str, int]"}

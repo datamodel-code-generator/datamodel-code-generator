@@ -26,7 +26,7 @@ from datamodel_code_generator._container_kinds import (
     SETS,
     UNHASHABLE_CONTAINERS,
     WRITTEN_CONTAINERS,
-    written_slot,
+    hash_slot,
 )
 from datamodel_code_generator._graph_links import clear_parents
 from datamodel_code_generator._model_keys import model_key_of, ref_branch_schema_of
@@ -1499,7 +1499,8 @@ def plan_unique_sets(
     """Return the plan of a field whose schemas declare ``arrays`` unique, each group the arrays of one schema.
 
     The lists of a group become sets, inner lists first, where ``can_hold`` says a set can hold the items of the list
-    once the lists of ``sets`` (by id) are sets; under ``keeps_tuples`` a tuple among a group keeps all of it. A list
+    once the lists of ``sets`` (by id) are sets, but a list an ``x-python-type`` gives its class (``given_container``),
+    which keeps it; under ``keeps_tuples`` a tuple among a group keeps all of it. A list
     but those of the field's own schema (``_own_unique_arrays``) stays a list in a union beside another member of its
     kind that keeps its lists (``_beside_its_kind``), decided again until no such set is left. The field's array
     ``default`` becomes the set of its values where a list of the field's own level becomes one and they hash;
@@ -1512,7 +1513,7 @@ def plan_unique_sets(
         if keeps_tuples and any(array.is_tuple for array in group):
             tuples.update((id(array), array) for array in group if array.is_tuple)
         else:
-            lists.update((id(array), array) for array in group if array.is_list)
+            lists.update((id(array), array) for array in group if array.is_list and array.given_container is None)
     own = _own_unique_arrays(field)
     nodes = dict(_nodes_with_paths(field.data_type, ()))
     own_level = {*map(id, _unique_items_arrays(field.data_type))}
@@ -1735,11 +1736,12 @@ def _set_item_facts(data_type: DataType, sets: Collection[int], reading: _PlanRe
     """Return the facts of an item type of an array that ``set_items_can_hash`` reads.
 
     ``sets`` holds the lists of the type that become sets, by id. A container is read as it is written: a set under
-    --use-generic-container-types is a frozen set, whose values hash. The positions of a tuple of one repeated type are
-    that type. A type alias is read as its value as it is written now, whose lists the passes write as sets before the
-    models that name the alias read it (``aliases_first``), and takes None where its value admits it, also where the
-    alias's field holds the None (``DataModel.holds_null``); one that holds itself is read as any other model the type
-    names. A model takes no hashable value where its class never hashes its instances
+    --use-generic-container-types is a frozen set, whose values hash, and a container an ``x-python-type`` gives a
+    class of (``hash_slot``) is that class, a tuple of its items for a tuple. The positions of a tuple of one repeated
+    type are that type. A type alias is read as its value as it is written now, whose lists the passes write as sets
+    before the models that name the alias read it (``aliases_first``), and takes None where its value admits it, also
+    where the alias's field holds the None (``DataModel.holds_null``); one that holds itself is read as any other model
+    the type names. A model takes no hashable value where its class never hashes its instances
     (``DataModel._instances_never_hash``) and the reading reads classes (``_PlanReading.reads_classes``). The types are
     read with a stack of their own (``_set_item_step``), so a chain of aliases of any length is read.
     """
@@ -1793,12 +1795,15 @@ def _set_item_step(
         slot: ContainerSlot | None = "set"
     else:
         slot = next((slot for slot in WRITTEN_CONTAINERS if getattr(data_type, CONTAINER_FLAGS[slot])), None)
-    if slot is None:
-        members = data_type.data_types
-        return _Combined(positions=False, count=len(members)), [(member, sets, reading) for member in members]
-    return SetItemFacts(
-        unhashable=written_slot(slot, generic=data_type.use_generic_container) in UNHASHABLE_CONTAINERS.slots
+    written = (
+        None if slot is None else hash_slot(slot, data_type.given_container, generic=data_type.use_generic_container)
     )
+    if written is None or written == "tuple":
+        members = data_type.data_types
+        return _Combined(positions=written is not None, count=len(members)), [
+            (member, sets, reading) for member in members
+        ]
+    return SetItemFacts(unhashable=written in UNHASHABLE_CONTAINERS.slots)
 
 
 def _annotated_reference(data_type: DataType) -> Reference | None:

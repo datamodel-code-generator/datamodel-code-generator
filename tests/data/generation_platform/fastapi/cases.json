@@ -212,6 +212,13 @@
     },
     "package_snapshots": []
   },
+  "containers": {
+    "input": "containers.yaml",
+    "model": {
+      "use_x_python_type_as_written": true,
+      "collapse_root_models": true
+    }
+  },
   "unbound": {
     "input": "unbound.yaml",
     "model": {

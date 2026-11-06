@@ -120,7 +120,7 @@ What other options should I use?
 - `--use-union-operator`: Use | operator for Union types (PEP 604).
 - `--use-unique-items-as-set`: Generate set types for arrays with uniqueItems constraint.
 - `--use-unique-items-as-set-by-value`: Write a uniqueItems set only where its final items hash by value.
-- `--use-x-python-type-as-written`: Type a field by an `x-python-type` union spelled `Optional[...]` or `Union[....
+- `--use-x-python-type-as-written`: Write a field's `x-python-type` as given: unions of every spelling and conta...
 
 ### Field Customization
 - `--aliases`: Apply custom field and class name aliases via inline JSON or a JSON file path.
@@ -964,12 +964,17 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         models hash by identity and such models merge, as in
                         0.89.0
   --use-x-python-type-as-written, --no-use-x-python-type-as-written
-                        Type a field by its x-python-type when that is a union
+                        Write a field's x-python-type as given: a union
                         spelled Optional[...] or Union[...], such as
-                        Optional[Literal['a', 'b']], as one spelled X | Y
-                        already is; without it such a union is ignored where
-                        the schema declares one type, and the field takes the
-                        schema's type, as in 0.89.0
+                        Optional[Literal['a', 'b']], types the field as one
+                        spelled X | Y already does, and a container class
+                        compatible with the schema, such as tuple,
+                        MutableSequence or MutableMapping, is written around
+                        the schema's item, key and value types; without it
+                        such a union is ignored where the schema declares one
+                        type, and the field takes the schema's type, and such
+                        a container is written as list, Sequence, set,
+                        frozenset or Mapping, as in 0.90.0
 
 [36;1mField customization[0m:
   --apply-field-options-to-every-field, --no-apply-field-options-to-every-field

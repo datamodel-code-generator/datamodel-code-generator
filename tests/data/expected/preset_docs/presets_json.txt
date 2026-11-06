@@ -13601,11 +13601,11 @@
         "title": "Every reached input model type reused"
       },
       {
-        "description": "Type a field by its x-python-type when that is a union spelled Optional[...] or Union[...], as one spelled X | Y already is, instead of the schema's type.",
+        "description": "Write a field's x-python-type as given: a union spelled Optional[...] or Union[...] types the field as one spelled X | Y already does, instead of the schema's type, and a container class compatible with the schema, such as tuple or MutableSequence, is written around the schema's item types instead of list, Sequence, set, frozenset or Mapping.",
         "options": [
           "--use-x-python-type-as-written"
         ],
-        "title": "x-python-type unions"
+        "title": "x-python-type as written"
       },
       {
         "description": "Type the values of a map whose type array lists object alone or with null, such as [object, null], as its additionalProperties say instead of Any, and with --use-typed-map-values-beside-other-types of the 20261027 presets also those of a type array that lists object beside other types.",
@@ -14079,11 +14079,11 @@
         "title": "Every reached input model type reused"
       },
       {
-        "description": "Type a field by its x-python-type when that is a union spelled Optional[...] or Union[...], as one spelled X | Y already is, instead of the schema's type.",
+        "description": "Write a field's x-python-type as given: a union spelled Optional[...] or Union[...] types the field as one spelled X | Y already does, instead of the schema's type, and a container class compatible with the schema, such as tuple or MutableSequence, is written around the schema's item types instead of list, Sequence, set, frozenset or Mapping.",
         "options": [
           "--use-x-python-type-as-written"
         ],
-        "title": "x-python-type unions"
+        "title": "x-python-type as written"
       },
       {
         "description": "Type the values of a map whose type array lists object alone or with null, such as [object, null], as its additionalProperties say instead of Any, and with --use-typed-map-values-beside-other-types of the 20261027 presets also those of a type array that lists object beside other types.",
@@ -14557,11 +14557,11 @@
         "title": "Every reached input model type reused"
       },
       {
-        "description": "Type a field by its x-python-type when that is a union spelled Optional[...] or Union[...], as one spelled X | Y already is, instead of the schema's type.",
+        "description": "Write a field's x-python-type as given: a union spelled Optional[...] or Union[...] types the field as one spelled X | Y already does, instead of the schema's type, and a container class compatible with the schema, such as tuple or MutableSequence, is written around the schema's item types instead of list, Sequence, set, frozenset or Mapping.",
         "options": [
           "--use-x-python-type-as-written"
         ],
-        "title": "x-python-type unions"
+        "title": "x-python-type as written"
       },
       {
         "description": "Type the values of a map whose type array lists object alone or with null, such as [object, null], as its additionalProperties say instead of Any, and with --use-typed-map-values-beside-other-types of the 20261027 presets also those of a type array that lists object beside other types.",
@@ -15035,11 +15035,11 @@
         "title": "Every reached input model type reused"
       },
       {
-        "description": "Type a field by its x-python-type when that is a union spelled Optional[...] or Union[...], as one spelled X | Y already is, instead of the schema's type.",
+        "description": "Write a field's x-python-type as given: a union spelled Optional[...] or Union[...] types the field as one spelled X | Y already does, instead of the schema's type, and a container class compatible with the schema, such as tuple or MutableSequence, is written around the schema's item types instead of list, Sequence, set, frozenset or Mapping.",
         "options": [
           "--use-x-python-type-as-written"
         ],
-        "title": "x-python-type unions"
+        "title": "x-python-type as written"
       },
       {
         "description": "Type the values of a map whose type array lists object alone or with null, such as [object, null], as its additionalProperties say instead of Any, and with --use-typed-map-values-beside-other-types of the 20261027 presets also those of a type array that lists object beside other types.",
@@ -15513,11 +15513,11 @@
         "title": "Every reached input model type reused"
       },
       {
-        "description": "Type a field by its x-python-type when that is a union spelled Optional[...] or Union[...], as one spelled X | Y already is, instead of the schema's type.",
+        "description": "Write a field's x-python-type as given: a union spelled Optional[...] or Union[...] types the field as one spelled X | Y already does, instead of the schema's type, and a container class compatible with the schema, such as tuple or MutableSequence, is written around the schema's item types instead of list, Sequence, set, frozenset or Mapping.",
         "options": [
           "--use-x-python-type-as-written"
         ],
-        "title": "x-python-type unions"
+        "title": "x-python-type as written"
       },
       {
         "description": "Type the values of a map whose type array lists object alone or with null, such as [object, null], as its additionalProperties say instead of Any, and with --use-typed-map-values-beside-other-types of the 20261027 presets also those of a type array that lists object beside other types.",
@@ -15991,11 +15991,11 @@
         "title": "Every reached input model type reused"
       },
       {
-        "description": "Type a field by its x-python-type when that is a union spelled Optional[...] or Union[...], as one spelled X | Y already is, instead of the schema's type.",
+        "description": "Write a field's x-python-type as given: a union spelled Optional[...] or Union[...] types the field as one spelled X | Y already does, instead of the schema's type, and a container class compatible with the schema, such as tuple or MutableSequence, is written around the schema's item types instead of list, Sequence, set, frozenset or Mapping.",
         "options": [
           "--use-x-python-type-as-written"
         ],
-        "title": "x-python-type unions"
+        "title": "x-python-type as written"
       },
       {
         "description": "Type the values of a map whose type array lists object alone or with null, such as [object, null], as its additionalProperties say instead of Any, and with --use-typed-map-values-beside-other-types of the 20261027 presets also those of a type array that lists object beside other types.",
@@ -16462,11 +16462,11 @@
         "title": "Every reached input model type reused"
       },
       {
-        "description": "Type a field by its x-python-type when that is a union spelled Optional[...] or Union[...], as one spelled X | Y already is, instead of the schema's type.",
+        "description": "Write a field's x-python-type as given: a union spelled Optional[...] or Union[...] types the field as one spelled X | Y already does, instead of the schema's type, and a container class compatible with the schema, such as tuple or MutableSequence, is written around the schema's item types instead of list, Sequence, set, frozenset or Mapping.",
         "options": [
           "--use-x-python-type-as-written"
         ],
-        "title": "x-python-type unions"
+        "title": "x-python-type as written"
       },
       {
         "description": "Type the values of a map whose type array lists object alone or with null, such as [object, null], as its additionalProperties say instead of Any, and with --use-typed-map-values-beside-other-types of the 20261027 presets also those of a type array that lists object beside other types.",
@@ -16969,11 +16969,11 @@
         "title": "Every reached input model type reused"
       },
       {
-        "description": "Type a field by its x-python-type when that is a union spelled Optional[...] or Union[...], as one spelled X | Y already is, instead of the schema's type.",
+        "description": "Write a field's x-python-type as given: a union spelled Optional[...] or Union[...] types the field as one spelled X | Y already does, instead of the schema's type, and a container class compatible with the schema, such as tuple or MutableSequence, is written around the schema's item types instead of list, Sequence, set, frozenset or Mapping.",
         "options": [
           "--use-x-python-type-as-written"
         ],
-        "title": "x-python-type unions"
+        "title": "x-python-type as written"
       },
       {
         "description": "Type the values of a map whose type array lists object alone or with null, such as [object, null], as its additionalProperties say instead of Any, and with --use-typed-map-values-beside-other-types of the 20261027 presets also those of a type array that lists object beside other types.",
@@ -17476,11 +17476,11 @@
         "title": "Every reached input model type reused"
       },
       {
-        "description": "Type a field by its x-python-type when that is a union spelled Optional[...] or Union[...], as one spelled X | Y already is, instead of the schema's type.",
+        "description": "Write a field's x-python-type as given: a union spelled Optional[...] or Union[...] types the field as one spelled X | Y already does, instead of the schema's type, and a container class compatible with the schema, such as tuple or MutableSequence, is written around the schema's item types instead of list, Sequence, set, frozenset or Mapping.",
         "options": [
           "--use-x-python-type-as-written"
         ],
-        "title": "x-python-type unions"
+        "title": "x-python-type as written"
       },
       {
         "description": "Type the values of a map whose type array lists object alone or with null, such as [object, null], as its additionalProperties say instead of Any, and with --use-typed-map-values-beside-other-types of the 20261027 presets also those of a type array that lists object beside other types.",
@@ -17983,11 +17983,11 @@
         "title": "Every reached input model type reused"
       },
       {
-        "description": "Type a field by its x-python-type when that is a union spelled Optional[...] or Union[...], as one spelled X | Y already is, instead of the schema's type.",
+        "description": "Write a field's x-python-type as given: a union spelled Optional[...] or Union[...] types the field as one spelled X | Y already does, instead of the schema's type, and a container class compatible with the schema, such as tuple or MutableSequence, is written around the schema's item types instead of list, Sequence, set, frozenset or Mapping.",
         "options": [
           "--use-x-python-type-as-written"
         ],
-        "title": "x-python-type unions"
+        "title": "x-python-type as written"
       },
       {
         "description": "Type the values of a map whose type array lists object alone or with null, such as [object, null], as its additionalProperties say instead of Any, and with --use-typed-map-values-beside-other-types of the 20261027 presets also those of a type array that lists object beside other types.",
@@ -18490,11 +18490,11 @@
         "title": "Every reached input model type reused"
       },
       {
-        "description": "Type a field by its x-python-type when that is a union spelled Optional[...] or Union[...], as one spelled X | Y already is, instead of the schema's type.",
+        "description": "Write a field's x-python-type as given: a union spelled Optional[...] or Union[...] types the field as one spelled X | Y already does, instead of the schema's type, and a container class compatible with the schema, such as tuple or MutableSequence, is written around the schema's item types instead of list, Sequence, set, frozenset or Mapping.",
         "options": [
           "--use-x-python-type-as-written"
         ],
-        "title": "x-python-type unions"
+        "title": "x-python-type as written"
       },
       {
         "description": "Type the values of a map whose type array lists object alone or with null, such as [object, null], as its additionalProperties say instead of Any, and with --use-typed-map-values-beside-other-types of the 20261027 presets also those of a type array that lists object beside other types.",
@@ -18997,11 +18997,11 @@
         "title": "Every reached input model type reused"
       },
       {
-        "description": "Type a field by its x-python-type when that is a union spelled Optional[...] or Union[...], as one spelled X | Y already is, instead of the schema's type.",
+        "description": "Write a field's x-python-type as given: a union spelled Optional[...] or Union[...] types the field as one spelled X | Y already does, instead of the schema's type, and a container class compatible with the schema, such as tuple or MutableSequence, is written around the schema's item types instead of list, Sequence, set, frozenset or Mapping.",
         "options": [
           "--use-x-python-type-as-written"
         ],
-        "title": "x-python-type unions"
+        "title": "x-python-type as written"
       },
       {
         "description": "Type the values of a map whose type array lists object alone or with null, such as [object, null], as its additionalProperties say instead of Any, and with --use-typed-map-values-beside-other-types of the 20261027 presets also those of a type array that lists object beside other types.",

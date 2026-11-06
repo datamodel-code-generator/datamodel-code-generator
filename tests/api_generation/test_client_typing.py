@@ -177,6 +177,7 @@ def test_client_typing_uploads(backend: DataModelType, tmp_path: Path) -> None:
         "type-spellings-cycle",
         "type-spellings-exact",
         "type-spellings-legacy",
+        "type-spellings-containers",
         "naming",
         "naming-snake",
         "type-checking-imports-on",

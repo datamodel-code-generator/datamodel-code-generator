@@ -5792,6 +5792,55 @@
       ]
     ]
   },
+  "type-spellings-containers": {
+    "input": "type-spellings-containers.yaml",
+    "references": [
+      "protocols/type-spellings-containers.json"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "dataclasses.dataclass"
+    ],
+    "model": {
+      "use_x_python_type_as_written": true
+    },
+    "config": {
+      "protocols": "protocols/type-spellings-containers.json"
+    },
+    "modules": {
+      "pydantic_v2.BaseModel": [
+        [
+          "client",
+          "_generated",
+          "model_bindings.py"
+        ],
+        [
+          "client",
+          "protocols",
+          "_plans.py"
+        ],
+        [
+          "client",
+          "resources",
+          "default",
+          "_sync.py"
+        ],
+        [
+          "models.py"
+        ]
+      ],
+      "dataclasses.dataclass": [
+        [
+          "client",
+          "_generated",
+          "model_bindings.py"
+        ],
+        [
+          "models.py"
+        ]
+      ]
+    }
+  },
   "typeddict-target-keys": {
     "input": "typeddict-target-keys.yaml",
     "backends": [

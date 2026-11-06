@@ -271,7 +271,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--use-union-operator": "Use | operator for Union types (PEP 604).",
     "--use-unique-items-as-set": "Generate set types for arrays with uniqueItems constraint.",
     "--use-unique-items-as-set-by-value": "Write a uniqueItems set only where its final items hash by value.",
-    "--use-x-python-type-as-written": "Type a field by an `x-python-type` union spelled `Optional[...]` or `Union[....",
+    "--use-x-python-type-as-written": "Write a field's `x-python-type` as given: unions of every spelling and conta...",
     "--validation": "Enable validation constraints (deprecated, use --field-constraints).",
     "--validators": "Add custom field validators to generated Pydantic v2 models.",
     "--watch": "Watch input file(s) for changes and regenerate output automatically.",

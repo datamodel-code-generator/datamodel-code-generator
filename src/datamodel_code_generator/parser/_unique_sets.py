@@ -28,6 +28,7 @@ from datamodel_code_generator._container_kinds import (
     MAPPINGS,
     UNHASHABLE_CONTAINERS,
     WRITTEN_CONTAINERS,
+    hash_slot,
     written_slot,
 )
 from datamodel_code_generator._model_keys import model_key_of
@@ -202,7 +203,8 @@ class _ByValue:
             if data_type.data_types:
                 return ValueHashItem(members=tuple(map(read, data_type.data_types)))
             return ValueHashItem(hashes=data_type.type not in _ANY_TYPES)
-        if written_slot(slot, generic=cast("Any", data_type).use_generic_container) in UNHASHABLE_CONTAINERS.slots:
+        generic = cast("Any", data_type).use_generic_container
+        if hash_slot(slot, data_type.given_container, generic=generic) in UNHASHABLE_CONTAINERS.slots:
             return ValueHashItem(hashes=False)
         return ValueHashItem(members=tuple(map(read, data_type.data_types)))
 

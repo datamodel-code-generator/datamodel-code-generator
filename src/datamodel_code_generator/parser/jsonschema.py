@@ -116,7 +116,15 @@ from datamodel_code_generator._constraint_applicability import (
     untaken_values,  # noqa: F401  # Preserve the established parser.jsonschema export.
     writes_beside_literal,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
-from datamodel_code_generator._container_kinds import ARRAYS, MAPPINGS, SEQUENCES
+from datamodel_code_generator._container_kinds import (
+    ARRAYS,
+    CONTAINER_FLAGS,
+    GIVEN_CONTAINERS,
+    ITEM_CONTAINERS,
+    MAPPINGS,
+    SEQUENCES,
+    ContainerSlot,
+)
 from datamodel_code_generator._document_reader import (
     ArrayIndexOutOfRangeError,  # noqa: F401  # Preserve the established parser.jsonschema export.
     MergedRefSiteRecursionError,
@@ -541,6 +549,11 @@ _RECORDED_TYPE_NULL_SITES: frozenset[NullSite] = frozenset({
 """The sites that read the answer ``JsonSchemaObject.type_has_null`` recorded when it was first asked."""
 
 _PYTHON_UNION_BASE_TYPES = frozenset({"Union", "Optional"})
+_PYTHON_TYPE_FLAGS: dict[str, str] = {
+    name: CONTAINER_FLAGS[given.slot] for name, given in GIVEN_CONTAINERS.items() if given.slot not in {"list", "dict"}
+}
+"""The container flag each class an x-python-type names gives its data type, but a list's and a dict's (the callers'
+default)."""
 _RootTypeRow = Literal[
     "ref",
     "custom-type",
@@ -1008,21 +1021,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         "integer": frozenset({"int", "Integer"}),
         "number": frozenset({"float", "int", "Number"}),
         "boolean": frozenset({"bool", "Boolean"}),
-        "array": frozenset({
-            "list",
-            "List",
-            "set",
-            "Set",
-            "frozenset",
-            "FrozenSet",
-            "Sequence",
-            "MutableSequence",
-            "tuple",
-            "Tuple",
-            "AbstractSet",
-            "MutableSet",
+        "array": frozenset(name for name, given in GIVEN_CONTAINERS.items() if given.slot in ITEM_CONTAINERS.slots),
+        "object": frozenset({
+            *(name for name, given in GIVEN_CONTAINERS.items() if given.slot in MAPPINGS.slots),
+            "TypedDict",
         }),
-        "object": frozenset({"dict", "Dict", "Mapping", "MutableMapping", "TypedDict"}),
     }
 
     # Types that require x-python-type override regardless of schema type
@@ -2777,7 +2780,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Get container type flags from x-python-type extension.
 
         Returns a dict with flags like is_set, is_frozen_set, is_mapping, is_sequence
-        that can be passed to data_type() to override the default container type.
+        that can be passed to data_type() to override the default container type: those of the slot a class the
+        x-python-type names, or the first member of a union that names one, stands in (``GIVEN_CONTAINERS``), but the
+        list's and the dict's, which the callers default to.
 
         Note: This is an instance method (not static) due to the snooper_to_methods
         class decorator which does not preserve staticmethod descriptors.
@@ -2791,30 +2796,42 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             python_type_expr_base_name,
         )
 
-        type_to_flag: dict[str, dict[str, bool]] = {
-            "Set": {"is_set": True},
-            "set": {"is_set": True},
-            "FrozenSet": {"is_frozen_set": True},
-            "frozenset": {"is_frozen_set": True},
-            "Mapping": {"is_mapping": True},
-            "MutableMapping": {"is_mapping": True},
-            "Sequence": {"is_sequence": True},
-            "MutableSequence": {"is_sequence": True},
-            "AbstractSet": {"is_frozen_set": True},
-            "MutableSet": {"is_set": True},
-        }
-
         base_type = python_type_expr_base_name(python_type)
-        if base_type in type_to_flag:
-            return type_to_flag[base_type]
+        if base_type in _PYTHON_TYPE_FLAGS:
+            return {_PYTHON_TYPE_FLAGS[base_type]: True}
 
         if is_union_python_type_expr(python_type):
             for argument in python_type_expr_arguments(python_type):
                 arg_base = python_type_expr_base_name(argument)
-                if arg_base in type_to_flag:
-                    return type_to_flag[arg_base]
+                if arg_base in _PYTHON_TYPE_FLAGS:
+                    return {_PYTHON_TYPE_FLAGS[arg_base]: True}
 
         return {}
+
+    def _container_flags(self, obj: JsonSchemaObject, slot: ContainerSlot) -> dict[str, Any]:
+        """Return the container flags of the data type of a schema read as a container in ``slot`` (a list or a dict).
+
+        They are the flags its x-python-type gives it (``_get_python_type_flags``), else those of ``slot``. Under
+        --use-x-python-type-as-written a container class the x-python-type names, compatible with the schema's type and
+        in the slot the data type is in, is also given to the data type (``given_container``), which writes it around
+        the schema's item, key and value types; row ``legacy-x-python-type-container-takes-slot-class``: without it the
+        slot's class is written.
+        """
+        flags: dict[str, Any] = self._get_python_type_flags(obj) or {CONTAINER_FLAGS[slot]: True}
+        if not self.use_x_python_type_as_written or (python_type := self._get_x_python_type(obj)) is None:
+            return flags
+
+        from datamodel_code_generator._python_type_annotation import python_type_expr_base_name  # noqa: PLC0415
+
+        if (
+            (given := GIVEN_CONTAINERS.get(base_type := python_type_expr_base_name(python_type))) is not None
+            and CONTAINER_FLAGS[given.slot] in flags
+            and self._is_compatible_python_type(
+                type_ if isinstance(type_ := _read_type(obj), str) else None, python_type
+            )
+        ):
+            return {**flags, "given_container": base_type}
+        return flags
 
     def _is_compatible_python_type(self, schema_type: str | None, python_type: PythonTypeExpr) -> bool:
         """Check if x-python-type is compatible with the JSON Schema type.
@@ -7207,9 +7224,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         else:
             item_data_types = []
 
-        container_flags: dict[str, bool] = {}
+        container_flags: dict[str, Any] = {}
         if not is_tuple:
-            container_flags = self._get_python_type_flags(obj) or {"is_list": True}
+            container_flags = self._container_flags(obj, "list")
 
         non_array_types = self._get_array_union_non_array_types(obj)
         localize_constraints = self._should_localize_array_union_constraints(obj, non_array_types)

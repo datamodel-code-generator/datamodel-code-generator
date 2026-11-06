@@ -353,18 +353,21 @@ class TargetModule:
             )
         return found
 
-    def _composed(self, kind: str, *parts: str, key: str | None = None) -> str:
+    def _composed(self, kind: str, *parts: str, key: str | None = None, given: str | None = None) -> str:
         """Return a composite of spelled types this module writes, importing the names its text writes once.
 
-        A union is of its parts, and any other kind is the type flag of a container of its one part.
+        A union is of its parts, and any other kind is the type flag of a container of its one part, written as the
+        container class ``given`` where an ``x-python-type`` gives it one.
         """
-        if (found := self.spelled.get(cache := (kind, key, *parts))) is None:
+        if (found := self.spelled.get(cache := (kind, key, given, *parts))) is None:
             composer = self.names.composer
             match kind:
                 case "union":
                     text, imports = composer.compose(members=parts, preserve_union_member_order=True)
                 case _:
                     flags: dict[str, Any] = {kind: True}
+                    if given is not None:
+                        flags["given_container"] = given
                     text, imports = composer.compose(base=parts[0], key=key, **flags)
             if not self.qualified:
                 for item in imports:
@@ -385,9 +388,12 @@ class TargetModule:
         """Return a read-only sequence of a spelled type, as the model generator writes one."""
         return self._composed("is_sequence", part)
 
-    def container(self, flag: str, part: str, *, key: str | None = None) -> str:
-        """Return a container of a spelled type, by the model type flag that names it, with a mapping's key type."""
-        return self._composed(flag, part, key=key)
+    def container(self, flag: str, part: str, *, key: str | None = None, given: str | None = None) -> str:
+        """Return a container of a spelled type, by the model type flag that names it, with a mapping's key type.
+
+        ``given`` is the container class an ``x-python-type`` gives it (``GenericType.given``), which it is written as.
+        """
+        return self._composed(flag, part, key=key, given=given)
 
     def imports(self) -> str:
         """Return the module's import statements: whole modules in path order, then names by module."""

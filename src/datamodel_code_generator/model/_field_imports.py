@@ -240,6 +240,10 @@ class _DataTypeView(Protocol):  # noqa: PLR0904
         """Whether the type is a tuple."""
 
     @property
+    def given_container(self) -> str | None:
+        """The container class an ``x-python-type`` gives the type, which it is written as."""
+
+    @property
     def tuple_item_count(self) -> int | None:
         """The number of items of a fixed-length tuple."""
 
@@ -709,6 +713,7 @@ def data_type_import_key(field: FieldImportsHost[_D], data_type: _D) -> tuple[An
         data_type.is_sequence,
         data_type.is_tuple,
         data_type.tuple_item_count,
+        data_type.given_container,
         data_type.use_standard_collections,
         data_type.use_generic_container,
         data_type.use_union_operator,

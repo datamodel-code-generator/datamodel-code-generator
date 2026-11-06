@@ -24,6 +24,7 @@ from datamodel_code_generator.types import ANY, Types, build_union
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Sequence
 
+    from datamodel_code_generator._container_kinds import ContainerSlot
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.model import DataModel, DataModelFieldBase
@@ -171,8 +172,8 @@ class ObjectMapsHost(Protocol):
     def _contains_false_schema(self, items: Iterable[JsonSchemaObject | bool]) -> bool:
         """Return whether one of ``items`` is a false schema."""
 
-    def _get_python_type_flags(self, obj: JsonSchemaObject) -> dict[str, bool]:
-        """Return the container flags the x-python-type of a schema gives its data type."""
+    def _container_flags(self, obj: JsonSchemaObject, slot: ContainerSlot) -> dict[str, Any]:
+        """Return the container flags and class the x-python-type of a schema gives a data type in ``slot``."""
 
     def _get_x_python_type(self, obj: JsonSchemaObject) -> PythonTypeExpr | None:
         """Return the type expression of the x-python-type of a schema, if any."""
@@ -432,7 +433,7 @@ def parse_additional_properties_map(
                 additional_properties=additional_properties,
             )
         ],
-        **(parser._get_python_type_flags(obj) or {"is_dict": True}),  # noqa: SLF001
+        **parser._container_flags(obj, "dict"),  # noqa: SLF001
     )
 
 
@@ -854,11 +855,7 @@ def parse_property_names(  # noqa: PLR0913, PLR0917
 
     key_type = parser._object_map_key_type(property_names, "property-names-map", name=name, path=path)  # noqa: SLF001
 
-    dict_flags: dict[str, bool] = {"is_dict": True}
-    if parent_obj:  # pragma: no branch
-        python_type_flags = parser._get_python_type_flags(parent_obj)  # noqa: SLF001
-        if python_type_flags:  # pragma: no cover
-            dict_flags = python_type_flags
+    dict_flags = parser._container_flags(parent_obj, "dict") if parent_obj else {"is_dict": True}  # noqa: SLF001
 
     return parser.data_type(
         data_types=[value_type],

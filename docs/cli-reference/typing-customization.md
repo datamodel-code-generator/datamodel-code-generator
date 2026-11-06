@@ -57,7 +57,7 @@
 | [`--use-union-operator`](#use-union-operator) | Use | operator for Union types (PEP 604). |
 | [`--use-unique-items-as-set`](#use-unique-items-as-set) | Generate set types for arrays with uniqueItems constraint. |
 | [`--use-unique-items-as-set-by-value`](#use-unique-items-as-set-by-value) | Write a uniqueItems set only where its final items hash by v... |
-| [`--use-x-python-type-as-written`](#use-x-python-type-as-written) | Type a field by an `x-python-type` union spelled `Optional[.... |
+| [`--use-x-python-type-as-written`](#use-x-python-type-as-written) | Write a field's `x-python-type` as given: unions of every sp... |
 
 ---
 
@@ -9838,13 +9838,19 @@ stays a list, and models whose arrays differ in `uniqueItems` are kept apart.
 
 ## `--use-x-python-type-as-written` {#use-x-python-type-as-written}
 
-Type a field by an `x-python-type` union spelled `Optional[...]` or `Union[...]`.
+Write a field's `x-python-type` as given: unions of every spelling and container classes.
 
 An `x-python-type` types its field where it is not compatible with the schema's type, and a union spelled `X | Y`, such
 as `Literal['a', 'b'] | None`, never is. Without this option the same union spelled `Optional[Literal['a', 'b']]` or
 `Union[Literal['low'], Literal['high']]` counts as compatible with every type the schema declares, so it is ignored
 and the field takes the schema's `str`. With it every spelling of a union types the field, at a property, an item, a
 map value and a root.
+
+A container class compatible with the schema's type, such as `tuple[str, ...]`, `MutableSequence[str]`, `MutableSet`,
+`AbstractSet` or `MutableMapping`, is written as that class around the schema's item, key and value types, which keep
+their constraints (`tuple[constr(max_length=3), ...]`), where without the option it is written as `list`, `Sequence`,
+`set`, `frozenset` or `Mapping`; --use-generic-container-types and --use-unique-items-as-set no longer rewrite it. A
+`prefixItems` tuple stays a tuple.
 
 !!! tip "Usage"
 
