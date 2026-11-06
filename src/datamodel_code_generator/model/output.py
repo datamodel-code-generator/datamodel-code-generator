@@ -6,7 +6,11 @@ import ast
 from typing import TYPE_CHECKING
 
 from datamodel_code_generator.model._rendered_names import _class_bodies, _expression_names, _parsed
-from datamodel_code_generator.model.base import _ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY, ALL_MODEL
+from datamodel_code_generator.model.base import (
+    _ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY,
+    _FORBID_UNKNOWN_FIELDS_TEMPLATE_DATA_KEY,
+    ALL_MODEL,
+)
 from datamodel_code_generator.reference import ModelType
 
 if TYPE_CHECKING:
@@ -33,6 +37,7 @@ def prepare_output_model_config(  # noqa: PLR0913, PLR0912
     no_alias: bool,
     allow_extra_fields: bool,
     extra_fields: str | None,
+    use_msgspec_forbid_unknown_fields: bool,
     enable_faux_immutability: bool,
     use_attribute_docstrings: bool,
     use_single_line_docstring: bool,
@@ -41,7 +46,11 @@ def prepare_output_model_config(  # noqa: PLR0913, PLR0912
     generate_schema_validators: bool,
     pin_aliases_with_alias_generator: bool,
 ) -> dict[str, Any]:
-    """Prepare output configuration while retaining template keys and insertion order."""
+    """Prepare output configuration while retaining template keys and insertion order.
+
+    Under --use-msgspec-forbid-unknown-fields, --extra-fields forbid marks every model for msgspec's
+    forbid_unknown_fields; with --use-generic-base-class the base class carries it already.
+    """
     if validators:
         for name, model_config in validators.items():
             extra_template_data[name]["validators"] = [
@@ -67,6 +76,8 @@ def prepare_output_model_config(  # noqa: PLR0913, PLR0912
         (base_config if use_generic_base_class else extra_template_data[ALL_MODEL])["allow_extra_fields"] = True
     if extra_fields:
         (base_config if use_generic_base_class else extra_template_data[ALL_MODEL])["extra_fields"] = extra_fields
+        if extra_fields == "forbid" and use_msgspec_forbid_unknown_fields and not use_generic_base_class:
+            extra_template_data[ALL_MODEL][_FORBID_UNKNOWN_FIELDS_TEMPLATE_DATA_KEY] = True
     if enable_faux_immutability:
         (base_config if use_generic_base_class else extra_template_data[ALL_MODEL])["allow_mutation"] = False
     if use_attribute_docstrings:

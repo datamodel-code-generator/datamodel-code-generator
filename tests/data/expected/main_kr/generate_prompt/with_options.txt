@@ -1400,9 +1400,11 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         false without patternProperties beside it, also in an
                         inline allOf member), so msgspec rejects the unknown
                         fields the schema rejects, as Pydantic output does
-                        with extra='forbid'; --extra-fields allow or ignore
-                        and --allow-extra-fields keep it open. Without it such
-                        a Struct ignores unknown fields, as in 0.89.0
+                        with extra='forbid'; --extra-fields forbid writes it
+                        on every Struct, also without --use-generic-base-
+                        class, and --extra-fields allow or ignore and --allow-
+                        extra-fields keep it open. Without it such a Struct
+                        ignores unknown fields, as in 0.89.0
   --use-msgspec-meta-for-map-keys, --no-use-msgspec-meta-for-map-keys
                         msgspec.Struct output only: write the keys of a map
                         whose keys propertyNames or patternProperties
