@@ -35,9 +35,9 @@ DataModelType.PydanticV2Dataclass	main/generation_platform/windows/PydanticV2Dat
 DataModelType.PydanticV2Dataclass	main/generation_platform/windows/PydanticV2Dataclass.txt	?	@formatter=builtin,python=3.15	= main/generation_platform/windows/PydanticV2Dataclass@builtin-python3.10.txt
 DataModelType.TypingTypedDict	main/generation_platform/TypingTypedDict.txt	?
 DataModelType.TypingTypedDict	main/generation_platform/windows/TypingTypedDict.txt	?
-DataModelType.TypingTypedDict	main/generation_platform/windows/TypingTypedDict.txt	?	@formatter=builtin,python=3.10	= main/generation_platform/windows/TypingTypedDict@builtin-python3.10.txt
+DataModelType.TypingTypedDict	main/generation_platform/windows/TypingTypedDict.txt	?	@formatter=builtin,python=3.10	= main/generation_platform/windows/TypingTypedDict@builtin-python3.10-2.txt
 DataModelType.TypingTypedDict	main/generation_platform/windows/TypingTypedDict.txt	?	@formatter=builtin,python=3.11	= main/generation_platform/windows/TypingTypedDict@builtin-python3.10.txt
 DataModelType.TypingTypedDict	main/generation_platform/windows/TypingTypedDict.txt	?	@formatter=builtin,python=3.12	= main/generation_platform/windows/TypingTypedDict@builtin-python3.10.txt
 DataModelType.TypingTypedDict	main/generation_platform/windows/TypingTypedDict.txt	?	@formatter=builtin,python=3.13	= main/generation_platform/windows/TypingTypedDict@builtin-python3.10.txt
 DataModelType.TypingTypedDict	main/generation_platform/windows/TypingTypedDict.txt	?	@formatter=builtin,python=3.14	= main/generation_platform/windows/TypingTypedDict@builtin-python3.10.txt
-DataModelType.TypingTypedDict	main/generation_platform/windows/TypingTypedDict.txt	?	@formatter=builtin,python=3.15	= main/generation_platform/windows/TypingTypedDict@builtin-python3.10.txt
+DataModelType.TypingTypedDict	main/generation_platform/windows/TypingTypedDict.txt	?	@formatter=builtin,python=3.15	= main/generation_platform/windows/TypingTypedDict@builtin-python3.10-2.txt
