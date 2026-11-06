@@ -199,7 +199,9 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
     """Sort data models by dependency order for correct forward references.
 
     Models, their references and the models needing a reference update action are keyed by model key; ``keyed``
-    holds the models of the outermost call, which the paths that models list themselves resolve against.
+    holds the models the paths that models list themselves resolve against (by default the sorted and unsorted ones).
+    Each model's reference keys are read once; up to ``recursion_count`` more passes place the models whose references
+    a pass placed.
     ``legacy_request_response`` ends the message of the error for models that cannot be ordered with the option that
     decides the read/write variants from the schema graph; the references it lists are sorted.
     """
@@ -223,48 +225,37 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         require_update_action_models.append(key)
         require_update_action_model_keys.add(key)
 
-    def get_reference_keys(model: DataModel, key: ModelKey) -> frozenset[ModelKey]:
+    def get_reference_keys(model: DataModel) -> frozenset[ModelKey]:
         reference_keys = (
             universe.resolve(model.reference_classes)
             if generation_index is None
             else generation_index.referenced_keys_for_model(model, universe)
         )
-        if model_runtime_validation_references := runtime_validation_references.get(key):
+        if model_runtime_validation_references := runtime_validation_references.get(model_key_of(model.reference)):
             return reference_keys | model_runtime_validation_references
         return reference_keys
 
-    sorted_model_count: int = len(sorted_data_models)
+    reference_keys_of = {model: get_reference_keys(model) for model in unsorted_data_models}
     sorted_model_keys = set(sorted_data_models)
-
-    unresolved_references: list[DataModel] = []
-    for model in unsorted_data_models:
-        key = model_key_of(model.reference)
-        reference_keys = get_reference_keys(model, key)
-        if reference_keys - {key} - sorted_model_keys:
-            unresolved_references.append(model)
-            continue
-        sorted_data_models[key] = model
-        sorted_model_keys.add(key)
-        if key in reference_keys:
-            add_require_update_action_model(model, key)
+    unresolved_references = unsorted_data_models
+    while True:
+        sorted_model_count = len(sorted_data_models)
+        resolving, unresolved_references = unresolved_references, []
+        for model in resolving:
+            key = model_key_of(model.reference)
+            reference_keys = reference_keys_of[model]
+            if reference_keys - {key} - sorted_model_keys:
+                unresolved_references.append(model)
+                continue
+            sorted_data_models[key] = model
+            sorted_model_keys.add(key)
+            if key in reference_keys:
+                add_require_update_action_model(model, key)
+        if not (unresolved_references and sorted_model_count != len(sorted_data_models) and recursion_count):
+            break
+        recursion_count -= 1
 
     if unresolved_references:
-        if sorted_model_count != len(sorted_data_models) and recursion_count:
-            try:
-                return sort_data_models(
-                    unresolved_references,
-                    sorted_data_models,
-                    require_update_action_models,
-                    recursion_count - 1,
-                    generation_index,
-                    pydantic_v2_root_model_type=pydantic_v2_root_model_type,
-                    runtime_validation_references=runtime_validation_references,
-                    keyed=universe,
-                    legacy_request_response=legacy_request_response,
-                )
-            except RecursionError:  # pragma: no cover
-                pass
-
         # sort on base_class dependency
         seen_orderings: set[tuple[ModelKey, ...]] = set()
         while True:
@@ -312,7 +303,7 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
         unsorted_data_model_keys = set(key_to_index)
         for model in unresolved_references:
             key = model_key_of(model.reference)
-            reference_keys = get_reference_keys(model, key)
+            reference_keys = reference_keys_of[model]
             unresolved_model = reference_keys - {key} - sorted_model_keys
             base_model_keys = {universe.key_of(s.reference) for s in model.base_classes if s.reference}
             update_action_parent = require_update_action_model_keys.intersection(base_model_keys)
