@@ -122,10 +122,9 @@ class _Aliases:
 
     __slots__ = ("live", "sets")
 
-    def __init__(self, live_models: Iterable[ModelView], is_set: Callable[[DataTypeView], bool]) -> None:
-        from datamodel_code_generator.model.msgspec import DataModelField  # noqa: PLC0415
-
-        meta_keys = DataModelField._META_FIELD_KEYS  # noqa: SLF001
+    def __init__(
+        self, live_models: Iterable[ModelView], is_set: Callable[[DataTypeView], bool], meta_keys: Collection[str]
+    ) -> None:
         self.live: Mapping[ModelKey, ModelView] = {model_key_of(model.reference): model for model in live_models}
         self.sets = {key: found for key, model in self.live.items() if (found := _alias_set(model, meta_keys, is_set))}
 
@@ -180,14 +179,15 @@ class _Aliases:
 
 
 def listed_members(
-    live_models: Sequence[ModelView], is_set: Callable[[DataTypeView], bool]
+    live_models: Sequence[ModelView], is_set: Callable[[DataTypeView], bool], meta_keys: Collection[str]
 ) -> list[tuple[ModelView, FieldView, list[ListedMember]]]:
     """Return, for each field of ``live_models``, the union members ``_Aliases.listed`` picks, where it picks any.
 
     ``is_set`` tells whether the node of an alias's value is a set: the decision on the final types
     (``parser/_unique_sets.py``) reads it from its plans, to write the defaults as the listed unions write them.
+    ``meta_keys`` are the keys of a field the output writes as ``Meta()`` arguments (``DecisionOptions``).
     """
-    aliases = _Aliases(live_models, is_set)
+    aliases = _Aliases(live_models, is_set, meta_keys)
     if not aliases.sets:
         return []
     return [
@@ -203,7 +203,9 @@ def _list_set_alias_members(facts: FinalFacts, writer: SetAliasMembersWriter) ->
 
     Every pick is read before the first write, so a union reads the aliases' sets as their models write them.
     """
-    for model, field, listed in listed_members(facts.live_models, lambda node: node.is_set):
+    for model, field, listed in listed_members(
+        facts.live_models, lambda node: node.is_set, facts.options.meta_field_keys
+    ):
         writer.write_members_as_lists(model, field, listed)
 
 

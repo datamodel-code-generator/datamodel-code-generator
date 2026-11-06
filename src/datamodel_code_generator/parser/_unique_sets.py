@@ -348,7 +348,9 @@ def _write_unique_items_as_sets(facts: FinalFacts, writer: UniqueSetsWriter) -> 
         planned = {id(node) for plan in plans.values() for node in plan.sets}
         reading.left = {
             id(node)
-            for _, _, listed in listed_members(facts.live_models, lambda node: id(node) in planned)
+            for _, _, listed in listed_members(
+                facts.live_models, lambda node: id(node) in planned, facts.options.meta_field_keys
+            )
             for node, _ in listed
         }
     fields = [(model, field) for model in facts.live_models for field in model.fields]
