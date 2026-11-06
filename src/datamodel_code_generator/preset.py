@@ -978,6 +978,14 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "the escaped text."
         ),
     ),
+    PresetOptionGroup(
+        title="Pydantic dataclass fields read by alias",
+        config=PresetConfig(read_input_model_dataclass_fields_by_alias=True),
+        description=(
+            "With --input-model, read the fields of a Pydantic dataclass by their aliases, as those of a model, so "
+            "a field with an alias keeps its Python type, such as deque[int], like one without."
+        ),
+    ),
 )
 
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
@@ -1276,7 +1284,9 @@ def render_presets_markdown() -> str:
             "`--collapse-root-models` with `--field-constraints` a constrained root model stays named inside a set, "
             "`Sequence` or `Mapping` of its holder, so their items keep its constraints, and "
             "`--keep-enum-literal-aliases`: under `--collapse-root-models` a named enum written as a `Literal` type "
-            "alias stays named at its uses."
+            "alias stays named at its uses, and "
+            "`--read-input-model-dataclass-fields-by-alias`: with `--input-model`, a field of a Pydantic dataclass "
+            "that has an alias keeps its Python type (`deque[int]`) like one without."
         ),
         "",
         (

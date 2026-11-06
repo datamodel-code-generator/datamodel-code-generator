@@ -121,7 +121,7 @@ def run_input_model_and_assert(
     *,
     input_model: str,
     output_path: Path,
-    expected_file: Path,
+    expected_file: Path | None = None,
     extra_args: Sequence[str] | None = None,
 ) -> None:
     """Run main with --input-model and assert results."""
@@ -1017,6 +1017,43 @@ def test_input_model_default_put_dict_import(tmp_path: Path) -> None:
         input_model="tests.data.python.input_model.pydantic_models:ModelWithDefaultPutDict",
         output_path=tmp_path / "output.py",
         expected_file=EXPECTED_INPUT_MODEL_PATH / "default_put_dict_import.py",
+    )
+
+
+@pytest.mark.cli_doc(
+    options=["--read-input-model-dataclass-fields-by-alias"],
+    option_description="""Read the fields of a Pydantic dataclass by their aliases with --input-model.
+
+`--input-model` gives each field the Python type of its model, such as `deque[int]`, where JSON Schema cannot spell
+it. A Pydantic dataclass is read by its annotations, keyed by field name, so a field with an alias takes the type its
+JSON Schema spells (`list[int]`) instead. With this option the fields of a Pydantic dataclass are read with their
+aliases, as those of a model, so an aliased field keeps its Python type like one without.""",
+    cli_args=["--input-model", "mymodule:Outer", "--read-input-model-dataclass-fields-by-alias"],
+    input_model="mymodule:Outer",
+    golden_output="input_model/read_dataclass_fields_by_alias[option].txt",
+    comparison_output="input_model/read_dataclass_fields_by_alias[no-option].txt",
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="released"),
+        pytest.param(["--read-input-model-dataclass-fields-by-alias"], id="option"),
+        pytest.param(
+            ["--read-input-model-dataclass-fields-by-alias", "--no-read-input-model-dataclass-fields-by-alias"],
+            id="no-option",
+        ),
+        pytest.param(["--preset", "standard-py310-20261104"], id="preset"),
+    ],
+)
+def test_input_model_read_dataclass_fields_by_alias(tmp_path: Path, extra_args: list[str]) -> None:
+    """Give an aliased field of a Pydantic dataclass its Python type under the option (#5541).
+
+    Without it ``myItems`` is typed ``list[int]`` and ``other_items`` ``deque[int]``, as in 0.89.0.
+    """
+    run_input_model_and_assert(
+        input_model="tests.data.python.input_model.dataclass_field_aliases:Outer",
+        output_path=tmp_path / "output.py",
+        extra_args=extra_args,
     )
 
 

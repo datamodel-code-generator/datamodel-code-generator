@@ -412,6 +412,13 @@ base_options.add_argument(
     choices=_values(InputModelRefStrategy),
     default=None,
 )
+_toggle(
+    base_options,
+    "--read-input-model-dataclass-fields-by-alias",
+    help="With --input-model, read the fields of a Pydantic dataclass by their aliases, as those of a model, so a "
+    "field with an alias keeps its Python type (deque[int], frozenset[str], ...) like one without; without it an "
+    "aliased field of a Pydantic dataclass takes the type its JSON Schema spells (list[int]), as in 0.89.0",
+)
 
 # ======================================================================================
 # Customization options for generated models

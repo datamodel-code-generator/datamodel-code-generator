@@ -2005,6 +2005,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
     assert boolean_optional_dests == snapshot([
         "allow_remote_refs",
         "allow_private_network",
+        "read_input_model_dataclass_fields_by_alias",
         "allow_population_by_field_name",
         "collapse_root_models",
         "collapse_shared_parent_wrappers",

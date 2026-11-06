@@ -2834,6 +2834,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
                     config.input_file_type,
                     config.input_model_ref_strategy,
                     config.output_model_type,
+                    read_dataclass_fields_by_alias=config.read_input_model_dataclass_fields_by_alias,
                 )
             except InputModelError as e:
                 raise Error(str(e)) from e

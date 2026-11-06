@@ -314,6 +314,7 @@ class BaseGenerateConfig(TypedDict):
     omit_redundant_constraints: NotRequired[bool]
     read_length_keywords_by_type: NotRequired[bool]
     read_msgspec_union_bounds_exactly: NotRequired[bool]
+    read_input_model_dataclass_fields_by_alias: NotRequired[bool]
     use_site_models_for_constrained_refs: NotRequired[bool]
     use_one_model_per_ref_site: NotRequired[bool]
     original_field_name_delimiter: NotRequired[str | None]

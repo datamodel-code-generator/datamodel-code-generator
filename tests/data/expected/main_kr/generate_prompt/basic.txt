@@ -21,11 +21,13 @@
 - `--no-ignore-ref-siblings-by-schema-version`
 - `--no-read-dynamic-anchors-in-document-order`
 - `--no-read-escaped-ref-pointers`
+- `--no-read-input-model-dataclass-fields-by-alias`
 - `--no-read-schema-version-per-document`
 - `--output`: Specify the destination path for generated Python code.
 - `--preset`: Apply an immutable built-in option preset.
 - `--read-dynamic-anchors-in-document-order`: Resolve a `$dynamicRef` to the first `$dynamicAnchor` of its name ...
 - `--read-escaped-ref-pointers`: Read the escapes of a `$ref` JSON pointer as the characters they encode.
+- `--read-input-model-dataclass-fields-by-alias`: Read the fields of a Pydantic dataclass by their aliases with ...
 - `--read-schema-version-per-document`: Read each document by the schema version it declares.
 - `--schema-version`: Schema version to use for parsing.
 - `--schema-version-mode`: Schema version validation mode.
@@ -514,6 +516,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         definitions a/b and Foo Bar; without it such a
                         reference gets a copy of its target named after the
                         escaped text (A1b, Foo20Bar), as in 0.89.0.
+  --read-input-model-dataclass-fields-by-alias, --no-read-input-model-dataclass-fields-by-alias
+                        With --input-model, read the fields of a Pydantic
+                        dataclass by their aliases, as those of a model, so a
+                        field with an alias keeps its Python type (deque[int],
+                        frozenset[str], ...) like one without; without it an
+                        aliased field of a Pydantic dataclass takes the type
+                        its JSON Schema spells (list[int]), as in 0.89.0
   --read-schema-version-per-document, --no-read-schema-version-per-document
                         Read each document by the schema version it declares
                         ($schema, or the openapi or asyncapi field); a
