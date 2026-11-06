@@ -1697,6 +1697,9 @@ openapi/field_type_collision_read_write_variant.yaml::components.schemas.Pet	pay
 openapi/fixed_length_array_tuples.yaml::components.schemas.RefValue	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/http_openapi_with_custom_port.yaml::components.schemas.User	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/include_path_parameters.yaml::components.schemas.Post	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/incomplete_model_defaults.yaml::components.schemas.LabelSelector	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/incomplete_model_defaults.yaml::components.schemas.Labels	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/incomplete_model_defaults.yaml::components.schemas.PodSpec	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/inheritance.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/input_diff/model_name_map_new.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/input_diff/model_name_map_old.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3763,6 +3766,9 @@ openapi/field_type_collision_read_write_variant.yaml::components.schemas.Pet	pay
 openapi/fixed_length_array_tuples.yaml::components.schemas.RefValue	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/http_openapi_with_custom_port.yaml::components.schemas.User	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/include_path_parameters.yaml::components.schemas.Post	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/incomplete_model_defaults.yaml::components.schemas.LabelSelector	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/incomplete_model_defaults.yaml::components.schemas.Labels	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/incomplete_model_defaults.yaml::components.schemas.PodSpec	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/inheritance.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/input_diff/model_name_map_new.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/input_diff/model_name_map_old.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

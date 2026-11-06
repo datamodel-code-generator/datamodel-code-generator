@@ -224,6 +224,7 @@
 - `--no-keep-self-referencing-array-items`
 - `--no-keep-shared-members-on-collapsed-root-models`
 - `--no-name-converted-payloads-by-message`
+- `--no-omit-incomplete-model-defaults`
 - `--no-omit-redundant-reference-null`
 - `--no-pin-aliases-with-alias-generator`
 - `--no-read-nullable-beside-type-list`
@@ -239,6 +240,7 @@
 - `--no-use-msgspec-meta-for-map-keys`
 - `--no-use-serialize-as-any-for-every-subclass`
 - `--no-use-subclass-enum`
+- `--omit-incomplete-model-defaults`: Write a property whose object default lacks required fields of its model w...
 - `--omit-redundant-reference-null`: Do not write None again at a reference to a model that holds null itself.
 - `--order-constructor-fields-by`: Order constructor fields by final names or by written defaults.
 - `--output-model-type`: Generate models from GraphQL with different output model types.

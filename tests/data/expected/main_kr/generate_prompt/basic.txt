@@ -224,6 +224,7 @@
 - `--no-keep-self-referencing-array-items`
 - `--no-keep-shared-members-on-collapsed-root-models`
 - `--no-name-converted-payloads-by-message`
+- `--no-omit-incomplete-model-defaults`
 - `--no-omit-redundant-reference-null`
 - `--no-pin-aliases-with-alias-generator`
 - `--no-read-nullable-beside-type-list`
@@ -239,6 +240,7 @@
 - `--no-use-msgspec-meta-for-map-keys`
 - `--no-use-serialize-as-any-for-every-subclass`
 - `--no-use-subclass-enum`
+- `--omit-incomplete-model-defaults`: Write a property whose object default lacks required fields of its model w...
 - `--omit-redundant-reference-null`: Do not write None again at a reference to a model that holds null itself.
 - `--order-constructor-fields-by`: Order constructor fields by final names or by written defaults.
 - `--output-model-type`: Generate models from GraphQL with different output model types.
@@ -1052,6 +1054,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --no-alias            Do not add a field alias. E.g., if --snake-case-field
                         is used along with a base class, which has an
                         alias_generator
+  --omit-incomplete-model-defaults, --no-omit-incomplete-model-defaults
+                        Write a property whose object default lacks required
+                        fields of its model (`default: {}`) without that
+                        default (`spec: PodSpec | None = None`), so input that
+                        leaves the property out is valid; without it the
+                        default is written and validated, which rejects such
+                        input, as in 0.90.0
   --omit-redundant-reference-null, --no-omit-redundant-reference-null
                         Do not write None again where a field, item or member
                         references a model that holds null itself (a root

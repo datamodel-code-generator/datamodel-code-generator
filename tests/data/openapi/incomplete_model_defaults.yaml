@@ -1,0 +1,65 @@
+openapi: 3.1.0
+info: {title: incomplete model defaults, version: "1"}
+paths: {}
+components:
+  schemas:
+    PodSpec:
+      type: object
+      required: [containers]
+      properties:
+        containers:
+          type: array
+          items: {type: string}
+        hostname:
+          type: string
+    LabelSelector:
+      type: object
+      required: [matchLabels]
+      properties:
+        matchLabels:
+          type: object
+          additionalProperties: {type: string}
+    WorkloadSpec:
+      allOf:
+        - $ref: '#/components/schemas/LabelSelector'
+      properties:
+        replicas:
+          type: integer
+    Labels:
+      type: object
+      additionalProperties: {type: string}
+    PodTemplateSpec:
+      type: object
+      properties:
+        priority:
+          type: integer
+          default: 0
+        labels:
+          $ref: '#/components/schemas/Labels'
+          default: {}
+        annotations:
+          type: object
+          additionalProperties: {type: string}
+          default: {}
+        selectorOrName:
+          anyOf:
+            - $ref: '#/components/schemas/LabelSelector'
+            - type: string
+          default: {matchLabels: {}}
+        spec:
+          allOf:
+            - $ref: '#/components/schemas/PodSpec'
+          default: {}
+        nullableSpec:
+          anyOf:
+            - $ref: '#/components/schemas/PodSpec'
+            - type: 'null'
+          default: {hostname: a}
+        completeSpec:
+          allOf:
+            - $ref: '#/components/schemas/PodSpec'
+          default: {containers: [app]}
+        workload:
+          allOf:
+            - $ref: '#/components/schemas/WorkloadSpec'
+          default: {replicas: 1}

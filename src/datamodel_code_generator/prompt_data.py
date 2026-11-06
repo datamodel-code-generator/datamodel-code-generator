@@ -143,6 +143,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--no-use-standard-collections": "Use typing.Dict/List instead of built-in dict/list for container types.",
     "--no-use-type-checking-imports": "Keep generated model imports available at runtime when using Ruff fixes.",
     "--no-use-union-operator": "Use Union[X, Y] / Optional[X] instead of X | Y union operator.",
+    "--omit-incomplete-model-defaults": "Write a property whose object default lacks required fields of its model w...",
     "--omit-redundant-constraints": "Do not write a constraint again beside a type that already enforces it.",
     "--omit-redundant-reference-null": "Do not write None again at a reference to a model that holds null itself.",
     "--openapi-as-definitions": "Give OpenAPI paths bodies or ref components the models their definitions get.",

@@ -1360,6 +1360,13 @@ _toggle(
 )
 _toggle(
     field_options,
+    "--omit-incomplete-model-defaults",
+    help="Write a property whose object default lacks required fields of its model (`default: {}`) without that "
+    "default (`spec: PodSpec | None = None`), so input that leaves the property out is valid; without it the "
+    "default is written and validated, which rejects such input, as in 0.90.0",
+)
+_toggle(
+    field_options,
     "--use-default-kwarg",
     help="Use `default=` instead of a positional argument for Fields that have default values.",
 )

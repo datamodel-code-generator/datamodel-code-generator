@@ -98,6 +98,7 @@ reviewed-safe model_name_map
 reviewed-safe name_allof_union_members_after_branches
 reviewed-safe naming_strategy
 reviewed-safe no_alias
+reviewed-safe omit_incomplete_model_defaults
 reviewed-safe omit_redundant_constraints
 reviewed-safe omit_redundant_reference_null
 reviewed-safe order_constructor_fields_by

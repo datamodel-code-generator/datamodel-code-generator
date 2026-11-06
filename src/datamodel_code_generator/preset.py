@@ -1176,6 +1176,14 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "as required, as --use-default keeps that of a property the schema lists as required itself."
         ),
     ),
+    PresetOptionGroup(
+        title="Incomplete model defaults omitted",
+        config=PresetConfig(omit_incomplete_model_defaults=True),
+        description=(
+            "Write a property whose object default lacks required fields of its model, such as default: {}, without "
+            "that default, so input that leaves the property out is valid instead of failing on the default."
+        ),
+    ),
 )
 """The 20261104 groups and the opt-in options of the release after 0.90.0."""
 
@@ -1555,7 +1563,9 @@ def render_presets_markdown() -> str:
             "as the numbered model merges into `Page`, and "
             "`--keep-defaults-of-inherited-required-fields`: with `--use-default` a property that only a schema it "
             "inherits from lists as required keeps the default its schema gives it (`a: str = 'x'`), as one the schema "
-            "lists as required itself does."
+            "lists as required itself does, and `--omit-incomplete-model-defaults`: a property whose object default "
+            "lacks required fields of its model (`default: {}`) is written without that default (`spec: PodSpec | "
+            "None = None`), so input that leaves it out is valid instead of failing on the default."
         ),
         "",
         "## Override Preset Options",

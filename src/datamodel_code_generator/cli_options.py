@@ -326,6 +326,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--omit-redundant-reference-null --no-omit-redundant-reference-null",
         "--keep-reference-null-on-merged-models --no-keep-reference-null-on-merged-models --use-default",
         "--keep-defaults-of-inherited-required-fields --no-keep-defaults-of-inherited-required-fields",
+        "--omit-incomplete-model-defaults --no-omit-incomplete-model-defaults",
         "--use-default-kwarg --no-use-default-kwarg",
         "--apply-field-options-to-every-field --no-apply-field-options-to-every-field",
     ),

@@ -1195,7 +1195,9 @@ SET_VALIDATE_DEFAULT_ON_FIELDS = PassDecl(
     Phase.RENDER_PREPARATION,
     Scope.MODULE,
     PassKind.TRANSFORM,
-    reads=_facts(Fact.DEFAULTS, Fact.FIELD_TYPES, Fact.MODELS_EXIST),
+    reads=_facts(
+        Fact.DEFAULTS, Fact.FIELD_TYPES, Fact.MODELS_EXIST, Fact.BASES, Fact.FIELD_SET, Fact.FIELD_NAMES, Fact.REQUIRED
+    ),
     writes=_facts(
         Fact.DEFAULTS,
         Fact.CONSTRAINTS,
