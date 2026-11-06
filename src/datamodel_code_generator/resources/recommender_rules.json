@@ -930,6 +930,10 @@
       "not_recommended": "preset",
       "reason": "Under --collapse-root-models only: set by the 20261106 presets; the recommendation starts from a preset."
     },
+    "keep_shared_members_on_collapsed_root_models": {
+      "not_recommended": "preset",
+      "reason": "Under --collapse-root-models only: set by the 20261106 presets; the recommendation starts from a preset."
+    },
     "collapse_constrained_root_models_as_annotated": {
       "not_recommended": "preset",
       "reason": "Under --collapse-root-models with --use-annotated only: set by the 20261106 presets; the recommendation starts from a preset."

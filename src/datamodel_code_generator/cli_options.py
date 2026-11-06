@@ -310,6 +310,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--keep-constrained-root-models-in-every-container --no-keep-constrained-root-models-in-every-container",
         "--keep-enum-literal-aliases --no-keep-enum-literal-aliases",
         "--keep-reference-null-on-collapsed-root-models --no-keep-reference-null-on-collapsed-root-models",
+        "--keep-shared-members-on-collapsed-root-models --no-keep-shared-members-on-collapsed-root-models",
         "--collapse-constrained-root-models-as-annotated --no-collapse-constrained-root-models-as-annotated",
         "--remove-unused-models-beside-type-overrides --no-remove-unused-models-beside-type-overrides",
         "--keep-self-referencing-array-items --no-keep-self-referencing-array-items",

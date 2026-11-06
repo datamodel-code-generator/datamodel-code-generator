@@ -2013,6 +2013,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "keep_constrained_root_models_in_every_container",
         "keep_enum_literal_aliases",
         "keep_reference_null_on_collapsed_root_models",
+        "keep_shared_members_on_collapsed_root_models",
         "collapse_constrained_root_models_as_annotated",
         "remove_unused_models_beside_type_overrides",
         "keep_self_referencing_array_items",

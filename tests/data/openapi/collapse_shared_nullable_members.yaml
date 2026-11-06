@@ -1,0 +1,29 @@
+openapi: 3.0.3
+info:
+  title: A nullable member of a recursive union that --collapse-root-models inlines at several sites
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Model:
+      type: object
+      properties:
+        notes:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/NoteOrText'
+    Note:
+      type: object
+      properties:
+        reply:
+          $ref: '#/components/schemas/NoteOrText'
+    NoteEntry:
+      anyOf:
+        - $ref: '#/components/schemas/Note'
+    Text:
+      type: string
+      nullable: true
+    NoteOrText:
+      anyOf:
+        - $ref: '#/components/schemas/NoteEntry'
+        - $ref: '#/components/schemas/Text'

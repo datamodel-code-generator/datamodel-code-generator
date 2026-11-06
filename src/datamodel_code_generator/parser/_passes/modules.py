@@ -507,6 +507,10 @@ class CollapseHost(
         """Whether a site that collapse gives the type of a root model admitting null keeps that null."""
 
     @property
+    def keep_shared_members_on_collapsed_root_models(self) -> bool:
+        """Whether a member that inlined copies of a root type share is replaced in every copy under collapse."""
+
+    @property
     def collapse_constrained_root_models_as_annotated(self) -> bool:
         """Whether collapse inlines a constrained string root as a member writing its constraints in ``Annotated``."""
 
@@ -1741,6 +1745,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                 has_remaining_root_references = has_other_root_references(parser, root_type_model.reference, data_type)
 
                 replacement_context = None
+                shared_holders: tuple[DataType, ...] = ()
                 if isinstance(field_ := data_type.parent, parser.data_model_field_type):
                     # for field
                     # override empty field by root-type field
@@ -1774,6 +1779,8 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                     )
 
                 elif isinstance(parent_data_type := data_type.parent, DataType):
+                    shared_holders, kept_holders = shared_member_holders(parser, data_type, copied_data_type)
+                    has_remaining_root_references = has_remaining_root_references or bool(kept_holders)
                     if parent_data_type.is_list:
                         if parser.field_constraints and not site_facts.member_carries_constraints:
                             graph_builder.set_field_constraints(
@@ -1812,6 +1819,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                         copied_data_type,
                         owner=parent_data_type,
                         replacement_kind="nested",
+                        holders=(shared_holders, kept_holders),
                     )
                 else:  # pragma: no cover
                     continue
@@ -1855,7 +1863,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                         )
 
                 parser._import_ledger.remove_referenced_imports(imports, root_type_model.path, producer)  # noqa: SLF001
-                keep_root_null(parser, root_type_field, copied_data_type)
+                keep_root_null(parser, root_type_field, copied_data_type, shared_holders)
                 if (
                     not has_remaining_root_references
                     and model_key_of(root_type_model.reference) not in rule_named_roots
@@ -1875,18 +1883,46 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
     )
 
 
-def keep_root_null(parser: CollapseHost, root_field: DataModelFieldBase, site: DataType) -> None:
+def shared_member_holders(
+    parser: CollapseHost, member: DataType, replacement: DataType
+) -> tuple[tuple[DataType, ...], tuple[DataType, ...]]:
+    """Return the inlined copies holding ``member`` beside its parent that take ``replacement``, and those that keep it.
+
+    Under --keep-shared-members-on-collapsed-root-models; without it no copy takes ``replacement`` and ``member``
+    leaves its reference, so the copies write an empty member, as in 0.90.0. A copy that ``replacement`` reaches keeps
+    ``member``, which then keeps naming its model: putting ``replacement`` there would make a type contain itself.
+    """
+    if not parser.keep_shared_members_on_collapsed_root_models or not (
+        holders := parser.generation_store.index.inlined_holders_of(member)
+    ):
+        return (), ()
+    reached: set[int] = set()
+    replacement.walk(lambda _: None, reached)
+    return (
+        tuple(holder for holder in holders if id(holder) not in reached),
+        tuple(holder for holder in holders if id(holder) in reached),
+    )
+
+
+def keep_root_null(
+    parser: CollapseHost, root_field: DataModelFieldBase, site: DataType, shared_holders: tuple[DataType, ...] = ()
+) -> None:
     """Put the type that collapse gave ``site`` inside a type admitting null, where the root model admits null.
 
     Under --keep-reference-null-on-collapsed-root-models. The null is the root field's own (``nullable``, as an
     OpenAPI 3.0 ``nullable: true`` root reads), which the root type inlined at ``site`` does not write; a type that
-    is optional itself already writes its null.
+    is optional itself already writes its null. The inlined copies ``shared_holders`` that hold ``site`` beside its
+    parent (``shared_member_holders``) take the same type in its place.
     """
     if not parser.keep_reference_null_on_collapsed_root_models or root_field.nullable is not True or site.is_optional:
         return
     graph_builder = parser._graph_builder  # noqa: SLF001
     holder = type(site)(is_optional=True)
     graph_builder.swap_data_type(site, holder)
+    for shared_holder in shared_holders:
+        graph_builder.set_nested_data_types(
+            shared_holder, [holder if member is site else member for member in shared_holder.data_types]
+        )
     graph_builder.set_nested_data_types(holder, [site])
 
 

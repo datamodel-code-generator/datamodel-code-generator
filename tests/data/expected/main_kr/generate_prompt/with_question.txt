@@ -204,6 +204,7 @@ How do I convert enums to Literal types?
 - `--keep-reference-null-on-collapsed-root-models`: Keep the null of a root model that admits null where `--coll...
 - `--keep-reference-null-on-merged-models`: Keep the null a reference's schema admits when its model is merged.
 - `--keep-self-referencing-array-items`: Keep the items of an array whose items name the array itself.
+- `--keep-shared-members-on-collapsed-root-models`: Keep each member of a root type that collapse inlined at sev...
 - `--keyword-only`: Generate dataclasses with keyword-only fields (Python 3.10+).
 - `--model-extra-keys`: Add model-level schema extensions to ConfigDict json_schema_extra.
 - `--model-extra-keys-without-x-prefix`: Strip x- prefix from model-level schema extensions and add to ConfigDic...
@@ -223,6 +224,7 @@ How do I convert enums to Literal types?
 - `--no-keep-reference-null-on-collapsed-root-models`
 - `--no-keep-reference-null-on-merged-models`
 - `--no-keep-self-referencing-array-items`
+- `--no-keep-shared-members-on-collapsed-root-models`
 - `--no-name-converted-payloads-by-message`
 - `--no-omit-redundant-reference-null`
 - `--no-pin-aliases-with-alias-generator`
@@ -1253,6 +1255,14 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         which cannot decode such a type alias, keeps the bare
                         `list`; without it the array is written as a bare
                         `list`, as in 0.90.0
+  --keep-shared-members-on-collapsed-root-models, --no-keep-shared-members-on-collapsed-root-models
+                        Under --collapse-root-models, keep each member of a
+                        root type that collapse inlined at several sites at
+                        every site when a root model that member names is
+                        collapsed later, as a recursive union reaches its
+                        plain member (`dict[str, Union["Entry", str]]`);
+                        without it those sites write the union without that
+                        member, or `Any` where no member is left, as in 0.90.0
   --keyword-only        Defined models as keyword only (for example
                         dataclass(kw_only=True)).
   --model-name-map MODEL_NAME_MAP
