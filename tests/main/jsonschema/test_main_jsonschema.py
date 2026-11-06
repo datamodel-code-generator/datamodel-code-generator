@@ -23587,6 +23587,93 @@ def test_main_jsonschema_collapse_root_models_container_field_constraints(output
     )
 
 
+@pytest.mark.parametrize(
+    ("output_model", "extra_args", "model_name", "expected_repr"),
+    [
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            [],
+            "Model",
+            "Model(iconColor=['a'], single=[1, 2], nullable=[1], grid=[[1, 2]], pairs={'k': [1, 2]}, rows=[['a'], 1], "
+            "listing=[Item(id=None, name='n')], typeList=TypeList(root=1), "
+            "through=Through(root=[Bounded(root=['a'])]))",
+            id="pydantic_v2.BaseModel",
+        ),
+        pytest.param(
+            "pydantic_v2.dataclass",
+            [],
+            "Model",
+            "Model(iconColor=['a'], single=[1, 2], nullable=[1], grid=[[1, 2]], pairs={'k': [1, 2]}, rows=[['a'], 1], "
+            "listing=[Item(id=None, name='n')], typeList=1, through=[['a']])",
+            id="pydantic_v2.dataclass",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--read-only-write-only-model-type", "request-response"],
+            "ModelRequest",
+            "ModelRequest(iconColor=['a'], single=[1, 2], nullable=[1], grid=[[1, 2]], pairs={'k': [1, 2]}, "
+            "rows=[['a'], 1], listing=[ItemRequest(name='n')], typeList=TypeList(root=1), "
+            "through=Through(root=[Bounded(root=['a'])]))",
+            id="request-response",
+        ),
+    ],
+)
+def test_main_jsonschema_collapse_root_models_item_count_aliases(
+    output_model: str, extra_args: list[str], model_name: str, expected_repr: str, output_file: Path
+) -> None:
+    """Inline the root models whose types name the type aliases that hold the item counts of nested arrays.
+
+    The member of an anyOf, the items of an array and the values of a map write their counts on a type alias of their
+    own without --field-constraints; a root model that names such aliases is inlined as it was when they were inline
+    arrays, in its Request and Response variants too, so its values parse as lists and the aliases check the counts.
+    A root model whose alias names a constrained root model, and the root model of a type list, stay named.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_item_count_aliases.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--collapse-root-models",
+            "--output-model-type",
+            output_model,
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="collapse_root_models_item_count_aliases",
+        model_name=model_name,
+        valid_json=json.dumps({
+            "iconColor": ["a"],
+            "single": [1, 2],
+            "nullable": [1],
+            "grid": [[1, 2]],
+            "pairs": {"k": [1, 2]},
+            "rows": [["a"], 1],
+            "listing": [{"name": "n"}],
+            "typeList": 1,
+            "through": [["a"]],
+        }),
+        invalid_json='{"iconColor": ["a", "b", "c"]}',
+        expected_error_type="too_long",
+        expected_repr=expected_repr,
+        invalid_keyword_arguments=[
+            ({"iconColor": []}, "too_short"),
+            ({"single": [1]}, "too_short"),
+            ({"nullable": [1, 2, 3]}, "too_long"),
+            ({"grid": [[1]]}, "too_short"),
+            ({"pairs": {"k": [1]}}, "too_short"),
+            ({"rows": [[]]}, "too_short"),
+            ({"listing": []}, "too_short"),
+        ],
+    )
+
+
 def test_main_jsonschema_collapse_root_models_array_item_union_self_reference(output_file: Path) -> None:
     """Keep an array field's own constraints when its items collapse into a self-referencing union."""
     run_main_and_assert(

@@ -207,11 +207,20 @@ decision = "#6171"
 release_note = "without --field-constraints, the minItems and maxItems of an array that has no field of its own (the member of an anyOf or oneOf, the items of an array, the values of a map) are written on a type alias of the array (Annotated[list[int], Field(min_length=2)]) instead of being dropped"
 
 [[accepted]]
+input = "*collapse_root_models_item_count_aliases*"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] (?:Model:\\w+|Color|Grid|Listing|Mixed|Nullable|Pairs|Single|Through): .* -> .*Annotated\\[list\\[.*\\], M(?:in|ax)Len\\(.*$"
+reason = "without --field-constraints, the minItems and maxItems of the members of an anyOf, the items of an array and the values of a map were dropped without a warning; they are kept on a type alias of the array (schema-mismatch fix), and under --collapse-root-models the root models that name those aliases are inlined as before (#6383), which this fixture pins"
+decision = "#6171"
+release_note = "without --field-constraints, the minItems and maxItems of an array that has no field of its own (the member of an anyOf or oneOf, the items of an array, the values of a map) are written on a type alias of the array (Annotated[list[int], Field(min_length=2)]) instead of being dropped"
+
+[[accepted]]
 input = "project:posthog/schema"
 backends = [ "pydantic_v2.BaseModel" ]
 aspects = [ "constraints", "probe" ]
-match = "^\\[constraints\\] (?:FunnelTimeToConvertResults:bins: list\\[list\\[int\\]\\] -> list\\[Annotated\\[list\\[int\\], MinLen\\(min_length=2\\),MaxLen\\(max_length=2\\)\\]\\]|SessionEventsItem:events: list\\[list\\[Any\\]\\] -> list\\[Annotated\\[list\\[Any\\], MinLen\\(min_length=0\\),MaxLen\\(max_length=0\\)\\]\\])$|^\\[probe\\] SessionEventsItem: accept -> reject$"
-reason = "without --field-constraints, the minItems and maxItems of the items of an array (the pairs of FunnelTimeToConvertResults.bins, the empty rows of SessionEventsItem.events) were dropped without a warning; they are kept on a type alias of the item array (schema-mismatch fix; the probe example breaks the count)"
+match = "^\\[constraints\\] (?:FunnelTimeToConvertResults:bins: list\\[list\\[int\\]\\] -> list\\[Annotated\\[list\\[int\\], MinLen\\(min_length=2\\),MaxLen\\(max_length=2\\)\\]\\]|SessionEventsItem:events: list\\[list\\[Any\\]\\] -> list\\[Annotated\\[list\\[Any\\], MinLen\\(min_length=0\\),MaxLen\\(max_length=0\\)\\]\\]|FileSystemImport:iconColor: Union\\[None, list\\[str\\]\\] -> Union\\[Annotated\\[list\\[str\\], MinLen\\(min_length=1\\),MaxLen\\(max_length=1\\)\\], Annotated\\[list\\[str\\], MinLen\\(min_length=2\\),MaxLen\\(max_length=2\\)\\], None\\])$|^\\[probe\\] SessionEventsItem: accept -> reject$"
+reason = "without --field-constraints, the minItems and maxItems of the items of an array (the pairs of FunnelTimeToConvertResults.bins, the empty rows of SessionEventsItem.events) and of the members of an anyOf (the one- and two-color forms of FileSystemImport.iconColor, whose root model --collapse-root-models inlines as before, #6383) were dropped without a warning; they are kept on a type alias of the array (schema-mismatch fix; the probe example breaks the count)"
 decision = "#6171"
 release_note = "without --field-constraints, the minItems and maxItems of an array that has no field of its own (the member of an anyOf or oneOf, the items of an array, the values of a map) are written on a type alias of the array (Annotated[list[int], Field(min_length=2)]) instead of being dropped"
 

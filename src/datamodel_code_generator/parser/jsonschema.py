@@ -146,7 +146,7 @@ from datamodel_code_generator._json_schema import (
     schema_positions,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
 from datamodel_code_generator._message_text import english_list, for_count
-from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, model_key_of
+from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, ITEM_COUNTS_SITE_KEY, model_key_of
 from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._mro import (
     linearize,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -616,13 +616,15 @@ class _MapValue:
 
     ``parse_item`` builds ``schema`` with ``parent`` as its parent, unless it is ``constrained``: then the root model
     that preserves its constraints is built from ``schema`` (a ``$ref`` merged with its siblings, or an allOf of
-    primitives, ``preserve_root_model``).
+    primitives, ``preserve_root_model``), marked as an item-count site (``ITEM_COUNTS_SITE_KEY``) where only its item
+    counts make it one (``item_counts_site``).
     """
 
     schema: JsonSchemaObject
     parent: JsonSchemaObject | None = None
     constrained: bool = False
     preserve_root_model: bool = False
+    item_counts_site: bool = False
 
 
 class _RefSiteRecursionError(RecursionError):
@@ -2621,6 +2623,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._record_derived_from(reference, obj)
         if obj.__dict__.get(FIELDLESS_SITE_KEY):
             reference.__dict__[FIELDLESS_SITE_KEY] = True
+        if obj.__dict__.get(ITEM_COUNTS_SITE_KEY):
+            reference.__dict__[ITEM_COUNTS_SITE_KEY] = True
         self._set_schema_metadata(reference.path, obj)
         self.set_schema_extensions(reference.path, obj)
 
@@ -5621,10 +5625,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         walk reads the same decision (``_typed_additional_properties_value``).
         """
         additional_properties = self._site_schema(additional_properties)
-        if not (
-            self._output_model_context.supports_annotated_constraints
-            or self._writes_item_counts_on_alias(additional_properties)
-        ):
+        annotated = self._output_model_context.supports_annotated_constraints
+        item_counts_site = not annotated and self._writes_item_counts_on_alias(additional_properties)
+        if not (annotated or item_counts_site):
             return _MapValue(
                 additional_properties,
                 parent if self.field_constraints and self.data_model_field_type.SUPPORTS_FIELD_CONSTRAINTS else None,
@@ -5671,7 +5674,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 )
         if not self._has_effective_constraints(value_schema):
             return _MapValue(additional_properties)
-        return _MapValue(value_schema, parent, constrained=True, preserve_root_model=preserve_root_model)
+        return _MapValue(
+            value_schema,
+            parent,
+            constrained=True,
+            preserve_root_model=preserve_root_model,
+            item_counts_site=item_counts_site,
+        )
 
     def _parse_additional_properties_value(
         self,
@@ -5682,10 +5691,16 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         additional_properties: JsonSchemaObject,
         constrained_name: str | None = None,
     ) -> DataType:
-        """Parse a mapping value schema while preserving supported Annotated constraints."""
+        """Parse a mapping value schema while preserving supported Annotated constraints.
+
+        The schema of a value that only its item counts make a model of its own is marked as an item-count site
+        (``ITEM_COUNTS_SITE_KEY``), which the model built from it takes (``_record_schema_object``).
+        """
         value = self._additional_properties_value(name, additional_properties, parent)
         if not value.constrained:
             return self.parse_item(name, value.schema, path, parent=value.parent)
+        if value.item_counts_site:
+            value.schema.__dict__[ITEM_COUNTS_SITE_KEY] = True
         return JsonSchemaParser._parse_constrained_additional_properties_value_item(
             self,
             constrained_name or (name if value.preserve_root_model else composed_name(name, "additional-property")),
@@ -6258,6 +6273,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return site.parent is not None and self._writes_item_counts_on_alias(site.obj)
 
     def _parse_item_counts_alias(self, site: _Site) -> DataType:
+        """Parse a nested array as the type alias that holds its item counts, marked as an item-count site.
+
+        The alias and its Request/Response variants take the mark from the site schema (``_record_schema_object``,
+        ``ITEM_COUNTS_SITE_KEY``).
+        """
+        site.obj.__dict__[ITEM_COUNTS_SITE_KEY] = True
         return self._parse_item_root(
             site,
             data_model_root_type=self._nested_constrained_model_type,

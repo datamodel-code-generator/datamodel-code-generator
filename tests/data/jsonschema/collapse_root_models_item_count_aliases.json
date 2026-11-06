@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "iconColor": {"$ref": "#/$defs/Color"},
+    "single": {"$ref": "#/$defs/Single"},
+    "nullable": {"$ref": "#/$defs/Nullable"},
+    "grid": {"$ref": "#/$defs/Grid"},
+    "pairs": {"$ref": "#/$defs/Pairs"},
+    "rows": {"type": "array", "items": {"$ref": "#/$defs/Mixed"}},
+    "listing": {"$ref": "#/$defs/Listing"},
+    "typeList": {"$ref": "#/$defs/TypeList"},
+    "through": {"$ref": "#/$defs/Through"}
+  },
+  "$defs": {
+    "Color": {
+      "anyOf": [
+        {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": 1},
+        {"type": "array", "items": {"type": "string"}, "minItems": 2, "maxItems": 2}
+      ]
+    },
+    "Single": {"anyOf": [{"type": "array", "items": {"type": "integer"}, "minItems": 2}]},
+    "Nullable": {"anyOf": [{"type": "array", "items": {"type": "integer"}, "maxItems": 2}, {"type": "null"}]},
+    "Grid": {"type": "array", "items": {"type": "array", "items": {"type": "integer"}, "minItems": 2, "maxItems": 2}},
+    "Pairs": {"type": "object", "additionalProperties": {"type": "array", "items": {"type": "integer"}, "minItems": 2}},
+    "Mixed": {"anyOf": [{"type": "array", "items": {"type": "string"}, "minItems": 1}, {"type": "integer"}]},
+    "Item": {
+      "type": "object",
+      "properties": {"id": {"type": "string", "readOnly": true}, "name": {"type": "string"}}
+    },
+    "Listing": {"anyOf": [{"type": "array", "items": {"$ref": "#/$defs/Item"}, "minItems": 1}, {"type": "integer"}]},
+    "TypeList": {"type": ["array", "integer"], "items": {"type": "string"}, "minItems": 1},
+    "Bounded": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "Through": {"anyOf": [{"type": "array", "items": {"$ref": "#/$defs/Bounded"}, "minItems": 1}, {"type": "integer"}]}
+  }
+}
