@@ -9242,7 +9242,8 @@ def test_main_unique_items_as_set_by_value_union_default_member(tmp_path: Path, 
     """Write the default of a union by the first member whose items take it, not the first array-like member.
 
     ``["a", "a"]`` is a ``Words`` list of strings, which ``Row``, a set of integers, does not take, so it stays the
-    list; ``[1, 1]`` is a ``Row`` and becomes its set. ``Model()`` holds the values that validating the defaults gives.
+    list; ``[1, 1]`` is a ``Row`` and becomes its set, as ``[1, None, 1]`` becomes the set of nullable integers.
+    ``Model()`` holds the values that validating the defaults gives.
     """
     (input_file := tmp_path / "unique_items_by_value_union_default_member.json").write_text(
         json.dumps({
@@ -9251,6 +9252,12 @@ def test_main_unique_items_as_set_by_value_union_default_member(tmp_path: Path, 
             "properties": {
                 "words": {"anyOf": [{"$ref": "#/$defs/Row"}, {"$ref": "#/$defs/Words"}], "default": ["a", "a"]},
                 "row": {"anyOf": [{"$ref": "#/$defs/Words"}, {"$ref": "#/$defs/Row"}], "default": [1, 1]},
+                "maybe": {
+                    "type": "array",
+                    "uniqueItems": True,
+                    "items": {"type": ["integer", "null"]},
+                    "default": [1, None, 1],
+                },
             },
             "$defs": {
                 "Row": {"type": "array", "uniqueItems": True, "items": {"type": "integer"}},
@@ -9274,7 +9281,7 @@ def test_main_unique_items_as_set_by_value_union_default_member(tmp_path: Path, 
     )
     with _generated_model(output_file, "unique_items_by_value_union_default_member", "Model") as model:
         default = model()
-        classes = {field: _value_classes(getattr(default, field)) for field in ("words", "row")}
+        classes = {field: _value_classes(getattr(default, field)) for field in ("words", "row", "maybe")}
     assert_output(f"{json.dumps(classes, indent=2)}\n")
 
 
