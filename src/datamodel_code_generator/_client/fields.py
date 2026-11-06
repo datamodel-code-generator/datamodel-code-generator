@@ -67,9 +67,9 @@ class _Fields:
     def operation(self, spec: OperationSpec) -> OperationSpec:
         """Plan an operation's field branches and why other media have none, refusing names that name no field.
 
-        Explicit names, configured or `--aliases` entries, must be new beside the method's other arguments. Each other
-        field takes its model field's name, or for a key that is no identifier the name a field would take, suffixed
-        apart from the other arguments; a field of several media takes one name.
+        Explicit names, configured or `--aliases` entries, must be new beside the method's other arguments. A field of
+        several media takes one name: the explicit name one of them gives it, else its model field's name, or for a
+        key that is no identifier the name a field would take, suffixed apart from the other arguments.
         """
         if spec.body is None or spec.body_arguments != "both":
             return spec
@@ -88,6 +88,7 @@ class _Fields:
             if (given := names.pop((media_type, item.wire_name), None) or (item.name if item.explicit else None))
             is not None
         }
+        shared = {wire_name: given for (_, wire_name), given in reversed(explicit.items())}
         self.problems.extend(
             CLIENT.problem(
                 "E_CONFIG_VALUE",
@@ -101,7 +102,11 @@ class _Fields:
         helpers = HELPER_ARGUMENTS if spec.contract.id in self.helpers else ()
         scope = NameScope((*RESERVED_ARGUMENTS, *helpers, *(parameter.python_name for parameter in spec.parameters)))
         for media_type, fields in declared:
-            given = [explicit[key] for item in fields if (key := (media_type, item.wire_name)) in explicit]
+            given = [
+                name
+                for item in fields
+                if (name := explicit.get((media_type, item.wire_name)) or shared.get(item.wire_name)) is not None
+            ]
             counts = Counter(given)
             if taken := sorted({name for name in given if name in scope or counts[name] > 1}):
                 self.problems.append(
@@ -115,9 +120,9 @@ class _Fields:
         for name in explicit.values():
             scope.take(name)
         pending: dict[str, str] = {}
-        for media_type, fields in declared:
+        for _, fields in declared:
             for item in fields:
-                if (media_type, item.wire_name) not in explicit:
+                if item.wire_name not in shared:
                     pending.setdefault(item.wire_name, self.base(item))
         derived = dict(
             zip(
@@ -131,7 +136,9 @@ class _Fields:
                 media_type=media_type,
                 fields=tuple(
                     FieldArgument(
-                        python_name=explicit.get((media_type, item.wire_name)) or derived[item.wire_name],
+                        python_name=explicit.get((media_type, item.wire_name))
+                        or shared.get(item.wire_name)
+                        or derived[item.wire_name],
                         wire_name=item.wire_name,
                         required=item.required,
                         type=item.type,

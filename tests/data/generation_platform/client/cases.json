@@ -1591,11 +1591,6 @@
               "media_type": "application/json",
               "name": "tag",
               "python_name": "pet_tag"
-            },
-            {
-              "media_type": "application/x-www-form-urlencoded",
-              "name": "tag",
-              "python_name": "pet_tag"
             }
           ]
         },
