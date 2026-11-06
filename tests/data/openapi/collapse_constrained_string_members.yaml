@@ -1,0 +1,49 @@
+openapi: 3.1.0
+info: {title: constrained string members, version: "1"}
+paths: {}
+components:
+  schemas:
+    Fee:
+      type: object
+      properties:
+        account:
+          description: ID or object
+          anyOf:
+            - type: string
+              maxLength: 8
+            - $ref: '#/components/schemas/Account'
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 3
+        labels:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            minLength: 1
+        codes:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Code'
+        slug:
+          anyOf:
+            - type: string
+              pattern: '^(?!x)[a-z]+$'
+            - type: integer
+              minimum: 0
+        notes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Note'
+    Account:
+      type: object
+      properties:
+        id: {type: string}
+    Code:
+      type: string
+      maxLength: 2
+    Note:
+      type: [string, 'null']
+      maxLength: 4

@@ -517,6 +517,13 @@ _toggle(
 )
 _toggle(
     model_options,
+    "--collapse-constrained-root-models-as-annotated",
+    help="Under --collapse-root-models with --use-annotated, inline a root model of a string with constraints into "
+    "the union, list, dict or other container of its holder as `Annotated[str, Field(...)]`, which keeps the "
+    "constraints on that member; without it such a root model stays named there, as in 0.90.0",
+)
+_toggle(
+    model_options,
     "--collapse-reuse-models",
     help="When used with --reuse-model, collapse duplicate models by replacing references instead of creating "
     "empty inheritance subclasses. This eliminates 'class Foo(Bar): pass' patterns",

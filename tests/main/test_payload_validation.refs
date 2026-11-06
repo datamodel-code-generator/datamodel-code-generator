@@ -1297,6 +1297,9 @@ openapi/body_and_parameters_remote_ref.yaml::components.schemas.PetForm	payloads
 openapi/body_and_parameters_remote_ref.yaml::paths./food/{food_id}.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/builtin_type_field_names.yaml::components.schemas.BuiltinTypeFieldNames	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/byte_format.yaml::components.schemas.Data	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/collapse_constrained_string_members.yaml::components.schemas.Account	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/collapse_constrained_string_members.yaml::components.schemas.Code	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/collapse_constrained_string_members.yaml::components.schemas.Note	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/collapse_nullable_roots.yaml::components.schemas.Label	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/collapse_nullable_roots.yaml::components.schemas.Names	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/collapse_nullable_roots.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3347,6 +3350,9 @@ openapi/body_and_parameters_remote_ref.yaml::components.schemas.PetForm	payloads
 openapi/body_and_parameters_remote_ref.yaml::paths./food/{food_id}.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/builtin_type_field_names.yaml::components.schemas.BuiltinTypeFieldNames	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/byte_format.yaml::components.schemas.Data	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/collapse_constrained_string_members.yaml::components.schemas.Account	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/collapse_constrained_string_members.yaml::components.schemas.Code	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/collapse_constrained_string_members.yaml::components.schemas.Note	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/collapse_nullable_roots.yaml::components.schemas.Label	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/collapse_nullable_roots.yaml::components.schemas.Names	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/collapse_nullable_roots.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

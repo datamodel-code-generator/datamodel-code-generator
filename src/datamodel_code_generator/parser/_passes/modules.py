@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
 from typing_extensions import Protocol, Unpack
 
 from datamodel_code_generator import CollapseRootModelsNameStrategy, FieldTypeCollisionStrategy, ReuseScope
-from datamodel_code_generator._constraint_applicability import TAG_LITERAL_UNTAKEN_KEYWORD
+from datamodel_code_generator._constraint_applicability import STRING_KEYWORDS, TAG_LITERAL_UNTAKEN_KEYWORD
 from datamodel_code_generator._container_kinds import (
     BUILTIN_CONTAINERS,
     CONTAINER_FLAGS,
@@ -213,7 +213,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._user_keys import ClassScope
     from datamodel_code_generator.config import ParserConfig
-    from datamodel_code_generator.enums import DataclassArguments
+    from datamodel_code_generator.enums import DataclassArguments, TargetPydanticVersion
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.parser._field_rows import FieldFacts, FieldRow
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
@@ -501,6 +501,18 @@ class CollapseHost(
     @property
     def keep_reference_null_on_collapsed_root_models(self) -> bool:
         """Whether a site that collapse gives the type of a root model admitting null keeps that null."""
+
+    @property
+    def collapse_constrained_root_models_as_annotated(self) -> bool:
+        """Whether collapse inlines a constrained string root as a member writing its constraints in ``Annotated``."""
+
+    @property
+    def use_annotated(self) -> bool:
+        """Whether the output writes field constraints in ``Annotated``."""
+
+    @property
+    def target_pydantic_version(self) -> TargetPydanticVersion | None:
+        """The Pydantic version the output targets, if configured."""
 
     @property
     def _const_narrowed_values(self) -> dict[int, tuple[DataType, _ConstNarrowing]]:
@@ -1483,6 +1495,12 @@ def collapse_site_facts(
     root_data_type = root_field.data_type
     constrained_root_field = _has_root_field_constraints(root_field, row="declared")
     constrained_root = _has_root_field_constraints(root_field)
+    member_carries_constraints = (
+        field_constraints
+        and constrained_root_field
+        and isinstance(data_type.parent, DataType)
+        and annotated_member_type(parser, root_field) is not None
+    )
     return CollapseSiteFacts(
         has_root_field=True,
         type_overridden=model_type_override(
@@ -1513,8 +1531,10 @@ def collapse_site_facts(
         root_type_is_map=root_data_type in MAPPINGS,
         root_type_names_model=_wrapped_model_reference(root_data_type) is not None,
         names_inner_models=parser.collapse_root_models_name_strategy is not None,
+        member_carries_constraints=member_carries_constraints,
         holder_has_container=field_constraints
         and constrained_root
+        and not member_carries_constraints
         and any(
             member.is_union
             or member
@@ -1528,6 +1548,31 @@ def collapse_site_facts(
         list_item=isinstance(parent := data_type.parent, DataType) and parent.is_list,
         collapses_list_items=parser._collapses_list_item_root_models,  # noqa: SLF001
     )
+
+
+def annotated_member_type(parser: CollapseHost, root_field: DataModelFieldBase) -> DataType | None:
+    """Return the string type that writes the ``Field()`` constraints of ``root_field`` in its ``Annotated`` form.
+
+    Under --collapse-constrained-root-models-as-annotated with --use-annotated, where the root type is the string type
+    and its constraints are string keywords, which the type manager writes into the string type as a dict key schema
+    writes them (``root_key_data_type``); None for any other root, and where the output writes no constraint in a type.
+    """
+    if not (parser.collapse_constrained_root_models_as_annotated and parser.use_annotated):
+        return None
+    keywords = _root_constraint_keywords(root_field)
+    root_type = root_field.data_type
+    string_type = parser.data_type_manager.get_data_type(Types.string)
+    if (
+        not keywords
+        or not keywords.keys() <= STRING_KEYWORDS
+        or root_type.is_optional
+        or (root_type.type, root_type.import_) != (string_type.type, string_type.import_)
+    ):
+        return None
+    member = parser.data_type_manager.get_data_type(
+        Types.string, use_annotated=True, target_pydantic_version=parser.target_pydantic_version, **keywords
+    )
+    return member if member.kwargs else None
 
 
 def has_other_root_references(parser: CollapseHost, reference: Reference, data_type: DataType) -> bool:
@@ -1587,7 +1632,9 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                     not reference
                     or not is_root_model(root_type_model := cast("DataModel", reference.source))
                     or keeps_root_model_named(
-                        collapse_site_facts(parser, model_field, data_type, root_type_model, circular_root_models)
+                        site_facts := collapse_site_facts(
+                            parser, model_field, data_type, root_type_model, circular_root_models
+                        )
                     )
                     is not None
                 ):
@@ -1675,7 +1722,9 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
 
                 source_module_name = _get_model_module_name(root_type_model, model_path_to_module_name)
                 target_module_name = _get_model_module_name(model, model_path_to_module_name)
-                if isinstance(data_type.parent, DataType) and any(
+                if site_facts.member_carries_constraints:
+                    copied_data_type = cast("DataType", annotated_member_type(parser, root_type_field))
+                elif isinstance(data_type.parent, DataType) and any(
                     dropped is root_type_model
                     for dropped in parser._self_named_root_models  # noqa: SLF001
                 ):
@@ -1722,7 +1771,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
 
                 elif isinstance(parent_data_type := data_type.parent, DataType):
                     if parent_data_type.is_list:
-                        if parser.field_constraints:
+                        if parser.field_constraints and not site_facts.member_carries_constraints:
                             graph_builder.set_field_constraints(
                                 model_field,
                                 ConstraintsBase.merge_constraints(root_type_field.constraints, model_field.constraints),

@@ -761,6 +761,13 @@ Model customization:
                         Suffix to add to generated class names (e.g., 'Schema'
                         produces 'UserSchema'). Does not apply to root model
                         when --class-name is specified.
+  --collapse-constrained-root-models-as-annotated, --no-collapse-constrained-root-models-as-annotated
+                        Under --collapse-root-models with --use-annotated,
+                        inline a root model of a string with constraints into
+                        the union, list, dict or other container of its holder
+                        as `Annotated[str, Field(...)]`, which keeps the
+                        constraints on that member; without it such a root
+                        model stays named there, as in 0.90.0
   --collapse-reuse-models, --no-collapse-reuse-models
                         When used with --reuse-model, collapse duplicate
                         models by replacing references instead of creating

@@ -465,6 +465,7 @@ class BaseGenerateConfig(BaseModel):
     keep_constrained_root_models_in_every_container: bool = False
     keep_enum_literal_aliases: bool = False
     keep_reference_null_on_collapsed_root_models: bool = False
+    collapse_constrained_root_models_as_annotated: bool = False
     collapse_reuse_models: bool = False
     skip_root_model: bool = False
     use_root_model_sequence_interface: bool = False

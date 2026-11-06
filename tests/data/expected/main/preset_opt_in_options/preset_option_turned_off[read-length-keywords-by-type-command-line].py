@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from enum import Enum
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel
+from pydantic import BaseModel, ConfigDict, Field, RootModel, StringConstraints
 from typing_extensions import TypeAliasType
 
 EitherString = TypeAliasType("EitherString", Annotated[str, Field(max_length=2)])
@@ -15,10 +15,6 @@ EitherString = TypeAliasType("EitherString", Annotated[str, Field(max_length=2)]
 
 class Branch(RootModel[list[int]]):
     root: Annotated[list[int], Field(max_length=3)]
-
-
-class Branch1(RootModel[str]):
-    root: Annotated[str, Field(max_length=3)]
 
 
 class NestedItem(RootModel[list[int]]):
@@ -47,7 +43,7 @@ class LengthKeywordsByType(BaseModel):
     counted: Annotated[list[str] | None, Field(max_length=3)] = None
     code: Annotated[str | None, Field(max_length=2, min_length=1)] = None
     either: EitherString | list[int] | None = None
-    branch: Branch | Branch1 | None = None
+    branch: Branch | Annotated[str, StringConstraints(max_length=3)] | None = None
     untyped: Annotated[list[int] | None, Field(max_length=2)] = None
     nested: list[NestedItem] | None = None
     by_key: dict[str, list[int]] | None = None
