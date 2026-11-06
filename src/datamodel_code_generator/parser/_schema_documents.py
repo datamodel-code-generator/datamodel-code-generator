@@ -695,7 +695,7 @@ def resolve_lenient_resource_ref(parser: SchemaDocumentsHost, reference: str, ba
         return reference
     if (target := _document_location(location, document)) == reference or not target.startswith("#"):
         return reference
-    source = redact_url("/".join(parser._schema_resource_path_parts[document]))  # noqa: SLF001
+    source = redact_url("/".join(parser._schema_resource_path_parts[document]) or parser._source_path_for_diagnostics())  # noqa: SLF001
     if reference.startswith("#"):
         if not lenient_pointer_exists(parser, document, reference):
             return target if lenient_pointer_exists(parser, document, target) else reference
