@@ -117,6 +117,9 @@ without-option	main/xmlschema/main_xmlschema/single_value_enum_as_const_keeps_co
 	main/xmlschema/versioning_include_xsd10.py
 [test_main_xmlschema_versioning_xsd10]
 	main/xmlschema/versioning_xsd10.py
+[test_main_xmlschema_warn_invalid_duration_defaults]
+	main/xmlschema/main_xmlschema/warn_invalid_duration_defaults.py
+	main/xmlschema/main_xmlschema/warn_invalid_duration_defaults.warnings.txt
 [test_main_xmlschema_with_parsed_source_cache]
 	main/xmlschema/purchase_order.py
 [test_main_xmlschema_xsd11_constructs]

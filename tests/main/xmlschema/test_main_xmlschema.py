@@ -1481,3 +1481,26 @@ def test_xmlschema_composed_content(output_file: Path, entrypoint: str, schema_g
                 json.dumps(results, indent=2) + "\n",
                 EXPECTED_XML_SCHEMA_PATH / schema_group / f"{case.get('expected', name)}.txt",
             )
+
+
+def test_main_xmlschema_warn_invalid_duration_defaults(output_file: Path) -> None:
+    """Warn about a duration default that is no lexical value of its type and keep it as written (#5536).
+
+    The type is read through restrictions of named and inline simple types; strings, lists, simple content, an
+    untyped attribute and a restriction of itself are not read as durations.
+    """
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=XML_SCHEMA_DATA_PATH / "invalid_duration_defaults.xsd",
+            output_path=output_file,
+            input_file_type="xmlschema",
+            extra_args=["--disable-timestamp", "--target-python-version", "3.10"],
+        )
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(record.message) for record in recorded if record.category is UserWarning)
+        ),
+        name="warnings",
+    )

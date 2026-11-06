@@ -39,6 +39,7 @@ from datamodel_code_generator.parser._xmlschema_literals import (
     _safe_day_time_duration_expression,
     _safe_float,
     _safe_time_expression,
+    invalid_duration_message,
 )
 from datamodel_code_generator.parser.base import Source, title_to_class_name
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
@@ -799,7 +800,16 @@ class _XMLSchemaConverter:
         if documentation := _documentation(element):
             schema["description"] = documentation
         if "default" in element.attrib:
-            schema["default"] = self._parse_literal(str(element.get("default")), schema, parse_temporal=True)
+            default = str(element.get("default"))
+            self._warn_invalid_default(
+                "element",
+                element.get("name"),
+                default,
+                element.get("type"),
+                _first_xsd_child(element, "simpleType"),
+                element,
+            )
+            schema["default"] = self._parse_literal(default, schema, parse_temporal=True)
         if "fixed" in element.attrib:
             self._apply_fixed_value(schema, self._parse_literal(str(element.get("fixed")), schema))
         if element.get("nillable") in {"true", "1"}:
@@ -867,6 +877,51 @@ class _XMLSchemaConverter:
         if (simple_type := _first_xsd_child(restriction, "simpleType")) is not None:
             return self._convert_simple_type(simple_type)
         return _copy_schema(STRING_SCHEMA)
+
+    def _builtin_base_name(
+        self,
+        type_name: str | None,
+        simple_type: ET.Element | None,
+        context: ET.Element,
+        seen: frozenset[QNameKey] = frozenset(),
+    ) -> str | None:
+        """Return the local name of the built-in type a declared simple type is or restricts; None for any other."""
+        if type_name:
+            local = _local_name(type_name)
+            namespace = self._qname_namespace(type_name, context)
+            key = self._resolve_key(type_name, self.simple_types, self.complex_types, element=context)
+            is_user_defined = key in self.simple_types or key in self.complex_types
+            if namespace == XML_SCHEMA_NAMESPACE or (
+                namespace is None and local in BUILTIN_TYPE_SCHEMAS and not is_user_defined
+            ):
+                return local
+            if key not in self.simple_types or key in seen:
+                return None
+            simple_type = context = self.simple_types[key]
+            seen |= {key}
+        if simple_type is None or (restriction := _first_xsd_child(simple_type, "restriction")) is None:
+            return None
+        return self._builtin_base_name(
+            restriction.get("base"), _first_xsd_child(restriction, "simpleType"), restriction, seen
+        )
+
+    def _warn_invalid_default(  # noqa: PLR0913, PLR0917
+        self,
+        kind: str,
+        name: str | None,
+        default: str,
+        type_name: str | None,
+        simple_type: ET.Element | None,
+        context: ET.Element,
+    ) -> None:
+        """Warn when the default of a declaration of a built-in duration type is no lexical value of that type."""
+        if (type_ := self._builtin_base_name(type_name, simple_type, context)) and (
+            reason := invalid_duration_message(type_, default)
+        ):
+            warnings.warn(
+                f"The default of {kind} {name!r} is kept as written, but {reason}",
+                stacklevel=2,
+            )
 
     def _apply_restriction_facets(self, restriction: ET.Element, schema: JsonSchema) -> JsonSchema:  # noqa: PLR0912
         schema = _copy_schema(schema)
@@ -1208,6 +1263,7 @@ class _XMLSchemaConverter:
         if not name:
             return
         use = attribute.get("use") or source_attribute.get("use")
+        simple_type = None
         if type_name := attribute.get("type") or source_attribute.get("type"):
             attribute_schema = self._schema_for_qname(type_name, attribute)
         else:
@@ -1222,6 +1278,7 @@ class _XMLSchemaConverter:
         if default is None and "default" not in attribute.attrib and "fixed" not in attribute.attrib:
             default = source_attribute.get("default")
         if default is not None:
+            self._warn_invalid_default("attribute", name, default, type_name, simple_type, attribute)
             attribute_schema["default"] = self._parse_literal(default, attribute_schema, parse_temporal=True)
         fixed = attribute.get("fixed")
         if fixed is None and "fixed" not in attribute.attrib:
