@@ -49,6 +49,7 @@ from datamodel_code_generator._json_schema import (
 )
 from datamodel_code_generator._process_state import ABSENT, PROCESS_STATE_LOCK, restore_entry
 from datamodel_code_generator._python_type_annotation import (
+    PythonTypeEllipsis,
     PythonTypeExpr,
     PythonTypeName,
     PythonTypeOpaqueText,
@@ -318,6 +319,8 @@ _PRESERVED_TYPE_ORIGINS: dict[type, str] = {
     ABCMutableSequence: "MutableSequence",
 }
 """Origins whose type JSON Schema loses, keyed to the name x-python-type spells them with."""
+
+_VARIADIC_TUPLE_ARGS = 2
 
 # Marker for types that Pydantic cannot serialize to JSON Schema
 _UNSERIALIZABLE_MARKER = "x-python-unserializable"
@@ -803,7 +806,20 @@ def _serialize_python_type(
     expression = _preserved_python_type_expr(tp)
     if expression is not None and generic_names:
         expression = _preserved_python_type_expr(tp, generic_names)
+    expression = expression or _variadic_tuple_expr(tp, generic_names)
     return _transport_python_type_expr(expression, expression_collector) if expression is not None else None
+
+
+def _variadic_tuple_expr(tp: type, generic_names: dict[type, str] | None = None) -> PythonTypeExpr | None:
+    """Spell a field typed as a variadic tuple, which JSON Schema writes as a list, for --use-x-python-type-as-written.
+
+    Only the field itself is spelled: a tuple inside a union stays a list.
+    """
+    args = get_args(tp)
+    if get_origin(tp) is not tuple or len(args) != _VARIADIC_TUPLE_ARGS or args[1] is not Ellipsis:
+        return None
+    item = _preserved_python_type_expr(args[0], generic_names) or _imported_python_type_expr(args[0])
+    return PythonTypeSubscript(PythonTypeName("tuple"), (item, PythonTypeEllipsis()))
 
 
 def _preserved_python_type_expr(tp: type, generic_names: dict[type, str] | None = None) -> PythonTypeExpr | None:  # ruff: ignore[too-many-return-statements]

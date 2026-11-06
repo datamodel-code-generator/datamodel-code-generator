@@ -1648,6 +1648,9 @@ external-cli-SkippedList	main/input_model/wire_winner_skippedlist.py
 external-cli-SkippedList	main/input_model/wire_winner_skippedlist_runtime.txt	= main/input_model/wire_winner_frozenwins_runtime.txt
 external-cli-UserExtensions	main/input_model/wire_winner_userextensions.py
 external-cli-UserExtensions	main/input_model/wire_winner_userextensions_runtime.txt
+[test_input_model_variadic_tuple_as_written]
+option	input_model/variadic_tuple_as_written[option].txt
+released	input_model/variadic_tuple_as_written[released].txt
 [test_input_model_wire_types]
 Aliased-builtin-api	main/input_model/wire_types_aliased.py
 Aliased-builtin-cli	main/input_model/wire_types_aliased.py
