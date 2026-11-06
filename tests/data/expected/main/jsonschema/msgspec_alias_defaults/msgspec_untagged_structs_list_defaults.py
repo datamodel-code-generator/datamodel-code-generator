@@ -19,13 +19,17 @@ class Square(Struct):
 Shapes: TypeAlias = list[Circle | Square]
 
 
+Pair: TypeAlias = tuple[Circle, Square]
+
+
 class Model(Struct):
     shapes: list[Circle | Square] | UnsetType = field(
         default_factory=lambda: [{'radius': 1}]
     )
     aliasShapes: Shapes | UnsetType = field(default_factory=lambda: [{'side': 2}])
     pair: tuple[Circle, Square] | UnsetType = field(
-        default_factory=lambda: convert(
-            [{'radius': 1}, {'side': 2}], type=tuple[Circle, Square]
-        )
+        default_factory=lambda: [{'radius': 1}, {'side': 2}]
+    )
+    aliasPair: Pair | UnsetType = field(
+        default_factory=lambda: convert([{'radius': 3}, {'side': 4}], type=Pair)
     )

@@ -12,6 +12,15 @@
     }
   ],
   "pair": [
+    "list",
+    {
+      "radius": "int"
+    },
+    {
+      "side": "int"
+    }
+  ],
+  "aliasPair": [
     "tuple",
     "Circle",
     "Square"

@@ -111,8 +111,10 @@
     },
     "emptyAliasMap": {},
     "pair": [
-      "tuple",
-      "PodSpec",
+      "list",
+      {
+        "name": "str"
+      },
       "int"
     ],
     "structMapOrString": {
@@ -148,7 +150,7 @@
       ]
     ]
   },
-  "decoded_defaults_equal": true,
+  "decoded_defaults_equal": false,
   "valid": {
     "structMap": {
       "k": {

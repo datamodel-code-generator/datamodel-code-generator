@@ -26,6 +26,9 @@ class Holder(Struct):
     labels: dict[str, str] | UnsetType = UNSET
 
 
+LabelsThenRow: TypeAlias = tuple[dict[str, str], Row]
+
+
 class Model(Struct):
     row: Row | UnsetType = field(
         default_factory=lambda: convert(
@@ -61,4 +64,10 @@ class Model(Struct):
     )
     rowArray: Row | UnsetType = field(
         default_factory=lambda: convert(['p', 5], type=Row)
+    )
+    labelsThenRow: tuple[dict[str, str], Row] | UnsetType = field(
+        default_factory=lambda: [{'a': 'b'}, {'a': 'z'}]
+    )
+    labelsThenRowAlias: LabelsThenRow | UnsetType = field(
+        default_factory=lambda: [{'a': 'b'}, {'a': 'z'}]
     )

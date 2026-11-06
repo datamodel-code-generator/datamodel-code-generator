@@ -46,7 +46,7 @@ class Model(Struct):
     )
     emptyAliasMap: Union[PodMap, UnsetType] = field(default_factory=dict)
     pair: Union[Tuple["PodSpec", int], UnsetType] = field(
-        default_factory=lambda: convert([{'name': 't'}, 1], type=Tuple[PodSpec, int])
+        default_factory=lambda: [{'name': 't'}, 1]
     )
     structMapOrString: Union[Dict[str, "PodSpec"], str, UnsetType] = field(
         default_factory=lambda: convert({'e': {'name': 'r'}}, type=Dict[str, PodSpec])

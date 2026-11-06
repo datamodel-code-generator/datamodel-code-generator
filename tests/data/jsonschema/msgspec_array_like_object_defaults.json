@@ -79,6 +79,41 @@
         "p",
         5
       ]
+    },
+    "labelsThenRow": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        {
+          "$ref": "#/$defs/Row"
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2,
+      "default": [
+        {
+          "a": "b"
+        },
+        {
+          "a": "z"
+        }
+      ]
+    },
+    "labelsThenRowAlias": {
+      "$ref": "#/$defs/LabelsThenRow",
+      "default": [
+        {
+          "a": "b"
+        },
+        {
+          "a": "z"
+        }
+      ]
     }
   },
   "$defs": {
@@ -140,6 +175,22 @@
           }
         }
       }
+    },
+    "LabelsThenRow": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        {
+          "$ref": "#/$defs/Row"
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2
     }
   }
 }

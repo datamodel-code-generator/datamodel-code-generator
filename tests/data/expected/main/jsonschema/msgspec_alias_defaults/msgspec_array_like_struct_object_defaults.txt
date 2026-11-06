@@ -6,7 +6,9 @@
     "rows": "[Row(a='w', b_c=UNSET)]",
     "rowAlias": "Row(a='v', b_c=UNSET)",
     "holder": "Holder(row=Row(a=UNSET, b_c=4.0), name='h', tags=['t'], nullableTags=None, rowsByKey={'k': Row(a='m', b_c=UNSET)}, labels={'x': 'y'})",
-    "rowArray": "Row(a='p', b_c=5.0)"
+    "rowArray": "Row(a='p', b_c=5.0)",
+    "labelsThenRow": "[{'a': 'b'}, {'a': 'z'}]",
+    "labelsThenRowAlias": "[{'a': 'b'}, {'a': 'z'}]"
   },
   "decoded_equal": true
 }

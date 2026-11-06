@@ -12,10 +12,12 @@
     "name": "str"
   },
   "countsThenStruct": [
-    "tuple",
+    "list",
     {
       "a": "int"
     },
-    "PodSpec"
+    {
+      "name": "str"
+    }
   ]
 }
