@@ -139,6 +139,7 @@ EXTRA_RUNS: dict[str, tuple[tuple[DataModelType, tuple[str, ...]], ...]] = {
         (DataModelType.PydanticV2BaseModel, ("--name-allof-union-members-after-branches",)),
         (DataModelType.PydanticV2BaseModel, ("--read-only-write-only-model-type", "all")),
     ),
+    "allof_beside_site_discriminator": ((DataModelType.MsgspecStruct, ("--use-msgspec-tagged-unions",)),),
 }
 VALIDATING_BACKENDS = {
     DataModelType.PydanticV2BaseModel,
@@ -195,6 +196,7 @@ DISTRIBUTE_DOCUMENTS: tuple[str, ...] = (
     "allof_beside_union",
     "allof_beside_union_oas31",
     "allof_beside_discriminated_branch",
+    "allof_beside_site_discriminator",
     "union_ref_branch_values",
     "union_ref_branch_values_draft07",
     "allof_union_parts",

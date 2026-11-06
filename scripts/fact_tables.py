@@ -1125,6 +1125,9 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         "Reference", "FIELDLESS_SITE_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
     ),
     AttributeFact(
+        "Reference", "REF_BRANCH_SCHEMA_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
+    ),
+    AttributeFact(
         "Reference", "ITEM_COUNTS_SITE_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
     ),
     AttributeFact(

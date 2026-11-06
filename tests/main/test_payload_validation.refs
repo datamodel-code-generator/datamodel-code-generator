@@ -1930,6 +1930,9 @@ openapi/schema_intersection/allof_beside_discriminated_branch.yaml::components.s
 openapi/schema_intersection/allof_beside_discriminated_branch.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/schema_intersection/allof_beside_discriminated_branch.yaml::components.schemas.Shape	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/schema_intersection/allof_beside_discriminated_branch.yaml::components.schemas.Square	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_intersection/allof_beside_site_discriminator.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_intersection/allof_beside_site_discriminator.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_intersection/allof_beside_site_discriminator.yaml::components.schemas.Dog	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/schema_intersection/allof_beside_union_oas31.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/schema_intersection/allof_beside_union_oas31.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/schema_intersection/allof_beside_union_oas31.yaml::components.schemas.Dog	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3974,6 +3977,9 @@ openapi/schema_intersection/allof_beside_discriminated_branch.yaml::components.s
 openapi/schema_intersection/allof_beside_discriminated_branch.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/schema_intersection/allof_beside_discriminated_branch.yaml::components.schemas.Shape	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/schema_intersection/allof_beside_discriminated_branch.yaml::components.schemas.Square	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_intersection/allof_beside_site_discriminator.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_intersection/allof_beside_site_discriminator.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/schema_intersection/allof_beside_site_discriminator.yaml::components.schemas.Dog	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/schema_intersection/allof_beside_union_oas31.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/schema_intersection/allof_beside_union_oas31.yaml::components.schemas.Cat	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/schema_intersection/allof_beside_union_oas31.yaml::components.schemas.Dog	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

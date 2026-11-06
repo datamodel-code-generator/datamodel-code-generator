@@ -146,7 +146,12 @@ from datamodel_code_generator._json_schema import (
     schema_positions,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
 from datamodel_code_generator._message_text import english_list, for_count
-from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, ITEM_COUNTS_SITE_KEY, model_key_of
+from datamodel_code_generator._model_keys import (
+    FIELDLESS_SITE_KEY,
+    ITEM_COUNTS_SITE_KEY,
+    REF_BRANCH_SCHEMA_KEY,
+    model_key_of,
+)
 from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator._mro import (
     linearize,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -863,14 +868,12 @@ def _expanded_variants(data_type: DataType) -> list[tuple[str, Reference]] | Non
     The type is the union the OpenAPI parser built for a ``$ref`` to a discriminated schema, each member recording the
     ``$ref`` of the subtype it stands for (``subtype_ref_of``); None for any other type.
     """
-    if data_type.reference is not None or not data_type.data_types:
-        return None
     variants = [
         (ref, member.reference)
         for member in data_type.data_types
         if member.reference is not None and (ref := subtype_ref_of(member)) is not None
     ]
-    return variants if len(variants) == len(data_type.data_types) else None
+    return variants if data_type.reference is None and variants and len(variants) == len(data_type.data_types) else None
 
 
 def _declared_value_types(schema: JsonSchemaObject) -> tuple[str, ...]:
@@ -4366,19 +4369,24 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ``legacy-ref-branch-without-site-parts`` is kept, the ``allOf`` members beside the union as further bases, as
         an inline branch merged with the site takes them: the ``allOf`` of the branch and those members with the
         site's other keywords (``parse_all_of``), the branch's class ``reference`` (``_BRANCH_REFERENCE_KEY``), a
-        dynamic scope's specialization included, its base. A branch the site adds nothing to is the branch's own class.
+        dynamic scope's specialization included, its base; its reference records the branch's
+        (``REF_BRANCH_SCHEMA_KEY``), whose schema path gives a tag the class takes from a path. A branch the site adds
+        nothing to is the branch's own class.
         ``parse_combined_schema`` calls it, where the site distributes its ``allOf`` members, for each subtype a
         discriminator expanded a ``$ref`` branch to (``_expanded_variants``), numbering the models in union order.
         """
         if obj.allOf and "legacy-ref-branch-without-site-parts" not in self._legacy_intersection:
             member = branch.model_copy()
             member.__dict__[_BRANCH_REFERENCE_KEY] = reference
-            return self.parse_all_of(
+            data_type = self.parse_all_of(
                 name,
                 obj.model_copy(update={"allOf": [member, *obj.allOf], "anyOf": [], "oneOf": []}),
                 path,
                 ignore_duplicate_model=True,
             )
+            assert data_type.reference is not None
+            data_type.reference.__dict__[REF_BRANCH_SCHEMA_KEY] = reference
+            return data_type
         return self._parse_object_common_part(
             name, obj, path, ignore_duplicate_model=True, fields=[], base_classes=[reference], required=[]
         )

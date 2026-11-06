@@ -1,0 +1,2 @@
+msgspec cannot decode the discriminated union Named: its Struct types Named1, Named2 are not all tagged. Pass --use-msgspec-tagged-unions to tag them.
+msgspec cannot decode the discriminated union Mapped: its Struct types Mapped1, Mapped2 are not all tagged. Pass --use-msgspec-tagged-unions to tag them.

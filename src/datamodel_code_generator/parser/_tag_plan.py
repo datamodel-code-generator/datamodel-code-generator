@@ -49,7 +49,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._constraint_applicability import TAG_LITERAL_UNTAKEN_KEYWORD
-from datamodel_code_generator._model_keys import model_key_of
+from datamodel_code_generator._model_keys import model_key_of, ref_branch_schema_of
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator.model._decisions.enum_kind import values_no_literal_holds
@@ -78,6 +78,7 @@ from datamodel_code_generator.model.base import (
 )
 from datamodel_code_generator.model.enum import Enum
 from datamodel_code_generator.parser._passes._shared import (
+    _base_schema_paths,
     _FieldTagFacts,
     _format_tags,
     _get_discriminator_field_value,
@@ -93,7 +94,7 @@ from datamodel_code_generator.parser._passes._shared import (
 )
 from datamodel_code_generator.parser._passes.render_prep import validates_structured_default
 from datamodel_code_generator.python_literal import stable_repr
-from datamodel_code_generator.reference import _is_special_path
+from datamodel_code_generator.reference import Reference, _is_special_path
 from datamodel_code_generator.types import ANY, NONE
 
 if TYPE_CHECKING:
@@ -110,7 +111,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.parser._passes._shared import DiscriminatorValue
-    from datamodel_code_generator.reference import ModelResolver, ModelType, Reference
+    from datamodel_code_generator.reference import ModelResolver, ModelType
     from datamodel_code_generator.types import DataType
 
 __all__ = [
@@ -183,7 +184,7 @@ DiscriminatorTag: TypeAlias = "tuple[DataModel, DataModelFieldBase, Discriminato
 VariantTagField: TypeAlias = "tuple[DataModel, DataModelFieldBase, Sequence[DiscriminatorValue]]"
 """A variant a union tags, the tag field it holds and the tags the union gives it there."""
 
-FieldNamer: TypeAlias = Callable[[str, "Reference | None"], tuple[str, str | list[str] | None]]
+FieldNamer: TypeAlias = Callable[[str, Reference | None], tuple[str, str | list[str] | None]]
 """The Python name and alias a property takes in the class of the reference, or in any class for None."""
 
 ValidityMode: TypeAlias = Literal["source-name", "python-or-original-name"]
@@ -312,10 +313,7 @@ def located_mapping(mapping: dict[str, str] | None, data_types: Iterable[DataTyp
     schema_paths = {
         path.removesuffix("#")
         for variant in variants
-        for path in (
-            _get_schema_path(variant),
-            *(_get_schema_path(base_class.reference) for base_class in variant.base_classes if base_class.reference),
-        )
+        for path in (_get_schema_path(variant), *_base_schema_paths(variant))
     }
     return {
         tag: MappingPath(path, path.located if path.located.removesuffix("#") in schema_paths else None)
@@ -458,7 +456,7 @@ def _find_reused_discriminator_value(
     return _find_discriminator_value(source.fields, field_name, field_name_mode=field_name_mode, site=site)
 
 
-def _schema_path_segment(model: DataModel) -> str:
+def _schema_path_segment(model: DataModel | Reference) -> str:
     """Return the last segment of the path of the schema a model is generated from (``_get_schema_path``)."""
     return _get_schema_path(model).rpartition("/")[2]
 
@@ -791,7 +789,13 @@ class _VariantTagFacts:
         ]
 
     def path_segment(self) -> str:
-        """Return the last segment of the variant's schema path."""
+        """Return the last segment of the variant's schema path, for the class of a ``$ref`` branch the branch's.
+
+        The class of a ``$ref`` branch with the allOf members beside its union (``ref_branch_schema_of``) stands for
+        the schema the branch names, which is the variant without --distribute-allof-over-unions.
+        """
+        if isinstance(branch := ref_branch_schema_of(self.model.reference), Reference):
+            return _schema_path_segment(branch)
         return _schema_path_segment(self.model)
 
 
