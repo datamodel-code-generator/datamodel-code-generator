@@ -577,3 +577,11 @@ match = "^\\[name-removed\\] (?:other:)?Options: removed$"
 reason = "a schema with x-python-import outside $defs that only fields name was also written as an empty class that nothing used, beside the import that types those fields; like a schema in $defs it is the class it imports now, and a schema that a base names keeps its model (owner decision: the unusable empty stand-in is deleted by default)"
 decision = "#5533"
 release_note = "a schema with x-python-import that a $ref names outside $defs, such as #/components/Foo, no longer also writes an empty class FooModel that nothing uses; the fields that name it keep the imported class"
+
+[[accepted]]
+input = "*items_beside_other_types*"
+aspects = [ "type" ]
+match = "^\\[type\\] (?:items_beside_other_types:)?(?:Model:\\w+|NullableString): .*\\blist\\[(?:int|Any|object)\\].* -> (?!.*\\blist\\[).*$"
+reason = "items or prefixItems beside declared types without array, such as type [string, null] with items, typed the schema as a list, which rejected every value the schema accepts; items apply only to arrays, so the schema is typed by its declared types, and a value that parsed before parses the same (rejects-valid fix)"
+decision = "#6382"
+release_note = "a schema whose declared types leave out array, such as type: [string, \"null\"] with items, is typed by those types (str | None) instead of a list that rejected every valid value; items and prefixItems apply only to arrays"

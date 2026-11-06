@@ -649,8 +649,18 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
 
     @cached_property
     def is_array(self) -> bool:
-        """Check if the schema represents an array type."""
-        return self.items is not None or self.prefixItems is not None or self.type == "array"
+        """Check if the schema represents an array type.
+
+        It does when ``array`` is its type, when it is among its types and items are given, or when no type is declared
+        but items are: items apply only to arrays, so beside other declared types they make no array.
+        """
+        has_items = self.items is not None or self.prefixItems is not None
+        match self.type:
+            case None:
+                return has_items
+            case str():
+                return self.type == "array"
+        return has_items and "array" in self.type
 
     @cached_property
     def ref_object_name(self) -> str:  # pragma: no cover

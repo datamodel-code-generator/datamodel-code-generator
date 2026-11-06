@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "nullableString": {"type": ["string", "null"], "items": {"type": "integer"}},
+    "string": {"type": "string", "items": {"type": "integer"}},
+    "reference": {"$ref": "#/$defs/NullableString"},
+    "object": {"type": ["object", "null"], "items": {"type": "integer"}, "properties": {"a": {"type": "integer"}}},
+    "prefixed": {"type": ["integer", "boolean"], "prefixItems": [{"type": "integer"}]},
+    "arrayOrString": {"type": ["array", "string"], "items": {"type": "integer"}},
+    "untyped": {"items": {"type": "integer"}}
+  },
+  "$defs": {"NullableString": {"type": ["string", "null"], "items": {"type": "integer"}}}
+}
