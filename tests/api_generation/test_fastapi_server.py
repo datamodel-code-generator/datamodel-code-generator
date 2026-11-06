@@ -150,6 +150,7 @@ def test_fastapi_server(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPat
         "overridden_containers",
         "ref_siblings",
         "ref_siblings_30",
+        "ref_siblings_30_ignored",
     ],
 )
 def test_generated_client(case: str, tmp_path: Path) -> None:

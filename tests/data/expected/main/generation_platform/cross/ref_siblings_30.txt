@@ -1,8 +1,8 @@
 models shared True
 # ref_siblings_30 in-process sync, in-process async
 list_items defaults
-  > GET /items?limit=20&offset=20
-  list_items(limit=20, offset=20, page=None)
+  > GET /items?limit=20&offset=20&page=7
+  list_items(limit=20, offset=20, page=7)
   < 204 -
   = None
 list_items values

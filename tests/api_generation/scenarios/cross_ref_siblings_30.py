@@ -1,7 +1,7 @@
 """Call the reference siblings server through its client when `--schema-version 3.0` reads the document as OpenAPI 3.0.
 
-OpenAPI 3.0 ignores the keywords beside a `$ref`, as the models do under that version: `page` has no default on
-either side, while `limit` and `offset` keep the default of `Limit`.
+The models read the keywords beside a `$ref` in OpenAPI 3.0 too, and so do client and server: `page` takes the
+default written beside its `$ref`, and `limit` and `offset` keep the default of `Limit`.
 """
 
 from __future__ import annotations

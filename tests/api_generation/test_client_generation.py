@@ -86,6 +86,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "media-item-parts",
         "parameter-content-defaults-30",
         "parameter-content-defaults-31",
+        "parameter-ref-loop-30",
         "multipart-referenced-items",
         "forms-reuse-response",
         "forms-allof-cycle",

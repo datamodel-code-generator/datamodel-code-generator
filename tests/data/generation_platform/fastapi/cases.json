@@ -377,6 +377,9 @@
   "security-roles": {
     "input": "auth-roles.yaml"
   },
+  "parameter-ref-loop-30": {
+    "input": "parameter-ref-loop-30.yaml"
+  },
   "security-roles-30": {
     "input": "auth-roles-30.yaml"
   },

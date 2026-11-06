@@ -420,9 +420,15 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self._visits: list[_WalkedHolder] = []
         self._callback_origin: SchemaLocation | None = None
         super().__init__(source, config=config)
-        self._reader = _Reader(
-            self._site_facts, siblings=lambda location: self._ref_siblings_apply_to(location, legacy="parsed-document")
-        )
+        self._reader = _Reader(self._site_facts, siblings=self._reads_ref_siblings_at)
+
+    def _reads_ref_siblings_at(self, location: SchemaLocation) -> bool:
+        """Return whether the models read the keywords beside a ``$ref`` at a location with the schema it names.
+
+        They do in every version, unless --ignore-ref-siblings-by-schema-version reads the ``$ref`` alone where the
+        version of the location ignores them (``reads_ref_alone``).
+        """
+        return not (self.config.ignore_ref_siblings_by_schema_version and self._ignores_ref_siblings_at(location))
 
     def _resolve_local_ref_path(self, path: Path, ref: str) -> Path:
         """Refuse a local file that a served source document would publish, before reading it.
@@ -2000,8 +2006,7 @@ class _Reader:
     """Read the loaded API documents by declaration while the walk reads them, recording what the models do not say.
 
     It reads the site of each location (``ApiOpenAPIParser._site_facts``), and the keywords beside a reference at a
-    location as parts of the schema where the parser does (``siblings``, the parser's ``_ref_siblings_apply_to``, by
-    the version of the location's document under --read-schema-version-per-document).
+    location with the schema it names where the models do (``siblings``, the parser's ``_reads_ref_siblings_at``).
     """
 
     def __init__(
@@ -2013,15 +2018,18 @@ class _Reader:
     def annotations(self, declaration: SchemaLocation) -> dict[str, YamlValue]:
         """Return the documentation keywords and default a schema gives its values, through its reference chain.
 
-        The schema a chain leads to gives its own, and the keywords beside each reference, where they are parts of the
-        schema as in OpenAPI 3.1, add theirs, the nearer one's first; in OpenAPI 3.0 they say nothing.
+        The schema a chain leads to gives its own, and the keywords beside each reference that the models read add
+        theirs, the nearer one's first. A chain that loops back leads to no schema: the keywords beside its references
+        are all it gives.
         """
         location, site = declaration, self.site(declaration)
         seen = {declaration}
         found: dict[str, YamlValue] = {}
-        while (target := site.ref) is not None and target not in seen:
+        while (target := site.ref) is not None:
             if self.siblings(location):
                 found = {**site.annotations, **found}
+            if target in seen:
+                return found
             seen.add(target)
             location, site = target, self.site(target)
         return {**site.annotations, **found}

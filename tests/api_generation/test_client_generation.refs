@@ -271,6 +271,8 @@ parameter-content-defaults-30	main/generation_platform/client/packages/parameter
 parameter-content-defaults-30	main/generation_platform/client/parameter-content-defaults-30.txt
 parameter-content-defaults-31	main/generation_platform/client/packages/parameter-content-defaults-31/pydantic_v2_BaseModel//*.py
 parameter-content-defaults-31	main/generation_platform/client/parameter-content-defaults-31.txt
+parameter-ref-loop-30	main/generation_platform/client/packages/parameter-ref-loop-30/pydantic_v2_BaseModel//*.py
+parameter-ref-loop-30	main/generation_platform/client/parameter-ref-loop-30.txt
 parts-bound-responses	main/generation_platform/client/packages/parts-bound-responses/pydantic_v2_BaseModel//*.py
 parts-bound-responses	main/generation_platform/client/parts-bound-responses.txt
 parts-bound-responses-reuse	main/generation_platform/client/packages/parts-bound-responses-reuse/pydantic_v2_BaseModel//*.py	= main/generation_platform/client/packages/parts-bound-responses/pydantic_v2_BaseModel//*.py
