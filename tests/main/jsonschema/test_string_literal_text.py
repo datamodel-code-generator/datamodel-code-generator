@@ -10,7 +10,12 @@ from jsonschema import Draft7Validator
 from jsonschema import ValidationError as SchemaValidationError
 
 from datamodel_code_generator.__main__ import Exit
-from tests.main.conftest import JSON_SCHEMA_DATA_PATH, assert_generated_model_json_validation, run_main_and_assert
+from tests.main.conftest import (
+    JSON_SCHEMA_DATA_PATH,
+    assert_generated_model_json_invalid,
+    assert_generated_model_json_validation,
+    run_main_and_assert,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -117,6 +122,187 @@ def test_regex_literal_surrogate(output_file: Path, output_type: str) -> None:
         input_file_type="jsonschema",
         extra_args=["--formatters", "builtin", "--output-model-type", output_type],
         force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel"], id="model"),
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel", "--use-type-alias"], id="model-type-alias"),
+        pytest.param(
+            ["--output-model-type", "pydantic_v2.BaseModel", "--use-type-alias", "--target-pydantic-version", "2"],
+            id="model-type-alias-target-2",
+            marks=pytest.mark.filterwarnings("ignore:The generated models need pydantic>=2.5:UserWarning"),
+        ),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass", "--use-type-alias"], id="dataclass-type-alias"),
+    ],
+)
+def test_regex_surrogate_engine(output_file: Path, extra_args: list[str]) -> None:
+    """Select Python's regex engine for a pattern with a lone surrogate, also one a type alias holds (#6320).
+
+    The default engine replaced the surrogate by U+FFFD, so the model took a value with three of them that the
+    schema rejects. An alias keeps the pattern a string, as no Pydantic builds a compiled one that holds a lone
+    surrogate, and the model that uses the alias selects the engine. The schema is written here, as a YAML parser
+    rejects the escape of a lone surrogate in a fixture file.
+    """
+    schema = {
+        "title": "Surrogate",
+        "type": "object",
+        "$defs": {
+            "Text": {"type": "string", "pattern": "^a\ud800b$"},
+            "Holder": {"type": "object", "properties": {"named": {"$ref": "#/$defs/Text"}}},
+        },
+        "properties": {"inline": {"type": "string", "pattern": "^a\ud800b$"}, "holder": {"$ref": "#/$defs/Holder"}},
+    }
+    (input_path := output_file.parent / "regex_surrogate_engine.json").write_text(json.dumps(schema), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", *extra_args],
+        force_exec_validation=True,
+    )
+    validator = Draft7Validator(schema)
+    replaced = "a\ufffd\ufffd\ufffdb"
+    for name, invalid in {"inline": {"inline": replaced}, "holder": {"holder": {"named": replaced}}}.items():
+        with pytest.raises(SchemaValidationError):
+            validator.validate(invalid)
+        assert_generated_model_json_invalid(
+            output_file,
+            module_name=f"regex_surrogate_engine_{name}",
+            model_name="Surrogate",
+            invalid_json=json.dumps(invalid),
+            expected_error_type="string_pattern_mismatch",
+        )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel", "--use-type-alias"], id="model-type-alias"),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass", "--use-type-alias"], id="dataclass-type-alias"),
+    ],
+)
+def test_regex_surrogate_engine_beside_default_engine_patterns(output_file: Path, extra_args: list[str]) -> None:
+    r"""Keep the default regex engine for a lone surrogate where its config also builds a pattern that engine runs.
+
+    Python's engine rejects ``\p{L}`` at import and reads ``$`` before a final line feed, so a model that builds such
+    a pattern beside a lone surrogate, in its own fields (``Sibling``), in a type alias it uses (``Holder``) or in a
+    subclass that takes its config (``Base``, through ``Child``), keeps the default engine as 0.89.0 did and warns;
+    ``Surrogate``, whose config builds lone surrogates only, still selects Python's engine (#6320), and so does
+    ``Lookaround``, whose lookaround needs it anyway.
+    """
+    surrogate, letters = "^a\ud800b$", "^\\p{L}+$"
+    schema = {
+        "title": "Surrogate",
+        "type": "object",
+        "$defs": {
+            "Text": {"type": "string", "pattern": surrogate},
+            "Holder": {
+                "type": "object",
+                "properties": {"named": {"$ref": "#/$defs/Text"}, "letters": {"type": "string", "pattern": letters}},
+            },
+            "Sibling": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "pattern": surrogate},
+                    "anchored": {"type": "string", "pattern": "^abc$"},
+                },
+            },
+            "Lookaround": {
+                "type": "object",
+                "properties": {
+                    "text": {"type": "string", "pattern": surrogate},
+                    "look": {"type": "string", "pattern": "^(?=a)a$"},
+                },
+            },
+            "Base": {"type": "object", "properties": {"text": {"type": "string", "pattern": surrogate}}},
+            "Child": {
+                "allOf": [{"$ref": "#/$defs/Base"}],
+                "type": "object",
+                "properties": {"letters": {"type": "string", "pattern": letters}},
+            },
+        },
+        "properties": {
+            "inline": {"type": "string", "pattern": surrogate},
+            **{name.lower(): {"$ref": f"#/$defs/{name}"} for name in ("Holder", "Sibling", "Lookaround", "Child")},
+        },
+    }
+    (input_path := output_file.parent / "regex_surrogate_beside.json").write_text(json.dumps(schema), encoding="utf-8")
+    with (
+        pytest.warns(UserWarning, match=r"so Holder accepts text the schema rejects: .+ r'\^\\p\{L\}\+\$'"),
+        pytest.warns(UserWarning, match=r"so Sibling accepts text the schema rejects: .+ r'\^abc\$'"),
+        pytest.warns(UserWarning, match=r"so Base accepts text the schema rejects: .+ r'\^\\p\{L\}\+\$'"),
+    ):
+        run_main_and_assert(
+            input_path=input_path,
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--formatters", "builtin", *extra_args],
+            force_exec_validation=True,
+        )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="regex_surrogate_beside",
+        model_name="Surrogate",
+        valid_json=json.dumps({
+            "holder": {"letters": "abc"},
+            "sibling": {"anchored": "abc"},
+            "child": {"letters": "abc"},
+            "lookaround": {"look": "a"},
+        }),
+        invalid_json=json.dumps({"lookaround": {"text": "a\ufffd\ufffd\ufffdb"}}),
+        expected_error_type="string_pattern_mismatch",
+    )
+    assert_generated_model_json_invalid(
+        output_file,
+        module_name="regex_surrogate_beside_inline",
+        model_name="Surrogate",
+        invalid_json=json.dumps({"inline": "a���b"}),
+        expected_error_type="string_pattern_mismatch",
+    )
+
+
+def test_regex_surrogate_engine_of_schema_validator_adapters(output_file: Path) -> None:
+    r"""Select Python's regex engine in the adapter of a patternProperties type whose patterns all hold lone surrogates.
+
+    The adapter of ``^code`` builds the lone surrogate of the alias ``Code`` alone and selects the engine (#6320); the
+    one of ``^text`` also builds ``\p{L}``, which Python's engine rejects, so it keeps the default engine.
+    """
+    surrogate = "^a\ud800b$"
+    schema = {
+        "title": "Surrogate",
+        "type": "object",
+        "$defs": {"Code": {"type": "string", "pattern": surrogate}},
+        "patternProperties": {
+            "^code": {"$ref": "#/$defs/Code"},
+            "^text": {"anyOf": [{"type": "string", "pattern": surrogate}, {"type": "string", "pattern": "^\\p{L}+$"}]},
+        },
+    }
+    (input_path := output_file.parent / "regex_surrogate_adapter.json").write_text(json.dumps(schema), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--formatters",
+            "builtin",
+            "--generate-schema-validators",
+            "--use-type-alias",
+            "--field-constraints",
+        ],
+        force_exec_validation=True,
+    )
+    with pytest.raises(SchemaValidationError):
+        Draft7Validator(schema).validate(invalid := {"code1": "a���b"})
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="regex_surrogate_adapter",
+        model_name="Surrogate",
+        valid_json='{"text1": "abc"}',
+        invalid_json=json.dumps(invalid),
+        expected_error_type="string_pattern_mismatch",
     )
 
 
@@ -351,6 +537,42 @@ def test_lone_surrogate_configured_alias_refused_by_pydantic(
         capsys=capsys,
         expected_stderr_contains=f"Surrogate.name: {site} at surrogate_alias.json#/properties/name holds a lone",
         output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize("output_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"])
+def test_lone_surrogate_alias_replaced_by_serialization_alias(output_file: Path, output_type: str) -> None:
+    r"""Keep the model whose only alias holding a lone surrogate the call does not write (#5983).
+
+    ``--use-serialization-alias`` writes the serialization alias that ``--serialization-aliases`` gives in place of the
+    property name ``k\ud800y``, so Pydantic reads no lone surrogate and the module builds, as in 0.89.0.
+    """
+    schema = {"title": "Surrogate", "type": "object", "properties": {"k\ud800y": {"type": "string"}}}
+    (input_path := output_file.parent / "surrogate_replaced.json").write_text(json.dumps(schema), encoding="utf-8")
+    (aliases_path := output_file.parent / "surrogate_replaced_aliases.json").write_text(
+        json.dumps({"k\ud800y": "key"}), encoding="utf-8"
+    )
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_type,
+            "--use-serialization-alias",
+            "--serialization-aliases",
+            str(aliases_path),
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="surrogate_replaced",
+        model_name="Surrogate",
+        valid_json='{"k_y": "v"}',
+        invalid_json='{"k_y": 1}',
+        expected_error_type="string_type",
+        expected_attribute_path=("k_y",),
+        expected_attribute_value="v",
     )
 
 

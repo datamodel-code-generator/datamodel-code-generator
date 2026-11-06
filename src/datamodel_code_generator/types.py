@@ -1988,34 +1988,33 @@ class DataTypeManager(ABC):
         A keyword none of them takes fails on every value of the type. Each member of the union the type is, other than
         None, counts: one that names a type alias stands for its type, read the same way, and one that names another
         model takes what ``member_constraint_keywords`` gives (an enum whose base is its value type what that type
-        takes; a root model, an object model, a dataclass or a plain enum none). The answer is None where a value is no
-        instance of a model, whose keywords the field assembly decided, or names a model ``model_of`` does not hold or
-        an alias that names itself again (``seen``).
+        takes; a root model, an object model, a dataclass or a plain enum none), and the length keywords too where its
+        instance has a length (``ModelView.has_length``, the sequence interface of a root model), which Pydantic checks
+        by ``len()``. The answer is None where a value is no instance of a model, whose keywords the field assembly
+        decided, or names a model ``model_of`` does not hold or an alias that names itself again (``seen``). The values
+        of the aliases a member names are read from a stack of their own, so a long chain of aliases takes no call per
+        alias.
         """
         keywords: set[str] = set()
-        if not (members := tuple(_value_members(data_type))):
-            return None
-        for member in members:
-            if (
-                (reference := member.reference) is None
-                or id(reference) in seen
-                or (model := model_of(reference)) is None
-            ):
+        pending: list[tuple[DataType, frozenset[int]]] = [(data_type, seen)]
+        while pending:
+            current, current_seen = pending.pop()
+            if not (members := tuple(_value_members(current))):
                 return None
-            if model.form != "alias":
-                keywords.update(cls.member_constraint_keywords(member, target_version, model_of) or ())
-            elif (
-                not (fields := model.fields)
-                or (
-                    aliased := cls.model_value_constraint_keywords(
-                        cast("DataType", fields[0].data_type), target_version, model_of, seen | {id(reference)}
-                    )
-                )
-                is None
-            ):
-                return None
-            else:
-                keywords.update(aliased)
+            for member in members:
+                if (
+                    (reference := member.reference) is None
+                    or id(reference) in current_seen
+                    or (model := model_of(reference)) is None
+                    or (model.form == "alias" and not model.fields)
+                ):
+                    return None
+                if model.form != "alias":
+                    keywords.update(cls.member_constraint_keywords(member, target_version, model_of) or ())
+                    if model.has_length:
+                        keywords.update(_applicability.LENGTH_KEYWORDS | _applicability.ITEM_COUNT_KEYWORDS)
+                else:
+                    pending.append((cast("DataType", model.fields[0].data_type), current_seen | {id(reference)}))
         return frozenset(keywords)
 
     @classmethod

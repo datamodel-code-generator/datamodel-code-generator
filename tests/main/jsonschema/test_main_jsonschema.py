@@ -12138,6 +12138,39 @@ def test_main_jsonschema_combined_branch_enum_intersection(output_file: Path, ke
     )
 
 
+@pytest.mark.filterwarnings("error::UserWarning")
+def test_main_jsonschema_combined_nullable_without_type(output_file: Path) -> None:
+    """Read a branch or member that states ``nullable`` without a ``type`` as admitting every type (#6246).
+
+    ``nullable`` adds null to a declared ``type`` only, so under ``--intersect-combined-schema-keywords`` the ``oneOf``
+    branch ``{nullable: true}`` keeps the string branch of the ``anyOf`` beside it, and the ``anyOf`` member
+    ``{nullable: true}`` meets both ``oneOf`` branches without a warning that no value satisfies them.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "combined_nullable_without_type.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--intersect-combined-schema-keywords", "--disable-timestamp", "--formatters", "builtin"],
+    )
+    validator = Draft202012Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    valid = {"branchUntyped": "a", "memberUntyped": 1}
+    invalid = {"branchUntyped": 1}
+    validator.validate(valid)
+    with pytest.raises(SchemaValidationError):
+        validator.validate(invalid)
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="combined_nullable_without_type",
+        model_name="Model",
+        valid_json=json.dumps(valid),
+        invalid_json=json.dumps(invalid),
+        expected_error_type="string_type",
+        expected_attribute_path=("branchUntyped",),
+        expected_attribute_value="a",
+    )
+
+
 @pytest.mark.skipif(
     black.__version__.split(".")[0] == "19",
     reason="Installed black doesn't support the old style",
@@ -17316,6 +17349,43 @@ def test_main_jsonschema_import_cycle_map_key_alias(output_dir: Path, output_mod
         input_file_type="jsonschema",
         extra_args=["--output-model-type", output_model_type, "--disable-timestamp", "--formatters", "builtin"],
         force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--collapse-root-models", "--use-annotated"], id="collapse-annotated"),
+        pytest.param(["--preset", "standard-py312-20261027"], id="preset"),
+    ],
+)
+def test_main_jsonschema_import_cycle_map_key_alias_collapsed(output_dir: Path, extra_args: list[str]) -> None:
+    """Type a map key named by a root model in every collapsed site of the map, so no import cycle is left (#6381).
+
+    ``A.m`` collapses ``Counts`` and shares its key ``Key``; typing that key by its root type in ``Counts`` left the
+    one of ``A`` naming no type, which the merge of the cycle it then made with ``keys`` wrote as ``dict[, int]``.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "import_cycle_map_key_alias",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            *extra_args,
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_dir / "z.py",
+        module_name="import_cycle_map_key_alias_collapsed_z",
+        model_name="A",
+        valid_json='{"m": {"abcd": 1}}',
+        invalid_json='{"m": {"abcde": 1}}',
+        expected_error_type="string_too_long",
     )
 
 
@@ -22633,6 +22703,7 @@ def test_main_jsonschema_contains_true_count_constraints(output_file: Path) -> N
         pytest.param(["--use-root-model-type-alias"], '{"color":"blue"}', "enum", id="root_model_type_alias"),
         pytest.param(["--output-model-type", "pydantic_v2.dataclass"], '{"tags":["a"]}', "too_short", id="dataclass"),
         pytest.param(["--collapse-root-models"], '{"tagsAsFloats":["a","b","c","d"]}', "too_long", id="collapse"),
+        pytest.param(["--use-root-model-sequence-interface"], '{"tags":["a"]}', "too_short", id="sequence_interface"),
     ],
 )
 def test_main_jsonschema_contains_count_beside_model_reference(
@@ -22642,8 +22713,8 @@ def test_main_jsonschema_contains_count_beside_model_reference(
 
     Pydantic applies ``min_length`` to the value the type validates to, so beside a root model, an object model, an
     enum or a union of them it raised ``TypeError`` for every value; the field is written without the counts and
-    warns, as msgspec does. A type alias (``pydantic_v2.dataclass``) and a collapsed root keep them, and so do the
-    counts written as integral floats (#5942).
+    warns, as msgspec does. A type alias (``pydantic_v2.dataclass``), a collapsed root and a root model whose
+    sequence interface gives it a length keep them, and so do the counts written as integral floats (#5942).
     """
     with (
         pytest.warns(
@@ -23513,6 +23584,127 @@ def test_main_jsonschema_collapse_root_models_container_field_constraints(output
             "builtin",
         ],
         force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("output_model", "extra_args", "model_name", "expected_repr"),
+    [
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            [],
+            "Model",
+            "Model(iconColor=['a'], single=[1, 2], nullable=[1], grid=[[1, 2]], pairs={'k': [1, 2]}, rows=[['a'], 1], "
+            "listing=[Item(id=None, name='n')], typeList=TypeList(root=1), "
+            "through=Through(root=[Bounded(root=['a'])]))",
+            id="pydantic_v2.BaseModel",
+        ),
+        pytest.param(
+            "pydantic_v2.dataclass",
+            [],
+            "Model",
+            "Model(iconColor=['a'], single=[1, 2], nullable=[1], grid=[[1, 2]], pairs={'k': [1, 2]}, rows=[['a'], 1], "
+            "listing=[Item(id=None, name='n')], typeList=1, through=[['a']])",
+            id="pydantic_v2.dataclass",
+        ),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--read-only-write-only-model-type", "request-response"],
+            "ModelRequest",
+            "ModelRequest(iconColor=['a'], single=[1, 2], nullable=[1], grid=[[1, 2]], pairs={'k': [1, 2]}, "
+            "rows=[['a'], 1], listing=[ItemRequest(name='n')], typeList=TypeList(root=1), "
+            "through=Through(root=[Bounded(root=['a'])]))",
+            id="request-response",
+        ),
+    ],
+)
+def test_main_jsonschema_collapse_root_models_item_count_aliases(
+    output_model: str, extra_args: list[str], model_name: str, expected_repr: str, output_file: Path
+) -> None:
+    """Inline the root models whose types name the type aliases that hold the item counts of nested arrays.
+
+    The member of an anyOf, the items of an array and the values of a map write their counts on a type alias of their
+    own without --field-constraints; a root model that names such aliases is inlined as it was when they were inline
+    arrays, in its Request and Response variants too, so its values parse as lists and the aliases check the counts.
+    A root model whose alias names a constrained root model, and the root model of a type list, stay named.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_item_count_aliases.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--collapse-root-models",
+            "--output-model-type",
+            output_model,
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="collapse_root_models_item_count_aliases",
+        model_name=model_name,
+        valid_json=json.dumps({
+            "iconColor": ["a"],
+            "single": [1, 2],
+            "nullable": [1],
+            "grid": [[1, 2]],
+            "pairs": {"k": [1, 2]},
+            "rows": [["a"], 1],
+            "listing": [{"name": "n"}],
+            "typeList": 1,
+            "through": [["a"]],
+        }),
+        invalid_json='{"iconColor": ["a", "b", "c"]}',
+        expected_error_type="too_long",
+        expected_repr=expected_repr,
+        invalid_keyword_arguments=[
+            ({"iconColor": []}, "too_short"),
+            ({"single": [1]}, "too_short"),
+            ({"nullable": [1, 2, 3]}, "too_long"),
+            ({"grid": [[1]]}, "too_short"),
+            ({"pairs": {"k": [1]}}, "too_short"),
+            ({"rows": [[]]}, "too_short"),
+            ({"listing": []}, "too_short"),
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    "reuse_args",
+    [
+        pytest.param(["--reuse-model"], id="reuse-model"),
+        pytest.param(["--reuse-model", "--collapse-reuse-models"], id="collapse-reuse-models"),
+    ],
+)
+def test_main_jsonschema_collapse_root_models_item_count_alias_reuse(reuse_args: list[str], output_file: Path) -> None:
+    """Keep the root model of a type list whose alias renders as the item-count alias of an anyOf member.
+
+    Reuse compares the type alias that holds the item counts of a nested array only with other such aliases, so the
+    alias of ``B``, which 0.89.0 wrote, stays a model of its own and ``B`` keeps its class, while ``A`` is inlined and
+    the alias of ``C`` duplicates the alias of ``A``.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_item_count_alias_reuse.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=["--collapse-root-models", *reuse_args, "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="collapse_root_models_item_count_alias_reuse",
+        model_name="Model",
+        valid_json='{"a": ["x"], "b": ["x"], "c": ["y"]}',
+        invalid_json='{"a": []}',
+        expected_error_type="too_short",
+        expected_repr="Model(a=['x'], b=B(root=['x']), c=['y'])",
+        invalid_keyword_arguments=[({"b": []}, "int_type"), ({"c": []}, "too_short")],
     )
 
 

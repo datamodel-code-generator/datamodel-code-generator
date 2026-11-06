@@ -21,6 +21,9 @@ PythonVersion.PY_312-True-api	main/jsonschema/msgspec_alias_defaults_3_12.py
 PythonVersion.PY_312-True-api	main/jsonschema/msgspec_alias_defaults_runtime.txt
 PythonVersion.PY_312-True-cli	main/jsonschema/msgspec_alias_defaults_3_12.py
 PythonVersion.PY_312-True-cli	main/jsonschema/msgspec_alias_defaults_runtime.txt
+[test_msgspec_array_like_struct_union_defaults]
+	main/jsonschema/msgspec_alias_defaults/msgspec_array_like_struct_union_defaults.py
+	main/jsonschema/msgspec_alias_defaults/msgspec_array_like_struct_union_defaults.txt
 [test_msgspec_array_member_union_defaults]
 	main/jsonschema/msgspec_alias_defaults/msgspec_array_member_union_defaults.py
 	main/jsonschema/msgspec_alias_defaults/msgspec_array_member_union_defaults.txt
@@ -33,6 +36,9 @@ True-api	main/graphql/msgspec_scalar_alias_defaults_True.py
 True-api	main/graphql/msgspec_scalar_alias_defaults_runtime.txt	?
 True-cli	main/graphql/msgspec_scalar_alias_defaults_True.py
 True-cli	main/graphql/msgspec_scalar_alias_defaults_runtime.txt	?
+[test_msgspec_nullable_alias_item_union_default]
+	main/jsonschema/msgspec_alias_defaults/msgspec_nullable_alias_item_union_default.py
+	main/jsonschema/msgspec_alias_defaults/msgspec_nullable_alias_item_union_default.txt
 [test_msgspec_recursive_alias_default]
 	main/jsonschema/msgspec_alias_defaults_recursive.py
 [test_msgspec_union_member_defaults]

@@ -262,9 +262,9 @@ def _has_xmlschema_versioning_attribute(element: ET.Element) -> bool:
     return any(_namespace(attribute) == XML_SCHEMA_VERSIONING_NAMESPACE for attribute in element.attrib)
 
 
-def _read_xml_text(path: Path, encoding: str) -> str:
+def _read_xml_text(path: Path, encoding: str, data: bytes | None = None) -> str:
     record_watch_dependency(path)
-    return _decode_xml_bytes(path.read_bytes(), encoding)
+    return _decode_xml_bytes(path.read_bytes() if data is None else data, encoding)
 
 
 def _decode_xml_bytes(data: bytes, encoding: str) -> str:
@@ -897,7 +897,7 @@ class _XMLSchemaConverter:
                 return local
             if key not in self.simple_types or key in seen:
                 return None
-            simple_type = context = self.simple_types[key]
+            simple_type = self.simple_types[key]
             seen |= {key}
         if simple_type is None or (restriction := _first_xsd_child(simple_type, "restriction")) is None:
             return None
@@ -1476,10 +1476,10 @@ class XMLSchemaParser(JsonSchemaParser):
 
     def _source_from_xml_path(self, path: Path) -> Source:
         relative_path = path.relative_to(self.base_path)
-        if not self._use_parsed_source_cache:
-            return Source(path=relative_path, text=_read_xml_text(path, self.encoding))
-        data = _load_xml_schema_data_from_path(path, self.base_path, self.encoding, **self._converter_options())
-        return Source(path=relative_path, raw_data=data)
+        if (data := self._prefetched_data(path)) is not None or not self._use_parsed_source_cache:
+            return Source(path=relative_path, text=_read_xml_text(path, self.encoding, data))
+        raw_data = _load_xml_schema_data_from_path(path, self.base_path, self.encoding, **self._converter_options())
+        return Source(path=relative_path, raw_data=raw_data)
 
     @property
     def iter_source(self) -> Iterator[Source]:

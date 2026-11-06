@@ -33,7 +33,13 @@ from datamodel_code_generator._container_kinds import (
 )
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._internal_utils import get_most_of_parent
-from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, ModelKey, model_key_of, names_by_path
+from datamodel_code_generator._model_keys import (
+    FIELDLESS_SITE_KEY,
+    ModelKey,
+    is_item_counts_site,
+    model_key_of,
+    names_by_path,
+)
 from datamodel_code_generator._reference_graph import (
     EdgeKind,
     GraphSnapshot,
@@ -297,7 +303,7 @@ class ModulesHost(
     ConstructorInfoHost,
     ReplacedRootsHost,
     TypeOverrideHost,
-    GraphBuilderHost,
+    GenerationStoreHost,
     MergedDuplicatesHost,
     CollapseRootModelsHost,
     OutputOptionsHost,
@@ -1353,12 +1359,29 @@ def _constrains_root_field(model: DataModel) -> bool:
 def _has_preservable_root_constraints(model: DataModel) -> bool:
     """Return whether flattening a root wrapper would discard field-owned constraints.
 
-    True when ``model``, or a model the snapshot of root types reaches from it, constrains its root field.
+    True when ``model``, or a model the snapshot of root types reaches from it, constrains its root field. The alias
+    of an item-count site that the walk reaches keeps its counts once ``model`` is inlined, as its holder names it, so
+    only the models it reaches count.
     """
     walk = walk_graph(
         GraphSnapshot.ROOT_CONSTRAINTS, EdgeKind.ROOT_TYPE, (model,), _model_key_of_model, _root_type_models
     )
-    return any(map(_constrains_root_field, walk.node_of.values()))
+    return any(
+        _constrains_root_field(node)
+        for key, node in walk.node_of.items()
+        if key in walk.starts or not is_item_counts_site(node.reference)
+    )
+
+
+def _wrapped_model_reference(root_data_type: DataType) -> Reference | None:
+    """Return the reference of the model a root type is, which the holder names in its place, or None.
+
+    The alias of an item-count site stands for the array that was inline there up to 0.89.0, so a root type that
+    names it alone is inlined as any other type.
+    """
+    if (reference := root_data_type.reference) is None or is_item_counts_site(reference):
+        return None
+    return reference
 
 
 def _site_needs_model_regex_engine(model: DataModel) -> bool:
@@ -1417,7 +1440,7 @@ def collapse_site_facts(
         constrained_root_field=constrained_root_field,
         constrained_root=constrained_root,
         root_type_is_map=root_data_type in MAPPINGS,
-        root_type_names_model=root_data_type.reference is not None,
+        root_type_names_model=_wrapped_model_reference(root_data_type) is not None,
         names_inner_models=parser.collapse_root_models_name_strategy is not None,
         holder_has_container=field_constraints
         and constrained_root
@@ -1466,7 +1489,9 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
     names stays written after its holders inline it: the rule checks values through its class. A root model that its
     inner model replaces leaves; once every module is processed, the rules name the inner model instead
     (``name_inner_models_in_rules``). The model of a site that earlier releases wrote as a model without fields
-    (``FIELDLESS_SITE_KEY``) keeps the types it names, so collapsing leaves every model those releases wrote.
+    (``FIELDLESS_SITE_KEY``) keeps the types it names, so collapsing leaves every model those releases wrote. The type
+    alias of an item-count site (``ITEM_COUNTS_SITE_KEY``) is read as the inline array it was up to 0.89.0: a root model
+    that names it is inlined as that array was, and its holder names the alias.
     """
     generation_store = parser.generation_store
     generation_index = generation_store.index
@@ -1497,8 +1522,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                 ):
                     continue
                 root_type_field = root_type_model.fields[0]
-                if root_type_field.data_type.reference:
-                    inner_reference = root_type_field.data_type.reference
+                if (inner_reference := _wrapped_model_reference(root_type_field.data_type)) is not None:
                     inner_model = cast("DataModel", inner_reference.source)
 
                     if (kept_root := parser._kept_parent_roots.get(id(root_type_model))) is not None:  # noqa: SLF001
@@ -2650,10 +2674,14 @@ def type_dict_keys_by_root_types(parser: ModulesHost, state: ModuleStateView) ->
     Runs once the root types are final: after collapse, const narrowing and type overrides. Such a root model
     named inside the root type a key takes is typed the same way, and a cycle of them stops at the first repeated
     model. A root type that cannot be a dict key either keeps the root model, as does a member of a key that is no
-    reference: another member may take every key. Each changed model refreshes its backend config, as a pattern
-    that a key takes may need another regex engine.
+    reference: another member may take every key. A key that the copies of a collapsed root type share
+    (``GenerationIndex.inlined_holders_of``) is replaced in each holder as the module of its model reaches it, with
+    the imports of that module, and leaves its reference once no holder keeps it: the holder that kept it otherwise
+    named the root model through a key that no longer names it. Each changed model refreshes its backend config, as a
+    pattern that a key takes may need another regex engine.
     """
     imports = state.imports
+    index = parser.generation_store.index
     for model in state.model_list:
         changed = False
         for field in model.fields:
@@ -2674,7 +2702,11 @@ def type_dict_keys_by_root_types(parser: ModulesHost, state: ModuleStateView) ->
                     or (root_type := root_key_data_type(parser, root_model)) is None
                 ):
                     continue
-                parser._graph_builder.detach_data_type_ref(data_type)  # noqa: SLF001
+                if not any(
+                    holder is not parent and isinstance(holder, DataType)
+                    for holder in (data_type.parent, *index.inlined_holders_of(data_type))
+                ):
+                    parser._graph_builder.detach_data_type_ref(data_type)  # noqa: SLF001
                 _replace_in_place(parser._graph_builder, parent, data_type, root_type)  # noqa: SLF001
                 producer = ImportProducer("type-dict-keys-by-root-types", model, field)
                 import_references(

@@ -1,0 +1,18 @@
+{
+  "defaults": {
+    "rowBesideString": [
+      "x"
+    ],
+    "rowsBesideString": [
+      [
+        "y"
+      ]
+    ]
+  },
+  "types": {
+    "rowBesideString": "Row",
+    "rowsBesideString": [
+      "Row"
+    ]
+  }
+}

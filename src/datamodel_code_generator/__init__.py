@@ -764,15 +764,15 @@ def get_first_file(path: Path) -> Path:
     raise FileNotFoundError(msg)
 
 
-def _read_once_input(input_: _GenerationInput) -> tuple[Path, bytes] | None:
+def _read_once_input(input_: _GenerationInput, input_file_type: InputFileType) -> tuple[Path, bytes] | None:
     """Return a path input with its bytes when it can be read only once: neither a directory nor a regular file.
 
     A pipe or a device yields its bytes to the first read only, so generation reads it before anything else and every
-    later read of the input takes these bytes.
+    later read of the input takes these bytes. CSV input is read once, up to its first row, by its reader alone.
     """
     import stat  # noqa: PLC0415
 
-    if not isinstance(input_, Path):
+    if not isinstance(input_, Path) or input_file_type == InputFileType.CSV:
         return None
     try:
         mode = input_.stat().st_mode
@@ -1448,7 +1448,7 @@ def _prepare_parser_common_options(  # noqa: PLR0912, PLR0913, PLR0917
         "model_name_map": config.model_name_map,
         "generate_schema_validators": generate_schema_validators,
         "schema_validator_base_class_name": config.schema_validator_base_class_name,
-        "base_path": input_.parent if isinstance(input_, Path) and input_.is_file() else None,
+        "base_path": input_.parent if isinstance(input_, Path) and input_.exists() and not input_.is_dir() else None,
         "remote_text_cache": remote_text_cache,
         "known_third_party": data_model_types.known_third_party,
         "default_field_extras": default_field_extras,
@@ -2209,7 +2209,7 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
     config = _prepare_directory_input(input_, config)
     source_override: Mapping[str, Any] | None = None
     diagnostic_source_path: Path | None = None
-    prefetched_source = _read_once_input(input_)
+    prefetched_source = _read_once_input(input_, input_file_type)
     read_once_data = None if prefetched_source is None else prefetched_source[1]
     if input_file_type == InputFileType.Auto:
         try:

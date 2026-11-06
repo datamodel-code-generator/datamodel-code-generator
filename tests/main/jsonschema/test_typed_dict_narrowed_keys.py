@@ -71,6 +71,36 @@ def test_typed_dict_narrowed_keys(output_file: Path, options: list[str]) -> None
     assert_output("".join(lines), name="payloads")
 
 
+def test_typed_dict_narrowed_keys_of_one_python_name(output_file: Path) -> None:
+    """Keep apart the keys of one Python name where a TypedDict that narrows a key writes the keys of its base.
+
+    ``Child`` narrows ``x`` and declares ``foo_bar`` beside the ``foo-bar`` of ``Base``, so it declares both keys, each
+    required as its own schema says. The model accepts the documents of the schema and rejects the others.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "typed_dict_narrowed_keys_python_names.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--output-model-type", "typing.TypedDict"],
+    )
+    validator = Draft202012Validator(json.loads(input_path.read_text()))
+    documents = [
+        {"foo_bar": 1},
+        {"foo_bar": 1, "foo-bar": "s", "x": "t"},
+        {"foo-bar": "s"},
+        {"foo_bar": 1, "foo-bar": 2},
+        {"foo_bar": 1, "x": None},
+    ]
+    with _generated_model(output_file, "typed_dict_narrowed_keys_python_names_model", "Model") as model:
+        lines = [
+            f"{json.dumps(document)}: schema {'accepts' if validator.is_valid(document) else 'rejects'}, "
+            f"model {_verdict(model, document)}\n"
+            for document in documents
+        ]
+    assert_output("".join(lines), name="payloads")
+
+
 def test_typed_dict_narrowed_keys_modules(output_dir: Path) -> None:
     """Import the models the keys of a base in another module name where a TypedDict writes them without the base.
 

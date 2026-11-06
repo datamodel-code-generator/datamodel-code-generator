@@ -274,6 +274,8 @@ def test_recommend_options(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
         pytest.param("multi_format_extension.yaml", [], id="asyncapi-multi-format-extension"),
         pytest.param("avro_payload.yaml", [], id="asyncapi-avro-payload"),
         pytest.param("avro_messages.yaml", [], id="asyncapi-avro-messages"),
+        pytest.param("avro_shared_names.yaml", [], id="asyncapi-avro-shared-names"),
+        pytest.param("avro_merged_names.yaml", [], id="asyncapi-avro-merged-names"),
         pytest.param("schema_key_component.yaml", [], id="openapi-schema-key-component"),
     ],
 )
@@ -290,7 +292,9 @@ def test_recommend_options_for_schemas(
     an error, and a blank title is no title of a union variant. An AsyncAPI multi-format schema object counts as its
     schema whatever ``x-`` extensions it has, and an OpenAPI component with a ``schema`` key counts as the schema it is.
     An AsyncAPI schema in Avro, by its own ``schemaFormat`` or its message's, counts as the JSON Schema generation
-    converts it to: its root as the schema, and the named types it reaches as components.
+    converts it to: its root as the schema, and the named types it reaches as components, apart from those of another
+    document and from a component of the same name, unless generation merges them into one class: a named type that
+    another converted document defines alike and whose referenced types are alike too counts once.
     A constraint a const decides counts as redundant on the root schema as it does on any other. The api scope reads the
     operations of a path item as its walk does: the ``query`` operation and ``additionalOperations`` from OpenAPI 3.2,
     and no ``x-`` key of ``paths``; the paths scope reads the methods before OpenAPI 3.2 and an ``x-`` key that holds

@@ -9,3 +9,6 @@ default	main/jsonschema/typed_dict_narrowed_keys/typed_dict_narrowed_keys[defaul
 default	main/jsonschema/typed_dict_narrowed_keys/typed_dict_narrowed_keys[default].py
 [test_typed_dict_narrowed_keys_modules]
 	main/jsonschema/typed_dict_narrowed_keys/modules/
+[test_typed_dict_narrowed_keys_of_one_python_name]
+	main/jsonschema/typed_dict_narrowed_keys/of_one_python_name.payloads.txt
+	main/jsonschema/typed_dict_narrowed_keys/of_one_python_name.py

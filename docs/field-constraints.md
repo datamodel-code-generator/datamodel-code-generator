@@ -239,7 +239,9 @@ member of a type list does: without `--field-constraints`, `{"anyOf": [{"type": 
 with it, `A` is a root model that holds them. In Pydantic `BaseModel` output, the items of an array that declares
 `minItems` or `maxItems` itself are such a root model in either case, as before: the items of `{"type": "array",
 "minItems": 1, "items": {"type": "array", "minItems": 2}}` at a property `rows` are `Row` instances, whose list is
-`.root`, where dataclasses keep the alias form.
+`.root`, where dataclasses keep the alias form. `--collapse-root-models` inlines a root model whose type names such
+aliases as it inlined the arrays before, and the aliases keep the counts: a property `a` that names a definition `A`,
+`{"anyOf": [{"type": "array", "maxItems": 1}, {"type": "array", "minItems": 3}]}`, is `a: A1 | A2`.
 
 A `typing` alias, an abstract collection, `Annotated[T, ...]`, `Final[T]` and `Literal` are read as for number
 keywords, so `typing.List[int]`, `collections.abc.Sequence[int]` and `Annotated[list[int], ...]` take the keywords of

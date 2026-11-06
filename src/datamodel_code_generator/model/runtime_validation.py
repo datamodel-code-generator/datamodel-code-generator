@@ -4,16 +4,21 @@ from __future__ import annotations
 
 from copy import copy
 from dataclasses import dataclass, field
+from functools import partial
 from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeAlias, cast
 
 from typing_extensions import Sentinel
 
 from datamodel_code_generator._records import record
-from datamodel_code_generator._regex_syntax import needs_python_engine
+from datamodel_code_generator._regex_syntax import has_lone_surrogate, pattern_engine, selects_python_engine
 from datamodel_code_generator._requirements import pydantic_target_meets
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator
+
+    from datamodel_code_generator._regex_syntax import PatternEngine
+    from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.types import DataType
 
 
@@ -75,26 +80,52 @@ class PatternPropertiesRule:
         """Return the positions in ``data_types`` whose patterns need the ``python-re`` engine of an adapter.
 
         A pattern of a type the rule names is checked by the adapter the helper builds for it, which has no model
-        config; the adapter row of ``needs_python_engine`` selects the engine there (a model's row keeps the default
-        engine for a verbose pattern that Rust accepts). A type alias has no config either, so the string patterns of
-        the aliases a type names count as its own.
+        config; the adapter row of ``pattern_engine`` decides there (a model's row keeps the default engine for a
+        verbose pattern that Rust accepts), over the patterns of the type (``selects_python_engine``). A type alias has
+        no config either, so the string patterns of the aliases a type names count as its own.
         """
         return tuple(
-            index for index, data_type in enumerate(self.data_types) if _needs_python_regex_engine(data_type, set())
+            index
+            for index, data_type in enumerate(self.data_types)
+            if selects_python_engine(_adapter_pattern_engines(data_type, set()))
         )
 
 
-def _needs_python_regex_engine(data_type: DataType, visited: set[int]) -> bool:
-    """Return whether a pattern of ``data_type``, or a string pattern of an alias it names, needs ``python-re``.
+def alias_keeps_string_pattern(pattern: str, target: TargetPydanticVersion | None) -> bool:
+    """Return whether a type alias keeps ``pattern`` a string, so that the models that use the alias select its engine.
 
-    An alias keeps string patterns on a target that predates compiled patterns; a later target compiles every
-    pattern that needs Python's engine.
+    A target that predates compiled patterns keeps every pattern a string, and no target compiles one that holds a
+    lone surrogate (``has_lone_surrogate``); a later target compiles every other pattern that needs Python's engine.
+    """
+    return not pydantic_target_meets("pydantic.compiled_pattern", target) or has_lone_surrogate(pattern)
+
+
+def _counts_every_pattern(_pattern: str) -> bool:
+    """Count every pattern: those outside the body of a type alias."""
+    return True
+
+
+def _counted_engine(pattern: str, counts: Callable[[str], bool]) -> PatternEngine | None:
+    """Return what a string pattern asks of an adapter (row ``adapter`` of ``pattern_engine``).
+
+    A pattern ``counts`` leaves out asks for no engine, but still runs on the adapter's: one that the default engine
+    runs as written counts.
+    """
+    engine = pattern_engine(pattern, row="adapter")
+    return engine if counts(pattern) or engine == "default" else None
+
+
+def _adapter_pattern_engines(
+    data_type: DataType, visited: set[int], counts: Callable[[str], bool] = _counts_every_pattern
+) -> Iterator[PatternEngine | None]:
+    """Yield what each pattern of ``data_type``, and each string pattern of an alias it names, asks of ``python-re``.
+
+    ``counts`` selects the patterns that ask for an engine: those an alias keeps strings
+    (``alias_keeps_string_pattern``) inside the body of an alias (``_counted_engine``).
     """
     for nested in data_type.all_data_types:
-        if isinstance(pattern := (nested.kwargs or {}).get("pattern"), str) and needs_python_engine(
-            pattern, row="adapter"
-        ):
-            return True
+        if isinstance(pattern := (nested.kwargs or {}).get("pattern"), str):
+            yield _counted_engine(pattern, counts)
         if (
             (reference := nested.reference) is None
             or not getattr(source := reference.source, "IS_ALIAS", False)
@@ -103,18 +134,11 @@ def _needs_python_regex_engine(data_type: DataType, visited: set[int]) -> bool:
             continue
         visited.add(id(source))
         alias = cast("_AliasModel", source)
-        if pydantic_target_meets("pydantic.compiled_pattern", alias.extra_template_data.get("target_pydantic_version")):
-            continue
-        if any(
-            (
-                isinstance(pattern := getattr(alias_field.constraints, "pattern", None), str)
-                and needs_python_engine(pattern, row="adapter")
-            )
-            or _needs_python_regex_engine(alias_field.data_type, visited)
-            for alias_field in alias.fields
-        ):
-            return True
-    return False
+        kept = partial(alias_keeps_string_pattern, target=alias.extra_template_data.get("target_pydantic_version"))
+        for alias_field in alias.fields:
+            if isinstance(pattern := getattr(alias_field.constraints, "pattern", None), str):
+                yield _counted_engine(pattern, kept)
+            yield from _adapter_pattern_engines(alias_field.data_type, visited, kept)
 
 
 class IndependentDeclaredPatternPropertiesRule(PatternPropertiesRule):

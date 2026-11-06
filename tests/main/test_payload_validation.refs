@@ -155,6 +155,8 @@ jsonschema/collapse_reuse_models_cross_module_users/item.json	payloads/native_nu
 jsonschema/collapse_root_models_atomic_replace.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/collapse_root_models_container_constraints.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/collapse_root_models_empty_union.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/collapse_root_models_item_count_alias_reuse.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/collapse_root_models_item_count_aliases.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/collapse_root_models_lookaround.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/collapse_root_models_lookaround_inheritance.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/collapse_root_models_lookaround_root.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -177,6 +179,7 @@ jsonschema/collapse_root_models_with_optional.json	payloads/native_numeric_empty
 jsonschema/collapsed_unimportable_directory_reference/1.0/code.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/combine_any_of_object.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/combine_one_of_object.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/combined_nullable_without_type.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/complex_any_of.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/complex_one_of.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/compound_property_names/allof_branch_title.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -993,6 +996,7 @@ jsonschema/typed_dict_functional_descriptions.json	payloads/native_numeric_empty
 jsonschema/typed_dict_key_text.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/typed_dict_mixed_closed.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/typed_dict_narrowed_keys_modules/other.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/typed_dict_narrowed_keys_python_names.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/typed_extras_generic_containers.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/typed_map_values_beside_other_types.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/undeclared_required/declared.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -1690,6 +1694,7 @@ openapi/msgspec_enum_values_in_discriminator_modules/b.json::components.schemas.
 openapi/msgspec_inline_const.yaml::components.schemas.Model	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_mixed_operation_enum.yaml::components.schemas.Model	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_mixed_operation_enum.yaml::paths./value.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/msgspec_nullable_alias_item_default.yaml::components.schemas.PodSpec	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_nullable_enum.yaml::components.schemas.Level	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_nullable_enum.yaml::components.schemas.LevelDefault	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_nullable_enum.yaml::components.schemas.LevelNullable	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2170,6 +2175,8 @@ jsonschema/collapse_reuse_models_cross_module_users/item.json	payloads/native_nu
 jsonschema/collapse_root_models_atomic_replace.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/collapse_root_models_container_constraints.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/collapse_root_models_empty_union.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/collapse_root_models_item_count_alias_reuse.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/collapse_root_models_item_count_aliases.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/collapse_root_models_lookaround.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/collapse_root_models_lookaround_inheritance.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/collapse_root_models_lookaround_root.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2192,6 +2199,7 @@ jsonschema/collapse_root_models_with_optional.json	payloads/native_numeric_empty
 jsonschema/collapsed_unimportable_directory_reference/1.0/code.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/combine_any_of_object.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/combine_one_of_object.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/combined_nullable_without_type.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/complex_any_of.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/complex_one_of.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/compound_property_names/allof_branch_title.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3001,6 +3009,7 @@ jsonschema/typed_dict_functional_descriptions.json	payloads/native_numeric_empty
 jsonschema/typed_dict_key_text.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/typed_dict_mixed_closed.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/typed_dict_narrowed_keys_modules/other.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/typed_dict_narrowed_keys_python_names.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/typed_extras_generic_containers.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/typed_map_values_beside_other_types.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/undeclared_required/declared.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3695,6 +3704,7 @@ openapi/msgspec_enum_values_in_discriminator_modules/b.json::components.schemas.
 openapi/msgspec_inline_const.yaml::components.schemas.Model	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_mixed_operation_enum.yaml::components.schemas.Model	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_mixed_operation_enum.yaml::paths./value.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/msgspec_nullable_alias_item_default.yaml::components.schemas.PodSpec	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_nullable_enum.yaml::components.schemas.Level	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_nullable_enum.yaml::components.schemas.LevelDefault	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/msgspec_nullable_enum.yaml::components.schemas.LevelNullable	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

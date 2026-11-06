@@ -21,6 +21,7 @@ from datamodel_code_generator import Error, ProtobufVersion, SchemaParseError, V
 from datamodel_code_generator._json_schema import definition_ref
 from datamodel_code_generator._message_text import install_command
 from datamodel_code_generator._paths import files_under
+from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator.parser._null_facts import null_schema, with_null
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.python_literal import _converted_float, stable_repr
@@ -420,9 +421,10 @@ class _ProtoInputPreparer:
         else:  # pragma: no cover
             target = temp_path / source_path.name
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(
-            _sanitize_proto_source(source_path.read_text(encoding=self.parser.encoding)), encoding=self.parser.encoding
-        )
+        encoding = self.parser.encoding
+        data = self.parser._prefetched_data(source_path)  # noqa: SLF001
+        text = source_path.read_text(encoding=encoding) if data is None else normalize_newlines(data.decode(encoding))
+        target.write_text(_sanitize_proto_source(text), encoding=encoding)
         return target
 
     def _write_missing_weak_imports(self, input_files: Iterable[Path], include_paths: Sequence[Path]) -> None:

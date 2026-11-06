@@ -5,7 +5,7 @@ Generates models inheriting from pydantic.RootModel for wrapping single types.
 
 from __future__ import annotations
 
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from typing_extensions import override
 
@@ -23,6 +23,9 @@ from datamodel_code_generator.model.pydantic_v2.base_model import (
 )
 from datamodel_code_generator.model.pydantic_v2.imports import IMPORT_CONFIG_DICT
 from datamodel_code_generator.python_literal import represent_untrusted_python_value, stable_repr
+
+if TYPE_CHECKING:
+    from datamodel_code_generator.types import DataType
 
 IMPORT_ABC_ITERATOR = Import.from_full_path("collections.abc.Iterator")
 IMPORT_ABC_SEQUENCE = Import.from_full_path("collections.abc.Sequence")
@@ -268,6 +271,23 @@ class RootModel(BaseModel):
         self._additional_imports.append(IMPORT_ANY)
         self.invalidate_render_caches()
 
+    @property
+    @override
+    def has_length(self) -> bool:
+        """Whether the root model writes the sequence interface, whose ``__len__`` gives the length of the root value.
+
+        It reads what ``finalize_sequence_interface`` keeps: the interface of a list or tuple root, not of a set root.
+        """
+        return (
+            _SEQUENCE_BASE_CLASS_TEMPLATE_DATA_KEY in self._internal_template_data
+            and self._sequence_root_type() not in SETS
+        )
+
+    def _sequence_root_type(self) -> DataType:
+        """Return the container the sequence interface delegates to: the root type, or the one type it holds."""
+        root_type = self.fields[0].data_type
+        return root_type if root_type in ITEM_CONTAINERS else root_type.data_types[0]
+
     def add_sequence_interface(self, item_type: str, slice_type: str) -> None:
         """Add sequence interface helpers that delegate to the wrapped root value."""
         for import_ in _sequence_imports(item_type):
@@ -286,10 +306,7 @@ class RootModel(BaseModel):
         """Refresh helpers once final root types and reference aliases are available."""
         if _SEQUENCE_BASE_CLASS_TEMPLATE_DATA_KEY not in self._internal_template_data:
             return
-        root_type = self.fields[0].data_type
-        if root_type not in ITEM_CONTAINERS:
-            root_type = root_type.data_types[0]
-        if root_type in SETS:
+        if (root_type := self._sequence_root_type()) in SETS:
             for import_ in _sequence_imports(self._internal_template_data[_SEQUENCE_ITEM_TYPE_TEMPLATE_DATA_KEY]):
                 self._additional_imports.remove(import_)
             for key in _SEQUENCE_TEMPLATE_DATA_KEYS:

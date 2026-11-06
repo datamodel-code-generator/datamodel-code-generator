@@ -322,9 +322,7 @@ class Allowlist:
     def skip_for(self, input_path: str, version: str) -> int | None:
         """Return the index of the first `[[base_skip]]` entry that skips the release `version` on this input."""
         for index, entry in enumerate(self.base_skips):
-            if fnmatch.fnmatch(input_path, entry.get("input", "")) and any(
-                _base_matches(spec, version) for spec in _skip_bases(entry)
-            ):
+            if _names_input(entry, input_path) and any(_base_matches(spec, version) for spec in _skip_bases(entry)):
                 return index
         return None
 
@@ -335,7 +333,7 @@ class Allowlist:
     def covers(self, index: int, input_path: str, backend: str) -> bool:
         """Return whether entry `index` applies to a cell of this input and backend."""
         entry = self.entries[index]
-        return fnmatch.fnmatch(input_path, entry.get("input", "")) and backend in entry.get("backends", [backend])
+        return _names_input(entry, input_path) and backend in entry.get("backends", [backend])
 
     def match(self, input_path: str, backend: str, change: Change) -> int | None:
         """Return the index of the first entry that accepts the change, or None."""
@@ -380,6 +378,12 @@ class Allowlist:
             ):
                 found.append(f"{where}: bases {bases!r} is not a list of versions (0.88.0) or maximums (<=0.88.0)")
         return found
+
+
+def _names_input(entry: dict[str, Any], input_path: str) -> bool:
+    """Return whether an entry names a cell's input: its `input` glob, or one of the globs of a list of them."""
+    globs = entry.get("input", "")
+    return any(fnmatch.fnmatch(input_path, glob) for glob in ([globs] if isinstance(globs, str) else globs))
 
 
 def _skip_bases(entry: dict[str, Any]) -> list[Any]:

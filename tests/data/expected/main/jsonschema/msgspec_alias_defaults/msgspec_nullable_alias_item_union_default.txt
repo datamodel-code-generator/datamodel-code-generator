@@ -1,0 +1,14 @@
+{
+  "defaults": {
+    "pods": [
+      null,
+      {
+        "a": "n"
+      }
+    ]
+  },
+  "item_types": [
+    "NoneType",
+    "PodSpec"
+  ]
+}

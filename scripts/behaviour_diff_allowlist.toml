@@ -23,6 +23,15 @@ decision = "#6067"
 release_note = "generation stops with an error instead of writing a class in a package beside a module of the same name, which importing the module replaced, so the models that use the class failed to import or decode"
 
 [[accepted]]
+input = "tests/data/jsonschema/module_named_like_module_import.json"
+backends = [ "msgspec.Struct" ]
+aspects = [ "import-path-removed" ]
+match = "^\\[import-path-removed\\] pkg\\.api:Literal: from pkg\\.api import Literal$"
+reason = "the module pkg.api imported its sibling module pkg.Literal by name beside typing.Literal, so the name Literal of pkg.api was the module and the Struct Order that reads Literal['order'] failed (under the py314 presets, which write no `from __future__ import annotations`, the release's Order records only that error, no field that names the module); the module imports Kind from pkg.Literal now and Literal is typing.Literal again, which is no name of the output (import-crash fix)"
+decision = "#6105"
+release_note = "a module that imports a sibling module by a name another import of the module also binds, such as `from . import Literal` beside `typing.Literal`, imports the models of that module directly instead, so the module no longer fails at import or decode"
+
+[[accepted]]
 input = "tests/data/jsonschema/schema_intersection/allof_value_unions.json"
 aspects = [ "numbered-name-removed", "name-removed", "type", "kind", "constraints", "bases", "default", "required", "constructor-order" ]
 reason = "an allOf whose anyOf or oneOf members admit only values was written as a model without fields, which rejects every value the schema accepts in every output form; it is the union of the intersections of one branch of each with the other parts now (rejects-all fix, as #5406 did for an allOf of values), and the numbered classes such a site left, the default factory of its fields, the empty class --reuse-model merged others into and the names --collapse-root-models now inlines go with that model"
@@ -126,6 +135,22 @@ decision = "#6163"
 release_note = "with --use-unique-items-as-set, every array whose own schema declares uniqueItems is written as a set, also the member of an anyOf or oneOf, the items of an array, the values of a map and a lone allOf member, where a model merged into its model declares it too"
 
 [[accepted]]
+input = [
+  "*allof_partial_override_unique_items*",
+  "*mapping_schema_validators*",
+  "*unique_items_nested_merged*",
+  "*unique_items_schema_validators*",
+  "*unique_items_union_enum_root*",
+  "*unique_items_union_mapping_shapes*",
+]
+backends = [ "typing.TypedDict", "dataclasses.dataclass" ]
+aspects = [ "type" ]
+match = "^\\[type\\] (?:Person:tags: list\\[str\\] -> set\\[str\\]|(?:Nested:nested|Labels:values|Tags:values|UniqueItemsPayload:mapping|UniqueItemsUnionEnumRoot|UniqueItemsUnionMappingShapes:mapping(?:ImpossibleBranch|EnumScalar)): (?P<pre>.*)dict\\[str, list\\[(?P<item>object|int)\\]\\](?P<post>.*) -> (?P=pre)dict\\[str, set\\[(?P=item)\\]\\](?P=post))$"
+reason = "with --use-unique-items-as-set (the practical presets), in TypedDict and dataclass output the values of a map, the map member of a union and a field that a TypedDict merged by allOf redeclares, whose own schema declares uniqueItems, were lists; they are sets now, as in the other outputs (owner decision: default under the option)"
+decision = "#6163"
+release_note = "with --use-unique-items-as-set, every array whose own schema declares uniqueItems is written as a set, also the member of an anyOf or oneOf, the items of an array, the values of a map and a lone allOf member, where a model merged into its model declares it too"
+
+[[accepted]]
 input = "*allof_with_required_inherited_*"
 aspects = [ "type" ]
 match = "^\\[type\\] (?:Projected)?(?:Entity|EdgeCases):allof_(?:with_unique|unique_items): (?:Union\\[(?:None, )?)?list\\[str\\](?:, msgspec\\.UnsetType)?\\]? -> (?:Union\\[(?:None|msgspec\\.UnsetType), )?set\\[str\\]\\]?$"
@@ -168,7 +193,7 @@ release_note = "without --field-constraints, the minItems and maxItems of an arr
 [[accepted]]
 input = "*one_of_with_sub_schema_array_item*"
 aspects = [ "constraints" ]
-match = "^\\[constraints\\] SpatialPlan:officialDocument: Union\\[None, list\\[pydantic\\.AnyUrl\\], str\\] -> Union\\[Annotated\\[list\\[pydantic\\.AnyUrl\\], MinLen\\(min_length=1\\)\\], None, str\\]$"
+match = "^\\[constraints\\] (?:SpatialPlan|Payload):officialDocument: Union\\[None, list\\[pydantic\\.AnyUrl\\], str\\] -> Union\\[Annotated\\[list\\[pydantic\\.AnyUrl\\], MinLen\\(min_length=1\\)\\], None, str\\]$"
 reason = "without --field-constraints, the minItems of the array member of a oneOf was dropped without a warning; it is kept on a type alias of the member (schema-mismatch fix)"
 decision = "#6171"
 release_note = "without --field-constraints, the minItems and maxItems of an array that has no field of its own (the member of an anyOf or oneOf, the items of an array, the values of a map) are written on a type alias of the array (Annotated[list[int], Field(min_length=2)]) instead of being dropped"
@@ -178,6 +203,24 @@ input = "*read_only_write_only_constrained_item*"
 aspects = [ "constraints" ]
 match = "^\\[constraints\\] Wrapping:rows: Union\\[None, list\\[list\\[Item\\]\\]\\] -> Union\\[None, list\\[Annotated\\[list\\[Item\\], MinLen\\(min_length=1\\)\\]\\]\\]$"
 reason = "without --field-constraints, the minItems of the items of an array were dropped without a warning; they are kept on a type alias of the item array (schema-mismatch fix)"
+decision = "#6171"
+release_note = "without --field-constraints, the minItems and maxItems of an array that has no field of its own (the member of an anyOf or oneOf, the items of an array, the values of a map) are written on a type alias of the array (Annotated[list[int], Field(min_length=2)]) instead of being dropped"
+
+[[accepted]]
+input = [ "*collapse_root_models_item_count_aliases*", "*collapse_root_models_item_count_alias_reuse*" ]
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] (?:(?:Model|Payload):\\w+|A|C|Color|Grid|Listing|Mixed|Nullable|Pairs|Single|Through): .* -> .*Annotated\\[list\\[.*\\], M(?:in|ax)Len\\(.*$"
+reason = "without --field-constraints, the minItems and maxItems of the members of an anyOf, the items of an array and the values of a map were dropped without a warning; they are kept on a type alias of the array (schema-mismatch fix), and under --collapse-root-models the root models that name those aliases are inlined as before (#6383) and reuse leaves the models 0.89.0 wrote apart from those aliases (#6384), which these fixtures pin"
+decision = "#6171"
+release_note = "without --field-constraints, the minItems and maxItems of an array that has no field of its own (the member of an anyOf or oneOf, the items of an array, the values of a map) are written on a type alias of the array (Annotated[list[int], Field(min_length=2)]) instead of being dropped"
+
+[[accepted]]
+input = "project:posthog/schema"
+backends = [ "pydantic_v2.BaseModel" ]
+aspects = [ "constraints", "probe" ]
+match = "^\\[constraints\\] (?:FunnelTimeToConvertResults:bins: list\\[list\\[int\\]\\] -> list\\[Annotated\\[list\\[int\\], MinLen\\(min_length=2\\),MaxLen\\(max_length=2\\)\\]\\]|SessionEventsItem:events: list\\[list\\[Any\\]\\] -> list\\[Annotated\\[list\\[Any\\], MinLen\\(min_length=0\\),MaxLen\\(max_length=0\\)\\]\\]|FileSystemImport:iconColor: Union\\[None, list\\[str\\]\\] -> Union\\[Annotated\\[list\\[str\\], MinLen\\(min_length=1\\),MaxLen\\(max_length=1\\)\\], Annotated\\[list\\[str\\], MinLen\\(min_length=2\\),MaxLen\\(max_length=2\\)\\], None\\])$|^\\[probe\\] SessionEventsItem: accept -> reject$"
+reason = "without --field-constraints, the minItems and maxItems of the items of an array (the pairs of FunnelTimeToConvertResults.bins, the empty rows of SessionEventsItem.events) and of the members of an anyOf (the one- and two-color forms of FileSystemImport.iconColor, whose root model --collapse-root-models inlines as before, #6383) were dropped without a warning; they are kept on a type alias of the array (schema-mismatch fix; the probe example breaks the count)"
 decision = "#6171"
 release_note = "without --field-constraints, the minItems and maxItems of an array that has no field of its own (the member of an anyOf or oneOf, the items of an array, the values of a map) are written on a type alias of the array (Annotated[list[int], Field(min_length=2)]) instead of being dropped"
 
@@ -198,9 +241,13 @@ decision = "#6171"
 release_note = "an allOf of value parts that keeps the form it is written in writes the keywords of its parts on its root, so a lone allOf member's minItems, maxLength or bounds are no longer dropped"
 
 [[accepted]]
-input = "*compound_property_names"
+input = [
+  "*compound_property_names",
+  "payload:jsonschema/compound_property_names/allof_branch_title.json",
+  "payload:jsonschema/compound_property_names/unsupported_allof.json",
+]
 aspects = [ "constraints", "type", "probe" ]
-match = "^\\[(?:(?:constraints|type)\\] (?:allof_branch_title|unsupported_allof):Root\\d*: .* -> .*(?:StringConstraints|Meta)\\(min_length=2,pattern='\\^a'\\).*|probe\\] (?:allof_branch_title|unsupported_allof):Root: accept -> reject)$"
+match = "^\\[(?:(?:constraints|type)\\] (?:(?:allof_branch_title|unsupported_allof):Root|Payload)\\d*: .* -> .*(?:StringConstraints|Meta)\\(min_length=2,pattern='\\^a'\\).*|probe\\] (?:(?:allof_branch_title|unsupported_allof):Root|Payload): accept -> reject)$"
 reason = "the allOf of a propertyNames schema that keeps the form it is written in dropped the minLength and pattern of its parts, so the map accepted keys the schema rejects; its keys write them now (schema-mismatch fix; the probe example key breaks them)"
 decision = "#6171"
 release_note = "an allOf of value parts that keeps the form it is written in writes the keywords of its parts on its root, so a lone allOf member's minItems, maxLength or bounds are no longer dropped"
@@ -224,15 +271,15 @@ release_note = "an allOf of value parts that keeps the form it is written in wri
 [[accepted]]
 input = "*reuse_scope_tree_root_key*"
 aspects = [ "constraints", "type", "probe" ]
-match = "^\\[(?:(?:constraints|type)\\] (?:[ab]:)?(?:Settings|Limits)\\d*: .* -> .*(?:StringConstraints|Meta)\\(min_length=2,pattern='\\^k'\\).*|probe\\] (?:[ab]:)?(?:Settings|Limits): accept -> reject)$"
+match = "^\\[(?:(?:constraints|type)\\] (?:[ab]:)?(?:Settings|Limits|Payload)\\d*: .* -> .*(?:StringConstraints|Meta)\\(min_length=2,pattern='\\^k'\\).*|probe\\] (?:[ab]:)?(?:Settings|Limits|Payload)\\d*: accept -> reject)$"
 reason = "the allOf of a propertyNames schema that keeps the form it is written in dropped the minLength and pattern of its parts, so the map accepted keys the schema rejects; its keys write them now (schema-mismatch fix; the probe example key breaks them)"
 decision = "#6171"
 release_note = "an allOf of value parts that keeps the form it is written in writes the keywords of its parts on its root, so a lone allOf member's minItems, maxLength or bounds are no longer dropped"
 
 [[accepted]]
-input = "*schema_intersection"
+input = [ "*schema_intersection", "payload:jsonschema/schema_intersection/allof_value_parts.json" ]
 aspects = [ "constraints", "type" ]
-match = "^\\[(?:constraints|type)\\] allof_value(?:_part)?s:\\w+(?::\\w+)?: .* -> .*(?:MinLen|Ge\\(|Le\\(|MultipleOf|Meta\\(|list\\[[A-Z]\\w*\\]).*$"
+match = "^\\[(?:constraints|type)\\] (?:allof_value(?:_part)?s:\\w+(?::\\w+)?|(?:Multiple|Outer)(?:Item|Prop)|Payload:(?:outer|multiple)_(?:prop|items)): .* -> .*(?:MinLen|Ge\\(|Le\\(|MultipleOf|Meta\\(|list\\[[A-Z]\\w*\\]).*$"
 reason = "an allOf value site that keeps the form it is written in (without --intersect-allof-keywords) took its root's constraints from the allOf site, so the bounds, lengths and multipleOf of its parts were dropped without a warning; the root writes them now (schema-mismatch fix)"
 decision = "#6171"
 release_note = "an allOf of value parts that keeps the form it is written in writes the keywords of its parts on its root, so a lone allOf member's minItems, maxLength or bounds are no longer dropped"
@@ -257,6 +304,7 @@ release_note = "with --use-unique-items-as-set, a uniqueItems array of models wh
 
 [[accepted]]
 input = "*unique_items_collapsed_root_items*"
+backends = [ "pydantic_v2.BaseModel" ]
 aspects = [ "type" ]
 match = "^\\[type\\] Root:(?:tags|objects|tag_sets): Union\\[None, set\\[(?:list\\[str\\]|dict\\[str, int\\])\\]\\] -> Union\\[None, set\\[(?:Tags|Object)\\]\\]$"
 reason = "with --collapse-root-models --use-unique-items-as-set (the practical presets), a root model of a list or a dict inlined into the items of a set gave set[list[str]] or set[dict[str, int]], which rejects every non-empty array; the root model stays named there, as without collapse, and hashes by identity (crash-class fix)"
@@ -265,6 +313,7 @@ release_note = "with --collapse-root-models and --use-unique-items-as-set, a roo
 
 [[accepted]]
 input = "*unique_items_frozen_set*"
+backends = [ "pydantic_v2.BaseModel" ]
 aspects = [ "type" ]
 match = "^\\[type\\] Holder:groups: Union\\[None, frozenset\\[(?:list|set)\\[int\\]\\]\\] -> Union\\[None, frozenset\\[Group\\]\\]$"
 reason = "with --collapse-root-models (the presets), a root model of an array inlined into the items of a frozen set gave frozenset[list[int]] or frozenset[set[int]], which rejects every non-empty array; the root model stays named there and hashes by identity (crash-class fix)"
@@ -273,6 +322,7 @@ release_note = "with --collapse-root-models and --use-unique-items-as-set, a roo
 
 [[accepted]]
 input = "*prefix_items_unique_items_sequence*"
+backends = [ "pydantic_v2.BaseModel" ]
 aspects = [ "type" ]
 match = "^\\[type\\] PrefixItemsUniqueItemsSequence:pairs: Union\\[None, set\\[list\\[Union\\[int, str\\]\\]\\]\\] -> Union\\[None, set\\[Pair\\]\\]$"
 reason = "with --collapse-root-models --use-unique-items-as-set (the practical presets), the root model of a closed prefixItems pair inlined into the items of a set gave set[list[int | str]], which rejects every non-empty array; the root model stays named there and hashes by identity (crash-class fix)"
@@ -307,20 +357,130 @@ decision = "#6190"
 release_note = "with --use-unique-items-as-set, a uniqueItems array whose items can never be set members (objects, arrays, a tuple holding an array) stays a list instead of a set that rejects every non-empty array, and a list default that cannot be a set keeps its list"
 
 [[accepted]]
+input = [ "*unique_items_by_value.json", "*unique_items_collapsed_root_items*" ]
+backends = [ "typing.TypedDict", "dataclasses.dataclass", "pydantic_v2.dataclass" ]
+aspects = [ "type" ]
+match = "^\\[type\\] Root:(?:tags|objects|tag_sets): (?P<pre>(?:Union\\[None, )?)set\\[(?P<item>list\\[str\\]|dict\\[str, int\\])\\](?P<post>\\]?) -> (?P=pre)list\\[(?P=item)\\](?P=post)$"
+reason = "with --use-unique-items-as-set (the practical presets), a uniqueItems array of arrays or objects, also of a root model of one that a TypedDict or dataclass output writes as its root type, was set[list[str]] or set[dict[str, int]], which rejects every non-empty array (Pydantic set_item_not_hashable); it stays a list (crash-class fix)"
+decision = "#6190"
+release_note = "with --use-unique-items-as-set, a uniqueItems array whose items can never be set members (objects, arrays, a tuple holding an array) stays a list instead of a set that rejects every non-empty array, and a list default that cannot be a set keeps its list"
+
+[[accepted]]
+input = [
+  "*api_constrained.yaml",
+  "*unique_items_by_value.json",
+  "*unique_items_collapsed_root_items*",
+  "*unique_items_enum_set*",
+  "*unique_items_model_items*",
+  "*unique_items_schema_validators*",
+  "*unique_model_sets*",
+]
+backends = [ "typing.TypedDict", "dataclasses.dataclass", "pydantic_v2.dataclass" ]
+aspects = [ "type" ]
+match = "^\\[type\\] (?:\\w+:)?(?:Pets|Root:(?:pets|settings|limits|points)|Container:items|UniqueItemsPayload:objects): (?P<pre>(?:Union\\[None, |Annotated\\[)?)set\\[(?P<item>Pet|Settings|Limits|Point|Item|UniqueObject)\\](?P<post>(?:\\]|, MinLen\\(min_length=1\\),MaxLen\\(max_length=10\\)\\])?) -> (?P=pre)list\\[(?P=item)\\](?P=post)$"
+reason = "with --use-unique-items-as-set (the practical presets), a uniqueItems array of TypedDicts (which hold dicts) or of non-frozen dataclasses and Pydantic dataclasses (which compare by value, so never hash) was a set of them, which rejects every non-empty array (Pydantic set_item_not_hashable); such items keep a list (crash-class fix)"
+decision = "#6266"
+release_note = "with --use-unique-items-as-set, a uniqueItems array of models whose class can never hash its instances (TypedDict, non-frozen dataclasses and msgspec Structs, RootModel aliases) stays a list instead of a set that rejects every non-empty array, and the models of a type alias that a set names take the set item hash"
+
+[[accepted]]
+input = "*unique_items_model_items*"
+backends = [ "dataclasses.dataclass", "pydantic_v2.dataclass" ]
+aspects = [ "default" ]
+match = "^\\[default\\] Root:pets: '(?P<pre>(?:FieldInfo\\(annotation=NoneType, required=False, )?)(?P<key>factory:|default_factory=)set(?P<post>(?:, validate_default=True\\))?)' -> '(?P=pre)(?P=key)list(?P=post)'$"
+reason = "the array default of a uniqueItems array of dataclasses that stays a list (#6266) is the list the schema declares, as the default of any list, instead of an empty set"
+decision = "#6266"
+release_note = "with --use-unique-items-as-set, a uniqueItems array of models whose class can never hash its instances (TypedDict, non-frozen dataclasses and msgspec Structs, RootModel aliases) stays a list instead of a set that rejects every non-empty array, and the models of a type alias that a set names take the set item hash"
+
+[[accepted]]
 input = "*well_known_wrappers*"
-backends = [ "pydantic_v2.BaseModel", "msgspec.Struct" ]
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct" ]
 aspects = [ "constraints", "type" ]
-match = "^\\[(?:constraints|type)\\] (?:\\w+:)?(?:ExampleWktWrapperBucket:uint(?:64|32)_value|Uint(?:64|32)Value): .* -> .*(?:Interval\\(ge=0,le=(?:18446744073709551615|4294967295)\\)|Meta\\(ge=0,le=4294967295\\)).*$"
+match = "^\\[(?:constraints|type)\\] (?:\\w+:)?(?:(?:ExampleWkt)?WrapperBucket:uint(?:64|32)_value|Uint(?:64|32)Value): .* -> .*(?:Interval\\(ge=0,le=|Meta\\(ge=0,le=|Le\\(le=|conint\\(ge=0, le=)(?:18446744073709551615|4294967295)\\).*$"
 reason = "the protobuf wrappers google.protobuf.UInt64Value and UInt32Value read only the lower bound of their scalar, so the models accepted integers above the wire range that plain uint64 and uint32 fields reject; the wrappers now take the schema of their scalar, upper bound included (class and field names, types and the parsed values of valid payloads stay)"
 decision = "#5537"
 release_note = "protobuf `google.protobuf.UInt64Value` and `UInt32Value` fields get the upper bound of `uint64` and `uint32`, like plain fields of those types, so out-of-range integers are rejected"
 
 [[accepted]]
-input = "*"
+input = [
+  "payload:jsonschema/field_type_collision_class_keys_builders.json",
+  "payload:jsonschema/msgspec_tag_below_instance_field.json",
+  "payload:jsonschema/prefix_items_closed_length.json",
+  "payload:jsonschema/pydantic_v2_dataclass_required_assignment_inherited.json",
+  "payload:jsonschema/read_only_write_only_redeclared_inherited_flag.json",
+  "payload:jsonschema/schema_intersection/inherited_overrides.json",
+  "payload:jsonschema/strip_default_none_inherited_place.json",
+  "payload:jsonschema/typed_dict_narrowed_keys_python_names.json",
+  "tests/data/graphql/github-api.graphql",
+  "tests/data/graphql/interface_mro.graphql",
+  "tests/data/graphql/typename_collision.graphql",
+  "tests/data/graphql/typename_collision_control.graphql",
+  "tests/data/graphql/typename_collision_scoped.graphql",
+  "tests/data/graphql/union.graphql",
+  "tests/data/jsonschema/allof_inherited_ref_other_directory",
+  "tests/data/jsonschema/allof_inherited_required_use_default.json",
+  "tests/data/jsonschema/diamond_inherited_field_override.json",
+  "tests/data/jsonschema/discriminator_enum_const_outside_enum.json",
+  "tests/data/jsonschema/field_type_collision_class_keys_builders.json",
+  "tests/data/jsonschema/field_type_collision_inherited_modules",
+  "tests/data/jsonschema/field_type_collision_inherited_modules_child_first",
+  "tests/data/jsonschema/field_type_collision_inherited_modules_package",
+  "tests/data/jsonschema/input_model_inherited_alias_winner.json",
+  "tests/data/jsonschema/msgspec_tag_below_instance_field.json",
+  "tests/data/jsonschema/msgspec_wide_int_tags.json",
+  "tests/data/jsonschema/prefix_items_closed_length.json",
+  "tests/data/jsonschema/pydantic_v2_dataclass_required_assignment_inherited.json",
+  "tests/data/jsonschema/read_only_write_only_redeclared_inherited_flag.json",
+  "tests/data/jsonschema/require_referenced_field",
+  "tests/data/jsonschema/same_name_reference_fields",
+  "tests/data/jsonschema/schema_intersection",
+  "tests/data/jsonschema/schema_intersection/inherited_override_maps.json",
+  "tests/data/jsonschema/schema_intersection/inherited_type_narrowing.json",
+  "tests/data/jsonschema/schema_validators_parser_branch_runtime.json",
+  "tests/data/jsonschema/strip_default_none_inherited_place.json",
+  "tests/data/jsonschema/typed_dict_narrowed_keys.json",
+  "tests/data/jsonschema/typed_dict_narrowed_keys_modules",
+  "tests/data/jsonschema/typed_dict_narrowed_keys_modules/child.json",
+  "tests/data/jsonschema/typed_dict_narrowed_keys_modules/grand_child.json",
+  "tests/data/jsonschema/typed_dict_narrowed_keys_python_names.json",
+  "tests/data/openapi/allof.yaml",
+  "tests/data/openapi/allof_array_ref_override.yaml",
+  "tests/data/openapi/allof_no_merge_backend_types.yaml",
+  "tests/data/openapi/allof_no_merge_constraint_type_shape.yaml",
+  "tests/data/openapi/allof_no_merge_external_relative",
+  "tests/data/openapi/allof_partial_override_inherited_types.yaml",
+  "tests/data/openapi/allof_partial_unconstrained_schemas.yaml",
+  "tests/data/openapi/allof_required_inherited_dataclass_metadata.yaml",
+  "tests/data/openapi/allof_required_inherited_model_references.yaml",
+  "tests/data/openapi/allof_required_inherited_options.yaml",
+  "tests/data/openapi/allof_required_inherited_rw_c3.yaml",
+  "tests/data/openapi/allof_with_required_inherited_complex_allof.yaml",
+  "tests/data/openapi/allof_with_required_inherited_comprehensive.yaml",
+  "tests/data/openapi/allof_with_required_inherited_coverage.yaml",
+  "tests/data/openapi/allof_with_required_inherited_edge_cases.yaml",
+  "tests/data/openapi/allof_with_required_inherited_fields.yaml",
+  "tests/data/openapi/allof_with_required_inherited_nested_object.yaml",
+  "tests/data/openapi/discriminator.yaml",
+  "tests/data/openapi/discriminator_enum_float_values.yaml",
+  "tests/data/openapi/discriminator_in_array_anyof.yaml",
+  "tests/data/openapi/discriminator_in_array_oneof.yaml",
+  "tests/data/openapi/discriminator_msgspec_tagged_base_redefined_field.yaml",
+  "tests/data/openapi/discriminator_msgspec_tagged_base_subclass_modules.yaml",
+  "tests/data/openapi/discriminator_reuse_variant_module_base_fields.yaml",
+  "tests/data/openapi/discriminator_without_mapping.yaml",
+  "tests/data/openapi/external_ref_mapping_all_of",
+  "tests/data/openapi/external_ref_mapping_all_of_grandchild",
+  "tests/data/openapi/external_ref_mapping_all_of_modules",
+  "tests/data/openapi/override_required_all_of.yaml",
+  "tests/data/openapi/read_only_write_only_allof_parent_inline_models.yaml",
+  "tests/data/openapi/read_only_write_only_empty_base.yaml",
+  "tests/data/openapi/schema_intersection",
+  "tests/data/openapi/schema_intersection/inherited_tuple_shape_oas31.yaml",
+  "tests/data/openapi/strip_default_none_constructor_order.yaml",
+]
 backends = [ "typing.TypedDict" ]
-aspects = [ "bases" ]
-match = "^\\[bases\\] \\S+: \\[[^\\]]*\\] -> \\[\\]$"
-reason = "a TypedDict whose key declares a key of its generated base with another type, requiredness or ReadOnly inherited that base, and type checkers reject a mutable key that a subclass declares otherwise (reportIncompatibleVariableOverride, invalid-typed-dict-field); it declares every key of its bases itself and drops them, so class and key names, the keys' types and requiredness and the values the class accepts stay as the schema gives them (type-check-only fix)"
+aspects = [ "bases", "import-path-removed" ]
+match = "^\\[bases\\] \\S+: \\[[^\\]]*\\] -> \\[\\]$|^(?:\\[import\\-path\\-removed\\]\\ _internal_1:Leafy_1:\\ from\\ _internal_1\\ import\\ Leafy_1|\\[import\\-path\\-removed\\]\\ a:Base:\\ from\\ a\\ import\\ Base|\\[import\\-path\\-removed\\]\\ app:Bird:\\ from\\ app\\ import\\ Bird|\\[import\\-path\\-removed\\]\\ app:Dog:\\ from\\ app\\ import\\ Dog|\\[import\\-path\\-removed\\]\\ app:RobotDog:\\ from\\ app\\ import\\ RobotDog|\\[import\\-path\\-removed\\]\\ b:Base:\\ from\\ b\\ import\\ Base|\\[import\\-path\\-removed\\]\\ base\\.leaf:Base:\\ from\\ base\\.leaf\\ import\\ Base|\\[import\\-path\\-removed\\]\\ beside\\.aaa:Branch:\\ from\\ beside\\.aaa\\ import\\ Branch|\\[import\\-path\\-removed\\]\\ beside\\.zzz:Branch:\\ from\\ beside\\.zzz\\ import\\ Branch|\\[import\\-path\\-removed\\]\\ child\\.child:Parent:\\ from\\ child\\.child\\ import\\ Parent|\\[import\\-path\\-removed\\]\\ child:Base:\\ from\\ child\\ import\\ Base|\\[import\\-path\\-removed\\]\\ extra_items:Twig1:\\ from\\ extra_items\\ import\\ Twig1|\\[import\\-path\\-removed\\]\\ extra_items:Twig:\\ from\\ extra_items\\ import\\ Twig|\\[import\\-path\\-removed\\]\\ pets:Cat:\\ from\\ pets\\ import\\ Cat|\\[import\\-path\\-removed\\]\\ required:Model_1:\\ from\\ required\\ import\\ Model_1|\\[import\\-path\\-removed\\]\\ subdirectory\\.aaa:Branch:\\ from\\ subdirectory\\.aaa\\ import\\ Branch|\\[import\\-path\\-removed\\]\\ subdirectory\\.zzz:Branch:\\ from\\ subdirectory\\.zzz\\ import\\ Branch)$"
+reason = "a TypedDict whose key declares a key of its generated base with another type, requiredness or ReadOnly inherited that base, and type checkers reject a mutable key that a subclass declares otherwise (reportIncompatibleVariableOverride, invalid-typed-dict-field); it declares every key of its bases itself and drops them, and no longer imports a base it dropped from another module, so class and key names, the keys' types and requiredness and the values the class accepts stay as the schema gives them (type-check-only fix); the inputs are those whose TypedDict cells of the nightly tier change so"
 decision = "#6250"
 release_note = "a TypedDict whose key narrows a key of its base, such as an allOf member that drops the null of an inherited property, gives it another type or requires it, declares every key of its bases itself instead of inheriting them, so type checkers accept the generated file; class names, key names and key types are unchanged"
 
@@ -336,24 +496,60 @@ release_note = "a TypedDict that declares the keys of a base of another module i
 [[accepted]]
 input = "tests/data/jsonschema/contains_integral_float_counts.json"
 aspects = [ "constraints", "probe" ]
-match = "^\\[constraints\\] ContainsIntegralFloatCounts:(?:values|never): .* -> .*(?:MinLen\\(min_length=[12]\\), MaxLen\\(max_length=[03]\\)|Meta\\(max_length=[03],min_length=[12]\\)).*$|^\\[probe\\] ContainsIntegralFloatCounts: accept -> reject$"
+match = "^\\[constraints\\] ContainsIntegralFloatCounts:(?:values|never): .* -> .*(?:MinLen\\(min_length=[12]\\), ?MaxLen\\(max_length=[03]\\)|Meta\\(max_length=[03],min_length=[12]\\)).*$|^\\[probe\\] ContainsIntegralFloatCounts: accept -> reject$"
 reason = "minContains and maxContains written as integral floats (2.0, 3.0) were dropped, so the model accepted arrays with fewer or more items than the schema allows; they are read as the integers they are, as minItems is (schema-mismatch fix)"
+decision = "#5942"
+release_note = "minContains and maxContains written as integral floats such as 2.0 give the array its minimum and maximum length, as the integers 2 and 3 do"
+
+[[accepted]]
+input = "tests/data/jsonschema/contains_integral_float_counts.json"
+backends = [ "pydantic_v2.dataclass" ]
+aspects = [ "default", "required" ]
+match = "^\\[default\\] ContainsIntegralFloatCounts:(?:values|never): '?None'? -> 'FieldInfo\\(annotation=NoneType, required=(?:False, default=None|True), metadata=\\[MinLen\\(min_length=[12]\\), MaxLen\\(max_length=[03]\\)\\]\\)'$|^\\[required\\] ContainsIntegralFloatCounts:(?:values|never): True -> False$"
+reason = "a pydantic dataclass writes the counts that minContains and maxContains written as integral floats now give (the entry above) as Field(None, max_length=3, min_length=2), or Field(max_length=3, min_length=2) under --strip-default-none, which the signature reads as the field's default and, without a default before, as a field that became optional; the default stays None and the field stays required (a payload without it still fails with missing), so only the counts change"
 decision = "#5942"
 release_note = "minContains and maxContains written as integral floats such as 2.0 give the array its minimum and maximum length, as the integers 2 and 3 do"
 
 [[accepted]]
 input = "tests/data/jsonschema/contains_count_beside_model_reference.json"
 aspects = [ "constraints" ]
-match = "^\\[constraints\\] ContainsCountBesideModelReference:tags_?[Aa]s_?[Ff]loats: .* -> .*(?:MinLen\\(min_length=2\\), MaxLen\\(max_length=3\\)|Meta\\(max_length=3,min_length=2\\)).*$"
+match = "^\\[constraints\\] ContainsCountBesideModelReference:tags_?[Aa]s_?[Ff]loats: .* -> .*(?:MinLen\\(min_length=2\\), ?MaxLen\\(max_length=3\\)|Meta\\(max_length=3,min_length=2\\)).*$"
 reason = "minContains and maxContains written as integral floats (2.0, 3.0) beside a reference to an array that the output writes as a list or a type alias of one were dropped, so the model accepted arrays with fewer or more items than the schema allows; they are read as the integers they are, as minItems is (schema-mismatch fix)"
 decision = "#5942"
 release_note = "minContains and maxContains written as integral floats such as 2.0 give the array its minimum and maximum length, as the integers 2 and 3 do"
 
 [[accepted]]
 input = "tests/data/jsonschema/contains_count_beside_model_reference.json"
-backends = [ "pydantic_v2.BaseModel" ]
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
 aspects = [ "constraints" ]
 match = "^\\[constraints\\] ContainsCountBesideModelReference:owner: Annotated\\[Union\\[None, Owner\\], MinLen\\(min_length=1\\)\\] -> Union\\[None, Owner\\]$"
 reason = "the item counts that contains implies were written beside a model class, which Pydantic cannot apply them to, so the model raised TypeError for every value; the field is written without them and warns, as msgspec does (crash fix)"
 decision = "#6035"
 release_note = "a property that references a model and states contains or minContains no longer gets min_length on the model class, which made every value raise TypeError; the counts are left out with a warning where the written type cannot take them"
+
+[[accepted]]
+input = "tests/data/jsonschema/schema_intersection*"
+backends = [ "pydantic_v2.dataclass" ]
+aspects = [ "constraints" ]
+match = "^\\[constraints\\] (?:allof_ref_item_constraints:)?Model:point_items: Union\\[None, list\\[Annotated\\[Point, Ge\\(ge=5\\)\\]\\]\\] -> Union\\[None, list\\[Point\\]\\]$"
+reason = "the minimum beside the allOf of a $ref to the object model Point was written on the item alias of that model class (PointItem = Annotated[Point, Field(ge=5)]), which Pydantic cannot apply to a Point, so the model raised TypeError for every non-empty list; a minimum does not apply to an object, so the item is written as Point and the keyword is left out with a warning, as msgspec does (crash fix)"
+decision = "#6035"
+release_note = "a numeric or length keyword beside a reference to an object model, such as minimum beside the allOf of a $ref to it, is no longer written on that model class, which made every value raise TypeError; it is left out with a warning, as msgspec does"
+
+[[accepted]]
+input = "tests/data/jsonschema/field_constraint_sites*"
+backends = [ "pydantic_v2.BaseModel" ]
+aspects = [ "constraints" ]
+match = "^\\[constraints\\] (?:union_root_kept_keywords:)?Model:loop: Annotated\\[Union\\[Loop, None, TextOrLoop1\\], MaxLen\\(max_length=3\\)\\] -> Union\\[Loop, None, TextOrLoop1\\]$"
+reason = "the maxLength beside the anyOf of a string and the root model Loop was written beside the union of the root models TextOrLoop1 and Loop, which Pydantic cannot apply to a root model instance, so the model raised TypeError for every value that is not null; TextOrLoop1 keeps the maxLength on its string, so the field is written without it and warns, as msgspec does (crash fix)"
+decision = "#6035"
+release_note = "a keyword beside a union whose members are all model or root model instances is no longer written on the field, which made every value raise TypeError; the members keep the check where they can, and the field warns"
+
+[[accepted]]
+input = "tests/data/jsonschema/ref_alias_chain*"
+backends = [ "pydantic_v2.BaseModel" ]
+aspects = [ "constraints" ]
+match = "^\\[constraints\\] (?:ref_alias_chain:)?(?:Entry: Annotated\\[Loop1, MaxLen\\(max_length=5\\)\\] -> Loop1|Loop1: Annotated\\[Loop2, MinLen\\(min_length=1\\)\\] -> Loop2|Loop2: Annotated\\[Loop1, MinLen\\(min_length=2\\)\\] -> Loop1)$"
+reason = "the maxLength and minLength beside the $ref cycle Entry -> Loop1 -> Loop2 -> Loop1 were written on root models whose root is another root model, which Pydantic cannot apply to a root model instance; validating any value that is not null recursed through the cycle until the process crashed in 0.89.0 and still does, so the bounds were never enforced; the root models are written without them and warn, as msgspec does (crash fix)"
+decision = "#6035"
+release_note = "a keyword beside a reference to a root model, such as minLength beside a $ref whose target is another reference, is no longer written on the root model class, which made every value raise TypeError; it is left out with a warning"

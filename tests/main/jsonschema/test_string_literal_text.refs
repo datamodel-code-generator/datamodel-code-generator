@@ -8,6 +8,9 @@ dataclasses.dataclass	main/jsonschema/string_literal_text/inline_field_descripti
 msgspec.Struct	main/jsonschema/string_literal_text/inline_field_description_text[msgspec.Struct].py
 pydantic_v2.BaseModel	main/jsonschema/string_literal_text/inline_field_description_text[pydantic_v2.BaseModel].py
 typing.TypedDict	main/jsonschema/string_literal_text/inline_field_description_text[typing.TypedDict].py
+[test_lone_surrogate_alias_replaced_by_serialization_alias]
+pydantic_v2.BaseModel	main/jsonschema/string_literal_text/lone_surrogate_alias_replaced_by_serialization_alias[pydantic_v2.BaseModel].py
+pydantic_v2.dataclass	main/jsonschema/string_literal_text/lone_surrogate_alias_replaced_by_serialization_alias[pydantic_v2.dataclass].py
 [test_lone_surrogate_comment_text]
 	main/jsonschema/string_literal_text/lone_surrogate_comment_text.py
 [test_lone_surrogate_docstring_text]
@@ -36,5 +39,15 @@ pydantic_v2.dataclass	main/jsonschema/string_literal_text/regex_literal_surrogat
 [test_regex_literal_text]
 pydantic_v2.BaseModel	main/jsonschema/string_literal_text/regex_literal_text[pydantic_v2.BaseModel].py
 pydantic_v2.dataclass	main/jsonschema/string_literal_text/regex_literal_text[pydantic_v2.dataclass].py
+[test_regex_surrogate_engine]
+dataclass-type-alias	main/jsonschema/string_literal_text/regex_surrogate_engine[dataclass-type-alias].py
+model	main/jsonschema/string_literal_text/regex_surrogate_engine[model].py
+model-type-alias	main/jsonschema/string_literal_text/regex_surrogate_engine[model-type-alias].py
+model-type-alias-target-2	main/jsonschema/string_literal_text/regex_surrogate_engine[model-type-alias-target-2].py	= main/jsonschema/string_literal_text/regex_surrogate_engine[model-type-alias].py
+[test_regex_surrogate_engine_beside_default_engine_patterns]
+dataclass-type-alias	main/jsonschema/string_literal_text/regex_surrogate_engine_beside_default_engine_patterns[dataclass-type-alias].py
+model-type-alias	main/jsonschema/string_literal_text/regex_surrogate_engine_beside_default_engine_patterns[model-type-alias].py
+[test_regex_surrogate_engine_of_schema_validator_adapters]
+	main/jsonschema/string_literal_text/regex_surrogate_engine_of_schema_validator_adapters.py
 [test_typed_dict_key_text]
 	main/jsonschema/string_literal_text/typed_dict_key_text.py

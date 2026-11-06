@@ -1045,13 +1045,62 @@ aliases, as those of a model, so an aliased field keeps its Python type like one
         pytest.param(["--preset", "standard-py310-20261104"], id="preset"),
     ],
 )
-def test_input_model_read_dataclass_fields_by_alias(tmp_path: Path, extra_args: list[str]) -> None:
+def test_input_model_read_dataclass_fields_by_alias(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, extra_args: list[str]
+) -> None:
     """Give an aliased field of a Pydantic dataclass its Python type under the option (#5541).
 
-    Without it ``myItems`` is typed ``list[int]`` and ``other_items`` ``deque[int]``, as in 0.89.0.
+    Without it ``myItems`` is typed ``list[int]`` and ``other_items`` ``deque[int]``, as in 0.89.0. The input module,
+    a Pydantic dataclass whose deque fields JSON Schema cannot spell, one of them under an alias, is written for the
+    test, as tests/data/python holds no new modules.
     """
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delitem(sys.modules, "dataclass_field_aliases", raising=False)
+    (tmp_path / "dataclass_field_aliases.py").write_text(
+        "from collections import deque\n\n"
+        "from pydantic import BaseModel, Field\n"
+        "from pydantic.dataclasses import dataclass\n\n\n"
+        "@dataclass\n"
+        "class Inner:\n"
+        "    my_items: deque[int] = Field(default_factory=deque, alias='myItems')\n"
+        "    other_items: deque[int] = Field(default_factory=deque)\n\n\n"
+        "class Outer(BaseModel):\n"
+        "    inner: Inner\n",
+        encoding="utf-8",
+    )
     run_input_model_and_assert(
-        input_model="tests.data.python.input_model.dataclass_field_aliases:Outer",
+        input_model="dataclass_field_aliases:Outer",
+        output_path=tmp_path / "output.py",
+        extra_args=extra_args,
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="released"), pytest.param(["--read-input-model-dataclass-fields-by-alias"], id="option")],
+)
+def test_input_model_dataclass_fields_of_one_alias(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, extra_args: list[str]
+) -> None:
+    """Type the property two fields of a Pydantic dataclass share by the last of them, whose schema Pydantic writes.
+
+    The input is the dataclass itself, whose schema marks no owner of a property, so ``shared`` is ``str`` under
+    ``--read-input-model-dataclass-fields-by-alias`` as without it, not the ``deque[int]`` of the first field.
+    """
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delitem(sys.modules, "dataclass_fields_of_one_alias", raising=False)
+    (tmp_path / "dataclass_fields_of_one_alias.py").write_text(
+        "from collections import deque\n\n"
+        "from pydantic import Field\n"
+        "from pydantic.dataclasses import dataclass\n\n\n"
+        "@dataclass\n"
+        "class Shared:\n"
+        "    first: deque[int] = Field(alias='shared')\n"
+        "    last: str = Field(alias='shared')\n",
+        encoding="utf-8",
+    )
+    run_input_model_and_assert(
+        input_model="dataclass_fields_of_one_alias:Shared",
         output_path=tmp_path / "output.py",
         extra_args=extra_args,
     )

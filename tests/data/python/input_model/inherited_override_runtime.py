@@ -16,6 +16,7 @@ CASES = {
     "AliasRequiredChild": [{}, {"new": 8}, {"old": 8}],
     "AliasGrandChild": [{}, {"newest": 8}, {"new": 8}],
     "AliasPairGrandChild": [{}, {"newest": 8, "newest_other": 9}, {"new": 8, "new_other": 9}],
+    "AliasTakenChild": [{}, {"old_other": 8}, {"old": 8}],
     "MultipleChild": [{}, {"value": 8}],
     "RepeatedPairChild": [{"value": [1, 1], "retained": [2, 3]}],
     "RepeatedGrandChild": [{"value": [1, 1]}],

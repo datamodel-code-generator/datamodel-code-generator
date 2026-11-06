@@ -9,6 +9,8 @@ import warnings
 from typing import TYPE_CHECKING, Any
 
 import pytest
+from jsonschema import Draft7Validator
+from jsonschema import ValidationError as SchemaValidationError
 from pydantic import ConfigDict, TypeAdapter, ValidationError
 
 from tests.conftest import assert_output
@@ -16,6 +18,7 @@ from tests.main.conftest import (
     DATA_PATH,
     JSON_SCHEMA_DATA_PATH,
     _generated_model,
+    assert_generated_model_json_invalid,
     installed_pydantic_runs_target,
     run_main_and_assert,
     target_pydantic_args,
@@ -194,3 +197,74 @@ def test_type_alias_lookaround_reuse_scope_tree(output_dir: Path, target_pydanti
             vars(sys.modules["type_alias_lookaround_tree_shared"]), "tree", target_pydantic_version
         )
     assert_output(results, LOOKAROUND_EXPECTED / "tree_runtime.txt")
+
+
+@pytest.mark.parametrize(
+    ("pattern", "invalid", "args"),
+    [
+        pytest.param("^a\ud800b$", "a\ufffd\ufffd\ufffdb", [], id="lone-surrogate"),
+        pytest.param(
+            "^(?=a)ab$",
+            "ac",
+            ["--target-pydantic-version", STRING_PATTERN_TARGET],
+            id="lookaround-target-2",
+            marks=[
+                pytest.mark.skipif(
+                    not installed_pydantic_runs_target("2.5"),
+                    reason="String alias patterns take the engine from a model config, which needs Pydantic 2.5",
+                ),
+                pytest.mark.filterwarnings("ignore:The generated models need pydantic>=2.5:UserWarning"),
+            ],
+        ),
+    ],
+)
+def test_type_alias_pattern_inherited_by_a_dataclass_with_its_own_config(
+    output_file: Path, pattern: str, invalid: str, args: list[str]
+) -> None:
+    """Select Python's engine in a dataclass with a config of its own whose first base reaches a string alias pattern.
+
+    Pydantic builds the fields a dataclass inherits with the config it applies, its own where it has one, so ``Own``
+    (``extra='forbid'``) and ``OwnChild`` built the inherited ``code`` with the default engine, and ``Child``, which
+    takes ``Own``'s config, did too: the default engine took the U+FFFD that replaces a lone surrogate, and refused a
+    lookaround at import. The schema is written here, as a YAML parser rejects the escape of a lone surrogate.
+    """
+    schema = {
+        "title": "Holder",
+        "type": "object",
+        "definitions": {
+            "Code": {"type": "string", "pattern": pattern},
+            "Base": {"type": "object", "properties": {"code": {"$ref": "#/definitions/Code"}}},
+            "Own": {"allOf": [{"$ref": "#/definitions/Base"}], "type": "object", "additionalProperties": False},
+            "Child": {"allOf": [{"$ref": "#/definitions/Own"}], "type": "object", "properties": {"x": {}}},
+            "OwnChild": {
+                "allOf": [{"$ref": "#/definitions/Own"}],
+                "type": "object",
+                "properties": {"y": {}},
+                "additionalProperties": False,
+            },
+        },
+        "properties": {
+            "own": {"$ref": "#/definitions/Own"},
+            "child": {"$ref": "#/definitions/Child"},
+            "ownChild": {"$ref": "#/definitions/OwnChild"},
+        },
+    }
+    (input_path := output_file.parent / "inherited_own_config.json").write_text(json.dumps(schema), encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--formatters", "builtin", *TYPE_ALIAS, *DATACLASS, *args],
+        force_exec_validation=True,
+    )
+    validator = Draft7Validator(schema)
+    for name in ("own", "child", "ownChild"):
+        with pytest.raises(SchemaValidationError):
+            validator.validate(payload := {name: {"code": invalid}})
+        assert_generated_model_json_invalid(
+            output_file,
+            module_name=f"inherited_own_config_{name}",
+            model_name=MODEL_NAME,
+            invalid_json=json.dumps(payload),
+            expected_error_type="string_pattern_mismatch",
+        )

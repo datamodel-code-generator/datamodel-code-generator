@@ -2355,15 +2355,20 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """Return whether a field of the model declares an inherited one otherwise (`_KEEPS_INHERITED_FIELD_TYPES`)."""
         return False
 
+    @staticmethod
+    def _base_layout_key(field: DataModelFieldBase) -> object:
+        """Return the name that ``flatten_base_layouts`` merges the declarations of a field by: its Python name."""
+        return id(field) if field.name is None else field.name
+
     def flatten_base_layouts(
         self, adopt_field: Callable[[DataModelFieldBase, bool], DataModelFieldBase]
     ) -> list[DataModelFieldBase]:
         """Return the fields that declare the model without its generated bases.
 
         Each base gives its fields after those of its own bases, in declaration order, and the model its fields last.
-        A name keeps its first position and the field declared last, and is required where any declaration requires
-        it, as allOf merges the properties of its parts. ``adopt_field`` makes a field one of the model, required or
-        not.
+        A name (``_base_layout_key``) keeps its first position and the field declared last, and is required where any
+        declaration requires it, as allOf merges the properties of its parts. ``adopt_field`` makes a field one of the
+        model, required or not.
         """
         fields: dict[object, DataModelFieldBase] = {}
         required: dict[object, bool] = {}
@@ -2376,7 +2381,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             for base in _find_base_classes(model):
                 collect(base)
             for field in model.fields:
-                key = id(field) if field.name is None else field.name
+                key = self._base_layout_key(field)
                 fields[key] = field
                 required[key] = required.get(key, False) or field.required
 
@@ -3189,6 +3194,11 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def value_base(self) -> str | None:
         """The builtin type an enum subclasses for the values of its members; a model that is no enum has none."""
         return None
+
+    @property
+    def has_length(self) -> bool:
+        """Whether the instance of the model has a length (``__len__``); only a sequence interface gives it one."""
+        return False
 
     @classmethod
     def create_base_class_model(

@@ -18,6 +18,7 @@ from tests.main.conftest import (
     EXPECTED_GRAPHQL_PATH,
     GRAPHQL_DATA_PATH,
     JSON_SCHEMA_DATA_PATH,
+    OPEN_API_DATA_PATH,
     _generated_model,
     run_generate_file_and_assert,
     run_main_and_assert,
@@ -247,6 +248,62 @@ def test_msgspec_union_member_defaults(output_file: Path) -> None:
             },
         }
         actual.update((label, _converted(model, document)) for label, document in documents.items())
+    assert_output(f"{json.dumps(actual, indent=2)}\n")
+
+
+def test_msgspec_nullable_alias_item_union_default(output_file: Path) -> None:
+    """Convert a list default beside a str to the list of a type alias that writes None, None items included.
+
+    The alias of OpenAPI 3.0 ``nullable`` writes ``PodSpec | None``, so it takes the None item of the default, and
+    ``Model()`` holds a Struct for the object item.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "msgspec_nullable_alias_item_default.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "msgspec.Struct", "--formatters", "builtin", "--disable-timestamp"],
+    )
+    with _generated_model(output_file, "msgspec_nullable_alias_item_default_model", "Model") as model:
+        default = model()
+        actual = {
+            "defaults": msgspec.to_builtins(default),
+            "item_types": [type(item).__name__ for item in default.pods],
+        }
+    assert_output(f"{json.dumps(actual, indent=2)}\n")
+
+
+def test_msgspec_array_like_struct_union_defaults(output_file: Path) -> None:
+    """Convert an array default beside a str to a Struct msgspec reads from an array, so ``Model()`` holds Structs.
+
+    ``Row`` takes ``array_like=True`` from the template data, so msgspec decodes it from an array, not an object, and
+    ``['x']`` converts to ``Row``, ``[['y']]`` to ``list[Row]``.
+    """
+    (template_data := output_file.parent / "array_like.json").write_text(
+        json.dumps({"Row": {"base_class_kwargs": {"array_like": True}}}), encoding="utf-8"
+    )
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "msgspec_array_like_union_defaults.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--extra-template-data",
+            str(template_data),
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    with _generated_model(output_file, "msgspec_array_like_union_defaults_model", "Model") as model:
+        default = model()
+        actual = {
+            "defaults": msgspec.to_builtins(default),
+            "types": {
+                "rowBesideString": type(default.rowBesideString).__name__,
+                "rowsBesideString": [type(item).__name__ for item in default.rowsBesideString],
+            },
+        }
     assert_output(f"{json.dumps(actual, indent=2)}\n")
 
 

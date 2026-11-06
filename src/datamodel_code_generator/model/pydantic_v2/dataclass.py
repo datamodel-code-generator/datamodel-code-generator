@@ -41,6 +41,7 @@ from datamodel_code_generator.model.pydantic_v2._output_context import (
 from datamodel_code_generator.model.pydantic_v2.base_model import (
     _ALIAS_GENERATOR_TEMPLATE_DATA_KEY,
     _config_dict_items,
+    _followed_fields,
     _import_rendered_alias_generator,
     _PydanticV2Model,
     has_lookaround_pattern,
@@ -96,14 +97,14 @@ def _pydantic_dataclass_field_participates_in_constructor(field: DataModelFieldB
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Mapping
+    from collections.abc import Iterator, Mapping
     from pathlib import Path
 
     from datamodel_code_generator import DataclassArguments
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._decisions.assignment import AssignmentRow
     from datamodel_code_generator.model._render_plan import FieldRenderPlan
-    from datamodel_code_generator.model.base import BaseClassDataType
+    from datamodel_code_generator.model.base import BaseClassDataType, DataModel
     from datamodel_code_generator.model.pydantic_base import _FieldArguments, _PydanticFieldRenderPlan
     from datamodel_code_generator.reference import Reference
 
@@ -261,16 +262,32 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
         if self._lookaround_regex_engine_checked:
             return
         self._lookaround_regex_engine_checked = True
-        if has_lookaround_pattern(self.fields, follow_references=True):
+        if has_lookaround_pattern(self.fields, follow_references=True, surrogates=False):
             self._select_python_regex_engine()
 
     @override
-    def _bases_without_inherited_config(self) -> list[BaseClassDataType]:
-        """Return the bases after the first: a dataclass takes the config of its first base only.
+    def _surrogate_pattern_scopes(self) -> Iterator[list[DataModelFieldBase]]:
+        """Yield its fields and those of every model they reach, as a lookaround counts them (``_followed_fields``)."""
+        return _followed_fields(self.fields)
 
-        It builds the fields of the other bases with its own config.
+    @override
+    def _takes_config_of(self, base: DataModel) -> bool:
+        """Return whether the dataclass applies the config of a base: its first, where it has no config of its own."""
+        return (
+            not self._rendered_config_items()
+            and bool(self.base_classes)
+            and (reference := self.base_classes[0].reference) is not None
+            and reference.source is base
+        )
+
+    @override
+    def _bases_without_inherited_config(self) -> list[BaseClassDataType]:
+        """Return the bases after the first, or every base where the dataclass has a config of its own.
+
+        A dataclass takes the config of its first base only where it has none of its own (``_applied_config_items``),
+        and builds the fields of every base with the config it applies.
         """
-        return self.base_classes[1:]
+        return self.base_classes if self._rendered_config_items() else self.base_classes[1:]
 
     def _applied_config_items(self, visiting: frozenset[int] = frozenset()) -> dict[str, str]:
         """Return the config items Pydantic applies: the dataclass's own, else all of its first dataclass base's.

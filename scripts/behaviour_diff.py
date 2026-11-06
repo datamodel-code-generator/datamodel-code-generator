@@ -24,8 +24,8 @@ and, for payload cases, payload verdicts; scripts/_behaviour_classify.py puts ea
 that uses an option, value or input type BASE does not have is `opt-in` and is not generated.
 
 Accepted changes are listed in scripts/behaviour_diff_allowlist.toml: `base` and `[[accepted]]` entries with
-`input` (glob), optional `backends`, `aspects` and `match` (regex on the change line), `reason`, `decision` (the
-public PR or issue references of the owner decision, `#1234, #1235`) and `release_note`.
+`input` (a glob, or a list of globs), optional `backends`, `aspects` and `match` (regex on the change line), `reason`,
+`decision` (the public PR or issue references of the owner decision, `#1234, #1235`) and `release_note`.
 A `[[base_skip]]` entry (`input` glob, `bases`: releases such as `["0.88.0"]` or a maximum such as `["<=0.88.0"]`,
 `reason`, `issue`) names an input a release is known to hang on: the release does not run for those cells, which are
 `base-skipped` once the candidate generated and imported (a candidate failure is a violation). `--check` also fails

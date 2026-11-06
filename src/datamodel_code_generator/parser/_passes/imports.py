@@ -1233,17 +1233,16 @@ def _loop_error(
 def _evaluated_data_types(model: DataModel, *, evaluates_annotations: bool) -> Iterator[DataType]:
     """Yield the data types that the statements defining a model evaluate as the module runs.
 
-    They are the types of the fields that ``definition_reads`` reads (row ``legacy-evaluated-without-root-model``), and
-    where it reads the model's own fields, every type of the model, its bases included.
+    Where ``definition_reads`` reads the fields of the model (row ``legacy-evaluated-without-root-model``), they are
+    every type of the model, its bases included. Only Pydantic and msgspec output reaches this check
+    (``alias_loop_failure``), and there a definition reads the model's own fields or none: the subset a functional
+    TypedDict evaluates never comes here.
     """
-    fields = definition_reads(
-        model, row="legacy-evaluated-without-root-model", evaluates_annotations=evaluates_annotations
-    )
-    if fields is model.fields:
+    if (
+        definition_reads(model, row="legacy-evaluated-without-root-model", evaluates_annotations=evaluates_annotations)
+        is not None
+    ):
         yield from model.all_data_types
-        return
-    for field in fields or ():
-        yield from field.data_type.all_data_types
 
 
 def reject_alias_cycles_without_schema(
@@ -1292,22 +1291,45 @@ def reject_alias_cycles_without_schema(
                 )
 
 
+_PYDANTIC_ALIAS_ARGUMENTS: Final[Mapping[str, str]] = {
+    "alias": "alias",
+    "validation_alias": "validation alias",
+    "serialization_alias": "serialization alias",
+}
+"""What each alias argument of ``Field()`` is, as the message names it."""
+
+
+def _pydantic_read_aliases(field: DataModelFieldBase) -> Iterator[tuple[str, str]]:
+    """Yield each alias the field's ``Field()`` call writes, which Pydantic reads, with what it is.
+
+    They are the arguments of the frozen render plan: an alias ``--use-serialization-alias`` writes as the serialization
+    alias, or replaces by the one ``--serialization-aliases`` gives, is no alias Pydantic reads. ``validation_alias``
+    writes the ``AliasChoices`` of the field's validation aliases.
+    """
+    plan = field._render_plan()  # noqa: SLF001
+    for call in (plan.call, plan.annotated_call):
+        for argument in () if call is None else call.kwargs:
+            if (kind := _PYDANTIC_ALIAS_ARGUMENTS.get(argument.name)) is None:
+                continue
+            if argument.name == "validation_alias":
+                yield from ((kind, alias) for alias in field.validation_aliases or ())
+            else:
+                yield kind, cast("str", argument.value)
+
+
 def _lone_surrogate_held(model: DataModel, field: DataModelFieldBase) -> tuple[str, str] | None:
     """Return the first text of a field that Pydantic reads as UTF-8 and that holds a lone surrogate, and its location.
 
-    The texts are the aliases of the field, the str values of its ``Literal`` types and the str values of the enums
-    its types validate as classes, read through the type aliases they name; a ``Literal`` of enum members holds the
-    members, not their values. The text is written as the message writes it (its ``repr``, after what it is), and the
-    location as the message names it: that of the type that holds the value, else of the field, else of the model; an
-    enum's own.
+    The texts are the aliases the field's ``Field()`` call writes (``_pydantic_read_aliases``), the str values of its
+    ``Literal`` types and the str values of the enums its types validate as classes, read through the type aliases they
+    name; a ``Literal`` of enum members holds the members, not their values. The text is written as the message writes
+    it (its ``repr``, after what it is), and the location as the message names it: that of the type that holds the
+    value, else of the field, else of the model; an enum's own.
     """
     origin = None if (built := field_origin_of(field)) is None else built.location
-    aliases = (
-        ("alias", field.alias),
-        *(("validation alias", alias) for alias in field.validation_aliases or ()),
-        ("serialization alias", field.serialization_alias),
-    )
-    if held := next(((kind, alias) for kind, alias in aliases if alias and holds_lone_surrogate(alias)), None):
+    if held := next(
+        ((kind, alias) for kind, alias in _pydantic_read_aliases(field) if holds_lone_surrogate(alias)), None
+    ):
         return f"its {held[0]} {stable_repr(held[1])}", named_schema_location(origin, model.reference)
     pending = [*field.data_type.all_data_types]
     seen: set[int] = set()

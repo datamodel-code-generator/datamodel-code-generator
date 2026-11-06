@@ -733,12 +733,18 @@ def _input_model_field_wire_name(field_name: str, field_info: Any) -> str:
 def _iter_owned_properties(
     properties: dict[str, Any], model_fields: dict[str, Any]
 ) -> Iterator[tuple[Any, dict[str, Any]]]:
-    """Pair each field with its property, skipping a property that another field of the same wire name owns."""
+    """Pair each field with its property, skipping a property that another field of the same wire name owns.
+
+    The owner is the field the schema marks (``InputModelJsonSchema``), else the last field of the wire name, whose
+    schema Pydantic writes for the property.
+    """
+    wire_names = {name: _input_model_field_wire_name(name, field_info) for name, field_info in model_fields.items()}
+    last_fields = {wire_name: name for name, wire_name in wire_names.items()}
     for field_name, field_info in model_fields.items():
-        if (prop := properties.get(_input_model_field_wire_name(field_name, field_info))) is None:
+        if (prop := properties.get(wire_name := wire_names[field_name])) is None:
             continue
         owner = prop.get(_FIELD_SCHEMA_NAME)
-        if not isinstance(owner, _FieldSchemaOwner) or owner.field_name == field_name:
+        if (owner.field_name if isinstance(owner, _FieldSchemaOwner) else last_fields[wire_name]) == field_name:
             yield field_info, prop
 
 
@@ -1385,6 +1391,7 @@ def _partition_inherited_fields(
             overrides[child_wire] = parent_wire
         else:
             inherited_names.add(child_wire)
+    inherited_names -= overrides.keys()
     return (
         {k: v for k, v in original_props.items() if k not in inherited_names},
         [name for name in original_required if name not in inherited_names],
