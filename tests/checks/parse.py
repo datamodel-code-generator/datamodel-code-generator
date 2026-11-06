@@ -383,18 +383,6 @@ def write_additional_properties_sets(original: Callable[..., None]) -> Callable[
     return write_additional_properties_sets
 
 
-def write_members_as_lists(original: Callable[..., None]) -> Callable[..., None]:
-    """Wrap ``_DecisionWriter.write_members_as_lists``: it writes the objects the guarded views a decision read name."""
-
-    @wraps(original)
-    def write_members_as_lists(self: Any, model: Any, field: Any, members: Any) -> None:
-        return original(
-            self, viewed(model), viewed(field), [(viewed(node), viewed(alias_set)) for node, alias_set in members]
-        )
-
-    return write_members_as_lists
-
-
 def mark_serialized_as_any(original: Callable[..., None]) -> Callable[..., None]:
     """Wrap ``_DecisionWriter.mark_serialized_as_any``: it writes the model that the guarded view it gets names."""
 
