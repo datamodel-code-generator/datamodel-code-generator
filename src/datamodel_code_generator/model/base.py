@@ -3179,8 +3179,11 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
     @property
     def form(self) -> ModelForm:
-        """How the model holds its value: as a type alias, a root model or the fields of an object."""
-        return "alias" if self.IS_ALIAS else "root" if self.IS_ROOT_MODEL else "object"
+        """How the model holds its value: as a root model, a type alias or the fields of an object.
+
+        A root model written as an assignment (``Foo = RootModel[str]``) is a root model: its value is its instance.
+        """
+        return "root" if self.IS_ROOT_MODEL else "alias" if self.IS_ALIAS else "object"
 
     @property
     def value_base(self) -> str | None:

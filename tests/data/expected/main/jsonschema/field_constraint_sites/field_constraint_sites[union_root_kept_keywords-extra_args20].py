@@ -39,7 +39,7 @@ class Model(BaseModel):
     text: Item | str | None = Field(None, max_length=3)
     count: CountOrNumber1 | int | None = Field(None, ge=3)
     code: Code | CodeOrText1 | None = Field(None, max_length=3)
-    loop: TextOrLoop1 | Loop | None = Field(None, max_length=3)
+    loop: TextOrLoop1 | Loop | None = None
 
 
 Loop.model_rebuild()

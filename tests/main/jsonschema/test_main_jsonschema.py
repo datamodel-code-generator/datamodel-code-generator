@@ -22625,6 +22625,55 @@ def test_main_jsonschema_contains_true_count_constraints(output_file: Path) -> N
     )
 
 
+@pytest.mark.parametrize(
+    ("extra_args", "invalid_json", "expected_error_type"),
+    [
+        pytest.param([], '{"color":"blue"}', "enum", id="default"),
+        pytest.param(["--use-annotated"], '{"color":"blue"}', "enum", id="use_annotated"),
+        pytest.param(["--use-root-model-type-alias"], '{"color":"blue"}', "enum", id="root_model_type_alias"),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass"], '{"tags":["a"]}', "too_short", id="dataclass"),
+        pytest.param(["--collapse-root-models"], '{"tagsAsFloats":["a","b","c","d"]}', "too_long", id="collapse"),
+    ],
+)
+def test_main_jsonschema_contains_count_beside_model_reference(
+    output_file: Path, extra_args: list[str], invalid_json: str, expected_error_type: str
+) -> None:
+    """Write the item counts beside a model only where the written type takes them, warning otherwise (#6035).
+
+    Pydantic applies ``min_length`` to the value the type validates to, so beside a root model, an object model, an
+    enum or a union of them it raised ``TypeError`` for every value; the field is written without the counts and
+    warns, as msgspec does. A type alias (``pydantic_v2.dataclass``) and a collapsed root keep them, and so do the
+    counts written as integral floats (#5942).
+    """
+    with (
+        pytest.warns(
+            UserWarning, match=r"^Pydantic does not take (max_length, )?min_length on .+ is generated without"
+        ),
+        pytest.warns(
+            UserWarning,
+            match=r"^Pydantic does not take min_length on Owner; ContainsCountBesideModelReference\.owner is generated "
+            r"without this constraint\.$",
+        ),
+    ):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "contains_count_beside_model_reference.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=extra_args,
+            force_exec_validation=True,
+        )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="contains_count_beside_model_reference",
+        model_name="ContainsCountBesideModelReference",
+        valid_json='{"tags":["a","b"],"tagsAsFloats":["a","b"],"owner":{"name":"x"},"color":"red","ownerOrColor":"green"}',
+        invalid_json=invalid_json,
+        expected_error_type=expected_error_type,
+        expected_attribute_path=("owner", "name"),
+        expected_attribute_value="x",
+    )
+
+
 def test_main_jsonschema_contains_integral_float_counts(output_file: Path) -> None:
     """Read ``minContains`` and ``maxContains`` written as integral floats as the integers they are (#5942).
 

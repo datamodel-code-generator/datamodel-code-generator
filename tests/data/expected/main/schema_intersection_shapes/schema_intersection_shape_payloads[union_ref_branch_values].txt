@@ -67,51 +67,51 @@ msgspec.Struct default at_least_ten 3 rejected
 msgspec.Struct default short_letters "abc" accepted
 msgspec.Struct default short_letters 5 accepted
 msgspec.Struct default short_letters "abcd" rejected
-pydantic_v2.BaseModel --field-constraints at_least 7 raised TypeError
-pydantic_v2.BaseModel --field-constraints at_least "s" raised TypeError
-pydantic_v2.BaseModel --field-constraints at_least 3 raised TypeError
-pydantic_v2.BaseModel --field-constraints letters "aa" raised TypeError
-pydantic_v2.BaseModel --field-constraints letters 5 raised TypeError
-pydantic_v2.BaseModel --field-constraints letters "b" raised TypeError
+pydantic_v2.BaseModel --field-constraints at_least 7 accepted
+pydantic_v2.BaseModel --field-constraints at_least "s" accepted
+pydantic_v2.BaseModel --field-constraints at_least 3 accepted
+pydantic_v2.BaseModel --field-constraints letters "aa" accepted
+pydantic_v2.BaseModel --field-constraints letters 5 accepted
+pydantic_v2.BaseModel --field-constraints letters "b" accepted
 pydantic_v2.BaseModel --field-constraints letters "aaaa" rejected
-pydantic_v2.BaseModel --field-constraints non_empty ["x"] raised TypeError
-pydantic_v2.BaseModel --field-constraints non_empty 3 raised TypeError
-pydantic_v2.BaseModel --field-constraints non_empty [] raised TypeError
+pydantic_v2.BaseModel --field-constraints non_empty ["x"] accepted
+pydantic_v2.BaseModel --field-constraints non_empty 3 accepted
+pydantic_v2.BaseModel --field-constraints non_empty [] accepted
 pydantic_v2.BaseModel --field-constraints at_least_in_all_of 7 accepted
 pydantic_v2.BaseModel --field-constraints at_least_in_all_of "s" accepted
 pydantic_v2.BaseModel --field-constraints at_least_in_all_of 3 accepted
 pydantic_v2.BaseModel --field-constraints at_least_field 7 accepted
 pydantic_v2.BaseModel --field-constraints at_least_field "s" accepted
 pydantic_v2.BaseModel --field-constraints at_least_field 3 accepted
-pydantic_v2.BaseModel --field-constraints at_least_ten 12 raised TypeError
-pydantic_v2.BaseModel --field-constraints at_least_ten "s" raised TypeError
+pydantic_v2.BaseModel --field-constraints at_least_ten 12 accepted
+pydantic_v2.BaseModel --field-constraints at_least_ten "s" accepted
 pydantic_v2.BaseModel --field-constraints at_least_ten 7 rejected
 pydantic_v2.BaseModel --field-constraints at_least_ten 3 rejected
-pydantic_v2.BaseModel --field-constraints short_letters "abc" raised TypeError
-pydantic_v2.BaseModel --field-constraints short_letters 5 raised TypeError
+pydantic_v2.BaseModel --field-constraints short_letters "abc" accepted
+pydantic_v2.BaseModel --field-constraints short_letters 5 accepted
 pydantic_v2.BaseModel --field-constraints short_letters "abcd" rejected
-pydantic_v2.BaseModel --use-annotated at_least 7 raised TypeError
-pydantic_v2.BaseModel --use-annotated at_least "s" raised TypeError
-pydantic_v2.BaseModel --use-annotated at_least 3 raised TypeError
-pydantic_v2.BaseModel --use-annotated letters "aa" raised TypeError
-pydantic_v2.BaseModel --use-annotated letters 5 raised TypeError
-pydantic_v2.BaseModel --use-annotated letters "b" raised TypeError
+pydantic_v2.BaseModel --use-annotated at_least 7 accepted
+pydantic_v2.BaseModel --use-annotated at_least "s" accepted
+pydantic_v2.BaseModel --use-annotated at_least 3 accepted
+pydantic_v2.BaseModel --use-annotated letters "aa" accepted
+pydantic_v2.BaseModel --use-annotated letters 5 accepted
+pydantic_v2.BaseModel --use-annotated letters "b" accepted
 pydantic_v2.BaseModel --use-annotated letters "aaaa" rejected
-pydantic_v2.BaseModel --use-annotated non_empty ["x"] raised TypeError
-pydantic_v2.BaseModel --use-annotated non_empty 3 raised TypeError
-pydantic_v2.BaseModel --use-annotated non_empty [] raised TypeError
+pydantic_v2.BaseModel --use-annotated non_empty ["x"] accepted
+pydantic_v2.BaseModel --use-annotated non_empty 3 accepted
+pydantic_v2.BaseModel --use-annotated non_empty [] accepted
 pydantic_v2.BaseModel --use-annotated at_least_in_all_of 7 accepted
 pydantic_v2.BaseModel --use-annotated at_least_in_all_of "s" accepted
 pydantic_v2.BaseModel --use-annotated at_least_in_all_of 3 accepted
 pydantic_v2.BaseModel --use-annotated at_least_field 7 accepted
 pydantic_v2.BaseModel --use-annotated at_least_field "s" accepted
 pydantic_v2.BaseModel --use-annotated at_least_field 3 accepted
-pydantic_v2.BaseModel --use-annotated at_least_ten 12 raised TypeError
-pydantic_v2.BaseModel --use-annotated at_least_ten "s" raised TypeError
+pydantic_v2.BaseModel --use-annotated at_least_ten 12 accepted
+pydantic_v2.BaseModel --use-annotated at_least_ten "s" accepted
 pydantic_v2.BaseModel --use-annotated at_least_ten 7 rejected
 pydantic_v2.BaseModel --use-annotated at_least_ten 3 rejected
-pydantic_v2.BaseModel --use-annotated short_letters "abc" raised TypeError
-pydantic_v2.BaseModel --use-annotated short_letters 5 raised TypeError
+pydantic_v2.BaseModel --use-annotated short_letters "abc" accepted
+pydantic_v2.BaseModel --use-annotated short_letters 5 accepted
 pydantic_v2.BaseModel --use-annotated short_letters "abcd" rejected
 pydantic_v2.BaseModel --collapse-root-models at_least 7 accepted
 pydantic_v2.BaseModel --collapse-root-models at_least "s" accepted
@@ -228,28 +228,28 @@ msgspec.Struct --use-site-models-for-constrained-refs at_least_ten 3 rejected
 msgspec.Struct --use-site-models-for-constrained-refs short_letters "abc" accepted
 msgspec.Struct --use-site-models-for-constrained-refs short_letters 5 accepted
 msgspec.Struct --use-site-models-for-constrained-refs short_letters "abcd" rejected
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least 7 raised TypeError
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least "s" raised TypeError
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least 3 raised TypeError
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs letters "aa" raised TypeError
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs letters 5 raised TypeError
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs letters "b" raised TypeError
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least 7 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least "s" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least 3 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs letters "aa" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs letters 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs letters "b" accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs letters "aaaa" rejected
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs non_empty ["x"] raised TypeError
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs non_empty 3 raised TypeError
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs non_empty [] raised TypeError
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs non_empty ["x"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs non_empty 3 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs non_empty [] accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least_in_all_of 7 accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least_in_all_of "s" accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least_in_all_of 3 accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least_field 7 accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least_field "s" accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least_field 3 accepted
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least_ten 12 raised TypeError
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least_ten "s" raised TypeError
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least_ten 12 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least_ten "s" accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least_ten 7 rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least_ten 3 rejected
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs short_letters "abc" raised TypeError
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs short_letters 5 raised TypeError
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs short_letters "abc" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs short_letters 5 accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs short_letters "abcd" rejected
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs at_least 7 accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs at_least "s" accepted

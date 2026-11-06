@@ -125,7 +125,7 @@ from datamodel_code_generator.model.pydantic_v2.imports import (
     IMPORT_VALIDATION_INFO,
     IMPORT_VALIDATOR_FUNCTION_WRAP_HANDLER,
 )
-from datamodel_code_generator.model.pydantic_v2.types import EncodedTextDataType
+from datamodel_code_generator.model.pydantic_v2.types import DataTypeManager, EncodedTextDataType
 from datamodel_code_generator.model.pydantic_v2.version import _includes_dict_key_reference_classes, model_target_meets
 from datamodel_code_generator.model.runtime_validation import (
     IndependentDeclaredPatternPropertiesRule,
@@ -230,7 +230,6 @@ def _get_plain_pattern_root_types() -> tuple[
 ]:
     """Identify the uncustomized model types eligible for inert root annotations."""
     from .root_model import RootModel  # noqa: PLC0415
-    from .types import DataTypeManager  # noqa: PLC0415
 
     return BaseModel, RootModel, DataModelField, DataTypeManager
 
@@ -712,6 +711,7 @@ class DataModelField(_PydanticBaseDataModelField):
     SUPPORTS_DISCRIMINATOR: ClassVar[bool] = True
     _CONSTRAINT_ARGUMENTS: ClassVar[dict[str, str]] = _constraint_arguments(Constraints)
     _UNWRITTEN_CONSTRAINT_ARGUMENTS: ClassVar[frozenset[str]] = frozenset({_UNIQUE_ITEMS_ARGUMENT})
+    _TYPE_MANAGER: ClassVar[type[DataTypeManagerBase]] = DataTypeManager
     PREPARE_PYTHON_PATTERNS = staticmethod(_prepare_python_patterns)
     PREPARE_TYPE_ALIAS_FIELD = staticmethod(_prepare_type_alias_field)
     NEEDS_MODEL_REGEX_ENGINE = staticmethod(_needs_model_regex_engine)
@@ -938,9 +938,11 @@ class DataModelField(_PydanticBaseDataModelField):
         return self._type_hint_from_data_type(data_type.model_copy(update={"use_standard_collections": False}))
 
     @override
-    def _normalized_constraint_arguments(self, omitted: list[Omitted]) -> dict[str, Kwarg]:
+    def _normalized_constraint_arguments(
+        self, omitted: list[Omitted], *, beside_models: bool = True
+    ) -> dict[str, Kwarg]:
         """Use prepared patterns after the shared constraint filtering and normalization."""
-        arguments = super()._normalized_constraint_arguments(omitted)
+        arguments = super()._normalized_constraint_arguments(omitted, beside_models=beside_models)
         if (
             isinstance(pattern := self.extras.get(_COMPILED_PATTERN_KEY), PythonRuntimeExpression)
             and (argument := arguments.get("pattern")) is not None

@@ -27,6 +27,9 @@ SITES = JSON_SCHEMA_DATA_PATH / "field_constraint_sites"
 PAYLOADS = DATA_PATH / "payloads" / "field_constraint_sites"
 LITERAL_ENUMS = ["--field-constraints", "--enum-field-as-literal", "all"]
 ANYURL_WITHOUT_CONSTRAINTS = pytest.mark.filterwarnings("ignore:fields holding AnyUrl are written without:UserWarning")
+MODELS_WITHOUT_LENGTH = pytest.mark.filterwarnings(
+    r"ignore:Pydantic does not take max_length on TextOrLoop1 \| Loop; Model\.loop is generated without:UserWarning"
+)
 
 
 @pytest.mark.parametrize(
@@ -52,7 +55,11 @@ ANYURL_WITHOUT_CONSTRAINTS = pytest.mark.filterwarnings("ignore:fields holding A
         ("union_root_keywords", ["--field-constraints", "--use-type-alias"]),
         ("union_root_keywords", ["--use-annotated", "--collapse-root-models"]),
         ("union_root_keywords", ["--field-constraints", "--output-model-type", "pydantic_v2.dataclass"]),
-        ("union_root_kept_keywords", ["--field-constraints", "--use-subclass-enum", "--collapse-root-models"]),
+        pytest.param(
+            "union_root_kept_keywords",
+            ["--field-constraints", "--use-subclass-enum", "--collapse-root-models"],
+            marks=MODELS_WITHOUT_LENGTH,
+        ),
         ("union_root_kept_keywords", ["--field-constraints", "--use-subclass-enum", "--use-type-alias"]),
         pytest.param(
             "union_root_kept_keywords",
@@ -63,7 +70,10 @@ ANYURL_WITHOUT_CONSTRAINTS = pytest.mark.filterwarnings("ignore:fields holding A
                 "3.11",
                 "--collapse-root-models",
             ],
-            marks=pytest.mark.skipif(sys.version_info < (3, 11), reason="StrEnum needs Python 3.11"),
+            marks=[
+                pytest.mark.skipif(sys.version_info < (3, 11), reason="StrEnum needs Python 3.11"),
+                MODELS_WITHOUT_LENGTH,
+            ],
         ),
         *(
             pytest.param("union_root_url_keywords", ["--field-constraints", *args], marks=ANYURL_WITHOUT_CONSTRAINTS)
@@ -89,8 +99,10 @@ def test_field_constraint_sites(output_file: Path, name: str, extra_args: list[s
     value raises no ``TypeError`` (#6022), also where a root model collapses into a union of one member. Where a member
     would lose the check, as a string, a ``str`` enum or an ``AnyUrl`` that writes no copy of it, the field keeps
     today's output, whose ``TypeError`` for the other members stays (#6053); the payloads of those fields use the
-    members that keep the check. Without ``--field-constraints``, a string length beside a union of an array and a
-    string limits the string only, at a property and at the items of an array, as 0.88.0 wrote it (#6189).
+    members that keep the check. A keyword that no member's value takes, all of them instances of models (the root
+    model of a branch and one that names itself again), is left out with a warning, as each raised ``TypeError``
+    (#6035). Without ``--field-constraints``, a string length beside a union of an array and a string limits the
+    string only, at a property and at the items of an array, as 0.88.0 wrote it (#6189).
     """
     input_path = SITES / f"{name}.json"
     run_main_and_assert(

@@ -87,7 +87,7 @@ class AtLeastTen2(RootModel[str]):
 
 
 class AtLeastTen(RootModel[AtLeastTen1 | AtLeastTen2]):
-    root: AtLeastTen1 | AtLeastTen2 = Field(..., ge=5)
+    root: AtLeastTen1 | AtLeastTen2
 
 
 class ShortLetters1(RootModel[str]):
@@ -99,7 +99,7 @@ class ShortLetters2(RootModel[int]):
 
 
 class ShortLetters(RootModel[ShortLetters1 | ShortLetters2]):
-    root: ShortLetters1 | ShortLetters2 = Field(..., max_length=8)
+    root: ShortLetters1 | ShortLetters2
 
 
 class Model(BaseModel):

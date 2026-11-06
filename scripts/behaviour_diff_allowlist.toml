@@ -340,3 +340,20 @@ match = "^\\[constraints\\] ContainsIntegralFloatCounts:(?:values|never): .* -> 
 reason = "minContains and maxContains written as integral floats (2.0, 3.0) were dropped, so the model accepted arrays with fewer or more items than the schema allows; they are read as the integers they are, as minItems is (schema-mismatch fix)"
 decision = "#5942"
 release_note = "minContains and maxContains written as integral floats such as 2.0 give the array its minimum and maximum length, as the integers 2 and 3 do"
+
+[[accepted]]
+input = "tests/data/jsonschema/contains_count_beside_model_reference.json"
+aspects = [ "constraints" ]
+match = "^\\[constraints\\] ContainsCountBesideModelReference:tags_?[Aa]s_?[Ff]loats: .* -> .*(?:MinLen\\(min_length=2\\), MaxLen\\(max_length=3\\)|Meta\\(max_length=3,min_length=2\\)).*$"
+reason = "minContains and maxContains written as integral floats (2.0, 3.0) beside a reference to an array that the output writes as a list or a type alias of one were dropped, so the model accepted arrays with fewer or more items than the schema allows; they are read as the integers they are, as minItems is (schema-mismatch fix)"
+decision = "#5942"
+release_note = "minContains and maxContains written as integral floats such as 2.0 give the array its minimum and maximum length, as the integers 2 and 3 do"
+
+[[accepted]]
+input = "tests/data/jsonschema/contains_count_beside_model_reference.json"
+backends = [ "pydantic_v2.BaseModel" ]
+aspects = [ "constraints" ]
+match = "^\\[constraints\\] ContainsCountBesideModelReference:owner: Annotated\\[Union\\[None, Owner\\], MinLen\\(min_length=1\\)\\] -> Union\\[None, Owner\\]$"
+reason = "the item counts that contains implies were written beside a model class, which Pydantic cannot apply them to, so the model raised TypeError for every value; the field is written without them and warns, as msgspec does (crash fix)"
+decision = "#6035"
+release_note = "a property that references a model and states contains or minContains no longer gets min_length on the model class, which made every value raise TypeError; the counts are left out with a warning where the written type cannot take them"
