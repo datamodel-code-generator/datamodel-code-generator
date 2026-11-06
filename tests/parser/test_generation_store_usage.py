@@ -303,6 +303,7 @@ def test_checker_uses_generation_store_api_surface() -> None:
     assert sorted(checker.GENERATION_STORE_MUTATION_METHODS) == snapshot(
         [
             "add_model_import",
+            "adopt_base_options",
             "append_field",
             "apply_const",
             "apply_literal_default",

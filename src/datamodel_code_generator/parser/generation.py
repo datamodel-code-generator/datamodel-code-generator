@@ -169,6 +169,7 @@ passes build are ``copied``."""
 
 NO_SITE_EFFECT: frozenset[str] = frozenset({
     "add_model_import",
+    "adopt_base_options",
     "apply_literal_default",
     "bind_builtin_names",
     "clear_target_null",
@@ -1556,6 +1557,13 @@ class GenerationStore:  # noqa: PLR0904
         return restored
 
     @staticmethod
+    @deprecated("Use GenerationStore.builder().adopt_base_options() instead.", category=None)
+    def adopt_base_options(model: DataModel) -> None:
+        """Run the model's ``adopt_base_options`` hook: it takes the options of the generated bases it flattens."""
+        model.adopt_base_options()
+        bump_model(model)
+
+    @staticmethod
     @deprecated("Use GenerationStore.builder().force_field_assignment() instead.", category=None)
     def force_field_assignment(field_: DataModelFieldBase) -> None:
         """Run the field's ``force_field_assignment`` hook: it renders an explicit required-field assignment."""
@@ -2635,6 +2643,10 @@ class GraphBuilder:
     def insert_field(self, model: DataModel, index: int, field_: DataModelFieldBase) -> None:
         """Insert a field into ``model`` and invalidate derived facts; the new sites of ``model`` are copied."""
         self._store.insert_field(model, index, field_)  # ty: ignore[deprecated]
+
+    def adopt_base_options(self, model: DataModel) -> None:
+        """Make the options of the generated bases a model flattens its own through the store."""
+        self._store.adopt_base_options(model)  # ty: ignore[deprecated]
 
     def force_field_assignment(self, field_: DataModelFieldBase) -> None:
         """Render an explicit required-field assignment for a field through the store."""

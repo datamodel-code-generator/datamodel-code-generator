@@ -888,10 +888,8 @@ class Struct(DataModel):
             flatten(self)
 
     @override
-    def flatten_base_layouts(
-        self, adopt_field: Callable[[DataModelFieldBase, bool], DataModelFieldBase]
-    ) -> list[DataModelFieldBase]:
-        """Return the fields in the order the constructor needs, and make the struct options of the bases its own.
+    def adopt_base_options(self) -> None:
+        """Make the struct options of the generated bases the struct's own.
 
         msgspec makes a struct take each option from the first class in its method resolution order that sets it; an
         option the generator wrote on that class keeps the syntax it wrote (``add_base_class_kwarg``).
@@ -906,6 +904,12 @@ class Struct(DataModel):
             options[name] = value
             if isinstance(owner, Struct) and name in (owned := owner._written_struct_options):  # noqa: SLF001
                 written[name] = owned[name]
+
+    @override
+    def flatten_base_layouts(
+        self, adopt_field: Callable[[DataModelFieldBase, bool], DataModelFieldBase]
+    ) -> list[DataModelFieldBase]:
+        """Return the fields in the order the constructor needs."""
         return self.order_fields_for_construction(super().flatten_base_layouts(adopt_field))
 
     def _validate_base_layouts(self) -> None:

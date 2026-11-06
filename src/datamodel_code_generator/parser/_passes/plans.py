@@ -189,7 +189,7 @@ def flatten_conflicting_base_layouts(parser: PlansHost, module_models: ModuleMod
 
 
 def flatten_base_layouts(parser: FlattenHost, model: DataModel) -> None:
-    """Make a model declare the fields of its generated bases and drop them.
+    """Make a model declare the fields of its generated bases and take their options, and drop them.
 
     The required names the model and its bases take from their own bases are resolved first, as only the bases
     give their fields. A field becomes required as a required name makes it.
@@ -211,6 +211,7 @@ def flatten_base_layouts(parser: FlattenHost, model: DataModel) -> None:
             )
         return field
 
+    parser._graph_builder.adopt_base_options(model)  # noqa: SLF001
     fields = model.flatten_base_layouts(adopt)
     with parser._graph_builder.defer_refresh():  # noqa: SLF001
         for base_class in model.base_classes:

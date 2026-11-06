@@ -2394,6 +2394,12 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """Return the name that ``flatten_base_layouts`` merges the declarations of a field by: its Python name."""
         return id(field) if field.name is None else field.name
 
+    def adopt_base_options(self) -> None:
+        """Make the options the generated bases give the model its own, before it drops them (``flatten_base_layouts``).
+
+        Only msgspec Structs take options from their bases; other models have none to take.
+        """
+
     def flatten_base_layouts(
         self, adopt_field: Callable[[DataModelFieldBase, bool], DataModelFieldBase]
     ) -> list[DataModelFieldBase]:
