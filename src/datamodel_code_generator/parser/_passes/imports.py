@@ -54,7 +54,7 @@ from datamodel_code_generator.imports import (
     _stored_import,
 )
 from datamodel_code_generator.model._decisions.enum_kind import enum_member_kinds, literal_value_kind
-from datamodel_code_generator.model._decisions.tag_value import struct_tag_clash
+from datamodel_code_generator.model._decisions.tag_value import struct_union_refusal
 from datamodel_code_generator.model._render_plan import RENDER_READY
 from datamodel_code_generator.model.base import BaseClassDataType, DataModel, _bare_loads_of, _model_key_of_model
 from datamodel_code_generator.model.enum import Enum, Member, get_raw_enum_member_value
@@ -563,13 +563,11 @@ def _msgspec_refused_structs(models: Iterable[object]) -> _MsgspecRefusal:
             if isinstance(model, DataModel) and model.REQUIRES_TAGGED_UNION_DISCRIMINATOR
         }.values(),
     )
-    if len(structs) < 2:  # noqa: PLR2004
+    if (refusal := struct_union_refusal([struct.discriminator_tag for struct in structs])) is None:
         return _NO_MSGSPEC_REFUSAL
-    if len(tags := [tag for struct in structs if (tag := struct.discriminator_tag) is not None]) < len(structs):
+    kind, values = refusal
+    if kind == "untagged":
         return structs, None
-    if (clash := struct_tag_clash(tags, "legacy-python-equality")) is None:
-        return _NO_MSGSPEC_REFUSAL
-    kind, values = clash
     if kind == "tag-fields":
         return structs, f"are tagged by different fields {_format_tags(values)}"
     if kind == "tag-types":
