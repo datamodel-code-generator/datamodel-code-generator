@@ -79,6 +79,7 @@ reviewed-safe infer_union_variant_names
 reviewed-safe intersect_allof_keywords
 reviewed-safe intersect_combined_schema_keywords
 reviewed-safe keep_constrained_root_models_in_every_container
+reviewed-safe keep_defaults_of_inherited_required_fields
 reviewed-safe keep_enum_literal_aliases
 reviewed-safe keep_enum_member_values
 reviewed-safe keep_false_dataclass_arguments

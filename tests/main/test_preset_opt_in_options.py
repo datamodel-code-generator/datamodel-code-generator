@@ -99,6 +99,7 @@ OPT_IN_OPTIONS_20261106: tuple[str, ...] = (
     "--keep-shared-members-on-collapsed-root-models",
     "--use-enum-field-as-literal-in-operations",
     "--dedupe-numbered-request-response-variants",
+    "--keep-defaults-of-inherited-required-fields",
 )
 """The options the 20261106 presets set beyond the 20261104 presets."""
 
@@ -391,6 +392,12 @@ CASES_20261106: tuple[pytest.ParameterSet, ...] = (
             *("--read-only-write-only-model-type", "request-response"),
         ],
         id="dedupe-numbered-request-response-variants",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "use_default_inherited_required.json",
+        "jsonschema",
+        ["--output-model-type", "dataclasses.dataclass", "--use-default"],
+        id="keep-defaults-of-inherited-required-fields",
     ),
 )
 """The inputs each opt-in option of the 20261106 presets changes."""

@@ -950,6 +950,10 @@
       "not_recommended": "preset",
       "reason": "Set by the 20261106 presets; the recommendation starts from a preset."
     },
+    "keep_defaults_of_inherited_required_fields": {
+      "not_recommended": "preset",
+      "reason": "With --use-default only: set by the 20261106 presets; the recommendation starts from a preset."
+    },
     "keep_enum_member_values": {
       "not_recommended": "preset",
       "reason": "Set by the 20261027 presets; the recommendation starts from a preset."

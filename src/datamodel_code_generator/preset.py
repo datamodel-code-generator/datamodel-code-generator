@@ -1168,6 +1168,14 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "numbered model merges into Page."
         ),
     ),
+    PresetOptionGroup(
+        title="Defaults of inherited required fields kept",
+        config=PresetConfig(keep_defaults_of_inherited_required_fields=True),
+        description=(
+            "With --use-default, keep the default a schema gives a property that only a schema it inherits from lists "
+            "as required, as --use-default keeps that of a property the schema lists as required itself."
+        ),
+    ),
 )
 """The 20261104 groups and the opt-in options of the release after 0.90.0."""
 
@@ -1544,7 +1552,10 @@ def render_presets_markdown() -> str:
             "definition's enum one, instead of an `Enum` class, and `--dedupe-numbered-request-response-variants`: "
             "under `--read-only-write-only-model-type` a Request or Response variant of a numbered model "
             "(`Page1Request` of an inline copy `Page1` of `Page`) merges into `PageRequest` where it renders the same, "
-            "as the numbered model merges into `Page`."
+            "as the numbered model merges into `Page`, and "
+            "`--keep-defaults-of-inherited-required-fields`: with `--use-default` a property that only a schema it "
+            "inherits from lists as required keeps the default its schema gives it (`a: str = 'x'`), as one the schema "
+            "lists as required itself does."
         ),
         "",
         "## Override Preset Options",

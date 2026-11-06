@@ -4810,7 +4810,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         field_name in inherited_required_names
                         or (inherited_field is not None and inherited_field.required)
                     ) and not self.force_optional_for_required_fields:
-                        self._graph_builder.require_field(field, use_default_with_required=False)
+                        self._graph_builder.require_field(
+                            field,
+                            use_default_with_required=uses_default_with_required(
+                                required=True,
+                                has_default=field.has_default,
+                                use_default=self.apply_default_values_for_required_fields
+                                and self.keep_defaults_of_inherited_required_fields,
+                            ),
+                        )
                     if field_name is None or _DEFERRED_INHERITED_TYPE_KEY not in field.__dict__:
                         if inherited_field is not None:
                             self._prepare_required_inherited_field(
