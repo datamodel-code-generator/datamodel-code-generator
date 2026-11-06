@@ -85,6 +85,8 @@ class DecisionOptions:
     """--use-tuple-for-closed-arrays writes a closed array as a tuple, which keeps its positions."""
     user_imports: bool = False
     """--additional-imports may shadow the builtin annotations that hashability reads."""
+    meta_field_keys: frozenset[str] = frozenset()
+    """The keys of a field the output writes as metadata beside its type (msgspec's ``Meta()`` arguments)."""
 
 
 @final

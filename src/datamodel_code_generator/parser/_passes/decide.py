@@ -61,7 +61,9 @@ def decide(parser: DecideHost, runner: Runner, run: FinishRun[Any, Any, Any]) ->
         modules,
         lambda data_type, model_of: keywords(data_type, version, model_of),
         DecisionOptions(
-            keeps_tuples=parser.use_tuple_for_closed_arrays, user_imports=bool(parser.config.additional_imports)
+            keeps_tuples=parser.use_tuple_for_closed_arrays,
+            user_imports=bool(parser.config.additional_imports),
+            meta_field_keys=parser._output_model_context.meta_field_keys,  # noqa: SLF001
         ),
     )
     writer = _DecisionWriter(parser._graph_builder, _copy_data_type)  # noqa: SLF001
