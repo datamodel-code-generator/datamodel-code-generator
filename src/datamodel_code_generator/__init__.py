@@ -906,7 +906,14 @@ def _format_file_header(
 
 
 def _build_file_header_parts(custom_file_header: str | None, config: GenerateConfig) -> tuple[str, str | None]:
-    """Build shared file-header parts, using a None suffix for replace mode."""
+    """Build shared file-header parts, using a None suffix for replace mode.
+
+    The header's line breaks end as the file's other lines do: a CR or CRLF in it is written as the file's newline.
+    """
+    if custom_file_header:
+        from datamodel_code_generator._python_syntax import normalize_newlines  # noqa: PLC0415
+
+        custom_file_header = normalize_newlines(custom_file_header)
     match config.custom_file_header_mode:
         case CustomFileHeaderMode.Replace if custom_file_header:
             return custom_file_header, None
@@ -925,7 +932,7 @@ def _build_file_header_parts(custom_file_header: str | None, config: GenerateCon
         safe_command_line = config.command_line.replace("\n", " ").replace("\r", " ")
         header_suffix += f"\n#   command:   {safe_command_line}"
     if custom_file_header:
-        custom_header = custom_file_header.rstrip("\r\n")
+        custom_header = custom_file_header.rstrip("\n")
         header_prefix = f"{custom_header}\n#\n{header_prefix}"
     return header_prefix, header_suffix
 

@@ -7037,6 +7037,20 @@ def test_generate_returns_string_with_custom_file_header_prepend() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "mode", [CustomFileHeaderMode.Replace, CustomFileHeaderMode.Prepend], ids=["replace", "prepend"]
+)
+def test_generate_custom_file_header_line_breaks_end_as_file_lines(mode: CustomFileHeaderMode) -> None:
+    """A CR or CRLF in a custom header is written as the file's newline, like the header's other line breaks."""
+    run_generate_and_assert(
+        input_=JSON_SCHEMA_DATA_PATH / "simple_string.json",
+        input_file_type=InputFileType.JsonSchema,
+        custom_file_header="# a\r# b\r\n# c\r\n",
+        custom_file_header_mode=mode,
+        disable_timestamp=True,
+    )
+
+
 def test_generate_returns_modules_with_custom_file_header_prepend() -> None:
     """Prepend custom and per-file provenance headers for output=None modules."""
     result = generate(
