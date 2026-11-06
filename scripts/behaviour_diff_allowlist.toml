@@ -210,7 +210,7 @@ release_note = "without --field-constraints, the minItems and maxItems of an arr
 input = [ "*collapse_root_models_item_count_aliases*", "*collapse_root_models_item_count_alias_reuse*" ]
 backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
 aspects = [ "constraints", "type" ]
-match = "^\\[(?:constraints|type)\\] (?:Model:\\w+|A|C|Color|Grid|Listing|Mixed|Nullable|Pairs|Single|Through): .* -> .*Annotated\\[list\\[.*\\], M(?:in|ax)Len\\(.*$"
+match = "^\\[(?:constraints|type)\\] (?:(?:Model|Payload):\\w+|A|C|Color|Grid|Listing|Mixed|Nullable|Pairs|Single|Through): .* -> .*Annotated\\[list\\[.*\\], M(?:in|ax)Len\\(.*$"
 reason = "without --field-constraints, the minItems and maxItems of the members of an anyOf, the items of an array and the values of a map were dropped without a warning; they are kept on a type alias of the array (schema-mismatch fix), and under --collapse-root-models the root models that name those aliases are inlined as before (#6383) and reuse leaves the models 0.89.0 wrote apart from those aliases (#6384), which these fixtures pin"
 decision = "#6171"
 release_note = "without --field-constraints, the minItems and maxItems of an array that has no field of its own (the member of an anyOf or oneOf, the items of an array, the values of a map) are written on a type alias of the array (Annotated[list[int], Field(min_length=2)]) instead of being dropped"
@@ -279,7 +279,7 @@ release_note = "an allOf of value parts that keeps the form it is written in wri
 [[accepted]]
 input = [ "*schema_intersection", "payload:jsonschema/schema_intersection/allof_value_parts.json" ]
 aspects = [ "constraints", "type" ]
-match = "^\\[(?:constraints|type)\\] (?:allof_value(?:_part)?s:\\w+(?::\\w+)?|(?:Multiple|Outer)(?:Item|Prop)|Payload:outer_(?:prop|items)): .* -> .*(?:MinLen|Ge\\(|Le\\(|MultipleOf|Meta\\(|list\\[[A-Z]\\w*\\]).*$"
+match = "^\\[(?:constraints|type)\\] (?:allof_value(?:_part)?s:\\w+(?::\\w+)?|(?:Multiple|Outer)(?:Item|Prop)|Payload:(?:outer|multiple)_(?:prop|items)): .* -> .*(?:MinLen|Ge\\(|Le\\(|MultipleOf|Meta\\(|list\\[[A-Z]\\w*\\]).*$"
 reason = "an allOf value site that keeps the form it is written in (without --intersect-allof-keywords) took its root's constraints from the allOf site, so the bounds, lengths and multipleOf of its parts were dropped without a warning; the root writes them now (schema-mismatch fix)"
 decision = "#6171"
 release_note = "an allOf of value parts that keeps the form it is written in writes the keywords of its parts on its root, so a lone allOf member's minItems, maxLength or bounds are no longer dropped"
@@ -393,9 +393,9 @@ release_note = "with --use-unique-items-as-set, a uniqueItems array of models wh
 
 [[accepted]]
 input = "*well_known_wrappers*"
-backends = [ "pydantic_v2.BaseModel", "msgspec.Struct" ]
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct" ]
 aspects = [ "constraints", "type" ]
-match = "^\\[(?:constraints|type)\\] (?:\\w+:)?(?:ExampleWktWrapperBucket:uint(?:64|32)_value|Uint(?:64|32)Value): .* -> .*(?:Interval\\(ge=0,le=(?:18446744073709551615|4294967295)\\)|Meta\\(ge=0,le=4294967295\\)).*$"
+match = "^\\[(?:constraints|type)\\] (?:\\w+:)?(?:(?:ExampleWkt)?WrapperBucket:uint(?:64|32)_value|Uint(?:64|32)Value): .* -> .*(?:Interval\\(ge=0,le=|Meta\\(ge=0,le=|Le\\(le=|conint\\(ge=0, le=)(?:18446744073709551615|4294967295)\\).*$"
 reason = "the protobuf wrappers google.protobuf.UInt64Value and UInt32Value read only the lower bound of their scalar, so the models accepted integers above the wire range that plain uint64 and uint32 fields reject; the wrappers now take the schema of their scalar, upper bound included (class and field names, types and the parsed values of valid payloads stay)"
 decision = "#5537"
 release_note = "protobuf `google.protobuf.UInt64Value` and `UInt32Value` fields get the upper bound of `uint64` and `uint32`, like plain fields of those types, so out-of-range integers are rejected"
@@ -496,8 +496,17 @@ release_note = "a TypedDict that declares the keys of a base of another module i
 [[accepted]]
 input = "tests/data/jsonschema/contains_integral_float_counts.json"
 aspects = [ "constraints", "probe" ]
-match = "^\\[constraints\\] ContainsIntegralFloatCounts:(?:values|never): .* -> .*(?:MinLen\\(min_length=[12]\\), MaxLen\\(max_length=[03]\\)|Meta\\(max_length=[03],min_length=[12]\\)).*$|^\\[probe\\] ContainsIntegralFloatCounts: accept -> reject$"
+match = "^\\[constraints\\] ContainsIntegralFloatCounts:(?:values|never): .* -> .*(?:MinLen\\(min_length=[12]\\), ?MaxLen\\(max_length=[03]\\)|Meta\\(max_length=[03],min_length=[12]\\)).*$|^\\[probe\\] ContainsIntegralFloatCounts: accept -> reject$"
 reason = "minContains and maxContains written as integral floats (2.0, 3.0) were dropped, so the model accepted arrays with fewer or more items than the schema allows; they are read as the integers they are, as minItems is (schema-mismatch fix)"
+decision = "#5942"
+release_note = "minContains and maxContains written as integral floats such as 2.0 give the array its minimum and maximum length, as the integers 2 and 3 do"
+
+[[accepted]]
+input = "tests/data/jsonschema/contains_integral_float_counts.json"
+backends = [ "pydantic_v2.dataclass" ]
+aspects = [ "default", "required" ]
+match = "^\\[default\\] ContainsIntegralFloatCounts:(?:values|never): '?None'? -> 'FieldInfo\\(annotation=NoneType, required=(?:False, default=None|True), metadata=\\[MinLen\\(min_length=[12]\\), MaxLen\\(max_length=[03]\\)\\]\\)'$|^\\[required\\] ContainsIntegralFloatCounts:(?:values|never): True -> False$"
+reason = "a pydantic dataclass writes the counts that minContains and maxContains written as integral floats now give (the entry above) as Field(None, max_length=3, min_length=2), or Field(max_length=3, min_length=2) under --strip-default-none, which the signature reads as the field's default and, without a default before, as a field that became optional; the default stays None and the field stays required (a payload without it still fails with missing), so only the counts change"
 decision = "#5942"
 release_note = "minContains and maxContains written as integral floats such as 2.0 give the array its minimum and maximum length, as the integers 2 and 3 do"
 
