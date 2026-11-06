@@ -14,12 +14,12 @@ class Pet(TypedDict):
     petType: Literal['cat', 'dog']
 
 
-class Cat(Pet):
+class Cat(TypedDict):
     petType: Literal['cat']
     meow: NotRequired[str]
 
 
-class Dog(Pet):
+class Dog(TypedDict):
     petType: PetType
 
 

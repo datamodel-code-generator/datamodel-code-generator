@@ -14,7 +14,7 @@ class Base(TypedDict):
     y: NotRequired[int]
 
 
-class Child(Base):
+class Child(TypedDict):
     x: NotRequired[int]
     e: NotRequired[Literal['b', 'c']]
     y: NotRequired[int]

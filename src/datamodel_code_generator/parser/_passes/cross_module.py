@@ -19,6 +19,7 @@ from datamodel_code_generator.model.base import (
     GENERIC_BASE_CLASS_PATH,
     BaseClassDataType,
     DataModel,
+    _find_base_classes,
 )
 from datamodel_code_generator.model.enum import Enum
 from datamodel_code_generator.parser._graph_ids import keyed_models
@@ -52,6 +53,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model.base import DataModelFieldBase
+    from datamodel_code_generator.parser._imports_plan import ImportPass
     from datamodel_code_generator.parser._passes._import_edges import ImportCycleSeeds
     from datamodel_code_generator.parser._passes._state import ModuleContextView, ModulePath, _ConstNarrowing
     from datamodel_code_generator.parser.generation import ModelRename
@@ -60,8 +62,10 @@ if TYPE_CHECKING:
 __all__ = [
     "CrossModuleHost",
     "CrossModuleRun",
+    "FlattenAcrossModulesHost",
     "TaggedBasesHost",
     "apply_generic_base_class",
+    "flatten_narrowed_inherited_fields",
     "import_enum_member_literal_classes",
     "import_removed_reuse_canonicals",
     "import_renamed_types",
@@ -114,7 +118,11 @@ class CrossModuleHost(ReimportHost, GenerationStoreHost, Protocol):
         """Build a model with ``factory``, a model class or a model factory, for the run's target Python."""
 
 
-class TaggedBasesHost(CrossModuleHost, FlattenHost, TagPlanHost, Protocol):
+class FlattenAcrossModulesHost(CrossModuleHost, FlattenHost, Protocol):
+    """What making a model of any module declare the fields of its bases reads and writes of the parser."""
+
+
+class TaggedBasesHost(FlattenAcrossModulesHost, TagPlanHost, Protocol):
     """What tagging the structs below tagged bases reads and writes of the parser."""
 
 
@@ -129,32 +137,43 @@ class CrossModuleRun(ModuleScopeView, Protocol):
 _GENERIC_BASE_CLASS: Final = ImportProducer("generic-base-class")
 
 
-def tag_fields_of_tagged_bases(parser: TaggedBasesHost, run: CrossModuleRun) -> None:
-    """Write what becomes of the msgspec structs below tagged bases (``iter_struct_tag_decisions``), and record it.
+def _flattener(
+    parser: FlattenAcrossModulesHost, run: CrossModuleRun, producer: ImportPass
+) -> Callable[[DataModel], None]:
+    """Return what makes a model of the run declare the fields of its generated bases and drop them.
 
-    The modules have bound the names of the models their fields name by then, so a struct that declares the fields
-    of its bases instead names the models of each copied field from its own module, importing those of others.
+    The modules have bound the names of the models their fields name by then, so the model names the models of each
+    copied field from its own module, importing those of others under names that no field of its module takes, as
+    the module's own imports are.
     """
     contexts = {id(model): ctx for ctx in run.contexts for model in ctx.models}
 
     def flatten(model: DataModel) -> None:
         own_fields = {id(field) for field in model.fields}
         flatten_base_layouts(parser, model)
+        copied = [field for field in model.fields if id(field) not in own_fields]
+        ctx = contexts[id(model)]
+        ctx.scoped_model_resolver.exclude_names.update(field.name for field in copied if field.name is not None)
         set_reference_expressions(
             parser,
-            ctx := contexts[id(model)],
+            ctx,
             run,
             model,
-            (
-                data_type
-                for field in model.fields
-                if id(field) not in own_fields
-                for data_type in field.data_type.all_data_types
-            ),
+            (data_type for field in copied for data_type in field.data_type.all_data_types),
             members=keyed_models(module_members(parser, ctx.models), "module members"),
-            producer=ImportProducer("tag-fields-of-tagged-bases", model),
+            producer=ImportProducer(producer, model),
         )
 
+    return flatten
+
+
+def tag_fields_of_tagged_bases(parser: TaggedBasesHost, run: CrossModuleRun) -> None:
+    """Write what becomes of the msgspec structs below tagged bases (``iter_struct_tag_decisions``), and record it.
+
+    A struct that declares the fields of its bases instead names the models of its copied fields as ``_flattener``
+    names them.
+    """
+    flatten = _flattener(parser, run, "tag-fields-of-tagged-bases")
     builder = parser._graph_builder  # noqa: SLF001
     decisions = parser._tag_plan.struct_tags  # noqa: SLF001
     for decision in iter_struct_tag_decisions(_context_models(run.contexts)):
@@ -178,6 +197,28 @@ def tag_fields_of_tagged_bases(parser: TaggedBasesHost, run: CrossModuleRun) -> 
                         builder.replace_field_type(field, field.data_type.__class__(literals=[field.extras["const"]]))
                 model.opt_out_of_inherited_tag()
         decisions.append(decision)
+
+
+def flatten_narrowed_inherited_fields(parser: FlattenAcrossModulesHost, run: CrossModuleRun) -> None:
+    """Make each model whose field narrows an inherited one, which its subclass cannot write, drop its bases.
+
+    The output holds an inherited field to the annotation of its bases (``DataModel._KEEPS_INHERITED_FIELD_TYPES``),
+    so such a model declares the fields of its generated bases itself (``_flattener``), bases first: a model that
+    inherits from one that narrows a field compares its fields with what that base declares then.
+    """
+    flatten = _flattener(parser, run, "flatten-narrowed-inherited-fields")
+    written = {id(model) for ctx in run.contexts for model in ctx.models}
+    visits = [(model, False) for ctx in reversed(run.contexts) for model in reversed(ctx.models)]
+    visited: set[int] = set()
+    while visits:
+        model, complete = visits.pop()
+        if complete:
+            if model._narrows_inherited_field():  # noqa: SLF001
+                flatten(model)
+        elif id(model) in written and id(model) not in visited:
+            visited.add(id(model))
+            visits.append((model, True))
+            visits.extend((base, False) for base in reversed(_find_base_classes(model)))
 
 
 def write_enum_member_tags_as_values(parser: CrossModuleHost, run: CrossModuleRun) -> None:

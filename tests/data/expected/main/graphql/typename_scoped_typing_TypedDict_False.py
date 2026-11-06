@@ -37,53 +37,56 @@ class Common(TypedDict):
     typename__: NotRequired[Literal['Common']]
 
 
-class Mid(Base):
+class Mid(TypedDict):
     typename__: String
-    typename___1: Int
     value: Int
+    typename___1: Int
     typename___2: NotRequired[Literal['Mid']]
 
 
-class OtherBase(Common):
+class OtherBase(TypedDict):
     value: Int
     typename__: NotRequired[Literal['OtherBase']]
 
 
-class Side(Common):
-    typename__: Int
+class Side(TypedDict):
     value: Int
+    typename__: Int
     typename___1: NotRequired[Literal['Side']]
 
 
-class Item(Mid, Base):
-    renamed: String
-    spare: Int
+class Item(TypedDict):
+    typename__: String
     value: Int
     typename___1: Int
     typename___2: NotRequired[Literal['Item']]
-
-
-class Multi(OtherBase, Side, Common):
+    renamed: String
     spare: Int
+
+
+class Multi(TypedDict):
     value: Int
     typename__: Int
     typename___1: NotRequired[Literal['Multi']]
+    spare: Int
 
 
-class MultiOrdinary(OtherBase, Common):
+class MultiOrdinary(TypedDict):
     value: Int
     typename__: NotRequired[Literal['MultiOrdinary']]
 
 
-class Ordinary(Base):
-    label: String
+class Ordinary(TypedDict):
+    typename__: String
     value: Int
     typename___1: NotRequired[Literal['Ordinary']]
-
-
-class Terminal(Mid, Base):
     label: String
-    typename___2: Int
+
+
+class Terminal(TypedDict):
+    typename__: String
     value: Int
     typename___1: Int
+    typename___2: Int
+    label: String
     typename___3: NotRequired[Literal['Terminal']]

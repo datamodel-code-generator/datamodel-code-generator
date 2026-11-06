@@ -314,3 +314,21 @@ match = "^\\[(?:constraints|type)\\] (?:\\w+:)?(?:ExampleWktWrapperBucket:uint(?
 reason = "the protobuf wrappers google.protobuf.UInt64Value and UInt32Value read only the lower bound of their scalar, so the models accepted integers above the wire range that plain uint64 and uint32 fields reject; the wrappers now take the schema of their scalar, upper bound included (class and field names, types and the parsed values of valid payloads stay)"
 decision = "#5537"
 release_note = "protobuf `google.protobuf.UInt64Value` and `UInt32Value` fields get the upper bound of `uint64` and `uint32`, like plain fields of those types, so out-of-range integers are rejected"
+
+[[accepted]]
+input = "*"
+backends = [ "typing.TypedDict" ]
+aspects = [ "bases" ]
+match = "^\\[bases\\] \\S+: \\[[^\\]]*\\] -> \\[\\]$"
+reason = "a TypedDict whose key declares a key of its generated base with another type, requiredness or ReadOnly inherited that base, and type checkers reject a mutable key that a subclass declares otherwise (reportIncompatibleVariableOverride, invalid-typed-dict-field); it declares every key of its bases itself and drops them, so class and key names, the keys' types and requiredness and the values the class accepts stay as the schema gives them (type-check-only fix)"
+decision = "#6250"
+release_note = "a TypedDict whose key narrows a key of its base, such as an allOf member that drops the null of an inherited property, gives it another type or requires it, declares every key of its bases itself instead of inheriting them, so type checkers accept the generated file; class names, key names and key types are unchanged"
+
+[[accepted]]
+input = "tests/data/jsonschema/typed_dict_narrowed_keys_modules"
+backends = [ "typing.TypedDict" ]
+aspects = [ "type", "import-path-removed" ]
+match = "^\\[type\\] child:Child:other: other_1\\.Other -> Other$|^\\[type\\] grand_child:GrandChild:detail: Detail -> base\\.Detail$|^\\[import-path-removed\\] child:Base: from child import Base$"
+reason = "the TypedDict Child of the directory input narrows a key of Base, another module, so it declares the keys of Base itself (the entry above): it no longer imports Base, and its keys and those GrandChild inherits name the same classes Other and Detail through the imports of its own module"
+decision = "#6250"
+release_note = "a TypedDict that declares the keys of a base of another module itself imports the models those keys name and no longer imports the base (see above)"

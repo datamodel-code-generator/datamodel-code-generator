@@ -40,7 +40,7 @@ class Base(TypedDict):
     open_map: NotRequired[dict[str, int]]
 
 
-class Child(Base):
+class Child(TypedDict):
     to_null: NotRequired[str]
     to_string: NotRequired[str | int]
     to_int_or_null: NotRequired[str | int | None]

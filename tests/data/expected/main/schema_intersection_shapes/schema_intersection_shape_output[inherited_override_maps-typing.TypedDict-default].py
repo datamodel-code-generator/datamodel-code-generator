@@ -26,6 +26,6 @@ class Base(TypedDict):
     tagged: NotRequired[dict[str, str] | dict[str, int]]
 
 
-class Child(Base):
+class Child(TypedDict):
     settings: NotRequired[Settings]
     tagged: NotRequired[dict[str, int] | dict[str, str]]

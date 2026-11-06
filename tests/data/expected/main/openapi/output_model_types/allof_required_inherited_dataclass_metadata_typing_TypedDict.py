@@ -14,7 +14,7 @@ class InitBase(TypedDict):
     inheritedMetadata: NotRequired[str]
 
 
-class RequiredOverrideChild(InitBase):
+class RequiredOverrideChild(TypedDict):
     inheritedScalar: str
     inheritedFactory: list[str]
     inheritedMetadata: str
@@ -25,7 +25,7 @@ class ExplicitInitBase(TypedDict):
     explicitInit: NotRequired[str]
 
 
-class ExplicitInitChild(ExplicitInitBase):
+class ExplicitInitChild(TypedDict):
     explicitInit: str
     newAfterExplicitInit: int
 
@@ -60,7 +60,8 @@ class KeywordOverrideBase(TypedDict):
     positionalOverride: NotRequired[str]
 
 
-class KeywordOverrideChild(KeywordOverrideBase):
+class KeywordOverrideChild(TypedDict):
+    retainedDefault: NotRequired[str]
     positionalOverride: str
 
 
@@ -70,8 +71,9 @@ class OrderingBase(TypedDict):
     lateFactory: NotRequired[list[str]]
 
 
-class OrderingChild(OrderingBase):
+class OrderingChild(TypedDict):
     earlyFactory: list[str]
+    priorDefault: NotRequired[str]
     lateFactory: list[str]
     newRequired: int
 
@@ -80,6 +82,6 @@ class LiteralDefaultBase(TypedDict):
     literalDefault: NotRequired[str]
 
 
-class LiteralDefaultChild(LiteralDefaultBase):
+class LiteralDefaultChild(TypedDict):
     literalDefault: str
     afterLiteral: int
