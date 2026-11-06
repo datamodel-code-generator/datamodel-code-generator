@@ -140,6 +140,7 @@ EXTRA_RUNS: dict[str, tuple[tuple[DataModelType, tuple[str, ...]], ...]] = {
         (DataModelType.PydanticV2BaseModel, ("--read-only-write-only-model-type", "all")),
     ),
     "allof_beside_site_discriminator": ((DataModelType.MsgspecStruct, ("--use-msgspec-tagged-unions",)),),
+    "ref_branches_beside_properties": ((DataModelType.MsgspecStruct, ("--use-msgspec-tagged-unions",)),),
 }
 VALIDATING_BACKENDS = {
     DataModelType.PydanticV2BaseModel,

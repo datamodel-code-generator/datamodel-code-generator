@@ -28,10 +28,10 @@ its counts stay on the alias that the holder names.
 """
 
 REF_BRANCH_SCHEMA_KEY: Final = "_ref_branch_schema"
-"""Records on the `Reference` of the class of a `$ref` branch that takes the allOf members beside its union the
-`Reference` of the schema the branch names (--distribute-allof-over-unions).
+"""Records on the `Reference` of the class of a `$ref` branch that takes the parts of its site (the `properties` and
+`required` beside its union, or the allOf members there) the `Reference` of the schema the branch names.
 
-A tag the variant takes from a schema path is that schema's, as the branch's own class takes it without the option.
+A tag the variant takes from a mapping or a schema path is that schema's, as the schema takes it as a variant itself.
 """
 
 ModelKey = NewType("ModelKey", int)

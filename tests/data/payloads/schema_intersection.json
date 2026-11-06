@@ -8630,5 +8630,58 @@
         ]
       }
     }
+  },
+  "ref_branches_beside_properties": {
+    "model": "Holder",
+    "dialect": "https://json-schema.org/draft/2020-12/schema",
+    "fields": {
+      "owned": {
+        "valid": [
+          {
+            "owner": "o",
+            "petType": "Cat",
+            "meow": "m"
+          },
+          {
+            "owner": "o",
+            "petType": "Dog",
+            "bark": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "Cat",
+            "meow": "m"
+          },
+          {
+            "owner": "o",
+            "petType": "Dog"
+          }
+        ]
+      },
+      "mapped": {
+        "valid": [
+          {
+            "petType": "c",
+            "meow": "m"
+          },
+          {
+            "owner": "o",
+            "petType": "d",
+            "bark": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "c"
+          },
+          {
+            "owner": 1,
+            "petType": "d",
+            "bark": "b"
+          }
+        ]
+      }
+    }
   }
 }

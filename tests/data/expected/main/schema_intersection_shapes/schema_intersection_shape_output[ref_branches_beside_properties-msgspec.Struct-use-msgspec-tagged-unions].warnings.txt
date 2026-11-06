@@ -1,0 +1,2 @@
+Discriminator 'petType' of Owned cannot be represented as msgspec tags: a base or derived struct of Owned1, Owned2 keeps 'petType' as a field; its variants are left untagged.
+Discriminator 'petType' of Mapped cannot be represented as msgspec tags: a base or derived struct of Mapped1, Mapped2 keeps 'petType' as a field; its variants are left untagged.

@@ -791,8 +791,8 @@ class _VariantTagFacts:
     def path_segment(self) -> str:
         """Return the last segment of the variant's schema path, for the class of a ``$ref`` branch the branch's.
 
-        The class of a ``$ref`` branch with the allOf members beside its union (``ref_branch_schema_of``) stands for
-        the schema the branch names, which is the variant without --distribute-allof-over-unions.
+        The class of a ``$ref`` branch with the parts of its site (``ref_branch_schema_of``) stands for the schema the
+        branch names, which is the variant where the site adds nothing to the branch.
         """
         if isinstance(branch := ref_branch_schema_of(self.model.reference), Reference):
             return _schema_path_segment(branch)
