@@ -51,7 +51,10 @@ __all__ = [
     "SettleRun",
     "SortedDataModels",
     "StructuredRun",
+    "mark_settle_diagnostics_reported",
     "pydantic_floors_recorded",
+    "settle_diagnostics_reported_once",
+    "settle_diagnostics_suppressed",
 ]
 
 ModulePath: TypeAlias = tuple[str, ...]
@@ -258,6 +261,8 @@ class SettleRun(Protocol[ConfigT]):
 
     args: _ParseArgs
     suppress_parse_warnings: bool
+    suppress_settle_diagnostics: bool
+    """Whether an earlier parse of the generation run reported the settle diagnostics, which this one leaves out."""
     config: ConfigT
     sorted_data_models: SortedDataModels
     model_identities: Mapping[DataModel, str] | None
@@ -328,6 +333,42 @@ def pydantic_floors_recorded() -> Generator[PydanticFloors]:
         yield record
 
 
+@final
+@dataclass(slots=True)
+class _SettleDiagnostics:
+    """Whether a parse of the generation run reported the settle diagnostics."""
+
+    reported: bool = False
+
+
+_SETTLE_DIAGNOSTICS: ContextVar[_SettleDiagnostics | None] = ContextVar("settle_diagnostics", default=None)
+
+
+@contextlib.contextmanager
+def settle_diagnostics_reported_once() -> Generator[None]:
+    """Report the settle diagnostics of the generation run inside once, in the first of its parses that reaches them.
+
+    A parse again repeats no warning of L0 and L1, which the parse before reported up to where it stopped, but reports
+    the settle diagnostics where no parse before reached them, such as after a parse that failed in L1.
+    """
+    with context_values({_SETTLE_DIAGNOSTICS: _SettleDiagnostics()}):
+        yield
+
+
+def settle_diagnostics_suppressed(suppress_parse_warnings: bool) -> bool:  # noqa: FBT001
+    """Return whether a parse leaves out the settle diagnostics: a parse again does after one that reported them.
+
+    A parse again outside a generation run (``settle_diagnostics_reported_once``) always leaves them out.
+    """
+    return suppress_parse_warnings and ((diagnostics := _SETTLE_DIAGNOSTICS.get()) is None or diagnostics.reported)
+
+
+def mark_settle_diagnostics_reported() -> None:
+    """Record that a parse of the generation run reported the settle diagnostics."""
+    if (diagnostics := _SETTLE_DIAGNOSTICS.get()) is not None:
+        diagnostics.reported = True
+
+
 _NO_DECISIONS: Final = DecisionOutcome(())
 
 
@@ -342,6 +383,7 @@ class _PipelineRun(Generic[ConfigT, ContextT, ResultT]):
 
     args: _ParseArgs
     suppress_parse_warnings: bool
+    suppress_settle_diagnostics: bool
     default_build_code_formatter: Callable[..., CodeFormatter]
     result_type: Callable[..., ResultT]
     config: ConfigT = dataclasses.field(init=False)

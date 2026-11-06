@@ -709,7 +709,7 @@ entry.
 | SETTLE | `settle_yielding_names` | global | transform | CLASS_NAMES, PLANS | CLASS_NAMES | Gives the names that yield to --model-name-map their final form, and records the reuse groups plan: the models whose names yield, and the site models, yield the canonical place of a group of duplicates. |
 | SETTLE | `name_models` | global | transform | CLASS_NAMES, PLANS | CLASS_NAMES | Plans the names of the models after their last claim (parser/_naming.py:NamingPlan), which L3 reads for the name a model was numbered from; under the legacy policy the plan is empty and no model is renamed. After `settle_yielding_names`: plans the names the yielding names leave. |
 | SETTLE | `report_parse_diagnostics` | global | check | STDERR | - | Reports dangling references and other parse diagnostics (parser hook). |
-| SETTLE | `warn_about_unmatched_model_name_keys` | global | check | STDERR | CLASS_NAMES | Runs when: not a retry that suppresses parse warnings. After `report_parse_diagnostics`: parse diagnostics are reported first. |
+| SETTLE | `warn_about_unmatched_model_name_keys` | global | check | STDERR | CLASS_NAMES | Runs when: no earlier parse of the generation run reported the settle diagnostics. After `report_parse_diagnostics`: parse diagnostics are reported first. |
 | SETTLE | `prepare_parse_config` | global | setup | - | - |  |
 | SETTLE | `sort_data_models` | global | plan | MODEL_ORDER | BASES, FIELD_TYPES, MODEL_ORDER | Orders models by dependency and lists those that need forward-reference updates. |
 | SETTLE | `record_source_reference_paths` | global | bookkeeping | - | MODEL_ORDER | Runs when: collect_model_metadata. |

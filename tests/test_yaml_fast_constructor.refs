@@ -114,6 +114,7 @@ openapi/anchor_object_documents/api.yaml	yaml_fast_constructor/parity.txt
 openapi/anchor_object_documents/global_parameter.yaml	yaml_fast_constructor/parity.txt
 openapi/anchor_object_documents/held_after_pointer/api.yaml	yaml_fast_constructor/parity.txt
 openapi/anchor_object_documents/held_after_pointer/collapse_cycle_api.yaml	yaml_fast_constructor/parity.txt
+openapi/anchor_object_documents/held_after_pointer/dangling_ref_api.yaml	yaml_fast_constructor/parity.txt
 openapi/anchor_object_documents/held_after_pointer/id_api.yaml	yaml_fast_constructor/parity.txt
 openapi/anchor_object_documents/held_after_pointer/id_parameter.yaml	yaml_fast_constructor/parity.txt
 openapi/anchor_object_documents/held_after_pointer/missing_anchor_api.yaml	yaml_fast_constructor/parity.txt

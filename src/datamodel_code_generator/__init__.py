@@ -2727,7 +2727,10 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
     )
     from functools import partial  # noqa: PLC0415
 
-    from datamodel_code_generator.parser.base import pydantic_floors_recorded  # noqa: PLC0415
+    from datamodel_code_generator.parser.base import (  # noqa: PLC0415
+        pydantic_floors_recorded,
+        settle_diagnostics_reported_once,
+    )
 
     parse_again = partial(
         _parse_again,
@@ -2749,7 +2752,11 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
         records_model_names=records_model_names,
     )
     # Phase 4: initial parse, disposal, and the complete retry flow share the output cwd.
-    with chdir(output_context_path if use_output_cwd else None), pydantic_floors_recorded() as floors:  # noqa: PLR1702
+    with (  # noqa: PLR1702
+        chdir(output_context_path if use_output_cwd else None),
+        pydantic_floors_recorded() as floors,
+        settle_diagnostics_reported_once(),
+    ):
         try:
             results = _parse_with_disposal(
                 input_,
