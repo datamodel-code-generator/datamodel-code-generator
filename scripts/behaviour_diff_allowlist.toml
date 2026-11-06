@@ -201,8 +201,8 @@ release_note = "--use-unique-items-as-set-by-value: a uniqueItems array whose it
 [[accepted]]
 input = [ "tests/data/jsonschema/schema_intersection", "tests/data/jsonschema/schema_intersection/allof_required_members.json" ]
 aspects = [ "type", "kind" ]
-match = "^\\[(?:type|kind)\\] (?:allof_required_members:)?(?:Branch|Model:(?:member|sibling|items|nullable_member|nullable_sibling|object_site)): .+ -> .+$"
-reason = "under --intersect-combined-schema-keywords (the 20261104 presets), a field, an item or a branch whose allOf names one model and adds only required names to it was written as that model, which accepted objects without them; the site is a subclass of that model that requires them and admits the null of that model where its own type does not exclude null (owner decision 11-06: fixed in the released option)"
+match = "^\\[(?:type|kind)\\] (?:allof_required_members:)?(?:Branch|Model:(?:member|sibling|items|nullable_member|nullable_sibling|object_site|ref_sibling|object_member)): .+ -> .+$"
+reason = "under --intersect-combined-schema-keywords (the 20261104 presets), a field, an item or a branch whose allOf names one model and adds only required names to it was written as that model, which accepted objects without them; the site is a subclass of that model that requires them and admits the null of that model where neither its own type nor that of an inline member excludes null, the required names beside the $ref of a lone member included (owner decision 11-06: fixed in the released option)"
 decision = "#6280"
 release_note = "--intersect-combined-schema-keywords: a field, an array item or a union branch whose allOf names one model and adds required names to it, such as allOf: [{$ref: A}, {required: [id]}], is written as a subclass of that model that requires them instead of as the model, which accepted objects without them"
 

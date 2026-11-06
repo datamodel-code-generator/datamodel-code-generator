@@ -148,6 +148,7 @@ __all__ = [
     "inherited_node",
     "inherited_override_schema",
     "inherited_schema_parents",
+    "inline_all_of_parts",
     "is_inherited_type_narrowing",
     "is_partial_inherited_nested_value",
     "is_partial_inherited_property",
@@ -227,6 +228,11 @@ def _inline_all_of_closure(
             yield from _inline_all_of_closure(parser, item, members_first=members_first)
     if members_first:
         yield schema
+
+
+def inline_all_of_parts(parser: InheritedSchemasHost, schema: JsonSchemaObject) -> Iterator[JsonSchemaObject]:
+    """Yield ``schema`` and its inline allOf members, recursively, as ``get_inline_required_names`` reads them."""
+    return _inline_all_of_closure(parser, schema)
 
 
 def _nested_schema_objects(value: object) -> Iterator[JsonSchemaObject]:

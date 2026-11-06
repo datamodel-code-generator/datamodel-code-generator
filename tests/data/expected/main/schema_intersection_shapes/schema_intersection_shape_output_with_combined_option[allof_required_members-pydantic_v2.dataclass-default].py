@@ -75,10 +75,22 @@ class ObjectSite(Nullable):
 
 
 @dataclass
+class RefSibling(A):
+    id: int = Field(...)
+
+
+@dataclass
+class ObjectMember(Nullable):
+    id: int = Field(...)
+
+
+@dataclass
 class Model:
     nullable_member: NullableMember | None
     nullable_sibling: NullableSibling | None
     object_site: ObjectSite
+    ref_sibling: RefSibling
+    object_member: ObjectMember
     member: Member | None = None
     sibling: Sibling | None = None
     items: list[Item] | None = None

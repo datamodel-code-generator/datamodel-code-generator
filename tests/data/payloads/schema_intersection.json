@@ -8381,6 +8381,12 @@
       },
       "object_site": {
         "id": 1
+      },
+      "ref_sibling": {
+        "id": 1
+      },
+      "object_member": {
+        "id": 1
       }
     },
     "fields": {
@@ -8462,6 +8468,34 @@
         ]
       },
       "object_site": {
+        "valid": [
+          {
+            "id": 1
+          }
+        ],
+        "invalid": [
+          null,
+          {}
+        ]
+      },
+      "ref_sibling": {
+        "valid": [
+          {
+            "id": 1
+          },
+          {
+            "id": 1,
+            "name": "a"
+          }
+        ],
+        "invalid": [
+          {},
+          {
+            "name": "a"
+          }
+        ]
+      },
+      "object_member": {
         "valid": [
           {
             "id": 1

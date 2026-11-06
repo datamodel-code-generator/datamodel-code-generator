@@ -60,10 +60,20 @@ class ObjectSite(Nullable):
     id: int
 
 
+class RefSibling(A):
+    id: int
+
+
+class ObjectMember(Nullable):
+    id: int
+
+
 class Model(Struct):
     nullable_member: NullableMember | None
     nullable_sibling: NullableSibling | None
     object_site: ObjectSite
+    ref_sibling: RefSibling
+    object_member: ObjectMember
     member: Member | UnsetType = UNSET
     sibling: Sibling | UnsetType = UNSET
     items: list[Item] | UnsetType = UNSET

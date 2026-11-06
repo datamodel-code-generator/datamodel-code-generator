@@ -64,6 +64,15 @@ class ObjectSite(TypedDict):
     id: int
 
 
+class RefSibling(TypedDict):
+    id: int
+    name: NotRequired[str]
+
+
+class ObjectMember(TypedDict):
+    id: int
+
+
 class Model(TypedDict):
     member: NotRequired[Member]
     sibling: NotRequired[Sibling]
@@ -72,3 +81,5 @@ class Model(TypedDict):
     nullable_member: NullableMember | None
     nullable_sibling: NullableSibling | None
     object_site: ObjectSite
+    ref_sibling: RefSibling
+    object_member: ObjectMember

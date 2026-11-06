@@ -36,3 +36,5 @@ class Model(TypedDict):
     nullable_member: Nullable | None
     nullable_sibling: Nullable | None
     object_site: Nullable | None
+    ref_sibling: A
+    object_member: Nullable | None
