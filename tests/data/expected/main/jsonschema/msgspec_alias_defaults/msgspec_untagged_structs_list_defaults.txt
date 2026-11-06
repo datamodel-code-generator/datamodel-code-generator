@@ -10,5 +10,10 @@
     {
       "side": "int"
     }
+  ],
+  "pair": [
+    "tuple",
+    "Circle",
+    "Square"
   ]
 }

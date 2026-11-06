@@ -423,7 +423,7 @@ def test_msgspec_struct_beside_map_defaults(output_file: Path) -> None:
     """Keep the default of a union of a Struct beside a map a value, also inside a list or a type alias.
 
     msgspec takes no such union, which generation warns about, so a conversion would raise in ``Model()``; the defaults
-    stay the values they are written as.
+    stay the values they are written as. The positions of a tuple are no union, so a map beside a Struct there converts.
     """
     with pytest.warns(UserWarning, match=r"msgspec cannot decode the (union|type alias)"):
         run_main_and_assert(
@@ -442,7 +442,8 @@ def test_msgspec_untagged_structs_list_defaults(output_file: Path) -> None:
     """Keep the default of a list of a union of untagged Structs a value, also through a type alias.
 
     msgspec takes no union of Structs that are not all tagged, which generation warns about, so a conversion to
-    ``list[Circle | Square]`` would raise in ``Model()``; the defaults stay the values they are written as.
+    ``list[Circle | Square]`` would raise in ``Model()``; the defaults stay the values they are written as. The
+    positions of a tuple are no union, so the default of ``tuple[Circle, Square]`` converts.
     """
     with pytest.warns(UserWarning, match=r"msgspec cannot decode the union"):
         run_main_and_assert(
