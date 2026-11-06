@@ -857,6 +857,35 @@ SETTLE_DISCRIMINATED_UNIONS = PassDecl(
     ),
     condition="the output fields write `discriminator=`",
 )
+CONSTRAIN_FIELDS_BY_THEIR_REFERENCE_SITES = PassDecl(
+    "constrain_fields_by_their_reference_sites",
+    Phase.MODULES,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(
+        Fact.FIELD_TYPES,
+        Fact.MODEL_KIND,
+        Fact.CONSTRAINTS,
+        Fact.TYPE_OVERRIDES,
+        Fact.REQUIRED,
+        Fact.DEFAULTS,
+        Fact.FIELD_ALIASES,
+        Fact.METADATA,
+        RenderFact.ASSIGNMENT_FORM,
+    ),
+    writes=_facts(Fact.CONSTRAINTS, RenderFact.ASSIGNMENT_FORM),
+    summary=(
+        "After every module is processed: writes on each field whose whole type an allOf site names by its first "
+        "`$ref` alone the constraints the site adds to that target, where the type is one `collapse_root_models` "
+        "inlined or names a type alias; a field whose type names a class keeps its output. A Pydantic dataclass "
+        "field that writes no `Field()` call takes them in `Annotated`, so it keeps its place in the constructor."
+    ),
+    condition="output that checks constraints",
+    after=(
+        After("apply_field_type_overrides", "a field type override replaces a type, and its site constraints, first"),
+        After("settle_kept_parent_roots", "reads the types the holders of kept roots settled on"),
+    ),
+)
 TYPE_USERS_OF_LOOPING_REF_CHAINS_BY_ANY = PassDecl(
     "type_users_of_looping_ref_chains_by_any",
     Phase.MODULES,
@@ -878,6 +907,10 @@ TYPE_USERS_OF_LOOPING_REF_CHAINS_BY_ANY = PassDecl(
         After("settle_kept_parent_roots", "reads the types the holders of kept roots settled on"),
         After("name_inner_models_in_rules", "both retype once every module is processed"),
         After("settle_discriminated_unions", "both retype once every module is processed"),
+        After(
+            "constrain_fields_by_their_reference_sites",
+            "a field types by Any only once its reference site constraints are written beside the type it names",
+        ),
     ),
 )
 WRITE_PLAIN_ALIASES_FOR_RECURSIVE_MODELS = PassDecl(
@@ -897,6 +930,10 @@ WRITE_PLAIN_ALIASES_FOR_RECURSIVE_MODELS = PassDecl(
         After("write_rule_aliases_as_classes", "reads the aliases that stay aliases once those with rules are classes"),
         After("name_inner_models_in_rules", "reads the alias values once the rules name their inner models"),
         After("type_users_of_looping_ref_chains_by_any", "reads the alias values once every user is typed"),
+        After(
+            "constrain_fields_by_their_reference_sites",
+            "the fields that name a type alias take its site constraints while it is still a type alias",
+        ),
     ),
 )
 TAG_FIELDS_OF_TAGGED_BASES = PassDecl(

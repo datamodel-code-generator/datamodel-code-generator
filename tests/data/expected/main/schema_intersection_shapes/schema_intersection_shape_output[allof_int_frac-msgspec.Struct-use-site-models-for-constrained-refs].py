@@ -13,13 +13,13 @@ FracMap: TypeAlias = Annotated[int, Meta(ge=1, le=9)]
 Number: TypeAlias = int
 
 
-Frac: TypeAlias = Annotated[Number, Meta(ge=0.5, le=9.5)]
+Frac: TypeAlias = Annotated[Number, Meta(ge=1, le=9)]
 
 
-FracProp: TypeAlias = Annotated[Number, Meta(ge=0.5, le=9.5)]
+FracProp: TypeAlias = Annotated[Number, Meta(ge=1, le=9)]
 
 
-FracItem: TypeAlias = Annotated[Number, Meta(ge=0.5, le=9.5)]
+FracItem: TypeAlias = Annotated[Number, Meta(ge=1, le=9)]
 
 
 class Model(Struct):

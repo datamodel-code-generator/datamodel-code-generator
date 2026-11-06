@@ -68,10 +68,10 @@ LooserItem = TypeAliasType("LooserItem", Annotated[Quantity, Field(..., ge=0)])
 LooserMap = TypeAliasType("LooserMap", Annotated[Quantity, Field(..., ge=0)])
 
 
-MemberItem = TypeAliasType("MemberItem", Annotated[Quantity, Field(..., ge=2)])
+MemberItem = TypeAliasType("MemberItem", Annotated[Quantity, Field(..., ge=2, le=9)])
 
 
-MemberMap = TypeAliasType("MemberMap", Annotated[Quantity, Field(..., ge=2)])
+MemberMap = TypeAliasType("MemberMap", Annotated[Quantity, Field(..., ge=2, le=9)])
 
 
 TwoItem = TypeAliasType("TwoItem", Annotated[Small, Field(..., ge=4)])

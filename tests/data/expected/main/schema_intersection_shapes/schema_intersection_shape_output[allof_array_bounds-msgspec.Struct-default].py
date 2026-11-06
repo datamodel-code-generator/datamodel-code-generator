@@ -18,6 +18,6 @@ TagsLen: TypeAlias = Annotated[Tags, Meta(min_length=1)]
 
 class Model(Struct):
     tags_len: TagsLen | UnsetType = UNSET
-    tags_len_prop: Tags | UnsetType = UNSET
+    tags_len_prop: Annotated[Tags, Meta(min_length=1)] | UnsetType = UNSET
     tags_len_items: list[TagsLenItem] | UnsetType = UNSET
     tags_len_map: dict[str, Tags] | UnsetType = UNSET

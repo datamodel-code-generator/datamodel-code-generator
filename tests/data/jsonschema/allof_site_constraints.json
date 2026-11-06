@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "$defs": {
+    "Str": {"type": "string"},
+    "Map": {"type": "object", "additionalProperties": {"type": "string"}},
+    "Counts": {"type": "array", "items": {"type": "integer"}},
+    "Code": {"type": "string", "minLength": 1},
+    "Positive": {"type": "integer", "minimum": 1},
+    "Score": {"allOf": [{"$ref": "#/$defs/Positive", "maximum": 10}]},
+    "Short": {"allOf": [{"$ref": "#/$defs/Str"}], "maxLength": 5}
+  },
+  "properties": {
+    "name": {"allOf": [{"$ref": "#/$defs/Str"}], "maxLength": 5},
+    "labels": {"allOf": [{"$ref": "#/$defs/Map"}], "minProperties": 1},
+    "counts": {"allOf": [{"$ref": "#/$defs/Counts"}, {"minItems": 3}]},
+    "code": {"allOf": [{"$ref": "#/$defs/Code"}, {"pattern": "^ab$"}]},
+    "score": {"$ref": "#/$defs/Score", "maximum": 5},
+    "short": {"$ref": "#/$defs/Short"}
+  }
+}

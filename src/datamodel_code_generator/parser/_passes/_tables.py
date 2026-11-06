@@ -595,6 +595,11 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
                 when=lambda self, _: self._tag_capabilities.writes_argument,
             ),
             PassSpec(
+                "constrain_fields_by_their_reference_sites",
+                late(modules.constrain_fields_by_their_reference_sites),
+                when=lambda self, _: self._output_model_context.checks_constraints,
+            ),
+            PassSpec(
                 "type_users_of_looping_ref_chains_by_any",
                 late(modules.type_users_of_looping_ref_chains_by_any),
                 when=lambda self, _: imports.alias_loop_failure(self.data_model_type) is None,

@@ -9,7 +9,7 @@ from msgspec import Meta, Struct
 
 
 class Pet(Struct):
-    id: str
+    id: Annotated[str, Meta(max_length=5)]
     name: str
     secret: Annotated[str, Meta(max_length=9, min_length=1)]
-    s2: Annotated[str, Meta(min_length=1)]
+    s2: Annotated[str, Meta(max_length=9, min_length=1)]
