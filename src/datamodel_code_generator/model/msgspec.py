@@ -8,7 +8,7 @@ from __future__ import annotations
 from ast import literal_eval
 from fractions import Fraction
 from functools import partial, wraps
-from operator import itemgetter
+from operator import is_not, itemgetter
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, NamedTuple, Optional, TypeVar, cast
 
@@ -72,6 +72,7 @@ from datamodel_code_generator.model.base import (
     _apply_literal_default,
     _default_factory_type_name,
     _default_state,
+    _field_source_name,
     _find_base_classes,
     _has_opaque_custom_base,
     _keeps_stripped_place,
@@ -95,6 +96,7 @@ from datamodel_code_generator.model.imports import (
 from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.model.types import DataTypeManager as _DataTypeManager
 from datamodel_code_generator.python_literal import (
+    PythonCode,
     _normalized_safe_python_name,
     represent_python_value,
     represent_untrusted_python_value,
@@ -182,6 +184,8 @@ _UNSET_DEFAULT = Why(RuleId("D4.default.msgspec-unset"), keyword="required")
 _NONE_DEFAULT = Why(RuleId("D4.default.msgspec-none"), keyword="nullable")
 _STRUCT_CONVERSION = Why(RuleId("D4.default.msgspec-convert"), keyword="default")
 """A default holding Structs is written as a factory that converts it with ``msgspec.convert``."""
+_IMPORT_SIMPLE_NAMESPACE = Import.from_full_path("types.SimpleNamespace")
+"""The object a default factory converts from its attributes to a Struct that msgspec reads from an array."""
 _CONSTRAINT = RuleId("D2.msgspec.constraint")
 _NON_FINITE = RuleId("D2.msgspec.non-finite-bound")
 _MULTIPLE_OF_ONE = RuleId("D2.msgspec.integer-multiple-of-one")
@@ -210,7 +214,8 @@ class _StructConversion:
     """The default factory that converts a default holding Structs: ``lambda: convert({...},  type=Model)``.
 
     ``of_list`` converts to a list of ``target``; ``container`` is the list type whose hint names ``target``. Its text
-    names the models as the module finally names them.
+    names the models as the module finally names them. A default that holds an object for a Struct msgspec reads from
+    an array is converted from attributes (``from_attributes``, ``_attribute_default``).
     """
 
     method: str
@@ -218,6 +223,19 @@ class _StructConversion:
     target: DataType
     container: DataType | None = None
     of_list: bool = False
+
+    @property
+    def _converted(self) -> object:
+        """Return the default as the factory converts it, its objects for array_like Structs as their attributes."""
+        if self.of_list and isinstance(self.default, list):
+            items = [_attribute_default(self.target, item) for item in self.default]
+            return items if any(map(is_not, items, self.default)) else self.default
+        return _attribute_default(self.container or self.target, self.default)
+
+    @property
+    def from_attributes(self) -> bool:
+        """Return whether the factory converts an object of the default from its attributes."""
+        return self._converted is not self.default
 
     @override
     def __str__(self) -> str:
@@ -229,7 +247,9 @@ class _StructConversion:
             type_text = self.container.type_hint.replace(self.target.alias or name, name)
         else:
             type_text = name
-        return f"lambda: {self.method}({represent_python_value(self.default)},  type={type_text})"
+        converted = self._converted
+        options = "" if converted is self.default else ", from_attributes=True"
+        return f"lambda: {self.method}({represent_python_value(converted)},  type={type_text}{options})"
 
 
 def _meta_call_text(call: CallPlan) -> str:
@@ -339,11 +359,14 @@ _SCALAR_VALUE_TYPES: Mapping[str, tuple[type, ...]] = MappingProxyType({
 """The Python types of the JSON values that ``msgspec.convert`` takes for each scalar type."""
 
 
-def _takes_default(data_type: DataType, default: object, seen: frozenset[int] = frozenset()) -> bool:  # noqa: PLR0911
+def _takes_default(  # noqa: PLR0911
+    data_type: DataType, default: object, seen: frozenset[int] = frozenset(), *, attributes: bool = False
+) -> bool:
     """Return whether ``msgspec.convert`` takes a default for a type, by the JSON kind of the default at every level.
 
     A Struct takes an object that holds the Struct's tag where it holds its tag field, or, where msgspec reads it from
-    an array (``_reads_arrays``), an array that starts with its tag where it has one; a type alias, what the type it
+    an array (``_reads_arrays``), an array that starts with its tag where it has one, and with ``attributes`` also such
+    an object, which the factory converts from its attributes (``_attribute_default``); a type alias, what the type it
     names takes besides itself (``seen`` holds the aliases followed since the last value read), and None where it
     writes None; a union, what one of its members takes; an array type, an array whose items its item types take; a
     mapping, an object whose values its value types take; a Literal, its values; str, int, float, bool and None, values
@@ -362,10 +385,10 @@ def _takes_default(data_type: DataType, default: object, seen: frozenset[int] = 
                         and isinstance(alias := fields[0], DataModelField)
                         and alias._field_has_top_level_none()  # noqa: SLF001
                     )
-                    or _takes_default(fields[0].data_type, default, seen | {id(source)})
+                    or _takes_default(fields[0].data_type, default, seen | {id(source)}, attributes=attributes)
                 )
             )
-        return not isinstance(source, Struct) or _struct_takes_default(source, default)
+        return not isinstance(source, Struct) or _struct_takes_default(source, default, attributes=attributes)
     if (array := data_type in ARRAYS) or data_type in MAPPINGS:
         values: Iterable[object] = ()
         match default:
@@ -376,21 +399,84 @@ def _takes_default(data_type: DataType, default: object, seen: frozenset[int] = 
             case _:
                 return False
         return not data_type.data_types or all(
-            any(_takes_default(item, value) for item in data_type.data_types) for value in values
+            any(_takes_default(item, value, attributes=attributes) for item in data_type.data_types) for value in values
         )
     if data_type.data_types:
-        return any(_takes_default(member, default, seen) for member in data_type.data_types)
+        return any(_takes_default(member, default, seen, attributes=attributes) for member in data_type.data_types)
     if data_type.literals:
         return any(type(literal) is type(default) and literal == default for literal in data_type.literals)
     return (kinds := _SCALAR_VALUE_TYPES.get(data_type.type or "")) is None or type(default) in kinds
 
 
-def _struct_takes_default(struct: Struct, default: object) -> bool:
+def _struct_takes_default(struct: Struct, default: object, *, attributes: bool) -> bool:
     """Return whether ``msgspec.convert`` takes a default for a Struct, by its JSON kind (``_takes_default``)."""
     tag = struct.discriminator_tag
-    if _reads_arrays(struct):
+    if _reads_arrays(struct) and not (attributes and isinstance(default, dict)):
         return isinstance(default, list) and (tag is None or (bool(default) and default[0] == tag[1]))
     return isinstance(default, dict) and (tag is None or default.get(tag[0], tag[1]) == tag[1])
+
+
+def _attribute_default(data_type: DataType, value: object, seen: frozenset[int] = frozenset()) -> object:
+    """Return ``value`` with each object that ``data_type`` reads as a Struct msgspec reads from an array as attributes.
+
+    msgspec reads such a Struct (``_reads_arrays``) from an array, or, under ``from_attributes``, from the attributes of
+    an object: the object is written as ``SimpleNamespace(**{...})`` (``_struct_attribute_default``). A type alias
+    reads the value by the type it names (``seen`` holds the aliases followed since the last value read), a union by
+    its first member that takes it (``_first_attribute_default``), an array type its items and a mapping its values by
+    the first of their types that take them. A value with no such object is returned as it is.
+    """
+    if (reference := data_type.reference) is not None:
+        match source := reference.source:
+            case TypeAliasBase() if source.fields and id(source) not in seen:
+                return _attribute_default(source.fields[0].data_type, value, seen | {id(source)})
+            case Struct() if isinstance(value, dict):
+                return _struct_attribute_default(source, value)
+        return value
+    if (array := data_type in ARRAYS) or data_type in MAPPINGS:
+        entries = (
+            dict(enumerate(value))
+            if array and isinstance(value, list)
+            else value
+            if not array and isinstance(value, dict)
+            else {}
+        )
+        read = {key: _first_attribute_default(data_type.data_types, item) for key, item in entries.items()}
+        if all(read[key] is item for key, item in entries.items()):
+            return value
+        return list(read.values()) if array else read
+    return _first_attribute_default(data_type.data_types, value, seen)
+
+
+def _struct_attribute_default(struct: Struct, value: dict[str, object]) -> object:
+    """Return an object a Struct reads as ``_attribute_default`` writes it: as attributes where it reads arrays.
+
+    Its values are read by the types of the fields of their schema names, those of its bases included.
+    """
+    fields: dict[str, DataModelFieldBase] = {}
+    for current in reach((struct,), lambda model: reversed(_struct_bases(model)), key=id):
+        for field in filter(_is_instance_field, current.fields):
+            fields.setdefault(cast("str", _field_source_name(field)), field)
+    read = {
+        key: item if (field := fields.get(key)) is None else _attribute_default(field.data_type, item)
+        for key, item in value.items()
+    }
+    if all(read[key] is item for key, item in value.items()):
+        read = value
+    return PythonCode(f"SimpleNamespace(**{represent_python_value(read)})") if _reads_arrays(struct) else read
+
+
+def _first_attribute_default(members: Sequence[DataType], value: object, seen: frozenset[int] = frozenset()) -> object:
+    """Return ``value`` as the member of ``members`` that takes it reads it (``_attribute_default``), else as it is.
+
+    The member is the first that takes it as msgspec reads JSON, else, where none does, the first that takes it from
+    attributes (``_takes_default``): msgspec reads an object as a member that reads objects.
+    """
+    for attributes in (False, True):
+        if (
+            member := next((m for m in members if _takes_default(m, value, seen, attributes=attributes)), None)
+        ) is not None:
+            return _attribute_default(member, value, seen)
+    return value
 
 
 def _reads_arrays(struct: Struct) -> bool:
@@ -1199,6 +1285,8 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
                 symbol_imports.append((IMPORT_MSGSPEC_FIELD, call.why))
             if converts:
                 symbol_imports.append((IMPORT_MSGSPEC_CONVERT, _STRUCT_CONVERSION))
+                if cast("_StructConversion", args.get("default_factory")).from_attributes:
+                    symbol_imports.append((_IMPORT_SIMPLE_NAMESPACE, _STRUCT_CONVERSION))
             if meta is not None:
                 symbol_imports.append((IMPORT_MSGSPEC_META, meta.why))
             if args.get("default") is UNSET:
@@ -1886,24 +1974,26 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         """Convert the default of a field of several types to the first written member it fits that names Structs.
 
         ``members`` are the members the field's type writes (``_non_none_members``), a container of several types being
-        one. A member takes the default as ``_takes_default`` reads it, and names Structs when it is a Struct, a type
-        alias of one, or a list of a Struct or a type alias. An object default beside a dict member stays the value.
+        one. A member takes the default as ``_takes_default`` reads it as JSON, else, where none does, from attributes,
+        and names Structs when it is a Struct, a type alias of one, or a list of a Struct or a type alias. An object
+        default beside a dict member stays the value.
         """
         if isinstance(default := self.default, dict) and any(member.is_dict for member in members):
             return None
-        for member in members:
-            if not _takes_default(member, default):
-                continue
-            if member.is_list and len(member.data_types) == 1:
-                if (child := member.data_types[0]).reference and isinstance(
-                    child.reference.source, (Struct, TypeAliasBase)
+        for attributes in (False, True):
+            for member in members:
+                if not _takes_default(member, default, attributes=attributes):
+                    continue
+                if member.is_list and len(member.data_types) == 1:
+                    if (child := member.data_types[0]).reference and isinstance(
+                        child.reference.source, (Struct, TypeAliasBase)
+                    ):
+                        return self._list_conversion(member, child)
+                elif (reference := member.reference) and (
+                    isinstance(source := reference.source, Struct)
+                    or (isinstance(source, TypeAliasBase) and self._type_alias_needs_struct_conversion(source))
                 ):
-                    return self._list_conversion(member, child)
-            elif (reference := member.reference) and (
-                isinstance(source := reference.source, Struct)
-                or (isinstance(source, TypeAliasBase) and self._type_alias_needs_struct_conversion(source))
-            ):
-                return _StructConversion(self._PARSE_METHOD, default, member)
+                    return _StructConversion(self._PARSE_METHOD, default, member)
         return None
 
     def _list_conversion(self, data_type: DataType, item: DataType) -> _StructConversion:
