@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 import pytest
 
@@ -13,9 +13,6 @@ from datamodel_code_generator.reference import ModelResolver
 from tests.conftest import assert_output
 from tests.main.conftest import JSON_SCHEMA_DATA_PATH, run_main_and_assert
 from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_file_content
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 def test_main_jsonschema_external_anchor_with_legacy_shorthand(output_file: Path) -> None:
@@ -127,6 +124,16 @@ def test_model_resolver_uses_cached_external_anchor_from_schema_fixture() -> Non
     local_result = resolver.resolve_ref(f"#{anchor}")
 
     assert_output(f"{cached_result}\n{local_result}\n", EXPECTED_JSON_SCHEMA_PATH / "cached_external_anchor_ref.txt")
+
+
+def test_jsonschema_anchor_with_relative_base_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Register the ``$anchor`` of a document the parser reads from a relative base path against that path once.
+
+    The base path is applied once, so ``#name`` does not name ``jsonschema/jsonschema/anchor_ref.json``.
+    """
+    monkeypatch.chdir(JSON_SCHEMA_DATA_PATH.parent)
+    base_path = Path(JSON_SCHEMA_DATA_PATH.name)
+    assert_output(JsonSchemaParser(base_path / "anchor_ref.json", base_path=base_path).parse())
 
 
 def test_jsonschema_external_id_resolved_to_local_ref_skips_anchor_normalization() -> None:
