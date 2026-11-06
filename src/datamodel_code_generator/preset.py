@@ -1063,6 +1063,15 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "spelled X | Y already is, instead of the schema's type."
         ),
     ),
+    PresetOptionGroup(
+        title="Typed nullable map values",
+        config=PresetConfig(use_typed_nullable_map_values=True),
+        description=(
+            "Type the values of a map whose type array lists object alone or with null, such as [object, null], as "
+            "its additionalProperties say instead of Any, and with --use-typed-map-values-beside-other-types of the "
+            "20261027 presets also those of a type array that lists object beside other types."
+        ),
+    ),
 )
 """The 20261104 groups and the opt-in options of the release after 0.90.0."""
 
@@ -1404,7 +1413,12 @@ def render_presets_markdown() -> str:
             "strategy, the types reached through dataclass fields are reused too, and no unused copy of a type a "
             "field's Python type imports is written, and `--use-x-python-type-unions`: an `x-python-type` union "
             "spelled `Optional[...]` or `Union[...]`, such as `Optional[Literal['a', 'b']]`, types its field as one "
-            "spelled `X | Y` already does, instead of the schema's type."
+            "spelled `X | Y` already does, instead of the schema's type, and `--use-typed-nullable-map-values`: the "
+            "values of a map whose type array lists object alone or with null, such as `[object, null]`, are typed as "
+            "its `additionalProperties` say (`dict[str, int] | None`) instead of `dict[str, Any] | None`, which also "
+            "makes `--use-typed-map-values-beside-other-types`, set by the 20261027 presets but acting only together "
+            "with it, type the map values of a type array that lists object beside other types (`dict[str, int] | "
+            "str`)."
         ),
         "",
         "## Override Preset Options",

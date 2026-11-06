@@ -1552,8 +1552,8 @@
       "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
     "use_typed_nullable_map_values": {
-      "not_recommended": "style",
-      "reason": "Types the values of nullable maps; a typing choice."
+      "not_recommended": "preset",
+      "reason": "Set by the 20261106 presets; the recommendation starts from a preset."
     },
     "use_union_operator": {
       "not_recommended": "preset",

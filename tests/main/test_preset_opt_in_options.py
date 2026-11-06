@@ -87,6 +87,7 @@ OPT_IN_OPTIONS_20261106: tuple[str, ...] = (
     "--skip-path-extension-keys",
     "--reuse-every-reached-input-model-type",
     "--use-x-python-type-unions",
+    "--use-typed-nullable-map-values",
 )
 """The options the 20261106 presets set beyond the 20261104 presets."""
 
@@ -301,6 +302,12 @@ CASES_20261106: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="use-x-python-type-unions",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "typed_map_values_beside_other_types.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="use-typed-nullable-map-values",
     ),
 )
 """The inputs each opt-in option of the 20261106 presets changes."""
@@ -548,6 +555,13 @@ def test_preset_sets_opt_in_option(
             "--capitalise-numbered-enum-members",
             "--no-capitalize-numbered-enum-members",
             id="capitalize-numbered-enum-members-alias",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "typed_map_values_beside_other_types.json",
+            [],
+            "--use-typed-nullable-map-values",
+            "--no-use-typed-nullable-map-values",
+            id="use-typed-nullable-map-values",
         ),
     ],
 )

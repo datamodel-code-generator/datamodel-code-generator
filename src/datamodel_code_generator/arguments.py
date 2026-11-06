@@ -1036,7 +1036,7 @@ _toggle(
     "--use-object-type",
     help="Use object instead of Any for unspecified JSON Schema object and array values",
 )
-_flag(
+_toggle(
     typing_options,
     "--use-typed-nullable-map-values",
     help="Type the values of nullable maps, schemas whose type array lists object alone or with null, such as "

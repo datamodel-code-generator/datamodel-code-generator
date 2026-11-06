@@ -70,6 +70,7 @@
 - `--no-use-tuple-for-closed-arrays`
 - `--no-use-tuple-for-fixed-items`
 - `--no-use-typed-map-values-beside-other-types`
+- `--no-use-typed-nullable-map-values`
 - `--no-use-union-operator`: Use Union[X, Y] / Optional[X] instead of X | Y union operator.
 - `--no-use-unique-items-as-set`
 - `--no-use-unique-items-as-set-by-value`
