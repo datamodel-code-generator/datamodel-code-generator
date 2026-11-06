@@ -524,6 +524,13 @@ _toggle(
 )
 _toggle(
     model_options,
+    "--remove-unused-models-beside-type-overrides",
+    help="Remove the models that nothing uses, such as a root model --collapse-root-models inlined, also from a module "
+    "a model-level --type-overrides key takes a model out of, as from every other module; without it they stay "
+    "written there, as in 0.90.0",
+)
+_toggle(
+    model_options,
     "--collapse-reuse-models",
     help="When used with --reuse-model, collapse duplicate models by replacing references instead of creating "
     "empty inheritance subclasses. This eliminates 'class Foo(Bar): pass' patterns",

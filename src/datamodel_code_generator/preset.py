@@ -1125,6 +1125,14 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "constraints on that member."
         ),
     ),
+    PresetOptionGroup(
+        title="Unused models removed beside type overrides",
+        config=PresetConfig(remove_unused_models_beside_type_overrides=True),
+        description=(
+            "Remove the models nothing uses, such as an inlined root model, also from a module that a model-level "
+            "--type-overrides key takes a model out of."
+        ),
+    ),
 )
 """The 20261104 groups and the opt-in options of the release after 0.90.0."""
 
@@ -1489,7 +1497,8 @@ def render_presets_markdown() -> str:
             "`str`, and "
             "`--collapse-constrained-root-models-as-annotated`: a constrained string inside a union or a container "
             "is written in place (`Annotated[str, StringConstraints(max_length=20)]`) instead of as a root model "
-            "of its own."
+            "of its own, and `--remove-unused-models-beside-type-overrides`: the models nothing uses, such as an "
+            "inlined root model, also leave a module that a model-level `--type-overrides` key takes a model out of."
         ),
         "",
         "## Override Preset Options",
