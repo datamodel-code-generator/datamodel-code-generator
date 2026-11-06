@@ -34,10 +34,11 @@ OPTION_SETS = {
 A schema with `additionalProperties: false` rejects every property its `properties` do not name, and Pydantic output
 writes `extra='forbid'` for it, but a msgspec.Struct ignores unknown fields, so it decodes payloads the schema
 rejects. With this option such a Struct is written with `forbid_unknown_fields=True`, also where an inline `allOf`
-member closes it; a subclass inherits it. A schema with `patternProperties` beside `additionalProperties: false`
-admits the keys its patterns match, which msgspec cannot check, so its Struct stays open. `--extra-fields forbid`
-writes it on every Struct, as `--use-generic-base-class` does on the base class already, and `--extra-fields allow`
-or `ignore` and `--allow-extra-fields` keep every Struct open.""",
+member closes it with `additionalProperties: false` or `unevaluatedProperties: false`; a subclass inherits it. A
+schema with `patternProperties` beside `additionalProperties: false` admits the keys its patterns match, which msgspec
+cannot check, so its Struct stays open. `--extra-fields forbid` writes it on every Struct, as
+`--use-generic-base-class` does on the base class already, and `--extra-fields allow` or `ignore` and
+`--allow-extra-fields` keep every Struct open.""",
     input_schema="jsonschema/msgspec_forbid_unknown_fields.json",
     cli_args=["--output-model-type", "msgspec.Struct", "--use-msgspec-forbid-unknown-fields"],
     golden_output="main/jsonschema/msgspec_forbid_unknown_fields/msgspec_forbid_unknown_fields[forbid].py",

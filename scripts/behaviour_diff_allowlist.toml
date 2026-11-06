@@ -214,3 +214,11 @@ match = "^\\[parsed-value\\] payload v\\d+: the parsed value differs$"
 reason = "the default of a msgspec field typed as a nested list or a union list of Structs, such as list[list[Item]] or list[Item | str], stayed the plain dicts of the schema, so a model that left the field out held dicts where Structs are declared and attribute access on them raised AttributeError, while the same JSON decoded to Structs; the default is converted to the declared type as list[Item] already was, so every payload keeps its verdict and decoding the encoded default gives the same value (crash-class fix, as #6196 in 0.90.0)"
 decision = "#6304"
 release_note = "a msgspec default of a nested list or a union list of Structs, such as list[list[PodSpec]] or list[PodSpec | str], is converted to the declared type with convert(...) as list[PodSpec] already was, instead of holding plain dicts"
+
+[[accepted]]
+input = [ "tests/data/jsonschema/allof_unevaluated_closed_member.json", "tests/data/jsonschema/unevaluated_properties.json" ]
+aspects = [ "config", "probe" ]
+match = "^\\[config\\] (?:ClosedFilters|NestedClosedFilters|MergedClosedFilters|Resource): .+ -> .*(?:'forbid'|'closed': 'True').*$|^\\[probe\\] (?:ClosedFilters|NestedClosedFilters|MergedClosedFilters|Resource): accept -> reject$"
+reason = "an inline allOf member with unevaluatedProperties: false, or the object beside its allOf, admits no property but those it evaluates, but the model inherited the open config of its base and accepted extra properties the schema rejects; it closes the model as additionalProperties: false does (Pydantic extra='forbid', TypedDict closed=True), where the schemas it evaluates, its $ref among them, evaluate no property that no properties names (no patternProperties, additionalProperties, anyOf, oneOf or if) (schema-mismatch fix: class names, field names and the parsed values of valid payloads stay)"
+decision = "#4742"
+release_note = "unevaluatedProperties: false in an inline allOf member, such as allOf [{$ref: Base}, {properties: {name: ...}, unevaluatedProperties: false}], closes the model as additionalProperties: false does (extra='forbid', closed=True), so it rejects the extra properties the schema rejects"

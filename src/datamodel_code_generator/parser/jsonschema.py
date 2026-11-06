@@ -2522,7 +2522,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _model_additional_properties(self, obj: JsonSchemaObject) -> JsonSchemaObject | bool | None:
         """Return the additionalProperties of the model built from ``obj``.
 
-        An inline allOf member with additionalProperties: false and no patternProperties closes the combined model.
+        An inline allOf member that admits no property but its own (``inline_sources_close``) closes the combined model.
         """
         if obj.allOf and obj.additionalProperties is not False and _all_of_values.inline_sources_close(self, (obj,)):
             return False
@@ -2553,8 +2553,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         for the outputs that read it as their closedness (the TypedDict reads the option).
         The additionalProperties are those of the model (``_model_additional_properties``). Under
         --use-msgspec-forbid-unknown-fields a model whose schema or an inline allOf member of it admits no property but
-        its own, without patternProperties beside its additionalProperties: false, is marked for msgspec's
-        forbid_unknown_fields.
+        its own (``inline_sources_close``) is marked for msgspec's forbid_unknown_fields.
         """
         if self.use_msgspec_forbid_unknown_fields and _all_of_values.inline_sources_close(self, (obj,)):
             _mark_forbids_unknown_fields(self.extra_template_data[path])

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 from functools import partial, reduce
-from itertools import chain
+from itertools import chain, islice
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, cast
 
 from typing_extensions import Protocol
@@ -1053,17 +1053,71 @@ def all_of_pattern_conjunction(parser: AllOfValuesHost) -> Callable[[Sequence[st
     )
 
 
+_UNNAMED_PROPERTY_APPLICATORS: Final = frozenset(schema_positions("in-place")) - {"allOf", "anyOf", "oneOf", "not"}
+"""The in-place applicators kept in a schema object's extras that may evaluate properties no ``properties`` names."""
+
+
 def _closes_properties(source: JsonSchemaObject) -> bool:
     """Return whether ``source`` admits no property but its own: additionalProperties false and no patternProperties."""
     return source.additionalProperties is False and not source.patternProperties
 
 
+def _evaluates_unnamed_properties(source: JsonSchemaObject) -> bool:
+    """Return whether ``source`` may evaluate a property no ``properties`` of the object names.
+
+    patternProperties, an additionalProperties or unevaluatedProperties but false, an anyOf, a oneOf, a dynamic
+    reference or another in-place applicator (``if``, ``dependentSchemas``) may.
+    """
+    return bool(
+        source.patternProperties
+        or (source.additionalProperties is not None and source.additionalProperties is not False)
+        or (source.unevaluatedProperties is not None and source.unevaluatedProperties is not False)
+        or source.anyOf
+        or source.oneOf
+        or source.dynamicRef
+        or source.recursiveRef
+        or not _UNNAMED_PROPERTY_APPLICATORS.isdisjoint(source.extras)
+    )
+
+
+def _closes_unevaluated_properties(parser: AllOfValuesHost, member: JsonSchemaObject) -> bool:
+    """Return whether ``member`` admits no property but those it evaluates, which are the fields of its object.
+
+    It says so with unevaluatedProperties false and no additionalProperties, beside a ``$ref`` only where the keywords
+    beside it apply, and the schemas it evaluates, the one its ``$ref`` names among them, evaluate no property that no
+    ``properties`` names (``_evaluates_unnamed_properties``).
+    """
+    if member.unevaluatedProperties is not False or member.additionalProperties is not None:
+        return False
+    held = parser.SCHEMA_OBJECT_TYPE.model_construct(allOf=[member])
+    return next(
+        islice(parser._iter_schema_validation_sources(held, include_references=False), 1, None),  # noqa: SLF001
+        None,
+    ) is not None and not any(
+        _evaluates_unnamed_properties(source)
+        for source in parser._iter_schema_validation_sources(held)  # noqa: SLF001
+    )
+
+
 def inline_sources_close(parser: AllOfValuesHost, schemas: Iterable[JsonSchemaObject]) -> bool:
-    """Return whether a schema of ``schemas`` or one of their inline allOf sources closes the object they combine."""
-    return any(
-        _closes_properties(source)
+    """Return whether a schema of ``schemas`` or one of their inline allOf members closes the object they combine.
+
+    A member closes it with additionalProperties false and no patternProperties, or with unevaluatedProperties false
+    where it evaluates no property but those its ``properties`` and the schemas it applies name
+    (``_closes_unevaluated_properties``).
+    """
+    schemas = tuple(schemas)
+    inline_sources = tuple(
+        source
         for schema in schemas
         for source in parser._iter_schema_validation_sources(schema, include_references=False)  # noqa: SLF001
+    )
+    return any(_closes_properties(source) for source in inline_sources) or any(
+        _closes_unevaluated_properties(parser, member)
+        for member in chain(
+            schemas,
+            (item for source in inline_sources for item in source.allOf if isinstance(item, JsonSchemaObject)),
+        )
     )
 
 
