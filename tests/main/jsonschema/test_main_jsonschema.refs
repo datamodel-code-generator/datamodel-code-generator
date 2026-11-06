@@ -6356,6 +6356,8 @@ pydantic_v2.BaseModel-prefix_items_closed_nullable_positions	main/jsonschema/mai
 	main/jsonschema/contains_false_default.py
 [test_main_jsonschema_contains_false_min_contains_zero]
 	main/jsonschema/contains_false_min_contains_zero.py
+[test_main_jsonschema_contains_integral_float_counts]
+	main/jsonschema/main_jsonschema/contains_integral_float_counts.py
 [test_main_jsonschema_contains_true_count_constraints]
 	main/jsonschema/contains_true_count_constraints.py
 [test_main_jsonschema_contains_true_default_min_contains]
