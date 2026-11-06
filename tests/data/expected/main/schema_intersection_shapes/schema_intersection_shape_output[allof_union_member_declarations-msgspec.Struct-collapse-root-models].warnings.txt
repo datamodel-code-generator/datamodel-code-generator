@@ -1,0 +1,6 @@
+msgspec cannot decode the union Model.inline: its Struct types Inline4, Inline5 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.refs: its Struct types Refs2, Refs3 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.required_branch: its Struct types RequiredBranch4, RequiredBranch5 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.two_unions: its Struct types TwoUnions4, TwoUnions5, TwoUnions6, TwoUnions7 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.own: its Struct types Own4, Own5 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.formats: its Struct types Formats4, Formats5 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.

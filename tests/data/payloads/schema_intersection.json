@@ -8263,5 +8263,111 @@
         ]
       }
     }
+  },
+  "allof_union_member_declarations": {
+    "model": "Model",
+    "fields": {
+      "inline": {
+        "valid": [
+          {
+            "x": 5
+          },
+          {
+            "x": -1
+          },
+          {
+            "c": 1
+          }
+        ],
+        "invalid": [
+          {
+            "x": 11
+          }
+        ]
+      },
+      "refs": {
+        "valid": [
+          {
+            "name": "Tom"
+          },
+          {
+            "name": ""
+          }
+        ],
+        "invalid": [
+          {
+            "name": "abcdefghijk"
+          }
+        ]
+      },
+      "required_branch": {
+        "valid": [
+          {
+            "x": 5
+          },
+          {
+            "c": 1
+          }
+        ],
+        "invalid": [
+          {
+            "x": 11
+          },
+          {
+            "x": -1
+          }
+        ]
+      },
+      "two_unions": {
+        "valid": [
+          {
+            "x": 5
+          },
+          {
+            "x": 11,
+            "d": "s"
+          }
+        ],
+        "invalid": [
+          {
+            "x": 11
+          },
+          {
+            "x": -1
+          }
+        ]
+      },
+      "own": {
+        "valid": [
+          {
+            "x": 5
+          },
+          {
+            "c": 1,
+            "x": -1
+          }
+        ],
+        "invalid": [
+          {
+            "x": 11
+          },
+          {
+            "x": -1
+          }
+        ]
+      },
+      "formats": {
+        "valid": [
+          {
+            "at": "2020-01-01T00:00:00Z"
+          }
+        ],
+        "invalid": [
+          {
+            "at": "2020-01-01T00:00:00.000000000000Z"
+          }
+        ]
+      }
+    }
   }
 }
