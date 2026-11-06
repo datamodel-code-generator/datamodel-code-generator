@@ -1,0 +1,49 @@
+openapi: 3.1.0
+info:
+  title: Linked data
+  version: "1"
+servers:
+  - url: https://api.example.com
+paths:
+  /documents:
+    post:
+      operationId: createDocument
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Document"
+      responses:
+        "200":
+          description: The stored document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+components:
+  schemas:
+    Node:
+      type: object
+      properties:
+        "@id":
+          type: string
+    Named:
+      allOf:
+        - $ref: "#/components/schemas/Node"
+      properties:
+        name:
+          type: string
+    Dated:
+      allOf:
+        - $ref: "#/components/schemas/Node"
+      properties:
+        created:
+          type: string
+    Document:
+      allOf:
+        - $ref: "#/components/schemas/Named"
+        - $ref: "#/components/schemas/Dated"
+      properties:
+        "@type":
+          type: string

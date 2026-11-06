@@ -228,17 +228,12 @@ def rewrite_copied_type(
 ) -> Any:
     """Return a copy of the type tree of ``data_type`` whose copies of the nodes ``rewrites`` names are rewritten.
 
-    ``rewrites`` maps a node of the tree, by id, to what makes its rewrite of the node's copy; the nodes are rewritten
-    inner ones first, so a rewrite holds the rewrites of the nodes it holds. A copied node in a copied parent is
-    swapped through ``store``; the copied root, which no parent holds, is returned rewritten for its holder to take.
+    ``rewrites`` maps a node below the root of the tree, by id, to what makes its rewrite of the node's copy; the nodes
+    are rewritten inner ones first, so a rewrite holds the rewrites of the nodes it holds, and each is swapped into its
+    copied parent through ``store``. The root is the wrapper the type of additional properties always is, no array.
     """
     copied = copy(data_type)
-    root = copied
     for source, target in list(zip(data_type.all_data_types, copied.all_data_types, strict=True)):
-        if (rewrite := rewrites.get(id(source))) is None:
-            continue
-        if target is copied:
-            root = rewrite(target)
-        else:
+        if (rewrite := rewrites.get(id(source))) is not None:
             store.swap_data_type(target, rewrite(target))
-    return root
+    return copied

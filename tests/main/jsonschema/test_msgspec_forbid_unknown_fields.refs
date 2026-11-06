@@ -10,3 +10,6 @@ released	main/jsonschema/msgspec_forbid_unknown_fields/msgspec_forbid_unknown_fi
 [test_msgspec_forbid_unknown_fields_flattened_bases]
 	main/jsonschema/msgspec_forbid_unknown_fields/flattened_bases.payloads.txt
 	main/jsonschema/msgspec_forbid_unknown_fields/flattened_bases.py
+[test_msgspec_forbid_unknown_fields_flattened_bases_shared_option]
+	main/jsonschema/msgspec_forbid_unknown_fields/flattened_bases_shared_option.payloads.txt
+	main/jsonschema/msgspec_forbid_unknown_fields/flattened_bases_shared_option.py

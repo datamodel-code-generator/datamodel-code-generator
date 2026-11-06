@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel
 from typing_extensions import TypeAliasType
 
@@ -12,7 +14,11 @@ Row = TypeAliasType("Row", set[int])
 Words = TypeAliasType("Words", list[str])
 
 
+Scopes = TypeAliasType("Scopes", set[Literal['read', 'write']])
+
+
 class Model(BaseModel):
     words: Row | Words | None = ['a', 'a']
     row: Words | Row | None = {1}
     maybe: set[int | None] | None = {None, 1}
+    scopes: Scopes | Words | None = {'read'}

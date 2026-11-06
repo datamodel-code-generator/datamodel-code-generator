@@ -123,6 +123,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "fields-unpack",
         "fields-errors",
         "fields-both",
+        "fields-typeddict-template-bases",
         "fields-cycle",
         "fields-optional-models",
         "type-spellings",

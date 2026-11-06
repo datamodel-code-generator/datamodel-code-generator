@@ -1,0 +1,3 @@
+valid: accepted
+unknown field: rejected
+encoded: {"both":{"a":1}}

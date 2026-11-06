@@ -183,6 +183,8 @@ fields-optional-models	main/generation_platform/client/packages/fields-optional-
 fields-structural	main/generation_platform/client/fields-structural.txt
 fields-structural	main/generation_platform/client/packages/fields-structural/dataclasses_dataclass//*.py
 fields-structural	main/generation_platform/client/packages/fields-structural/typing_TypedDict//*.py
+fields-typeddict-template-bases	main/generation_platform/client/fields-typeddict-template-bases.txt
+fields-typeddict-template-bases	main/generation_platform/client/packages/fields-typeddict-template-bases/typing_TypedDict//*.py
 fields-unpack	main/generation_platform/client/fields-unpack.txt
 fields-unpack	main/generation_platform/client/packages/fields-unpack/pydantic_v2_BaseModel//*.py
 fingerprint-nested	main/generation_platform/client/fingerprint-nested.txt

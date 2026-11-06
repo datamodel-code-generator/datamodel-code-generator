@@ -1154,22 +1154,18 @@ def _field_named(model: DataModel, name: str | None) -> DataModelFieldBase | Non
 def _write_unique_sets(parser: ModulesHost, model_field: DataModelFieldBase, plan: UniqueItemsPlan) -> None:
     """Write the lists of a field's type that ``plan`` decides as sets, and the field's list default as its set.
 
-    Each set records that it is one (``with_unique_items_set``), and the field's list default is kept for
-    ``replace_unhashable_unique_set_to_list``.
+    Each set records that it is one (``with_unique_items_set``) and takes the place of its list in the type that holds
+    it: a field's type holds its arrays, as the union an array's type is built in does (``legacy-non-array-first``).
+    The field's list default is kept for ``replace_unhashable_unique_set_to_list``.
     """
     builder = parser._graph_builder  # noqa: SLF001
-    field_type = model_field.data_type
     as_set = _unique_set_of(parser)
     for list_type in plan.sets:
-        set_type = as_set(list_type)
-        if list_type is field_type:
-            field_type = set_type
-        else:
-            builder.swap_data_type(list_type, set_type, refresh="deferred")
+        builder.swap_data_type(list_type, as_set(list_type), refresh="deferred")
     if plan.default is not None:
         parser._unique_set_defaults[id(model_field)] = (model_field, model_field.default)  # noqa: SLF001
         builder.set_field_default(model_field, plan.default)
-    builder.replace_field_type(model_field, field_type)
+    builder.replace_field_type(model_field, model_field.data_type)
 
 
 def _unique_set_of(parser: ModulesHost) -> Callable[[DataType], DataType]:
