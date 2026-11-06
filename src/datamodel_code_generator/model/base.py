@@ -575,9 +575,9 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     SUPPORTS_DISCRIMINATOR: ClassVar[bool] = False
     _FIELD_ASSIGNMENT_ROW: ClassVar[AssignmentRow] = "model"
     _FREEZES_RENDER_PLAN: ClassVar[bool] = False
+    """Whether the field renders from a plan that the parse freezes at B2 (``_build_frozen_render_plan``)."""
     _META_FIELD_KEYS: ClassVar[set[str]] = set()
     """The keys of a field the output writes as metadata beside its type, as msgspec writes ``Meta()`` arguments."""
-    """Whether the field renders from a plan that the parse freezes at B2 (``_build_frozen_render_plan``)."""
 
     if TYPE_CHECKING:
 
