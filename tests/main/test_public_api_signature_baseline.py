@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import importlib
 import inspect
+import sys
 import types
 from typing import TYPE_CHECKING, Annotated, Any, ForwardRef, Union, get_args, get_origin
 
@@ -1342,6 +1343,15 @@ def test_config_models_force_rebuild_after_defer_build() -> None:
     assert set(config_model_types) == expected_model_names
     for model_type in config_model_types.values():
         assert model_type.model_rebuild(force=True, _types_namespace=rebuild_namespace)
+
+
+def test_config_star_import_lists_the_public_names() -> None:
+    """Ensure a star import of config takes its public names, the parser config models it builds on access included."""
+    importlib.import_module("datamodel_code_generator.config")
+    config_module = sys.modules["datamodel_code_generator.config"]
+
+    assert config_module.__all__ == [name for name in dir(config_module) if not name.startswith("_")]
+    assert {"GraphQLParserConfig", "OpenAPIParserConfig", "ParserConfig"} <= set(config_module.__all__)
 
 
 def test_generate_config_dict_fields_match_generate_config() -> None:
