@@ -424,6 +424,11 @@
     },
     "config": {}
   },
+  "multipart-read-only-exploded": {
+    "input": "multipart-read-only-exploded.yaml",
+    "model": {"read_only_write_only_model_type": "request-response"},
+    "modules": [["client", "_operations.py"]]
+  },
   "multipart-kinds": {
     "input": "multipart-kinds.yaml",
     "config": {}

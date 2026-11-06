@@ -230,6 +230,8 @@ method-collisions	main/generation_platform/client/method-collisions.txt
 method-collisions	main/generation_platform/client/packages/method-collisions/pydantic_v2_BaseModel//*.py
 method-collisions-suffix	main/generation_platform/client/method-collisions-suffix.txt
 method-collisions-suffix	main/generation_platform/client/packages/method-collisions-suffix/pydantic_v2_BaseModel//*.py
+multipart-read-only-exploded	main/generation_platform/client/multipart-read-only-exploded.txt
+multipart-read-only-exploded	main/generation_platform/client/packages/multipart-read-only-exploded/pydantic_v2_BaseModel//*.py
 multipart-referenced-items	main/generation_platform/client/multipart-referenced-items.txt
 multipart-referenced-items	main/generation_platform/client/packages/multipart-referenced-items/pydantic_v2_BaseModel//*.py
 multipart-text-files	main/generation_platform/client/multipart-text-files.txt

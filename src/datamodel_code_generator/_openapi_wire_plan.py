@@ -307,13 +307,18 @@ def _form(
 def _styles(
     planner: _WirePlanner, use: TypeUseBinding, encodings: tuple[WireDeclaration, ...]
 ) -> tuple[TypeUseId, tuple[ParameterPlan, ...]] | None:
-    """Return the query parameter plans of the form-data members whose encodings name a style or its options."""
+    """Return the query parameter plans of the form-data members whose encodings name a style or its options.
+
+    The other members that count against their names are those the form's model writes, as for a URL-encoded form: a
+    property the direction leaves out, such as a readOnly one of a request, writes none.
+    """
     try:
         bound = _schema_use(planner, (use.id,), use.id.use_site)
         members = {name: schema for name, schema, _ in property_members(use)}
         encoded = tuple(_encoding(bound, members, declaration) for declaration in member_encodings(use, encodings))
         styled = {plan.name for plan in encoded}
-        encoded = _distinct(planner, bound, [name for name in members if name not in styled], encoded)
+        names = [member.name for member in form_members(planner.kinds, bound) if member.name not in styled]
+        encoded = _distinct(planner, bound, names, encoded)
     except _PlanError as error:
         _refused(planner, error, use.id.owner, (use.id,))
         return None

@@ -1,0 +1,12 @@
+models shared True
+# forms_read_only in-process sync, in-process async
+create_item
+  > POST /items [multipart/form-data; boundary=<boundary>]
+  create_item(body=ItemRequest(filter=Filter(id='f-1')))
+  < 204 -
+  = None
+create_item empty
+  > POST /items [multipart/form-data; boundary=<boundary>]
+  create_item(body=ItemRequest(filter=None))
+  < 204 -
+  = None

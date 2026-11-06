@@ -87,6 +87,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "parameter-content-defaults-30",
         "parameter-content-defaults-31",
         "parameter-ref-loop-30",
+        "multipart-read-only-exploded",
         "multipart-referenced-items",
         "forms-reuse-response",
         "forms-allof-cycle",
