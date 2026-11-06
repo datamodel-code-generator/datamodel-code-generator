@@ -559,6 +559,8 @@ class Struct(DataModel):
         )
         self.extra_template_data.setdefault("base_class_kwargs", {})
         self._set_internal_template_data("base_class_kwargs", {})
+        if self.extra_template_data.get("extra_fields") == "forbid":
+            self.add_base_class_kwarg("forbid_unknown_fields", "True")
         if self.keyword_only:
             self.add_base_class_kwarg("kw_only", "True")
 

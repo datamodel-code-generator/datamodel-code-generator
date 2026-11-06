@@ -20433,6 +20433,21 @@ def test_main_use_generic_base_class_msgspec(output_file: Path) -> None:
     )
 
 
+def test_main_msgspec_forbid_without_generic_base(output_file: Path) -> None:
+    """Reject unknown JSON keys for a standalone msgspec Struct with --extra-fields forbid."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "use_generic_base_class_simple.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "msgspec.Struct", "--extra-fields", "forbid"],
+    )
+    with (
+        _generated_model(output_file, "use_generic_base_class_simple", "Simple") as model,
+        pytest.raises(msgspec.ValidationError, match="unexpected"),
+    ):
+        msgspec.json.decode(b'{"x":1,"unexpected":2}', type=model)
+
+
 def test_main_use_generic_base_class_msgspec_forbid(output_file: Path) -> None:
     """Test --use-generic-base-class with msgspec.Struct and --extra-fields forbid."""
     run_main_and_assert(

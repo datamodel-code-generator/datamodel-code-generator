@@ -8249,6 +8249,8 @@ api	main/jsonschema/msgspec_float_multiple_of/warnings.txt
 cli	main/jsonschema/msgspec_float_multiple_of/msgspec.py
 cli	main/jsonschema/msgspec_float_multiple_of/rejected.txt
 cli	main/jsonschema/msgspec_float_multiple_of/warnings.txt
+[test_main_msgspec_forbid_without_generic_base]
+	main/jsonschema/main_jsonschema/main_msgspec_forbid_without_generic_base.py
 [test_main_msgspec_inherited_optional_default_uses_kw_only]
 	main/jsonschema/msgspec_inherited_optional_default.py
 [test_main_msgspec_integer_fractional_constraints]
