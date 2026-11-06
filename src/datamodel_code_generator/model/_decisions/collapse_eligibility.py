@@ -27,8 +27,11 @@ __all__ = [
 
 KeepRule: TypeAlias = Literal[
     "no-root-field",
+    "type-override",
     "circular",
     "runtime-object-validation",
+    "unhashable-set-item",
+    "enum-literal-alias",
     "fieldless-site-regex-engine",
     "constraints-in-type",
     "constrained-map",
@@ -39,18 +42,30 @@ KeepRule: TypeAlias = Literal[
 """Why collapse keeps a root model named at a site.
 
 * ``no-root-field``: the root model has no root field to inline.
+* ``type-override``: a model-level ``--type-overrides`` key replaces the root model, so its holders take the type of
+  the override, as they do without collapse.
 * ``circular``: the root model is circular (L4 ``set_circular_root_model_paths``) and cannot be fully inlined.
 * ``runtime-object-validation``: the root model owns runtime object rules, which would be lost with it.
+* ``unhashable-set-item``: the site is the item of a set or frozen set and no value of the root type hashes (a list, a
+  dict), so the set would reject every item once the root type is inlined, while the root model is a class whose
+  instances hash (the identity hash of a Pydantic set item); a root model written as an alias is its type anyway.
+* ``enum-literal-alias``: under ``--keep-enum-literal-aliases``, the root model is a type alias of the ``Literal`` of
+  an enum definition, which the output names instead of an Enum class (row ``legacy-collapse-enum-literal-aliases``
+  inlines it, as 0.89.0 did); a type alias holds the values of its type, so its holders parse the same values.
 * ``fieldless-site-regex-engine``: the root model is the model of a site that earlier releases wrote as a model
   without fields (``FIELDLESS_SITE_KEY``) and its pattern needs a regex engine in the config of the model that holds
   it: inlined, that engine would apply to the other patterns of its holder.
 * ``constraints-in-type``: without ``--field-constraints``, the root model or a root model its root type reaches
-  constrains its root field, which the type of the holder would not carry.
+  constrains its root field, which the type of the holder would not carry; the type alias of an item-count site
+  (``ITEM_COUNTS_SITE_KEY``, an array that was inline there up to 0.89.0) that it reaches keeps its counts itself, as
+  the holder names it, so only the models the alias reaches count.
 * ``constrained-map``: the root field constrains a dict or mapping.
 * ``constraints-beside-container``: under ``--field-constraints``, the root field has constraints (as ``Field()``
-  arguments or inside its type) and the holder's field type holds a dict, a union or a list.
-* ``no-name-strategy``: the root type names another model and no ``--collapse-root-models-name-strategy`` says which
-  name the site takes.
+  arguments or inside its type) and the holder's field type holds a dict, a union or a list, or under
+  ``--keep-constrained-root-models-in-every-container`` any container (row ``legacy-collapse-beside-lists-and-dicts``
+  leaves out sets, frozen sets, sequences, mappings and tuples).
+* ``no-name-strategy``: the root type names another model, other than the type alias of an item-count site, and no
+  ``--collapse-root-models-name-strategy`` says which name the site takes.
 * ``list-item``: the root type names no model, the site is the item of a list, and the parser does not collapse the
   root models that list items name (GraphQL).
 """
@@ -67,23 +82,32 @@ class CollapseSiteFacts:
 
     has_root_field: bool = False
     """The root model has a root field; every other fact is False when it has none."""
+    type_overridden: bool = False
+    """A model-level ``--type-overrides`` key names the root model (``_user_keys.model_type_override``)."""
     circular: bool = False
     runtime_object_validation: bool = False
+    unhashable_set_item: bool = False
+    """The site is the item of a set or frozen set, no value of the root type hashes and the root model is a class
+    whose instances hash."""
+    enum_literal_alias: bool = False
+    """Under ``--keep-enum-literal-aliases``, the root model is a type alias of the ``Literal`` of an enum."""
     needs_model_regex_engine: bool = False
     """The root model is a fieldless site whose pattern needs a regex engine in its holder's config."""
     field_constraints: bool = False
     constrains_through_root_types: bool = False
-    """The root model, or a root model its root type reaches, constrains its root field."""
+    """The root model, or a root model its root type reaches other than the alias of an item-count site, constrains its
+    root field."""
     constrained_root_field: bool = False
     """The root field has constraints as ``Field()`` arguments."""
     constrained_root: bool = False
     """The root field has constraints as ``Field()`` arguments or written inside its type."""
     root_type_is_map: bool = False
     root_type_names_model: bool = False
+    """The root type is one reference to a model other than the alias of an item-count site."""
     names_inner_models: bool = False
     """A ``--collapse-root-models-name-strategy`` is set."""
     holder_has_container: bool = False
-    """The holder's field type holds a dict, a union or a list."""
+    """The holder's field type holds a dict, a union or a list, or any container where the option asks so."""
     list_item: bool = False
     """The site is the item of a list."""
     collapses_list_items: bool = False
@@ -94,10 +118,16 @@ def keeps_root_model_named(facts: CollapseSiteFacts, /) -> KeepRule | None:  # n
     """Return the rule that keeps the root model named at a site, or None when collapse inlines it there."""
     if not facts.has_root_field:
         return "no-root-field"
+    if facts.type_overridden:
+        return "type-override"
     if facts.circular:
         return "circular"
     if facts.runtime_object_validation:
         return "runtime-object-validation"
+    if facts.unhashable_set_item:
+        return "unhashable-set-item"
+    if facts.enum_literal_alias:
+        return "enum-literal-alias"
     if facts.needs_model_regex_engine:
         return "fieldless-site-regex-engine"
     if not facts.field_constraints and facts.constrains_through_root_types:

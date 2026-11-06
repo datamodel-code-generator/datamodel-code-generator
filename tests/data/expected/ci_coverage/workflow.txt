@@ -198,6 +198,8 @@
     "typing-pydantic214-nocov-e2e:ubuntu-24.04:4/4:"
   ],
   "coverage_count": 96,
+  "coverage_if": "!cancelled() && needs.test-coverage.result == 'success' && needs.test-formatter-coverage.result == 'success' && needs.test-http-backends.result == 'success' && needs.test-shard.result == 'success' && needs.test-shard-main.result == (github.event_name == 'pull_request' && 'skipped' || 'success')",
+  "coverage_if_reads_every_need": true,
   "coverage_needs_only_producers": true,
   "coverage_unique": 96,
   "exclude_only_without_coverage": true,
@@ -216,8 +218,14 @@
     "py315-nocov-parallel:shard1:tests/cli_doc/test_cli_options_sync.py"
   ],
   "gate_always": "always()",
+  "gate_main_only_jobs_match": true,
   "gate_needs_all_jobs": true,
   "job_count": 187,
+  "main_only_jobs": [
+    "test-shard-main",
+    "test-shard-nocov-main"
+  ],
+  "main_only_names_match": true,
   "permissions": {
     "contents": "read"
   },

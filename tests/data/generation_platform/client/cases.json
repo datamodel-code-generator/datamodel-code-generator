@@ -424,8 +424,34 @@
     },
     "config": {}
   },
+  "multipart-read-only-exploded": {
+    "input": "multipart-read-only-exploded.yaml",
+    "model": {"read_only_write_only_model_type": "request-response"},
+    "modules": [["client", "_operations.py"]]
+  },
   "multipart-kinds": {
     "input": "multipart-kinds.yaml",
+    "config": {}
+  },
+  "multipart-text-files": {
+    "input": "multipart-text-files.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "type_overrides": {
+        "Files.file": "builtins.str",
+        "Files.notes": "builtins.str",
+        "Stamp.taken": "datetime.datetime"
+      }
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ],
     "config": {}
   },
   "servers": {
@@ -897,6 +923,9 @@
   "header-names": {
     "input": "header-names.yaml"
   },
+  "required-errors": {
+    "input": "required-errors.yaml"
+  },
   "setting-errors": {
     "input": "pets.yaml",
     "config": {
@@ -951,10 +980,22 @@
     "config": {"body_arguments": "both"},
     "modules": false
   },
+  "naming-enclosing-model": {
+    "input": "naming.yaml",
+    "model": {"naming_strategy": "enclosing-model"},
+    "config": {"body_arguments": "both"},
+    "modules": false
+  },
   "naming-primary-first": {
     "input": "naming-refs.yaml",
     "references": ["naming-refs-shared.yaml"],
     "model": {"naming_strategy": "primary-first"},
+    "modules": false
+  },
+  "naming-definitions-first": {
+    "input": "naming-refs.yaml",
+    "references": ["naming-refs-shared.yaml"],
+    "model": {"naming_strategy": "definitions-first"},
     "modules": false
   },
   "naming-default": {
@@ -1822,6 +1863,39 @@
       ]
     ]
   },
+  "merged-nullable-kept": {
+    "input": "merged-nullable-kept.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "model": {
+      "reuse_model": true,
+      "collapse_reuse_models": true,
+      "keep_reference_null_on_merged_models": true
+    },
+    "modules": [
+      [
+        "client",
+        "types",
+        "default",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "models.py"
+      ]
+    ]
+  },
   "type-spellings-reuse": {
     "input": "type-spellings-reuse.yaml",
     "backends": [
@@ -2384,6 +2458,11 @@
   },
   "auth-roles-30": {
     "input": "auth-roles-30.yaml"
+  },
+  "auth-roles-30-read-as-31": {
+    "input": "auth-roles-30.yaml",
+    "model": {"schema_version": "3.1"},
+    "modules": [["client", "_generated", "security.py"]]
   },
   "auth-wire-conflicts": {
     "input": "auth-wire-conflicts.yaml"
@@ -3355,6 +3434,29 @@
       ]
     },
     "modules": false
+  },
+  "protocols-reserved-arguments": {
+    "input": "reserved-arguments.yaml",
+    "references": [
+      "protocols/reserved-arguments.json"
+    ],
+    "modules": false,
+    "config": {
+      "protocols": "protocols/reserved-arguments.json",
+      "operations": [
+        {
+          "ref": "/paths/~1tags/get",
+          "parameter_names": [
+            {"in_": "query", "name": "items", "python_name": "items"},
+            {"in_": "query", "name": "state", "python_name": "state"}
+          ]
+        },
+        {
+          "ref": "/paths/~1labels/get",
+          "parameter_names": [{"in_": "query", "name": "items", "python_name": "items"}]
+        }
+      ]
+    }
   },
   "protocols-querystring": {
     "input": "querystring.yaml",
@@ -5496,6 +5598,10 @@
         "_sync.py"
       ]
     ]
+  },
+  "parameter-ref-loop-30": {
+    "input": "parameter-ref-loop-30.yaml",
+    "modules": [["client", "resources", "default", "_sync.py"]]
   },
   "parameter-content-defaults-31": {
     "input": "parameter-content-defaults-31.yaml",

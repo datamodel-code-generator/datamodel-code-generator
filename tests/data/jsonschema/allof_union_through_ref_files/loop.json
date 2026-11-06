@@ -1,0 +1,16 @@
+{
+  "title": "Loop",
+  "allOf": [
+    {
+      "$ref": "back.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string"
+        }
+      }
+    }
+  ]
+}

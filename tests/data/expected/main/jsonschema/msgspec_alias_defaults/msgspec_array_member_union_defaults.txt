@@ -1,0 +1,32 @@
+{
+  "defaults": {
+    "aliasFirst": [
+      "x"
+    ],
+    "aliasSecond": [
+      "y"
+    ],
+    "structsBesideAlias": [
+      {
+        "a": "z"
+      }
+    ],
+    "flagsBesideStructs": [
+      "on"
+    ]
+  },
+  "item_types": {
+    "aliasFirst": [
+      "str"
+    ],
+    "aliasSecond": [
+      "str"
+    ],
+    "structsBesideAlias": [
+      "PodSpec"
+    ],
+    "flagsBesideStructs": [
+      "str"
+    ]
+  }
+}

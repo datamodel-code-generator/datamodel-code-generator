@@ -1,0 +1,12 @@
+{
+  "valid": [
+    {"merged": 6, "superseded": 1234567890123456771, "upper": 24},
+    {"merged": 11, "superseded": 1234567890123456800, "upper": 20},
+    {"merged": 5.5, "upper": 16.0}
+  ],
+  "invalid": [
+    {"merged": 5},
+    {"superseded": 1234567890123456770},
+    {"upper": 28}
+  ]
+}

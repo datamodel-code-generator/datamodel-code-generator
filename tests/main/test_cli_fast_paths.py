@@ -788,6 +788,29 @@ def test_output_format_json_schema_exact_fast_paths_skip_argument_parser_import(
             assert fast_path["stdout"] == parsed_path["stdout"]
 
 
+def test_parsed_fast_paths_refuse_the_options_of_the_skill_installer(capsys: pytest.CaptureFixture[str]) -> None:
+    """Refuse --skill-scope and --overwrite-skill without --install-skill for every JSON Schema and the prompt.
+
+    The fast paths of a parsed command step aside for them, so every name is refused as a generation command is.
+    """
+    schema_names = (
+        "config",
+        "generate-prompt",
+        "generation",
+        "model-metadata",
+        "recommend-options",
+        "structured-output",
+    )
+    commands = [*(["--output-format-json-schema", name] for name in schema_names), ["--generate-prompt"]]
+    results = {}
+    for options in (["--skill-scope", "user"], ["--overwrite-skill"]):
+        for command in commands:
+            result = _run_module_fast_path_in_process([*command, *options])
+            results[" ".join((*command, *options))] = {**result, "stderr": capsys.readouterr().err}
+
+    assert_output(f"{json.dumps(results, indent=2)}\n")
+
+
 @pytest.mark.abnormal_path("Pydantic 2.0 cannot be installed beside the Pydantic of the test environment")
 @pytest.mark.parametrize("schema_name", ["generation", "structured-output"])
 @pytest.mark.parametrize("separate", [False, True], ids=["equals", "separate"])

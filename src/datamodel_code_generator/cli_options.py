@@ -32,6 +32,7 @@ from datamodel_code_generator.enums import (
     ReuseScope,
     TargetPydanticVersion,
 )
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from argparse import Action, ArgumentParser
@@ -241,7 +242,13 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(
         _C.BASE,
         "--input --output --emit-model-metadata --http-backend --url --input-model --input-model-ref-strategy",
-        "--input-file-type --encoding --schema-version --schema-version-mode --external-ref-mapping --preset",
+        "--read-input-model-dataclass-fields-by-alias --no-read-input-model-dataclass-fields-by-alias",
+        "--input-file-type --encoding --schema-version --schema-version-mode",
+        "--read-schema-version-per-document --no-read-schema-version-per-document",
+        "--read-escaped-ref-pointers --no-read-escaped-ref-pointers",
+        "--read-dynamic-anchors-in-document-order --no-read-dynamic-anchors-in-document-order",
+        "--ignore-ref-siblings-by-schema-version --no-ignore-ref-siblings-by-schema-version",
+        "--external-ref-mapping --preset",
     ),
     **_opts(
         _C.MODEL,
@@ -273,7 +280,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
             ),
         ),
     ),
-    **_opts(_C.MODEL, "--reuse-model", group=_G.MODEL_REUSE),
+    **_opts(_C.MODEL, "--reuse-model --no-reuse-model", group=_G.MODEL_REUSE),
     **_opts(
         _C.MODEL,
         "--reuse-scope",
@@ -296,15 +303,23 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
             message="`--collapse-root-models-name-strategy` requires `--collapse-root-models`.",
         ),
     ),
-    **_opts(_C.MODEL, "--collapse-shared-parent-wrappers", group=_G.ROOT_MODEL),
-    **_opts(_C.MODEL, "--collapse-reuse-models", group=_G.MODEL_REUSE),
+    **_opts(_C.MODEL, "--collapse-shared-parent-wrappers --no-collapse-shared-parent-wrappers", group=_G.ROOT_MODEL),
+    **_opts(
+        _C.MODEL,
+        "--keep-constrained-root-models-in-every-container --no-keep-constrained-root-models-in-every-container",
+        "--keep-enum-literal-aliases --no-keep-enum-literal-aliases",
+        group=_G.ROOT_MODEL,
+    ),
+    **_opts(_C.MODEL, "--collapse-reuse-models --no-collapse-reuse-models", group=_G.MODEL_REUSE),
     **_opts(_C.MODEL, "--keep-model-order --order-constructor-fields-by"),
     **_opts(_C.MODEL, "--allow-extra-fields", implies=_relations("--extra-fields", value="allow")),
     **_opts(
         _C.MODEL,
         "--allow-population-by-field-name --no-allow-population-by-field-name --enable-faux-immutability",
-        "--use-subclass-enum --force-optional --strict-nullable --omit-redundant-reference-null --use-default",
-        "--use-default-kwarg",
+        "--use-subclass-enum --no-use-subclass-enum --force-optional --strict-nullable --no-strict-nullable",
+        "--omit-redundant-reference-null --no-omit-redundant-reference-null",
+        "--keep-reference-null-on-merged-models --no-keep-reference-null-on-merged-models --use-default",
+        "--use-default-kwarg --no-use-default-kwarg",
     ),
     **_opts(
         _C.MODEL,
@@ -321,7 +336,8 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(
         _C.MODEL,
         "--strip-default-none --dataclass-arguments --use-msgspec-tagged-unions --tag-msgspec-by-payload-name",
-        "--use-msgspec-nullable-enum-alias",
+        "--no-tag-msgspec-by-payload-name",
+        "--use-msgspec-nullable-enum-alias --use-msgspec-meta-for-map-keys --no-use-msgspec-meta-for-map-keys",
     ),
     **_opts(
         _C.MODEL, "--use-frozen-field --no-use-frozen-field", group=_G.READ_ONLY_WRITE_ONLY, topic=OptionTopic.OPENAPI
@@ -342,8 +358,19 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         group=_G.MODEL_NAMING,
         implies=_relations("--naming-strategy", value=NamingStrategy.ParentPrefixed.value),
     ),
-    **_opts(_C.MODEL, "--naming-strategy --duplicate-name-suffix", group=_G.MODEL_NAMING),
-    **_opts(_C.MODEL, "--use-one-literal-as-default --use-serialize-as-any"),
+    **_opts(
+        _C.MODEL,
+        "--naming-strategy --duplicate-name-suffix --use-duplicate-name-suffix-for-every-collision",
+        "--no-use-duplicate-name-suffix-for-every-collision",
+        "--name-converted-payloads-by-message --no-name-converted-payloads-by-message",
+        "--singularize-last-word-of-item-names --no-singularize-last-word-of-item-names",
+        group=_G.MODEL_NAMING,
+    ),
+    **_opts(
+        _C.MODEL,
+        "--use-one-literal-as-default --use-serialize-as-any --use-serialize-as-any-for-every-subclass",
+        "--no-use-serialize-as-any-for-every-subclass",
+    ),
     **_opts(_C.MODEL, "--skip-root-model --use-root-model-sequence-interface", group=_G.ROOT_MODEL),
     **_opts(_C.MODEL, "--use-generic-base-class", group=_G.MODEL_SHAPE),
     **_opts(_C.MODEL, "--model-extra-keys --model-extra-keys-without-x-prefix"),
@@ -359,8 +386,9 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     ),
     **_opts(
         _C.FIELD,
-        "--capitalize-enum-members --special-field-name-prefix --remove-special-field-name-prefix",
-        "--empty-enum-field-name",
+        "--capitalize-enum-members --capitalize-numbered-enum-members --no-capitalize-numbered-enum-members",
+        "--special-field-name-prefix",
+        "--remove-special-field-name-prefix --empty-enum-field-name",
     ),
     **_opts(_C.FIELD, "--set-default-enum-member"),
     **_opts(
@@ -368,15 +396,24 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--aliases --serialization-aliases --default-values --deserialize-default-values",
         "--no-deserialize-default-values",
     ),
-    **_opts(_C.MODEL, "--alias-generator --pin-aliases-with-alias-generator"),
+    **_opts(_C.MODEL, "--alias-generator --pin-aliases-with-alias-generator --no-pin-aliases-with-alias-generator"),
     **_opts(
         _C.FIELD,
-        "--no-alias --use-serialization-alias --use-title-as-name --infer-union-variant-names",
-        "--use-tag-as-union-variant-name --use-schema-description --use-field-description",
-        "--use-field-description-example --use-attribute-docstrings --use-inline-field-description",
-        "--use-single-line-docstring --field-constraints --omit-redundant-constraints",
-        "--use-site-models-for-constrained-refs --field-extra-keys --field-extra-keys-without-x-prefix",
+        "--no-alias --use-serialization-alias --use-title-as-name --no-use-title-as-name --infer-union-variant-names",
+        "--use-tag-as-union-variant-name --name-allof-union-members-after-branches",
+        "--no-name-allof-union-members-after-branches --use-schema-description --no-use-schema-description",
+        "--use-field-description --no-use-field-description",
+        "--use-field-description-example --no-use-field-description-example --use-attribute-docstrings",
+        "--use-inline-field-description",
+        "--use-single-line-docstring --no-use-single-line-docstring --field-constraints",
+        "--omit-redundant-constraints --no-omit-redundant-constraints --read-length-keywords-by-type",
+        "--no-read-length-keywords-by-type",
+        "--read-msgspec-union-bounds-exactly --no-read-msgspec-union-bounds-exactly",
+        "--use-site-models-for-constrained-refs --no-use-site-models-for-constrained-refs",
+        "--use-one-model-per-ref-site --no-use-one-model-per-ref-site --field-extra-keys",
+        "--field-extra-keys-without-x-prefix",
         "--field-include-all-keys --extra-fields --use-enum-values-in-discriminator",
+        "--merge-shared-variant-tags --no-merge-shared-variant-tags",
         "--field-type-collision-strategy",
     ),
     **_opts(_C.TYPING, "--use-union-operator --no-use-union-operator", group=_G.TYPE_SYNTAX),
@@ -390,45 +427,77 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(_C.TYPING, "--use-type-alias", group=_G.TYPE_ALIAS),
     **_opts(_C.TYPING, "--use-type-alias-type", group=_G.TYPE_ALIAS, implies=_implied("use_type_alias_type")),
     **_opts(_C.TYPING, "--use-root-model-type-alias", group=_G.TYPE_ALIAS),
+    **_opts(
+        _C.TYPING,
+        "--use-plain-alias-for-recursive-models --no-use-plain-alias-for-recursive-models",
+        group=_G.TYPE_ALIAS,
+    ),
     **_opts(_C.TYPING, "--strict-types", group=_G.TYPE_MAPPING),
     **_opts(
         _C.TYPING,
         "--enum-field-as-literal --enum-field-as-literal-map --ignore-enum-constraints",
-        "--use-single-value-enum-as-const --read-const-beside-enum --filter-literal-values",
-        "--intersect-allof-keywords",
+        "--use-single-value-enum-as-const --no-use-single-value-enum-as-const --read-const-beside-enum",
+        "--no-read-const-beside-enum --filter-literal-values --no-filter-literal-values",
+        "--intersect-allof-keywords --no-intersect-allof-keywords",
     ),
-    **_opts(_C.MODEL, "--read-nullable-beside-type-list --keep-field-defaults-off-branch-roots"),
+    **_opts(
+        _C.TYPING,
+        "--intersect-combined-schema-keywords",
+        implies=_implied("intersect_combined_schema_keywords"),
+    ),
+    **_opts(_C.TYPING, "--no-intersect-combined-schema-keywords"),
+    **_opts(_C.TYPING, "--distribute-allof-over-unions --no-distribute-allof-over-unions"),
+    **_opts(
+        _C.MODEL,
+        "--read-nullable-beside-type-list --no-read-nullable-beside-type-list",
+        "--keep-field-defaults-off-branch-roots --no-keep-field-defaults-off-branch-roots",
+    ),
     **_opts(_C.TYPING, "--disable-future-imports", group=_G.IMPORTS),
     **_opts(
         _C.TYPING,
         "--use-pendulum --use-standard-primitive-types --no-use-standard-primitive-types --use-object-type",
+        "--no-use-object-type",
         "--use-typed-nullable-map-values --use-typed-map-values-beside-other-types",
+        "--no-use-typed-map-values-beside-other-types",
         group=_G.TYPE_MAPPING,
     ),
-    **_opts(_C.TYPING, "--keep-enum-member-values"),
-    **_opts(_C.TYPING, "--read-unevaluated-properties --use-single-dict-for-object-maps", group=_G.TYPE_MAPPING),
+    **_opts(_C.TYPING, "--keep-enum-member-values --no-keep-enum-member-values"),
+    **_opts(
+        _C.TYPING,
+        "--read-unevaluated-properties --no-read-unevaluated-properties --use-single-dict-for-object-maps",
+        "--no-use-single-dict-for-object-maps",
+        group=_G.TYPE_MAPPING,
+    ),
     **_opts(_C.TEMPLATE, "--use-type-checking-imports --no-use-type-checking-imports", group=_G.IMPORTS),
     **_opts(
         _C.TEMPLATE,
-        "--generate-schema-validators --check-pattern-maps-strictly --schema-validator-type",
+        "--generate-schema-validators --check-pattern-maps-strictly --no-check-pattern-maps-strictly",
+        "--schema-validator-type",
         "--schema-validator-base-class-name",
     ),
     **_opts(
         _C.TYPING,
         "--output-datetime-class --output-date-class --use-decimal-for-multiple-of",
-        "--use-decimal-in-field-forms",
+        "--use-decimal-in-field-forms --no-use-decimal-in-field-forms",
+        "--use-encoded-str-for-constrained-base64 --no-use-encoded-str-for-constrained-base64",
         group=_G.TYPE_MAPPING,
     ),
     **_opts(_C.TYPING, "--use-non-positive-negative-number-constrained-types"),
     **_opts(
         _C.TYPING,
-        "--use-unique-items-as-set --use-tuple-for-fixed-items --use-tuple-for-closed-arrays",
+        "--use-unique-items-as-set --no-use-unique-items-as-set --use-unique-items-as-set-by-value",
+        "--no-use-unique-items-as-set-by-value --use-tuple-for-fixed-items",
+        "--no-use-tuple-for-fixed-items --use-tuple-for-closed-arrays --no-use-tuple-for-closed-arrays",
         "--use-tuple-for-fixed-length-arrays",
         group=_G.COLLECTION_TYPES,
     ),
     **_opts(_C.TYPING, "--use-total-false-for-typed-dict --use-closed-typed-dict --no-use-closed-typed-dict"),
     **_opts(_C.TYPING, "--import-overrides", group=_G.IMPORTS),
-    **_opts(_C.TYPING, "--type-mappings --type-overrides", group=_G.TYPE_MAPPING),
+    **_opts(
+        _C.TYPING,
+        "--type-mappings --type-overrides --type-overrides-replace-whole-type --no-type-overrides-replace-whole-type",
+        group=_G.TYPE_MAPPING,
+    ),
     **_opts(
         _C.TYPING,
         "--use-specialized-enum",
@@ -465,23 +534,36 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(_C.TEMPLATE, "--additional-imports", group=_G.IMPORTS),
     **_opts(_C.TEMPLATE, "--class-decorators", group=_G.GENERATED_OUTPUT),
     **_opts(_C.TEMPLATE, "--use-double-quotes", group=_G.OUTPUT_FORMATTING),
-    **_opts(_C.TEMPLATE, "--use-exact-imports", group=_G.IMPORTS),
+    **_opts(
+        _C.TEMPLATE,
+        "--use-exact-imports --rename-submodules-hidden-by-classes --no-rename-submodules-hidden-by-classes",
+        group=_G.IMPORTS,
+    ),
     **_opts(_C.TEMPLATE, "--disable-appending-item-suffix --no-treat-dot-as-module"),
     **_opts(
         _C.TEMPLATE,
-        "--strict-dotted-module-names --no-strict-dotted-module-names --disable-timestamp",
+        "--strict-dotted-module-names --no-strict-dotted-module-names --disable-timestamp --no-disable-timestamp",
         "--enable-version-header --enable-command-header --enable-generated-header-marker",
         group=_G.GENERATED_OUTPUT,
     ),
-    **_opts(_C.TEMPLATE, "--formatters --custom-formatters --custom-formatters-kwargs", group=_G.OUTPUT_FORMATTING),
+    **_opts(
+        _C.TEMPLATE,
+        "--formatters --no-formatters --custom-formatters --custom-formatters-kwargs",
+        group=_G.OUTPUT_FORMATTING,
+    ),
     **_opts(_C.OPENAPI, "--openapi-scopes", group=_G.OPENAPI_SCOPES),
     **_opts(_C.OPENAPI, "--use-operation-id-as-name --use-status-code-in-response-name", group=_G.OPENAPI_NAMING),
     **_opts(
         _C.OPENAPI,
-        "--read-only-write-only-model-type --dedupe-request-response-variants",
+        "--read-only-write-only-model-type --dedupe-request-response-variants --no-dedupe-request-response-variants",
         group=_G.READ_ONLY_WRITE_ONLY,
     ),
-    **_opts(_C.OPENAPI, "--include-path-parameters --openapi-include-paths", group=_G.OPENAPI_PATHS),
+    **_opts(
+        _C.OPENAPI,
+        "--include-path-parameters --openapi-include-paths --keep-first-character-of-path-keys",
+        "--no-keep-first-character-of-path-keys",
+        group=_G.OPENAPI_PATHS,
+    ),
     **_opts(_C.OPENAPI, "--openapi-include-info-version"),
     **_opts(_C.OPENAPI, "--openapi-as-definitions", group=_G.OPENAPI_SCOPES),
     **_opts(_C.OPENAPI, "--validation"),
@@ -589,10 +671,13 @@ def _validate_option_topic_groups() -> None:
             continue
         allowed_groups = OPTION_TOPIC_ALLOWED_GROUPS.get(meta.topic)
         if allowed_groups is None:  # pragma: no cover
-            msg = f"{option}: topic {meta.topic.value!r} has no allowed groups"
+            msg = f"{option}: topic {stable_repr(meta.topic.value)} has no allowed groups"
             raise AssertionError(msg)
         if meta.group not in allowed_groups:  # pragma: no cover
-            msg = f"{option}: group {meta.group.value!r} is not allowed for topic {meta.topic.value!r}"
+            msg = (
+                f"{option}: group {stable_repr(meta.group.value)} is not allowed for topic "
+                f"{stable_repr(meta.topic.value)}"
+            )
             raise AssertionError(msg)
 
 
@@ -661,9 +746,14 @@ def _no_option(action: Action) -> str | None:
 
 
 def _negative_option(dest: str) -> str | None:
-    """Return the --no- flag the parser defines for a boolean destination, or None."""
-    action = _argparse_index().actions.get(dest)
-    return _no_option(action) if isinstance(action, BooleanOptionalAction) else None
+    """Return the --no- flag the parser defines for a destination, or None.
+
+    A boolean's is the --no- string of its action; a list option's is the flag that turns it off with an empty list.
+    """
+    index = _argparse_index()
+    if isinstance(action := index.actions.get(dest), BooleanOptionalAction):
+        return _no_option(action)
+    return flag if (flag := option_flag(dest, negative=True)) in index.canonical else None
 
 
 @lru_cache(maxsize=1)
@@ -697,15 +787,16 @@ def get_option_meta(option: str) -> CLIOptionMeta | None:
     """Get documentation metadata for an option.
 
     Uses an exact match first so BooleanOptionalAction variants can carry
-    separate metadata, then falls back to the canonical option name.
+    separate metadata, then the alias of the same variant that has a section, then the canonical option name.
     If the option is not explicitly registered, returns a default entry
     with General category (auto-categorization for new options).
     """
     if option in CLI_OPTION_META:
         return CLI_OPTION_META[option]
     canonical = get_canonical_option(option)
-    if canonical in CLI_OPTION_META:
-        return CLI_OPTION_META[canonical]
+    for name in (get_cli_option_doc_name(option), canonical):
+        if name in CLI_OPTION_META:
+            return CLI_OPTION_META[name]
     if canonical in get_all_canonical_options() and canonical not in EXCLUDED_FROM_DOCS:
         return CLIOptionMeta(name=canonical, category=OptionCategory.GENERAL)
     return None
@@ -721,13 +812,18 @@ def get_cli_doc_slug(text: str) -> str:
 
 
 def get_cli_option_doc_name(option: str) -> str:
-    """Return the option name used by generated CLI documentation anchors."""
+    """Return the option name used by generated CLI documentation anchors.
+
+    The --name and --no-name forms of a flag have a section each; the aliases of a form share the section of the
+    canonical one of them.
+    """
     canonical = get_canonical_option(option)
     if canonical in MANUAL_DOCS:
         return canonical
     options = _argparse_index().siblings.get(option, ())
     if option.startswith("--") and any(item.startswith("--no-") for item in options):
-        return option
+        negative = option.startswith("--no-")
+        return max((item for item in options if item.startswith("--no-") is negative), key=_canonical_option_key)
     return canonical
 
 

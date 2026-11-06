@@ -26,4 +26,5 @@ D = RootModel[list[A]]
 
 Model.model_rebuild()
 A.model_rebuild()
+B.model_rebuild()
 C.model_rebuild()

@@ -45,6 +45,7 @@ from datamodel_code_generator.parser._intersection import (
     intersect_enum_values,
 )
 from datamodel_code_generator.parser._intersection import json_values_equal as _json_literal_values_equal
+from datamodel_code_generator.parser._naming import composed_name
 from datamodel_code_generator.parser._passes._shared import (
     CollapseRootModelsHost,
     DataModelTypeHost,
@@ -53,9 +54,9 @@ from datamodel_code_generator.parser._passes._shared import (
 from datamodel_code_generator.parser._schema_object import _ANNOTATION_KEYWORDS, JsonSchemaObject, _is_false_all_of
 from datamodel_code_generator.parser._schema_reading import (
     _constraint_values,
-    _get_json_value_type,
     _intersect_dumps,
     _is_object_only_type,
+    _json_value_admitted,
     _schema_dump,
 )
 from datamodel_code_generator.parser.base import get_special_path
@@ -72,7 +73,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model.runtime_validation import UniqueItemsPath, UniqueItemsPathStep
     from datamodel_code_generator.parser._schema_graph import _TargetNode
     from datamodel_code_generator.parser.schema_version import JsonSchemaFeatures
-    from datamodel_code_generator.reference import ModelResolver, Reference
+    from datamodel_code_generator.reference import ModelResolver, Reference, SchemaLocation
     from datamodel_code_generator.types import DataTypeManager
 
 __all__ = [
@@ -161,16 +162,8 @@ class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPyth
         """The resolver of the references and class names of the parse."""
 
     @property
-    def schema_features(self) -> JsonSchemaFeatures:
-        """The features of the JSON Schema version being parsed."""
-
-    @property
     def _legacy_object_maps(self) -> frozenset[str]:
         """The rows of 0.86.0 object maps kept."""
-
-    @property
-    def _ref_sibling_keywords_enabled(self) -> bool:
-        """Whether the sibling keywords of a ``$ref`` apply beside it in the document being parsed."""
 
     @property
     def _property_count_rule_cache(self) -> dict[int, tuple[JsonSchemaObject, PropertyCountRule | None]]:
@@ -242,6 +235,9 @@ class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPyth
         visited: frozenset[int] = frozenset(),
     ) -> bool:
         """Return whether a generated type can receive an array from raw input."""
+
+    def _features_at(self, at: JsonSchemaObject | SchemaLocation | None) -> JsonSchemaFeatures:
+        """Return the schema features that read a schema object (``parser/jsonschema.py``)."""
 
     def _field_input_names(self, field: DataModelFieldBase) -> tuple[str, ...]:
         """Return Pydantic's ordered raw input names for one declared field."""
@@ -392,6 +388,11 @@ class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPyth
 
     def _plain_pattern_root_annotations(self, obj: JsonSchemaObject, patterns: list[tuple[str, DataType]]) -> bool:
         """Recognize inert root annotations only in the standard generation context."""
+
+    def _ref_siblings_apply_to(
+        self, schema: JsonSchemaObject, *, legacy: Literal["first-read", "parsed-document", "as-written"]
+    ) -> bool:
+        """Return whether the keywords beside the ``$ref`` of ``schema`` apply with it (``parser/jsonschema.py``)."""
 
     def _ref_path(self, ref: str) -> str:
         """Return the reference key a reference names: its edge's key, or a plain string's ``resolve_ref``."""
@@ -549,31 +550,37 @@ def _is_empty_property_schema(item: JsonSchemaObject, *, allowed_keywords: froze
 
 
 def _get_conditional_property_values(item: JsonSchemaObject | bool | None) -> tuple[object, ...] | None:  # noqa: FBT001
-    """Extract a presence predicate or literals without discarding property constraints."""
+    """Extract a presence predicate or literals without discarding property constraints.
+
+    The literals are the values that ``const``, ``enum`` and ``type`` all admit: a ``const`` beside an ``enum`` is the
+    value when the enum holds it. A property that admits no value never matches, so the predicate has none (None).
+    """
     if item is None or item is True:
         return ()
     if not isinstance(item, JsonSchemaObject):
         return None
-    if "const" in item.extras:
-        keyword, values = "const", (item.extras["const"],)
-    elif item.enum:
-        keyword, values = "enum", tuple(item.enum)
-    else:
-        return () if _is_empty_property_schema(item) else None
-    if not _is_empty_property_schema(item, allowed_keywords=frozenset({keyword, "type"})):
-        return None
-    if item.type is None:
-        return values
-    schema_types = admitted_types(declared_types(item.type))
-    return (
-        tuple(
-            value
-            for value in values
-            if _get_json_value_type(value) in schema_types
-            or (isinstance(value, float) and value.is_integer() and "integer" in schema_types)
+    declared = {
+        keyword: values
+        for keyword, values in (
+            ("const", (item.extras["const"],) if "const" in item.extras else ()),
+            ("enum", tuple(item.enum or ())),
         )
-        or None
+        if values
+    }
+    if not declared:
+        return () if _is_empty_property_schema(item) else None
+    if not _is_empty_property_schema(item, allowed_keywords=frozenset({"type", *declared})):
+        return None
+    first, *others = declared.values()
+    values = tuple(
+        value
+        for value in first
+        if all(any(_json_literal_values_equal(value, other) for other in admitted) for admitted in others)
     )
+    if item.type is not None:
+        schema_types = admitted_types(declared_types(item.type))
+        values = tuple(value for value in values if _json_value_admitted(schema_types, value))
+    return values or None
 
 
 def _input_names(names_by_property: Mapping[str, tuple[str, ...]] | None, name: str) -> tuple[str, ...]:
@@ -708,7 +715,12 @@ def iter_property_count_validation_sources(
     obj: JsonSchemaObject,
     visited_refs: frozenset[_TargetNode] = frozenset(),
 ) -> Iterator[JsonSchemaObject]:
-    """Yield count constraints from allOf, preserving JSON Schema $ref siblings."""
+    """Yield count constraints from allOf, preserving JSON Schema $ref siblings.
+
+    A ``$ref`` member yields its own count keywords where its schema version applies the keywords beside a ``$ref``
+    (``_ref_siblings_apply_to``), as the other source walkers do; without --read-schema-version-per-document in every
+    version (row ``legacy-count-ref-member-as-written``).
+    """
     yield obj
     for item in obj.allOf:
         if not isinstance(item, JsonSchemaObject):
@@ -716,7 +728,8 @@ def iter_property_count_validation_sources(
         if not item.ref:
             yield from parser._iter_property_count_validation_sources(item, visited_refs)  # noqa: SLF001
             continue
-        yield item
+        if parser._ref_siblings_apply_to(item, legacy="as-written"):  # noqa: SLF001
+            yield item
         if (target := parser._unvisited_ref_target(item.ref, visited_refs)) is not None:  # noqa: SLF001
             yield from parser._iter_property_count_validation_sources(*target)  # noqa: SLF001
 
@@ -848,7 +861,7 @@ def iter_scoped_schema_validation_sources(
         if not isinstance(item, JsonSchemaObject):
             continue
         if item.ref:
-            if parser._ref_sibling_keywords_enabled:  # noqa: SLF001
+            if parser._ref_siblings_apply_to(item, legacy="first-read"):  # noqa: SLF001
                 has_sibling_constraints = (
                     item.patternProperties
                     or item.additionalProperties is not None
@@ -890,7 +903,7 @@ def schema_item_may_accept_container(
 
 def schema_literal_values(parser: SchemaValidatorsHost, obj: JsonSchemaObject) -> tuple[object, ...] | None:
     """Return direct const/enum values after their JSON Schema intersection."""
-    has_const = parser.schema_features.const_support and "const" in obj.extras
+    has_const = parser._features_at(obj).const_support and "const" in obj.extras  # noqa: SLF001
     const = obj.extras.get("const") if has_const else None
     has_enum = "enum" in obj.model_fields_set
     if not has_const and not has_enum:
@@ -919,7 +932,7 @@ def schema_may_accept_container(
             container_type,
             visited_refs | {node},
         )
-        if not (accepts and parser._ref_sibling_keywords_enabled):  # noqa: SLF001
+        if not (accepts and parser._ref_siblings_apply_to(obj, legacy="first-read")):  # noqa: SLF001
             return accepts
     if (values := parser._schema_literal_values(obj)) is not None and not any(  # noqa: SLF001
         isinstance(value, list if container_type == "array" else dict) for value in values
@@ -1053,7 +1066,7 @@ def data_type_may_accept_array(
     visited |= {data_type_id}
 
     match data_type:
-        case DataType() if data_type in ARRAYS.without("legacy-frozen-set-not-an-array"):
+        case DataType() if data_type in ARRAYS:
             return True
         case DataType(reference=reference) if reference is not None and isinstance(reference.source, DataModel):
             source = reference.source
@@ -1103,7 +1116,7 @@ def get_executable_unique_items_paths(  # noqa: PLR0911, PLR0912
                 return {(*path, *rule.path) for rule in runtime_validation.unique_items}
 
         match data_type:
-            case DataType() if data_type in ITEM_CONTAINERS.without("legacy-frozen-set-not-an-array"):
+            case DataType() if data_type in ITEM_CONTAINERS:
                 return parser._get_common_executable_unique_items_paths(  # noqa: SLF001
                     data_type.data_types,
                     (*path, None),
@@ -1151,7 +1164,7 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
             yield from parser._iter_unique_items_rules(  # noqa: SLF001
                 target[0], path, target[1], property_input_names, include_properties=include_properties
             )
-        if not parser._ref_sibling_keywords_enabled:  # noqa: SLF001
+        if not parser._ref_siblings_apply_to(obj, legacy="first-read"):  # noqa: SLF001
             return
     if obj.uniqueItems is True:
         yield UniqueItemsRule(path=path)
@@ -1190,7 +1203,7 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
     if isinstance(obj.items, JsonSchemaObject):
         items_path_step: UniqueItemsPathStep = (
             (UNIQUE_ITEMS_ARRAY_TAIL_PATH_STEP, len(obj.prefixItems))
-            if parser.schema_features.prefix_items and obj.prefixItems
+            if parser._features_at(obj).prefix_items and obj.prefixItems  # noqa: SLF001
             else None
         )
         yield from parser._iter_unique_items_rules(  # noqa: SLF001
@@ -1198,7 +1211,7 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
         )
     for index, item in chain(
         enumerate(obj.items if isinstance(obj.items, list) else ()),
-        enumerate((obj.prefixItems or ()) if parser.schema_features.prefix_items else ()),
+        enumerate((obj.prefixItems or ()) if parser._features_at(obj).prefix_items else ()),  # noqa: SLF001
     ):
         if isinstance(item, JsonSchemaObject):
             yield from parser._iter_unique_items_rules(  # noqa: SLF001
@@ -1206,7 +1219,7 @@ def iter_unique_items_rules(  # noqa: PLR0912, PLR0913
             )
 
     if (
-        not parser.schema_features.prefix_items
+        not parser._features_at(obj).prefix_items  # noqa: SLF001
         and isinstance(obj.additionalItems, JsonSchemaObject)
         and isinstance(obj.items, list)
     ):
@@ -1855,7 +1868,7 @@ def collect_pattern_property_validators(
     source_index, source, additional_properties = additional_property
     if _is_false_all_of(additional_properties):
         return pattern_value_types, rejected_patterns, None, False
-    additional_property_name = f"{name}AdditionalProperty"
+    additional_property_name = composed_name(name, "additional-property")
     additional_property_type = parser._parse_additional_properties_value(  # noqa: SLF001
         additional_property_name,
         get_special_path(f"schemaValidators/additionalProperties/{source_index}", path),

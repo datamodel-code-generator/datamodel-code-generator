@@ -7,12 +7,14 @@
 | [`--allof-class-hierarchy`](#allof-class-hierarchy) | Controls how allOf schemas are represented in the generated ... |
 | [`--allof-merge-mode`](#allof-merge-mode) | Merge constraints from root model references in allOf schema... |
 | [`--disable-future-imports`](#disable-future-imports) | Prevent automatic addition of __future__ imports in generate... |
+| [`--distribute-allof-over-unions`](#distribute-allof-over-unions) | Read an `allOf` with the `anyOf` and `oneOf` it holds or sit... |
 | [`--enum-field-as-literal`](#enum-field-as-literal) | Convert all enum fields to Literal types instead of Enum cla... |
 | [`--enum-field-as-literal-map`](#enum-field-as-literal-map) | Override enum/literal generation per-field via JSON mapping. |
 | [`--filter-literal-values`](#filter-literal-values) | Keep only the values of a `const` or an `enum` that meet the... |
 | [`--ignore-enum-constraints`](#ignore-enum-constraints) | Ignore enum constraints and use base string type instead of ... |
 | [`--import-overrides`](#import-overrides) | Override modules for generated imports by symbol name. |
 | [`--intersect-allof-keywords`](#intersect-allof-keywords) | Combine the keywords of every part of an `allOf`, a `$ref` w... |
+| [`--intersect-combined-schema-keywords`](#intersect-combined-schema-keywords) | Combine the keywords beside an `anyOf` or `oneOf` with each ... |
 | [`--keep-enum-member-values`](#keep-enum-member-values) | Give an enum class a value base only when it keeps every mem... |
 | [`--no-use-closed-typed-dict`](#no-use-closed-typed-dict) | Disable PEP 728 TypedDict closed/extra_items generation. |
 | [`--no-use-specialized-enum`](#no-use-specialized-enum) | Disable specialized Enum classes for Python 3.11+ code gener... |
@@ -25,14 +27,17 @@
 | [`--strict-types`](#strict-types) | Enable strict type validation for specified Python types. |
 | [`--type-mappings`](#type-mappings) | Override default type mappings for schema formats. |
 | [`--type-overrides`](#type-overrides) | Replace schema model types with custom Python types via JSON... |
+| [`--type-overrides-replace-whole-type`](#type-overrides-replace-whole-type) | Make every `--type-overrides` value of a field replace the f... |
 | [`--use-annotated`](#use-annotated) | Use typing.Annotated for Field() with constraints. |
 | [`--use-closed-typed-dict`](#use-closed-typed-dict) | Generate TypedDict with PEP 728 closed/extra_items (default:... |
 | [`--use-decimal-for-multiple-of`](#use-decimal-for-multiple-of) | Generate Decimal types for fields with multipleOf constraint... |
 | [`--use-decimal-in-field-forms`](#use-decimal-in-field-forms) | Write `Decimal` for a number with `multipleOf` in the field ... |
+| [`--use-encoded-str-for-constrained-base64`](#use-encoded-str-for-constrained-base64) | Check the constraints of a `format: byte` string on its base... |
 | [`--use-generic-container-types`](#use-generic-container-types) | Use generic container types (Sequence, Mapping) for type hin... |
 | [`--use-non-positive-negative-number-constrained-types`](#use-non-positive-negative-number-constrained-types) | Use NonPositive/NonNegative types for number constraints. |
 | [`--use-object-type`](#use-object-type) | Use object instead of Any for unspecified object and array v... |
 | [`--use-pendulum`](#use-pendulum) | Use pendulum types for date, time, and duration fields. |
+| [`--use-plain-alias-for-recursive-models`](#use-plain-alias-for-recursive-models) | Write the type alias of a model that names itself as a plain... |
 | [`--use-root-model-type-alias`](#use-root-model-type-alias) | Generate RootModel as type alias format for better mypy supp... |
 | [`--use-single-dict-for-object-maps`](#use-single-dict-for-object-maps) | Type an object map as one dict instead of a union of dicts. |
 | [`--use-single-value-enum-as-const`](#use-single-value-enum-as-const) | Treat `enum` with a single value as `const` with that value. |
@@ -49,6 +54,7 @@
 | [`--use-typed-nullable-map-values`](#use-typed-nullable-map-values) | Type the values of nullable maps as their schemas say instea... |
 | [`--use-union-operator`](#use-union-operator) | Use | operator for Union types (PEP 604). |
 | [`--use-unique-items-as-set`](#use-unique-items-as-set) | Generate set types for arrays with uniqueItems constraint. |
+| [`--use-unique-items-as-set-by-value`](#use-unique-items-as-set-by-value) | Write a uniqueItems set only where its final items hash by v... |
 
 ---
 
@@ -1131,6 +1137,468 @@ postponed evaluation of annotations (PEP 563).
 
 ---
 
+## `--distribute-allof-over-unions` {#distribute-allof-over-unions}
+
+Read an `allOf` with the `anyOf` and `oneOf` it holds or sits beside, as JSON Schema does.
+
+A schema with an `allOf` beside an `anyOf` or `oneOf` admits a value that every `allOf` member and one branch admit.
+An inline branch is parsed with the `allOf` merged in, but a `$ref` branch takes only the `properties` and `required`
+beside it, so `{allOf: [Base], oneOf: [Cat, Dog]}` writes `Cat | Dog` and drops `Base`. With
+`--distribute-allof-over-unions` such a branch gets a class whose bases are the branch and the `allOf` members
+(`Pet1(Cat, Base)`), at a definition, a property, an array item and a map value alike, and an OpenAPI request or
+response body is that union too (without the option it is parsed by its `allOf` and the union is dropped). A `$ref`
+branch that names no object takes the value keywords beside the union, as an inline branch does, so `minimum: 5`
+beside `anyOf: [{$ref: Quantity}, {type: string}]` rejects `3`. An `allOf` member's value keywords meet such a branch
+under `--use-site-models-for-constrained-refs`, as they meet a `$ref` member of an `allOf` there.
+
+An `allOf` whose members hold several `anyOf` or `oneOf` admits a value that meets one branch of each. Without the
+option their branches join one union, each with the other parts (and the inline branches of a later `anyOf` replace
+those of an earlier one); with it the `allOf` is one union variant per combination of one branch of each
+(`M6(M1, M3, M5)`, a class each branch appears in once), at most 128 per `allOf` (above that the branches join one
+union, with a warning). A `$ref` member that names an `allOf` over a union, which was a base that later passes drop, is
+read in its place, so its union joins those of the site (`Leaf4(Leaf1, Leaf3)`). The value branches of these unions are
+read at a field (`RootModel[constr(min_length=2) | int]` where 0.89.0 writes `Any`), beside a `$ref` member that is
+the type of a field or an item, and beside object branches (`R3m3 | constr(min_length=2)`), as an `allOf` of value
+unions that would be a model without fields is read without the option.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input allof_beside_union.json --distribute-allof-over-unions # (1)!
+    ```
+
+    1. :material-arrow-left: `--distribute-allof-over-unions` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Model",
+      "type": "object",
+      "properties": {
+        "pet": {
+          "$ref": "#/$defs/Pet"
+        },
+        "pet_inline_member": {
+          "$ref": "#/$defs/PetInlineMember"
+        },
+        "pet_mixed": {
+          "$ref": "#/$defs/PetMixed"
+        },
+        "pet_inline": {
+          "$ref": "#/$defs/PetInline"
+        },
+        "pet_props": {
+          "$ref": "#/$defs/PetProps"
+        },
+        "pet_field": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base"
+            }
+          ],
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Cat"
+            },
+            {
+              "$ref": "#/$defs/Dog"
+            }
+          ]
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/Base"
+              }
+            ],
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Cat"
+              },
+              {
+                "$ref": "#/$defs/Dog"
+              }
+            ]
+          }
+        },
+        "values": {
+          "type": "object",
+          "additionalProperties": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/Base"
+              }
+            ],
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Cat"
+              },
+              {
+                "$ref": "#/$defs/Dog"
+              }
+            ]
+          }
+        }
+      },
+      "$defs": {
+        "Base": {
+          "type": "object",
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          }
+        },
+        "Cat": {
+          "type": "object",
+          "required": [
+            "meow"
+          ],
+          "properties": {
+            "meow": {
+              "type": "boolean"
+            }
+          }
+        },
+        "Dog": {
+          "type": "object",
+          "required": [
+            "bark"
+          ],
+          "properties": {
+            "bark": {
+              "type": "boolean"
+            }
+          }
+        },
+        "Pet": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base"
+            }
+          ],
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Cat"
+            },
+            {
+              "$ref": "#/$defs/Dog"
+            }
+          ]
+        },
+        "PetInlineMember": {
+          "allOf": [
+            {
+              "type": "object",
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                }
+              }
+            }
+          ],
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Cat"
+            },
+            {
+              "$ref": "#/$defs/Dog"
+            }
+          ]
+        },
+        "PetMixed": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base"
+            }
+          ],
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Cat"
+            },
+            {
+              "type": "object",
+              "required": [
+                "bark"
+              ],
+              "properties": {
+                "bark": {
+                  "type": "boolean"
+                }
+              }
+            }
+          ]
+        },
+        "PetInline": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Base"
+            }
+          ],
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "meow"
+              ],
+              "properties": {
+                "meow": {
+                  "type": "boolean"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "bark"
+              ],
+              "properties": {
+                "bark": {
+                  "type": "boolean"
+                }
+              }
+            }
+          ]
+        },
+        "PetProps": {
+          "type": "object",
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Cat"
+            },
+            {
+              "$ref": "#/$defs/Dog"
+            }
+          ]
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  allof_beside_union.json
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, RootModel
+
+
+        class Base(BaseModel):
+            id: str
+
+
+        class Cat(BaseModel):
+            meow: bool
+
+
+        class Dog(BaseModel):
+            bark: bool
+
+
+        class Pet1(Cat, Base):
+            pass
+
+
+        class Pet2(Dog, Base):
+            pass
+
+
+        class Pet(RootModel[Pet1 | Pet2]):
+            root: Pet1 | Pet2
+
+
+        class PetInlineMember1(Cat):
+            id: str
+
+
+        class PetInlineMember2(Dog):
+            id: str
+
+
+        class PetInlineMember(RootModel[PetInlineMember1 | PetInlineMember2]):
+            root: PetInlineMember1 | PetInlineMember2
+
+
+        class PetMixed1(Base):
+            bark: bool
+
+
+        class PetMixed2(Cat, Base):
+            pass
+
+
+        class PetMixed(RootModel[PetMixed2 | PetMixed1]):
+            root: PetMixed2 | PetMixed1
+
+
+        class PetInline1(Base):
+            meow: bool
+
+
+        class PetInline2(Base):
+            bark: bool
+
+
+        class PetInline(RootModel[PetInline1 | PetInline2]):
+            root: PetInline1 | PetInline2
+
+
+        class PetProps1(Cat):
+            id: str
+
+
+        class PetProps2(Dog):
+            id: str
+
+
+        class PetProps(RootModel[PetProps1 | PetProps2]):
+            root: PetProps1 | PetProps2
+
+
+        class PetField(Cat, Base):
+            pass
+
+
+        class PetField1(Dog, Base):
+            pass
+
+
+        class Items(Cat, Base):
+            pass
+
+
+        class Items1(Dog, Base):
+            pass
+
+
+        class Values(Cat, Base):
+            pass
+
+
+        class Values1(Dog, Base):
+            pass
+
+
+        class Model(BaseModel):
+            pet: Pet | None = None
+            pet_inline_member: PetInlineMember | None = None
+            pet_mixed: PetMixed | None = None
+            pet_inline: PetInline | None = None
+            pet_props: PetProps | None = None
+            pet_field: PetField | PetField1 | None = None
+            items: list[Items | Items1] | None = None
+            values: dict[str, Values | Values1] | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  allof_beside_union.json
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, RootModel
+
+
+        class Base(BaseModel):
+            id: str
+
+
+        class Cat(BaseModel):
+            meow: bool
+
+
+        class Dog(BaseModel):
+            bark: bool
+
+
+        class Pet(RootModel[Cat | Dog]):
+            root: Cat | Dog
+
+
+        class PetInlineMember(RootModel[Cat | Dog]):
+            root: Cat | Dog
+
+
+        class PetMixed1(Base):
+            bark: bool
+
+
+        class PetMixed(RootModel[Cat | PetMixed1]):
+            root: Cat | PetMixed1
+
+
+        class PetInline1(Base):
+            meow: bool
+
+
+        class PetInline2(Base):
+            bark: bool
+
+
+        class PetInline(RootModel[PetInline1 | PetInline2]):
+            root: PetInline1 | PetInline2
+
+
+        class PetProps1(Cat):
+            id: str
+
+
+        class PetProps2(Dog):
+            id: str
+
+
+        class PetProps(RootModel[PetProps1 | PetProps2]):
+            root: PetProps1 | PetProps2
+
+
+        class Model(BaseModel):
+            pet: Pet | None = None
+            pet_inline_member: PetInlineMember | None = None
+            pet_mixed: PetMixed | None = None
+            pet_inline: PetInline | None = None
+            pet_props: PetProps | None = None
+            pet_field: Cat | Dog | None = None
+            items: list[Cat | Dog] | None = None
+            values: dict[str, Cat | Dog] | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
 ## `--enum-field-as-literal` {#enum-field-as-literal}
 
 Convert all enum fields to Literal types instead of Enum classes.
@@ -2143,6 +2611,303 @@ dropped. Parts that no value meets together keep the earlier merge with a warnin
 
         class Model(BaseModel):
             c: Child | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--intersect-combined-schema-keywords` {#intersect-combined-schema-keywords}
+
+Combine the keywords beside an `anyOf` or `oneOf` with each branch, as JSON Schema does.
+
+The keywords beside an `anyOf` or `oneOf` apply to every value, whichever branch it meets. Without the option each
+branch is parsed with them merged in, and the branch's value of a keyword wins: `minimum: 5` beside a branch with
+`minimum: 1` gives `ge=1`. With `--intersect-combined-schema-keywords`, which turns on `--intersect-allof-keywords`,
+each branch is their intersection as `--intersect-allof-keywords` writes it: the tightest bound, the conjunction of
+the `pattern`s, the common `multipleOf`, the `type` and `enum` values both admit, and nested `properties` alike; the
+`nullable` beside the `anyOf` stays with the branch. Where parts meet, an `enum` also loses the values the merged
+`type` rejects. A branch whose keywords no value meets together keeps its earlier merge with a warning. Where an
+`anyOf` and a `oneOf` stand side by side, a branch of one keeps the branches of the other whose `type` admits one of
+its types, and a branch that keeps none is left out, unless every branch is. A property that overrides an inherited
+one merges its `properties` name by name, so a nested property named `default` or `nullable` stays; an override that
+narrows the inherited `type` (to `null`, to one of its types, or in a nested schema) is the intersection instead of
+the inherited type; and under `--allof-merge-mode none` the type shape keeps the length of a closed tuple. An `allOf`
+member reads the siblings of its `$ref` as a part where the dialect does (2019-09 and later, OpenAPI 3.1), a member
+naming a `$ref` alias takes the alias's target as its base, and the union an `allOf` member's `anyOf` or `oneOf` gives
+admits null where every part of the `allOf` does.
+
+**Option relationships:**
+
+- **Implies:** [`--intersect-allof-keywords`](typing-customization.md#intersect-allof-keywords) enabled
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input combined_branch_keywords.json --intersect-combined-schema-keywords # (1)!
+    ```
+
+    1. :material-arrow-left: `--intersect-combined-schema-keywords` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Model",
+      "type": "object",
+      "$defs": {
+        "Code": {"type": "integer", "minimum": 1},
+        "Small": {"type": "integer"},
+        "SmallOrNull": {"type": ["integer", "null"]},
+        "NoneLeft": {"$ref": "#/$defs/Small", "enum": ["a", "b"]},
+        "NullLeft": {"$ref": "#/$defs/SmallOrNull", "enum": [null, "a"]},
+        "Nested": {
+          "type": "object",
+          "properties": {"a": {"type": "integer", "minimum": 5}},
+          "anyOf": [
+            {"properties": {"a": {"minimum": 1}, "b": {"type": "string"}}, "required": ["b"]},
+            {"required": ["a"]}
+          ]
+        }
+      },
+      "properties": {
+        "bound": {"minimum": 5, "anyOf": [{"type": "integer", "minimum": 1}, {"type": "string"}]},
+        "length": {"maxLength": 3, "oneOf": [{"type": "string", "maxLength": 10}, {"type": "integer"}]},
+        "pattern": {"pattern": "^a", "anyOf": [{"type": "string", "pattern": "b$"}, {"type": "integer"}]},
+        "multiple": {"multipleOf": 2, "anyOf": [{"type": "integer", "multipleOf": 3}, {"type": "string"}]},
+        "typed": {"type": "string", "anyOf": [{"type": ["string", "integer"], "minLength": 1}, {"maxLength": 3}]},
+        "values": {"enum": ["a", "b", 1], "anyOf": [{"type": "string", "enum": ["b", "c"]}, {"type": "integer"}]},
+        "ref_branch": {"anyOf": [{"$ref": "#/$defs/Code", "minimum": 5}, {"type": "string"}]},
+        "ref_enum": {"$ref": "#/$defs/Small", "enum": [1, "a", 2], "x-enum-varnames": ["one", "letter", "two"]},
+        "dead": {"type": "string", "anyOf": [{"type": "integer"}, {"minLength": 1}]}
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  combined_branch_keywords.json
+
+        from __future__ import annotations
+
+        from enum import Enum, IntEnum
+
+        from pydantic import BaseModel, ConfigDict, RootModel, conint, constr
+
+
+        class Bound(RootModel[conint(ge=5)]):
+            root: conint(ge=5)
+
+
+        class Bound1(RootModel[str]):
+            root: str
+
+
+        class Length(RootModel[constr(max_length=3)]):
+            root: constr(max_length=3)
+
+
+        class Length1(RootModel[int]):
+            root: int
+
+
+        class Pattern(RootModel[str]):
+            model_config = ConfigDict(
+                regex_engine="python-re",
+            )
+            root: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))')
+
+
+        class Pattern1(RootModel[int]):
+            root: int
+
+
+        class Multiple(RootModel[conint(multiple_of=6)]):
+            root: conint(multiple_of=6)
+
+
+        class Multiple1(RootModel[str]):
+            root: str
+
+
+        class Values(Enum):
+            b = 'b'
+
+
+        class Values1(IntEnum):
+            integer_1 = 1
+
+
+        class RefEnum(IntEnum):
+            one = 1
+            two = 2
+
+
+        class Model(BaseModel):
+            bound: Bound | Bound1 | None = None
+            length: Length | Length1 | None = None
+            pattern: Pattern | Pattern1 | None = None
+            multiple: Multiple | Multiple1 | None = None
+            typed: constr(min_length=1) | constr(max_length=3) | None = None
+            values: Values | Values1 | None = None
+            ref_branch: conint(ge=5) | str | None = None
+            ref_enum: RefEnum | None = None
+            dead: int | constr(min_length=1) | None = None
+
+
+        class Code(RootModel[conint(ge=1)]):
+            root: conint(ge=1)
+
+
+        class Small(RootModel[int]):
+            root: int
+
+
+        class SmallOrNull(RootModel[int | None]):
+            root: int | None
+
+
+        class NoneLeft(Enum):
+            a = 'a'
+            b = 'b'
+
+
+        class NullLeft(Enum):
+            NoneType_None = None
+
+
+        class Nested1(BaseModel):
+            a: conint(ge=5) | None = None
+            b: str
+
+
+        class Nested2(BaseModel):
+            a: conint(ge=5)
+
+
+        class Nested(RootModel[Nested1 | Nested2]):
+            root: Nested1 | Nested2
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  combined_branch_keywords.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+
+        from pydantic import BaseModel, RootModel, conint, constr
+
+
+        class Bound(RootModel[conint(ge=1)]):
+            root: conint(ge=1)
+
+
+        class Bound1(RootModel[str]):
+            root: str
+
+
+        class Length(RootModel[constr(max_length=10)]):
+            root: constr(max_length=10)
+
+
+        class Length1(RootModel[int]):
+            root: int
+
+
+        class Pattern(RootModel[constr(pattern=r'b$')]):
+            root: constr(pattern=r'b$')
+
+
+        class Pattern1(RootModel[int]):
+            root: int
+
+
+        class Multiple(RootModel[conint(multiple_of=3)]):
+            root: conint(multiple_of=3)
+
+
+        class Multiple1(RootModel[str]):
+            root: str
+
+
+        class Values(Enum):
+            b = 'b'
+
+
+        class Values1(Enum):
+            a = 'a'
+            b = 'b'
+            integer_1 = 1
+
+
+        class RefEnum(Enum):
+            one = 1
+            letter = 'a'
+            two = 2
+
+
+        class Model(BaseModel):
+            bound: Bound | Bound1 | None = None
+            length: Length | Length1 | None = None
+            pattern: Pattern | Pattern1 | None = None
+            multiple: Multiple | Multiple1 | None = None
+            typed: constr(min_length=1) | int | constr(max_length=3) | None = None
+            values: Values | Values1 | None = None
+            ref_branch: conint(ge=5) | str | None = None
+            ref_enum: RefEnum | None = None
+            dead: int | constr(min_length=1) | None = None
+
+
+        class Code(RootModel[conint(ge=1)]):
+            root: conint(ge=1)
+
+
+        class Small(RootModel[int]):
+            root: int
+
+
+        class SmallOrNull(RootModel[int | None]):
+            root: int | None
+
+
+        class NoneLeft(Enum):
+            a = 'a'
+            b = 'b'
+
+
+        class NullLeft(Enum):
+            NoneType_None = None
+            a = 'a'
+
+
+        class Nested1(BaseModel):
+            a: conint(ge=1) | None = None
+            b: str
+
+
+        class Nested2(BaseModel):
+            a: conint(ge=5)
+
+
+        class Nested(RootModel[Nested1 | Nested2]):
+            root: Nested1 | Nested2
         ```
 
         <!-- fmt: on -->
@@ -3769,6 +4534,117 @@ instead of generating them.
 
 ---
 
+## `--type-overrides-replace-whole-type` {#type-overrides-replace-whole-type}
+
+Make every `--type-overrides` value of a field replace the field's whole type.
+
+A class path of `--type-overrides` names the type of the whole field, but without this option the field keeps the dict
+of an object map around it: `{"M.f": "builtins.dict"}` on a map of integers writes `dict[str, dict]`, which rejects
+`{"a": 1}`, valid for the schema, and `decimal.Decimal` writes a dict of `Decimal` values. With it the class replaces
+the map itself (`dict`, `Decimal`), as an annotation such as `dict[str, int]` already does, and a `propertyNames` key
+type leaves with the map.
+
+The item counts of an array and the property counts of a map that an override replaces stay only where the new type
+counts the same: a sequence class its items (`builtins.tuple`), a mapping class its keys (`builtins.dict`,
+`collections.abc.Mapping`), or a type the generator cannot classify. Without the option they stay whatever the new type
+is: a `str` in place of an array with `maxItems` limits the length of the string (`notes`), and `typing.Any` in place of
+an array with `minItems` checks the length of every value and raises `TypeError` for one without a length. A count the
+new type does not count is left out with a warning.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input type_overrides_replace_whole_type.json --type-overrides '{"Inventory.counts": "builtins.dict", "Inventory.sized": "builtins.dict", "Inventory.amounts": "typing.Any", "Inventory.keyed": "collections.abc.Mapping", "Inventory.labels": "dict[str, str]", "Inventory.tags": "builtins.tuple", "Inventory.notes": "builtins.str", "Inventory.code": "builtins.bytes"}' --type-overrides-replace-whole-type # (1)!
+    ```
+
+    1. :material-arrow-left: `--type-overrides-replace-whole-type` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Inventory",
+      "type": "object",
+      "properties": {
+        "counts": {"type": "object", "additionalProperties": {"type": "integer"}},
+        "sized": {"type": "object", "additionalProperties": {"type": "integer"}, "minProperties": 1},
+        "amounts": {"type": "object", "additionalProperties": {"type": "number"}, "maxProperties": 2},
+        "keyed": {"type": "object", "additionalProperties": {"type": "string"}, "propertyNames": {"maxLength": 2}},
+        "labels": {"type": "object", "additionalProperties": {"type": "string"}, "minProperties": 1},
+        "tags": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "notes": {"type": "array", "items": {"type": "string"}, "maxItems": 3},
+        "code": {"type": "string", "minLength": 2}
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  type_overrides_replace_whole_type.json
+
+        from __future__ import annotations
+
+        from builtins import bytes, dict, str, tuple
+        from collections.abc import Mapping
+        from typing import Any
+
+        from pydantic import BaseModel, Field
+
+
+        class Inventory(BaseModel):
+            counts: dict | None = None
+            sized: dict | None = Field(None, min_length=1)
+            amounts: Any | None = None
+            keyed: Mapping | None = None
+            labels: dict[str, str] | None = Field(None, min_length=1)
+            tags: tuple | None = Field(None, min_length=1)
+            notes: str | None = None
+            code: bytes | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  type_overrides_replace_whole_type.json
+
+        from __future__ import annotations
+
+        from builtins import bytes, dict, str, tuple
+        from collections.abc import Mapping
+        from typing import Any
+
+        from pydantic import BaseModel, Field, constr
+
+
+        class Inventory(BaseModel):
+            counts: dict[str, dict] | None = None
+            sized: dict[str, dict] | None = Field(None, min_length=1)
+            amounts: dict[str, Any] | None = Field(None, max_length=2)
+            keyed: dict[constr(max_length=2), Mapping] | None = None
+            labels: dict[str, str] | None = Field(None, min_length=1)
+            tags: tuple | None = Field(None, min_length=1)
+            notes: str | None = Field(None, max_length=3)
+            code: bytes | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
 ## `--use-annotated` {#use-annotated}
 
 Use typing.Annotated for Field() with constraints.
@@ -4469,6 +5345,179 @@ arguments.
 
 ---
 
+## `--use-encoded-str-for-constrained-base64` {#use-encoded-str-for-constrained-base64}
+
+Check the constraints of a `format: byte` string on its base64 text in the field forms.
+
+JSON Schema checks `pattern`, `minLength` and `maxLength` of a `format: byte` string on the base64 text. The field
+forms write `Annotated[Base64Str, Field(...)]` (`--use-annotated`) or, for an optional field, `Base64Str | None =
+Field(...)` (`--field-constraints`), and Pydantic checks such constraints on the decoded text: `maxLength: 8` accepts
+the 12 characters of `YWFhYWFhYQ==`, which decode to 7. With this option the string is written
+`Annotated[str, Field(...), EncodedStr(encoder=Base64Encoder)]`, which Pydantic 2.10 or later checks on the text before
+decoding it, at a property, an item, a map value, a root and a union member; Pydantic before 2.10 checks none of these
+forms on the text, and a target Pydantic older than 2.10 warns so.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input encoded_str_for_constrained_base64.json --use-annotated --use-encoded-str-for-constrained-base64 # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-encoded-str-for-constrained-base64` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "EncodedStrForConstrainedBase64",
+      "type": "object",
+      "required": ["required"],
+      "properties": {
+        "pattern": {"type": "string", "format": "byte", "pattern": "^Y"},
+        "lengths": {"type": "string", "format": "byte", "minLength": 4, "maxLength": 8},
+        "required": {"type": "string", "format": "byte", "minLength": 4},
+        "nullable": {"type": ["string", "null"], "format": "byte", "maxLength": 8},
+        "plain": {"type": "string", "format": "byte"},
+        "items": {"type": "array", "items": {"type": "string", "format": "byte", "maxLength": 8}},
+        "values": {"type": "object", "additionalProperties": {"type": "string", "format": "byte", "pattern": "^Y"}},
+        "ref": {"$ref": "#/$defs/Short"},
+        "member": {"anyOf": [{"type": "string", "format": "byte", "maxLength": 8}, {"type": "integer"}]},
+        "branch": {"type": ["array", "string"], "format": "byte", "maxLength": 8, "items": {"type": "integer"}}
+      },
+      "$defs": {
+        "Short": {"type": "string", "format": "byte", "maxLength": 8}
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  encoded_str_for_constrained_base64.json
+
+        from __future__ import annotations
+
+        from typing import Annotated
+
+        from pydantic import Base64Encoder, Base64Str, BaseModel, EncodedStr, Field, RootModel
+        from typing_extensions import TypeAliasType
+
+
+        class Item(
+            RootModel[Annotated[str, Field(max_length=8), EncodedStr(encoder=Base64Encoder)]]
+        ):
+            root: Annotated[str, Field(max_length=8), EncodedStr(encoder=Base64Encoder)]
+
+
+        ValuesAdditionalProperty = TypeAliasType(
+            "ValuesAdditionalProperty",
+            Annotated[str, Field(pattern=r'^Y'), EncodedStr(encoder=Base64Encoder)],
+        )
+
+
+        class Member(
+            RootModel[Annotated[str, Field(max_length=8), EncodedStr(encoder=Base64Encoder)]]
+        ):
+            root: Annotated[str, Field(max_length=8), EncodedStr(encoder=Base64Encoder)]
+
+
+        BranchString = TypeAliasType(
+            "BranchString",
+            Annotated[str, Field(max_length=8), EncodedStr(encoder=Base64Encoder)],
+        )
+
+
+        class Short(
+            RootModel[Annotated[str, Field(max_length=8), EncodedStr(encoder=Base64Encoder)]]
+        ):
+            root: Annotated[str, Field(max_length=8), EncodedStr(encoder=Base64Encoder)]
+
+
+        class EncodedStrForConstrainedBase64(BaseModel):
+            pattern: (
+                Annotated[str, Field(pattern=r'^Y'), EncodedStr(encoder=Base64Encoder)] | None
+            ) = None
+            lengths: (
+                Annotated[
+                    str, Field(min_length=4, max_length=8), EncodedStr(encoder=Base64Encoder)
+                ]
+                | None
+            ) = None
+            required: Annotated[str, Field(min_length=4), EncodedStr(encoder=Base64Encoder)]
+            nullable: (
+                Annotated[str, Field(max_length=8), EncodedStr(encoder=Base64Encoder)] | None
+            ) = None
+            plain: Base64Str | None = None
+            items: list[Item] | None = None
+            values: dict[str, ValuesAdditionalProperty] | None = None
+            ref: Short | None = None
+            member: Member | int | None = None
+            branch: BranchString | list[int] | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  encoded_str_for_constrained_base64.json
+
+        from __future__ import annotations
+
+        from typing import Annotated
+
+        from pydantic import Base64Str, BaseModel, Field, RootModel
+        from typing_extensions import TypeAliasType
+
+
+        class Item(RootModel[Base64Str]):
+            root: Annotated[Base64Str, Field(max_length=8)]
+
+
+        ValuesAdditionalProperty = TypeAliasType(
+            "ValuesAdditionalProperty", Annotated[Base64Str, Field(pattern='^Y')]
+        )
+
+
+        class Member(RootModel[Base64Str]):
+            root: Annotated[Base64Str, Field(max_length=8)]
+
+
+        BranchString = TypeAliasType("BranchString", Annotated[Base64Str, Field(max_length=8)])
+
+
+        class Short(RootModel[Base64Str]):
+            root: Annotated[Base64Str, Field(max_length=8)]
+
+
+        class EncodedStrForConstrainedBase64(BaseModel):
+            pattern: Annotated[Base64Str | None, Field(pattern='^Y')] = None
+            lengths: Annotated[Base64Str | None, Field(max_length=8, min_length=4)] = None
+            required: Annotated[Base64Str, Field(min_length=4)]
+            nullable: Annotated[Base64Str | None, Field(max_length=8)] = None
+            plain: Base64Str | None = None
+            items: list[Item] | None = None
+            values: dict[str, ValuesAdditionalProperty] | None = None
+            ref: Short | None = None
+            member: Member | int | None = None
+            branch: BranchString | list[int] | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
 ## `--use-generic-container-types` {#use-generic-container-types}
 
 Use generic container types (Sequence, Mapping) for type hinting.
@@ -5001,6 +6050,176 @@ If you need a different datetime class for `date-time` fields, use
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--use-plain-alias-for-recursive-models` {#use-plain-alias-for-recursive-models}
+
+Write the type alias of a model that names itself as a plain alias in Pydantic output.
+
+A type alias whose whole value is a model that names itself, such as `Alias = TypeAliasType("Alias", Node)` for
+`Node.next: Node | None`, is refused by Pydantic 2 in the second model that uses it: the module fails to import
+(circular-reference-schema), or, where the alias carries metadata, that model fails to validate. With
+`--use-plain-alias-for-recursive-models` the alias is written as `Alias: TypeAlias = Node`, the model itself, which
+every model that uses it builds; it then has no entry of its own in `model_json_schema()` `$defs`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input recursive_model_alias_two_users.json --output-model-type pydantic_v2.dataclass --use-plain-alias-for-recursive-models # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-plain-alias-for-recursive-models` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$defs": {
+        "Node": {
+          "type": "object",
+          "properties": {
+            "next": {"$ref": "#/$defs/Node"}
+          }
+        },
+        "Alias": {
+          "$ref": "#/$defs/Node",
+          "properties": {
+            "a": {"type": "string"}
+          }
+        },
+        "Described": {
+          "$ref": "#/$defs/Node",
+          "description": "A node beside a description"
+        },
+        "Solo": {
+          "$ref": "#/$defs/Node",
+          "description": "A node that one class uses"
+        },
+        "A": {
+          "type": "object",
+          "properties": {
+            "n": {"$ref": "#/$defs/Alias"},
+            "d": {"$ref": "#/$defs/Described"},
+            "s": {"$ref": "#/$defs/Solo"}
+          }
+        },
+        "B": {
+          "type": "object",
+          "properties": {
+            "n": {"$ref": "#/$defs/Alias"},
+            "d": {"$ref": "#/$defs/Described"}
+          }
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  recursive_model_alias_two_users.json
+
+        from __future__ import annotations
+
+        from typing import Annotated, Any, TypeAlias
+
+        from pydantic import Field
+        from pydantic.dataclasses import dataclass
+        from typing_extensions import TypeAliasType
+
+        Model = TypeAliasType("Model", Any)
+
+
+        @dataclass
+        class Node:
+            next: Node | None = None
+
+
+        Alias: TypeAlias = Node
+
+
+        Described: TypeAlias = Annotated[
+            Node, Field(..., description='A node beside a description')
+        ]
+
+
+        Solo: TypeAlias = Annotated[Node, Field(..., description='A node that one class uses')]
+
+
+        @dataclass
+        class A:
+            n: Alias | None = None
+            d: Described | None = None
+            s: Solo | None = None
+
+
+        @dataclass
+        class B:
+            n: Alias | None = None
+            d: Described | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  recursive_model_alias_two_users.json
+
+        from __future__ import annotations
+
+        from typing import Annotated, Any
+
+        from pydantic import Field
+        from pydantic.dataclasses import dataclass
+        from typing_extensions import TypeAliasType
+
+        Model = TypeAliasType("Model", Any)
+
+
+        @dataclass
+        class Node:
+            next: Node | None = None
+
+
+        Alias = TypeAliasType("Alias", Node)
+
+
+        Described = TypeAliasType(
+            "Described", Annotated[Node, Field(..., description='A node beside a description')]
+        )
+
+
+        Solo = TypeAliasType(
+            "Solo", Annotated[Node, Field(..., description='A node that one class uses')]
+        )
+
+
+        @dataclass
+        class A:
+            n: Alias | None = None
+            d: Described | None = None
+            s: Solo | None = None
+
+
+        @dataclass
+        class B:
+            n: Alias | None = None
+            d: Described | None = None
+        ```
+
+        <!-- fmt: on -->
 
 ---
 
@@ -6483,7 +7702,9 @@ checks it.
             kept_variable_length: list[str | int] | None = Field(
                 None, max_length=2, min_length=1
             )
-            closed_by_type_list: list[str] | None = Field(None, max_length=2, min_length=2)
+            closed_by_type_list: list[str | None] | None = Field(
+                None, max_length=2, min_length=2
+            )
             kept_apart_from_extension_keys: list[str] | None = Field(
                 None, max_length=2, min_length=2
             )
@@ -7553,7 +8774,12 @@ Generate set types for arrays with uniqueItems constraint.
 
 The `--use-unique-items-as-set` flag generates Python set types instead of
 list types for JSON Schema arrays that have the uniqueItems constraint set
-to true, enforcing uniqueness at the type level.
+to true, enforcing uniqueness at the type level: a property, a root model,
+the member of an anyOf or oneOf, the items of an array and the values of a
+map. An array whose items no set can hold, such as objects or arrays, stays
+a list. So does a nested array in a union beside another member of its kind
+that keeps its lists, an array beside an array or a map beside a map, as a
+msgspec union holds one of each.
 
 !!! tip "Usage"
 
@@ -7894,5 +9120,433 @@ to true, enforcing uniqueness at the type level.
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--use-unique-items-as-set-by-value` {#use-unique-items-as-set-by-value}
+
+Write a uniqueItems set only where its final items hash by value.
+
+Under `--use-unique-items-as-set`, the arrays whose schemas declare `uniqueItems` become sets before root models
+collapse, type overrides apply and the other modules are processed, and a model that is a set item hashes by identity,
+so two equal items are both kept. Deduplication and `--reuse-model` also compare such arrays as the lists they still
+are, so a model whose array declares no `uniqueItems` can merge into one whose array does, and a list the schema allows
+to repeat then drops its duplicates. With `--use-unique-items-as-set-by-value` the sets are decided on the final item
+types: a set is written only where every value of its items hashes by value (scalars, enums, tuples and frozen sets of
+them, frozen models whose fields hash), so an array of models that hash only by identity, of `Any` or of containers
+stays a list, and models whose arrays differ in `uniqueItems` are kept apart.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input unique_items_by_value.json --use-unique-items-as-set --reuse-model --collapse-reuse-models --collapse-root-models --use-unique-items-as-set-by-value # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-unique-items-as-set-by-value` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "title": "Root",
+      "type": "object",
+      "properties": {
+        "labels": {
+          "$ref": "#/$defs/Labels"
+        },
+        "history": {
+          "$ref": "#/$defs/History"
+        },
+        "pets": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Pet"
+          }
+        },
+        "colors": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Color"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Tags"
+          }
+        },
+        "anything": {
+          "type": "array",
+          "uniqueItems": true
+        },
+        "numbers": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "integer"
+          },
+          "default": [
+            1,
+            2
+          ]
+        },
+        "first": {
+          "type": "object",
+          "properties": {
+            "entry": {
+              "title": "Entry",
+              "type": "object",
+              "properties": {
+                "tags": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "second": {
+          "type": "object",
+          "properties": {
+            "entry": {
+              "title": "Entry",
+              "type": "object",
+              "properties": {
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "codes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "settings": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Settings"
+          }
+        },
+        "pairs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "items": false,
+            "minItems": 2
+          }
+        },
+        "limits": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Limits"
+          }
+        },
+        "points": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Point"
+          }
+        }
+      },
+      "$defs": {
+        "Labels": {
+          "type": "object",
+          "properties": {
+            "names": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "History": {
+          "type": "object",
+          "properties": {
+            "names": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "Pet": {
+          "type": "object",
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "type": "integer"
+            },
+            "nicknames": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "Color": {
+          "type": "string",
+          "enum": [
+            "red",
+            "blue"
+          ]
+        },
+        "Tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "Settings": {
+          "type": "object",
+          "properties": {
+            "options": {
+              "type": "object",
+              "default": {}
+            }
+          }
+        },
+        "Limits": {
+          "type": "object",
+          "properties": {
+            "levels": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "integer"
+              },
+              "default": [
+                1
+              ]
+            }
+          }
+        },
+        "Point": {
+          "type": "object",
+          "required": [
+            "x",
+            "y"
+          ],
+          "properties": {
+            "x": {
+              "type": "integer"
+            },
+            "y": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "required": [
+        "codes"
+      ]
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  unique_items_by_value.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import Any
+
+        from pydantic import BaseModel, Field, RootModel
+
+
+        class Entry(BaseModel):
+            tags: set[str] | None = None
+
+
+        class First(BaseModel):
+            entry: Entry | None = Field(None, title='Entry')
+
+
+        class Entry1(BaseModel):
+            tags: list[str] | None = None
+
+
+        class Second(BaseModel):
+            entry: Entry1 | None = Field(None, title='Entry')
+
+
+        class Pair(RootModel[list[int | str]]):
+            root: list[int | str] = Field(..., max_length=2, min_length=2)
+
+
+        class Labels(BaseModel):
+            names: set[str] | None = None
+
+
+        class History(BaseModel):
+            names: list[str] | None = None
+
+
+        class Pet(BaseModel):
+            id: int
+            nicknames: set[str] | None = None
+
+
+        class Color(Enum):
+            red = 'red'
+            blue = 'blue'
+
+
+        class Settings(BaseModel):
+            options: dict[str, Any] | None = {}
+
+
+        class Limits(BaseModel):
+            levels: set[int] | None = {1}
+
+
+        class Point(BaseModel):
+            x: int
+            y: int
+
+
+        class Root(BaseModel):
+            labels: Labels | None = None
+            history: History | None = None
+            pets: list[Pet] | None = None
+            colors: set[Color] | None = None
+            tags: list[list[str]] | None = None
+            anything: list[Any] | None = None
+            numbers: set[int] | None = {1, 2}
+            first: First | None = None
+            second: Second | None = None
+            codes: set[str]
+            settings: list[Settings] | None = None
+            pairs: list[Pair] | None = None
+            limits: list[Limits] | None = None
+            points: list[Point] | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  unique_items_by_value.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+        from typing import Any
+
+        from pydantic import BaseModel, Field, RootModel
+
+
+        class Entry(BaseModel):
+            tags: set[str] | None = None
+
+
+        class First(BaseModel):
+            entry: Entry | None = Field(None, title='Entry')
+
+
+        class Pair(RootModel[list[int | str]]):
+            __hash__ = object.__hash__
+            root: list[int | str] = Field(..., max_length=2, min_length=2)
+
+
+        class Labels(BaseModel):
+            names: set[str] | None = None
+
+
+        class Pet(BaseModel):
+            __hash__ = object.__hash__
+            id: int
+            nicknames: set[str] | None = None
+
+
+        class Color(Enum):
+            red = 'red'
+            blue = 'blue'
+
+
+        class Tags(RootModel[list[str]]):
+            __hash__ = object.__hash__
+            root: list[str]
+
+
+        class Settings(BaseModel):
+            __hash__ = object.__hash__
+            options: dict[str, Any] | None = {}
+
+
+        class Limits(BaseModel):
+            __hash__ = object.__hash__
+            levels: set[int] | None = {1}
+
+
+        class Point(BaseModel):
+            __hash__ = object.__hash__
+            x: int
+            y: int
+
+
+        class Root(BaseModel):
+            labels: Labels | None = None
+            history: Labels | None = None
+            pets: set[Pet] | None = None
+            colors: set[Color] | None = None
+            tags: set[Tags] | None = None
+            anything: set[Any] | None = None
+            numbers: set[int] | None = {1, 2}
+            first: First | None = None
+            second: First | None = None
+            codes: set[str]
+            settings: set[Settings] | None = None
+            pairs: set[Pair] | None = None
+            limits: set[Limits] | None = None
+            points: set[Point] | None = None
+        ```
+
+        <!-- fmt: on -->
 
 ---

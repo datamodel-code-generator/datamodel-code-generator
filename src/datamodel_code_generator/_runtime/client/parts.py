@@ -29,10 +29,11 @@ class PartPlan:
     has one, and each item of a repeated member becomes its own part: JSON for a member of the JSON kind, whose type
     has no one scalar kind, and for any other by the value's shape. The media types of the member's encoding bound
     the media type a part names, and the first concrete one is its default. A member whose encoding gives a query
-    style writes a part for each name and value that style gives its value.
+    style writes a part for each name and value that style gives its value. A file part of a member the models type as
+    `str` (`text`) may hold text, which is sent in the charset of the part's media type, UTF-8 when it names none.
     """
 
-    __slots__ = ("codec", "content_types", "kind", "name", "repeated", "style")
+    __slots__ = ("codec", "content_types", "kind", "name", "repeated", "style", "text")
 
     def __init__(  # noqa: PLR0913
         self,
@@ -43,14 +44,16 @@ class PartPlan:
         codec: OutboundModelCodec | None = None,
         content_types: tuple[str, ...] = (),
         style: ParameterPlan | None = None,
+        text: bool = False,
     ) -> None:
-        """Keep the member's name, kind, repeats, codec, media, and style."""
+        """Keep the member's name, kind, repeats, codec, media, style, and whether its file parts may be text."""
         self.name = name
         self.kind: PartKind = kind
         self.repeated = repeated
         self.codec = codec
         self.content_types = content_types
         self.style = style
+        self.text = text
 
     def media(self, named: str | None) -> str | None:
         """Return the media type of a part: the one it names within the encoding's, or the encoding's default.

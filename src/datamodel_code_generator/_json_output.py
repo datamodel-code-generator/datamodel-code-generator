@@ -71,14 +71,16 @@ def write_streamed_json(
     """Write ``dump_json({**document, key: [*items]}, style)`` and a newline, dumping one item of the array at a time.
 
     For a document whose array is not held in memory: the jobs of a batch run, read back from their spool, and the
-    resources of the remote lock. ``key`` is a key of the document's top level, so each item is two levels deep.
+    resources of the remote lock. ``key`` is a key of the document's top level, so each item is two levels deep. The
+    lines of an item end at the line feed only, as ``json.dumps`` ends them: its strings may hold U+2028, U+2029 and
+    U+0085.
     """
     array = f"\n  {dump_json(key, style)}: ["
     head, _, tail = dump_json({**document, key: []}, style).partition(f"{array}]")
     write(f"{head}{array}")
     closing = "]"
     for index, item in enumerate(items):
-        write(f"{',' if index else ''}\n" + "\n".join(f"    {line}" for line in dump_json(item, style).splitlines()))
+        write(f"{',' if index else ''}\n" + "\n".join(f"    {line}" for line in dump_json(item, style).split("\n")))
         closing = "\n  ]"
     write(f"{closing}{tail}\n")
 
@@ -92,7 +94,8 @@ def json_schema_path(name: str) -> JsonSchemaPath | None:
     """Return where the command line prints the JSON Schema ``name`` of ``--output-format-json-schema``, None for none.
 
     ``argv`` before the argument parser loads when the request is the whole command, ``parsed`` once the parser has read
-    the command, before ``--version`` and the skill options, ``main`` only where the command handles those options.
+    the command, before ``--version``, ``main`` only where the command handles ``--version``. On every path the options
+    of ``--install-skill`` are refused without it, as the command line refuses them.
     """
     return None if (source := _JSON_SCHEMAS.get(name)) is None else source.path
 

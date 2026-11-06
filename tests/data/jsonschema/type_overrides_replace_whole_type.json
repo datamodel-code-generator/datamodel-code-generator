@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Inventory",
+  "type": "object",
+  "properties": {
+    "counts": {"type": "object", "additionalProperties": {"type": "integer"}},
+    "sized": {"type": "object", "additionalProperties": {"type": "integer"}, "minProperties": 1},
+    "amounts": {"type": "object", "additionalProperties": {"type": "number"}, "maxProperties": 2},
+    "keyed": {"type": "object", "additionalProperties": {"type": "string"}, "propertyNames": {"maxLength": 2}},
+    "labels": {"type": "object", "additionalProperties": {"type": "string"}, "minProperties": 1},
+    "tags": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "notes": {"type": "array", "items": {"type": "string"}, "maxItems": 3},
+    "code": {"type": "string", "minLength": 2}
+  }
+}

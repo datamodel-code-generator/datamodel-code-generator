@@ -816,6 +816,12 @@ cannot be opened, and an async file or async iterable as a `FilePart` (HTTPX2 re
 raise a request `DecodeError` with the reason `unencodable` before anything is sent, with the underlying failure as
 `cause`. An async file is not inspected first: a text-mode or closed one fails while sending as `APIConnectionError`.
 
+A `FilePart` of a member that the models type as `str`, a `--type-overrides` value or a `contentMediaType` string, also
+takes text, which is sent in the charset of the part's media type, UTF-8 when it names none; text that charset cannot
+represent raises a request `DecodeError` with the reason `unencodable`. A member typed `bytes` takes the inputs above
+alone. A binary member whose models type is any other (`datetime.datetime`) is not a file: it is a field part of that
+type.
+
 Caller files stay open, wherever the last read left them. A path the call opened is closed when the call ends; a close
 failure is attached to an error already propagating, and otherwise raises `SDKError` with the reason
 `cleanup_failed`. Sync calls do all file I/O on the calling thread. In async calls a path the call opens is opened,

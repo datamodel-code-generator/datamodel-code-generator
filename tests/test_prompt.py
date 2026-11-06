@@ -14,9 +14,7 @@ from datamodel_code_generator.prompt import (
     _actions_by_dest,
     _canonical_option,
     _format_current_options,
-    _negative_option,
     _option_metadata,
-    _positive_option,
     generate_prompt,
 )
 from tests.conftest import assert_output
@@ -82,8 +80,6 @@ def test_prompt_option_metadata_fallbacks() -> None:
     custom_action = parser.add_argument("--custom", default=SUPPRESS, help=SUPPRESS, type=callable_type)
 
     assert _canonical_option(short_action) == "-x"
-    assert _positive_option(short_action, "--x") == "--x"
-    assert _negative_option(short_action, "--no-x") == "--no-x"
     assert callable_type("value") == "value"
 
     metadata = _option_metadata(custom_action)

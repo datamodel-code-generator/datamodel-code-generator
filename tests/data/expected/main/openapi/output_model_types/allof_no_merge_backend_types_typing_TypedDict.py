@@ -25,7 +25,7 @@ class Base(TypedDict):
     mappingRoot: ScalarMapping
 
 
-class Child(Base):
+class Child(TypedDict):
     direct: str
     inline: str
     array: list[str]

@@ -27,6 +27,7 @@ from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._runtime.model_codecs.media import essence
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._target_contract import DeclarationId, TypeUseBinding, TypeUseId
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Container, Iterable, Iterator, Mapping
@@ -104,13 +105,13 @@ def _events(helper: Helper) -> Iterator[tuple[str, str | None, SchemaRef]]:
         yield at, None, schema
         return
     for key, reference in schema["mapping"].items():
-        yield f"{at}.mapping[{key!r}]", key, reference
+        yield f"{at}.mapping[{stable_repr(key)}]", key, reference
 
 
 def _errors(helper: Helper) -> Iterator[tuple[str, str, SchemaRef]]:
     """Yield where each error event schema of a helper is set, its discriminator value, and itself."""
     for key, reference in helper.tree["error_events"].items():
-        yield f"{helper.at}.error_events[{key!r}]", key, reference
+        yield f"{helper.at}.error_events[{stable_repr(key)}]", key, reference
 
 
 def stream_only(spec: OperationSpec) -> bool:
@@ -136,7 +137,7 @@ def _media_problem(helper: Helper) -> str | None:
     if essence(media) in accepted:
         return None
     expected = accepted[0] if len(accepted) == 1 else f"one of {english_list(accepted, 'or', 'serial')}"
-    return f"The media type {media!r} of {helper.name!r} is not {expected}"
+    return f"The media type {stable_repr(media)} of {stable_repr(helper.name)} is not {expected}"
 
 
 class _Streams(HelperPlanner):
@@ -199,12 +200,14 @@ class _Streams(HelperPlanner):
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.media", message, spec))
         else:
             if (response := _stream_response(spec, bare)) is None:
-                message = f"{_label(spec)} declares no {bare} success response for the {label} helper {name!r}"
+                message = (
+                    f"{_label(spec)} declares no {bare} success response for the {label} helper {stable_repr(name)}"
+                )
                 problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, spec))
             if reopen is not None and (reopened := _stream_response(reopen, bare)) is None:
                 message = (
-                    f"{_label(reopen)} declares no {bare} success response for the {label} helper {name!r} to "
-                    "reopen its stream with"
+                    f"{_label(reopen)} declares no {bare} success response for the {label} helper {stable_repr(name)} "
+                    "to reopen its stream with"
                 )
                 where = f"{at}.resume.reopen_operation"
                 problems.append(_problem("E_CONFIG_VALUE", "config", where, message, reopen))
@@ -241,7 +244,10 @@ class _Streams(HelperPlanner):
         for setting, keys in (("event_schema.mapping", events), ("error_events", helper.tree["error_events"])):
             if value in keys:
                 where = f"{helper.at}.completion.value"
-                message = f"The completion event type {value!r} of {helper.name!r} is also a key of its {setting}"
+                message = (
+                    f"The completion event type {stable_repr(value)} of {stable_repr(helper.name)} is also a key of "
+                    f"its {setting}"
+                )
                 yield _problem("E_CONFIG_CONFLICT", "config", where, message, spec)
 
 
@@ -310,7 +316,10 @@ def _resumed(helper: Helper, spec: StreamSpec, pages: _Pages, polls: _Polls) -> 
         return
     where = f"{at}.expires_at"
     if read["from"] != "header":
-        message = f"The expiry of {helper.name!r} reads a {read['from']}, where only a header of a stream gives one"
+        message = (
+            f"The expiry of {stable_repr(helper.name)} reads a {read['from']}, where only a header of a stream gives "
+            "one"
+        )
         yield _problem("E_CONFIG_VALUE", "config", where, message, spec.operation)
     elif isinstance(found := polls.read(helper, [opened], read, where, "expiry"), Diagnostic):
         yield found
@@ -325,25 +334,25 @@ def _cursor(helper: Helper, spec: StreamSpec, reopen: OperationSpec, pages: _Pag
     """
     resume, name, label = helper.tree["resume"], helper.name, _label(reopen)
     at, write, cursor = f"{helper.at}.resume", helper.tree["resume"]["write"], helper.tree["resume"]["cursor"]
-    where, place = f"{at}.write", f"the {write['in']} parameter {write.get('name')!r} of {label}"
+    where, place = f"{at}.write", f"the {write['in']} parameter {stable_repr(write.get('name'))} of {label}"
     if (secret := pages.credential(helper, reopen, write, where, "cursor")) is not None:
         yield secret
         return
     if write["in"] == "path":
-        message = f"The cursor of {name!r} is written to {place}, which is not supported yet"
+        message = f"The cursor of {stable_repr(name)} is written to {place}, which is not supported yet"
         yield _problem("E_CLIENT_UNSUPPORTED", "target", where, message, reopen)
         return
     if cursor == "event_id" or resume["null"] == "clear":
         if write["in"] not in {"header", "query"}:
             message = (
-                f"The cursor of {name!r} can be cleared, which only a header or query parameter can omit; writing it "
-                f"to {_TARGETS[write['in']]} of {label} is not supported yet"
+                f"The cursor of {stable_repr(name)} can be cleared, which only a header or query parameter can omit; "
+                f"writing it to {_TARGETS[write['in']]} of {label} is not supported yet"
             )
             yield _problem("E_CLIENT_UNSUPPORTED", "target", where, message, reopen)
             return
         key = _target_key(write)
         if any(item.required and parameter_key(item.location, item.wire_name) == key for item in reopen.parameters):
-            message = f"The cursor of {name!r} can be cleared, which {place}, a required one, cannot omit"
+            message = f"The cursor of {stable_repr(name)} can be cleared, which {place}, a required one, cannot omit"
             yield _problem("E_CONFIG_VALUE", "config", where, message, reopen)
             return
     if cursor == "event_id":
@@ -366,7 +375,10 @@ def _read(
     """
     name, at = helper.name, f"{helper.at}.resume.cursor"
     if cursor["from"] != "body":
-        message = f"The cursor of {name!r} reads a {cursor['from']}, where only a body pointer reads an event's cursor"
+        message = (
+            f"The cursor of {stable_repr(name)} reads a {cursor['from']}, where only a body pointer reads an event's "
+            "cursor"
+        )
         return _problem("E_CONFIG_VALUE", "config", at, message, spec.operation)
     pointer, inherit = cursor["pointer"], helper.tree["resume"]["missing"] == "inherit"
     found: set[str] | None = set()
@@ -376,12 +388,17 @@ def _read(
         if (types := pages.declared(use.type, pointer)) == "absent":
             if inherit:
                 continue
-            message = f"The cursor pointer {pointer!r} of {name!r} names no property of {location.pointer!r}"
+            message = (
+                f"The cursor pointer {stable_repr(pointer)} of {stable_repr(name)} names no property of "
+                f"{stable_repr(location.pointer)}"
+            )
             return _problem("E_CONFIG_VALUE", "config", f"{at}.pointer", message, spec.operation)
         declared = True
         found = None if types is None or found is None else found | types
     if not declared:
-        message = f"The cursor pointer {pointer!r} of {name!r} names no property of any event schema"
+        message = (
+            f"The cursor pointer {stable_repr(pointer)} of {stable_repr(name)} names no property of any event schema"
+        )
         return _problem("E_CONFIG_VALUE", "config", f"{at}.pointer", message, spec.operation)
     return None if found is None else frozenset(found)
 
@@ -394,11 +411,14 @@ def _discriminated(helper: Helper, spec: StreamSpec, pages: _Pages) -> Iterator[
     for location, value in {use.schema: use.type for use in spec.uses if use.schema is not None}.items():
         label = location.pointer
         if (types := pages.declared(value, pointer)) == "absent":
-            message = f"The discriminator pointer {pointer!r} of {helper.name!r} names no property of {label!r}"
+            message = (
+                f"The discriminator pointer {stable_repr(pointer)} of {stable_repr(helper.name)} names no property of "
+                f"{stable_repr(label)}"
+            )
             yield _problem("E_CONFIG_VALUE", "config", where, message, spec.operation)
         elif types is not None and "string" not in types:
             message = (
-                f"The discriminator of {helper.name!r} reads {english_list(sorted(types), 'or', 'serial')} values "
-                f"from {label!r}, where only string values fit"
+                f"The discriminator of {stable_repr(helper.name)} reads {english_list(sorted(types), 'or', 'serial')} "
+                f"values from {stable_repr(label)}, where only string values fit"
             )
             yield _problem("E_CONFIG_VALUE", "config", where, message, spec.operation)

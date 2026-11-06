@@ -13,17 +13,17 @@ copied runtime
   client/media.py: 39
   client/native.py: 187
   client/operations.py: 863
-  client/options.py: 312
+  client/options.py: 309
   client/paths.py: 47
   client/positions.py: 129
   client/raw.py: 715
   client/responses.py: 87
   client/retry.py: 321
-  client/timing.py: 166
+  client/timing.py: 173
   client/urls.py: 88
   model_codecs/__init__.py: 2
   model_codecs/errors.py: 18
-  model_codecs/media.py: 550
+  model_codecs/media.py: 546
   model_codecs/parameters.py: 386
   model_codecs/pydantic_adapters.py: 51
   model_codecs/pydantic_models.py: 31

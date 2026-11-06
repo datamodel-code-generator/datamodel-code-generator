@@ -20,6 +20,9 @@ variadic	main/input_model/model_with_callable_types.py
 	main/input_model/custom_generic_type_import.py
 [test_input_model_cwd_already_in_path]
 	main/input_model/multiple_with_pydantic_output.py
+[test_input_model_dataclass_fields_of_one_alias]
+option	input_model/dataclass_fields_of_one_alias[option].txt
+released	input_model/dataclass_fields_of_one_alias[released].txt	= input_model/dataclass_fields_of_one_alias[option].txt
 [test_input_model_dataclass_with_python_types]
 	main/input_model/dataclass_with_python_types.py
 [test_input_model_default_put_dict_import]
@@ -686,6 +689,10 @@ api-AliasSameChild	main/input_model/inherited_overrides/AliasSameChild.py	?
 api-AliasSameChild	main/input_model/inherited_overrides/AliasSameChild_builtin.py	?	= main/input_model/inherited_overrides/AliasSameChild.py
 api-AliasSameChild	main/input_model/inherited_overrides/AliasSameChild_runtime.txt
 api-AliasSameChild	main/input_model/inherited_overrides/AliasSameChild_schema.txt
+api-AliasTakenChild	main/input_model/inherited_overrides/AliasTakenChild.py	?
+api-AliasTakenChild	main/input_model/inherited_overrides/AliasTakenChild_builtin.py	?	= main/input_model/inherited_overrides/AliasTakenChild.py
+api-AliasTakenChild	main/input_model/inherited_overrides/AliasTakenChild_runtime.txt
+api-AliasTakenChild	main/input_model/inherited_overrides/AliasTakenChild_schema.txt
 api-CallerBooleanNormal	main/input_model/inherited_overrides/CallerBooleanNormal.py	?
 api-CallerBooleanNormal	main/input_model/inherited_overrides/CallerBooleanNormal_builtin.py	?	= main/input_model/inherited_overrides/CallerBooleanNormal.py
 api-CallerBooleanNormal	main/input_model/inherited_overrides/CallerBooleanNormal_runtime.txt	= main/input_model/inherited_overrides/CallerDictNormal_runtime.txt
@@ -818,6 +825,10 @@ cli-AliasSameChild	main/input_model/inherited_overrides/AliasSameChild.py	?
 cli-AliasSameChild	main/input_model/inherited_overrides/AliasSameChild_builtin.py	?	= main/input_model/inherited_overrides/AliasSameChild.py
 cli-AliasSameChild	main/input_model/inherited_overrides/AliasSameChild_runtime.txt
 cli-AliasSameChild	main/input_model/inherited_overrides/AliasSameChild_schema.txt
+cli-AliasTakenChild	main/input_model/inherited_overrides/AliasTakenChild.py	?
+cli-AliasTakenChild	main/input_model/inherited_overrides/AliasTakenChild_builtin.py	?	= main/input_model/inherited_overrides/AliasTakenChild.py
+cli-AliasTakenChild	main/input_model/inherited_overrides/AliasTakenChild_runtime.txt
+cli-AliasTakenChild	main/input_model/inherited_overrides/AliasTakenChild_schema.txt
 cli-CallerBooleanNormal	main/input_model/inherited_overrides/CallerBooleanNormal.py	?
 cli-CallerBooleanNormal	main/input_model/inherited_overrides/CallerBooleanNormal_builtin.py	?	= main/input_model/inherited_overrides/CallerBooleanNormal.py
 cli-CallerBooleanNormal	main/input_model/inherited_overrides/CallerBooleanNormal_runtime.txt	= main/input_model/inherited_overrides/CallerDictNormal_runtime.txt
@@ -1060,6 +1071,11 @@ set_type	main/input_model/model_with_python_types.py
 	main/input_model/pydantic_to_typeddict.py
 [test_input_model_pydantic_with_jsonschema_type]
 	main/input_model/pydantic_with_jsonschema.py	= main/input_model/path_format.py
+[test_input_model_read_dataclass_fields_by_alias]
+no-option	input_model/read_dataclass_fields_by_alias[no-option].txt
+option	input_model/read_dataclass_fields_by_alias[option].txt
+preset	input_model/read_dataclass_fields_by_alias[preset].txt
+released	input_model/read_dataclass_fields_by_alias[released].txt	= input_model/read_dataclass_fields_by_alias[no-option].txt
 [test_input_model_recursive_model_types]
 	main/input_model/recursive_model_types.py
 [test_input_model_ref_strategy_dataclass_reuse_foreign]
@@ -2632,7 +2648,7 @@ external-api-reuse-all-annotated_repeated-pydantic_v2.BaseModel	main/input_model
 external-api-reuse-all-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all.py	?
 external-api-reuse-all-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all_black23.py	?
 external-api-reuse-all-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_typed_reuse-all.txt
-external-api-reuse-all-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_typed_reuse-all.py
+external-api-reuse-all-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_typed_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_typed_reuse-all.py
 external-api-reuse-all-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_wrapper_reuse-all.txt
 external-api-reuse-all-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_wrapper_reuse-all.py
 external-api-reuse-all-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/arguments_reuse-all.py	?
@@ -2754,7 +2770,7 @@ external-api-reuse-foreign-annotated_repeated-pydantic_v2.BaseModel	main/input_m
 external-api-reuse-foreign-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all.py	?
 external-api-reuse-foreign-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all_black23.py	?
 external-api-reuse-foreign-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_typed_reuse-all.txt
-external-api-reuse-foreign-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_typed_reuse-all.py
+external-api-reuse-foreign-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_typed_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_typed_reuse-all.py
 external-api-reuse-foreign-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_wrapper_reuse-all.txt
 external-api-reuse-foreign-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_wrapper_reuse-all.py
 external-api-reuse-foreign-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/arguments_reuse-all.py	?
@@ -3007,7 +3023,7 @@ external-cli-reuse-all-annotated_repeated-pydantic_v2.BaseModel	main/input_model
 external-cli-reuse-all-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all.py	?
 external-cli-reuse-all-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all_black23.py	?
 external-cli-reuse-all-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_typed_reuse-all.txt
-external-cli-reuse-all-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_typed_reuse-all.py
+external-cli-reuse-all-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_typed_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_typed_reuse-all.py
 external-cli-reuse-all-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_wrapper_reuse-all.txt
 external-cli-reuse-all-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_wrapper_reuse-all.py
 external-cli-reuse-all-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/arguments_reuse-all.py	?
@@ -3129,7 +3145,7 @@ external-cli-reuse-foreign-annotated_repeated-pydantic_v2.BaseModel	main/input_m
 external-cli-reuse-foreign-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all.py	?
 external-cli-reuse-foreign-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all_black23.py	?
 external-cli-reuse-foreign-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_typed_reuse-all.txt
-external-cli-reuse-foreign-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_typed_reuse-all.py
+external-cli-reuse-foreign-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_typed_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_typed_reuse-all.py
 external-cli-reuse-foreign-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_wrapper_reuse-all.txt
 external-cli-reuse-foreign-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_wrapper_reuse-all.py
 external-cli-reuse-foreign-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/arguments_reuse-all.py	?

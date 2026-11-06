@@ -1,0 +1,5 @@
+combined_branch_keywords.json#/properties/dead/anyOf/0: no value satisfies every part of this schema (the keywords beside its anyOf and its own keywords), since no value meets all of their `type`; the generated code keeps its earlier `type`.
+combined_branch_keywords.json#/$defs/NoneLeft: no value satisfies every part of this schema (the referenced or inherited schema and its own keywords), since no value meets all of their `enum`; the generated code keeps its earlier `enum`.
+msgspec checks all str members of a union against the constraints of each of them, so max_length, min_length of one member would reject values another member accepts; Model.typed is generated without these constraints.
+msgspec cannot decode the enum NullLeft: its member NoneType_None = None makes its values neither all str nor all int. Pass --use-msgspec-nullable-enum-alias to write it without the null member and with a nullable alias that msgspec decodes.
+msgspec cannot decode the union Nested: its Struct types Nested1, Nested2 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.

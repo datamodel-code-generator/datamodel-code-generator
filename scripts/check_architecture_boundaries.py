@@ -25,6 +25,7 @@ Layer: TypeAlias = Literal[
     "python-syntax",
     "free-names",
     "name-words",
+    "naming",
     "graph-links",
     "container-kinds",
     "warning-control",
@@ -132,6 +133,18 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
         (
             "the class name made from the words of a text is a leaf that every layer reads: import only the standard "
             "library and typing_extensions"
+        ),
+    ),
+    "naming": (
+        frozenset({
+            *sys.stdlib_module_names,
+            "typing_extensions",
+            "datamodel_code_generator._free_names",
+            "datamodel_code_generator._model_keys",
+        }),
+        (
+            "the names of the models are a leaf that the parsers and their passes read: import only the standard "
+            "library, typing_extensions, datamodel_code_generator._free_names and datamodel_code_generator._model_keys"
         ),
     ),
     "graph-links": (
@@ -258,8 +271,10 @@ _PARSER_PASS_IMPORTS: Final = frozenset({
     "datamodel_code_generator.parser._field_rows",
     "datamodel_code_generator.parser._graph_ids",
     "datamodel_code_generator.parser._imports_plan",
+    "datamodel_code_generator.parser._init_exports",
     "datamodel_code_generator.parser._intersection",
     "datamodel_code_generator.parser._model_shapes",
+    "datamodel_code_generator.parser._naming",
     "datamodel_code_generator.parser._null_facts",
     "datamodel_code_generator.parser._origins",
     "datamodel_code_generator.parser._passes",
@@ -1319,6 +1334,8 @@ def _classify_source_path(path: Path) -> Layer:
             layer = "facts"
         case ("parser", "_schema_graph.py"):
             layer = "schema-graph"
+        case ("parser", "_naming.py"):
+            layer = "naming"
         case ("parser", "_passes", *_):
             layer = "parser-passes"
         case ("parser", filename) if filename in _PARSER_CORE_FILENAMES:

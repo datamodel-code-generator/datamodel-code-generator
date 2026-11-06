@@ -6,16 +6,18 @@ rows need, in their order, as an Enum lookup or a variant's mapped tags cost mor
 that read the facts from the live objects are listed in ``docs/architecture.md``.
 
 The rows named ``legacy-*`` keep today's output where passes or backends disagree on a tag; the fix of each deletes
-its row (G05): ``legacy-literal-only`` (``FieldTagSite``),
+its row (G05): ``legacy-literal-only`` and ``legacy-nested-root-model-tag`` (``FieldTagSite``),
 ``legacy-python-equality`` (``TagIdentity``), ``legacy-any-key`` (``MappingPathRule``) and the rows in the docstrings
 of ``redeclared_tag_field``, ``tagged_union_discriminator`` and ``struct_tag_field``.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias, final
+import re
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, final
 
-from typing_extensions import assert_never
+from typing_extensions import Self, assert_never
 
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._records import record
@@ -47,6 +49,9 @@ if TYPE_CHECKING:
     class VariantTagFacts(Protocol):
         """The facts of a variant that ``variant_tags`` reads, each computed when it is asked for."""
 
+        def merged_tags(self) -> Sequence[Any] | None:
+            """Return every tag the unions listing the variant give it, where it is read with them, or None."""
+
         def own_tag(self) -> Any:
             """Return the tag of the variant's own tag field (``field_tag``), or None."""
 
@@ -56,24 +61,30 @@ if TYPE_CHECKING:
         def inherited_tag(self) -> Any:
             """Return the tag of a tag field the variant inherits, or None."""
 
+        def inherited_schema_tag(self) -> Any:
+            """Return the tag an ancestor's schema fixes for the tag property, or None (``inherited-schema-field``)."""
+
         def inline_tag(self) -> Any:
             """Return the tag an inline variant inherits, or None where it is no inline variant or may not take it."""
 
-        def mapped_tags(self) -> Sequence[str]:
-            """Return the mapping keys naming the variant or its bases (``mapped_tags``)."""
+        def mapped_tags(self) -> Sequence[Any]:
+            """Return the tags of the mapping keys naming the variant or its bases (``mapping_key_tag``)."""
 
         def path_segment(self) -> str:
             """Return the last segment of the variant's schema path."""
 
 
 __all__ = [
+    "SCALAR_TAG_TYPES",
     "EnumTagMembers",
     "EnumTagRule",
     "FieldTag",
     "FieldTagRule",
     "FieldTagSite",
+    "MappingPath",
     "MappingPathKey",
     "MappingPathRule",
+    "ScalarTagKind",
     "StructTagClash",
     "TagFieldMatch",
     "TagIdentity",
@@ -89,6 +100,7 @@ __all__ = [
     "field_tag",
     "is_tag_value",
     "mapped_tags",
+    "mapping_key_tag",
     "mapping_path_keys",
     "redeclared_tag_field",
     "same_tag",
@@ -128,14 +140,18 @@ TagFieldMatch: TypeAlias = Literal[
   the Python name the property resolves to by default; it finds the Python name the variants of a union share.
 """
 
-FieldTagSite: TypeAlias = Literal["schema", "variant-field", "legacy-literal-only"]
+FieldTagSite: TypeAlias = Literal["schema", "variant-field", "legacy-nested-root-model-tag", "legacy-literal-only"]
 """Where ``field_tag`` asks for the tag of a field.
 
 * ``schema``: L1, the property schema of a union branch (``JsonSchemaParser._get_single_literal_value``): its
   ``const``, else the one value of its ``enum``, else the schema its ``$ref`` names; a value no ``Literal`` holds is no
   tag, and such a ``const`` ends the search.
-* ``variant-field``: L5, the tag field of a variant (``_get_discriminator_field_value``): its ``const``, its one
-  ``Literal`` or the one member of its Enum, of any kind (``value-of-another-kind``).
+* ``variant-field``: L5, the tag field of a variant a union lists (``_get_discriminator_field_value``): its ``const``,
+  its one ``Literal`` or the one member of its Enum, of any kind (``value-of-another-kind``), else the tag of the root
+  model or type alias its type names, as ``--enum-field-as-literal`` writes a one-value enum the field references.
+* ``legacy-nested-root-model-tag``: L5, the tag field of a variant a nested choice gives a union, and of an inline
+  variant, read as ``variant-field`` but without the root model its type names: such a variant gives no tag there,
+  so its union stays a plain union, which accepts a payload of a variant whose tag is optional (#6044).
 * ``legacy-literal-only``: L6, a field of a msgspec Struct that redeclares the tag field of a tagged base
   (``iter_struct_tag_decisions``): only its one ``Literal``, so a ``const``, a one-member Enum or a ``Literal``
   msgspec refuses as a tag (``struct_tag_refused``) there opts the Struct out of the inherited tag instead of
@@ -150,9 +166,10 @@ FieldTagRule: TypeAlias = Literal[
 * ``const``: the ``const``, a value a ``Literal`` holds (str, int or bool).
 * ``one-literal``: the type is a ``Literal`` of one value.
 * ``one-member-enum``: the type is an Enum of one member, or the ``enum`` holds one value, a value a ``Literal`` holds.
-* ``referenced-schema``: the tag of the schema the ``$ref`` names (``schema`` only).
+* ``referenced-schema``: the tag of the schema the ``$ref`` names (``schema``), or of the root model or type alias the
+  type names (``variant-field``).
 * ``value-of-another-kind``: a ``const`` or one-member Enum value of another kind (a float, an array or an object)
-  is the variant's tag too (``variant-field`` only), so no other row tags it; no ``Literal`` holds it
+  is the variant's tag too (not at ``schema``), so no other row tags it; no ``Literal`` holds it
   (``is_tag_value``), so its union is not discriminated.
 """
 
@@ -166,14 +183,31 @@ VariantTagSource: TypeAlias = Literal["variant", "union", "nested"]
 """
 
 VariantTagRule: TypeAlias = Literal[
-    "own-field", "reused-schema-field", "inherited-field", "mapping", "inline-inherited-field", "path-segment", "none"
+    "merged-shared-tags",
+    "own-field",
+    "reused-schema-field",
+    "inherited-field",
+    "inherited-schema-field",
+    "mapping",
+    "inline-inherited-field",
+    "path-segment",
+    "none",
 ]
 """The rows of ``variant_tags``.
 
+* ``merged-shared-tags``: under ``--merge-shared-variant-tags``, every tag the discriminated unions listing the
+  variant give it, where they give it different tags and no union listing it, or nesting a union that lists it, would
+  read one of them on another of its variants (``parser/_tag_plan.py:TagPlan.merged_variant_tags``), also for a nested
+  variant, whose tag field a union listing it writes as a ``Literal`` of them all, so a union nesting that union reads
+  every one of them as its tags.
 * ``own-field``: the variant's own tag field (``field_tag``).
 * ``reused-schema-field``: the tag field of the model that reuse replaced with the variant, an empty subclass whose
   base can carry the tag another union wrote.
-* ``inherited-field``: a tag field the variant inherits (``nested`` only).
+* ``inherited-field``: a tag field the variant inherits (``nested`` only), which may hold a tag an earlier union wrote
+  (row ``legacy-tag-from-earlier-union`` of ``parser/_tag_plan.py``).
+* ``inherited-schema-field``: the one value the schema of an ancestor fixes for the tag property (``field_tag``), the
+  nearest first, as an allOf parent fixes it for every payload of the variant; never a tag a union wrote into an
+  ancestor. Not for an inline variant, which takes ``inline-inherited-field`` with its clash rule (#4829).
 * ``mapping``: the mapping keys that name the variant or, failing that, its bases (``mapped_tags``).
 * ``inline-inherited-field``: the tag field an inline variant inherits, for a variant that has no name to be tagged by
   (#4829): the last segment of its schema path is an internal marker, and no union it belongs to lists another variant
@@ -202,14 +236,46 @@ TagIdentity: TypeAlias = Literal["type-and-value", "legacy-python-equality"]
 MappingPathRule: TypeAlias = Literal["selects", "legacy-any-key"]
 """Which keys a discriminator mapping path is matched by (``mapping_path_keys``).
 
-* ``selects``: a bare name only by the schema name; any other path by the part after ``#/``, by a file name unless the
-  path starts with ``#/``, or by a path relative to the document.
-* ``legacy-any-key``: by all four, which can name more schemas; the layout prediction of msgspec base flattening
-  (``parser/_passes/plans.py:find_possible_tag_names``) reads it until a tag plan replaces the prediction.
+* ``selects``: a path that knows the location it names (``MappingPath.located``) only by that location, so an entry
+  names the file it resolves to and no other; a bare name only by the schema name; any other path by the part after
+  ``#/``, by a file name unless the path starts with ``#/``, or by a path relative to the document, as written without
+  its first segment and, unless it starts with ``#``, with its dot segments removed (``_without_dot_segments``).
+* ``legacy-any-key``: by all of them, the bare name included, which can name more schemas; the layout prediction of
+  msgspec base flattening (``parser/_passes/plans.py:find_possible_tag_names``) reads it until a tag plan replaces the
+  prediction.
 """
 
-MappingPathKey: TypeAlias = tuple[Literal["name", "schema", "file", "relative"], str]
+MappingPathKey: TypeAlias = tuple[Literal["name", "schema", "file", "relative", "located"], str]
 """A key a mapping path and a schema path are matched by."""
+
+ScalarTagKind: TypeAlias = Literal["integer", "number", "boolean"]
+"""The JSON type of a tag property's scalar type, which a mapping key is read as (``mapping_key_tag``)."""
+
+SCALAR_TAG_TYPES: Final[Mapping[str, ScalarTagKind]] = MappingProxyType({
+    **dict.fromkeys(
+        ("int", "conint", "StrictInt", "PositiveInt", "NegativeInt", "NonNegativeInt", "NonPositiveInt"), "integer"
+    ),
+    **dict.fromkeys(
+        (
+            "float",
+            "confloat",
+            "StrictFloat",
+            "PositiveFloat",
+            "NegativeFloat",
+            "NonNegativeFloat",
+            "NonPositiveFloat",
+            "Decimal",
+            "condecimal",
+        ),
+        "number",
+    ),
+    **dict.fromkeys(("bool", "StrictBool"), "boolean"),
+})
+"""The kind of each type the builtin type managers write for an integer, a number and a boolean schema."""
+
+_INTEGER_TEXT: Final = re.compile(r"-?(?:0|[1-9][0-9]*)")
+_NUMBER_TEXT: Final = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?")
+_BOOLEAN_TEXT: Final[Mapping[str, bool]] = MappingProxyType({"true": True, "false": False})
 
 StructTagClash: TypeAlias = Literal["tag-fields", "tag-types", "shared-tags"]
 """How the tags of a union's tagged msgspec Structs clash (``struct_tag_clash``): by different tag fields, by tags
@@ -304,7 +370,7 @@ def field_tag(site: FieldTagSite, facts: FieldTagFacts, /) -> FieldTag | None:
     """Return the one tag a field or a schema holds, or None (``FieldTagSite``, ``FieldTagRule``).
 
     It holds its ``const``, else the value of its one ``Literal``, else that of its one Enum member, else the tag of
-    the schema its ``$ref`` names.
+    the schema its ``$ref`` names (not at ``legacy-nested-root-model-tag``).
     """
     if site != "legacy-literal-only" and facts.has_const():
         return _value_tag(site, facts.const(), "const")
@@ -317,7 +383,7 @@ def field_tag(site: FieldTagSite, facts: FieldTagFacts, /) -> FieldTag | None:
     members, value = facts.enum_member()
     if members == 1 and (tag := _value_tag(site, value, "one-member-enum")) is not None:
         return tag
-    return facts.referenced_tag()
+    return None if site == "legacy-nested-root-model-tag" else facts.referenced_tag()
 
 
 def _value_tag(site: FieldTagSite, value: Any, rule: Literal["const", "one-member-enum"]) -> FieldTag | None:
@@ -327,16 +393,19 @@ def _value_tag(site: FieldTagSite, value: Any, rule: Literal["const", "one-membe
     """
     if is_literal_kind(literal_value_kind(value)):
         return FieldTag(value, rule)
-    return FieldTag(value, "value-of-another-kind") if site == "variant-field" else None
+    return None if site == "schema" else FieldTag(value, "value-of-another-kind")
 
 
 def variant_tags(source: VariantTagSource, facts: VariantTagFacts, /) -> VariantTags:  # noqa: PLR0911
     """Return the tags of a variant (``VariantTagSource``, ``VariantTagRule``).
 
-    A variant takes its own tag, else that of the model it replaces; a nested one then the tag it inherits, if any.
-    Otherwise, and for ``union``, the mapping keys decide, else the replaced model's tag, else the tag an inline
-    variant inherits, else the path segment.
+    A variant whose tags are merged takes them all. A variant takes its own tag, else that of the model it replaces;
+    a nested one then the tag it inherits, if any.
+    Otherwise, and for ``union``, the tag the schema of an ancestor fixes decides, else the mapping keys, else the
+    replaced model's tag, else the tag an inline variant inherits, else the path segment.
     """
+    if (merged := facts.merged_tags()) is not None:
+        return VariantTags(tuple(merged), "merged-shared-tags")
     if source != "union":
         if (own := facts.own_tag()) is not None:
             return VariantTags((own,), "own-field")
@@ -345,6 +414,8 @@ def variant_tags(source: VariantTagSource, facts: VariantTagFacts, /) -> Variant
         if source == "nested":
             inherited = facts.inherited_tag()
             return VariantTags((), "none") if inherited is None else VariantTags((inherited,), "inherited-field")
+    if (inherited := facts.inherited_schema_tag()) is not None:
+        return VariantTags((inherited,), "inherited-schema-field")
     if mapped := facts.mapped_tags():
         return VariantTags(tuple(mapped), "mapping")
     if (reused := facts.reused_tag()) is not None:
@@ -357,27 +428,82 @@ def variant_tags(source: VariantTagSource, facts: VariantTagFacts, /) -> Variant
 def mapping_path_keys(path: str, /, *, rule: MappingPathRule = "selects") -> tuple[MappingPathKey, ...]:
     """Return the keys a discriminator mapping path names a schema by (``MappingPathRule`` names the rules).
 
-    The keys are its name, the part after ``#/``, its file name and its path relative to the document.
+    The keys are its name, the part after ``#/``, its file name and its path relative to the document, or, where it
+    knows the location it names (``MappingPath``), that location alone; ``legacy-any-key`` adds it to the others.
     """
+    location: tuple[MappingPathKey, ...] = (
+        (("located", path.located.removesuffix("#")),)
+        if isinstance(path, MappingPath) and path.located is not None
+        else ()
+    )
+    if rule == "selects" and location:
+        return location
     if rule == "selects" and "/" not in path and "#" not in path:
         return (("name", path),)
     relative: MappingPathKey = ("relative", path[path.find("/") + 1 :])
     schema: MappingPathKey = ("schema", path.rsplit("#/", maxsplit=1)[-1])
     file: MappingPathKey = ("file", path.rsplit("/", maxsplit=1)[-1])
     if rule == "legacy-any-key":
-        return ("name", path), schema, file, relative
-    return (schema, relative) if path.startswith("#/") else (schema, file, relative)
+        keys: tuple[MappingPathKey, ...] = (("name", path), schema, file, relative)
+    else:
+        keys = (schema, relative) if path.startswith("#/") else (schema, file, relative)
+    if path.startswith("#"):
+        return keys
+    resolved: MappingPathKey = ("relative", _without_dot_segments(path))
+    return (*keys, *(() if resolved == relative else (resolved,)), *location)
+
+
+@final
+class MappingPath(str):  # noqa: FURB189 - it must be a str wherever a mapping path is read
+    """A discriminator mapping path with the location it names, relative to the base of the parse (``located``).
+
+    The parser sets it where it reads the mapping, to the key of the reference the path names from the document that
+    declares the mapping (``parser/_union_tags.py:located_mapping_paths``), as it resolves every reference: a path
+    through a symlinked directory names the file the link leads to, and a mapping another document declares is read
+    against that document's directory wherever the union is held. It is None for a path that names no local file.
+    """
+
+    __slots__ = ("located",)
+
+    located: str | None
+
+    def __new__(cls, path: str, located: str | None = None) -> Self:
+        """Return the path, text as written, with the location it names."""
+        self = super().__new__(cls, path)
+        self.located = located
+        return self
+
+
+def _without_dot_segments(path: str) -> str:
+    """Return a path with its dot segments removed (RFC 3986, section 5.2.4) and without a leading ``/``.
+
+    The path is read segment by segment: ``.`` goes, ``..`` takes the segment before it, or nothing at the start, so
+    ``../x``, ``./x`` and ``x`` read alike, while a name starting with a dot, ``.defs``, is a segment like any other.
+    """
+    segments: list[str] = []
+    for segment in path.split("/"):
+        if segment == "..":
+            if segments:
+                segments.pop()
+        elif segment != "." and (segment or segments):
+            segments.append(segment)
+    return "/".join(segments)
 
 
 def schema_path_keys(schema_path: str, /) -> tuple[MappingPathKey, ...]:
-    """Return the keys the schema path of a model is named by in a discriminator mapping (``mapping_path_keys``)."""
-    relative = schema_path[: schema_path.find("#")].lstrip("../")  # noqa: B005
+    """Return the keys the schema path of a model is named by in a discriminator mapping (``mapping_path_keys``).
+
+    Its path relative to the document is that of its file with the dot segments removed (``_without_dot_segments``),
+    also without its first segment; its location is the schema path itself, which is relative to the base of the parse.
+    """
+    relative = _without_dot_segments(schema_path[: schema_path.find("#")])
     return (
         ("name", schema_path.rsplit("/", 1)[-1]),
         ("schema", schema_path.rsplit("#/", maxsplit=1)[-1]),
         ("file", schema_path[:-1]),
         ("relative", relative),
         ("relative", "/".join(relative.split("/")[1:])),
+        ("located", schema_path.removesuffix("#")),
     )
 
 
@@ -395,6 +521,37 @@ def mapped_tags(mapping: Mapping[str, str], /, *, schema_path: str, base_schema_
     return selected(schema_path) or [
         tag for base_schema_path in base_schema_paths for tag in selected(base_schema_path)
     ]
+
+
+def mapping_key_tag(
+    key: str, /, *, member_value: Any = None, literals: Sequence[TagValue] = (), scalar: ScalarTagKind | None = None
+) -> Any:
+    """Return the tag a discriminator mapping key names: the value of the tag property's type whose JSON text it is.
+
+    A mapping key is text, so it names the value of the Enum member it names (``member_value``, of any kind, None
+    where there is none), else the ``Literal`` value of the tag field's type whose JSON text it is, else the value of
+    its scalar kind: ``'1'`` of an integer is ``1``, ``'1.5'`` of a number ``1.5`` and ``'true'`` of a boolean
+    ``True``. A key that is no such value, and any key of another type, stays the text it is.
+    """
+    if member_value is not None:
+        return member_value
+    if literals:
+        return next((value for value in literals if _json_text(value) == key), key)
+    match scalar:
+        case "integer" | "number" if _INTEGER_TEXT.fullmatch(key):
+            return int(key)
+        case "number":
+            return float(key) if _NUMBER_TEXT.fullmatch(key) else key
+        case "boolean":
+            return _BOOLEAN_TEXT.get(key, key)
+    return key
+
+
+def _json_text(value: TagValue) -> str:
+    """Return the JSON text of a ``Literal`` value: a string itself, ``true`` or ``false``, or the digits of an int."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return value if isinstance(value, str) else str(value)
 
 
 def is_tag_value(value: Any, /, *, bool_literals: bool) -> bool:

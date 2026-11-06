@@ -8,20 +8,23 @@ This improves mypy type inference for RootModel constructors.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
+
+from typing_extensions import override
 
 from datamodel_code_generator import cached_path_exists
-from datamodel_code_generator.model.base import TEMPLATE_DIR
+from datamodel_code_generator.model.base import overrides_builtin_templates
 from datamodel_code_generator.model.pydantic_v2.base_model import has_lookaround_pattern
 from datamodel_code_generator.model.pydantic_v2.imports import IMPORT_ROOT_MODEL
 from datamodel_code_generator.model.pydantic_v2.root_model import RootModel
 from datamodel_code_generator.types import NONE
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
     from pathlib import Path
 
     from datamodel_code_generator.imports import Import
+    from datamodel_code_generator.model._decisions.hashability import SetItemHash
     from datamodel_code_generator.model.base import DataModelFieldBase
 
 
@@ -47,7 +50,7 @@ def _root_model_constraints_fallback(
             cached_path_exists(custom_template_dir / RootModelTypeAlias.TEMPLATE_FILE_PATH)
             or cached_path_exists(custom_template_dir / RootModelTypeAlias.TEMPLATE_FILE_PATH.rsplit("/", 1)[-1])
         )
-        and custom_template_dir.resolve() != TEMPLATE_DIR.resolve()
+        and overrides_builtin_templates(custom_template_dir)
     ):
         return None
     return _constrained_root_model
@@ -68,3 +71,8 @@ class RootModelTypeAlias(RootModel):
     DOCSTRING_INDENT: ClassVar[int] = 0
     FIELD_DOCSTRING_INDENT: ClassVar[int] = 0
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_ROOT_MODEL,)
+
+    @override
+    def _class_hash(self, generic_base_config: Mapping[str, Any] | None) -> SetItemHash:
+        """Return ``never``: the alias ``Foo = RootModel[type]`` has no class body for the hash of a set item."""
+        return self._compared_class_hash()

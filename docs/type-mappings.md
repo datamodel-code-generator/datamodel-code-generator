@@ -89,6 +89,9 @@ type-mappings = [
 ]
 ```
 
+The `minLength` and `maxLength` of a `format: binary` string, written as `bytes`, count octets, as OpenAPI 3.1.1
+specifies for unencoded binary data, so `maxLength: 3` rejects `"ééé"`, three characters in six octets.
+
 ---
 
 ## `--strict-types`
@@ -109,7 +112,8 @@ A `format: byte` string stays `Base64Str`, or `Base64Bytes` with `--type-mapping
 base64 text, also with `--strict-types str` or `bytes`. With `minLength` or `maxLength`, such bytes are written as
 `Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)]`, which checks the lengths on the base64
 text, as JSON Schema counts them, before decoding it. Pydantic checks them so from 2.10 on, and an explicit
-`--target-pydantic-version 2` warns about each such field.
+`--target-pydantic-version 2` warns about each such field. Pydantic cannot check a `pattern` on the text of such bytes,
+so `--field-constraints` and `--use-annotated` leave it out with a warning.
 
 ### Without `--strict-types`
 

@@ -1,0 +1,4 @@
+{"pet": {"pet_type": "c", "naps": 1}}: model accepts
+{"pet": {"pet_type": "d", "walks": 1}}: model accepts
+{"pet": {"pet_type": "b", "sings": true}}: model rejects
+{"pet": {"pet_type": "bird.json#"}}: model rejects

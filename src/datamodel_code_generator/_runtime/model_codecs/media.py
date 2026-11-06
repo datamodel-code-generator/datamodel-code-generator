@@ -86,8 +86,7 @@ JSON_MEDIA_TYPE: Final = "application/json"
 QUOTED: Final = r'"(?:[\t !#-\[\]-~\x80-\xff]|\\[\t -~\x80-\xff])*"'
 LENIENT_QUOTED: Final = r'"(?:[^"\\]|\\.)*"'
 """A quoted string of a MIME header field as a multipart part's Content-Disposition is read: any character but a double
-quote or a backslash, and any escaped one but a line feed, between double quotes. Row `legacy-lenient-quoted-string`: a
-cache helper reads Cache-Control with it too."""
+quote or a backslash, and any escaped one but a line feed, between double quotes."""
 STATUSES: Final = range(100, 600)
 SUCCESS_STATUSES: Final = range(200, 300)
 REDIRECT_STATUSES: Final = range(300, 400)
@@ -134,19 +133,16 @@ def json_text(
     *,
     ascii_only: bool = False,
     sort_keys: bool = False,
-    errors: Literal["runtime", "legacy-python-json-errors"] = "runtime",
 ) -> str:
     """Serialize ordinary JSON builtins as compact JSON text, escaping non-ASCII text when asked.
 
     The errors are the runtime's own, with the same messages on every Python version: ValueError for a circular
     reference, a non-finite number, an integer over the interpreter's decimal conversion limit, or a value nested
-    beyond the recursion limit, and TypeError for a value or key that is not JSON. `errors="legacy-python-json-errors"`
-    lets the standard library's errors through with its messages, as a server writes a body without a model.
+    beyond the recursion limit, and TypeError for a value or key that is not JSON.
     """
-    caught = _JSON_ERRORS if errors == "runtime" else ()
     try:
         return json.dumps(value, sort_keys=sort_keys, separators=(",", ":"), ensure_ascii=ascii_only, allow_nan=False)
-    except caught as error:
+    except _JSON_ERRORS as error:
         if isinstance(error, TypeError):
             raise TypeError(_NOT_JSON) from None
         message = (

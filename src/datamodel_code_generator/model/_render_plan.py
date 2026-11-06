@@ -62,6 +62,7 @@ __all__ = [
     "PLAIN_ANNOTATION",
     "RENDER_READY",
     "REQUIRED_FIELD",
+    "TYPE_OVERRIDE",
     "UNTAKEN_BY_TYPE",
     "AnnotationForm",
     "AssignmentFacts",
@@ -168,7 +169,7 @@ class Why(NamedTuple):
     ``keyword`` is the schema keyword or field attribute the item comes from, ``option`` the option that selected
     the rule, ``via`` the earlier decisions it went through. The schema location is not stored: it is the location of
     the field's model and property. The rows that more than one backend writes are defined once below
-    (``PLAIN_ANNOTATION`` to ``UNTAKEN_BY_TYPE``); the rows of one backend stay in its module.
+    (``PLAIN_ANNOTATION`` to ``TYPE_OVERRIDE``); the rows of one backend stay in its module.
     """
 
     rule: RuleId
@@ -201,6 +202,8 @@ EXPLICIT_ALIAS = Why(RuleId("D9.alias.explicit"), keyword="alias")
 """The field's alias, written as the call's argument."""
 UNTAKEN_BY_TYPE = RuleId("D2.untaken-by-type")
 """A constraint the field's type does not take is not written."""
+TYPE_OVERRIDE = Why(RuleId("D2.type-override"), option="--type-overrides")
+"""The constraints that leave with the type ``--type-overrides`` replaces are not written."""
 
 
 class Kwarg(NamedTuple):
@@ -247,7 +250,7 @@ OmitReason: TypeAlias = Literal[
 * ``self-reference-container``: the field names its own model outside a container, which takes no constraints.
 * ``strict-kwargs``: a strict type that carries its arguments writes the constraints itself.
 * ``untaken-by-type``: the type of the field, or of a part collapsing inlined into it, does not take the keyword
-  (recorded at L5); it warns.
+  (recorded at L5, or decided as the field is written: msgspec ``Meta``, and Pydantic beside a model); it warns.
 * ``override-type-does-not-take``: ``--type-overrides`` replaced the type and its arguments; it warns.
 * ``none-type``: a number constraint on a ``None`` type.
 * ``consumed-by-type``: the type expresses the keyword (``const`` as a ``Literal``, an integer ``multipleOf`` of 1).

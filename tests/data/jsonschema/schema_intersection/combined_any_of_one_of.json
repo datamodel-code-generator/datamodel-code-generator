@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "$defs": {
+    "Str": {"type": "string"}
+  },
+  "properties": {
+    "common": {"anyOf": [{"type": "string"}, {"type": "integer"}], "oneOf": [{"type": "string"}, {"type": "boolean"}]},
+    "every": {"anyOf": [{"type": ["integer", "string"]}, {"type": "boolean"}], "oneOf": [{"type": "integer"}, {"type": "string"}]},
+    "untyped": {"anyOf": [{"minLength": 2}, {"type": "integer"}], "oneOf": [{"type": "string"}, {"type": "boolean"}]},
+    "nulls": {"anyOf": [{"type": ["string", "null"]}, {"type": "integer"}], "oneOf": [{"type": "null"}, {"type": "boolean"}]},
+    "objects": {
+      "anyOf": [{"type": "object", "properties": {"a": {"type": "string"}}, "required": ["a"]}, {"type": "string"}],
+      "oneOf": [{"type": "object", "properties": {"b": {"type": "integer"}}, "required": ["b"]}, {"type": "array"}]
+    },
+    "false_branch": {"anyOf": [{"type": "integer"}, {"type": "string"}], "oneOf": [false, {"type": "string"}]},
+    "ref_branch": {"anyOf": [{"type": "integer"}, {"type": "string"}], "oneOf": [{"$ref": "#/$defs/Str"}, {"type": "boolean"}]},
+    "disjoint": {"anyOf": [{"type": "integer"}], "oneOf": [{"type": "string"}, {"type": "boolean"}]}
+  }
+}

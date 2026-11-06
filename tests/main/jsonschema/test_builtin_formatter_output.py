@@ -177,3 +177,56 @@ def test_dataclass_field_call_moves_to_parentheses_when_its_head_overflows(outpu
         expected_attribute_path=("aCollectionFieldNameThatKeepsGoingAndGoingxxxxxxxxxxxxxxxxxx",),
         expected_attribute_value=["a"],
     )
+
+
+def test_union_annotation_over_the_line_length_is_split_at_its_brackets(output_file: Path) -> None:
+    """Split a ``Union`` or ``Optional[Union]`` annotation of 92 columns at its brackets, as black does.
+
+    A field without a default, and a ``Union`` inside ``Optional`` with a default, used to stay on one line.
+    """
+    run_generate_file_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "builtin_union_annotation_split.json",
+        output_path=output_file,
+        input_file_type=InputFileType.JsonSchema,
+        output_model_type=DataModelType.PydanticV2BaseModel,
+        formatters=[Formatter.BUILTIN],
+        builtin_format_line_length=88,
+        use_union_operator=False,
+        disable_timestamp=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="builtin_union_annotation_split",
+        model_name="UnionSplit",
+        valid_json='{"values":{"a1":"x"}}',
+        invalid_json='{"values":{"c":1}}',
+        expected_error_type="string_pattern_mismatch",
+        expected_attribute_path=("values",),
+        expected_attribute_value={"a1": "x"},
+    )
+
+
+def test_empty_tuple_annotation_over_the_line_length_is_split_at_its_brackets(output_file: Path) -> None:
+    """Split a ``tuple[()]`` annotation of 90 columns at its brackets with ``()`` as its element, as black does.
+
+    The split wrote no element, ``tuple[`` and ``]`` around a blank line, which Python cannot parse.
+    """
+    run_generate_file_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "builtin_empty_tuple_annotation_split.json",
+        output_path=output_file,
+        input_file_type=InputFileType.JsonSchema,
+        output_model_type=DataModelType.PydanticV2BaseModel,
+        formatters=[Formatter.BUILTIN],
+        builtin_format_line_length=88,
+        disable_timestamp=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="builtin_empty_tuple_annotation_split",
+        model_name="EmptyTupleSplit",
+        valid_json='{"anEmptyTupleFieldWhoseAnnotationRunsOverTheLineLengthxxxxxxxxxxxxxxxxxxxxxx":[]}',
+        invalid_json='{"anEmptyTupleFieldWhoseAnnotationRunsOverTheLineLengthxxxxxxxxxxxxxxxxxxxxxx":[1]}',
+        expected_error_type="too_long",
+        expected_attribute_path=("anEmptyTupleFieldWhoseAnnotationRunsOverTheLineLengthxxxxxxxxxxxxxxxxxxxxxx",),
+        expected_attribute_value=(),
+    )

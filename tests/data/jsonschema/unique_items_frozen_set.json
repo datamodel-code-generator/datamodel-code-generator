@@ -1,0 +1,13 @@
+{
+  "title": "Holder",
+  "type": "object",
+  "properties": {
+    "groups": {
+      "type": "array",
+      "items": {"type": "array", "items": {"type": "integer"}, "uniqueItems": true},
+      "uniqueItems": true,
+      "x-python-type": "frozenset[tuple[int, ...]]"
+    },
+    "ids": {"type": "array", "items": {"type": "integer"}, "uniqueItems": true, "x-python-type": "frozenset[int]"}
+  }
+}

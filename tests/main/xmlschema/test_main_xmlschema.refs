@@ -24,6 +24,9 @@
 	main/xmlschema/datetime_classes_naive.py
 [test_main_xmlschema_default_open_content_applies_to_empty]
 	main/xmlschema/default_open_content_applies_to_empty.py
+[test_main_xmlschema_directory_input_ignores_its_own_output]
+	main/xmlschema/main_xmlschema/directory_input_ignores_its_own_output.2/	= main/xmlschema/main_xmlschema/directory_input_ignores_its_own_output/
+	main/xmlschema/main_xmlschema/directory_input_ignores_its_own_output/
 [test_main_xmlschema_edge_cases]
 	main/xmlschema/edge_cases.py
 [test_main_xmlschema_fixed_decimal]
@@ -114,6 +117,9 @@ without-option	main/xmlschema/main_xmlschema/single_value_enum_as_const_keeps_co
 	main/xmlschema/versioning_include_xsd10.py
 [test_main_xmlschema_versioning_xsd10]
 	main/xmlschema/versioning_xsd10.py
+[test_main_xmlschema_warn_invalid_duration_defaults]
+	main/xmlschema/main_xmlschema/warn_invalid_duration_defaults.py
+	main/xmlschema/main_xmlschema/warn_invalid_duration_defaults.warnings.txt
 [test_main_xmlschema_with_parsed_source_cache]
 	main/xmlschema/purchase_order.py
 [test_main_xmlschema_xsd11_constructs]

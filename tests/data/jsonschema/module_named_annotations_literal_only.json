@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Catalog",
+  "type": "object",
+  "properties": {"n": {"type": "integer"}},
+  "$defs": {
+    "api.Order": {"type": "object", "properties": {"kind": {"$ref": "#/$defs/annotations.Kind"}}},
+    "annotations.Kind": {"type": "string", "enum": ["book", "disc"], "const": "book"}
+  }
+}

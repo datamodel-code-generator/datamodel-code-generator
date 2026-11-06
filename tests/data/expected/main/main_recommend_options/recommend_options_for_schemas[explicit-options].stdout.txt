@@ -15,14 +15,14 @@ Schema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)
   formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
   integer/number/boolean schemas   5
 
-Start from  --preset standard-py314-20261027
+Start from  --preset standard-py314-20261104
 
 Add (5 options)
-  --naming-strategy full-path   [naming.qualify-shared-inline-names]
+  --naming-strategy enclosing-model   [naming.qualify-shared-inline-names]
       Inline schemas under different parents share property names (names: 4, e.g. status x3, owner
       x3, state x2, total x2; inline names equal to a component name: 0). Numbered names (Status,
-      Status1) depend on parse order and shift when the schema grows; full-path names each inline
-      model after its parent.
+      Status1) depend on parse order and shift when the schema grows; enclosing-model names each
+      inline model after the model it is built for, once, and leaves definitions their own names.
       measured: GitHub REST API description: numbered names 663 -> 53; locations renamed between two
       versions 17% -> 0.0%
       measured: Petstore: Status and Status1 became OrderStatus and PetStatus
@@ -79,15 +79,15 @@ Notes
   - The rules were calibrated on the 20261017 presets.
 
 Command
-  datamodel-codegen --collapse-reuse-models --enum-field-as-literal one --input api.yaml --naming-strategy full-path --preset standard-py314-20261027 --reuse-model --target-python-version 3.14 --no-treat-dot-as-module --use-tag-as-union-variant-name --use-title-as-name
+  datamodel-codegen --collapse-reuse-models --enum-field-as-literal one --input api.yaml --naming-strategy enclosing-model --preset standard-py314-20261104 --reuse-model --target-python-version 3.14 --no-treat-dot-as-module --use-tag-as-union-variant-name --use-title-as-name
 
 pyproject.toml
   [tool.datamodel-codegen]
   collapse-reuse-models = true
   enum-field-as-literal = "one"
   input = "api.yaml"
-  naming-strategy = "full-path"
-  preset = "standard-py314-20261027"
+  naming-strategy = "enclosing-model"
+  preset = "standard-py314-20261104"
   reuse-model = true
   target-python-version = "3.14"
   treat-dot-as-module = false

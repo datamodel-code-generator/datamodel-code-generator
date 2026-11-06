@@ -1,0 +1,4 @@
+exit=0
+base-skipped: tests/data/*.json | 0.86.0 loops on the input (#5935) | 2 cells
+summary: same=0, no-behaviour=0, crash-fix=0, accepted=0, violation=0, both-fail=0, opt-in=0, base-skipped=2
+cells: 2 (tier nightly, shard 1/1), cached base outputs: 0

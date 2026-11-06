@@ -16,14 +16,14 @@ Schema  JSON Schema (https://json-schema.org/draft/2020-12/schema)
   integer/number/boolean schemas   0
   root schema                      object model 1, title words 0
 
-Start from  --preset standard-py314-20261027
+Start from  --preset standard-py314-20261104
 
 Add (7 options)
-  --naming-strategy full-path   [naming.qualify-shared-inline-names]
+  --naming-strategy enclosing-model   [naming.qualify-shared-inline-names]
       Inline schemas under different parents share property names (names: 2, e.g. status x3, owner
       x2; inline names equal to a component name: 0). Numbered names (Status, Status1) depend on
-      parse order and shift when the schema grows; full-path names each inline model after its
-      parent.
+      parse order and shift when the schema grows; enclosing-model names each inline model after the
+      model it is built for, once, and leaves definitions their own names.
       measured: GitHub REST API description: numbered names 663 -> 53; locations renamed between two
       versions 17% -> 0.0%
       measured: Petstore: Status and Status1 became OrderStatus and PetStatus
@@ -31,11 +31,11 @@ Add (7 options)
       charge component (ChargeModel)
       measured: SchemaStore workflow and tsconfig schemas: full-path doubled or lengthened names and
       lost
-      trial: recommended - naming-strategy -> recommended: classes 10 -> 10, problem names 1 -> 0; 7
+      trial: recommended - naming-strategy -> recommended: classes 10 -> 10, problem names 1 -> 0; 5
       of 10 classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added, e.g.
         Owner -> BillingInvoiceOwner   at $defs/billing.Invoice > owner
         Owner1 -> ShippingShipmentOwner   at $defs/shipping.Shipment > owner
-        Customer -> ManyOptionsCustomer   at $defs/Customer
+        BillingAddress -> BillingInvoiceBillingAddress   at $defs/billing.Invoice > billingAddress
   --enum-field-as-literal all   [enums.inline-value-sets-as-literal]
       Most enums are inline value sets of one property (inline enums: 5 of 5). As Enum classes they
       add one class name each, the longest and most numbered names; Literal types keep the values
@@ -65,11 +65,11 @@ Add (7 options)
       became TsConfig, names over 40 characters 6 -> 0
       measured: SchemaStore workflow, docker-compose and package.json schemas: Model became
       Workflow, Compose and PackageJson
-      trial: recommended - root-name -> recommended: classes 10 -> 10, problem names 1 -> 0; 5 of 10
+      trial: recommended - root-name -> recommended: classes 10 -> 10, problem names 1 -> 0; 3 of 10
       classes matched by schema location renamed (0 only renumbered), 0 removed, 0 added, e.g.
-        ModelCustomer -> ManyOptionsCustomer   at $defs/Customer
-        ModelStore -> ManyOptionsStore   at $defs/Store
         Model -> ManyOptions   at (root)
+        ModelCard -> ManyOptionsCard   at (root) > payment > oneOf 0
+        ModelBank -> ManyOptionsBank   at (root) > payment > oneOf 1
   --no-treat-dot-as-module   [dotted-keys.flat-when-namespaces-cycle]
       Dotted keys (2, in 2 namespaces) reference each other in cycles (namespace groups: 1). As
       modules, cycle members move to _internal.py, where same-named classes of different namespaces
@@ -111,20 +111,20 @@ Trial  8 candidates generated in memory without formatting; nothing written
   candidate                      classes   problems  numbered  long  doubled  displaced  median  unconstrained
   current                             25  4 (16.0%)         3     0        0          0       7              0
   preset                              25  4 (16.0%)         3     0        0          0       7              0
-  recommended                         10   0 (0.0%)         0     0        0          0      19              0   selected
+  recommended                         10   0 (0.0%)         0     0        0          0      15              0   selected
   recommended - naming-strategy       10  1 (10.0%)         1     0        0          0      11              0
-  recommended - enum-shape            15   0 (0.0%)         0     0        0          0      20              0
-  recommended - reuse                 20   0 (0.0%)         0     0        0          0      23              0
-  recommended - root-name             10  1 (10.0%)         0     0        0          0      16              0
-  recommended - dotted-keys           11   1 (9.1%)         1     0        0          0      14              0
+  recommended - enum-shape            15   0 (0.0%)         0     0        0          0      15              0
+  recommended - reuse                 20   0 (0.0%)         0     0        0          0      15              0
+  recommended - root-name             10  1 (10.0%)         0     0        0          0      14              0
+  recommended - dotted-keys           11   1 (9.1%)         1     0        0          0       8              0
   current: the configuration as set, without the preset; never selected
   unconstrained: fields that dcg warns it generates without some of their constraints
 
 Changes from the current configuration (current -> recommended)
-  9 of 9 classes matched by schema location renamed (0 only renumbered), 16 removed, 1 added, e.g.
-    Payment -> ManyOptionsPaymentCard   at (root) > payment > oneOf 0
-    Payment1 -> ManyOptionsPaymentBank   at (root) > payment > oneOf 1
-    Customer -> ManyOptionsCustomer   at $defs/Customer
+  7 of 9 classes matched by schema location renamed (0 only renumbered), 16 removed, 1 added, e.g.
+    Payment -> ManyOptionsCard   at (root) > payment > oneOf 0
+    Payment1 -> ManyOptionsBank   at (root) > payment > oneOf 1
+    Invoice -> BillingInvoice   at $defs/billing.Invoice
 
 Notes
   - The rules were calibrated on the 20261017 presets.
@@ -132,7 +132,7 @@ Notes
     no trial result.
 
 Command
-  datamodel-codegen --class-name ManyOptions --collapse-reuse-models --enum-field-as-literal all --input many_options.json --naming-strategy full-path --preset standard-py314-20261027 --reuse-model --target-python-version 3.14 --no-treat-dot-as-module --use-tag-as-union-variant-name
+  datamodel-codegen --class-name ManyOptions --collapse-reuse-models --enum-field-as-literal all --input many_options.json --naming-strategy enclosing-model --preset standard-py314-20261104 --reuse-model --target-python-version 3.14 --no-treat-dot-as-module --use-tag-as-union-variant-name
 
 pyproject.toml
   [tool.datamodel-codegen]
@@ -140,8 +140,8 @@ pyproject.toml
   collapse-reuse-models = true
   enum-field-as-literal = "all"
   input = "many_options.json"
-  naming-strategy = "full-path"
-  preset = "standard-py314-20261027"
+  naming-strategy = "enclosing-model"
+  preset = "standard-py314-20261104"
   reuse-model = true
   target-python-version = "3.14"
   treat-dot-as-module = false

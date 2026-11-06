@@ -10,7 +10,12 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, TypeAlias, Union, cast
 from urllib.parse import ParseResult, urlparse
 
 from datamodel_code_generator import Error, _validate_alias_generator, _validate_output_datetime_class
-from datamodel_code_generator._config_fields import CLI_RESOLVED_PATH_FIELDS, DEFAULT_WATCH_DELAY
+from datamodel_code_generator._config_fields import (
+    CLI_RESOLVED_PATH_FIELDS,
+    DEFAULT_WATCH_DELAY,
+    PATH_FIELD_NAMES,
+    option_path,
+)
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
 from datamodel_code_generator._option_names import field_name, split_external_ref_mapping
 from datamodel_code_generator._paths import resolved
@@ -64,6 +69,20 @@ _RawConfigValue: TypeAlias = (
 )
 
 
+def _delimited_items(value: object) -> list[str] | None:
+    """Return the items of a delimited-list option, which the command line writes as one comma-separated string.
+
+    A string is split at its commas and a list of strings, how pyproject.toml writes the option, is its items; any other
+    value has none here, and validation of the field reports it.
+    """
+    match value:
+        case str():
+            return value.split(",")
+        case [*items] if all(isinstance(item, str) for item in items):
+            return cast("list[str]", items)
+    return None
+
+
 def _extract_additional_imports(extra_template_data: defaultdict[str, dict[str, Any]]) -> list[str]:
     """Extract additional_imports from extra_template_data entries."""
     additional_imports: list[str] = []
@@ -78,9 +97,10 @@ def _extract_additional_imports(extra_template_data: defaultdict[str, dict[str, 
     if not additional_imports:
         return additional_imports
 
+    from datamodel_code_generator._format_types import NEWEST_TARGET  # noqa: PLC0415
     from datamodel_code_generator.base_config import _validate_additional_import_paths  # noqa: PLC0415
 
-    return _validate_additional_import_paths(additional_imports) or []
+    return _validate_additional_import_paths(additional_imports, NEWEST_TARGET) or []
 
 
 def _validate_http_key_value_options(
@@ -99,14 +119,18 @@ def _validate_http_key_value_options(
                 field_name, field_value = each_item.split(separator, maxsplit=1)
                 return field_name, field_value.lstrip()
             except ValueError as exc:
-                msg = f"Invalid {item_error_name}: {each_item!r}"
+                from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
+                msg = f"Invalid {item_error_name}: {stable_repr(each_item)}"
                 raise Error(msg) from exc
         return each_item  # pragma: no cover
 
     if isinstance(value, list):
         return [validate_each_item(cast("_HttpKeyValueInput", each_item)) for each_item in value]
-    msg = f"Invalid {value_error_name} value: {value!r}"  # pragma: no cover
-    raise Error(msg)  # pragma: no cover
+    from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
+    msg = f"Invalid {value_error_name} value: {stable_repr(value)}"
+    raise Error(msg)
 
 
 @lru_cache(maxsize=1)
@@ -164,13 +188,20 @@ def _get_config_class() -> type[Config]:
             except JsonConfigError as e:
                 raise Error(str(e)) from e
 
-        @field_validator(*CLI_RESOLVED_PATH_FIELDS, mode="before")
+        @field_validator(*PATH_FIELD_NAMES, mode="before")
         @classmethod
-        def validate_path(cls, value: Any) -> Path | None:
-            """Validate and resolve path."""
-            if value is None or isinstance(value, Path):
+        def validate_path(cls, value: Any, info: ValidationInfo) -> Path | str | None:
+            """Validate a path, and resolve a spelled one when the command line reads it from the working directory.
+
+            A path the parser already built only expands ``~``.
+            """
+            if value is None:
                 return value  # pragma: no cover
-            return resolved(Path(value))
+            field = cast("str", info.field_name)
+            path = option_path(field, value)
+            if field not in CLI_RESOLVED_PATH_FIELDS:
+                return value
+            return resolved(path) if isinstance(value, str) else path
 
         @field_validator("url", mode="before")
         @classmethod
@@ -225,9 +256,8 @@ def _get_config_class() -> type[Config]:
         @classmethod
         def validate_custom_formatters(cls, values: dict[str, Any]) -> dict[str, Any]:
             """Validate and split custom formatters."""
-            custom_formatters = values.get("custom_formatters")
-            if custom_formatters is not None:
-                values["custom_formatters"] = custom_formatters.split(",")
+            if (custom_formatters := _delimited_items(values.get("custom_formatters"))) is not None:
+                values["custom_formatters"] = custom_formatters
             return values
 
         @model_validator(mode="before")
@@ -252,16 +282,12 @@ def _get_config_class() -> type[Config]:
         @classmethod
         def validate_class_decorators(cls, values: dict[str, Any]) -> dict[str, Any]:
             """Validate and split class decorators, adding @ prefix if missing."""
-            class_decorators = values.get("class_decorators")
-            if class_decorators is not None:
-                decorators = []
-                for raw_decorator in class_decorators.split(","):
-                    stripped = raw_decorator.strip()
-                    if stripped:
-                        if not stripped.startswith("@"):
-                            stripped = f"@{stripped}"
-                        decorators.append(stripped)
-                values["class_decorators"] = decorators
+            if (class_decorators := _delimited_items(values.get("class_decorators"))) is not None:
+                values["class_decorators"] = [
+                    stripped if stripped.startswith("@") else f"@{stripped}"
+                    for decorator in class_decorators
+                    if (stripped := decorator.strip())
+                ]
             return values
 
         @model_validator(mode="before")
@@ -302,7 +328,7 @@ def _get_config_class() -> type[Config]:
         def validate_custom_file_header(self: Self) -> Self:
             """Validate custom file header options are mutually exclusive."""
             if self.custom_file_header is not None and self.custom_file_header_path is not None:
-                msg = "`--custom_file_header_path` can not be used with `--custom_file_header`."
+                msg = "`--custom-file-header-path` can not be used with `--custom-file-header`."
                 raise Error(msg)
             return self
 
@@ -363,9 +389,10 @@ def _get_config_class() -> type[Config]:
         @classmethod
         def validate_schema_validator_base_class_name(cls, v: str | None) -> str | None:
             """Validate schema validator base class name."""
+            from datamodel_code_generator._format_types import NEWEST_TARGET  # noqa: PLC0415
             from datamodel_code_generator.base_config import _schema_validator_base_class_name_error  # noqa: PLC0415
 
-            if (msg := _schema_validator_base_class_name_error(v)) is not None:
+            if (msg := _schema_validator_base_class_name_error(v, NEWEST_TARGET)) is not None:
                 raise Error(msg)
             return v
 

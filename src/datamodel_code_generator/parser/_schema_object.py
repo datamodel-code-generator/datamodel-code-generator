@@ -23,7 +23,6 @@ from pydantic import (
 from pydantic_core import core_schema
 from typing_extensions import override
 
-from datamodel_code_generator import Error
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, non_null_types, schema_positions
 from datamodel_code_generator.parser._null_facts import NullSources, resolve_null_facts
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH, canonical_ref_spelling, keep_resolved_ref
@@ -44,14 +43,17 @@ if TYPE_CHECKING:
 
 __all__ = [
     "DEFAULT_FIELD_KEYS",
+    "EMPTY_ENUM_CONTEXT",
     "EXCLUDE_FIELD_KEYS",
     "EXCLUDE_FIELD_KEYS_IN_JSON_SCHEMA",
+    "IGNORED_REF_SIBLINGS_CONTEXT",
     "READ_UNEVALUATED_PROPERTIES_CONTEXT",
     "Discriminator",
     "JSONReference",
     "JsonSchemaLiteral",
     "JsonSchemaObject",
     "get_ref_type",
+    "reads_ref_alone",
 ]
 
 JsonSchemaLiteral = Union[bool, int, str]  # noqa: UP007
@@ -227,6 +229,9 @@ def _type_null_sources(obj: JsonSchemaObject) -> NullSources:
         nullable=obj.nullable,
         copied_nullable=bool(obj.__dict__.get(_COPIED_NULLABLE_KEY)),
         enum_null=None in obj.enum,
+        enum_set=bool(obj.enum),
+        const_set="const" in obj.extras,
+        const_null="const" in obj.extras and obj.extras["const"] is None,
     )
 
 
@@ -257,6 +262,11 @@ _IN_PLACE_APPLICATOR_KEYWORDS: Final = frozenset({
 })
 """The keywords that apply a schema to the instance itself; ``then`` and ``else`` apply only through ``if``."""
 READ_UNEVALUATED_PROPERTIES_CONTEXT: Final = "read_unevaluated_properties"
+IGNORED_REF_SIBLINGS_CONTEXT: Final = "ignored_ref_siblings"
+"""The context key of ``--ignore-ref-siblings-by-schema-version``: whether a location's version ignores ``$ref``
+siblings."""
+EMPTY_ENUM_CONTEXT: Final = "empty_enum"
+"""The context key of the set that collects the location of each schema object whose ``enum`` lists no value."""
 
 
 _PROPERTY_EVALUATING_KEYWORDS: Final = frozenset({
@@ -269,6 +279,22 @@ _PROPERTY_EVALUATING_KEYWORDS: Final = frozenset({
 def _is_document_object(values: object) -> TypeIs[dict[str, Any]]:
     """Return whether ``values`` is a JSON object of a document the running parse loaded, not a dump or a merge."""
     return isinstance(values, dict) and (graph := SCHEMA_GRAPH.get()) is not None and id(values) in graph.locations
+
+
+def reads_ref_alone(values: object, context: Mapping[str, Any] | None) -> TypeIs[dict[str, Any]]:
+    """Return whether a JSON object of a loaded document is read as its ``$ref`` alone, without the keywords beside it.
+
+    Only under ``--ignore-ref-siblings-by-schema-version``, whose test of a location the parser passes in ``context``
+    (``IGNORED_REF_SIBLINGS_CONTEXT``), where the schema version of the object's document ignores them (draft 4, 6 and
+    7, OpenAPI 3.0, AsyncAPI 2).
+    """
+    return (
+        (ignores := (context or {}).get(IGNORED_REF_SIBLINGS_CONTEXT)) is not None
+        and _is_document_object(values)
+        and isinstance(values.get("$ref"), str)
+        and len(values) > 1
+        and ignores(_source_location(values))
+    )
 
 
 def _has_map_key_keywords(schema: JsonSchemaObject) -> bool:
@@ -421,6 +447,40 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
         if not values.get("properties") and _is_false_all_of(unevaluated_properties):
             return {**values, "unevaluatedProperties": False}
         return {**values, "additionalProperties": unevaluated_properties}
+
+    @model_validator(mode="before")
+    @classmethod
+    def collect_empty_enum(cls, values: Any, info: ValidationInfo) -> Any:
+        """Collect a schema object of a document whose ``enum`` lists no value, so that no value is valid against it.
+
+        The parser passes the set of their locations in the validation context (``EMPTY_ENUM_CONTEXT``) and reports
+        them after the schema parsing. The schema object of the document decides, as written: a dump or a merge the
+        parser validates again is not collected, nor an ``enum`` beside a ``$ref`` that
+        ``read_ref_alone_where_its_siblings_are_ignored``, which runs before it, leaves out.
+        """
+        if (
+            isinstance(values, dict)
+            and values.get("enum") == []
+            and (locations := (info.context or {}).get(EMPTY_ENUM_CONTEXT)) is not None
+            and _is_document_object(values)
+        ):
+            locations.add(_source_location(values))
+        return values
+
+    @model_validator(mode="before")
+    @classmethod
+    def read_ref_alone_where_its_siblings_are_ignored(cls, values: Any, info: ValidationInfo) -> Any:
+        """Read a ``$ref`` as its target alone where the schema version of its document ignores the keywords beside it.
+
+        Only under ``--ignore-ref-siblings-by-schema-version``, whose test of a location (draft 4, 6 and 7, OpenAPI
+        3.0, AsyncAPI 2) the parser passes in the validation context; nested schema objects are validated with the same
+        context. The schema object of the document decides, as written, so the keywords beside the ``$ref`` are left
+        out of it, annotations and extensions included, and the document keeps them for the JSON pointers that name
+        them. Defined last, it runs before the other validators and sees the document object.
+        """
+        if not reads_ref_alone(values, info.context):
+            return values
+        return _located({"$ref": values["$ref"]}, _source_location(values))
 
     @property
     def python_field_overrides(self) -> Mapping[str, str]:
@@ -607,15 +667,21 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
     @field_validator("custom_base_path", mode="before")
     @classmethod
     def validate_custom_base_path(cls, value: Any) -> Any:
-        """Validate schema-controlled custom base class import paths."""
+        """Validate schema-controlled custom base class import paths as paths of the newest target Python.
+
+        The parser checks a path again for the run's target where a model takes it as its base class.
+        """
+        from datamodel_code_generator._format_types import NEWEST_TARGET  # noqa: PLC0415
+        from datamodel_code_generator.validators import _validate_schema_python_import_path  # noqa: PLC0415
+
         match value:
             case None:
                 return None
             case list():
                 for item in value:
-                    _validate_schema_python_import_path(item, "customBasePath")
+                    _validate_schema_python_import_path(item, "customBasePath", NEWEST_TARGET)
             case _:
-                _validate_schema_python_import_path(value, "customBasePath")
+                _validate_schema_python_import_path(value, "customBasePath", NEWEST_TARGET)
         return value
 
     @cached_property
@@ -706,19 +772,6 @@ DEFAULT_FIELD_KEYS: set[str] = {
     "externalDocs",
     "xml",
 }
-
-
-def _validate_schema_python_import_path(value: Any, field_name: str) -> str:
-    if not isinstance(value, str):
-        msg = f"{field_name} must be a dotted Python identifier path: {value!r}"
-        raise Error(msg)
-    from datamodel_code_generator.validators import _validate_dotted_python_identifier_path  # noqa: PLC0415
-
-    try:
-        return _validate_dotted_python_identifier_path(value)
-    except ValueError as exc:
-        msg = f"{field_name} {exc}"
-        raise Error(msg) from None
 
 
 EXCLUDE_FIELD_KEYS_IN_JSON_SCHEMA: set[str] = {

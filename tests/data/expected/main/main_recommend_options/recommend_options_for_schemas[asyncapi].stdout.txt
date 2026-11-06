@@ -15,13 +15,14 @@ Schema  AsyncAPI 2.6.0
   formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced
   integer/number/boolean schemas   0
 
-Start from  --preset standard-py314-20261027
+Start from  --preset standard-py314-20261104
 
 Add (1 option)
-  --naming-strategy full-path   [naming.qualify-shared-inline-names]
+  --naming-strategy enclosing-model   [naming.qualify-shared-inline-names]
       Inline schemas under different parents share property names (names: 1, e.g. user x4; inline
       names equal to a component name: 0). Numbered names (Status, Status1) depend on parse order
-      and shift when the schema grows; full-path names each inline model after its parent.
+      and shift when the schema grows; enclosing-model names each inline model after the model it is
+      built for, once, and leaves definitions their own names.
       measured: GitHub REST API description: numbered names 663 -> 53; locations renamed between two
       versions 17% -> 0.0%
       measured: Petstore: Status and Status1 became OrderStatus and PetStatus
@@ -34,11 +35,11 @@ Notes
   - The rules were calibrated on the 20261017 presets.
 
 Command
-  datamodel-codegen --input events.yaml --naming-strategy full-path --preset standard-py314-20261027 --target-python-version 3.14
+  datamodel-codegen --input events.yaml --naming-strategy enclosing-model --preset standard-py314-20261104 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
   input = "events.yaml"
-  naming-strategy = "full-path"
-  preset = "standard-py314-20261027"
+  naming-strategy = "enclosing-model"
+  preset = "standard-py314-20261104"
   target-python-version = "3.14"

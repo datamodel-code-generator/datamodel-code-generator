@@ -78,6 +78,12 @@ EXPORTS_SCOPE_MODELS = {
     "p.item": ("p", "Item"),
     "p.u.user": ("p.u", "User"),
 }
+CHILD_IMPORTS_PACKAGE = "all_exports_scope_child_imports_package_model"
+CHILD_IMPORTS_PACKAGE_MODELS = {
+    "pkg.other.Thing": ("pkg.other", "Thing"),
+    "pkg.sub.Holder": ("pkg.sub", "Holder"),
+    "pkg.sub.api.Order": ("pkg.sub.api", "Order"),
+}
 DOTTED_MODULES = "circular_imports_exports_scope_dotted_modules"
 DOTTED_MODULES_PATH = JSON_SCHEMA_DATA_PATH / "circular_imports_exports_scope_dotted"
 DOTTED_MODULES_MODELS = {
@@ -267,6 +273,24 @@ def test_circular_imports_exports_scope_module_below_package(output_dir: Path, s
         extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--all-exports-scope", scope],
     )
     assert_output(_open_api_verdicts(output_dir, EXPORTS_SCOPE, EXPORTS_SCOPE_MODELS), name="payloads")
+
+
+@pytest.mark.parametrize("scope", ["children", "recursive"])
+def test_circular_imports_exports_scope_child_imports_package_model(output_dir: Path, scope: str) -> None:
+    """Merge a package whose exports run a submodule that imports a model of the package back (#6194).
+
+    With ``--all-exports-scope`` the ``__init__`` module of ``pkg.sub`` imports ``pkg.sub.api``, whose ``Order`` uses
+    ``pkg.sub.Holder``: importing ``pkg.sub.api`` first ran ``pkg.sub``, which imported ``pkg.sub.api`` before it
+    defined ``Holder``, and failed. ``pkg.sub`` and ``pkg.sub.api`` merge into ``_internal.py``; every module imports
+    as the first of a fresh interpreter state, and the models accept and reject the payloads as the schema does.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{CHILD_IMPORTS_PACKAGE}.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--all-exports-scope", scope],
+    )
+    assert_output(_open_api_verdicts(output_dir, CHILD_IMPORTS_PACKAGE, CHILD_IMPORTS_PACKAGE_MODELS))
 
 
 def test_circular_imports_exports_scope_dotted_modules(output_dir: Path) -> None:

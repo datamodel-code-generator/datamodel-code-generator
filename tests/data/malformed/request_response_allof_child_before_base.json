@@ -1,0 +1,39 @@
+{
+  "$defs": {
+    "C": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/B"
+        }
+      ],
+      "properties": {
+        "x": {
+          "type": "string"
+        }
+      }
+    },
+    "B": {
+      "type": "object",
+      "properties": {
+        "p": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "readOnly": true
+            },
+            "n": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "c": {
+      "$ref": "#/$defs/C"
+    }
+  }
+}

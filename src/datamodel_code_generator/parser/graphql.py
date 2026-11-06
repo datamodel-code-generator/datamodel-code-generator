@@ -25,6 +25,7 @@ from datamodel_code_generator._format_types import DatetimeClassType
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._message_text import install_command
 from datamodel_code_generator._requirements import python_target_meets
+from datamodel_code_generator._user_keys import ClassScope
 from datamodel_code_generator.model._decisions.enum_kind import decide_enum_kind, enum_as_literal
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, UnionPolicy, assemble_union
 from datamodel_code_generator.model.base import _find_base_classes, get_inherited_fields
@@ -40,10 +41,7 @@ from datamodel_code_generator.types import Types
 try:
     import graphql
 except ImportError as exc:  # pragma: no cover
-    msg = (
-        f"Please run {install_command('graphql', row='legacy-graphql-quote')} "
-        "to generate data-model from a GraphQL schema."
-    )
+    msg = f"Please run {install_command('graphql')} to generate data-model from a GraphQL schema."
     raise Exception(msg) from exc  # noqa: TRY002
 
 
@@ -183,6 +181,10 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
 
                 self.support_graphql_types[resolved_type].append(type_)
 
+    def _class_scope(self, name: str) -> ClassScope:
+        """Return the scope of the class of the GraphQL type ``name``: the type name, then its output names keyed."""
+        return self.model_resolver.class_scope("predicted", name, self.references[name].path)
+
     def _typename_field(self, name: str, excludes: set[str]) -> DataModelFieldBase:
         field_name = "typename__"
         if field_name in excludes:
@@ -195,7 +197,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             name=field_name,
             alias="__typename",
             source_name="__typename",
-            class_name=name,
+            scope=self._class_scope(name),
             default=name,
             required=False,
             use_one_literal_as_default=True,
@@ -211,7 +213,8 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
     def parse_scalar(self, scalar_graphql_object: graphql.GraphQLScalarType) -> None:
         """Parse a GraphQL scalar type and add it to results."""
         self._graph_builder.register_model(
-            self.data_model_scalar_type(
+            self._new_model(
+                self.data_model_scalar_type,
                 reference=self.references[scalar_graphql_object.name],
                 fields=[],
                 custom_template_dir=self.custom_template_dir,
@@ -251,13 +254,23 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             model_type=self.data_model_root_type,
             reference=self.references[enum_object.name],
             fields=[self._build_field("bare", data_type, required=True)],
-            custom_base_class=self._resolve_base_class(enum_object.name),
+            custom_base_class=self._resolve_base_class(self._class_scope(enum_object.name)),
             custom_template_dir=self.custom_template_dir,
             extra_template_data=self.extra_template_data,
             path=self.current_source_path,
             description=enum_object.description,
         )
         self._graph_builder.register_model(data_model_type)
+
+    def _enum_member_extras(self, value: graphql.GraphQLEnumValue) -> dict[str, Any]:
+        """Return the extras of an enum member: the description of its value where a docstring option writes it.
+
+        A member never writes ``Field(description=...)``, but a Pydantic field with a description registers the
+        ``Field`` import, so a description that no docstring option writes stays out and the module imports keep order.
+        """
+        if value.description is None or not (self.use_field_description or self.use_inline_field_description):
+            return {}
+        return {"description": value.description}
 
     def parse_enum_as_enum_class(self, enum_object: graphql.GraphQLEnumType) -> None:
         """Parse enum values as an Enum class."""
@@ -274,7 +287,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
 
             enum_fields.append(
                 self._build_field(
-                    "graphql-enum-member",
+                    "enum-member",
                     self.data_type_manager.get_data_type(
                         Types.string,
                     ),
@@ -282,7 +295,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
                     default=default,
                     required=True,
                     has_default=True,
-                    use_field_description=value.description is not None,
+                    extras=self._enum_member_extras(value),
                     original_name=None,
                 )
             )
@@ -296,7 +309,8 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             has_strenum=python_target_meets("python.strenum", self.target_python_version.version_key),
             keep_member_values=self.config.keep_enum_member_values,
         )
-        enum = _enum_class(kind)(
+        enum = self._new_model(
+            _enum_class(kind),
             reference=self.references[enum_object.name],
             fields=enum_fields,
             path=self.current_source_path,
@@ -306,15 +320,21 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
         )
         self._graph_builder.register_model(enum)
 
-    def parse_field(
+    def parse_field(  # noqa: PLR0913
         self,
         field_name: str,
         alias: str | list[str] | None,
         field: graphql.GraphQLField | graphql.GraphQLInputField,
         original_field_name: str,
         class_name: str | None = None,
+        *,
+        output_names: tuple[str, ...] = (),
     ) -> DataModelFieldBase:
-        """Parse a GraphQL field and return a data model field."""
+        """Parse a GraphQL field and return a data model field.
+
+        The class keys of the options read ``class_name``, then the class's names in the output (``output_names``).
+        """
+        scope = None if class_name is None else ClassScope(class_name, output_names)
         final_data_type = self._graphql_data_type(is_optional=True)
         data_type = final_data_type
         obj = field.type
@@ -360,7 +380,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             default if has_schema_default else None,
             has_default=has_schema_default,
             required=required,
-            class_name=class_name,
+            scope=scope,
         )
 
         extras = {} if self.default_field_extras is None else self.default_field_extras.copy()
@@ -374,7 +394,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             name=field_name,
             alias=alias,
             source_name=original_field_name,
-            class_name=class_name,
+            scope=scope,
             default=effective_default,
             required=required,
             nullable=null_facts.admits_null,
@@ -391,18 +411,20 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
         """Parse a GraphQL object-like type and add it to results."""
         fields = []
         exclude_field_names: set[str] = set()
+        scope = self._class_scope(obj.name)
 
         for original_field_name, field in obj.fields.items():
             field_name_, alias = self.model_resolver.get_valid_field_name_and_alias(
                 original_field_name,
                 excludes=exclude_field_names,
                 model_type=self.field_name_model_type,
-                class_name=obj.name,
+                class_name=scope.name,
+                output_names=scope.output_names,
             )
             exclude_field_names.add(field_name_)
 
             data_model_field_type = self.parse_field(
-                field_name_, alias, field, original_field_name, class_name=obj.name
+                field_name_, alias, field, original_field_name, class_name=scope.name, output_names=scope.output_names
             )
             fields.append(data_model_field_type)
 
@@ -426,7 +448,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             reference=self.references[obj.name],
             fields=fields,
             base_classes=base_classes,
-            custom_base_class=self._resolve_base_class(obj.name),
+            custom_base_class=self._resolve_base_class(scope),
             custom_template_dir=self.custom_template_dir,
             extra_template_data=self.extra_template_data,
             path=self.current_source_path,
@@ -457,10 +479,11 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
             self._build_field("bare", DataType(), name=self.references[types[index].name].name)
             for index in plan.members
         ]
-        data_model_type = self.data_model_union_type(
+        data_model_type = self._new_model(
+            self.data_model_union_type,
             reference=self.references[union_object.name],
             fields=fields,
-            custom_base_class=self._resolve_base_class(union_object.name),
+            custom_base_class=self._resolve_base_class(self._class_scope(union_object.name)),
             custom_template_dir=self.custom_template_dir,
             extra_template_data=self.extra_template_data,
             path=self.current_source_path,
@@ -563,7 +586,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
                         ),
                         wire_name,
                         source_name=wire_name,
-                        class_name=obj.name,
+                        scope=self._class_scope(obj.name),
                         row="rename",
                     )
                     excludes.add(cast("str", field.name))
@@ -601,7 +624,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
                 ),
                 "__typename",
                 source_name="__typename",
-                class_name=obj.name,
+                scope=self._class_scope(obj.name),
                 row="rename",
             )
 

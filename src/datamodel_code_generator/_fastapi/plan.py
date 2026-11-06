@@ -32,7 +32,9 @@ from datamodel_code_generator._openapi_wire_plan import (
     form_extras,
     form_members,
     form_styled,
+    member_encodings,
     parameter_plans,
+    part_json,
     plan_wire,
 )
 from datamodel_code_generator._runtime.model_codecs.media import (
@@ -106,8 +108,9 @@ from datamodel_code_generator._target_operations import (
 )
 from datamodel_code_generator._target_types import present, sole_present
 from datamodel_code_generator._url_redaction import redact_reference
-from datamodel_code_generator.enums import DataModelType
+from datamodel_code_generator.enums import DataModelType, OpenAPIVersion
 from datamodel_code_generator.imports import Import
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -457,7 +460,10 @@ def _unresolved(code: str, kind: str, declaration: WireDeclaration) -> Diagnosti
     reason = (
         "whose document could not be loaded" if item.state == "document_not_observed" else f"which reaches no {kind}"
     )
-    message = f"The {kind} {declaration.name!r} references {redact_reference(item.reference)!r}, {reason}"
+    message = (
+        f"The {kind} {stable_repr(declaration.name)} references {stable_repr(redact_reference(item.reference))}, "
+        f"{reason}"
+    )
     return _problem(code, message, declaration.use_site)
 
 
@@ -465,13 +471,13 @@ def _link_operation_problem(link: WireDeclaration) -> str | None:
     """Return why a link does not name its operation with exactly one string operationRef or operationId."""
     named = [(key, value) for key, value in link.facts if key in {"operationRef", "operationId"}]
     if not named:
-        return f"The link {link.name!r} names no operation with operationRef or operationId"
+        return f"The link {stable_repr(link.name)} names no operation with operationRef or operationId"
     if len(named) > 1:
-        return f"The link {link.name!r} names its operation with both operationRef and operationId"
+        return f"The link {stable_repr(link.name)} names its operation with both operationRef and operationId"
     key, value = named[0]
     if literal_text(value) is not None:
         return None
-    return f"The link {link.name!r} has an {key} that is not a string"
+    return f"The link {stable_repr(link.name)} has an {key} that is not a string"
 
 
 def invalid_links(operations: Iterable[OperationContract]) -> tuple[Diagnostic, ...]:
@@ -511,8 +517,8 @@ def _part_text(encoding: WireDeclaration) -> bool:
 
 
 def _encodings(media: MediaSpec) -> Iterator[WireDeclaration]:
-    """Return the encodings a media declares."""
-    return children_of(media.declaration, "encoding")
+    """Return the encodings a media declares for the members its model has in the request (`member_encodings`)."""
+    return member_encodings(media.use, children_of(media.declaration, "encoding"))
 
 
 def _files(media: MediaSpec) -> frozenset[str]:
@@ -520,7 +526,7 @@ def _files(media: MediaSpec) -> frozenset[str]:
     return frozenset(() if parts is None else (name for name, part in parts.members if part.file))
 
 
-def _json_members(media: MediaSpec, version: str) -> frozenset[str | None]:
+def _json_members(media: MediaSpec, version: OpenAPIVersion) -> frozenset[str | None]:
     """Return the multipart members whose encodings send them as JSON: one JSON media type and no style.
 
     A style that the document's version applies leaves the media type unused, and a member holding files keeps its
@@ -537,7 +543,7 @@ def _json_members(media: MediaSpec, version: str) -> frozenset[str | None]:
     )
 
 
-def _typed_members(media: MediaSpec, kinds: LexicalKinds, version: str) -> frozenset[str | None]:
+def _typed_members(media: MediaSpec, kinds: LexicalKinds, version: OpenAPIVersion) -> frozenset[str | None]:
     """Return the multipart members whose encodings name media types the adapters read their parts in.
 
     A member is read as JSON in a JSON media type; one of a single scalar kind, whose field parts Starlette reads as
@@ -556,7 +562,7 @@ def _typed_members(media: MediaSpec, kinds: LexicalKinds, version: str) -> froze
     }
 
 
-def _encoded(media: MediaSpec, kinds: LexicalKinds, version: str) -> WireDeclaration | None:
+def _encoded(media: MediaSpec, kinds: LexicalKinds, version: OpenAPIVersion) -> WireDeclaration | None:
     """Return the first multipart encoding that the form adapter does not read.
 
     No adapter reads part headers, nor a style for a member holding files, which the client refuses too. A style that
@@ -581,7 +587,7 @@ def _untyped(encoding: WireDeclaration, typed: frozenset[str | None]) -> bool:
     return fact(encoding, "contentType") is not None and encoding.name not in typed
 
 
-def _planned(encoding: WireDeclaration, version: str, textless: frozenset[str], *, multipart: bool) -> bool:
+def _planned(encoding: WireDeclaration, version: OpenAPIVersion, textless: frozenset[str], *, multipart: bool) -> bool:
     """Return whether a form member's encoding is read by its query parameter plan rather than as plain text.
 
     A form's own text reads the default `form` style with explode of a member of one scalar kind; a URL-encoded
@@ -642,7 +648,11 @@ class Planner:  # noqa: PLR0904
         self.modes: dict[str, HandlerMode] = self.selected("handler_modes", config.handler_modes)
         groups = {group_key(operation, single=config.layout == "single") for operation in request.operations}
         self.problems.extend(
-            _problem("E_CONFIG_VALUE", f"The router_names entry {key!r} names no group", option_path="router_names")
+            _problem(
+                "E_CONFIG_VALUE",
+                f"The router_names entry {stable_repr(key)} names no group",
+                option_path="router_names",
+            )
             for key in config.router_names
             if key not in groups
         )
@@ -693,7 +703,7 @@ class Planner:  # noqa: PLR0904
         """Name each operation's handler: explicit names first, which must differ, then derived ones suffixed apart."""
         explicit = [name for operation in operations if (name := self.names.get(operation.id.use_site.pointer))]
         self.problems.extend(
-            _problem("F_NAME_CONFLICT", f"Several operation names become {name!r}")
+            _problem("F_NAME_CONFLICT", f"Several operation names become {stable_repr(name)}")
             for name, count in sorted(Counter(explicit).items())
             if count > 1
         )
@@ -743,7 +753,7 @@ class Planner:  # noqa: PLR0904
         }
         conflicts.update(stem for stem in stems.values() if _file_stem_conflict(stem, self.target_names.python_version))
         self.problems.extend(
-            _problem("F_NAME_CONFLICT", f"Several router groups or reserved names take {stem!r}")
+            _problem("F_NAME_CONFLICT", f"Several router groups or reserved names take {stable_repr(stem)}")
             for stem in sorted(conflicts)
         )
         named = [key for key in members if stems[key] != "service"]
@@ -846,16 +856,17 @@ class Planner:  # noqa: PLR0904
         if name in self.schemes:
             return
         if (declaration := operation_schemes(self.scheme_catalogues, operation).get(name)) is None:
-            message = f"{label(operation)} requires the undeclared security scheme {name!r}"
+            message = f"{label(operation)} requires the undeclared security scheme {stable_repr(name)}"
             self.problems.append(_problem("F_SECURITY_INVALID", message, operation.id.use_site))
         elif (unresolved := _unresolved("F_SECURITY_INVALID", "security scheme", declaration)) is not None:
             self.problems.append(unresolved)
         elif (scheme := _scheme(name, declaration)) is None:
             message = (
-                f"The apiKey security scheme {name!r} needs a name and a location of header, query, or cookie"
+                f"The apiKey security scheme {stable_repr(name)} needs a name and a location of header, query, or "
+                "cookie, and a header or cookie name that is a token"
                 if fact(declaration, "type") == "apiKey"
-                else f"The security scheme {name!r} needs a type of apiKey, http with a scheme, mutualTLS, oauth2, "
-                "or openIdConnect"
+                else f"The security scheme {stable_repr(name)} needs a type of apiKey, http with a scheme, mutualTLS, "
+                "oauth2, or openIdConnect"
             )
             self.problems.append(_problem("F_SECURITY_INVALID", message, declaration.use_site))
         else:
@@ -890,8 +901,9 @@ class Planner:  # noqa: PLR0904
             if argument.location == "path" and argument.name == argument.wire_name
         }
         taken = {*RESERVED, *(argument.name for argument in arguments if argument.name not in own)}
+        repeatable = self.wire.version != OpenAPIVersion.V32
         try:
-            return route_path(operation.path, taken, repeatable=not self.wire.version.startswith("3.2"))
+            return route_path(operation.path, taken, repeatable=repeatable)
         except RouteError as error:
             self.problems.append(_problem("F_ROUTE_INVALID", str(error), operation.id.use_site))
             return RoutePath(path=operation.path, route_path=operation.path, placeholders=wire_names, slots=())
@@ -925,8 +937,8 @@ class Planner:  # noqa: PLR0904
         value, default = self.parameter_type(use)
         if plan is not None and plan.content_media_type is None and use is not None and self.strict_bytes(use.type):
             message = (
-                f"The {location} parameter {name!r} of {label(operation)} is strict bytes, which rejects the text "
-                "a parameter carries"
+                f"The {location} parameter {stable_repr(name)} of {label(operation)} is strict bytes, which rejects "
+                "the text a parameter carries"
             )
             self.problems.append(_problem("F_PARAMETER_UNSUPPORTED", message, declaration.use_site))
         kind = (
@@ -1221,8 +1233,9 @@ class Planner:  # noqa: PLR0904
         """Return a form with how its members are read: each property of its model, then any other property.
 
         A member whose type, or whose items' type, has a lexical kind is text of that kind. Any other, such as an
-        object, is JSON in a multipart body, as is a member whose encoding names JSON and one that takes any value,
-        which keeps a part that is not JSON as it comes since it takes that too; a URL-encoded body carries
+        object, is JSON in a multipart body, as is a member whose encoding names JSON and one that takes any value
+        without a style or media type from its encoding (`part_json`), which keeps a part that is not JSON as it comes
+        since it takes that too; a URL-encoded body carries
         text alone, so generation stops for such a member, as it does for a parameter and for the client, unless its
         encoding gives it a style or content. A member whose encoding gives it a style or content that its own text
         does not read is read by its query parameter plan. The other properties a schema types are read by the same
@@ -1236,6 +1249,7 @@ class Planner:  # noqa: PLR0904
         members = tuple(form_members(self.wire.kinds, media.use))
         encoded = self.encoded(media, members)
         json_members = _json_members(media, self.wire.version)
+        encodings = {encoding.name or "": encoding for encoding in _encodings(media)}
         multipart = media.kind == "multipart"
         read = [
             (
@@ -1245,7 +1259,11 @@ class Planner:  # noqa: PLR0904
                 else self.form_plan(
                     media,
                     member,
-                    json=member.name in json_members,
+                    json=multipart
+                    and (
+                        member.name in json_members
+                        or part_json(self.wire.kinds, member.type, encodings.get(member.name), self.wire.version)
+                    ),
                     untyped=multipart and self.wire.kinds.untyped(member.leaf),
                 ),
             )
@@ -1265,8 +1283,12 @@ class Planner:  # noqa: PLR0904
         )
         additional: FieldPlan | JsonPartSpec | None = None
         if (extras := form_extras(self.wire.kinds, media.use)) is not None:
-            untyped = multipart and self.wire.kinds.untyped(extras.leaf)
-            additional = self.form_plan(media, extras, untyped=untyped)
+            additional = self.form_plan(
+                media,
+                extras,
+                json=multipart and part_json(self.wire.kinds, extras.type, None, self.wire.version),
+                untyped=multipart and self.wire.kinds.untyped(extras.leaf),
+            )
         elif multipart and (media.use.parts is None or media.use.parts.extra is None):
             additional = JsonPartSpec("", BuiltinType("object"), untyped=True)
         if media.kind == "form" and (encoding := media.use.encoding) is not None and encoding.form.problem is not None:
@@ -1317,8 +1339,12 @@ class Planner:  # noqa: PLR0904
     def form_plan(
         self, media: MediaSpec, member: FormMember, *, json: bool = False, untyped: bool = False
     ) -> FieldPlan | JsonPartSpec | None:
-        """Return how one member of a form is read, reporting one that the adapters do not read."""
-        if member.kind is not None and not json and not untyped:
+        """Return how one member of a form is read, reporting one that the adapters do not read.
+
+        A member of a lexical kind is text of that kind unless it is JSON (`part_json`), and a JSON member that takes
+        any value (`untyped`) keeps a part that is not JSON as it comes.
+        """
+        if member.kind is not None and not json:
             return FieldPlan(member.name, member.kind, repeated=member.repeated)
         if media.kind == "multipart":
             binding = member.field
@@ -1457,7 +1483,7 @@ class Planner:  # noqa: PLR0904
         self.problems.extend(
             _problem(
                 "E_CONFIG_VALUE",
-                f"The parameter_names entry {key!r} of {label(operation)} names no argument",
+                f"The parameter_names entry {stable_repr(key)} of {label(operation)} names no argument",
                 operation.id.use_site,
                 "parameter_names",
             )
@@ -1475,7 +1501,9 @@ class Planner:  # noqa: PLR0904
                 support.append(Argument(name="media_type", kind="media_type", location="media_type"))
         self.problems.extend(
             _problem(
-                "F_NAME_CONFLICT", f"The arguments of {label(operation)} take {name!r} twice", operation.id.use_site
+                "F_NAME_CONFLICT",
+                f"The arguments of {label(operation)} take {stable_repr(name)} twice",
+                operation.id.use_site,
             )
             for name, count in sorted(Counter([*filter(None, given), "self", *(item.name for item in support)]).items())
             if count > 1

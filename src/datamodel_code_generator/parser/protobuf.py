@@ -19,11 +19,12 @@ from typing_extensions import Unpack
 
 from datamodel_code_generator import Error, ProtobufVersion, SchemaParseError, VersionMode
 from datamodel_code_generator._json_schema import definition_ref
-from datamodel_code_generator._message_text import extra_requirement
+from datamodel_code_generator._message_text import install_command
 from datamodel_code_generator._paths import files_under
+from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator.parser._null_facts import null_schema, with_null
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
-from datamodel_code_generator.python_literal import _converted_float
+from datamodel_code_generator.python_literal import _converted_float, stable_repr
 from datamodel_code_generator.util import (
     _collecting_watch_dependencies,  # pyright: ignore[reportPrivateUsage]
     record_watch_dependency,
@@ -144,15 +145,20 @@ WELL_KNOWN_SCHEMAS: dict[str, dict[str, Any]] = {
     "google.protobuf.Any": {"type": "object", "additionalProperties": True},
     "google.protobuf.Empty": {"type": "object", "properties": {}, "additionalProperties": False},
     "google.protobuf.FieldMask": {"type": "string"},
-    "google.protobuf.DoubleValue": with_null({"type": "number", "format": "double"}, "member"),
-    "google.protobuf.FloatValue": with_null({"type": "number", "format": "float"}, "member"),
-    "google.protobuf.Int64Value": with_null({"type": "integer", "format": "int64"}, "member"),
-    "google.protobuf.UInt64Value": with_null({"type": "integer", "format": "int64", "minimum": 0}, "member"),
-    "google.protobuf.Int32Value": with_null({"type": "integer", "format": "int32"}, "member"),
-    "google.protobuf.UInt32Value": with_null({"type": "integer", "format": "int32", "minimum": 0}, "member"),
-    "google.protobuf.BoolValue": with_null({"type": "boolean"}, "member"),
-    "google.protobuf.StringValue": with_null({"type": "string"}, "member"),
-    "google.protobuf.BytesValue": with_null({"type": "string", "format": "binary"}, "member"),
+    **{
+        f"google.protobuf.{name}Value": with_null(SCALAR_SCHEMAS[type_], "member")
+        for name, type_ in (
+            ("Double", TYPE_DOUBLE),
+            ("Float", TYPE_FLOAT),
+            ("Int64", TYPE_INT64),
+            ("UInt64", TYPE_UINT64),
+            ("Int32", TYPE_INT32),
+            ("UInt32", TYPE_UINT32),
+            ("Bool", TYPE_BOOL),
+            ("String", TYPE_STRING),
+            ("Bytes", TYPE_BYTES),
+        )
+    },
 }
 
 
@@ -161,7 +167,7 @@ def _load_grpc_tools() -> tuple[Any, Path]:
         import grpc_tools  # noqa: PLC0415
         from grpc_tools import protoc  # noqa: PLC0415
     except ImportError as exc:  # pragma: no cover
-        msg = f"protobuf input requires grpcio-tools. Install {extra_requirement('protobuf')}."
+        msg = f"protobuf input requires grpcio-tools. Please run {install_command('protobuf')}."
         raise Error(msg) from exc
     return protoc, Path(grpc_tools.__file__).parent / "_proto"
 
@@ -170,7 +176,7 @@ def _load_descriptor_pb2() -> Any:
     try:
         from google.protobuf import descriptor_pb2  # noqa: PLC0415
     except ImportError as exc:  # pragma: no cover
-        msg = f"protobuf input requires google.protobuf. Install {extra_requirement('protobuf')}."
+        msg = f"protobuf input requires google.protobuf. Please run {install_command('protobuf')}."
         raise Error(msg) from exc
     return descriptor_pb2
 
@@ -415,9 +421,10 @@ class _ProtoInputPreparer:
         else:  # pragma: no cover
             target = temp_path / source_path.name
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(
-            _sanitize_proto_source(source_path.read_text(encoding=self.parser.encoding)), encoding=self.parser.encoding
-        )
+        encoding = self.parser.encoding
+        data = self.parser._prefetched_data(source_path)  # noqa: SLF001
+        text = source_path.read_text(encoding=encoding) if data is None else normalize_newlines(data.decode(encoding))
+        target.write_text(_sanitize_proto_source(text), encoding=encoding)
         return target
 
     def _write_missing_weak_imports(self, input_files: Iterable[Path], include_paths: Sequence[Path]) -> None:
@@ -429,7 +436,7 @@ class _ProtoInputPreparer:
             for import_path in WEAK_IMPORT_PATTERN.findall(text):
                 stub = (weak_import_dir / import_path).resolve()
                 if not stub.is_relative_to(weak_import_dir):
-                    msg = f"Invalid Protocol Buffers weak import path: {import_path!r}"
+                    msg = f"Invalid Protocol Buffers weak import path: {stable_repr(import_path)}"
                     raise SchemaParseError(msg)
                 if any((include_path / import_path).exists() for include_path in include_paths):
                     continue
@@ -542,8 +549,8 @@ class _ProtobufDescriptorConverter:
             return declared
         if self.schema_version_mode == VersionMode.Strict and self.protobuf_version != declared:
             warn(
-                f"Protobuf file {file_descriptor.name!r} declares {declared.value}, "
-                f"but --schema-version {self.protobuf_version.value} was requested.",
+                f"Protobuf file {stable_repr(file_descriptor.name)} declares {declared.value}, but --schema-version "
+                f"{self.protobuf_version.value} was requested.",
                 stacklevel=3,
             )
         return self.protobuf_version
@@ -661,7 +668,7 @@ class _ProtobufDescriptorConverter:
             return None
         map_key_python_type = MAP_KEY_PYTHON_TYPES.get(key_field.type)
         if map_key_python_type is None:  # pragma: no cover
-            msg = f"Protocol Buffers map field {field.name!r} uses unsupported key type"
+            msg = f"Protocol Buffers map field {stable_repr(field.name)} uses unsupported key type"
             raise SchemaParseError(msg)
         value_field = next((item for item in entry.field if item.name == "value"), None)
         if value_field is None:  # pragma: no cover

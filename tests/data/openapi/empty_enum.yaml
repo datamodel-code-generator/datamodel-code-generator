@@ -1,0 +1,19 @@
+openapi: 3.0.3
+info:
+  title: Empty enum
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        kind:
+          type: string
+          nullable: true
+          enum: []
+        size:
+          $ref: "#/components/schemas/Size"
+    Size:
+      type: integer
+      enum: []

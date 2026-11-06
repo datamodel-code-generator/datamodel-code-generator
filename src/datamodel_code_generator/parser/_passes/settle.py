@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any
 from typing_extensions import Protocol, TypeVar
 
 from datamodel_code_generator import Error
+from datamodel_code_generator._document_reader import nesting_limit
 from datamodel_code_generator._message_text import counted
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
 from datamodel_code_generator._url_redaction import named_location, redact_reference
@@ -25,17 +26,23 @@ from datamodel_code_generator.parser._passes._shared import (
     GenerationStoreHost,
     RecursionFactsHost,
     RootModelTypeHost,
-    _is_pydantic_v2_root_model,
     _runtime_validation_reference_keys,
     _sort_models_by_class_body_references,
+    definition_reads,
+    with_dedupe_request_response_hint,
 )
-from datamodel_code_generator.parser._passes._state import ParseConfigView, RecursionFacts
+from datamodel_code_generator.parser._passes._state import (
+    ParseConfigView,
+    RecursionFacts,
+    mark_settle_diagnostics_reported,
+)
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser.generation import set_model_base_classes
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import _UNMATCHED_MODEL_NAME_KEYS_REPORTED, location_of
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping
+    from collections.abc import Callable, Iterable, Mapping
 
     from datamodel_code_generator import (
         AllExportsCollisionStrategy,
@@ -143,6 +150,9 @@ class ParseHost(Protocol):
     def parse_raw(self) -> None:
         """Load the sources and parse them into models (L0 and L1)."""
 
+    def _start_naming_frames(self) -> None:
+        """Open the naming frames before L1 when it records them."""
+
 
 def _runtime_validation_names_later_model(
     models: list[DataModel],
@@ -166,6 +176,12 @@ def _named_model_path(path: str, models: Mapping[str, DataModel]) -> str:
     return named_location(location, path)
 
 
+def _reference_set(paths: Iterable[str]) -> str:
+    """Write the paths a message lists as the frozenset it always wrote, in sorted order so runs give one text."""
+    listed = ", ".join(map(repr, sorted(set(paths))))
+    return f"frozenset({{{listed}}})" if listed else "frozenset()"
+
+
 def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
     unsorted_data_models: list[DataModel],
     sorted_data_models: SortedDataModels | None = None,
@@ -176,13 +192,14 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
     pydantic_v2_root_model_type: type[DataModel] | None = None,
     runtime_validation_references: Mapping[ModelKey, frozenset[ModelKey]] | None = None,
     keyed: KeyedModels | None = None,
-    unresolved_hint: str = "",
+    legacy_request_response: bool = False,
 ) -> tuple[list[DataModel], SortedDataModels, list[ModelKey]]:
     """Sort data models by dependency order for correct forward references.
 
     Models, their references and the models needing a reference update action are keyed by model key; ``keyed``
     holds the models of the outermost call, which the paths that models list themselves resolve against.
-    ``unresolved_hint`` ends the message of the error for models that cannot be ordered.
+    ``legacy_request_response`` ends the message of the error for models that cannot be ordered with the option that
+    decides the read/write variants from the schema graph; the references it lists are sorted.
     """
     if sorted_data_models is None:
         sorted_data_models = OrderedDict()
@@ -241,7 +258,7 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
                     pydantic_v2_root_model_type=pydantic_v2_root_model_type,
                     runtime_validation_references=runtime_validation_references,
                     keyed=universe,
-                    unresolved_hint=unresolved_hint,
+                    legacy_request_response=legacy_request_response,
                 )
             except RecursionError:  # pragma: no cover
                 pass
@@ -253,9 +270,12 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
             # Build lookup dict for O(1) index access instead of O(n) list.index()
             key_to_index = {model_key_of(m.reference): idx for idx, m in enumerate(unresolved_references)}
             for model in unresolved_references:
+                fields = definition_reads(
+                    model, row="legacy-class-body-without-alias-values", root_model_type=pydantic_v2_root_model_type
+                )
                 references = (
-                    (t.reference for f in model.fields for t in f.data_type.all_data_types)
-                    if _is_pydantic_v2_root_model(model, pydantic_v2_root_model_type)
+                    (t.reference for f in fields for t in f.data_type.all_data_types)
+                    if fields is not None
                     else (b.reference for b in model.base_classes)
                 )
                 indexes = [
@@ -320,10 +340,12 @@ def sort_data_models(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
 
             unresolved_classes = ", ".join(
                 f"[class: {_named_model_path(item.path, models_by_path)} references: "
-                f"{frozenset(_named_model_path(path, models_by_path) for path in reference_paths(item))}]"
+                f"{_reference_set(_named_model_path(path, models_by_path) for path in reference_paths(item))}]"
                 for item in unresolved_references
             )
-            msg = f"A Parser can not resolve classes: {unresolved_classes}.{unresolved_hint}"
+            msg = f"A Parser can not resolve classes: {unresolved_classes}."
+            if legacy_request_response:
+                raise Error(with_dedupe_request_response_hint(msg))
             raise Exception(msg)  # noqa: TRY002
 
     return unresolved_references, sorted_data_models, require_update_action_models
@@ -383,7 +405,7 @@ def warn_about_unmatched_model_name_keys(parser: SettleHost[Any]) -> None:
     if _UNMATCHED_MODEL_NAME_KEYS_REPORTED.get() and (
         unmatched_keys := sorted({redact_reference(key) for key in parser.model_resolver.unmatched_model_name_keys()})
     ):
-        listed = ", ".join(map(repr, unmatched_keys))
+        listed = ", ".join(map(stable_repr, unmatched_keys))
         warn_as_parser_base(
             f"--model-name-map: {counted(len(unmatched_keys), 'key')} matched no generated model: {listed}",
             UserWarning,
@@ -395,7 +417,9 @@ def settle_yielding_names(parser: SettleHost[Any], _run: SettleRun[Any]) -> None
     """Give the names that yield to ``--model-name-map`` their final form, and record the reuse groups plan.
 
     The models whose names yield, and the site models of the parse, yield the canonical place of a group of
-    duplicates to the others too.
+    duplicates to the others too. The parse again with the final names (row ``legacy-reparse-for-final-names``)
+    follows the renames of the yielding names; the names the generation store renames after them
+    (``GenerationStore.renames``) are given by path to the parse again of ``imports.translate_final_name_keys``.
     """
     parser._reuse_groups = ReuseGroups(  # noqa: SLF001
         site_models=frozenset(parser._site_model_keys),  # noqa: SLF001
@@ -406,11 +430,12 @@ def settle_yielding_names(parser: SettleHost[Any], _run: SettleRun[Any]) -> None
 
 
 def report_parse_diagnostics(parser: SettleHost[Any], run: SettleRun[Any]) -> None:
-    """Report the parse diagnostics, without repeating them on a retry."""
-    if run.suppress_parse_warnings:
+    """Report the parse diagnostics once per generation run: a retry repeats none that an earlier parse reported."""
+    if run.suppress_settle_diagnostics:
         parser._run_with_suppressed_warnings(parser._report_parse_diagnostics)  # noqa: SLF001
     else:
         parser._report_parse_diagnostics()  # noqa: SLF001
+        mark_settle_diagnostics_reported()
 
 
 def prepare_run_parse_config(parser: SettleHost[ConfigT], run: SettleRun[ConfigT]) -> None:
@@ -436,11 +461,8 @@ def sort_parsed_models(parser: SettleHost[Any], run: SettleRun[Any]) -> None:
         runtime_validation_references=(
             None if parser.keep_model_order else _runtime_validation_reference_keys(parser.results, same_module=True)
         ),
-        unresolved_hint=(
-            " --dedupe-request-response-variants decides the read/write variants from the schema graph and can"
-            " generate such schemas."
-            if parser.read_only_write_only_model_type is not None and not parser.dedupe_request_response_variants
-            else ""
+        legacy_request_response=(
+            parser.read_only_write_only_model_type is not None and not parser.dedupe_request_response_variants
         ),
     )
     parser._recursion_facts = RecursionFacts(require_update=frozenset(require_update), circular_roots=frozenset())  # noqa: SLF001
@@ -456,21 +478,18 @@ def record_source_reference_paths(run: SettleRun[Any]) -> None:
 
 
 def parse_raw(parser: ParseHost, run: SettleRun[Any]) -> None:
-    """Run L0 and L1, without repeating warnings on a retry; the HTTP session closes either way.
+    """Run L0 and L1, without repeating warnings on a retry, with the naming frames open while L1 records them.
 
-    A parse that exceeds the recursion limit on deeply nested schemas stops with an error, not a partial result.
+    The HTTP session closes either way. A parse that exceeds the recursion limit on deeply nested schemas stops with
+    an error, not a partial result.
     """
+    parser._start_naming_frames()  # noqa: SLF001
     try:
-        if run.suppress_parse_warnings:
-            parser._run_with_suppressed_warnings(parser.parse_raw)  # noqa: SLF001
-        else:
-            parser.parse_raw()
-    except RecursionError:
-        msg = (
-            "Schema nesting is too deep to generate: parsing the nested schemas exceeded the Python recursion "
-            f"limit ({sys.getrecursionlimit()})."
-        )
-        raise Error(msg) from None
+        with nesting_limit():
+            if run.suppress_parse_warnings:
+                parser._run_with_suppressed_warnings(parser.parse_raw)  # noqa: SLF001
+            else:
+                parser.parse_raw()
     finally:
         parser._close_http_fetch_session()  # noqa: SLF001
 

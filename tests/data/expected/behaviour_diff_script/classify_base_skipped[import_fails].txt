@@ -1,0 +1,8 @@
+{
+  "cls": "violation",
+  "notes": [
+    "import fails: ImportError: cannot import name 'X'",
+    "base skipped: loops (#5935)"
+  ],
+  "accepted_by": []
+}

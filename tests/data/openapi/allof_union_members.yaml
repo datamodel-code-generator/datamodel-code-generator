@@ -1,0 +1,40 @@
+openapi: 3.1.0
+info: {title: allOf union members, version: "1"}
+paths: {}
+components:
+  schemas:
+    Envelope:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}
+    Event:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - oneOf:
+            - type: object
+              required: [type]
+              properties:
+                type: {type: string, enum: [created]}
+                name: {type: string}
+            - type: object
+              required: [type]
+              properties:
+                type: {type: string, enum: [deleted]}
+                reason: {type: string}
+    Opened:
+      type: object
+      required: [state]
+      properties:
+        state: {type: string, enum: [opened]}
+    Closed:
+      type: object
+      required: [state]
+      properties:
+        state: {type: string, enum: [closed]}
+    Notice:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - oneOf:
+            - $ref: '#/components/schemas/Opened'
+            - $ref: '#/components/schemas/Closed'

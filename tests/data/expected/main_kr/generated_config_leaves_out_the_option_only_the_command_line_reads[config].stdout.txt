@@ -1,0 +1,3 @@
+[tool.datamodel-codegen]
+input = "m.json"
+

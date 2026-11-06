@@ -8,8 +8,8 @@
     "close"
   ],
   "error": [
-    "NotADirectoryError",
-    "20"
+    "Error",
+    "Single-module output requires a file path, not a directory"
   ],
   "batch": null,
   "result_sha256": null,

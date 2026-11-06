@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "untyped": {"enum": []},
+    "nullable": {"type": ["string", "null"], "enum": []},
+    "listed": {"type": "array", "items": {"type": "integer", "enum": []}},
+    "mapped": {"type": "object", "additionalProperties": {"enum": []}},
+    "member": {"anyOf": [{"type": "string", "enum": []}, {"type": "integer"}]},
+    "holder": {"enum": [], "anyOf": [{"type": "string"}, {"type": "integer"}]},
+    "merged": {"allOf": [{"type": "string"}, {"enum": []}]},
+    "first": {"$ref": "#/definitions/Never"},
+    "second": {"$ref": "#/definitions/Never"},
+    "keys": {"type": "object", "propertyNames": {"enum": []}},
+    "sibling": {"$ref": "#/definitions/Text", "enum": []},
+    "filled": {"type": "string", "enum": ["a"]}
+  },
+  "definitions": {
+    "Never": {"type": "string", "enum": []},
+    "Text": {"type": "string"}
+  }
+}

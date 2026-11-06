@@ -90,6 +90,7 @@ protocols-querystring-target-checks	main/generation_platform/client/protocols/pr
 protocols-references	main/generation_platform/client/protocols/protocols-references.txt
 protocols-relative	main/generation_platform/client/packages/helpers/pydantic_v2_BaseModel//*.py
 protocols-relative	main/generation_platform/client/protocols/protocols-disabled.txt
+protocols-reserved-arguments	main/generation_platform/client/protocols/protocols-reserved-arguments.txt
 protocols-shared-errors	main/generation_platform/client/protocols/protocols-shared-errors.txt
 protocols-socket-checks	main/generation_platform/client/protocols/protocols-socket-checks.txt
 protocols-socket-errors	main/generation_platform/client/protocols/protocols-socket-errors.txt
@@ -126,6 +127,8 @@ auth-no-root	main/generation_platform/client/packages/auth-no-root/pydantic_v2_B
 auth-roles	main/generation_platform/client/auth-roles.txt
 auth-roles	main/generation_platform/client/packages/auth-roles/pydantic_v2_BaseModel//*.py
 auth-roles-30	main/generation_platform/client/auth-roles-30.txt
+auth-roles-30-read-as-31	main/generation_platform/client/auth-roles-30-read-as-31.txt
+auth-roles-30-read-as-31	main/generation_platform/client/packages/auth-roles-30-read-as-31/pydantic_v2_BaseModel//*.py
 auth-wire-conflicts	main/generation_platform/client/auth-wire-conflicts.txt
 binary-allowed	main/generation_platform/client/binary-allowed.txt
 binary-allowed	main/generation_platform/client/packages/binary-allowed/dataclasses_dataclass//*.py
@@ -215,6 +218,8 @@ merged-nullable-forms	main/generation_platform/client/packages/merged-nullable-f
 merged-nullable-forms	main/generation_platform/client/packages/merged-nullable-forms/pydantic_v2_BaseModel//*.py
 merged-nullable-forms	main/generation_platform/client/packages/merged-nullable-forms/pydantic_v2_dataclass//*.py
 merged-nullable-forms	main/generation_platform/client/packages/merged-nullable-forms/typing_TypedDict//*.py
+merged-nullable-kept	main/generation_platform/client/merged-nullable-kept.txt
+merged-nullable-kept	main/generation_platform/client/packages/merged-nullable-kept/pydantic_v2_BaseModel//*.py
 merged-nullable-reference	main/generation_platform/client/merged-nullable-reference.txt
 merged-nullable-reference	main/generation_platform/client/packages/merged-nullable-reference/dataclasses_dataclass//*.py
 merged-nullable-reference	main/generation_platform/client/packages/merged-nullable-reference/msgspec_Struct//*.py
@@ -225,8 +230,13 @@ method-collisions	main/generation_platform/client/method-collisions.txt
 method-collisions	main/generation_platform/client/packages/method-collisions/pydantic_v2_BaseModel//*.py
 method-collisions-suffix	main/generation_platform/client/method-collisions-suffix.txt
 method-collisions-suffix	main/generation_platform/client/packages/method-collisions-suffix/pydantic_v2_BaseModel//*.py
+multipart-read-only-exploded	main/generation_platform/client/multipart-read-only-exploded.txt
+multipart-read-only-exploded	main/generation_platform/client/packages/multipart-read-only-exploded/pydantic_v2_BaseModel//*.py
 multipart-referenced-items	main/generation_platform/client/multipart-referenced-items.txt
 multipart-referenced-items	main/generation_platform/client/packages/multipart-referenced-items/pydantic_v2_BaseModel//*.py
+multipart-text-files	main/generation_platform/client/multipart-text-files.txt
+multipart-text-files	main/generation_platform/client/packages/multipart-text-files/msgspec_Struct//*.py	= main/generation_platform/client/packages/multipart-text-files/pydantic_v2_BaseModel//*.py
+multipart-text-files	main/generation_platform/client/packages/multipart-text-files/pydantic_v2_BaseModel//*.py
 name-errors	main/generation_platform/client/name-errors.txt
 names	main/generation_platform/client/names.txt
 names	main/generation_platform/client/packages/names/pydantic_v2_BaseModel//*.py
@@ -263,6 +273,8 @@ parameter-content-defaults-30	main/generation_platform/client/packages/parameter
 parameter-content-defaults-30	main/generation_platform/client/parameter-content-defaults-30.txt
 parameter-content-defaults-31	main/generation_platform/client/packages/parameter-content-defaults-31/pydantic_v2_BaseModel//*.py
 parameter-content-defaults-31	main/generation_platform/client/parameter-content-defaults-31.txt
+parameter-ref-loop-30	main/generation_platform/client/packages/parameter-ref-loop-30/pydantic_v2_BaseModel//*.py
+parameter-ref-loop-30	main/generation_platform/client/parameter-ref-loop-30.txt
 parts-bound-responses	main/generation_platform/client/packages/parts-bound-responses/pydantic_v2_BaseModel//*.py
 parts-bound-responses	main/generation_platform/client/parts-bound-responses.txt
 parts-bound-responses-reuse	main/generation_platform/client/packages/parts-bound-responses-reuse/pydantic_v2_BaseModel//*.py	= main/generation_platform/client/packages/parts-bound-responses/pydantic_v2_BaseModel//*.py
@@ -303,6 +315,7 @@ ref-name-positions	main/generation_platform/client/ref-name-positions.txt
 reference-errors	main/generation_platform/client/reference-errors.txt
 references	main/generation_platform/client/packages/references/pydantic_v2_BaseModel//*.py
 references	main/generation_platform/client/references.txt
+required-errors	main/generation_platform/client/required-errors.txt
 response-keys	main/generation_platform/client/packages/response-keys/pydantic_v2_BaseModel//*.py
 response-keys	main/generation_platform/client/response-keys.txt
 retries	main/generation_platform/client/packages/retries/pydantic_v2_BaseModel//*.py

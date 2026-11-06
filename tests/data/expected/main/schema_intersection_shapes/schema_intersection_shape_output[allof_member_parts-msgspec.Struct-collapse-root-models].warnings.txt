@@ -1,0 +1,2 @@
+msgspec cannot decode the union WithRecursive: its Struct types WithRecursive3, WithRecursive4 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the type alias Recursive, or a type that uses it: its value names itself through no Struct, while msgspec decodes a recursive type only through a Struct.

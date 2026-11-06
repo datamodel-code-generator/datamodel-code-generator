@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "title": "Recursive",
+  "allOf": [
+    {
+      "$ref": "recursive_mid.json#/$defs/Mid"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "own": {
+          "type": "string"
+        }
+      }
+    }
+  ]
+}

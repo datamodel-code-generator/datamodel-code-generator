@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NullablePositions",
+  "type": "object",
+  "properties": {
+    "nullable_first": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "items": false
+    },
+    "null_first": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "integer"
+        }
+      ],
+      "items": false
+    }
+  },
+  "required": [
+    "nullable_first",
+    "null_first"
+  ]
+}

@@ -3,21 +3,52 @@
 [test_option_list_in_pyproject]
 empty-list-under-preset	main/preset_opt_in_options/option_list_in_pyproject[empty-list-under-preset].py
 toml-list	main/preset_opt_in_options/option_list_in_pyproject[toml-list].py	= main/openapi/main_openapi/strip_default_none_constructor_order[msgspec].py
+[test_preset_option_turned_off]
+capitalize-numbered-enum-members-alias-command-line	main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-command-line].py
+capitalize-numbered-enum-members-alias-pyproject	main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[capitalize-numbered-enum-members-alias-command-line].py
+read-const-beside-enum-command-line	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].py
+read-const-beside-enum-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].py
+read-length-keywords-by-type-command-line	main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-command-line].py
+read-length-keywords-by-type-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-command-line].py
 [test_preset_sets_opt_in_option]
+capitalise-numbered-enum-members-practical	main/preset_opt_in_options/preset_sets_opt_in_option[capitalise-numbered-enum-members-practical].py	= main/preset_opt_in_options/preset_sets_opt_in_option[capitalise-numbered-enum-members-standard].py
+capitalise-numbered-enum-members-standard	main/preset_opt_in_options/preset_sets_opt_in_option[capitalise-numbered-enum-members-standard].py
 check-pattern-maps-strictly-practical	main/preset_opt_in_options/preset_sets_opt_in_option[check-pattern-maps-strictly-practical].py
 check-pattern-maps-strictly-standard	main/preset_opt_in_options/preset_sets_opt_in_option[check-pattern-maps-strictly-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[check-pattern-maps-strictly-practical].py
 collapse-shared-parent-wrappers-practical	main/preset_opt_in_options/preset_sets_opt_in_option[collapse-shared-parent-wrappers-practical].py
 collapse-shared-parent-wrappers-standard	main/preset_opt_in_options/preset_sets_opt_in_option[collapse-shared-parent-wrappers-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[collapse-shared-parent-wrappers-practical].py
 dedupe-request-response-variants-practical	main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-request-response-variants-practical].py
 dedupe-request-response-variants-standard	main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-request-response-variants-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-request-response-variants-practical].py
+distribute-allof-over-unions-practical	main/preset_opt_in_options/preset_sets_opt_in_option[distribute-allof-over-unions-practical].py
+distribute-allof-over-unions-standard	main/preset_opt_in_options/preset_sets_opt_in_option[distribute-allof-over-unions-standard].py
 filter-literal-values-practical	main/preset_opt_in_options/preset_sets_opt_in_option[filter-literal-values-practical].py
 filter-literal-values-standard	main/preset_opt_in_options/preset_sets_opt_in_option[filter-literal-values-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[filter-literal-values-practical].py
+ignore-ref-siblings-by-schema-version-practical	main/preset_opt_in_options/preset_sets_opt_in_option[ignore-ref-siblings-by-schema-version-practical].py
+ignore-ref-siblings-by-schema-version-standard	main/preset_opt_in_options/preset_sets_opt_in_option[ignore-ref-siblings-by-schema-version-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[ignore-ref-siblings-by-schema-version-practical].py
 intersect-allof-keywords-practical	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-allof-keywords-practical].py
 intersect-allof-keywords-standard	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-allof-keywords-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[intersect-allof-keywords-practical].py
+intersect-combined-schema-keywords-practical	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-combined-schema-keywords-practical].py
+intersect-combined-schema-keywords-standard	main/preset_opt_in_options/preset_sets_opt_in_option[intersect-combined-schema-keywords-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[intersect-combined-schema-keywords-practical].py
+keep-constrained-root-models-in-every-container-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-root-models-in-every-container-practical].py
+keep-constrained-root-models-in-every-container-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-root-models-in-every-container-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-constrained-root-models-in-every-container-practical].py
+keep-enum-literal-aliases-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-enum-literal-aliases-practical].py
+keep-enum-literal-aliases-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-enum-literal-aliases-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-enum-literal-aliases-practical].py
 keep-enum-member-values-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-enum-member-values-practical].py
 keep-enum-member-values-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-enum-member-values-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-enum-member-values-practical].py
 keep-field-defaults-off-branch-roots-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-field-defaults-off-branch-roots-practical].py
 keep-field-defaults-off-branch-roots-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-field-defaults-off-branch-roots-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-field-defaults-off-branch-roots-practical].py
+keep-first-character-of-path-keys-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-first-character-of-path-keys-practical].py
+keep-first-character-of-path-keys-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-first-character-of-path-keys-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-first-character-of-path-keys-practical].py
+keep-reference-null-on-merged-models-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-reference-null-on-merged-models-practical].py
+keep-reference-null-on-merged-models-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-reference-null-on-merged-models-standard].py
+merge-shared-variant-tags-practical	main/preset_opt_in_options/preset_sets_opt_in_option[merge-shared-variant-tags-practical].py
+merge-shared-variant-tags-standard	main/preset_opt_in_options/preset_sets_opt_in_option[merge-shared-variant-tags-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[merge-shared-variant-tags-practical].py
+name-allof-union-members-after-branches-practical	main/preset_opt_in_options/preset_sets_opt_in_option[name-allof-union-members-after-branches-practical].py
+name-allof-union-members-after-branches-standard	main/preset_opt_in_options/preset_sets_opt_in_option[name-allof-union-members-after-branches-standard].py
+name-converted-payloads-by-message-practical	main/preset_opt_in_options/preset_sets_opt_in_option[name-converted-payloads-by-message-practical].py
+name-converted-payloads-by-message-standard	main/preset_opt_in_options/preset_sets_opt_in_option[name-converted-payloads-by-message-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[name-converted-payloads-by-message-practical].py
+naming-strategy-definitions-first-practical	main/preset_opt_in_options/preset_sets_opt_in_option[naming-strategy-definitions-first-practical].py
+naming-strategy-definitions-first-standard	main/preset_opt_in_options/preset_sets_opt_in_option[naming-strategy-definitions-first-standard].py
 omit-redundant-reference-null-practical	main/preset_opt_in_options/preset_sets_opt_in_option[omit-redundant-reference-null-practical].py
 omit-redundant-reference-null-standard	main/preset_opt_in_options/preset_sets_opt_in_option[omit-redundant-reference-null-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[omit-redundant-reference-null-practical].py
 openapi-ref-components-as-definitions-practical	main/preset_opt_in_options/preset_sets_opt_in_option[openapi-ref-components-as-definitions-practical].py
@@ -30,17 +61,47 @@ pin-aliases-with-alias-generator-practical	main/preset_opt_in_options/preset_set
 pin-aliases-with-alias-generator-standard	main/preset_opt_in_options/preset_sets_opt_in_option[pin-aliases-with-alias-generator-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[pin-aliases-with-alias-generator-practical].py
 read-const-beside-enum-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-const-beside-enum-practical].py
 read-const-beside-enum-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-const-beside-enum-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-const-beside-enum-practical].py
+read-dynamic-anchors-in-document-order-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-dynamic-anchors-in-document-order-practical].py
+read-dynamic-anchors-in-document-order-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-dynamic-anchors-in-document-order-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-dynamic-anchors-in-document-order-practical].py
+read-escaped-ref-pointers-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-escaped-ref-pointers-practical].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-escaped-ref-pointers-standard].py
+read-escaped-ref-pointers-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-escaped-ref-pointers-standard].py
+read-length-keywords-by-type-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-length-keywords-by-type-practical].py
+read-length-keywords-by-type-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-length-keywords-by-type-standard].py
+read-msgspec-union-bounds-exactly-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-msgspec-union-bounds-exactly-practical].py
+read-msgspec-union-bounds-exactly-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-msgspec-union-bounds-exactly-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-msgspec-union-bounds-exactly-practical].py
 read-nullable-beside-type-list-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-nullable-beside-type-list-practical].py
 read-nullable-beside-type-list-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-nullable-beside-type-list-standard].py
+read-schema-version-per-document-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-schema-version-per-document-practical]/
+read-schema-version-per-document-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-schema-version-per-document-standard]/	= main/preset_opt_in_options/preset_sets_opt_in_option[read-schema-version-per-document-practical]/
 read-unevaluated-properties-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-practical].py
 read-unevaluated-properties-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-practical].py
+rename-submodules-hidden-by-classes-practical	main/preset_opt_in_options/preset_sets_opt_in_option[rename-submodules-hidden-by-classes-practical]/
+rename-submodules-hidden-by-classes-standard	main/preset_opt_in_options/preset_sets_opt_in_option[rename-submodules-hidden-by-classes-standard]/	= main/preset_opt_in_options/preset_sets_opt_in_option[rename-submodules-hidden-by-classes-practical]/
+singularize-last-word-of-item-names-practical	main/preset_opt_in_options/preset_sets_opt_in_option[singularize-last-word-of-item-names-practical].py
+singularize-last-word-of-item-names-standard	main/preset_opt_in_options/preset_sets_opt_in_option[singularize-last-word-of-item-names-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[singularize-last-word-of-item-names-practical].py
 tag-msgspec-by-payload-name-practical	main/preset_opt_in_options/preset_sets_opt_in_option[tag-msgspec-by-payload-name-practical].py	= main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[default].py
 tag-msgspec-by-payload-name-standard	main/preset_opt_in_options/preset_sets_opt_in_option[tag-msgspec-by-payload-name-standard].py	= main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[default].py
+type-overrides-replace-whole-type-practical	main/preset_opt_in_options/preset_sets_opt_in_option[type-overrides-replace-whole-type-practical].py	= main/preset_opt_in_options/preset_sets_opt_in_option[type-overrides-replace-whole-type-standard].py
+type-overrides-replace-whole-type-standard	main/preset_opt_in_options/preset_sets_opt_in_option[type-overrides-replace-whole-type-standard].py
 use-decimal-in-field-forms-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-decimal-in-field-forms-practical].py
 use-decimal-in-field-forms-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-decimal-in-field-forms-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-decimal-in-field-forms-practical].py
+use-duplicate-name-suffix-for-every-collision-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-duplicate-name-suffix-for-every-collision-practical].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-duplicate-name-suffix-for-every-collision-standard].py
+use-duplicate-name-suffix-for-every-collision-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-duplicate-name-suffix-for-every-collision-standard].py
+use-encoded-str-for-constrained-base64-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-encoded-str-for-constrained-base64-practical].py
+use-encoded-str-for-constrained-base64-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-encoded-str-for-constrained-base64-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-encoded-str-for-constrained-base64-practical].py
+use-msgspec-meta-for-map-keys-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-msgspec-meta-for-map-keys-practical].py	= main/jsonschema/msgspec_map_keys/msgspec_map_keys[meta].py
+use-msgspec-meta-for-map-keys-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-msgspec-meta-for-map-keys-standard].py	= main/jsonschema/msgspec_map_keys/msgspec_map_keys[meta].py
+use-one-model-per-ref-site-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-one-model-per-ref-site-practical].py
+use-one-model-per-ref-site-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-one-model-per-ref-site-standard].py
+use-plain-alias-for-recursive-models-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-plain-alias-for-recursive-models-practical].py
+use-plain-alias-for-recursive-models-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-plain-alias-for-recursive-models-standard].py
+use-serialize-as-any-for-every-subclass-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-serialize-as-any-for-every-subclass-practical].py
+use-serialize-as-any-for-every-subclass-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-serialize-as-any-for-every-subclass-standard].py
 use-single-dict-for-object-maps-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-single-dict-for-object-maps-practical].py
 use-single-dict-for-object-maps-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-single-dict-for-object-maps-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-single-dict-for-object-maps-practical].py
 use-tuple-for-closed-arrays-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-tuple-for-closed-arrays-practical].py
 use-tuple-for-closed-arrays-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-tuple-for-closed-arrays-standard].py
 use-typed-map-values-beside-other-types-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-typed-map-values-beside-other-types-practical].py
 use-typed-map-values-beside-other-types-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-typed-map-values-beside-other-types-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-typed-map-values-beside-other-types-practical].py
+use-unique-items-as-set-by-value-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-unique-items-as-set-by-value-practical].py
+use-unique-items-as-set-by-value-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-unique-items-as-set-by-value-standard].py

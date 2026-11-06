@@ -11,8 +11,11 @@ The text between the quotes of a single-quoted string literal is escaped here, o
 literal of a text is written here when one holds it; the caller or its template writes the quotes. So are the text of a
 docstring and of a comment: the escapes a triple-quoted docstring needs, its one-line and block forms, and the line
 endings a comment block keeps; templates read the public functions as filters through ``model.base``, which keeps
-their names. Every reader of text that ends its lines as Python's universal newlines do (CRLF and a lone CR read as
-LF), source text and comments alike, reads it through ``normalize_newlines``.
+their names. A lone surrogate, which a UTF-8 module cannot hold, is escaped in a literal, which keeps its value, and
+replaced by U+FFFD in a docstring and a comment, which hold text only (Python 3.13 and later compile no docstring that
+holds one, however it is escaped); ``holds_lone_surrogate`` tells where a library that reads text as UTF-8 meets one.
+Every reader of text that ends its lines as Python's universal newlines do (CRLF and a lone CR read as LF), source
+text and comments alike, reads it through ``normalize_newlines``.
 """
 
 from __future__ import annotations
@@ -34,12 +37,27 @@ QUOTE_AND_CONTROL_ESCAPES = {
 """The escapes the text of any single-quoted literal needs: the quote and the control characters. The text of a raw
 literal (a Pydantic pattern) needs these only, as it reads a backslash as itself."""
 
-SINGLE_QUOTED_ESCAPES = str.maketrans({"\u0000": r"\x00", "\\": r"\\", **QUOTE_AND_CONTROL_ESCAPES})
+_SURROGATES: Final = range(0xD800, 0xE000)
+"""The code points of the lone surrogates, which UTF-8 cannot encode, so a module cannot hold them as they are."""
+
+SINGLE_QUOTED_ESCAPES = str.maketrans({
+    "\u0000": r"\x00",
+    "\\": r"\\",
+    **QUOTE_AND_CONTROL_ESCAPES,
+    **{chr(code): f"\\u{code:04x}" for code in _SURROGATES},
+})
 """The escapes of the text of a single-quoted literal that is not raw, as ``str.translate`` reads them (an enum value,
-a ``TypedDict`` key): the escapes above, the backslash, and the null byte, which a module cannot hold."""
+a ``TypedDict`` key): the escapes above, the backslash, the null byte and each lone surrogate, which a module cannot
+hold."""
+
+_SURROGATE_REPLACEMENTS: Final = dict.fromkeys(_SURROGATES, "\ufffd")
+"""Each lone surrogate replaced by U+FFFD, as ``str.translate`` reads it, for the text of a docstring or a comment."""
 
 RAW_SINGLE_QUOTED_ESCAPES = str.maketrans(QUOTE_AND_CONTROL_ESCAPES)
 """The escapes of the text of a raw single-quoted literal (a Pydantic pattern), as ``str.translate`` reads them."""
+
+_LONE_SURROGATE: Final = re.compile(r"[\ud800-\udfff]")
+"""A lone surrogate (``_SURROGATES``)."""
 
 _RAW_LITERAL_TEXT: Final = re.compile(r"(?:[^\\'\x00\ud800-\udfff]|\\[^\x00\ud800-\udfff])*")
 """The escaped text a raw single-quoted literal holds: each character is a plain one or follows a backslash."""
@@ -116,6 +134,16 @@ def normalize_newlines(text: str) -> str:
     return text.replace("\r\n", "\n").replace("\r", "\n") if "\r" in text else text
 
 
+def holds_lone_surrogate(text: str, /) -> bool:
+    """Return whether ``text`` holds a lone surrogate, which UTF-8 cannot encode, so no library reading UTF-8 holds."""
+    return not text.isascii() and _LONE_SURROGATE.search(text) is not None
+
+
+def _without_surrogates(text: str) -> str:
+    """Return ``text`` with each lone surrogate replaced by U+FFFD (``_SURROGATE_REPLACEMENTS``)."""
+    return text if text.isascii() else text.translate(_SURROGATE_REPLACEMENTS)
+
+
 def _normalize_string(value: str) -> str:
     """Return the underlying built-in string without invoking subclass overrides."""
     return value if type(value) is str else str.__str__(value)  # noqa: PLC2801 - bypass untrusted subclass overrides
@@ -134,6 +162,7 @@ def escape_docstring(value: str | None) -> str | None:
     - Backslashes: `\\` -> `\\\\` (must be escaped first)
     - Triple quotes: `\"\"\"` -> `\\\"\\\"\\\"` (would terminate docstring)
     - Null bytes: written as `\\x00`, as a module cannot hold one
+    - Lone surrogates: replaced by U+FFFD, as a module cannot hold one and no escape compiles in a docstring
 
     Args:
         value: The string to escape, or None.
@@ -148,7 +177,7 @@ def escape_docstring(value: str | None) -> str | None:
     value = _normalize_string(value)
     # Escape backslashes first, then triple quotes. Retain the original string
     # when no escaping is needed so custom-template fast paths stay allocation-free.
-    escaped = value.replace("\\", "\\\\").replace('"""', '\\"\\"\\"').replace("\0", "\\x00")
+    escaped = _without_surrogates(value.replace("\\", "\\\\").replace('"""', '\\"\\"\\"').replace("\0", "\\x00"))
     return _EscapedDocstring(escaped) if escaped != value else value
 
 
@@ -214,11 +243,12 @@ def comment_safe(value: str | None) -> str | None:
 
     Built-in union templates already prefix LF continuation lines with ``# ``.
     This helper converts CRLF and bare CR into LF so that existing template
-    behavior keeps the whole description inside the comment block.
+    behavior keeps the whole description inside the comment block, and replaces
+    each lone surrogate, which a module cannot hold, by U+FFFD.
     """
     if value is None:
         return None
-    return normalize_newlines(_normalize_string(value))
+    return normalize_newlines(_without_surrogates(_normalize_string(value)))
 
 
 def inline_comment_safe(value: str | None) -> str | None:

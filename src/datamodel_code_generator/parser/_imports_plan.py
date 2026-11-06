@@ -82,6 +82,7 @@ ImportPass: TypeAlias = Literal[
     "import-renamed-types",
     "import-enum-member-literal-classes",
     "tag-fields-of-tagged-bases",
+    "flatten-narrowed-inherited-fields",
     "generic-base-class",
     "inherited-keyword-only-copies",
     "type-alias-fields",
@@ -94,6 +95,8 @@ ImportPass: TypeAlias = Literal[
     "builtin-module-bindings",
     "builtin-submodule-bindings",
     "submodule-import-bindings",
+    "hidden-submodules",
+    "hidden-submodule-import-bindings",
     "field-name-bindings",
     "reused-variant-literal",
     "shadowed-imports",
@@ -120,6 +123,8 @@ ImportPass: TypeAlias = Literal[
   repairs of the same names.
 * ``tag-fields-of-tagged-bases``: ``tag_fields_of_tagged_bases`` (L6), the models that the fields a reused msgspec
   struct copies from its bases name from the module of that struct.
+* ``flatten-narrowed-inherited-fields``: ``flatten_narrowed_inherited_fields`` (L6), the models that the fields a model
+  whose field narrows an inherited one copies from its bases name from the module of that model.
 * ``generic-base-class``: ``apply_generic_base_class`` (L6), the generated base model instead of the output base class.
 * ``inherited-keyword-only-copies``: ``fix_constructor_field_ordering`` (L6), the models that the keyword-only copies of
   inherited fields name from the module of the model that takes them.
@@ -137,6 +142,10 @@ ImportPass: TypeAlias = Literal[
   submodules hide and that the package writes bare.
 * ``submodule-import-bindings``: ``alias_builtins_hidden_by_submodules``, new names of the imports of models and
   modules named like a submodule of the package that imports them.
+* ``hidden-submodules``: ``import_models_of_hidden_submodules``, the models of submodules that their package hides,
+  imported from the submodule instead of the module imports they replace.
+* ``hidden-submodule-import-bindings``: ``import_models_of_hidden_submodules``, aliases of the imports of a package that
+  a submodule the output loads hides, which every bare use in the package follows.
 * ``field-name-bindings``: ``_bind_module_field_names``, aliases of imports that a field name hides.
 * ``reused-variant-literal``: ``alias_reused_variant_literal``, the alias of ``typing.Literal`` beside a model named
   ``Literal``.

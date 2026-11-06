@@ -55,6 +55,7 @@ from datamodel_code_generator.parser.base import (
     _DEFERRED_INHERITED_TYPE_KEY,
     _RAW_SCHEMA_DEFAULT_KEY,
     SPECIAL_PATH_FORMAT,
+    ClassScope,
     Parser,
     Source,
     _get_inherited_type_modifiers,
@@ -625,7 +626,9 @@ def test_build_missing_required_field_uses_shared_alias_policy() -> None:
     """Required-only schema fields use the common alias normalization."""
     parser = JsonSchemaParser("")
 
-    field = parser._build_missing_required_field("missing", set(), [], "Model")
+    field = parser._build_missing_required_field(
+        "missing", set(), [], parser.model_resolver.class_scope("predicted", "Model", "#")
+    )
 
     assert field.name == "missing"
     assert field.required is True
@@ -1695,7 +1698,7 @@ def test_parse_deferred_json_pointer_rejects_overlong_array_index() -> None:
 def test_validate_schema_python_import_path_rejects_non_string() -> None:
     """Test schema import path validation rejects non-string values."""
     with pytest.raises(Error, match="customTypePath must be a dotted Python identifier path: 1"):
-        _validate_schema_python_import_path(1, "customTypePath")
+        _validate_schema_python_import_path(1, "customTypePath", PythonVersion.PY_314)
 
 
 @pytest.mark.parametrize(
@@ -4498,7 +4501,7 @@ def test_inherited_request_response_override_resolves_derived_default() -> None:
         data_type=DataType(),
     )
     child_field.__dict__[_DEFERRED_INHERITED_TYPE_KEY] = child_field.data_type
-    child_field.__dict__[_DEFERRED_INHERITED_CLASS_KEY] = "Derived"
+    child_field.__dict__[_DEFERRED_INHERITED_CLASS_KEY] = ClassScope("Derived")
 
     fields = parser._merge_inherited_field_overrides([inherited_field], [child_field])
     fields[0].default["source"].append("copy")

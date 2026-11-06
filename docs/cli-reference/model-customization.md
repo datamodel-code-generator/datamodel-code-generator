@@ -23,13 +23,17 @@
 | [`--enable-faux-immutability`](#enable-faux-immutability) | Enable faux immutability in Pydantic models (frozen=True). |
 | [`--force-optional`](#force-optional) | Force all fields to be Optional regardless of required statu... |
 | [`--frozen-dataclasses`](#frozen-dataclasses) | Generate frozen dataclasses with optional keyword-only field... |
+| [`--keep-constrained-root-models-in-every-container`](#keep-constrained-root-models-in-every-container) | Keep constrained root models named in every container of a h... |
+| [`--keep-enum-literal-aliases`](#keep-enum-literal-aliases) | Keep a named enum written as a Literal type alias named unde... |
 | [`--keep-field-defaults-off-branch-roots`](#keep-field-defaults-off-branch-roots) | Leave a property's default off the root models extracted fro... |
 | [`--keep-model-order`](#keep-model-order) | Keep generated model order deterministic while respecting de... |
+| [`--keep-reference-null-on-merged-models`](#keep-reference-null-on-merged-models) | Keep the null a reference's schema admits when its model is ... |
 | [`--keyword-only`](#keyword-only) | Generate dataclasses with keyword-only fields (Python 3.10+)... |
 | [`--model-extra-keys`](#model-extra-keys) | Add model-level schema extensions to ConfigDict json_schema_... |
 | [`--model-extra-keys-without-x-prefix`](#model-extra-keys-without-x-prefix) | Strip x- prefix from model-level schema extensions and add t... |
 | [`--model-name-map`](#model-name-map) | Rename generated model classes from a JSON mapping. |
-| [`--naming-strategy`](#naming-strategy) | Use parent-prefixed naming strategy for duplicate model name... |
+| [`--name-converted-payloads-by-message`](#name-converted-payloads-by-message) | Name a converted payload that names no type of its own after... |
+| [`--naming-strategy`](#naming-strategy) | Choose how models are named and how duplicate model names ar... |
 | [`--omit-redundant-reference-null`](#omit-redundant-reference-null) | Do not write None again at a reference to a model that holds... |
 | [`--order-constructor-fields-by`](#order-constructor-fields-by) | Order constructor fields by final names or by written defaul... |
 | [`--output-model-type`](#output-model-type) | Select the output model type (Pydantic v2, Pydantic v2 datac... |
@@ -38,6 +42,7 @@
 | [`--read-nullable-beside-type-list`](#read-nullable-beside-type-list) | Write the null that `nullable: true` declares beside a `type... |
 | [`--reuse-model`](#reuse-model) | Reuse identical model definitions instead of generating dupl... |
 | [`--reuse-scope`](#reuse-scope) | Scope for model reuse detection (root or tree). |
+| [`--singularize-last-word-of-item-names`](#singularize-last-word-of-item-names) | Name the item model of an array by singularizing only the la... |
 | [`--skip-root-model`](#skip-root-model) | Skip generation of root model when schema contains nested de... |
 | [`--strict-nullable`](#strict-nullable) | Treat default field as a non-nullable field. |
 | [`--strip-default-none`](#strip-default-none) | Remove fields with None as default value from generated mode... |
@@ -48,14 +53,17 @@
 | [`--use-default`](#use-default) | Use default values from schema in generated models. |
 | [`--use-default-factory-for-optional-nested-models`](#use-default-factory-for-optional-nested-models) | Generate default_factory for optional nested model fields. |
 | [`--use-default-kwarg`](#use-default-kwarg) | Use default= keyword argument instead of positional argument... |
+| [`--use-duplicate-name-suffix-for-every-collision`](#use-duplicate-name-suffix-for-every-collision) | Give the `--duplicate-name-suffix` suffix to every model ren... |
 | [`--use-frozen-field`](#use-frozen-field) | Generate frozen (immutable) field definitions for readOnly p... |
 | [`--use-generic-base-class`](#use-generic-base-class) | Generate a shared base class with model configuration to avo... |
 | [`--use-missing-sentinel`](#use-missing-sentinel) | Use Pydantic's MISSING sentinel for unset optional BaseModel... |
+| [`--use-msgspec-meta-for-map-keys`](#use-msgspec-meta-for-map-keys) | Check the keys of a msgspec map whose keys propertyNames or ... |
 | [`--use-msgspec-nullable-enum-alias`](#use-msgspec-nullable-enum-alias) | Write a msgspec.Struct enum that lists null as an Enum and a... |
 | [`--use-msgspec-tagged-unions`](#use-msgspec-tagged-unions) | Write a msgspec.Struct discriminated union as tagged structs... |
 | [`--use-one-literal-as-default`](#use-one-literal-as-default) | Use single literal value as default when enum has only one o... |
 | [`--use-root-model-sequence-interface`](#use-root-model-sequence-interface) | Make non-null sequence-like Pydantic v2 RootModel classes im... |
 | [`--use-serialize-as-any`](#use-serialize-as-any) | Wrap fields with subtypes in Pydantic's SerializeAsAny. |
+| [`--use-serialize-as-any-for-every-subclass`](#use-serialize-as-any-for-every-subclass) | Wrap a field in SerializeAsAny when any subclass of its mode... |
 | [`--use-subclass-enum`](#use-subclass-enum) | Generate typed Enum subclasses for enums with specific field... |
 
 ---
@@ -3104,6 +3112,267 @@ keyword-only arguments.
 
 ---
 
+## `--keep-constrained-root-models-in-every-container` {#keep-constrained-root-models-in-every-container}
+
+Keep constrained root models named in every container of a holder.
+
+Under `--collapse-root-models` with `--field-constraints`, a root model whose root field has constraints, such as an
+item schema with `minLength`, stays named beside a list, a dict or a union of its holder, as `Field()` arguments could
+not carry its constraints there, but is inlined into a set, a frozen set, a `Sequence` or a `Mapping`, where its
+constraints are lost, so the holder accepts items the schema rejects. With
+`--keep-constrained-root-models-in-every-container` it stays named inside any container.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input collapse_constrained_roots_in_containers.json --collapse-root-models --field-constraints --use-unique-items-as-set --keep-constrained-root-models-in-every-container # (1)!
+    ```
+
+    1. :material-arrow-left: `--keep-constrained-root-models-in-every-container` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "title": "Holder",
+      "type": "object",
+      "properties": {
+        "names": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "x-python-type": "Sequence[str]"
+        },
+        "name_list": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "x-python-type": "Mapping[str, int]"
+        },
+        "fs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "x-python-type": "frozenset[str]"
+        },
+        "assignees": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  collapse_constrained_roots_in_containers.json
+
+        from __future__ import annotations
+
+        from collections.abc import Mapping, Sequence
+
+        from pydantic import BaseModel, Field, RootModel
+
+
+        class Name(RootModel[str]):
+            root: str = Field(..., min_length=1)
+
+
+        class NameListItem(RootModel[str]):
+            root: str = Field(..., min_length=1)
+
+
+        class Counts(RootModel[int]):
+            root: int = Field(..., ge=0)
+
+
+        class F(RootModel[str]):
+            __hash__ = object.__hash__
+            root: str = Field(..., min_length=1)
+
+
+        class Assignee(RootModel[str]):
+            __hash__ = object.__hash__
+            root: str = Field(..., min_length=1)
+
+
+        class Holder(BaseModel):
+            names: Sequence[Name] | None = None
+            name_list: list[NameListItem] | None = None
+            counts: Mapping[str, Counts] | None = None
+            fs: frozenset[F] | None = None
+            assignees: set[Assignee] | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  collapse_constrained_roots_in_containers.json
+
+        from __future__ import annotations
+
+        from collections.abc import Mapping, Sequence
+
+        from pydantic import BaseModel, Field, RootModel
+
+
+        class NameListItem(RootModel[str]):
+            root: str = Field(..., min_length=1)
+
+
+        class Holder(BaseModel):
+            names: Sequence[str] | None = None
+            name_list: list[NameListItem] | None = None
+            counts: Mapping[str, int] | None = None
+            fs: frozenset[str] | None = None
+            assignees: set[str] | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--keep-enum-literal-aliases` {#keep-enum-literal-aliases}
+
+Keep a named enum written as a Literal type alias named under collapse.
+
+An output that writes an enum definition as a `Literal` type alias (TypedDict, or `--enum-field-as-literal all`) names
+it at its uses (`Status = Literal['open', 'resolved']`, `status: Status`), but `--collapse-root-models` inlines it, so
+every use repeats the `Literal` and the name of the enum is lost. With `--keep-enum-literal-aliases` the alias stays
+named; a type alias holds the values of its type, so its uses parse the same values. A Pydantic `RootModel` class of
+the `Literal` still collapses.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input collapse_enum_literal_aliases.json --output-model-type typing.TypedDict --collapse-root-models --keep-enum-literal-aliases # (1)!
+    ```
+
+    1. :material-arrow-left: `--keep-enum-literal-aliases` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "title": "Ticket",
+      "type": "object",
+      "required": [
+        "status",
+        "history"
+      ],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/Status"
+        },
+        "history": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Status"
+          }
+        },
+        "name": {
+          "$ref": "#/$defs/Name"
+        }
+      },
+      "$defs": {
+        "Status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "resolved"
+          ]
+        },
+        "Name": {
+          "type": "string"
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  collapse_enum_literal_aliases.json
+
+        from __future__ import annotations
+
+        from typing import Literal, TypeAlias, TypedDict
+
+        from typing_extensions import NotRequired
+
+        Status: TypeAlias = Literal['open', 'resolved']
+
+
+        class Ticket(TypedDict):
+            status: Status
+            history: list[Status]
+            name: NotRequired[str]
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  collapse_enum_literal_aliases.json
+
+        from __future__ import annotations
+
+        from typing import Literal, TypedDict
+
+        from typing_extensions import NotRequired
+
+
+        class Ticket(TypedDict):
+            status: Literal['open', 'resolved']
+            history: list[Literal['open', 'resolved']]
+            name: NotRequired[str]
+        ```
+
+        <!-- fmt: on -->
+
+---
+
 ## `--keep-field-defaults-off-branch-roots` {#keep-field-defaults-off-branch-roots}
 
 Leave a property's default off the root models extracted from its `anyOf` or `oneOf` branches.
@@ -3444,6 +3713,181 @@ same schema produce the same ordering, which keeps diffs stable.
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--keep-reference-null-on-merged-models` {#keep-reference-null-on-merged-models}
+
+Keep the null a reference's schema admits when its model is merged.
+
+Deduplication of equal models, `--reuse-model`, `--collapse-reuse-models` and `--reuse-scope tree` merge a model into
+an equal one, and point the fields, items and members that named it at the model that stays. Without the option such a
+reference takes the null of the model it names after the merge, so a `type: [object, null]` property whose model is
+merged into an equal model that rejects null loses its `| None` and rejects the null its schema admits. With
+`--keep-reference-null-on-merged-models` it keeps the null of the schema it names, so a model that differs from another
+only by that null stays apart under `--reuse-model`. A reference whose schema rejects null keeps rejecting it in both
+cases.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input keep_reference_null_on_merged_models.json --strict-nullable --reuse-model --keep-reference-null-on-merged-models # (1)!
+    ```
+
+    1. :material-arrow-left: `--keep-reference-null-on-merged-models` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Holder",
+      "type": "object",
+      "required": ["first", "second", "home", "work"],
+      "properties": {
+        "first": {"type": "object", "properties": {"tool": {"type": "object", "properties": {"name": {"type": "string"}}}}},
+        "second": {
+          "type": "object",
+          "required": ["tool"],
+          "properties": {"tool": {"type": ["object", "null"], "properties": {"name": {"type": "string"}}}}
+        },
+        "bar": {"$ref": "#/$defs/Bar"},
+        "foo": {"$ref": "#/$defs/Foo"},
+        "home": {"$ref": "#/$defs/Home"},
+        "homes": {"type": "array", "items": {"$ref": "#/$defs/Home"}},
+        "work": {"$ref": "#/$defs/Work"}
+      },
+      "$defs": {
+        "Bar": {"type": "object", "properties": {"item": {"type": "object", "properties": {"count": {"type": "integer"}}}}},
+        "Foo": {
+          "type": "object",
+          "properties": {"item": {"type": ["object", "null"], "properties": {"count": {"type": "integer"}}}}
+        },
+        "Work": {"type": "object", "properties": {"street": {"type": "string"}}},
+        "Home": {"type": ["object", "null"], "properties": {"street": {"type": "string"}}}
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  keep_reference_null_on_merged_models.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel
+
+
+        class Tool(BaseModel):
+            name: str | None = None
+
+
+        class First(BaseModel):
+            tool: Tool | None = None
+
+
+        class Second(BaseModel):
+            tool: Tool | None
+
+
+        class Item(BaseModel):
+            count: int | None = None
+
+
+        class Bar(BaseModel):
+            item: Item | None = None
+
+
+        class Foo(Bar):
+            pass
+
+
+        class Work(BaseModel):
+            street: str | None = None
+
+
+        class Home(Work):
+            pass
+
+
+        class Holder(BaseModel):
+            first: First
+            second: Second
+            bar: Bar | None = None
+            foo: Foo | None = None
+            home: Home | None
+            homes: list[Home | None] | None = None
+            work: Work
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  keep_reference_null_on_merged_models.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel
+
+
+        class Tool(BaseModel):
+            name: str | None = None
+
+
+        class First(BaseModel):
+            tool: Tool | None = None
+
+
+        class Second(BaseModel):
+            tool: Tool
+
+
+        class Item(BaseModel):
+            count: int | None = None
+
+
+        class Bar(BaseModel):
+            item: Item | None = None
+
+
+        class Foo(Bar):
+            pass
+
+
+        class Work(BaseModel):
+            street: str | None = None
+
+
+        class Home(Work):
+            pass
+
+
+        class Holder(BaseModel):
+            first: First
+            second: Second
+            bar: Bar | None = None
+            foo: Foo | None = None
+            home: Home
+            homes: list[Home | None] | None = None
+            work: Work
+        ```
+
+        <!-- fmt: on -->
 
 ---
 
@@ -3977,7 +4421,8 @@ Rename generated model classes from a JSON mapping.
 
 The `--model-name-map` option applies explicit class names to generated models.
 Mapping keys can be canonical schema refs such as `#/definitions/Foo` or the
-current generated class name such as `Foo1`. Values are final Python class names.
+class name a model has in the output without the map, such as `Foo1`; the other
+models keep the names they have there. Values are final Python class names.
 
 This is useful when a schema cannot be edited but generated model names must be
 stable for public APIs or downstream code. Colliding mapped names fail instead
@@ -4078,19 +4523,189 @@ warning. GraphQL input does not apply `--model-name-map`, so every key is report
 
 ---
 
+## `--name-converted-payloads-by-message` {#name-converted-payloads-by-message}
+
+Name a converted payload that names no type of its own after its message.
+
+An AsyncAPI payload in Avro or XML Schema is converted to JSON Schema first. A payload that names no type of its own,
+such as an Avro `string`, array, map or union, or an XML Schema with several global elements, takes the converter's
+placeholder title `Model`: the root of a string, array or union payload writes `Field(..., title='Model')`, and under
+`--use-title-as-name` a string, array, map or XML Schema payload is named `Model`, `Model1`, .... With
+`--name-converted-payloads-by-message` such a payload takes no title, as a JSON Schema payload, so its class is named
+after its message (`PingPublishPayload`) under `--use-title-as-name` too. A payload that names its type, such as an Avro
+record, keeps that name.
+
+**Related:** [`--use-title-as-name`](field-customization.md#use-title-as-name)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input converted_payload_names.yaml --name-converted-payloads-by-message # (1)!
+    ```
+
+    1. :material-arrow-left: `--name-converted-payloads-by-message` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    asyncapi: 2.6.0
+    info: {title: t, version: '1'}
+    channels:
+      text:
+        publish:
+          message:
+            name: Text
+            schemaFormat: application/vnd.apache.avro;version=1.9.0
+            payload: string
+      ping:
+        publish:
+          message:
+            name: Ping
+            schemaFormat: application/vnd.apache.avro;version=1.9.0
+            payload: {type: array, items: string}
+      pong:
+        publish:
+          message:
+            name: Pong
+            schemaFormat: application/vnd.apache.avro;version=1.9.0
+            payload: {type: map, values: int}
+      rec:
+        publish:
+          message:
+            name: Rec
+            schemaFormat: application/vnd.apache.avro;version=1.9.0
+            payload: {type: record, name: Model, fields: [{name: a, type: string}]}
+      uni:
+        publish:
+          message:
+            name: Uni
+            schemaFormat: application/vnd.apache.avro;version=1.9.0
+            payload: ["null", "string"]
+      xml:
+        publish:
+          message:
+            name: Xml
+            schemaFormat: application/xml;version=1.0
+            payload: |
+              <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+                <xs:element name="A" type="xs:string"/>
+                <xs:element name="B" type="xs:int"/>
+              </xs:schema>
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  converted_payload_names.yaml
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, Field, RootModel, conint
+
+
+        class TextPublishPayload(RootModel[str]):
+            root: str
+
+
+        class PingPublishPayload(RootModel[list[str]]):
+            root: list[str]
+
+
+        class PongPublishPayload(RootModel[dict[str, int]]):
+            root: dict[str, int]
+
+
+        class RecPublishPayload(BaseModel):
+            a: str
+
+
+        class UniPublishPayload(RootModel[str | None]):
+            root: str | None
+
+
+        class XmlPublishPayload(BaseModel):
+            A: str = Field(..., title='A')
+            B: conint(ge=-2147483648, le=2147483647) = Field(..., title='B')
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  converted_payload_names.yaml
+        #   timestamp: 2019-07-26T00:00:00+00:00
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel, Field, RootModel, conint
+
+
+        class TextPublishPayload(RootModel[str]):
+            root: str = Field(..., title='Model')
+
+
+        class PingPublishPayload(RootModel[list[str]]):
+            root: list[str] = Field(..., title='Model')
+
+
+        class PongPublishPayload(RootModel[dict[str, int]]):
+            root: dict[str, int]
+
+
+        class RecPublishPayload(BaseModel):
+            a: str
+
+
+        class UniPublishPayload(RootModel[str | None]):
+            root: str | None = Field(..., title='Model')
+
+
+        class XmlPublishPayload(BaseModel):
+            A: str = Field(..., title='A')
+            B: conint(ge=-2147483648, le=2147483647) = Field(..., title='B')
+        ```
+
+        <!-- fmt: on -->
+
+---
+
 ## `--naming-strategy` {#naming-strategy}
 
-Use parent-prefixed naming strategy for duplicate model names.
+Choose how models are named and how duplicate model names are told apart.
 
-The `--naming-strategy parent-prefixed` flag prefixes model names with their
-parent model name when duplicates occur. For example, if both `Order` and
-`Cart` have an inline `Item` definition, they become `OrderItem` and `CartItem`.
+`numbered` (the default) keeps a model's own name and numbers a duplicate (`Item`, `Item1`). `parent-prefixed` and
+`full-path` prefix every nested model with the name of the model that holds it, joined in CamelCase and with nested
+parents included, also where the name is unique: both give the same model names. For example, `Order` and `Cart`
+with an inline `item` give `OrderItem` and `CartItem` (here `ModelOrderItem` and `ModelCartItem`, as the definitions
+sit below the root model `Model`), and `Company` > `employee` > `home_address` gives `CompanyEmployeeHomeAddress`.
+
+`primary-first` numbers a duplicate as `numbered` does, but renames a model of another file that holds the name of a
+primary definition. `definitions-first` gives every definition (in `/definitions/`, `/$defs/` or
+`/components/schemas/` of any document) its own name before an inline model, a union branch or another definition
+that asked for it first, which takes the name the definition would have taken (`Item1`); a model whose name is made
+from a renamed model, such as the model of its extra properties, is renamed with it. `enclosing-model` prefixes
+every nested model with the final name of the model it is built for, once, and a branch of a union without a name of
+its own with its position (`StreamEvent1`), while a definition keeps its own name (`Customer`, not `ModelCustomer`).
 
 Generated clients and servers (experimental) follow the same rules for their method, argument, module, and class
-names, with the resource or router group as the parent of a method and the method as the parent of an argument;
-under `primary-first`, a primary name is one the root document declares.
+names, with the resource or router group as the parent of a method and the method as the parent of an argument, but
+prefix only a name their scope already holds: `parent-prefixed` with its innermost enclosing scope, `full-path` with
+every enclosing scope (`enclosing-model` as `full-path`); under `primary-first` and `definitions-first`, a primary
+name is one the root document declares.
 
-**Related:** [`--duplicate-name-suffix`](#duplicate-name-suffix), [`--parent-scoped-naming`](#parent-scoped-naming)
+**Related:** [`--duplicate-name-suffix`](#duplicate-name-suffix), [`--parent-scoped-naming`](#parent-scoped-naming), [`--read-only-write-only-model-type`](openapi-only-options.md#read-only-write-only-model-type), [`--use-tag-as-union-variant-name`](field-customization.md#use-tag-as-union-variant-name)
 
 !!! tip "Usage"
 
@@ -4102,75 +4717,312 @@ under `primary-first`, a primary name is one the root document declares.
 
 ??? example "Examples"
 
-    **Input Schema:**
+    === "OpenAPI"
 
-    ```json
-    {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "definitions": {
-        "Order": {
-          "type": "object",
-          "properties": {
-            "item": {
+        **Input Schema:**
+
+        ```yaml
+        openapi: 3.0.3
+        info: {title: definitions first, version: "1"}
+        paths: {}
+        components:
+          schemas:
+            build:
+              type: object
+              properties:
+                package:
+                  type: object
+                  properties:
+                    id: {type: string, readOnly: true}
+                    path: {type: string}
+                  additionalProperties:
+                    type: object
+                    title: PackageExtra
+                    properties:
+                      size: {type: integer}
+            package:
+              type: object
+              properties:
+                id: {type: string, readOnly: true}
+                name: {type: string}
+              additionalProperties:
+                type: object
+                properties:
+                  weight: {type: integer}
+            holder:
+              type: object
+              properties:
+                pkg: {$ref: '#/components/schemas/package'}
+            application_fee:
+              type: object
+              properties:
+                charge:
+                  anyOf:
+                    - {type: string, maxLength: 5000}
+                    - $ref: '#/components/schemas/charge'
+            charge:
+              type: object
+              properties:
+                id: {type: string}
+            event:
+              allOf:
+                - $ref: '#/components/schemas/holder'
+                - oneOf:
+                    - type: object
+                      properties:
+                        created: {type: string}
+                    - type: object
+                      properties:
+                        deleted: {type: string}
+        ```
+
+        **Output:**
+
+        === "With Option"
+
+            <!-- fmt: off -->
+
+            ```python
+            # generated by datamodel-codegen:
+            #   filename:  definitions_first.yaml
+
+            from __future__ import annotations
+
+            from typing import Dict
+
+            from pydantic import BaseModel, ConfigDict, RootModel, constr
+
+
+            class Package1AdditionalProperty(BaseModel):
+                size: int | None = None
+
+
+            class Package1(BaseModel):
+                model_config = ConfigDict(
+                    extra='allow',
+                )
+                __annotations__ = {
+                    '__pydantic_extra__': Dict[str, Package1AdditionalProperty],
+                }
+                id: str | None = None
+                path: str | None = None
+
+
+            class Build(BaseModel):
+                package: Package1 | None = None
+
+
+            class PackageAdditionalProperty(BaseModel):
+                weight: int | None = None
+
+
+            class Package(BaseModel):
+                model_config = ConfigDict(
+                    extra='allow',
+                )
+                __annotations__ = {
+                    '__pydantic_extra__': Dict[str, PackageAdditionalProperty],
+                }
+                id: str | None = None
+                name: str | None = None
+
+
+            class Holder(BaseModel):
+                pkg: Package | None = None
+
+
+            class Charge(BaseModel):
+                id: str | None = None
+
+
+            class Event1(BaseModel):
+                created: str | None = None
+
+
+            class Event2(BaseModel):
+                deleted: str | None = None
+
+
+            class Event3(Holder):
+                pass
+
+
+            class Event4(Event1, Event3):
+                pass
+
+
+            class Event5(Event2, Event3):
+                pass
+
+
+            class Event(RootModel[Event4 | Event5]):
+                root: Event4 | Event5
+
+
+            class ApplicationFee(BaseModel):
+                charge: constr(max_length=5000) | Charge | None = None
+            ```
+
+            <!-- fmt: on -->
+
+        === "Without Option"
+
+            <!-- fmt: off -->
+
+            ```python
+            # generated by datamodel-codegen:
+            #   filename:  definitions_first.yaml
+
+            from __future__ import annotations
+
+            from typing import Dict
+
+            from pydantic import BaseModel, ConfigDict, RootModel, constr
+
+
+            class PackageAdditionalProperty(BaseModel):
+                size: int | None = None
+
+
+            class Package(BaseModel):
+                model_config = ConfigDict(
+                    extra='allow',
+                )
+                __annotations__ = {
+                    '__pydantic_extra__': Dict[str, PackageAdditionalProperty],
+                }
+                id: str | None = None
+                path: str | None = None
+
+
+            class Build(BaseModel):
+                package: Package | None = None
+
+
+            class Package1AdditionalProperty(BaseModel):
+                weight: int | None = None
+
+
+            class Package1(BaseModel):
+                model_config = ConfigDict(
+                    extra='allow',
+                )
+                __annotations__ = {
+                    '__pydantic_extra__': Dict[str, Package1AdditionalProperty],
+                }
+                id: str | None = None
+                name: str | None = None
+
+
+            class Holder(BaseModel):
+                pkg: Package1 | None = None
+
+
+            class Charge(BaseModel):
+                id: str | None = None
+
+
+            class Event1(BaseModel):
+                created: str | None = None
+
+
+            class Event2(BaseModel):
+                deleted: str | None = None
+
+
+            class Event3(Holder):
+                pass
+
+
+            class Event4(Event1, Event3):
+                pass
+
+
+            class Event5(Event2, Event3):
+                pass
+
+
+            class Event(RootModel[Event4 | Event5]):
+                root: Event4 | Event5
+
+
+            class ApplicationFee(BaseModel):
+                charge: constr(max_length=5000) | Charge | None = None
+            ```
+
+            <!-- fmt: on -->
+
+    === "JSON Schema"
+
+        **Input Schema:**
+
+        ```json
+        {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "definitions": {
+            "Order": {
               "type": "object",
               "properties": {
-                "name": {"type": "string"}
+                "item": {
+                  "type": "object",
+                  "properties": {
+                    "name": {"type": "string"}
+                  }
+                }
               }
-            }
-          }
-        },
-        "Cart": {
-          "type": "object",
-          "properties": {
-            "item": {
+            },
+            "Cart": {
               "type": "object",
               "properties": {
-                "quantity": {"type": "integer"}
+                "item": {
+                  "type": "object",
+                  "properties": {
+                    "quantity": {"type": "integer"}
+                  }
+                }
               }
             }
           }
         }
-      }
-    }
-    ```
+        ```
 
-    **Output:**
+        **Output:**
 
-    <!-- fmt: off -->
+        <!-- fmt: off -->
 
-    ```python
-    # generated by datamodel-codegen:
-    #   filename:  input.json
-    #   timestamp: 2019-07-26T00:00:00+00:00
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  input.json
+        #   timestamp: 2019-07-26T00:00:00+00:00
 
-    from __future__ import annotations
+        from __future__ import annotations
 
-    from typing import Any
+        from typing import Any
 
-    from pydantic import BaseModel, RootModel
+        from pydantic import BaseModel, RootModel
 
 
-    class Model(RootModel[Any]):
-        root: Any
+        class Model(RootModel[Any]):
+            root: Any
 
 
-    class ModelOrderItem(BaseModel):
-        name: str | None = None
+        class ModelOrderItem(BaseModel):
+            name: str | None = None
 
 
-    class ModelOrder(BaseModel):
-        item: ModelOrderItem | None = None
+        class ModelOrder(BaseModel):
+            item: ModelOrderItem | None = None
 
 
-    class ModelCartItem(BaseModel):
-        quantity: int | None = None
+        class ModelCartItem(BaseModel):
+            quantity: int | None = None
 
 
-    class ModelCart(BaseModel):
-        item: ModelCartItem | None = None
-    ```
+        class ModelCart(BaseModel):
+            item: ModelCartItem | None = None
+        ```
 
-    <!-- fmt: on -->
+        <!-- fmt: on -->
 
 ---
 
@@ -6147,6 +6999,128 @@ The `--reuse-scope` flag configures the code generation behavior.
 
 ---
 
+## `--singularize-last-word-of-item-names` {#singularize-last-word-of-item-names}
+
+Name the item model of an array by singularizing only the last word of its name.
+
+The item model of an array property is named by singularizing the property name. Without the option the whole name
+is singularized as one word, which goes wrong for some endings: `actions_caches` gives `ActionsCach` and
+`payment_status` gives `PaymentStatu`. With `--singularize-last-word-of-item-names` only the last word is
+singularized, `ActionsCache`, and a last word without a singular takes the `Item` suffix, `PaymentStatusItem`.
+
+**Related:** [`--disable-appending-item-suffix`](template-customization.md#disable-appending-item-suffix)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input singularize_last_word_of_item_names.yaml --singularize-last-word-of-item-names # (1)!
+    ```
+
+    1. :material-arrow-left: `--singularize-last-word-of-item-names` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.0.3
+    info: {title: singular, version: "1"}
+    paths: {}
+    components:
+      schemas:
+        ActionsCacheList:
+          type: object
+          properties:
+            actions_caches:
+              type: array
+              items:
+                type: object
+                properties:
+                  id: {type: integer}
+            payment_status:
+              type: array
+              items:
+                type: object
+                properties:
+                  s: {type: string}
+            shipping_addresses:
+              type: array
+              items:
+                type: object
+                properties:
+                  city: {type: string}
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  singularize_last_word_of_item_names.yaml
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel
+
+
+        class ActionsCache(BaseModel):
+            id: int | None = None
+
+
+        class PaymentStatusItem(BaseModel):
+            s: str | None = None
+
+
+        class ShippingAddress(BaseModel):
+            city: str | None = None
+
+
+        class ActionsCacheList(BaseModel):
+            actions_caches: list[ActionsCache] | None = None
+            payment_status: list[PaymentStatusItem] | None = None
+            shipping_addresses: list[ShippingAddress] | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  singularize_last_word_of_item_names.yaml
+
+        from __future__ import annotations
+
+        from pydantic import BaseModel
+
+
+        class ActionsCach(BaseModel):
+            id: int | None = None
+
+
+        class PaymentStatu(BaseModel):
+            s: str | None = None
+
+
+        class ShippingAddress(BaseModel):
+            city: str | None = None
+
+
+        class ActionsCacheList(BaseModel):
+            actions_caches: list[ActionsCach] | None = None
+            payment_status: list[PaymentStatu] | None = None
+            shipping_addresses: list[ShippingAddress] | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
 ## `--skip-root-model` {#skip-root-model}
 
 Skip generation of root model when schema contains nested definitions.
@@ -7505,6 +8479,150 @@ default values.
 
 ---
 
+## `--use-duplicate-name-suffix-for-every-collision` {#use-duplicate-name-suffix-for-every-collision}
+
+Give the `--duplicate-name-suffix` suffix to every model renamed in its module.
+
+The parse names a model whose name another model already holds with the suffix of `--duplicate-name-suffix`. A model
+renamed later because its name is taken in its module, by an inline model of the same name or by a name the module
+imports (a definition `AnyUrl` beside a `format: uri` field), takes the suffix `Model` whatever the option says. With
+`--use-duplicate-name-suffix-for-every-collision` it takes the suffix the map gives its kind (`model` or `enum`, else
+`default`), and `Model` where the map gives none. Without `--duplicate-name-suffix` the option changes nothing.
+
+**Related:** [`--duplicate-name-suffix`](#duplicate-name-suffix)
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input duplicate_name_suffix_every_collision.json --duplicate-name-suffix '{"model": "Schema", "enum": "Kind"}' --use-duplicate-name-suffix-for-every-collision # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-duplicate-name-suffix-for-every-collision` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$defs": {
+        "Item": {"type": "object", "properties": {"v": {"type": "string"}}},
+        "AnyUrl": {"type": "object", "properties": {"href": {"type": "string"}}},
+        "Status": {"type": "string", "enum": ["open", "closed"]}
+      },
+      "title": "Root",
+      "type": "object",
+      "properties": {
+        "item": {"type": "object", "properties": {"w": {"type": "integer"}}},
+        "other": {"$ref": "#/$defs/Item"},
+        "site": {"type": "string", "format": "uri"},
+        "link": {"$ref": "#/$defs/AnyUrl"},
+        "status": {"type": "string", "enum": ["new", "old"]},
+        "state": {"$ref": "#/$defs/Status"}
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  duplicate_name_suffix_every_collision.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+
+        from pydantic import AnyUrl, BaseModel
+
+
+        class Item(BaseModel):
+            w: int | None = None
+
+
+        class Status(Enum):
+            new = 'new'
+            old = 'old'
+
+
+        class ItemSchema(BaseModel):
+            v: str | None = None
+
+
+        class AnyUrlSchema(BaseModel):
+            href: str | None = None
+
+
+        class StatusKind(Enum):
+            open = 'open'
+            closed = 'closed'
+
+
+        class Root(BaseModel):
+            item: Item | None = None
+            other: ItemSchema | None = None
+            site: AnyUrl | None = None
+            link: AnyUrlSchema | None = None
+            status: Status | None = None
+            state: StatusKind | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  duplicate_name_suffix_every_collision.json
+
+        from __future__ import annotations
+
+        from enum import Enum
+
+        from pydantic import AnyUrl, BaseModel
+
+
+        class Item(BaseModel):
+            w: int | None = None
+
+
+        class Status(Enum):
+            new = 'new'
+            old = 'old'
+
+
+        class ItemModel(BaseModel):
+            v: str | None = None
+
+
+        class AnyUrlModel(BaseModel):
+            href: str | None = None
+
+
+        class StatusModel(Enum):
+            open = 'open'
+            closed = 'closed'
+
+
+        class Root(BaseModel):
+            item: Item | None = None
+            other: ItemModel | None = None
+            site: AnyUrl | None = None
+            link: AnyUrlModel | None = None
+            status: Status | None = None
+            state: StatusModel | None = None
+        ```
+
+        <!-- fmt: on -->
+
+---
+
 ## `--use-frozen-field` {#use-frozen-field}
 
 Generate frozen (immutable) field definitions for readOnly properties.
@@ -7799,6 +8917,138 @@ preserves the difference between an omitted field and a nullable field set to `N
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--use-msgspec-meta-for-map-keys` {#use-msgspec-meta-for-map-keys}
+
+Check the keys of a msgspec map whose keys propertyNames or patternProperties constrain.
+
+A map whose keys a `propertyNames` schema or the patterns of `patternProperties` constrain by `pattern`, `minLength`
+or `maxLength` is written with `str` keys in msgspec.Struct output, so every key decodes, while Pydantic output checks
+them. With this option the keys are `Annotated[str, Meta(...)]`, which msgspec checks at decode. The keys of a
+`propertyNames` union stay `str`, as msgspec decodes a union of strings by one of them.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input msgspec_map_keys.json --output-model-type msgspec.Struct --use-msgspec-meta-for-map-keys # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-msgspec-meta-for-map-keys` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Model",
+      "type": "object",
+      "properties": {
+        "named": {
+          "type": "object",
+          "propertyNames": {"pattern": "^[a-z]+$"},
+          "additionalProperties": {"type": "string"}
+        },
+        "sized": {
+          "type": "object",
+          "propertyNames": {"minLength": 2, "maxLength": 4},
+          "additionalProperties": {"type": "integer"}
+        },
+        "patterned": {
+          "type": "object",
+          "patternProperties": {"^x-": {"type": "string"}},
+          "additionalProperties": false
+        },
+        "named_and_patterned": {
+          "type": "object",
+          "propertyNames": {"maxLength": 5},
+          "patternProperties": {"^[a-z]+$": {"type": "string"}},
+          "additionalProperties": false
+        },
+        "nested": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "propertyNames": {"pattern": "^[0-9]+$"},
+            "additionalProperties": {"type": "boolean"}
+          }
+        },
+        "either": {
+          "type": "object",
+          "propertyNames": {"anyOf": [{"pattern": "^a"}, {"pattern": "^b"}]},
+          "additionalProperties": {"type": "string"}
+        },
+        "single_branch": {
+          "type": "object",
+          "propertyNames": {"anyOf": [{"pattern": "^a"}]},
+          "additionalProperties": {"type": "string"}
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  msgspec_map_keys.json
+
+        from __future__ import annotations
+
+        from typing import Annotated
+
+        from msgspec import UNSET, Meta, Struct, UnsetType
+
+
+        class Model(Struct):
+            named: dict[Annotated[str, Meta(pattern='^[a-z]+$')], str] | UnsetType = UNSET
+            sized: dict[Annotated[str, Meta(max_length=4, min_length=2)], int] | UnsetType = (
+                UNSET
+            )
+            patterned: dict[Annotated[str, Meta(pattern='^x-')], str] | UnsetType = UNSET
+            named_and_patterned: (
+                dict[Annotated[str, Meta(max_length=5, pattern='^[a-z]+$')], str] | UnsetType
+            ) = UNSET
+            nested: list[dict[Annotated[str, Meta(pattern='^[0-9]+$')], bool]] | UnsetType = (
+                UNSET
+            )
+            either: dict[str, str] | UnsetType = UNSET
+            single_branch: dict[Annotated[str, Meta(pattern='^a')], str] | UnsetType = UNSET
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  msgspec_map_keys.json
+
+        from __future__ import annotations
+
+        from msgspec import UNSET, Struct, UnsetType
+
+
+        class Model(Struct):
+            named: dict[str, str] | UnsetType = UNSET
+            sized: dict[str, int] | UnsetType = UNSET
+            patterned: dict[str, str] | UnsetType = UNSET
+            named_and_patterned: dict[str, str] | UnsetType = UNSET
+            nested: list[dict[str, bool]] | UnsetType = UNSET
+            either: dict[str, str] | UnsetType = UNSET
+            single_branch: dict[str, str] | UnsetType = UNSET
+        ```
+
+        <!-- fmt: on -->
 
 ---
 
@@ -8661,6 +9911,152 @@ polymorphic types and inheritance hierarchies.
     ```
 
     <!-- fmt: on -->
+
+---
+
+## `--use-serialize-as-any-for-every-subclass` {#use-serialize-as-any-for-every-subclass}
+
+Wrap a field in SerializeAsAny when any subclass of its model adds fields.
+
+`--use-serialize-as-any` wraps a field whose model has a direct subclass that adds fields, as the subclasses recorded
+when the model was parsed tell, so a subclass two levels down, a subclass of a model that `--reuse-model` or
+`--collapse-reuse-models` merged into another, and a field that names its model through its module (`c.Base`) are left
+out and serialize as the base model. With this option the class hierarchy of the generated output decides: a field is
+wrapped when any subclass of its model, at any depth, adds fields (Pydantic v2 only).
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input serialize_as_any_every_subclass.json --use-serialize-as-any --use-serialize-as-any-for-every-subclass --reuse-model # (1)!
+    ```
+
+    1. :material-arrow-left: `--use-serialize-as-any-for-every-subclass` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$defs": {
+        "A": {"type": "object", "properties": {"x": {"type": "string"}}},
+        "B": {"type": "object", "properties": {"x": {"type": "string"}}},
+        "Sub": {"allOf": [{"$ref": "#/$defs/B"}, {"type": "object", "properties": {"y": {"type": "integer"}}}]},
+        "C": {"type": "object", "properties": {"z": {"type": "string"}}},
+        "Mid": {"allOf": [{"$ref": "#/$defs/C"}]},
+        "Leaf": {"allOf": [{"$ref": "#/$defs/Mid"}, {"type": "object", "properties": {"w": {"type": "integer"}}}]},
+        "Holder": {
+          "type": "object",
+          "properties": {"a": {"$ref": "#/$defs/A"}, "b": {"$ref": "#/$defs/B"}, "c": {"$ref": "#/$defs/C"}}
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  serialize_as_any_every_subclass.json
+
+        from __future__ import annotations
+
+        from typing import Any
+
+        from pydantic import BaseModel, RootModel, SerializeAsAny
+
+
+        class Model(RootModel[Any]):
+            root: Any
+
+
+        class A(BaseModel):
+            x: str | None = None
+
+
+        class B(A):
+            pass
+
+
+        class Sub(B):
+            y: int | None = None
+
+
+        class C(BaseModel):
+            z: str | None = None
+
+
+        class Mid(C):
+            pass
+
+
+        class Leaf(Mid):
+            w: int | None = None
+
+
+        class Holder(BaseModel):
+            a: SerializeAsAny[A] | None = None
+            b: SerializeAsAny[B] | None = None
+            c: SerializeAsAny[C] | None = None
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  serialize_as_any_every_subclass.json
+
+        from __future__ import annotations
+
+        from typing import Any
+
+        from pydantic import BaseModel, RootModel
+
+
+        class Model(RootModel[Any]):
+            root: Any
+
+
+        class A(BaseModel):
+            x: str | None = None
+
+
+        class B(A):
+            pass
+
+
+        class Sub(B):
+            y: int | None = None
+
+
+        class C(BaseModel):
+            z: str | None = None
+
+
+        class Mid(C):
+            pass
+
+
+        class Leaf(Mid):
+            w: int | None = None
+
+
+        class Holder(BaseModel):
+            a: A | None = None
+            b: B | None = None
+            c: C | None = None
+        ```
+
+        <!-- fmt: on -->
 
 ---
 

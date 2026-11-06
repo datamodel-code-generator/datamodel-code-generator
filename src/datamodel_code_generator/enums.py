@@ -28,7 +28,7 @@ class DataclassArguments(TypedDict, total=False):
 
 
 MIN_VERSION: Final[int] = 10
-MAX_VERSION: Final[int] = 13
+MAX_VERSION: Final[int] = 15
 DEFAULT_SHARED_MODULE_NAME: Final[str] = "shared"
 
 
@@ -177,18 +177,27 @@ class HTTPBackend(Enum):
 
 
 class NamingStrategy(Enum):
-    """Strategy for generating unique model names when duplicates occur.
+    """Strategy for naming models and telling duplicate model names apart.
 
     numbered: Append numeric suffix (Address1, Address2) [default].
-    parent_prefixed: Prefix with parent model name (CustomerAddress, UserAddress).
-    full_path: Use full schema path for unique names (OrdersItemsAddress).
+    parent_prefixed: Prefix every nested model with the name of the model that holds it, in CamelCase, nested parents
+        included (CompanyAddress, CompanyEmployeeHomeAddress); the model names are those of full_path where the class
+        names are converted as by default, as a custom_class_name_generator gets the names joined by an underscore
+        (Company_address) here and in CamelCase (CompanyAddress) under full_path.
+    full_path: Prefix every nested model with the names of the models that hold it (CompanyEmployeeHomeAddress).
     primary_first: Prioritize primary schema definitions, others get suffix.
+    definitions_first: Give a definition its own name before any other model that asks for it, in every document, and
+        number the model that took it first; the models are numbered as by numbered otherwise.
+    enclosing_model: Prefix every nested model with the final name of the model it is built for, once (CompanyAddress,
+        StreamEvent1 for the first branch of the union StreamEvent); a definition keeps its own name.
     """
 
     Numbered = "numbered"
     ParentPrefixed = "parent-prefixed"
     FullPath = "full-path"
     PrimaryFirst = "primary-first"
+    DefinitionsFirst = "definitions-first"
+    EnclosingModel = "enclosing-model"
 
 
 class ClassNameAffixScope(Enum):
@@ -378,21 +387,6 @@ class JsonSchemaVersion(Enum):
     Draft201909 = "2019-09"
     Draft202012 = "2020-12"
     Auto = "auto"
-
-
-_REF_SIBLING_KEYWORDS_DISABLED_VERSIONS: Final = frozenset({
-    JsonSchemaVersion.Draft4,
-    JsonSchemaVersion.Draft6,
-    JsonSchemaVersion.Draft7,
-})
-
-
-def _ref_siblings_apply(version: JsonSchemaVersion) -> bool:
-    """Return whether a JSON Schema document of ``version`` evaluates the keywords beside a ``$ref``.
-
-    Draft 4, 6 and 7 ignore them; every later draft evaluates them, and so does ``auto`` (no document to detect from).
-    """
-    return version not in _REF_SIBLING_KEYWORDS_DISABLED_VERSIONS
 
 
 class OpenAPIVersion(Enum):

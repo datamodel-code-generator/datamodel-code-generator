@@ -3,6 +3,8 @@
 [test_generate_client]
 	main/generation_platform/client/cli/options/_sync.py
 	main/generation_platform/client/cli/options/models.py
+[test_generate_reads_a_leading_tilde_of_an_output_as_the_home_directory]
+	api_generation/generate_targets/generate_reads_a_leading_tilde_of_an_output_as_the_home_directory.txt
 [test_generate_server]
 config	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 config	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/server//*.py

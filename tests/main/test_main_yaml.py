@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import warnings
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
@@ -112,6 +113,28 @@ def test_main_yaml_deprecated_bool(output_file: Path) -> None:
             output_path=output_file,
             input_file_type="openapi",
         )
+
+
+@pytest.mark.usefixtures("yaml_backend")
+def test_main_yaml_bool_text_in_strings_does_not_warn(output_file: Path) -> None:
+    """A block scalar or quoted string spelling a YAML 1.1 boolean holds text and does not warn with ryaml (#5546)."""
+    with warnings.catch_warnings():
+        warnings.filterwarnings("error", message="YAML bool", category=DeprecationWarning)
+        run_main_and_assert(
+            input_path=YAML_DATA_PATH / "bool_text_in_strings.yaml",
+            output_path=output_file,
+            input_file_type="jsonschema",
+        )
+
+
+@pytest.mark.usefixtures("yaml_backend")
+def test_main_yaml_bool_word_does_not_warn(output_file: Path, tmp_path: Path) -> None:
+    """A word that starts with a YAML 1.1 boolean, such as ``TrueColor``, holds no boolean and does not warn (#5546)."""
+    input_path = tmp_path / "bool_word.yaml"
+    input_path.write_text("type: object\ntitle: TrueColor\nproperties:\n  a:\n    type: string\n")
+    with warnings.catch_warnings():
+        warnings.filterwarnings("error", message="YAML bool", category=DeprecationWarning)
+        run_main_and_assert(input_path=input_path, output_path=output_file, input_file_type="jsonschema")
 
 
 @pytest.mark.parametrize("yaml_backend", ["pyyaml", "ryaml"], indirect=True)

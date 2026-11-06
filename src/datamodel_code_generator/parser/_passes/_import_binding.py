@@ -122,9 +122,9 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
     init: bool,
     internal_modules: Collection[tuple[str, ...]],
     base_class: bool,
-    treat_dot_as_module: bool | None,
     shared_imports: Imports | None,
     row: ImportPathRow = "reference",
+    hidden_modules: Collection[tuple[str, ...]] = (),
 ) -> ReferenceImportTarget:
     """Return how the module ``current_module_name`` imports the model ``name`` at ``target_full_name``.
 
@@ -133,7 +133,9 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
     not through the module imported from its package, where an import every module shares (``shared_imports``) binds
     the module's name: every module, a package's ``__init__`` included, writes that import, so the module would bind the
     name twice and ``from package import module`` would give what the package binds, not the module. The import then
-    binds the model's name, which another shared import may bind too (``beside_shared_import``).
+    binds the model's name, which another shared import may bind too (``beside_shared_import``). So is a model of one of
+    the ``hidden_modules``, whose package binds the module's name itself (``submodules_hidden_by_packages``), and its
+    import keeps off the names of the shared imports in the same way.
     """
     beside_shared_import = False
     if base_class:
@@ -148,13 +150,6 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
         if use_exact and not is_ancestor_package_reference(current_module_name, target_full_name):
             from_, import_ = full_path = exact_import(from_, import_, name)
         import_ = written_name(import_)
-        current_module_path = tuple(current_module_name.split(".")) if current_module_name else ()
-        if (  # pragma: no cover
-            len(current_module_path) > 1 and current_module_path[-1].count(".") > 0 and not treat_dot_as_module
-        ):
-            rel_path_depth = current_module_path[-1].count(".")
-            from_ = from_[rel_path_depth:]
-
         ref_module = tuple(target_full_name.split(".")[:-1])
 
         is_module_class_collision = ref_module and import_ == name and ref_module[-1] == import_
@@ -166,11 +161,16 @@ def reference_import_target(  # ruff: ignore[too-many-arguments]
             and _is_module_named_like_shared_import(shared_imports, import_, name)
         )
 
-        if imports_module and (is_internal_module or is_module_class_collision or named_like_shared_import):
+        hidden_by_package = ref_module in hidden_modules
+        if imports_module and (
+            is_internal_module or is_module_class_collision or named_like_shared_import or hidden_by_package
+        ):
             from_ = join_module(from_, import_)
             import_ = name
             full_path = from_, import_
-            beside_shared_import = named_like_shared_import and _is_bound_by_shared_import(shared_imports, name)
+            beside_shared_import = (named_like_shared_import or hidden_by_package) and _is_bound_by_shared_import(
+                shared_imports, name
+            )
     from_ = written_name(from_)
     written_from = "." + from_ if init and not target_full_name.startswith(current_module_name + ".") else from_
     return ReferenceImportTarget(full_path, from_, import_, written_from, beside_shared_import)
@@ -187,10 +187,10 @@ def register_reference_import(  # noqa: PLR0913
     internal_modules: set[tuple[str, ...]],
     base_class: bool = False,
     producer: ImportProducer,
-    treat_dot_as_module: bool | None,
     import_ledger: ModuleImportLedger,
     shared_imports: Imports,
     row: ImportPathRow = "reference",
+    hidden_modules: Collection[tuple[str, ...]] = (),
 ) -> str | None:
     """Import a reference from another module and return its expression when it is not the class name.
 
@@ -206,9 +206,9 @@ def register_reference_import(  # noqa: PLR0913
         init=init,
         internal_modules=internal_modules,
         base_class=base_class,
-        treat_dot_as_module=treat_dot_as_module,
         shared_imports=shared_imports,
         row=row,
+        hidden_modules=hidden_modules,
     )
     if target.same_module:
         return None
@@ -241,14 +241,13 @@ def generic_base_class_import(module: ModulePath, base_module: ModulePath, name:
         init=init,
         internal_modules=(),
         base_class=True,
-        treat_dot_as_module=None,
         shared_imports=None,
     )
     return Import(from_=target.written_from, import_=target.import_)
 
 
 class ReferenceExpressionHost(Protocol):
-    """The option, the import ledger and the builder that writing how a data type names its reference uses."""
+    """The import ledger and the builder that writing how a data type names its reference uses, and the option."""
 
     @property
     def _graph_builder(self) -> GraphBuilder:
@@ -299,7 +298,6 @@ def set_reference_expression(  # noqa: PLR0913, PLR0917
             internal_modules=internal_modules,
             base_class=isinstance(data_type, BaseClassDataType),
             producer=producer,
-            treat_dot_as_module=host.treat_dot_as_module,
             import_ledger=host._import_ledger,  # noqa: SLF001
             shared_imports=host.imports,
             row=row,

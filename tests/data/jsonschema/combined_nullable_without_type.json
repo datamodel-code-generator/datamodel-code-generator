@@ -1,0 +1,8 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "branchUntyped": {"anyOf": [{"type": "string"}, {"type": "null"}], "oneOf": [{"nullable": true}]},
+    "memberUntyped": {"anyOf": [{"nullable": true}, {"type": "boolean"}], "oneOf": [{"type": "string"}, {"type": "integer"}]}
+  }
+}

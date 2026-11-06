@@ -8,12 +8,13 @@ JSON pointer walk (``get_model_by_path``, ``split_json_pointer``, ``unescape_jso
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple
 
 from typing_extensions import Sentinel
 
-from datamodel_code_generator._document_reader import ArrayIndexOutOfRangeError, member
-from datamodel_code_generator._json_pointer import decode_token
+from datamodel_code_generator._document_reader import ArrayIndexOutOfRangeError, member, member_key
+from datamodel_code_generator._json_pointer import decode_token, fragment_pointer, is_pointer_fragment
 from datamodel_code_generator._json_schema import (
     INSTANCE_DATA_KEYWORDS,
     SCHEMA_MAP_KEYS,
@@ -30,6 +31,7 @@ from datamodel_code_generator.types import DataType, UnionIntFloat
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterable, Mapping, Sequence
+    from collections.abc import Set as AbstractSet
 
     from datamodel_code_generator.parser._intersection import KeywordIntersection
 
@@ -62,6 +64,16 @@ def _get_json_value_type(value: object) -> str:
     return next((name for kind, name in _JSON_VALUE_TYPES if isinstance(value, kind)), "")
 
 
+def _json_value_admitted(schema_types: AbstractSet[str], value: object) -> bool:
+    """Return whether the JSON types ``schema_types`` (``admitted_types`` of a ``type``) admit a value.
+
+    A float without a fraction is an integer too.
+    """
+    return _get_json_value_type(value) in schema_types or (
+        isinstance(value, float) and value.is_integer() and "integer" in schema_types
+    )
+
+
 def _constraint_values(obj: JsonSchemaObject, keys: Iterable[str], *, as_numbers: bool = False) -> dict[str, Any]:
     """Return the value of each of ``keys`` that a schema sets, in their order; ``as_numbers`` unwraps a number."""
     return {
@@ -71,32 +83,63 @@ def _constraint_values(obj: JsonSchemaObject, keys: Iterable[str], *, as_numbers
     }
 
 
-def _dump_parts_admit_null(parts: Sequence[Mapping[str, Any]]) -> bool:
-    """Return whether the dumped parts of an intersection admit null (site ``all-of-parts``); the last is its own."""
+def _dump_parts_admit_null(parts: Sequence[Mapping[str, Any]], *, own_last: bool = True) -> bool:
+    """Return whether the dumped parts of an intersection admit null (site ``all-of-parts``); the last is its own.
+
+    Without ``own_last`` none of them is the site's own: each part with a ``type`` must declare null.
+    """
     return bool(
         resolve_null_facts(
-            dump_null_sources(parts[-1]),
+            dump_null_sources(parts[-1] if own_last else {}),
             "all-of-parts",
             parts=[dump_null_sources(part) for part in parts if "type" in part],
         ).admits_null
     )
 
 
-def _intersect_dumps(
+def _dump_parts_without_own_admit_null(parts: Sequence[Mapping[str, Any]]) -> bool:
+    """Return ``_dump_parts_admit_null`` of parts none of which is the site's own."""
+    return _dump_parts_admit_null(parts, own_last=False)
+
+
+def _dump_enum_entries_skip_null(dump: Mapping[str, Any]) -> bool:
+    """Return whether the ``x-enum-*`` entries of a dumped schema leave out the null of its enum (site ``enum``)."""
+    return (
+        resolve_null_facts(
+            replace(
+                dump_null_sources(dump),
+                type_string=dump.get("type") == "string",
+                enum_null=None in (dump.get("enum") or ()),
+            ),
+            "enum",
+        ).rule
+        == "enum-null-as-nullable"
+    )
+
+
+def _intersect_dumps(  # noqa: PLR0913
     parts: Sequence[Mapping[str, Any]],
     row: dict[str, Any],
     *,
     ref_siblings_are_parts: bool = True,
     legacy_rows: Collection[str] = (),
+    removes_enum_outside_type: bool = False,
+    own_last: bool = True,
 ) -> KeywordIntersection:
-    """Return ``parser/_intersection.py:intersect_keywords`` of dumped schema objects, null by ``all-of-parts``."""
+    """Return ``parser/_intersection.py:intersect_keywords`` of dumped schema objects, null by ``all-of-parts``.
+
+    ``removes_enum_outside_type`` removes the ``enum`` values the merged ``type`` rejects (``_json_value_admitted``).
+    Without ``own_last`` no part is the site's own keywords, whose declared null the null rule would take.
+    """
     return intersect_keywords(
         parts,
         row,
         extras_key=JsonSchemaObject.__extra_key__,
-        parts_admit_null=_dump_parts_admit_null,
+        parts_admit_null=_dump_parts_admit_null if own_last else _dump_parts_without_own_admit_null,
+        enum_entries_skip_null=_dump_enum_entries_skip_null,
         ref_siblings_are_parts=ref_siblings_are_parts,
         legacy_rows=legacy_rows,
+        admits_value=_json_value_admitted if removes_enum_outside_type else None,
     )
 
 
@@ -241,22 +284,49 @@ def _get_model_by_decoded_path(
     raise AssertionError  # pragma: no cover
 
 
-def _fragment_value(document: Any, fragment: str, *, or_missing: bool = False) -> Any:
+def unescaped_slash_pointer(document: object, tokens: Sequence[str | int]) -> str | None:
+    """Return the pointer of a key holding ``/`` that the unescaped ``/`` of ``tokens`` splits, or None.
+
+    ``tokens`` name no node. Where the tokens from one onward, joined by ``/``, are a key of the dict the tokens before
+    them reach, the pointer of that key is returned with its ``/`` escaped (``/definitions/user~1created``).
+    """
+    node = document
+    for index, token in enumerate(tokens):
+        if not isinstance(node, dict):
+            return None
+        if index < len(tokens) - 1 and (key := "/".join(map(str, tokens[index:]))) in node:
+            return fragment_pointer((*tokens[:index], key))
+        if (node := node.get(str(token), _MISSING_JSON_POINTER)) is _MISSING_JSON_POINTER:
+            return None
+    raise AssertionError  # pragma: no cover - the tokens of a dangling reference name no node
+
+
+SlashNames = Literal["joined", "uri"]
+"""How a JSON pointer reads a ``/`` it writes unescaped inside a name: row ``joined`` joins the parts from a part that
+names no member, the most first, into a key the object holds; row ``uri``, that of --read-escaped-ref-pointers, joins
+them only into a name that holds ``://``, as JSON Pointer reads every other unescaped ``/`` as a separator."""
+
+
+def _fragment_value(document: Any, fragment: str, *, or_missing: bool = False, names: SlashNames = "joined") -> Any:
     """Return the value a JSON pointer fragment names in a loaded document, the document itself for no fragment."""
     return (
-        _get_model_by_decoded_path(document, split_json_pointer(document, fragment), or_missing=or_missing)
+        _get_model_by_decoded_path(document, split_json_pointer(document, fragment, names=names), or_missing=or_missing)
         if fragment
         else document
     )
 
 
-def split_json_pointer(schema: dict[str, YamlValue] | list[YamlValue], pointer: str) -> list[str]:
-    """Split a JSON pointer into path parts, preserving slash-containing dict keys."""
-    return _split_json_pointer(schema, pointer)[0]
+def split_json_pointer(
+    schema: dict[str, YamlValue] | list[YamlValue], pointer: str, *, names: SlashNames = "joined"
+) -> list[str]:
+    """Split a JSON pointer into path parts, preserving slash-containing dict keys (``SlashNames``)."""
+    return _split_json_pointer(schema, pointer, names=names)[0]
 
 
-def _split_json_pointer(schema: dict[str, YamlValue] | list[YamlValue], pointer: str) -> tuple[list[str], list[str]]:
-    """Split a JSON pointer into lookup and reference path parts."""
+def _split_json_pointer(
+    schema: dict[str, YamlValue] | list[YamlValue], pointer: str, *, names: SlashNames = "joined"
+) -> tuple[list[str], list[str]]:
+    """Split a JSON pointer into lookup and reference path parts, reading an unescaped ``/`` by ``names``."""
     raw_parts = pointer.removeprefix("/").split("/") if pointer else []
     if "://" not in pointer and "~1" not in pointer:
         return [unescape_json_pointer_segment(part) for part in raw_parts], raw_parts
@@ -268,10 +338,10 @@ def _split_json_pointer(schema: dict[str, YamlValue] | list[YamlValue], pointer:
     while index < len(raw_parts):
         if isinstance(current, dict):
             direct_key = unescape_json_pointer_segment(raw_parts[index])
-            if direct_key in current:
+            if (held_key := member_key(current, direct_key)) in current:
                 parts.append(direct_key)
                 reference_parts.append(raw_parts[index])
-                current = current.get(direct_key, {})
+                current = current[held_key]
                 index += 1
                 continue
 
@@ -279,7 +349,7 @@ def _split_json_pointer(schema: dict[str, YamlValue] | list[YamlValue], pointer:
             matched_end = index
             for end in range(len(raw_parts), index, -1):
                 key = unescape_json_pointer_segment("/".join(raw_parts[index:end]))
-                if key in current:
+                if key in current and (names == "joined" or "://" in key):
                     matched_key = key
                     matched_end = end
                     break
@@ -394,4 +464,4 @@ def _ref_edge_child_entries(
 
 def _is_plain_name_fragment(ref: str) -> bool:
     """Return whether a reference is a plain-name fragment, which names an anchor instead of a location."""
-    return ref.startswith("#") and ref[1:2] not in {"", "/"}
+    return ref.startswith("#") and not is_pointer_fragment(ref[1:])

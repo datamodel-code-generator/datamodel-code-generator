@@ -29,9 +29,7 @@ def test_generation_attempt_lifetime(case: dict[str, str], tmp_path: Path, monke
         source = copied
     output = None
     if failure == "emit":
-        blocked = tmp_path / "blocked"
-        blocked.write_text("not a directory")
-        output = blocked / "models.py"
+        (output := tmp_path / "models.py").mkdir()
     observation, retained = run_generation_session(
         source,
         failure=failure,

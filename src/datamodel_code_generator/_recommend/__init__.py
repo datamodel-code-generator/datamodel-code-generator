@@ -30,10 +30,11 @@ if TYPE_CHECKING:
     from collections.abc import Set as AbstractSet
 
     from datamodel_code_generator._recommend._metrics import NameChanges, NameMetrics
-    from datamodel_code_generator._recommend._signals import SchemaKind, Signals
+    from datamodel_code_generator._recommend._signals import Signals
     from datamodel_code_generator._recommend._trial import CandidateOutcome, TrialCandidate, TrialInput
     from datamodel_code_generator._recommend_vocabulary import DisagreementKind, InputSource, OptionValue, RecommendMode
     from datamodel_code_generator.enums import InputFileType
+    from datamodel_code_generator.parser.schema_version import SchemaKind
     from datamodel_code_generator.preset import ResolvedPresetConfig
 
 _ANALYSED_TYPES: dict[str, SchemaKind] = {"openapi": "openapi", "jsonschema": "jsonschema", "asyncapi": "asyncapi"}
@@ -140,7 +141,6 @@ class Recommendation:
     preset_configured: bool
     covers: list[Option] = field(default_factory=list)
     recommendations: list[Option] = field(default_factory=list)
-    consider: list[Option] = field(default_factory=list)
     optional: list[Option] = field(default_factory=list)
     not_recommended: list[Option] = field(default_factory=list)
     disagreements: list[Disagreement] = field(default_factory=list)
@@ -164,7 +164,6 @@ class _Plan:
     baseline: dict[str, Any]
     delta: list[Option] = field(default_factory=list)
     covers: list[Option] = field(default_factory=list)
-    consider: list[Option] = field(default_factory=list)
     optional: list[Option] = field(default_factory=list)
     not_recommended: list[Option] = field(default_factory=list)
     blocked: list[tuple[Decision, str, OptionValue]] = field(default_factory=list)
@@ -235,14 +234,16 @@ def _document(text: str, kind: SchemaKind, what: str) -> dict[str, Any]:
 
 def _measure(document: dict[str, Any], kind: SchemaKind, config: Any) -> Signals:
     """Return the signals of a schema document, for the scopes the configuration generates."""
+    from datamodel_code_generator._document_reader import nesting_limit  # noqa: PLC0415
     from datamodel_code_generator._recommend._signals import measure_signals  # noqa: PLC0415
 
-    return measure_signals(
-        document,
-        kind,
-        openapi_scopes=frozenset(scope.value for scope in config.openapi_scopes or ()) or frozenset({"schemas"}),
-        include_paths=config.openapi_include_paths or (),
-    )
+    with nesting_limit():
+        return measure_signals(
+            document,
+            kind,
+            openapi_scopes=frozenset(scope.value for scope in config.openapi_scopes or ()) or frozenset({"schemas"}),
+            include_paths=config.openapi_include_paths or (),
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -324,10 +325,6 @@ def _plan(
             if changes:
                 plan.optional.append(_option(decision, changes))
             continue
-        if decision.contested:
-            if changes:
-                plan.consider.append(_option(decision, changes))
-            continue
         if blocked := [
             (decision, name, value) for name, value in changes.items() if option_arguments(name, value) is None
         ]:
@@ -378,7 +375,7 @@ def _disagreements(decisions: Sequence[Decision], request: RecommendRequest) -> 
     return [
         Disagreement(name, configured, value, decision, "explicit")
         for decision in decisions
-        if not decision.contested and decision.rule.optional is None
+        if decision.rule.optional is None
         for name, value in decision.values.items()
         if name in request.explicit_fields and (configured := configured_value(config, name)) != value
     ]
@@ -442,6 +439,7 @@ def _trial_input(request: RecommendRequest, analysed: _Input) -> TrialInput:
                 config.input_file_type,
                 config.input_model_ref_strategy,
                 config.output_model_type,
+                read_dataclass_fields_by_alias=config.read_input_model_dataclass_fields_by_alias,
             )
         except InputModelError as e:
             raise Error(str(e)) from e
@@ -506,14 +504,12 @@ def _label(base: str, option: Option, *, removed: bool) -> str:
     return f"{base} {'-' if removed else '+'} {option.decision.rule.decision}"
 
 
-def _candidates(
-    delta: Sequence[Option], consider: Sequence[Option], *, configured: bool
-) -> tuple[list[_Candidate], int]:
+def _candidates(delta: Sequence[Option], *, configured: bool) -> tuple[list[_Candidate], int]:
     """Return the candidates to compare and how many the limit of eight left out.
 
-    The current configuration, the preset, the recommendation, the recommendation with each option it may also take,
-    and the recommendation without each option it adds; with a configured preset, the current configuration is the
-    preset. A configuration is compared once, under its first label, and the last candidates are left out first.
+    The current configuration, the preset, the recommendation, and the recommendation without each option it adds;
+    with a configured preset, the current configuration is the preset. A configuration is compared once, under its
+    first label, and the last candidates are left out first.
     """
     base = "current" if configured else "preset"
     recommended = "recommended" if delta else base
@@ -521,10 +517,6 @@ def _candidates(
         *(() if configured else (_Candidate("current", on_preset=False, options=(), selectable=False),)),
         _Candidate(base, on_preset=True, options=()),
         _Candidate(recommended, on_preset=True, options=tuple(delta)),
-        *(
-            _Candidate(_label(recommended, option, removed=False), on_preset=True, options=(*delta, option))
-            for option in consider
-        ),
         *(
             _Candidate(
                 _label("recommended", option, removed=True),
@@ -661,7 +653,7 @@ def _compare(request: RecommendRequest, recommendation: Recommendation, analysed
 
     run = _runner(request, analysed)
     delta = recommendation.recommendations
-    candidates, dropped = _candidates(delta, recommendation.consider, configured=request.config.preset is not None)
+    candidates, dropped = _candidates(delta, configured=request.config.preset is not None)
     known = _known_type(analysed)
     outcomes, detected = run(_trial_candidates(request, recommendation, candidates, known))
     by_key = {candidate.key: outcome for candidate, outcome in zip(candidates, outcomes, strict=True)}
@@ -670,7 +662,7 @@ def _compare(request: RecommendRequest, recommendation: Recommendation, analysed
     )
     center = next((candidate for candidate in candidates if by_key[candidate.key] is selected), None)
     chosen = delta if center is None else center.options
-    pairs = _pairs(chosen, [*delta, *recommendation.consider])
+    pairs = _pairs(chosen, delta)
     extra = [] if center is None or center.key == _key(delta) else _remeasure(center, pairs, by_key.keys())
     if extra:
         more, _ = run(_trial_candidates(request, recommendation, extra, detected))
@@ -697,11 +689,9 @@ def _select(
     from datamodel_code_generator._recommend._metrics import location_changes  # noqa: PLC0415
     from datamodel_code_generator._recommend._trial import rank  # noqa: PLC0415
 
-    delta_rules = _key(recommendation.recommendations)[1]
     measured = [_measured(option, by_key, before, after) for option, before, after in pairs]
     recommendation.recommendations = [option for option in measured if option.decision.rule.id in chosen]
-    recommendation.left_out = [option for option in measured if option.decision.rule.id in delta_rules - chosen]
-    recommendation.consider = [option for option in measured if option.decision.rule.id not in delta_rules | chosen]
+    recommendation.left_out = [option for option in measured if option.decision.rule.id not in chosen]
     current = next(outcome for outcome in trial.outcomes if outcome.candidate.label == "current")
     selected = trial.selected
     migration = (
@@ -795,7 +785,6 @@ def recommend_options(request: RecommendRequest) -> Recommendation:
     recommendation.covers = plan.covers
     recommendation.recommendations = plan.delta
     recommendation.not_recommended = plan.not_recommended
-    recommendation.consider = plan.consider
     recommendation.optional = plan.optional
     recommendation.disagreements = [
         *recommendation.disagreements,

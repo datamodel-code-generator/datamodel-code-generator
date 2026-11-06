@@ -1,0 +1,30 @@
+openapi: 3.1.0
+info:
+  title: An exploded form-data member beside a readOnly property of its name
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /items:
+    post:
+      operationId: createItem
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {$ref: "#/components/schemas/Item"}
+            encoding:
+              filter: {style: form, explode: true}
+      responses:
+        '204':
+          description: Created.
+components:
+  schemas:
+    Item:
+      type: object
+      properties:
+        id: {type: string, readOnly: true}
+        filter:
+          type: object
+          properties:
+            id: {type: string}

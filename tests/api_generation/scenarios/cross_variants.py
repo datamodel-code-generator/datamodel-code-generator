@@ -1,8 +1,8 @@
 """Call the form variants server through its client: forms whose schema has read-only and write-only members.
 
 With request and response models, a form's request model leaves the read-only members out, one that is an object
-included, so neither target plans them: the client writes the others, and the server reads the others and passes
-over a read-only member a request sends anyway.
+included, so neither target plans them, nor the encodings the forms give them: the client writes the others, and
+the server reads the others and passes over a read-only member a request sends anyway.
 """
 
 from __future__ import annotations

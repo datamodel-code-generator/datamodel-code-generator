@@ -6,6 +6,7 @@ import ast
 import importlib.util
 import inspect
 import json
+import os
 import platform
 import re
 import shutil
@@ -15,9 +16,10 @@ import warnings
 from argparse import ArgumentTypeError, BooleanOptionalAction, Namespace
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
+from decimal import Decimal
 from io import StringIO
 from pathlib import Path
-from threading import Event
+from threading import Event, Thread
 from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, cast
 
 import black
@@ -58,6 +60,7 @@ from datamodel_code_generator.arguments import _dataclass_arguments, arg_parser
 from datamodel_code_generator.config import GenerateConfig
 from datamodel_code_generator.deprecations import DEPRECATIONS, Deprecation
 from datamodel_code_generator.format import CodeFormatter, Formatter, PythonVersion
+from datamodel_code_generator.json_config import JsonConfigError, load_json_config_field
 from datamodel_code_generator.model.pydantic_v2 import UnionMode
 from datamodel_code_generator.parser import LiteralType
 from datamodel_code_generator.parser.mcp import convert_mcp_tools_to_jsonschema
@@ -89,11 +92,14 @@ from tests.conftest import (
     validate_generated_code,
 )
 from tests.main.conftest import (
+    AVRO_DATA_PATH,
     DATA_PATH,
     DEFAULT_VALUES_DATA_PATH,
     EXPECTED_MAIN_PATH,
+    GRAPHQL_DATA_PATH,
     JSON_SCHEMA_DATA_PATH,
     OPEN_API_DATA_PATH,
+    PROTOBUF_DATA_PATH,
     PYTHON_DATA_PATH,
     TIMESTAMP,
     _optional_test_parsed_source_cache,
@@ -109,6 +115,7 @@ if TYPE_CHECKING:
     from pytest_mock import MockerFixture
 
     from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+    from tests.main.conftest import InputFileTypeLiteral
 
 assert_file_content = create_assert_file_content(EXPECTED_MAIN_PATH)
 BLACK_VERSION = version.parse(black.__version__)
@@ -752,20 +759,58 @@ def test_model_graph_check_reports_a_copied_reference(
 
 
 @pytest.mark.parametrize(
-    ("input_name", "options"),
+    ("input_path", "options"),
     [
-        pytest.param("ref_type_has_null.json", {"omit_redundant_reference_null": True}, id="null"),
-        pytest.param("numeric_constraint_precision/non_finite_multiple_of.json", {}, id="dropped-multiple-of"),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "ref_type_has_null.json", {"omit_redundant_reference_null": True}, id="null"
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "numeric_constraint_precision/non_finite_multiple_of.json",
+            {},
+            id="dropped-multiple-of",
+        ),
+        pytest.param(OPEN_API_DATA_PATH / "redundant_reference_null.yaml", {}, id="no-default"),
     ],
 )
 def test_a_deep_copied_type_keeps_what_its_site_recorded(
-    monkeypatch: pytest.MonkeyPatch, recwarn: pytest.WarningsRecorder, input_name: str, options: dict[str, bool]
+    monkeypatch: pytest.MonkeyPatch, recwarn: pytest.WarningsRecorder, input_path: Path, options: dict[str, bool]
 ) -> None:
     """A custom parser that types a field with a deep copy of its type keeps what the site recorded on the type.
 
     ``--omit-redundant-reference-null`` marks the None of ``nullOnlyRef`` as the one the schema it references admits,
     and a ``multipleOf`` of 1e400 that Pydantic refuses is recorded on its type for the warning of the field; the copy
-    carries those records, so the output and the warnings are the ones without the copy.
+    carries those records, so the output and the warnings are the ones without the copy. A copied root model that
+    declares no default keeps declaring none: up to 0.88.0 the copy of its default marker was written as the default of
+    ``Use.name_d`` (``Field(<object object at 0x...>)``).
+    """
+    from copy import deepcopy
+
+    from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+
+    class CopyingParser(OpenAPIParser if input_path.is_relative_to(OPEN_API_DATA_PATH) else JsonSchemaParser):
+        def parse_raw(self) -> None:
+            super().parse_raw()
+            for model in self.results:
+                for field in model.fields:
+                    self.generation_store.replace_field_type(field, deepcopy(field.data_type))
+
+    monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, "0")
+    parser = CopyingParser(input_path, formatters=[Formatter.BUILTIN], **options)
+    assert_output(cast("str", parser.parse()))
+    assert_output(
+        "".join(
+            f"{message}\n"
+            for message in dict.fromkeys(str(warning.message) for warning in recwarn if warning.category is UserWarning)
+        ),
+        name="warnings",
+    )
+
+
+def test_a_deep_copied_union_leaves_out_what_its_members_hold(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A custom parser that types a field with a deep copy of its union leaves out the keywords its members hold.
+
+    The copy names the root models of the branches by their model keys, so ``--field-constraints`` leaves the
+    keywords beside the union out of the field as it does without the copy (#5824).
     """
     from copy import deepcopy
 
@@ -776,18 +821,50 @@ def test_a_deep_copied_type_keeps_what_its_site_recorded(
             super().parse_raw()
             for model in self.results:
                 for field in model.fields:
+                    if field.required:
+                        self.generation_store.replace_field_type(field, deepcopy(field.data_type))
+
+    monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, "0")
+    parser = CopyingParser(
+        JSON_SCHEMA_DATA_PATH / "field_constraint_sites" / "union_root_keywords.json",
+        formatters=[Formatter.BUILTIN],
+        field_constraints=True,
+    )
+    assert_output(cast("str", parser.parse()))
+
+
+def test_a_deep_copied_type_keeps_the_msgspec_union_hint(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A custom parser that types a field with a deep copy of its type keeps the hint of the msgspec union warning.
+
+    The copy names the enums its original names by their model keys, so the warnings about the unions msgspec refuses
+    still recommend ``--enum-field-as-literal all``, which writes those enums as Literal values (#5824).
+    """
+    from copy import deepcopy
+
+    from datamodel_code_generator.model import get_data_model_types
+
+    class CopyingParser(OpenAPIParser):
+        def parse_raw(self) -> None:
+            super().parse_raw()
+            for model in self.results:
+                for field in model.fields:
                     self.generation_store.replace_field_type(field, deepcopy(field.data_type))
 
     monkeypatch.setenv(CHECK_MODEL_GRAPH_ENV, "0")
-    parser = CopyingParser(JSON_SCHEMA_DATA_PATH / input_name, formatters=[Formatter.BUILTIN], **options)
-    assert_output(cast("str", parser.parse()))
-    assert_output(
-        "".join(
-            f"{message}\n"
-            for message in dict.fromkeys(str(warning.message) for warning in recwarn if warning.category is UserWarning)
-        ),
-        name="warnings",
-    )
+    model_types = get_data_model_types(DataModelType.MsgspecStruct, PythonVersion.PY_310)
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        CopyingParser(
+            OPEN_API_DATA_PATH / "msgspec_enum_unions.yaml",
+            formatters=[Formatter.BUILTIN],
+            data_model_type=model_types.data_model,
+            data_model_root_type=model_types.root_model,
+            data_model_field_type=model_types.field_model,
+            data_type_manager_type=model_types.data_type_manager,
+            dump_resolve_reference_action=model_types.dump_resolve_reference_action,
+            reuse_model=True,
+        ).parse()
+    assert_output("".join(f"{message}\n" for message in dict.fromkeys(str(warning.message) for warning in recorded)))
 
 
 @pytest.mark.parametrize("flag", ["check", "report", "off"])
@@ -1102,6 +1179,31 @@ def test_snooper_to_methods_without_pysnooper(mocker: MockerFixture, monkeypatch
     monkeypatch.setitem(sys.modules, "pysnooper", None)
     mock = mocker.Mock()
     assert snooper_to_methods()(mock) == mock
+
+
+def test_debug_without_pysnooper_names_a_command_a_shell_runs(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Write the pip command that installs the debug extra as a shell runs it, with no prompt glued to it.
+
+    Up to 0.88.0 the hint wrote ``$pip install ...``, which a shell runs as the command ``$pip``, expanded to nothing.
+    """
+    monkeypatch.setitem(sys.modules, "pysnooper", None)
+    with pytest.raises(Exception, match=re.escape("Please run `pip install 'datamodel-code-generator[debug]'` to use")):
+        run_main_with_args(["--debug", "--input", str(JSON_SCHEMA_DATA_PATH / "person.json")])
+
+
+def test_protobuf_without_grpc_tools_names_the_command_that_installs_it(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Tell the pip command that installs the protobuf extra, where up to 0.88.0 the hint named only its requirement."""
+    monkeypatch.setitem(sys.modules, "grpc_tools", None)
+    run_main_with_args(
+        ["--input", str(PROTOBUF_DATA_PATH / "proto3_optional.proto"), "--input-file-type", "protobuf"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=(
+            "protobuf input requires grpcio-tools. Please run `pip install 'datamodel-code-generator[protobuf]'`."
+        ),
+    )
 
 
 @pytest.mark.parametrize(argnames="no_color", argvalues=[False, True])
@@ -1903,19 +2005,80 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
     assert boolean_optional_dests == snapshot([
         "allow_remote_refs",
         "allow_private_network",
+        "read_input_model_dataclass_fields_by_alias",
         "allow_population_by_field_name",
         "collapse_root_models",
+        "collapse_shared_parent_wrappers",
+        "keep_constrained_root_models_in_every_container",
+        "keep_enum_literal_aliases",
+        "collapse_reuse_models",
+        "singularize_last_word_of_item_names",
+        "disable_timestamp",
+        "tag_msgspec_by_payload_name",
+        "use_msgspec_meta_for_map_keys",
+        "reuse_model",
+        "pin_aliases_with_alias_generator",
         "treat_dot_as_module",
         "strict_dotted_module_names",
+        "rename_submodules_hidden_by_classes",
+        "use_schema_description",
+        "use_title_as_name",
+        "name_allof_union_members_after_branches",
         "use_standard_primitive_types",
+        "use_duplicate_name_suffix_for_every_collision",
+        "name_converted_payloads_by_message",
+        "use_single_value_enum_as_const",
+        "read_const_beside_enum",
+        "filter_literal_values",
+        "intersect_allof_keywords",
+        "intersect_combined_schema_keywords",
+        "distribute_allof_over_unions",
+        "omit_redundant_constraints",
+        "read_length_keywords_by_type",
+        "read_msgspec_union_bounds_exactly",
+        "use_site_models_for_constrained_refs",
+        "use_one_model_per_ref_site",
         "use_annotated",
+        "use_serialize_as_any_for_every_subclass",
+        "use_decimal_in_field_forms",
+        "use_encoded_str_for_constrained_base64",
+        "merge_shared_variant_tags",
         "use_standard_collections",
+        "use_object_type",
+        "use_typed_map_values_beside_other_types",
+        "read_unevaluated_properties",
+        "use_single_dict_for_object_maps",
+        "use_subclass_enum",
         "use_specialized_enum",
+        "keep_enum_member_values",
         "use_union_operator",
+        "use_unique_items_as_set",
+        "use_unique_items_as_set_by_value",
+        "use_tuple_for_fixed_items",
+        "use_tuple_for_closed_arrays",
         "use_closed_typed_dict",
+        "use_plain_alias_for_recursive_models",
+        "type_overrides_replace_whole_type",
+        "capitalise_numbered_enum_members",
         "snake_case_field",
+        "strict_nullable",
+        "omit_redundant_reference_null",
+        "keep_reference_null_on_merged_models",
+        "use_default_kwarg",
+        "read_nullable_beside_type_list",
+        "keep_field_defaults_off_branch_roots",
+        "use_field_description",
+        "use_field_description_example",
+        "use_single_line_docstring",
         "use_frozen_field",
+        "check_pattern_maps_strictly",
         "use_type_checking_imports",
+        "dedupe_request_response_variants",
+        "keep_first_character_of_path_keys",
+        "read_schema_version_per_document",
+        "read_escaped_ref_pointers",
+        "read_dynamic_anchors_in_document_order",
+        "ignore_ref_siblings_by_schema_version",
         "server_include_request",
     ])
 
@@ -1997,6 +2160,105 @@ def test_space_and_special_characters_dict_stdin(monkeypatch: pytest.MonkeyPatch
         input_file_type="dict",
         assert_func=assert_file_content,
     )
+
+
+@pytest.mark.skipif(os.name == "nt", reason="named pipes need os.mkfifo")
+@pytest.mark.timeout(30)
+@pytest.mark.parametrize(
+    ("source", "input_file_type"),
+    [
+        pytest.param(JSON_SCHEMA_DATA_PATH / "simple_string.json", None, id="auto-jsonschema"),
+        pytest.param(JSON_SCHEMA_DATA_PATH / "simple_string.json", "jsonschema", id="jsonschema"),
+        pytest.param(DATA_PATH / "json" / "pet.json", None, id="auto-json"),
+        pytest.param(DATA_PATH / "csv" / "simple.csv", "csv", id="csv"),
+        pytest.param(DATA_PATH / "mcp_tools" / "tools_list.json", "mcp-tools", id="mcp-tools"),
+        pytest.param(DATA_PATH / "xmlschema" / "allof_root_type.xsd", "xmlschema", id="xmlschema"),
+        pytest.param(DATA_PATH / "protobuf" / "common.proto", "protobuf", id="protobuf"),
+    ],
+)
+def test_main_named_pipe_input_is_read_once(
+    source: Path,
+    input_file_type: InputFileTypeLiteral | None,
+    tmp_path: Path,
+    output_file: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A named pipe input is read once, by type detection, conversion and parsing alike, and generates as its file.
+
+    The pipe yields its bytes once, so the second generation of the formatter parity check is left out.
+    """
+    monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
+    pipe = tmp_path / source.name
+    os.mkfifo(pipe)
+    writer = Thread(target=pipe.write_bytes, args=(source.read_bytes(),), daemon=True)
+    writer.start()
+    run_main_and_assert(
+        input_path=pipe,
+        output_path=output_file,
+        input_file_type=input_file_type,
+        extra_args=["--disable-timestamp"],
+        assert_func=assert_file_content,
+    )
+    writer.join()
+
+
+@pytest.mark.skipif(os.name == "nt", reason="named pipes need os.mkfifo")
+@pytest.mark.timeout(30)
+@pytest.mark.parametrize("input_file_type", [None, "jsonschema"], ids=["auto", "jsonschema"])
+def test_main_named_pipe_input_resolves_references_beside_it(
+    input_file_type: InputFileTypeLiteral | None,
+    tmp_path: Path,
+    output_file: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A named pipe input resolves its relative references beside the pipe, whether its type is detected or given."""
+    monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
+    schemas = tmp_path / "schemas"
+    schemas.mkdir()
+    shutil.copy(JSON_SCHEMA_DATA_PATH / "external_definitions.json", schemas)
+    pipe = schemas / "external_definitions_root.json"
+    os.mkfifo(pipe)
+    writer = Thread(target=pipe.write_bytes, args=((JSON_SCHEMA_DATA_PATH / pipe.name).read_bytes(),), daemon=True)
+    writer.start()
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=pipe,
+        output_path=output_file,
+        input_file_type=input_file_type,
+        extra_args=["--disable-timestamp"],
+        assert_func=assert_file_content,
+    )
+    writer.join()
+
+
+@pytest.mark.skipif(os.name == "nt", reason="named pipes need os.mkfifo")
+@pytest.mark.timeout(30)
+def test_main_named_pipe_csv_input_is_read_up_to_its_first_row(
+    tmp_path: Path, output_file: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A CSV named pipe is read up to its first row, so generation ends while its writer still holds the pipe open."""
+    monkeypatch.delenv("DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY", raising=False)
+    pipe = tmp_path / "simple.csv"
+    os.mkfifo(pipe)
+    generated = Event()
+
+    def write_and_hold() -> None:
+        with pipe.open("wb") as stream:
+            stream.write((DATA_PATH / "csv" / "simple.csv").read_bytes())
+            stream.flush()
+            generated.wait(30)
+
+    writer = Thread(target=write_and_hold, daemon=True)
+    writer.start()
+    run_main_and_assert(
+        input_path=pipe,
+        output_path=output_file,
+        input_file_type="csv",
+        extra_args=["--disable-timestamp"],
+        assert_func=assert_file_content,
+    )
+    generated.set()
+    writer.join()
 
 
 @freeze_time("2024-12-14")
@@ -2871,7 +3133,7 @@ def test_generate_cli_command_with_false_boolean(tmp_path: Path, capsys: pytest.
     pyproject_toml = """
 [tool.datamodel-codegen]
 input = "schema.yaml"
-reuse-model = false
+use-exact-imports = false
 """
     (tmp_path / "pyproject.toml").write_text(pyproject_toml)
 
@@ -3627,6 +3889,188 @@ def test_main_rejects_additional_import_injection_in_extra_template_data(
     assert_output(capsys.readouterr().err, EXPECTED_MAIN_PATH / "additional_imports_invalid.txt")
 
 
+@pytest.mark.parametrize(
+    ("option", "value", "message"),
+    [
+        pytest.param(
+            "--base-class",
+            "mypkg.1x",
+            "base_class must be a Python import path composed of identifiers: 'mypkg.1x'",
+            id="base-class",
+        ),
+        pytest.param(
+            "--base-class-map",
+            '{"Person": ["mypkg.Base", "mypkg.class"]}',
+            "base_class_map must be a Python import path composed of identifiers: 'mypkg.class'",
+            id="base-class-map",
+        ),
+        pytest.param(
+            "--type-overrides",
+            '{"Person.firstName": "mypkg.1x"}',
+            "type_overrides must be a Python import path composed of identifiers: 'mypkg.1x'",
+            id="type-overrides",
+        ),
+        pytest.param(
+            "--class-decorators",
+            "@mypkg.1x(letter_case=LetterCase.CAMEL)",
+            "class_decorators must be a Python import path composed of identifiers: 'mypkg.1x'",
+            id="class-decorators",
+        ),
+        pytest.param(
+            "--class-decorators",
+            "@mypkg . class  # comment",
+            "class_decorators must be a Python import path composed of identifiers: 'mypkg.class'",
+            id="class-decorators-spaced-dot-comment",
+        ),
+        pytest.param(
+            "--class-decorators",
+            "@mypkg.deco if flag else other",
+            "class_decorators must be a Python import path composed of identifiers: 'mypkg.deco if flag else other'",
+            id="class-decorators-expression",
+        ),
+        pytest.param(
+            "--class-decorators",
+            '@mypkg."""deco',
+            'class_decorators must be a Python import path composed of identifiers: \'@mypkg."""deco\'',
+            id="class-decorators-unterminated-string",
+        ),
+        pytest.param(
+            "--class-decorators",
+            "@mypkg.deco\n  (flag)",
+            "class_decorators must be a Python import path composed of identifiers: '@mypkg.deco\\n  (flag)'",
+            id="class-decorators-indented-line",
+        ),
+        pytest.param(
+            "--class-decorators",
+            "@\nmypkg.deco",
+            "class_decorators must be a Python import path composed of identifiers: '@\\nmypkg.deco'",
+            id="class-decorators-line-break-before-path",
+        ),
+        pytest.param(
+            "--base-class",
+            ".Base",
+            "base_class must be a Python import path composed of identifiers: '.Base'",
+            id="base-class-relative-without-module",
+        ),
+        pytest.param(
+            "--base-class",
+            "...",
+            "base_class must be a Python import path composed of identifiers: '...'",
+            id="base-class-only-dots",
+        ),
+        pytest.param(
+            "--base-class-map",
+            '{"Person": ".mypkg..Base"}',
+            "base_class_map must be a Python import path composed of identifiers: '.mypkg..Base'",
+            id="base-class-map-relative-empty-part",
+        ),
+        pytest.param(
+            "--type-overrides",
+            '{"Person.firstName": "..mypkg.1x"}',
+            "type_overrides must be a Python import path composed of identifiers: '..mypkg.1x'",
+            id="type-overrides-relative-non-identifier",
+        ),
+        pytest.param(
+            "--class-decorators",
+            "@..mypkg.deco",
+            "class_decorators must be a Python import path composed of identifiers: '..mypkg.deco'",
+            id="class-decorators-relative",
+        ),
+        pytest.param(
+            "--additional-imports",
+            "..mypkg.thing",
+            "additional_imports must be a Python import path composed of identifiers: '..mypkg.thing'",
+            id="additional-imports-relative",
+        ),
+    ],
+)
+def test_main_refuses_named_path_with_non_identifier_part(
+    output_file: Path, capsys: pytest.CaptureFixture[str], option: str, value: str, message: str
+) -> None:
+    """Refuse an option that names a Python object by a dotted path with a part that is not an identifier (#6109).
+
+    ``mypkg.1x`` wrote ``from mypkg import 1x`` or ``@mypkg.1x``, which does not parse. A decorator's path is its tokens
+    before the arguments of its call, without comments and the whitespace around a dot; a decorator that does not
+    tokenize there, or that a line break outside its parentheses splits, is refused as a whole. A relative path names a
+    module after its dots (#6224): ``.Base`` wrote ``import Base``, and a decorator or an additional import cannot be
+    relative.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "person.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[option, value],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=message,
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize("output_model_type", ["msgspec.Struct", "pydantic_v2.BaseModel"])
+def test_main_relative_base_class_and_type_override_paths(output_dir: Path, output_model_type: str) -> None:
+    """Import a relative ``--base-class``, ``--base-class-map`` and ``--type-overrides`` path as given (#6224).
+
+    Each module writes the relative module after ``from`` as 0.88.0 did, so models generated into a subpackage can
+    inherit a base class of a package above it; spaces around a relative type override are no part of its path.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "dot_notation_inheritance.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--base-class",
+            "...base.BaseClass",
+            "--base-class-map",
+            '{"v0.Properties": ["...base.BaseClass", "..mixins.Hooks"]}',
+            "--type-overrides",
+            '{"Animal.species": " ..types.Species "}',
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
+def test_generate_revalidates_mutated_named_paths() -> None:
+    """Refuse a base class path set on a public config after it was validated, as the parser reads it (#6109)."""
+    config = GenerateConfig(input_file_type=InputFileType.JsonSchema)
+    config.base_class = "mypkg.1x"
+    with pytest.raises(Error, match=r"base_class must be a Python import path composed of identifiers: 'mypkg\.1x'"):
+        generate(JSON_SCHEMA_DATA_PATH / "person.json", config=config)
+
+
+def test_main_named_paths_keep_what_follows_a_path(output_file: Path) -> None:
+    """Keep the decorators and type overrides whose text after a path, or around it, is no path (#6109).
+
+    A decorator's path ends at its first bracket after its opening parentheses, so a call, a subscript and parentheses
+    are written as given, and a comment or whitespace around a dot is no part of it; a type override that spells an
+    annotation names no class to import, and an empty base class names none.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "person.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--class-decorators",
+            (
+                "@(mypkg.deco),mypkg.deco(letter_case=LetterCase.CAMEL),@registry[0].register,"
+                "@deprecated  # comment,@mypkg . decorator"
+            ),
+            "--additional-imports",
+            "mypkg,mypkg.LetterCase,mypkg.deprecated,mypkg.registry",
+            "--type-overrides",
+            '{"Person.firstName": "str | None"}',
+            "--base-class-map",
+            '{"Person": ""}',
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--type-overrides"],
     option_description="""Replace schema model types with custom Python types via JSON mapping.
@@ -3672,6 +4116,248 @@ def test_type_overrides_model_level(output_file: Path) -> None:
             "--type-overrides",
             '{"CustomType": "my_app.types.CustomType"}',
         ],
+    )
+
+
+@pytest.mark.parametrize(
+    "output_model_type",
+    ["pydantic_v2.BaseModel", "msgspec.Struct", "dataclasses.dataclass", "typing.TypedDict"],
+)
+def test_type_overrides_model_level_collapse_root_models(output_file: Path, output_model_type: str) -> None:
+    """Replace a root model a model-level override names wherever it is used, also when root models collapse."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_collapsed_root.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--type-overrides",
+            '{"Code": "mypkg.Code"}',
+            "--collapse-root-models",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
+def test_type_overrides_model_level_dotted_schema_name(output_dir: Path) -> None:
+    """Replace a schema with a dotted name by its class name, in its module and in the modules that use it."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "type_overrides_dotted_schema_name.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--type-overrides",
+            '{"Pet": "decimal.Decimal"}',
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+        runtime_validation_module="b",
+        runtime_validation_model_name="Owner",
+        runtime_validation_data={"pet": "1.5"},
+    )
+
+
+def _class_keyed_options(*class_names: str) -> list[str]:
+    """Return the options read while models are built, each keyed by every class of ``class_names`` and its ``name``."""
+    return [
+        "--base-class-map",
+        json.dumps(dict.fromkeys(class_names, "base.Base")),
+        "--extra-template-data",
+        json.dumps({class_name: {"config": {"frozen": True}} for class_name in class_names}),
+        "--validators",
+        json.dumps({
+            class_name: {"validators": [{"field": "name", "function": "base.check"}]} for class_name in class_names
+        }),
+        "--aliases",
+        json.dumps({f"{class_name}.name": "label" for class_name in class_names}),
+        "--serialization-aliases",
+        json.dumps({f"{class_name}.name": "wire_name" for class_name in class_names}),
+        "--default-values",
+        json.dumps({f"{class_name}.name": "x" for class_name in class_names}),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("input_path", "input_file_type", "extra_args"),
+    [
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "field_type_collision_class_keys_builders.json",
+            "jsonschema",
+            [
+                "--field-type-collision-strategy",
+                "rename-type",
+                *_class_keyed_options("Pet", "Dog", "Name", "Pets", "Kind"),
+            ],
+            id="builders-keyed-by-schema-names",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "field_type_collision_class_keys_builders.json",
+            "jsonschema",
+            [
+                "--field-type-collision-strategy",
+                "rename-type",
+                *_class_keyed_options("Pet_1", "Dog_1", "Name_1", "Pets_1", "Kind_1"),
+            ],
+            id="builders-keyed-by-output-names",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "field_type_collision_class_keys.json",
+            "jsonschema",
+            [
+                "--field-type-collision-strategy",
+                "rename-type",
+                *_class_keyed_options("Pet_1"),
+                "--base-class-map",
+                json.dumps({"Pet_1": "base.Output", "Pet": "base.Schema"}),
+                "--aliases",
+                json.dumps({"Pet_1.name": "output_label", "Pet.name": "schema_label"}),
+            ],
+            id="schema-name-key-before-output-name-key",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "field_type_collision_model_name_map.json",
+            "jsonschema",
+            [
+                "--field-type-collision-strategy",
+                "rename-type",
+                "--model-name-map",
+                json.dumps({"Pet": "Cat"}),
+                *_class_keyed_options("Cat_1"),
+            ],
+            id="model-name-map-value-renamed",
+        ),
+        pytest.param(
+            JSON_SCHEMA_DATA_PATH / "collapse_root_models_parent_class_keys.json",
+            "jsonschema",
+            [
+                "--collapse-root-models",
+                "--collapse-root-models-name-strategy",
+                "parent",
+                "--base-class-map",
+                json.dumps({"Wrap": "base.Base"}),
+                "--aliases",
+                json.dumps({"Wrap.name": "label"}),
+            ],
+            id="inner-model-named-after-collapsed-root",
+        ),
+        pytest.param(
+            OPEN_API_DATA_PATH / "field_type_collision_read_write_variant.yaml",
+            "openapi",
+            [
+                "--field-type-collision-strategy",
+                "rename-type",
+                "--read-only-write-only-model-type",
+                "request-response",
+                *_class_keyed_options("PetRequest_1"),
+            ],
+            id="read-write-variant",
+        ),
+        pytest.param(
+            OPEN_API_DATA_PATH / "model_name_map_same_name_documents" / "openapi.yaml",
+            "openapi",
+            _class_keyed_options("PetModel"),
+            id="same-name-documents",
+        ),
+        pytest.param(
+            GRAPHQL_DATA_PATH / "field_type_collision.graphql",
+            "graphql",
+            ["--field-type-collision-strategy", "rename-type", *_class_keyed_options("Pet_1")],
+            id="graphql-type",
+        ),
+        pytest.param(
+            AVRO_DATA_PATH / "field_type_collision.avsc",
+            "avro",
+            ["--field-type-collision-strategy", "rename-type", *_class_keyed_options("Pet_1")],
+            id="avro-record",
+        ),
+    ],
+)
+def test_class_keyed_options_name_renamed_classes(
+    output_file: Path, input_path: Path, input_file_type: str, extra_args: list[str]
+) -> None:
+    """Apply an option keyed by a class name to the class that has the name in the output after a late rename.
+
+    A key of the name a model was built under applies before a key of the name it ends with (#5418).
+    """
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type=input_file_type,
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
+def test_class_keyed_options_name_renamed_class_in_module(output_dir: Path) -> None:
+    """Apply a dotted class key to the class a field-type collision renames in its module (#5418)."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "field_type_collision_dotted_module.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--field-type-collision-strategy",
+            "rename-type",
+            *_class_keyed_options("a.Pet_1"),
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
+def test_class_keyed_options_name_renamed_class_payload(output_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Validate payloads with the class a field-type collision renames, configured by keys of its output name.
+
+    The type override names the field by the name the alias gives it (#5418).
+    """
+    monkeypatch.syspath_prepend(str(PYTHON_DATA_PATH))
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "field_type_collision_class_keys.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--field-type-collision-strategy",
+            "rename-type",
+            "--base-class-map",
+            json.dumps({"Pet_1": "explicit_alias_base.NamespaceBase"}),
+            "--extra-template-data",
+            json.dumps({"Pet_1": {"config": {"frozen": True}}}),
+            "--aliases",
+            json.dumps({"Pet_1.name": "nm"}),
+            "--type-overrides",
+            json.dumps({"Pet_1.nm": "decimal.Decimal"}),
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="generated_class_keyed_options_renamed_class",
+        model_name="Model",
+        valid_json='{"Pet": {"name": "1.5"}}',
+        invalid_json='{"Pet": {"name": "x"}}',
+        expected_error_type="decimal_parsing",
+        expected_attribute_path=("Pet", "nm"),
+        expected_attribute_value=Decimal("1.5"),
     )
 
 
@@ -3824,6 +4510,75 @@ def test_type_overrides_model_level_base_class(
     finally:
         for module_name in module_names:
             sys.modules.pop(module_name, None)
+
+
+@pytest.mark.parametrize("value", ["typing.Literal[1.5]", "str | None", "list[int]", "None"])
+def test_type_overrides_model_level_base_class_refuses_annotation(
+    output_file: Path, capsys: pytest.CaptureFixture[str], value: str
+) -> None:
+    """Refuse a model-level override that replaces a base class with an annotation that is no class.
+
+    Up to 0.88.0 the annotation was written as the base, such as ``class Child(Literal[1.5]):``, and the module failed
+    to import.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_base_class.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        expected_exit=Exit.ERROR,
+        file_should_not_exist=output_file,
+        capsys=capsys,
+        expected_stderr_contains=f"--type-overrides 'Base': {value!r} is no class, so it cannot replace Base as a base",
+        extra_args=["--type-overrides", json.dumps({"Base": value}), "--formatters", "builtin"],
+    )
+
+
+def test_type_overrides_model_level_base_class_takes_bare_class_name(output_file: Path) -> None:
+    """Replace a base class with a bare class name, such as ``Decimal``, as with its class path ``decimal.Decimal``."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_base_class.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "dataclasses.dataclass",
+            "--type-overrides",
+            json.dumps({"Base": "Decimal"}),
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize("value", ["Any", "typing.Any"])
+def test_type_overrides_model_level_base_class_refuses_any_before_python_311(
+    output_file: Path, capsys: pytest.CaptureFixture[str], value: str
+) -> None:
+    """Refuse ``typing.Any`` as a base class for a target before Python 3.11, which cannot subclass it.
+
+    Up to 0.88.0 ``class Child(Any):`` was written, and the module failed to import before Python 3.11.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "type_overrides_base_class.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        expected_exit=Exit.ERROR,
+        file_should_not_exist=output_file,
+        capsys=capsys,
+        expected_stderr_contains=(
+            f"--type-overrides 'Base': {value!r} is no class before Python 3.11, so it cannot replace Base as a base"
+        ),
+        extra_args=[
+            "--type-overrides",
+            json.dumps({"Base": value}),
+            "--target-python-version",
+            "3.10",
+            "--formatters",
+            "builtin",
+        ],
+    )
 
 
 @freeze_time(TIMESTAMP)
@@ -5340,6 +6095,68 @@ def test_ruff_batch_formatting_directory(output_dir: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("encoding", "formatters"),
+    [
+        pytest.param("utf-16", ["ruff-format"], id="utf-16-format"),
+        pytest.param("latin-1", ["ruff-format"], id="latin-1-format"),
+        pytest.param("latin-1", ["ruff-check", "ruff-format"], id="latin-1-check-format"),
+    ],
+)
+def test_ruff_formats_directory_written_in_another_encoding(
+    encoding: str, formatters: list[str], tmp_path: Path, output_dir: Path
+) -> None:
+    """Run Ruff over a model directory that is written in an encoding Ruff cannot read.
+
+    Ruff reads and writes UTF-8 only. It sees the files as UTF-8, and they are written in the requested encoding.
+    """
+    (source := tmp_path / "modular.yaml").write_bytes(
+        (OPEN_API_DATA_PATH / "modular.yaml").read_text(encoding="utf-8").encode(encoding)
+    )
+    run_main_and_assert(
+        input_path=source,
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            *("--encoding", encoding, "--custom-file-header", "# Café"),
+            *("--formatters", *formatters, "--disable-timestamp"),
+        ],
+        skip_code_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("encoding", "formatters"),
+    [
+        pytest.param("utf-16", ["ruff-format"], id="utf-16-format"),
+        pytest.param("latin-1", ["ruff-format"], id="latin-1-format"),
+        pytest.param("latin-1", ["ruff-check"], id="latin-1-check"),
+        pytest.param("latin-1", ["ruff-check", "ruff-format"], id="latin-1-check-format"),
+    ],
+)
+def test_ruff_formats_file_written_in_another_encoding(
+    encoding: str, formatters: list[str], tmp_path: Path, output_file: Path
+) -> None:
+    """Run Ruff over a model file with a non-ASCII description that is written in an encoding Ruff cannot read.
+
+    Ruff reads and writes UTF-8 only. It is given the code as UTF-8, and the file is written in the requested encoding.
+    """
+    schema = {
+        "title": "Pet",
+        "type": "object",
+        "description": "Café",
+        "properties": {"name": {"type": "string", "description": "Café"}, "tag": {"type": "integer"}},
+    }
+    (source := tmp_path / "pet.json").write_bytes(json.dumps(schema, ensure_ascii=False).encode(encoding))
+    run_main_and_assert(
+        input_path=source,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--encoding", encoding, "--formatters", *formatters, "--disable-timestamp"],
+        skip_code_validation=True,
+    )
+
+
 def test_type_checking_imports_default_to_runtime_imports_for_modular_pydantic_ruff(output_dir: Path) -> None:
     """Test modular Pydantic output keeps runtime imports by default when Ruff formats a directory."""
     run_main_and_assert(
@@ -6324,6 +7141,20 @@ def test_generate_returns_string_with_custom_file_header_prepend() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "mode", [CustomFileHeaderMode.Replace, CustomFileHeaderMode.Prepend], ids=["replace", "prepend"]
+)
+def test_generate_custom_file_header_line_breaks_end_as_file_lines(mode: CustomFileHeaderMode) -> None:
+    """A CR or CRLF in a custom header is written as the file's newline, like the header's other line breaks."""
+    run_generate_and_assert(
+        input_=JSON_SCHEMA_DATA_PATH / "simple_string.json",
+        input_file_type=InputFileType.JsonSchema,
+        custom_file_header="# a\r# b\r\n# c\r\n",
+        custom_file_header_mode=mode,
+        disable_timestamp=True,
+    )
+
+
 def test_generate_returns_modules_with_custom_file_header_prepend() -> None:
     """Prepend custom and per-file provenance headers for output=None modules."""
     result = generate(
@@ -7276,6 +8107,20 @@ def test_aliases_unparsable_json(
     )
 
 
+def test_json_config_depth_limit_applies_to_a_file_object() -> None:
+    """Refuse a file object that nests deeper than the field allows, as the same text given as a string is.
+
+    Only the Python API can give a file object, so the command line cannot reach it.
+    """
+    text = '{"a":' * 70 + "1" + "}" * 70
+    messages = []
+    for source in (text, StringIO(text)):
+        with pytest.raises(JsonConfigError) as error:
+            load_json_config_field("client_protocols", source)
+        messages.append(str(error.value))
+    assert_output("\n".join(messages) + "\n")
+
+
 def test_default_values_non_dict(output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test --default-values with non-dict JSON file returns error."""
     run_main_and_assert(
@@ -7430,6 +8275,7 @@ def test_all_exports_includes_generate_config() -> None:
             ("20261015", ("310", "311", "312", "313", "314", "315")),
             ("20261017", ("310", "311", "312", "313", "314", "315")),
             ("20261027", ("310", "311", "312", "313", "314", "315")),
+            ("20261104", ("310", "311", "312", "313", "314", "315")),
         )
         for family in ("standard", "practical")
         for target in targets

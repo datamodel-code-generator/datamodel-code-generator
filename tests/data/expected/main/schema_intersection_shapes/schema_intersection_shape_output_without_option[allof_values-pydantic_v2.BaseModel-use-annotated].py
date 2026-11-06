@@ -10,11 +10,11 @@ from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 
 class LevelProp(RootModel[int]):
-    root: int
+    root: Annotated[int, Field(ge=0, le=10)]
 
 
 class LevelItem(RootModel[int]):
-    root: int
+    root: Annotated[int, Field(ge=0, le=10)]
 
 
 class LevelMap(RootModel[int]):
@@ -61,7 +61,7 @@ class UntypedMap(RootModel[Any]):
 
 
 class P(RootModel[str]):
-    root: str
+    root: Annotated[str, Field(min_length=2)]
 
 
 class Level(RootModel[int]):

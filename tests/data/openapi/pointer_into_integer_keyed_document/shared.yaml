@@ -1,0 +1,7 @@
+openapi: 3.0.3
+404:
+  description: Not found
+codes:
+  schema:
+    type: string
+    maxLength: 3

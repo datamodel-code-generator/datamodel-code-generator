@@ -14,12 +14,12 @@ class P1(BaseModel):
     pet: Cat | None = Field(None, title='Pet')
 
 
-class Pet(BaseModel):
+class Pet1(BaseModel):
     y: int | None = None
 
 
 class P2(BaseModel):
-    pet: Pet | None = Field(None, title='Pet')
+    pet: Pet1 | None = Field(None, title='Pet')
 
 
 class Pet2(BaseModel):

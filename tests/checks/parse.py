@@ -27,6 +27,7 @@ from tests.checks.finality import (
     parse_checks,
 )
 from tests.checks.model_graph import check_emitted_models, check_model_owners
+from tests.checks.naming import start as start_naming
 from tests.checks.schema_graph import check_shared_schemas
 from tests.checks.schema_locations import check_schema_locations
 from tests.checks.trace import MODULE_TRACE_MARK, TRACE
@@ -123,6 +124,7 @@ CHECKED_MODELS: Final[dict[str, Callable[[Any, Any], Sequence[Any]]]] = {
     "mark_unused_models_start": _model_list,
     "set_reference_default_value_to_field": _model_list,
     "reuse_model": _model_list,
+    "replace_merged_unique_list_to_set": _model_list,
     "collapse_root_models": _model_list,
     "set_default_enum_member": _model_list,
     "sort_models": _model_list,
@@ -141,6 +143,7 @@ CHECKED_MODELS: Final[dict[str, Callable[[Any, Any], Sequence[Any]]]] = {
     "apply_base_class_type_overrides": _model_list,
     "settle_discriminated_unions": _context_models,
     "tag_fields_of_tagged_bases": _context_models,
+    "flatten_narrowed_inherited_fields": _context_models,
     "write_enum_member_tags_as_values": _context_models,
     "assign_forward_reference_fields": _model_list,
     "fix_constructor_field_ordering": _models_before_override_removal,
@@ -228,6 +231,7 @@ def _run_pipeline(original: Callable[..., None], runner: Any, steps: Any, parser
     modes = read_modes()
     token, module = MODES.set(modes), _IN_MODULE.set(False)
     try:
+        start_naming(parser)
         with NO_SCOPE if Area.STORE_WRITES not in modes and Area.FACT_FINALITY not in modes else _checks(parser):
             return original(runner, steps, parser, state)
     finally:
@@ -245,7 +249,8 @@ def _checks(parser: object) -> AbstractContextManager[None]:
 def run_pass(original: Callable[..., None]) -> Callable[..., None]:
     """Wrap ``Runner.run_pass``: a pass that runs is traced and runs inside the finality scope of its declaration.
 
-    ``when`` is evaluated once, by the original: the pass it runs is the instrumented one.
+    ``when`` is evaluated once, by the original: the pass it runs is the instrumented one, which the checks of a parse
+    make once for each pass spec (``ParseChecks.passes``).
     """
 
     @wraps(original)
@@ -253,6 +258,9 @@ def run_pass(original: Callable[..., None]) -> Callable[..., None]:
         trace, checks = TRACE.get(), PARSE_CHECKS.get()
         if trace is None and checks is None:
             return original(self, spec, parser, state)
+        passes = {} if checks is None else checks.passes
+        if (known := passes.get(id(spec))) is not None and known[0] is spec:
+            return original(self, known[1], parser, state)
         run, checked_models = spec.run, CHECKED_MODELS.get(spec.name)
 
         def instrumented(parser: object, state: object) -> None:
@@ -261,7 +269,8 @@ def run_pass(original: Callable[..., None]) -> Callable[..., None]:
             with NO_SCOPE if checks is None else checks.fact_pass(_DECLS[spec.name], models):
                 run(parser, state)
 
-        return original(self, replace(spec, run=instrumented), parser, state)
+        passes[id(spec)] = (spec, scoped := replace(spec, run=instrumented))
+        return original(self, scoped, parser, state)
 
     return run_pass
 
@@ -321,8 +330,8 @@ def seal_facts(original: Callable[..., Any]) -> Callable[..., Any]:
     """
 
     @wraps(original)
-    def seal_facts(self: Any, modules: Any) -> Any:
-        facts = original(self, modules)
+    def seal_facts(self: Any, modules: Any, member_keywords: Any, options: Any) -> Any:
+        facts = original(self, modules, member_keywords, options)
         checks = PARSE_CHECKS.get()
         return facts if checks is None or checks.finality is None else _views(checks.finality, facts)
 
@@ -342,6 +351,36 @@ def drop_held_null(original: Callable[..., None]) -> Callable[..., None]:
         return original(self, viewed(model), viewed(field), [viewed(data_type) for data_type in data_types])
 
     return drop_held_null
+
+
+def drop_field_constraints(original: Callable[..., None]) -> Callable[..., None]:
+    """Wrap ``_DecisionWriter.drop_field_constraints``: it writes the field that the guarded view it gets names."""
+
+    @wraps(original)
+    def drop_field_constraints(self: Any, model: Any, field: Any, keywords: frozenset[str]) -> None:
+        return original(self, viewed(model), viewed(field), keywords)
+
+    return drop_field_constraints
+
+
+def write_sets(original: Callable[..., None]) -> Callable[..., None]:
+    """Wrap ``_DecisionWriter.write_sets``: it writes the objects that the guarded views a decision read name."""
+
+    @wraps(original)
+    def write_sets(self: Any, model: Any, field: Any, lists: Any, default: Any) -> None:
+        return original(self, viewed(model), viewed(field), [viewed(data_type) for data_type in lists], default)
+
+    return write_sets
+
+
+def mark_serialized_as_any(original: Callable[..., None]) -> Callable[..., None]:
+    """Wrap ``_DecisionWriter.mark_serialized_as_any``: it writes the model that the guarded view it gets names."""
+
+    @wraps(original)
+    def mark_serialized_as_any(self: Any, model: Any, wrapped: bool) -> None:
+        return original(self, viewed(model), wrapped)
+
+    return mark_serialized_as_any
 
 
 def get_inherited_constructor_info(original: Callable[..., Any]) -> Callable[..., Any]:

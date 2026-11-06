@@ -1,0 +1,38 @@
+--naming-strategy definitions-first: test_naming_strategy_definitions_first_beside_a_resolver_that_names_models.<locals>.NamingResolver overrides get_class_name of ModelResolver, so the models keep the names it gives
+from __future__ import annotations
+
+from enum import Enum
+from typing import Optional
+
+from pydantic import AnyUrl, BaseModel
+
+
+class Item(BaseModel):
+    w: Optional[int] = None
+
+
+class Status(Enum):
+    new = 'new'
+    old = 'old'
+
+
+class ItemModel(BaseModel):
+    v: Optional[str] = None
+
+
+class AnyUrlModel(BaseModel):
+    href: Optional[str] = None
+
+
+class StatusModel(Enum):
+    open = 'open'
+    closed = 'closed'
+
+
+class Root(BaseModel):
+    item: Optional[Item] = None
+    other: Optional[ItemModel] = None
+    site: Optional[AnyUrl] = None
+    link: Optional[AnyUrlModel] = None
+    status: Optional[Status] = None
+    state: Optional[StatusModel] = None

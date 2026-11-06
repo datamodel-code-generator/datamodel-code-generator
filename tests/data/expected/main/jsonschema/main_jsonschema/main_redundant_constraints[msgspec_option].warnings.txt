@@ -1,4 +1,5 @@
 redundant_constraints.json#/properties/unmet: no value satisfies every part of this schema (its values and the constraints beside them), since no value meets all of their `const`, `maxLength`; the generated code keeps its earlier `const`, `maxLength`.
+a Literal of the output model cannot hold the value 1.5, so it is written as its type, which admits other values; Ratio1 is generated without this constraint.
 msgspec checks all str members of a union against the constraints of each of them, so min_length of one member would reject values another member accepts; ModelIds is generated without this constraint.
 msgspec checks all str members of a union against the constraints of each of them, so min_length of one member would reject values another member accepts; ConstIds is generated without this constraint.
 msgspec checks all str members of a union against the constraints of each of them, so min_length of one member would reject values another member accepts; RedundantConstraints.model is generated without this constraint.

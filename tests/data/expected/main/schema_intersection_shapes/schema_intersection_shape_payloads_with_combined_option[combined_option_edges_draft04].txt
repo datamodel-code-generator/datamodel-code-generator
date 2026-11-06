@@ -1,0 +1,36 @@
+pydantic_v2.BaseModel default const_part null accepted
+pydantic_v2.BaseModel default const_part {"y": "s"} accepted
+pydantic_v2.BaseModel default const_part {"y": 1} rejected
+pydantic_v2.dataclass default const_part null accepted
+pydantic_v2.dataclass default const_part {"y": "s"} accepted
+pydantic_v2.dataclass default const_part {"y": 1} rejected
+msgspec.Struct default const_part null accepted
+msgspec.Struct default const_part {"y": "s"} accepted
+msgspec.Struct default const_part {"y": 1} rejected
+pydantic_v2.BaseModel --field-constraints const_part null accepted
+pydantic_v2.BaseModel --field-constraints const_part {"y": "s"} accepted
+pydantic_v2.BaseModel --field-constraints const_part {"y": 1} rejected
+pydantic_v2.BaseModel --use-annotated const_part null accepted
+pydantic_v2.BaseModel --use-annotated const_part {"y": "s"} accepted
+pydantic_v2.BaseModel --use-annotated const_part {"y": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models const_part null accepted
+pydantic_v2.BaseModel --collapse-root-models const_part {"y": "s"} accepted
+pydantic_v2.BaseModel --collapse-root-models const_part {"y": 1} rejected
+msgspec.Struct --collapse-root-models const_part null accepted
+msgspec.Struct --collapse-root-models const_part {"y": "s"} accepted
+msgspec.Struct --collapse-root-models const_part {"y": 1} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs const_part null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs const_part {"y": "s"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs const_part {"y": 1} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs const_part null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs const_part {"y": "s"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs const_part {"y": 1} rejected
+msgspec.Struct --use-site-models-for-constrained-refs const_part null accepted
+msgspec.Struct --use-site-models-for-constrained-refs const_part {"y": "s"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs const_part {"y": 1} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs const_part null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs const_part {"y": "s"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs const_part {"y": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs const_part null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs const_part {"y": "s"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs const_part {"y": 1} rejected

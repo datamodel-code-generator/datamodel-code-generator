@@ -39,11 +39,21 @@ post_choices JSON
   = None
 post_texts
   > POST /texts [multipart/form-data; boundary=<boundary>]
-  post_texts(body=TextsPostRequest(note='café', count=5, code='ab', ids=[1, 2]))
+  post_texts(body=TextsPostRequest(note='café', count=5, code='ab', ids=[1, 2], anything=None, styled=None, loose=None))
   < 204 -
   = None
 post_texts non-ASCII code
   ! DecodeError: DecodeError(operation_id='postTexts', reason='unencodable', location='body') [operation_id='postTexts', location=('body',), body_bytes=b'', truncated=False, cause=ParameterEncodingError("The text cannot be represented in its media type's charset")] unencodable
+post_texts members of any value
+  > POST /texts [multipart/form-data; boundary=<boundary>]
+  post_texts(body=TextsPostRequest(note=None, count=None, code=None, ids=None, anything='1', styled='true', loose='null'))
+  < 204 -
+  = None
+/texts members of any value
+  > POST /texts [multipart/form-data; boundary=<boundary>]
+  post_texts(body=TextsPostRequest(note=None, count=None, code=None, ids=None, anything='null', styled='1', loose=True))
+  < 204 -
+  = (204, None)
 post_images
   > POST /images [multipart/form-data; boundary=<boundary>]
   post_images(body=ImagesPostRequest(image=b'\x89PNG\r\n', thumbnails=[b'\x00one', b'\xfftwo'], caption='*café*'))

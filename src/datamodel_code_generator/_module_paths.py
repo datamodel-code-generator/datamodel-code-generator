@@ -2,8 +2,9 @@
 
 The output writes each module as a file: ``name.py``, or ``__init__.py`` for a package, below the directories of its
 packages. A ``-`` of a directory or file name is written as ``_`` (``written_name``). Without ``--treat-dot-as-module``
-so are the dots of a name but its last one (``normalized_path``, the keys of the parser's result); with it, each
-dotted name becomes packages (``package_path``), a file name keeping its extension (``expanded_path``).
+so are the dots of a name (``flat_name``), a file name keeping the one of its extension (``normalized_path``, the keys
+of the parser's result); with it, each dotted name becomes packages (``package_path``), a file name keeping its
+extension (``expanded_path``).
 ``written_path`` is the path of the written file.
 
 The dotted name of the module a file holds is that path without the file's ``.py`` and without a package's
@@ -25,7 +26,8 @@ A module imports a name of another module by a relative import (``relative``): o
 more for each package up to the packages both modules share, then the other module's path below them, split into the
 module the import is from and its last name. A name in the ``__init__`` of a package the module lies below
 (``is_ancestor_package_reference``) is imported from the dots alone. ``join_module`` appends a name to such a relative
-module, and ``exact_import`` imports the name itself from the module ``relative`` imports. This module imports only
+module, ``exact_import`` imports the name itself from the module ``relative`` imports, and ``absolute`` names the module
+a relative import reaches. This module imports only
 the standard library, so every layer may use it.
 """
 
@@ -37,10 +39,12 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 __all__ = [
+    "absolute",
     "dotted_module",
     "dotted_name",
     "exact_import",
     "expanded_path",
+    "flat_name",
     "is_ancestor_package_reference",
     "is_below",
     "is_below_name",
@@ -149,6 +153,20 @@ def relative(
     return left, right
 
 
+def absolute(current_module: str, from_: str, *, current_is_init: bool = False) -> str:
+    """Return the dotted name of the module that the relative import ``from_`` of ``current_module`` names.
+
+    The module path of ``from_`` below the package it starts at: ``current_module``'s own package for one dot, and one
+    package up for each dot more. ``current_is_init`` makes ``current_module`` a package ``__init__``, which is that
+    package itself. It reads the module part of an import as ``relative`` writes it.
+    """
+    path = from_.lstrip(".")
+    parts = current_module.split(".") if current_module else []
+    package = parts if current_is_init else parts[:-1]
+    kept = package[: max(len(package) - (len(from_) - len(path) - 1), 0)]
+    return ".".join([*kept, *([path] if path else [])])
+
+
 def is_ancestor_package_reference(current_module: str, reference: str) -> bool:
     """Check if reference is in an ancestor package (__init__.py).
 
@@ -193,6 +211,11 @@ def written_name(name: str) -> str:
     return name.replace("-", "_")
 
 
+def flat_name(name: str) -> str:
+    """Return the name ``name`` with its dots written as ``_``, as the output writes it without packages for them."""
+    return name.replace(".", "_")
+
+
 def written_names(path: Sequence[str]) -> tuple[str, ...]:
     """Return each name of ``path`` as the output writes it (``written_name``), its dots as they are."""
     return tuple(map(written_name, path))
@@ -201,12 +224,12 @@ def written_names(path: Sequence[str]) -> tuple[str, ...]:
 def normalized_path(path: Sequence[str], *, treat_dot_as_module: bool | None) -> tuple[str, ...]:
     """Return the file path ``path`` as the parser's result keys it, before ``treat_dot_as_module`` expands it.
 
-    Without ``treat_dot_as_module``, the dots of each name but its last one are written as ``_``.
+    Without ``treat_dot_as_module``, the dots of each name but its last one are written as ``_`` (``flat_name``).
     """
     names = written_names(path)
     if treat_dot_as_module:
         return names
-    return tuple(name[: name.rfind(".")].replace(".", "_") + name[name.rfind(".") :] for name in names)
+    return tuple(flat_name(name[: name.rfind(".")]) + name[name.rfind(".") :] for name in names)
 
 
 def package_path(module: Sequence[str]) -> tuple[str, ...]:

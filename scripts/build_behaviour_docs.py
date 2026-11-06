@@ -29,6 +29,7 @@ GATE_CLASSES = {
     "violation": "an unannounced behaviour change (a release is not published with one)",
     "both-fail": "both releases fail on the input",
     "opt-in": "the generation uses an option or option value the previous release does not have",
+    "base-skipped": "the previous release is known to hang on the input, so it did not run; the new one works",
 }
 QUERY_CLASSES = {
     "same": "identical output",

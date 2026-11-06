@@ -915,6 +915,7 @@ def signature_of(path: Path, output_model_type: str, payloads: list[dict[str, An
     warnings.simplefilter("ignore")
     path = path.resolve()
     TREE_ROOT[0] = str(path.parent)
+    sys.path.insert(0, str(path.parent))
     if not path.is_dir():
         try:
             module = _import_file(path)
@@ -924,7 +925,6 @@ def signature_of(path: Path, output_model_type: str, payloads: list[dict[str, An
         if payloads is not None:
             signature["payloads"] = payload_verdicts(module, payloads, output_model_type)
         return signature
-    sys.path.insert(0, str(path.parent))
     modules = {}
     for file in sorted(path.rglob("*.py")):
         if "__pycache__" not in file.parts:

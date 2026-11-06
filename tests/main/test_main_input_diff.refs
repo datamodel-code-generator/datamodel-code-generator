@@ -15,8 +15,10 @@ identical	main/input_diff/identical.txt	= main/jsonschema/optional_nested_factor
 [test_diff_against_json_reports_structured_differences_without_writing_virtual_output]
 	main/input_diff/different_file_json.txt
 [test_diff_against_preserves_a_preexisting_virtual_directory]
-	main/input_diff/identical.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
-	main/input_diff/virtual_directory_sentinel//*.py
+package	main/input_diff/identical.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+package	main/input_diff/virtual_directory_sentinel//*.py
+single-module	main/input_diff/identical.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+single-module	main/input_diff/virtual_directory_sentinel//*.py
 [test_diff_against_preserves_a_preexisting_virtual_file]
 	main/input_diff/identical.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 	main/input_diff/virtual_file_sentinel.py

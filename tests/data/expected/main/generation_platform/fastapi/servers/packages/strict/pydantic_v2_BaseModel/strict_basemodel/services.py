@@ -62,3 +62,13 @@ class DefaultService(Protocol):
         """
         Handle POST /uploads.
         """
+
+    @abstractmethod
+    def search(
+        self,
+        *,
+        q: strict_basemodel_models.BySize | strict_basemodel_models.ByName | None,
+    ) -> None | HTTPResult[None] | Response:
+        """
+        Handle GET /search.
+        """

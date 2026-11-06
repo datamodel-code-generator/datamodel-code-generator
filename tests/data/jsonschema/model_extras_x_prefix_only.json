@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Prefixed",
+  "type": "object",
+  "x-xenon": 1,
+  "x--dash": 2,
+  "x-x-x": 3,
+  "properties": {
+    "name": {"type": "string", "x-xenon": 4, "x--dash": 5, "x-x-x": 6}
+  }
+}

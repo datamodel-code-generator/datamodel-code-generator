@@ -41,6 +41,7 @@ from datamodel_code_generator.model.pydantic_v2._output_context import (
 from datamodel_code_generator.model.pydantic_v2.base_model import (
     _ALIAS_GENERATOR_TEMPLATE_DATA_KEY,
     _config_dict_items,
+    _followed_fields,
     _import_rendered_alias_generator,
     _PydanticV2Model,
     has_lookaround_pattern,
@@ -96,14 +97,14 @@ def _pydantic_dataclass_field_participates_in_constructor(field: DataModelFieldB
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Mapping
+    from collections.abc import Iterator, Mapping
     from pathlib import Path
 
     from datamodel_code_generator import DataclassArguments
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._decisions.assignment import AssignmentRow
     from datamodel_code_generator.model._render_plan import FieldRenderPlan
-    from datamodel_code_generator.model.base import BaseClassDataType
+    from datamodel_code_generator.model.base import BaseClassDataType, DataModel
     from datamodel_code_generator.model.pydantic_base import _FieldArguments, _PydanticFieldRenderPlan
     from datamodel_code_generator.reference import Reference
 
@@ -177,11 +178,11 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
             keyword_only=keyword_only,
             frozen=frozen,
             treat_dot_as_module=treat_dot_as_module,
+            dataclass_arguments=self.resolve_dataclass_arguments(
+                dataclass_arguments, frozen=frozen, keyword_only=keyword_only
+            ),
         )
 
-        self.dataclass_arguments = self.resolve_dataclass_arguments(
-            dataclass_arguments, frozen=frozen, keyword_only=keyword_only
-        )
         self._set_deprecated_decorator()
 
         config_parameters = build_base_config_parameters(
@@ -254,22 +255,39 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
     def _apply_lookaround_regex_engine(self) -> None:
         """Force the python-re regex engine when a lookaround pattern is reachable.
 
-        Runs lazily because referenced patterns are only linked after ``__init__``; the
-        result is memoized to keep ``imports`` cheap.
+        The patterns of every model the fields reach count (``has_lookaround_pattern``, row
+        ``legacy-dataclass-follows-every-reference``). Runs lazily because referenced patterns are only linked after
+        ``__init__``; the result is memoized to keep ``imports`` cheap.
         """
         if self._lookaround_regex_engine_checked:
             return
         self._lookaround_regex_engine_checked = True
-        if has_lookaround_pattern(self.fields, follow_references=True):
+        if has_lookaround_pattern(self.fields, follow_references=True, surrogates=False):
             self._select_python_regex_engine()
 
     @override
-    def _bases_without_inherited_config(self) -> list[BaseClassDataType]:
-        """Return the bases after the first: a dataclass takes the config of its first base only.
+    def _surrogate_pattern_scopes(self) -> Iterator[list[DataModelFieldBase]]:
+        """Yield its fields and those of every model they reach, as a lookaround counts them (``_followed_fields``)."""
+        return _followed_fields(self.fields)
 
-        It builds the fields of the other bases with its own config.
+    @override
+    def _takes_config_of(self, base: DataModel) -> bool:
+        """Return whether the dataclass applies the config of a base: its first, where it has no config of its own."""
+        return (
+            not self._rendered_config_items()
+            and bool(self.base_classes)
+            and (reference := self.base_classes[0].reference) is not None
+            and reference.source is base
+        )
+
+    @override
+    def _bases_without_inherited_config(self) -> list[BaseClassDataType]:
+        """Return the bases after the first, or every base where the dataclass has a config of its own.
+
+        A dataclass takes the config of its first base only where it has none of its own (``_applied_config_items``),
+        and builds the fields of every base with the config it applies.
         """
-        return self.base_classes[1:]
+        return self.base_classes if self._rendered_config_items() else self.base_classes[1:]
 
     def _applied_config_items(self, visiting: frozenset[int] = frozenset()) -> dict[str, str]:
         """Return the config items Pydantic applies: the dataclass's own, else all of its first dataclass base's.
@@ -294,11 +312,12 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
 
         Row ``legacy-dataclass-overwrites-engine``: it replaces an engine the config names, which a model keeps (#5637).
         The dataclass gets a config of its own: the one in the template data may be shared with every model of the
-        same name (``--extra-template-data``).
+        same name (``--extra-template-data``). It reads the items of that config as a model does, so a config that is
+        no mapping adds none.
         """
         # Merge into any config from __init__; a duplicate ConfigDict import is deduped on render.
         self.extra_template_data["config"] = {
-            **self.extra_template_data.get("config", {}),
+            **dict(_config_dict_items(self.extra_template_data.get("config"))),
             "regex_engine": '"python-re"',
         }
         self._set_internal_template_data(_SAFE_CONFIG_ITEMS_TEMPLATE_DATA_KEY, self._rendered_config_items())
@@ -507,16 +526,27 @@ class DataModelFieldBackport(DataModelField):
     def __init__(self, **data: Any) -> None:
         """Initialize and make non-identifier aliases safe for dataclass signatures."""
         super().__init__(**data)
-        if self.alias is None or is_python_name(self.alias, self.data_type.python_version):
-            return
+        for attribute, value in self.alias_form().items():
+            setattr(self, attribute, value)
 
+    @override
+    def alias_form(self, *, inherits: bool = False) -> dict[str, Any]:
+        """Return a non-identifier alias as the validation and serialization aliases the dataclass signature accepts.
+
+        A class with a generated base class takes the signature of that Pydantic dataclass, so the alias stays an
+        ``alias=`` there; only a class without a base class builds a signature from the alias, which must be an
+        identifier.
+        """
+        if inherits or self.alias is None or is_python_name(self.alias, self.data_type.python_version):
+            return {}
         validation_aliases = list(self.validation_aliases or ())
         if self.alias not in validation_aliases:
             validation_aliases.insert(0, self.alias)
-        if self.serialization_alias is None:
-            self.serialization_alias = self.alias
-        self.validation_aliases = validation_aliases
-        self.alias = None
+        return {
+            "alias": None,
+            "validation_aliases": validation_aliases,
+            "serialization_alias": self.alias if self.serialization_alias is None else self.serialization_alias,
+        }
 
 
 _rebuild_model_with_datamodel_namespace(DataModelField)

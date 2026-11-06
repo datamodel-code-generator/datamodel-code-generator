@@ -9,7 +9,7 @@ from functools import lru_cache
 from io import StringIO
 from typing import TYPE_CHECKING
 
-from datamodel_code_generator._target_unicode import is_python_name
+from datamodel_code_generator._target_unicode import host_identifiers, is_python_name
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -27,6 +27,9 @@ _COMPONENT_EMPTY = 0
 _COMPONENT_HAS_CONTENT = 1
 _COMPONENT_AFTER_COMMA = 2
 _COMPONENT_AFTER_EQUALS = 3
+_PATH_SKIPPED_TOKEN_TYPES = frozenset({token.COMMENT, token.ENDMARKER})
+_LINE_BREAK_TOKEN_TYPES = frozenset({token.NEWLINE, tokenize.NL})
+_PATH_END_BRACKETS = frozenset("()[]")
 
 
 def _is_parenthesized_name(body: str, name: str) -> bool:
@@ -178,17 +181,67 @@ def _parse_direct_target(
     return None if wrapper_depth else (name, index, has_call)
 
 
+def python_decorator_path(decorator: str) -> str:
+    """Return the path a decorator names: its tokens after ``@`` and opening parentheses, up to its next bracket.
+
+    The tokens after the bracket, such as the arguments of a call, are not read. Comments, line breaks inside the
+    opening parentheses and the whitespace around a dot are no part of the path; other whitespace between two tokens
+    is kept as one space, so ``a.b if c else d`` names no path. A line break outside the parentheses ends the
+    decorator's line; a decorator whose text the tokenizer cannot read before that bracket, or that goes on after that
+    line, names itself as a whole, ``@`` included, so no path reads it. A character UTF-8 cannot encode is read as its
+    backslash escape, as every Python version reads it the same way, and an identifier character of a target that the
+    running interpreter does not know is read as a letter it knows (``host_identifiers``) and given back in the path.
+    """
+    source = decorator.removeprefix("@").lstrip(" \t\f").encode(errors="backslashreplace").decode()
+    lent = host_identifiers(source)
+    path: list[str] = []
+    previous: tokenize.TokenInfo | None = None
+    depth = 0
+    line_ended = False
+    try:
+        for item in tokenize.generate_tokens(StringIO(lent.source if lent else source).readline):
+            if item.type in _LINE_BREAK_TOKEN_TYPES:
+                line_ended = line_ended or not depth
+                continue
+            if item.type in _PATH_SKIPPED_TOKEN_TYPES:
+                continue
+            if line_ended or item.type in _INVALID_TOKEN_TYPES:
+                return decorator
+            if previous is None and item.string == "(":
+                depth += 1
+                continue
+            if item.type == token.OP and item.string in _PATH_END_BRACKETS:
+                break
+            if previous is not None and previous.end != item.start and "." not in {previous.string, item.string}:
+                path.append(" ")
+            path.append(item.string)
+            previous = item
+    except (SyntaxError, tokenize.TokenError):
+        return decorator
+    return lent.restore_text("".join(path)) if lent else "".join(path)
+
+
 @lru_cache(maxsize=128)
 def is_named_python_decorator(decorator: str, name: str) -> bool:
-    """Match an exact unqualified target without parsing target expressions."""
-    if decorator[:1] != "@" or not is_python_name(name, rule="host"):
+    """Match an exact unqualified target without parsing target expressions.
+
+    The names are read by the target's identifier characters, whatever interpreter runs: a character the running
+    interpreter does not know is read as a letter it knows (``host_identifiers``) and given back before it is matched.
+    """
+    if decorator[:1] != "@" or not is_python_name(name):
         return False
 
     body = decorator[1:].strip()
-    if body.isidentifier():
+    lent = host_identifiers(body)
+    source = lent.source if lent else body
+    if source.isidentifier():
         return body == name
     if _is_parenthesized_name(body, name):
         return True
-    if not body or (tokens := _significant_tokens(body)) is None:
+    if not body or (tokens := _significant_tokens(source)) is None:
         return False
-    return (parsed := _parse_direct_target(tokens, 0)) is not None and parsed[1] == len(tokens) and parsed[0] == name
+    return (
+        (parsed := _parse_direct_target(tokens, 0)) is not None
+        and parsed[1] == len(tokens)
+        and (lent.restore_text(parsed[0]) if lent else parsed[0]) == name
+    )

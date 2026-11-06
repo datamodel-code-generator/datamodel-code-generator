@@ -1,0 +1,10 @@
+{
+  "valid": [
+    {"link": "https://example.com/abc", "inline": "https://example.com/abc"},
+    {}
+  ],
+  "invalid": [
+    {"link": "https://a"},
+    {"inline": "https://a"}
+  ]
+}

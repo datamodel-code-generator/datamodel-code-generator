@@ -35,23 +35,12 @@
     }
   ],
   "properties": {
-    "shared": {
-      "items": {
-        "type": "integer"
-      },
-      "title": "Shared",
-      "type": "array"
-    },
     "label": {
       "default": "extra",
       "title": "Label",
       "type": "string"
     }
   },
-  "required": [
-    "shared",
-    "shared"
-  ],
   "title": "InheritedWins",
   "type": "object"
 }

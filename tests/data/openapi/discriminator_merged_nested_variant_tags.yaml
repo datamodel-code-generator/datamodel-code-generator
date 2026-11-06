@@ -1,0 +1,61 @@
+openapi: 3.0.3
+info:
+  title: Variants Shared by Discriminated Unions Nested in Another
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        outer:
+          $ref: '#/components/schemas/Outer'
+        byKey:
+          $ref: '#/components/schemas/ByKey'
+        inline:
+          oneOf:
+            - $ref: '#/components/schemas/Cat'
+            - oneOf:
+                - $ref: '#/components/schemas/Dog'
+                - $ref: '#/components/schemas/Bird'
+          discriminator:
+            propertyName: kind
+    Cat:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        meow: {type: string}
+    Dog:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        bark: {type: string}
+    Bird:
+      type: object
+      required: [kind]
+      properties:
+        kind: {type: string}
+        wing: {type: string}
+    DogOrBird:
+      oneOf:
+        - $ref: '#/components/schemas/Dog'
+        - $ref: '#/components/schemas/Bird'
+      discriminator:
+        propertyName: kind
+    ByKey:
+      oneOf:
+        - $ref: '#/components/schemas/Dog'
+        - $ref: '#/components/schemas/Bird'
+      discriminator:
+        propertyName: kind
+        mapping:
+          dog: '#/components/schemas/Dog'
+          bird: '#/components/schemas/Bird'
+    Outer:
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/DogOrBird'
+      discriminator:
+        propertyName: kind

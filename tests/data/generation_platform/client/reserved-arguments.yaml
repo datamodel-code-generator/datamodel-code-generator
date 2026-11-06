@@ -1,0 +1,54 @@
+openapi: 3.1.0
+info:
+  title: Reserved arguments
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /tags:
+    get:
+      operationId: listTags
+      tags: [tags]
+      parameters:
+        - name: items
+          in: query
+          schema: {type: string}
+        - name: state
+          in: query
+          schema: {type: string}
+        - name: cursor
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of tags.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Page'}
+  /labels:
+    get:
+      operationId: listLabels
+      tags: [labels]
+      parameters:
+        - name: items
+          in: query
+          schema: {type: string}
+        - name: cursor
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of labels.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Page'}
+components:
+  schemas:
+    Page:
+      type: object
+      properties:
+        data:
+          type: array
+          items: {type: string}
+        next_cursor:
+          type: [string, 'null']

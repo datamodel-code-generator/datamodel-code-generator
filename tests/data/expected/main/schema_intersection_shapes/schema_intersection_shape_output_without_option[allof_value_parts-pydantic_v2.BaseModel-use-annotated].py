@@ -93,11 +93,11 @@ class NullableMap(RootModel[Any]):
 
 
 class OuterProp(RootModel[int]):
-    root: Annotated[int, Field(description='site', le=9)]
+    root: Annotated[int, Field(description='site', ge=0, le=9)]
 
 
 class OuterItem(RootModel[int]):
-    root: Annotated[int, Field(description='site', le=9)]
+    root: Annotated[int, Field(description='site', ge=0, le=9)]
 
 
 class OuterMap(RootModel[int]):
@@ -105,11 +105,11 @@ class OuterMap(RootModel[int]):
 
 
 class MultipleProp(RootModel[int]):
-    root: int
+    root: Annotated[int, Field(multiple_of=6)]
 
 
 class MultipleItem(RootModel[int]):
-    root: int
+    root: Annotated[int, Field(multiple_of=6)]
 
 
 class MultipleMap(RootModel[int]):

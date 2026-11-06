@@ -2,6 +2,10 @@
 # Each line records the expected output a test compares; to accept changed output add --inline-snapshot=fix (see AGENTS.md).
 [test_main_yaml]
 	main/yaml.py
+[test_main_yaml_bool_text_in_strings_does_not_warn]
+	main/main_yaml/bool_text_in_strings_does_not_warn.py
+[test_main_yaml_bool_word_does_not_warn]
+	main/main_yaml/bool_word_does_not_warn.py
 [test_main_yaml_deprecated_bool]
 	main/main_yaml/deprecated_bool.py
 [test_main_yaml_integer_beyond_int64]

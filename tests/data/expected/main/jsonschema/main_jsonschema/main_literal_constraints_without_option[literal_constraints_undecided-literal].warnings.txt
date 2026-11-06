@@ -1,0 +1,3 @@
+a Literal of the output model cannot hold the value 1.5, so it is written as its type, which admits other values; LiteralConstraintsUndecided.zero_step is generated without this constraint.
+a Literal of the output model cannot hold the value inf, so it is written as its type, which admits other values; LiteralConstraintsUndecided.infinite is generated without this constraint.
+a Literal of the output model cannot hold the value nan, so it is written as its type, which admits other values; LiteralConstraintsUndecided.not_a_number is generated without this constraint.

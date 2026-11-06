@@ -1,0 +1,4 @@
+Model {"nested": [1, [2]]} (valid): type refused by msgspec
+Model {"tree": {"children": [1]}} (valid): type refused by msgspec
+Node {"children": [1, {"children": []}]} (valid): accepted
+Node {"children": ["x"]} (invalid): rejected

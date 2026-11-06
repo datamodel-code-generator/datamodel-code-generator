@@ -84,6 +84,27 @@ This matches the expected behavior when `type: string` is specified in your sche
 
 📎 Related: [#1653](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/1653), [#1766](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/1766), [#2338](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/2338)
 
+### 🔤 YAML read differently with the `ryaml` extra
+
+With `pip install 'datamodel-code-generator[ryaml]'`, YAML input is read by ryaml (YAML 1.2) instead of PyYAML (YAML 1.1). Generation is the same for ordinary documents; the YAML below is read differently. If ryaml cannot read a document (for example an integer outside 64 bits), PyYAML reads it instead.
+
+| YAML text | PyYAML | ryaml | To get the same result |
+| --- | --- | --- | --- |
+| `<<: *base` (merge key) | keys of `base` are merged in | `<<` stays a key holding `base` | Avoid merge keys; write the keys out |
+| `017` | integer `15` (octal) | string `"017"` | Write `15`, or quote it as a string |
+| `1_000` | integer `1000` | string `"1_000"` | Write `1000` |
+| `1:20` | integer `80` (base 60) | string `"1:20"` | Write `80`, or quote it as a string |
+| `0o17` | string `"0o17"` | integer `15` | Quote it if it is a string |
+| `1.0e3` | string `"1.0e3"` | float `1000.0` | Quote it if it is a string, or write `1000.0` |
+| `12345678901234567890123456789012345678901` (41 digits) | integer | float `1.2345678901234568e+40` | Quote it, or keep integers within 64 bits |
+| `!!binary /w==` | bytes `b"\xff"` | string `"/w=="` | Write the value as a plain string |
+| `!!omap [a: 1]` | list of tuples | list of one-key mappings | Write a list of mappings |
+| `!foo bar` (unknown tag) | error | mapping `{"!foo": "bar"}` | Remove the tag |
+
+`!!set` is rejected with either reader. Unquoted `YES`, `no`, `on` and `off` stay strings with both readers. The `True`, `False`, `TRUE` and `FALSE` spellings are read as booleans by both and warn as deprecated; write `true` or `false`.
+
+📎 Related: [#4511](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4511), [#5546](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5546)
+
 ---
 
 ## 🔍 Type Checking
@@ -388,6 +409,766 @@ See [Root Models and Type Aliases](root-model-and-type-alias.md) for details.
 📎 Related: [#2505](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/2505)
 
 ---
+
+## Opt-in behaviour changes in 0.90.0
+
+The opt-in options of 0.90.0, listed as in [Opt-in behaviour changes in 0.87.0](#opt-in-behaviour-changes-in-0870). Without them the output is byte-identical to 0.89.0. The `20261104` preset sets every option in this section, and keeps the options of the `20261027` preset (see [Presets](presets.md)).
+
+### `--merge-shared-variant-tags`
+
+| | |
+|---|---|
+| Option | `--merge-shared-variant-tags` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#5361](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5361), [#4666](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4666) |
+
+**Affects:** a variant that several discriminated unions tag differently, for example one by its schema name and one by a `mapping` key. A variant has one tag field, so it keeps the tag of the first union that tags it, and the other union rejects the documents that select the variant by a tag it does not keep, with a warning. With the option its tag field takes every tag the unions give it that the pattern of the tag field admits. A variant keeps the first union's tag where a union listing it, or nesting a union that lists it, would then read one of its tags on another variant, and msgspec Structs, which take one tag, are unchanged.
+
+Schema: `ByName` is a `oneOf` of `Cat` and `Dog` discriminated by `kind` without a mapping, and `ByKey` lists the same variants with the mapping `{"cat": "#/components/schemas/Cat", "dog": "#/components/schemas/Dog"}`.
+
+Without the option (same as 0.89.0), `ByKey` rejects `{"kind": "cat"}`:
+
+```python
+class Cat(BaseModel):
+    kind: Literal["Cat"]
+```
+
+With the option:
+
+```python
+class Cat(BaseModel):
+    kind: Literal["Cat", "cat"]
+```
+
+### `--use-encoded-str-for-constrained-base64`
+
+| | |
+|---|---|
+| Option | `--use-encoded-str-for-constrained-base64` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#6170](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6170) |
+
+**Affects:** a `format: byte` string with `pattern`, `minLength` or `maxLength` in the field forms (`--use-annotated`, `--field-constraints`) of Pydantic v2 output. JSON Schema checks them on the base64 text, while `Annotated[Base64Str, Field(...)]` and an optional `Base64Str` with `Field(...)` check them on the decoded text: `maxLength: 8` accepts `YWFhYWFhYQ==` (12 characters, 7 decoded) and `minLength: 4` rejects `YWFh` (4 characters, 3 decoded). With the option the constraints stand in front of the decoding `EncodedStr`, which Pydantic 2.10 or later checks on the text; a target Pydantic older than 2.10 warns that it does not check them. A string without these constraints stays `Base64Str`.
+
+Schema: `{"type": "string", "format": "byte", "minLength": 4, "maxLength": 8}`, with `--use-annotated`.
+
+Without the option (same as 0.89.0):
+
+```python
+lengths: Annotated[Base64Str | None, Field(max_length=8, min_length=4)] = None
+```
+
+With the option:
+
+```python
+lengths: Annotated[str, Field(min_length=4, max_length=8), EncodedStr(encoder=Base64Encoder)] | None = None
+```
+
+### `--use-duplicate-name-suffix-for-every-collision`
+
+| | |
+|---|---|
+| Option | `--use-duplicate-name-suffix-for-every-collision` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#5420](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5420) |
+
+**Affects:** with `--duplicate-name-suffix`, a model renamed because its name is taken in its module: a definition named like an inline model (`Item` beside an inline `item`), or like a name the module imports (`AnyUrl` beside a `format: uri` field). Such a model takes the suffix `Model` whatever the map says; with the option it takes the suffix the map gives its kind (`model`, `enum`, else `default`), and `Model` where the map gives none. Without `--duplicate-name-suffix` the option changes nothing.
+
+Schema: `$defs` `Item` beside an inline object property `item`, with `--duplicate-name-suffix '{"model": "Schema"}'`.
+
+Without the option (same as 0.89.0):
+
+```python
+class ItemModel(BaseModel):
+    v: str | None = None
+```
+
+With the option:
+
+```python
+class ItemSchema(BaseModel):
+    v: str | None = None
+```
+
+### `--capitalise-numbered-enum-members`
+
+| | |
+|---|---|
+| Option | `--capitalise-numbered-enum-members` (also `--capitalize-numbered-enum-members`) |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#5665](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5665) |
+
+**Affects:** under `--capitalise-enum-members`, an enum whose members differ only by case. The second member finds the capitalized name taken and is numbered, and the number goes on the name as written; with the option the numbered name is capitalized too. Without `--capitalise-enum-members` the option changes nothing.
+
+Schema: `{"type": "string", "enum": ["a", "A"]}`, with `--capitalise-enum-members`.
+
+Without the option (same as 0.89.0):
+
+```python
+class E(Enum):
+    A = "a"
+    a_1 = "A"
+```
+
+With the option:
+
+```python
+class E(Enum):
+    A = "a"
+    A_1 = "A"
+```
+
+### `--keep-first-character-of-path-keys`
+
+| | |
+|---|---|
+| Option | `--keep-first-character-of-path-keys` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#5539](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5539) |
+
+**Affects:** an OpenAPI `paths` key that does not start with `/` (not valid OpenAPI, but read), under `--openapi-scopes paths`. Its operation models lose the first character of the key; with the option only a leading slash is stripped, as for webhook names and the `api` scope. Keys that start with `/` are named as before.
+
+Schema: `paths: {pets: {get: ...}}`, with `--openapi-scopes schemas paths parameters`.
+
+Without the option (same as 0.89.0):
+
+```python
+class EtsGetResponse(BaseModel):
+    a: str | None = None
+```
+
+With the option:
+
+```python
+class PetsGetResponse(BaseModel):
+    a: str | None = None
+```
+
+### `--name-converted-payloads-by-message`
+
+| | |
+|---|---|
+| Option | `--name-converted-payloads-by-message` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#5677](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5677) |
+
+**Affects:** an AsyncAPI payload in Avro or XML Schema that names no type of its own: an Avro `string`, array, map or union, or an XML Schema with several global elements. The converter gives it the placeholder title `Model`, so the root of a string, array or union payload writes `Field(..., title='Model')` (also in `model_json_schema()`) and `--use-title-as-name` names a string, array, map or XML Schema payload `Model`. With the option the payload takes no title, as a JSON Schema payload, and is named after its message. A payload that names its type, such as an Avro record, keeps that name.
+
+Schema: a message `Ping` with `schemaFormat: application/vnd.apache.avro;version=1.9.0` and `payload: string`.
+
+Without the option (same as 0.89.0):
+
+```python
+class PingPublishPayload(RootModel[str]):
+    root: str = Field(..., title="Model")
+```
+
+With the option:
+
+```python
+class PingPublishPayload(RootModel[str]):
+    root: str
+```
+
+### `--singularize-last-word-of-item-names`
+
+| | |
+|---|---|
+| Option | `--singularize-last-word-of-item-names` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#4824](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4824) |
+
+**Affects:** the item model of an array, named by singularizing the name of the array. The whole name is singularized as one word, which goes wrong for some endings: `actions_caches` gives `ActionsCach` and `payment_status` gives `PaymentStatu`. With the option only the last word is singularized, and a last word without a singular takes the `Item` suffix (or none under `--disable-appending-item-suffix`). Names whose whole-name singular is right, such as `shipping_addresses` (`ShippingAddress`), are unchanged.
+
+Schema: a property `actions_caches` of `type: array` with inline object items.
+
+Without the option (same as 0.89.0):
+
+```python
+class ActionsCach(BaseModel):
+    id: int | None = None
+```
+
+With the option:
+
+```python
+class ActionsCache(BaseModel):
+    id: int | None = None
+```
+
+### `--naming-strategy definitions-first`
+
+| | |
+|---|---|
+| Option | `--naming-strategy definitions-first` |
+| Preset | `20261104` (the practical presets take it instead of `primary-first`) |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#4825](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4825); the name part of [#4846](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4846) |
+
+**Affects:** a definition (in `/definitions/`, `/$defs/` or `/components/schemas/` of any document) whose name an inline model, a union branch, a request or response variant or another definition asked for first. Models take their names in the order the parser reaches them, so the definition is numbered (`Package1`), or renamed `ChargeModel` where both took the name and the module renames the later one; `primary-first` renames only models of other files. With the value the first definition of a name, those of the input before those of the documents it references, takes it, and the model that held it takes the name the definition would have taken (`Package1`), else the first free one (`Charge1`). A model whose name is made from a renamed model, such as the model of its extra properties (`Package1AdditionalProperty`) or its request and response variants, is renamed with it, and every other model keeps its name. The options keyed by class name (`--aliases "Package.name"`, `--base-class-map`, ...) name the classes of the output.
+
+Schema: the component `build` holds an inline object `package` (`path`), and the component `package` (`name`) follows it.
+
+Without the option (same as 0.89.0):
+
+```python
+class Package(BaseModel):
+    path: str | None = None
+
+
+class Package1(BaseModel):
+    name: str | None = None
+```
+
+With the option:
+
+```python
+class Package1(BaseModel):
+    path: str | None = None
+
+
+class Package(BaseModel):
+    name: str | None = None
+```
+
+### `--naming-strategy enclosing-model`
+
+| | |
+|---|---|
+| Option | `--naming-strategy enclosing-model` |
+| Preset | none; `--recommend-options` recommends it where inline schemas under different parents share names |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#4855](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4855), [#4845](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4845), [#4826](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4826), [#5666](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5666) |
+
+**Affects:** the nested models under `--naming-strategy full-path` and `parent-prefixed`. They are prefixed with the name of the closest model registered above them when they are named, not the model they are built for: the model of an `allOf` property finds none (`Issue1`, `Issue2`), a union branch without a name of its own takes the union's name and is prefixed with it again (`StreamEventStreamEvent`), a branch named after its tag too (`PetPetCat`), a definition parsed after the root model takes the root's name (`ModelCustomer`), and `--parent-scoped-naming` adds a second prefix (`OrderOrderOtherOrderOrderOtherItem`). With the value every model built for another model takes that model's final name once, then its own part: its property key, its singular item name, its title or tag, or its position as a branch without a name (`StreamEvent1`); the model of a nullable enum, of extra properties or a request or response variant keeps the word of its role. A definition, a document root and an operation model take their own names. A name another model takes first is numbered, with `_` after a name that ends in a digit (`StreamEvent1_1`).
+
+Schema: the component `IssueClosed` with an `allOf` property `issue`, and a `oneOf` `StreamEvent` of two inline objects.
+
+Without the option (same as 0.89.0, with `--naming-strategy full-path`):
+
+```python
+class Issue1(Issue):
+    state: str | None = None
+
+
+class StreamEventStreamEvent(BaseModel):
+    delta: str | None = None
+```
+
+With the option:
+
+```python
+class IssueClosedIssue(Issue):
+    state: str | None = None
+
+
+class StreamEvent1(BaseModel):
+    delta: str | None = None
+```
+
+### `--name-allof-union-members-after-branches`
+
+| | |
+|---|---|
+| Option | `--name-allof-union-members-after-branches` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#4847](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4847) |
+
+**Affects:** an `allOf` that holds a `oneOf` or `anyOf`, which gives each branch a class combining it with the other parts of the allOf. These classes, the branch-only bases and the part the branches share are all numbered after the holder (`Event1` to `Event5`), and `--infer-union-variant-names` names the branch-only bases after their tags, not the classes of the union. With the option each class of the union takes the holder's name and the branch's tag (under `--infer-union-variant-names` or `--use-tag-as-union-variant-name`), the class of a `$ref` branch, else its position (`EventCreated`, `NoticeOpened`, `Event1`); a branch-only base takes that class's name and `Base` (`EventCreatedBase`) and the shared part the holder's name and `Base` (`EventBase`). A name another model holds is numbered, with `_` after a name that ends in a digit.
+
+Schema: `Event` is an `allOf` of `$ref: Envelope` and a `oneOf` of two inline objects tagged by `type: created` and `type: deleted`, with `--infer-union-variant-names`.
+
+Without the option (same as 0.89.0):
+
+```python
+class Event2(EventCreated, Event1):
+    pass
+
+
+class Event(RootModel[Event2 | Event3]):
+    root: Event2 | Event3
+```
+
+With the option:
+
+```python
+class EventCreated(EventCreatedBase, EventBase):
+    pass
+
+
+class Event(RootModel[EventCreated | EventDeleted]):
+    root: EventCreated | EventDeleted
+```
+
+### `--read-schema-version-per-document`
+
+| | |
+|---|---|
+| Option | `--read-schema-version-per-document` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#5380](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5380), [#5699](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5699), [#5700](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5700) |
+
+**Affects:** a run that reads documents of different schema versions (a directory of draft-07 and 2020-12 files, a 2020-12 document that references a draft-07 one), an OpenAPI 3.1 or later or AsyncAPI 3 document with keywords beside a `$ref`, and a `minProperties` or `maxProperties` beside an allOf `$ref` of a draft 4 to 7 document under `--generate-schema-validators`. Without the option the version of the document parsed first decides, for every document, whether the keywords beside a `$ref` apply and which features of its version are read, and the schema validators read an OpenAPI or AsyncAPI document as draft 7. With the option each document is read by the version it declares (`$schema`, `openapi`, `asyncapi`); a referenced document that declares none takes the version of the document whose reference loads it. Two same-named definitions of a document and of a document it references can get each other's class names (`Score`, `ScoreModel`) when the option makes them differ. An explicit `--schema-version` reads every document by that version, with or without the option, except that without it the schema validators read an OpenAPI or AsyncAPI document as draft 7.
+
+Schema: a 2020-12 `Root` whose `score` is `{"allOf": [{"$ref": "#/$defs/Positive", "maximum": 10}]}` and whose `legacy` references the same definition in a draft-07 document.
+
+Without the option (same as 0.89.0), `legacy` rejects 11, which draft 7 accepts:
+
+```python
+class Root(BaseModel):
+    legacy: Score | None = None
+    score: Score | None = None
+```
+
+With the option:
+
+```python
+class Root(BaseModel):
+    legacy: ScoreModel | None = None
+    score: Score | None = None
+```
+
+### `--ignore-ref-siblings-by-schema-version`
+
+| | |
+|---|---|
+| Option | `--ignore-ref-siblings-by-schema-version` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#5845](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5845), [#5958](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5958) |
+
+**Affects:** a `$ref` with keywords beside it in a version that ignores them: JSON Schema draft 4, 6 and 7, OpenAPI 3.0 and AsyncAPI 2. Without the option those keywords overlay the referenced schema: a sibling `format: binary` types the field `bytes`, a sibling `maxLength` constrains it, and a sibling `uniqueItems` makes it a set under `--use-unique-items-as-set`. With the option the field is typed by the referenced schema alone; annotations beside the `$ref` (`description`, `default`, `title`) and extensions are left out too. Versions that apply the keywords beside a `$ref` read them as before; the version is the one `--read-schema-version-per-document` reads, else that of the document being parsed.
+
+Schema: an OpenAPI 3.0 `Holder` whose `data` is `{"$ref": "#/components/schemas/Text", "format": "binary"}`, with `Text` a string.
+
+Without the option (same as 0.89.0):
+
+```python
+class Holder(BaseModel):
+    data: bytes | None = None
+```
+
+With the option:
+
+```python
+class Holder(BaseModel):
+    data: Text | None = None
+```
+
+### `--intersect-combined-schema-keywords`
+
+| | |
+|---|---|
+| Option | `--intersect-combined-schema-keywords` (turns on `--intersect-allof-keywords`) |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#5416](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5416), [#5453](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5453), [#5535](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5535), [#4977](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4977), [#5532](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5532), [#5177](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5177), [#5181](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5181), [#6246](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6246) |
+
+**Affects:** keywords beside an `anyOf` or `oneOf` that a branch declares too. They apply to every value, whichever branch it meets, but each branch is parsed with them merged in and the branch's value wins, so `minimum: 5` beside a branch with `minimum: 1` accepts `3`. With the option each branch is the intersection of both, as `--intersect-allof-keywords` writes it for an `allOf`: the tightest bound, the conjunction of the `pattern`s, the common `multipleOf`, the `type` and `enum` values both admit, nested `properties` alike; a `nullable` beside the `anyOf` stays with each branch. Where an `anyOf` and a `oneOf` stand side by side, a branch of one keeps the branches of the other whose `type` admits one of its types, and a branch that keeps none is left out unless every branch is, so `anyOf: [string, integer]` beside `oneOf: [string, boolean]` gives `str` instead of `str | bool`. Where parts meet (these branches, a `$ref` with siblings, an inherited override, the members of an `allOf`) an `enum` also loses the values the merged `type` rejects, so an Enum can become an `IntEnum` or `StrEnum`. A `$ref` branch without siblings of its own keeps its referenced type.
+
+A property that overrides an inherited one (an `allOf` child) also merges its `properties` and `patternProperties` name by name, so a nested property named `default`, `examples`, `example` or `nullable` is no longer dropped; an override that narrows the inherited `type` (to `null`, from `[string, integer]` to `string`, from `number` to `integer`, from `[object, string]` to `object`, or the type of a nested schema) is the intersection with the inherited property instead of the inherited type, which could only drop its null; and under `--allof-merge-mode none` the type shape of an override keeps the length of a closed tuple (`items: false`). An override that narrows a nested schema can get its own model, numbered (`Foo1`) where the inherited model has the name: it is the form an override with constraints already takes. 0.70.0 wrote `a: None` for `{"type": "null"}` over `{"type": ["string", "null"]}`; users upgrading from it get that output back with this option.
+
+An `allOf` member also reads the keywords beside its `$ref` as a part of it where the document's dialect does (2019-09 and later, OpenAPI 3.1, a document without `$schema`; draft 7 and OpenAPI 3.0 keep ignoring them), so `{"$ref": "#/$defs/A", "properties": {"extra": ...}, "required": ["extra"]}` adds `extra`; a member naming a schema that is only a `$ref` (beside annotations) takes that schema's target as its base, so its fields are no longer lost; and the union of the variants an `allOf` member's `anyOf` or `oneOf` gives admits `None` where every part of the `allOf` admits null.
+
+Schema: `Base.a` is `{"type": ["string", "null"]}`, and the `allOf` child redeclares it as `{"type": "null"}`.
+
+Without the option (same as 0.78.0 to 0.89.0):
+
+```python
+class Child(Base):
+    a: str | None = None
+```
+
+With the option:
+
+```python
+class Child(Base):
+    a: None = Field(None)
+```
+
+Schema: `{"minimum": 5, "anyOf": [{"type": "integer", "minimum": 1}, {"type": "string"}]}`.
+
+Without the option (same as 0.89.0):
+
+```python
+class Bound(RootModel[conint(ge=1)]):
+    root: conint(ge=1)
+```
+
+With the option:
+
+```python
+class Bound(RootModel[conint(ge=5)]):
+    root: conint(ge=5)
+```
+
+### `--distribute-allof-over-unions`
+
+| | |
+|---|---|
+| Option | `--distribute-allof-over-unions` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#4820](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4820), [#5416](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5416), [#4853](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4853), [#5305](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5305), [#4495](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4495) |
+
+**Affects:** a schema with an `allOf` beside an `anyOf` or `oneOf`, which admits a value that every `allOf` member and one branch admit. An inline branch is parsed with the `allOf` merged in, but a `$ref` branch takes only the `properties` and `required` beside it, so the `allOf` is dropped and the model accepts data without the properties it requires; an OpenAPI request or response body with an `allOf` beside the union is parsed by its `allOf` and drops the union. With the option a `$ref` branch gets a class whose bases are the branch and the `allOf` members, at a definition, a property, an array item and a map value alike, a body is that union as the same schema in `components` is, and a `$ref` branch that names no object takes the value keywords beside the union (`minimum`, `pattern`, `minItems` ...), as an inline branch does. The new classes are numbered after the site (`Pet1`, `Pet2`), so a later inline branch of the same union or value branch of the site can take another number (`R` becomes `R1`). An `allOf` member's own value keywords meet a `$ref` branch that names no object under `--use-site-models-for-constrained-refs`, as they meet a `$ref` member of an `allOf` there.
+
+An `allOf` whose members hold several `anyOf` or `oneOf` admits a value that meets one branch of each, but their branches join one union, each with the other parts of the `allOf`, so a value that meets one `anyOf` alone is accepted, and the inline branches of a later `anyOf` replace those of an earlier one (its properties are lost). With the option the `allOf` is one union variant per combination of one branch of each, a class whose bases are those branches and the class of the other parts (`M6(M1, M3, M5)`), each branch once in it and each set of branches once; an `allOf` with more than 128 combinations keeps the joined union, with a warning. A `$ref` member that names an `allOf` over a union, which was a base that later passes drop as a root model, is read in its place, so its union joins those of the site and its properties join the class of the other parts (`Leaf3`); a member naming a schema already read in place adds nothing. The branch classes of a second `anyOf` and the variants take new numbers after the site (`M1` to `M9`), and the models of a schema read in place can be written after the site.
+
+The value branches of these unions (`{"type": "string"}`, a `$ref` to a value schema) are read without the option only where the `allOf` would be a model without fields, which rejected every value: there the `allOf` is the union of the intersections, such as `RootModel[constr(min_length=2) | int]` for `allOf: [{anyOf: [string, integer]}, {minLength: 2}]`. With the option they are read at a property or an array item, which wrote `Any`, beside a `$ref` member that is the type of a property or an item (`qf: Quantity` accepted `6` beside `anyOf: [{maximum: 5}, {minimum: 7}]`), and beside object branches, which dropped them (`R3m3 | constr(min_length=2)`); a branch without a type is `Any`.
+
+Schema: `Pet` is `{"allOf": [{"$ref": "#/$defs/Base"}], "oneOf": [{"$ref": "#/$defs/Cat"}, {"$ref": "#/$defs/Dog"}]}`, where `Base` requires `id`.
+
+Without the option (same as 0.89.0), `Pet` accepts `{"meow": true}`:
+
+```python
+class Pet(RootModel[Cat | Dog]):
+    root: Cat | Dog
+```
+
+With the option:
+
+```python
+class Pet1(Cat, Base):
+    pass
+
+
+class Pet2(Dog, Base):
+    pass
+
+
+class Pet(RootModel[Pet1 | Pet2]):
+    root: Pet1 | Pet2
+```
+
+### `--keep-reference-null-on-merged-models`
+
+| | |
+|---|---|
+| Option | `--keep-reference-null-on-merged-models` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#4816](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4816), [#5163](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5163), [#5411](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5411) |
+
+**Affects:** a field, item or member whose schema admits null (`type: [object, "null"]`, or `nullable: true` under `--strict-nullable`) and names a model that is merged into an equal model that rejects null: by the deduplication of equal models of one name, `--reuse-model` (which makes it a subclass of the equal model, or removes it under `--collapse-reuse-models`) or `--reuse-scope tree`. Without the option the reference takes the null of the model it names after the merge, so it loses its `| None` where the field writes none of its own (a required field under `--strict-nullable`, a required `$ref`, a `NotRequired` TypedDict key, a msgspec list item) and rejects the null its schema admits. With the option it keeps the null of the schema it names, and a model that differs from another only by that null stays apart under `--reuse-model`. A reference whose schema rejects null keeps rejecting it either way.
+
+Schema: `Work` is `{"type": "object", "properties": {"street": {"type": "string"}}}`, `Home` the same with `"type": ["object", "null"]`, and `Person` requires `home` (`$ref` to `Home`) and `work` (`$ref` to `Work`), with `--reuse-model`.
+
+Without the option (same as 0.89.0), `Person` rejects `{"home": null, "work": {}}`:
+
+```python
+class Home(Work):
+    pass
+
+
+class Person(BaseModel):
+    home: Home
+    work: Work
+```
+
+With the option:
+
+```python
+class Person(BaseModel):
+    home: Home | None
+    work: Work
+```
+
+### `--use-msgspec-meta-for-map-keys`
+
+| | |
+|---|---|
+| Option | `--use-msgspec-meta-for-map-keys` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#6074](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6074) |
+
+**Affects:** msgspec.Struct output of a map whose keys a `propertyNames` schema or the patterns of `patternProperties` constrain by `pattern`, `minLength` or `maxLength`. The keys are written `str`, so msgspec decodes every key, while Pydantic output checks them. With the option they are `Annotated[str, Meta(...)]`, which msgspec checks at decode. The keys of a `propertyNames` union (`anyOf` of patterns) stay `str`: msgspec decodes a union of strings by one of them.
+
+Schema: `{"type": "object", "propertyNames": {"pattern": "^[a-z]+$"}, "additionalProperties": {"type": "string"}}`.
+
+Without the option (same as 0.89.0):
+
+```python
+named: dict[str, str] | UnsetType = UNSET
+```
+
+With the option:
+
+```python
+named: dict[Annotated[str, Meta(pattern="^[a-z]+$")], str] | UnsetType = UNSET
+```
+
+### `--rename-submodules-hidden-by-classes`
+
+| | |
+|---|---|
+| Option | `--rename-submodules-hidden-by-classes` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#6067](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6067) |
+
+**Affects:** modular output where a package's `__init__.py` defines a class named like one of its submodules, such as the class `Warn` of `pkg.Warn` beside the module `pkg/Warn.py` of `pkg.Warn.Detail`. Importing the module binds the name `Warn` of the package to the module in place of the class, so the models that name either fail to decode. With the option the module, with the modules below it, takes the first free name with trailing underscores (`pkg/Warn_.py`, `pkg/Warn__.py` beside a module `pkg/Warn_.py`), also where the directories of a directory input name it; the class keeps its name. The class names are the final ones: where a later rename gives a class the name of a submodule (`--field-type-collision-strategy rename-type`, an import that shadows the class, `--collapse-root-models-name-strategy parent`), the run is parsed again and renames that submodule.
+
+Schema: `$defs` with `pkg.Warn`, `pkg.Warn.Detail`, `pkg.Report` (a `$ref` to `pkg.Warn`) and `pkg.api.Order` (a `$ref` to `pkg.Warn.Detail`), with `--output`.
+
+In 0.89.0, `pkg/api.py` beside `pkg/Warn.py`; without the option generation now stops with an error that names the class and the module instead:
+
+```python
+from . import Warn
+
+
+class Order(BaseModel):
+    detail: Warn.Detail | None = None
+```
+
+With the option, `pkg/api.py` beside `pkg/Warn_.py`:
+
+```python
+from . import Warn_
+
+
+class Order(BaseModel):
+    detail: Warn_.Detail | None = None
+```
+
+### `--use-serialize-as-any-for-every-subclass`
+
+| | |
+|---|---|
+| Option | `--use-serialize-as-any-for-every-subclass` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#5595](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5595), [#5672](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5672), [#5673](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5673) |
+
+**Affects:** Pydantic v2 output under `--use-serialize-as-any`. A field is wrapped in `SerializeAsAny` only when a direct subclass of its model adds fields, as recorded when the model was parsed: a subclass two levels down (#5673), a subclass of a model that `--reuse-model` or `--collapse-reuse-models` merged into another (#5672), and a field that names its model through its module (`c.Base`, #5595) are left out, so an instance of the subclass serializes as the base model. With the option the class hierarchy of the generated output decides: a field is wrapped when any subclass of its model, at any depth, adds fields.
+
+Schema: `Holder.c` references `C`, `Mid` extends `C` without fields and `Leaf` extends `Mid` with `w`.
+
+Without the option (same as 0.89.0):
+
+```python
+class Holder(BaseModel):
+    c: C | None = None
+```
+
+With the option:
+
+```python
+class Holder(BaseModel):
+    c: SerializeAsAny[C] | None = None
+```
+
+### `--read-escaped-ref-pointers`
+
+| | |
+|---|---|
+| Option | `--read-escaped-ref-pointers` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#4952](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4952) |
+
+**Affects:** a `$ref` whose JSON pointer escapes a character: `~1` for `/`, `~0` for `~`, or a percent-encoded octet such as `%20` for a space. The reference keeps the escaped text as the key of its target, so the definition it names, which is keyed by its name, gets a copy named after the escaped text (`Foo20Bar` beside `FooBar`, `A1b` beside `AB`), and the field takes the copy. Both classes validate the same documents, but an instance of the definition's class is not one of the copy's. With the option a pointer is keyed by the characters its escapes encode, as JSON Pointer and URI fragments read it, in every scope as the `api` scope already keys it, so every spelling of a pointer names the one model of its target; a model a reference adds is named after the decoded last token, and a `--model-name-map` key that names a path matches it in any spelling. A `/` written unescaped inside a name is a separator then, as JSON Pointer reads it: `#/definitions/user/created` no longer names the definition `user/created` and warns as a dangling reference, while a name that holds `://` is still read whole.
+
+Schema: `$defs` holds `Foo Bar` and `a/b`, and the properties `fb` and `ab` reference them as `#/$defs/Foo%20Bar` and `#/$defs/a~1b`.
+
+Without the option (same as 0.89.0):
+
+```python
+class Model(BaseModel):
+    fb: Foo20Bar | None = None
+    ab: A1b | None = None
+```
+
+With the option:
+
+```python
+class Model(BaseModel):
+    fb: FooBar | None = None
+    ab: AB | None = None
+```
+
+### `--read-dynamic-anchors-in-document-order`
+
+| | |
+|---|---|
+| Option | `--read-dynamic-anchors-in-document-order` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#5131](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5131) |
+
+**Affects:** a plain-name `$dynamicRef` (`#T`) that its dynamic scope does not bind, and a `$ref` or `$dynamicRef` to a plain name that several schemas of one document declare, which JSON Schema leaves undefined and which warns either way. The `$dynamicRef` names the first `$dynamicAnchor` of its name that the parse has met, so the answer depends on the order of the schemas: an OpenAPI component written before the components that declare the anchor resolves to the last of them, one written after them to the first. A `$ref` to a duplicated `$anchor` names the last declaration. With the option the document as loaded decides: both name the first declaration in document order.
+
+Schema: the components `First` and `Second` both declare `$dynamicAnchor: T`, and `Holder`, written before them, has `item: {$dynamicRef: "#T"}`.
+
+Without the option (same as 0.89.0):
+
+```python
+class Holder(BaseModel):
+    item: Second | None = None
+```
+
+With the option:
+
+```python
+class Holder(BaseModel):
+    item: First | None = None
+```
+
+### `--use-one-model-per-ref-site`
+
+| | |
+|---|---|
+| Option | `--use-one-model-per-ref-site` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#5079](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5079), [#5076](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5076) |
+
+**Affects:** an object `$ref` with sibling keywords, such as `{"$ref": "#/$defs/Node", "required": ["v"]}`. The `$ref` is parsed as its target merged with the keywords beside it, at the path that reaches it; the target's own `$ref`s with sibling keywords are copied into the merged object and parsed again below it, so a chain of N definitions whose `next` is such a `$ref` to the next one gives N(N-1)/2 site models (`Next`, `Next1`, ..., where the copies of one place validate the same documents), one nested parse per hop, which stops with "Schema nesting is too deep" for a long chain. With the option each place such a `$ref` is written, with the `$dynamicAnchor` bindings of its dynamic scope, gets one model, which every unchanged copy of that place shares, parsed from a worklist without nesting: N-1 site models beside the N definitions. The field that holds the `$ref` keeps its own required, default and alias; a copy that a merge changed is parsed where it is, as without the option, and where request and response models are split the model is parsed where it is first met, so a chain still nests one parse per hop there.
+
+Schema: `Link0` to `Link4`, where `Link0` to `Link3` have `next: {"$ref": "#/$defs/Link<i+1>", "required": ["v"], "description": "link <i>"}`.
+
+Without the option (same as 0.89.0), `Link0.next` is `Next`, whose `next` is `Next1`, whose `next` is `Next2`, ..., and `Link1.next` is `Next4`, whose `next` is `Next5`, ...: 10 site models.
+
+With the option:
+
+```python
+class Next(BaseModel):
+    v: int
+    next: Next1 | None = Field(None, description="link 1")
+
+
+class Link0(BaseModel):
+    v: int | None = None
+    next: Next | None = Field(None, description="link 0")
+```
+
+and `Link1.next` is `Next1` too: 4 site models.
+
+### `--use-unique-items-as-set-by-value`
+
+| | |
+|---|---|
+| Option | `--use-unique-items-as-set-by-value` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#4834](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4834), [#4936](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4936), [#6191](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6191) |
+
+**Affects:** output under `--use-unique-items-as-set`. Its sets are decided before `--collapse-root-models`, `--type-overrides` and the other modules, and a model that is a set item hashes by identity, so `[{"id": 1}, {"id": 1}]` parses to a set of two equal `Pet`s (#4936). Deduplication, `--reuse-model`, `--collapse-reuse-models` and `--reuse-scope tree` compare such arrays as the lists they still are, so a model whose array declares no `uniqueItems` merges into one whose array does, and its `["b", "a", "b"]` parses to `{"a", "b"}` (#4834); a root model of another module is collapsed into a list or a set as the order of the modules says (#6191). With the option a set is decided on the final item types and written only where every value of its items hashes by value: scalars, enums, tuples and frozen sets of them, and frozen models whose fields hash. An array of models that hash only by identity, of `Any` or of containers stays a list, and models whose arrays differ in `uniqueItems` stay apart.
+
+Schema: `Labels.names` declares `uniqueItems`, `History.names` does not, and `pets` is a `uniqueItems` array of `Pet` objects; with `--use-unique-items-as-set --reuse-model --collapse-reuse-models`.
+
+Without the option (same as 0.89.0):
+
+```python
+class Root(BaseModel):
+    labels: Labels | None = None
+    history: Labels | None = None
+    pets: set[Pet] | None = None
+```
+
+With the option:
+
+```python
+class Root(BaseModel):
+    labels: Labels | None = None
+    history: History | None = None
+    pets: list[Pet] | None = None
+```
+
+### `--keep-constrained-root-models-in-every-container`
+
+| | |
+|---|---|
+| Option | `--keep-constrained-root-models-in-every-container` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#5819](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5819), [#4827](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4827) |
+
+**Affects:** `--collapse-root-models` with `--field-constraints` (or `--use-annotated`). A root model whose root field has constraints, such as an item schema with `minLength` or a map value with `minimum`, stays named beside a list, a dict or a union of its holder, as `Field()` arguments cannot carry its constraints there, but is inlined into a set, a frozen set, a `Sequence` or a `Mapping`, where its constraints are lost: `Sequence[str]` accepts `[""]` (#5819), and a `uniqueItems` array under `--use-unique-items-as-set` accepts empty strings (#4827). With the option such a root model stays named inside any container. With `--use-unique-items-as-set-by-value` too, the uniqueItems array of such a root model, which hashes by identity, is a list.
+
+Schema: `names` is an array of strings with `minLength: 1` written as `Sequence[str]` (`x-python-type`), with `--collapse-root-models --field-constraints`.
+
+Without the option (same as 0.89.0):
+
+```python
+class Holder(BaseModel):
+    names: Sequence[str] | None = None
+```
+
+With the option:
+
+```python
+class Name(RootModel[str]):
+    root: str = Field(..., min_length=1)
+
+
+class Holder(BaseModel):
+    names: Sequence[Name] | None = None
+```
+
+### `--keep-enum-literal-aliases`
+
+| | |
+|---|---|
+| Option | `--keep-enum-literal-aliases` |
+| Preset | `20261104` |
+| Class | opt-in |
+| Release | 0.90.0 |
+| Issue | [#4860](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4860) |
+
+**Affects:** `--collapse-root-models` in an output that writes an enum definition as a `Literal` type alias: TypedDict, and the other outputs under `--enum-field-as-literal all` (with `--use-type-alias` for Pydantic). Collapse inlines the alias, so every use repeats the `Literal` and the name of the enum is lost. With the option the alias stays named at its uses; a type alias holds the values of its type, so the uses accept the same values. A Pydantic `RootModel` class of the `Literal` still collapses, as keeping it would wrap the values its holders parse.
+
+Schema: `Status` is `{"type": "string", "enum": ["open", "resolved"]}` and `Ticket.status` references it, with `--output-model-type typing.TypedDict --collapse-root-models`.
+
+Without the option (same as 0.89.0):
+
+```python
+class Ticket(TypedDict):
+    status: Literal["open", "resolved"]
+```
+
+With the option:
+
+```python
+Status: TypeAlias = Literal["open", "resolved"]
+
+
+class Ticket(TypedDict):
+    status: Status
+```
 
 ## Opt-in behaviour changes in 0.87.0
 
@@ -753,9 +1534,9 @@ class Resource(BaseModel):
 | Preset | `20261027` |
 | Class | opt-in |
 | Release | 0.87.0 |
-| Issue | [#5115](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5115) |
+| Issue | [#5115](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/5115), [#6065](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/6065) |
 
-**Affects:** `--read-only-write-only-model-type request-response` and `all`. The read and write variants are decided from the schema graph: no unreferenced duplicate variants, stable numbering, and the inline models of an `allOf` parent are written once. Some recursive schemas cannot be generated without the option, and the error names it.
+**Affects:** `--read-only-write-only-model-type request-response` and `all`. The read and write variants are decided from the schema graph: no unreferenced duplicate variants, stable numbering, and the inline models of an `allOf` parent are written once. The root models of a constrained inline union (`{"minLength": 1, "oneOf": [...]}`) are written once under the names they take without the split (`X`, `X1` instead of unused `X`, `X1` beside `X2`, `X3`). Some recursive schemas cannot be generated without the option, and the error names it.
 
 Schema (OpenAPI): `Child` inherits `Parent` through `allOf`, `Parent.id` is `readOnly`, and `Parent.payload` is an inline object. Command: `--read-only-write-only-model-type request-response`. `Payload1` is written but never referenced in the first block.
 

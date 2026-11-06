@@ -19,7 +19,10 @@ TomlValue: TypeAlias = str | bool | int | float | list["TomlValue"] | tuple["Tom
 TomlKeyRow: TypeAlias = Literal["unicode", "legacy-ascii-table-keys"]
 _TOML_BARE_KEY = re.compile(r"[A-Za-z0-9_-]+")
 CONFIG_TABLE: Final = ("tool", "datamodel-codegen")
-FIELD_ALIASES: Final = {"capitalize_enum_members": "capitalise_enum_members"}
+FIELD_ALIASES: Final = {
+    "capitalize_enum_members": "capitalise_enum_members",
+    "capitalize_numbered_enum_members": "capitalise_numbered_enum_members",
+}
 GENERATE_FIELD_NAMES: Final = {
     "use_default": "apply_default_values_for_required_fields",
     "force_optional": "force_optional_for_required_fields",
@@ -34,9 +37,12 @@ def option_flag(field: str, *, negative: bool = False) -> str:
     return f"--{'no-' if negative else ''}{field.replace('_', '-')}"
 
 
-def option_flags(field: str) -> tuple[str, ...]:
-    """Return the options of a config field: its own, then those of the aliases ``FIELD_ALIASES`` gives it."""
-    return (option_flag(field), *(option_flag(alias) for alias, name in FIELD_ALIASES.items() if name == field))
+def option_flags(field: str, *, negative: bool = False) -> tuple[str, ...]:
+    """Return the options of a config field, or their --no- forms: its own, then those of its ``FIELD_ALIASES``."""
+    return (
+        option_flag(field, negative=negative),
+        *(option_flag(alias, negative=negative) for alias, name in FIELD_ALIASES.items() if name == field),
+    )
 
 
 def field_name(key: str) -> str:
@@ -47,12 +53,16 @@ def field_name(key: str) -> str:
 def option_arguments(field: str, value: object, *, negative: Callable[[str], str | None]) -> list[Any] | None:
     """Return the arguments that set a config field to a value, or None when no option can express it.
 
-    True is the field's option and False the --no- option ``negative`` finds for the field (None when the parser has
-    none); a list or tuple is the option followed by its items, any other value the option followed by the value.
-    Items and values are returned as given, so that each writer spells them: ``str``, its quoting, an enum's value.
+    True is the field's option and False, or a list or tuple without items, the --no- option ``negative`` finds for the
+    field (None when the parser has none: the option is then left out); a list or tuple is the option followed by its
+    items, any other value the option followed by the value. Items and values are returned as given, so that each
+    writer spells them: ``str``, its quoting, an enum's value.
     """
-    if isinstance(value, bool):
-        return [option_flag(field)] if value else None if (flag := negative(field)) is None else [flag]
+    match value:
+        case True:
+            return [option_flag(field)]
+        case False | []:
+            return None if (flag := negative(field)) is None else [flag]
     return [option_flag(field), *(value if isinstance(value, list | tuple) else (value,))]
 
 
@@ -100,6 +110,23 @@ def json_ready(value: Any) -> Any:
     return value
 
 
+def compact_json(value: Mapping[str, Any]) -> str:
+    """Return a mapping option as the compact JSON text its command-line option reads."""
+    return json.dumps(json_ready(value), ensure_ascii=False, separators=(",", ":"))
+
+
+def mapping_argument(field: str, value: Mapping[str, Any]) -> str:
+    """Return the shell words that give a mapping to the option of a config field: its compact JSON, quoted.
+
+    ``--external-ref-mapping`` reads ``FILE_PATH=PYTHON_PACKAGE`` words instead.
+    """
+    import shlex  # noqa: PLC0415
+
+    if field == "external_ref_mapping":
+        return " ".join(shlex.quote(f"{path}={package}") for path, package in value.items())
+    return shlex.quote(compact_json(value))
+
+
 def toml_text(value: TomlValue) -> str:
     """Format a Python value as a TOML value string."""
     if isinstance(value, bool):
@@ -139,13 +166,20 @@ def configured_value(config: object, field: str) -> Any:
 def split_external_ref_mapping(item: object) -> tuple[str, str]:
     """Split a FILE_PATH=PYTHON_PACKAGE mapping, raising ValueError with the message --external-ref-mapping reports."""
     if not isinstance(item, str) or "=" not in item:
+        from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
         msg = (
-            f"Invalid --external-ref-mapping format: {item!r}. "
-            "Expected FILE_PATH=PYTHON_PACKAGE (e.g., '../common/schema.yaml=mypackage.models')"
+            f"Invalid --external-ref-mapping format: {stable_repr(item)}. Expected FILE_PATH=PYTHON_PACKAGE (e.g., "
+            "'../common/schema.yaml=mypackage.models')"
         )
         raise ValueError(msg)
     file_path, python_package = (part.strip() for part in item.rsplit("=", maxsplit=1))
     if not file_path or not python_package:
-        msg = f"Invalid --external-ref-mapping format: {item!r}. Both FILE_PATH and PYTHON_PACKAGE must be non-empty."
+        from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
+        msg = (
+            f"Invalid --external-ref-mapping format: {stable_repr(item)}. Both FILE_PATH and PYTHON_PACKAGE must be "
+            "non-empty."
+        )
         raise ValueError(msg)
     return file_path, python_package

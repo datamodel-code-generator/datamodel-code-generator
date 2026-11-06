@@ -1,0 +1,8 @@
+description: The tag.
+content:
+  application/json:
+    schema:
+      type: object
+      properties:
+        label:
+          type: string

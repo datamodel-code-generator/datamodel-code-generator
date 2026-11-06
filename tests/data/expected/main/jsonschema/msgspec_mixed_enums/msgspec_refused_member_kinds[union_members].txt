@@ -1,0 +1,13 @@
+msgspec cannot decode the union Model.structOrMap: it holds the dict-like members Spec, dict[str, str], while a msgspec union holds only one dict-like member (its Struct types count as one).
+msgspec cannot decode the union Model.maps: it holds the dict-like members dict[str, str], dict[str, int], while a msgspec union holds only one dict-like member (its Struct types count as one).
+msgspec cannot decode the union Model.lists: it holds the array-like members list[str], list[int], while a msgspec union holds only one array-like member.
+msgspec cannot decode the union Model.textOrBytes: it holds the str-like members bytes, str, while a msgspec union holds only one str-like member (str and Literal str values count as one).
+msgspec cannot decode the union Model.textOrDuration: it holds the str-like members timedelta, TextOrDuration, while a msgspec union holds only one str-like member (str and Literal str values count as one).
+structOrMap: refused by msgspec
+maps: refused by msgspec
+lists: refused by msgspec
+textOrBytes: refused by msgspec
+textOrDuration: refused by msgspec
+structOrList: decoded
+textOrNumber: decoded
+textOrIntLiteral: decoded

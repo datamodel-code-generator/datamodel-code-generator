@@ -1,0 +1,7 @@
+Call {"type": "function", "name": "n"}: schema accepts, model rejects
+Call {"type": "custom", "input": "x"}: schema accepts, model accepts
+Call {"type": "FunctionCall"}: schema rejects, model rejects
+NamedOrCustom {"type": "function", "label": "l"}: schema accepts, model rejects
+NamedOrCustom {"type": "NamedCall"}: schema rejects, model rejects
+Call {'type': FunctionType.function} from Python: model accepts
+NamedOrCustom {'type': FunctionType.function} from Python: model accepts

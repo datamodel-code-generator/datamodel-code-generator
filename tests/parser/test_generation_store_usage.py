@@ -321,13 +321,16 @@ def test_checker_uses_generation_store_api_surface() -> None:
             "inline_shared",
             "insert_field",
             "mark_forward_references",
+            "mark_serialized_as_any",
             "mark_target_null",
             "name_enum_member",
+            "name_enum_member_literal_class",
             "name_reference",
             "note_changed_models",
             "override_type_import",
             "record_dropped_multiple_of",
             "record_values_as_written",
+            "record_widened_values",
             "redirect_model_reference_users",
             "redirect_reference_users",
             "register_model",
@@ -420,7 +423,7 @@ def test_fact_vocabulary_and_table_shape() -> None:
         "Access": ("ATTRIBUTE", "CONTAINER", "ITEM", "DICT_KEY", "CACHED_PROPERTY"),
     })
     assert Counter(row.kind for row in checker.ATTRIBUTE_FACTS) == snapshot(
-        Counter({"FACT": 67, "PRESENTATION": 58, "BOOKKEEPING": 21, "CACHE": 11})
+        Counter({"FACT": 71, "PRESENTATION": 59, "BOOKKEEPING": 28, "CACHE": 11})
     )
     assert sorted({row.owner for row in checker.ATTRIBUTE_FACTS}) == snapshot([
         "AnnotatedConstraintDataType",
@@ -438,6 +441,7 @@ def test_fact_vocabulary_and_table_shape() -> None:
         "TemplateBase",
         "TypedDict",
         "_MetaAnnotatedType",
+        "_MetaStrKeyType",
         "_RenderedDataModelField",
     ])
 

@@ -1,0 +1,28 @@
+openapi: 3.0.3
+info:
+  title: JSON pointers into maps with integer YAML keys
+  version: "1.0"
+paths: {}
+x-shared:
+  responses:
+    200:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              a:
+                type: integer
+  codes:
+    201:
+      type: string
+      maxLength: 2
+components:
+  schemas:
+    Ok:
+      $ref: "#/x-shared/responses/200/content/application~1json/schema"
+    Created:
+      type: object
+      properties:
+        code:
+          $ref: "#/x-shared/codes/201"

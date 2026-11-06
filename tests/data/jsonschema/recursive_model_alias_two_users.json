@@ -1,0 +1,39 @@
+{
+  "$defs": {
+    "Node": {
+      "type": "object",
+      "properties": {
+        "next": {"$ref": "#/$defs/Node"}
+      }
+    },
+    "Alias": {
+      "$ref": "#/$defs/Node",
+      "properties": {
+        "a": {"type": "string"}
+      }
+    },
+    "Described": {
+      "$ref": "#/$defs/Node",
+      "description": "A node beside a description"
+    },
+    "Solo": {
+      "$ref": "#/$defs/Node",
+      "description": "A node that one class uses"
+    },
+    "A": {
+      "type": "object",
+      "properties": {
+        "n": {"$ref": "#/$defs/Alias"},
+        "d": {"$ref": "#/$defs/Described"},
+        "s": {"$ref": "#/$defs/Solo"}
+      }
+    },
+    "B": {
+      "type": "object",
+      "properties": {
+        "n": {"$ref": "#/$defs/Alias"},
+        "d": {"$ref": "#/$defs/Described"}
+      }
+    }
+  }
+}

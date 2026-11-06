@@ -19,6 +19,16 @@ from pydantic import (
 from typing_extensions import TypeAliasType
 
 
+class BySize(BaseModel):
+    size: StrictInt
+    note: StrictStr | None = None
+
+
+class ByName(BaseModel):
+    name: StrictStr
+    note: StrictStr | None = None
+
+
 class Size(RootModel[conint(ge=1, strict=True)]):
     root: conint(ge=1, strict=True) = 10
 
@@ -87,3 +97,6 @@ class UploadsPostRequest(BaseModel):
     flag: StrictBool | None = None
     note: StrictStr | None = None
     counts: list[StrictInt] | None = None
+
+
+SearchGetQueryQParameter = TypeAliasType("SearchGetQueryQParameter", BySize | ByName)

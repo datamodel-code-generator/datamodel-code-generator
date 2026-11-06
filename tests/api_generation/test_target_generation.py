@@ -89,6 +89,17 @@ def test_target_render_untyped_nullable_maps(
     assert_directory_content(tmp_path / directory, EXPECTED / case / directory, pattern)
 
 
+def test_target_render_object_document_loaded_by_pointer(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Generate the server of an API whose parameter document a pointer into it loaded before the parameter held it.
+
+    A component schema takes a member of the document by a JSON pointer, so the anchor of the parameter's schema was
+    not indexed and generation failed with "Unresolved $id reference" (#6070); the run parses again with the role known.
+    """
+    assert_output(target_render_report("roles-after-pointer", tmp_path, monkeypatch, capsys))
+
+
 @pytest.mark.abnormal_path("the running interpreter is never older than the supported minimum")
 def test_target_render_python_runtime(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch

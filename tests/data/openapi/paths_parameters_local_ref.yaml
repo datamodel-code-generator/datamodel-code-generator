@@ -1,0 +1,25 @@
+openapi: 3.0.3
+info:
+  title: Parameters of every path by reference
+  version: "1"
+paths:
+  parameters:
+    - $ref: "#/components/parameters/Tenant"
+  /pets:
+    get:
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: ok
+components:
+  parameters:
+    Tenant:
+      name: tenant
+      in: query
+      required: true
+      schema:
+        type: string

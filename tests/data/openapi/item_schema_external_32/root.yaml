@@ -1,0 +1,22 @@
+openapi: 3.1.0
+info:
+  title: Pets
+  version: "1"
+paths:
+  /owners:
+    get:
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+  /pets:
+    get:
+      responses:
+        "200":
+          $ref: "responses.yaml#/components/responses/PetLines"

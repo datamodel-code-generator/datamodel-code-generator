@@ -623,5 +623,10 @@
     "input": {"path": "single-value-enum.yaml"},
     "model": {"openapi_scopes": ["api"], "use_single_value_enum_as_const": true},
     "steps": [{"generate": {}}, {"check": {}}, {"show": "server/_generated/openapi.json"}]
+  },
+  "roles-after-pointer": {
+    "input": {"path": "roles-after-pointer.yaml"},
+    "model": {"openapi_scopes": ["schemas", "api"]},
+    "steps": [{"generate": {}}, {"check": {}}, {"show": "models.py"}]
   }
 }

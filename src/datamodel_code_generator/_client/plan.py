@@ -20,7 +20,9 @@ from datamodel_code_generator._openapi_wire_plan import (
     content_types,
     form_extras,
     form_styled,
+    member_encodings,
     parameter_plans,
+    part_json,
     property_members,
 )
 from datamodel_code_generator._runtime.client.options import HTTP_SCHEMES
@@ -86,6 +88,7 @@ from datamodel_code_generator._target_operations import (
     type_names,
 )
 from datamodel_code_generator._target_types import present
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import _rw_variant_flag
 
 if TYPE_CHECKING:
@@ -394,7 +397,7 @@ class Planner:
         self.problems.extend(
             _problem(
                 "E_CONFIG_VALUE",
-                f"The tag {item.tag!r} is the first tag of no operation",
+                f"The tag {stable_repr(item.tag)} is the first tag of no operation",
                 option_path=f"resource_names[{index}]",
             )
             for index, item in enumerate(config.resource_names)
@@ -490,7 +493,8 @@ class Planner:
         if parameter_key("header", metadata.header_name) in owners:
             index = self.config.operations.index(setting)
             message = (
-                f"The idempotency header {metadata.header_name!r} of {label(operation)} already has a request owner"
+                f"The idempotency header {stable_repr(metadata.header_name)} of {label(operation)} already has a "
+                "request owner"
             )
             self.problems.append(
                 _problem(
@@ -536,7 +540,7 @@ class Planner:
         )
         for tag, namespace in zip(first, names, strict=True):
             if windows_device(namespace, self.names.python_version) and (operation := staying.get(tag)) is not None:
-                message = f"The tag {tag!r} of {label(operation)} needs an explicit resource name"
+                message = f"The tag {stable_repr(tag)} of {label(operation)} needs an explicit resource name"
                 self.problems.append(_problem("E_RESERVED_NAME", message, operation.id.use_site))
         return dict(zip(first, names, strict=True))
 
@@ -548,7 +552,7 @@ class Planner:
         if setting is None or (name := setting.name) is None:
             return derived_name(self.names, operation)
         if name in RESERVED_MEMBERS:
-            message = f"The method name {name!r} of {label(operation)} is reserved"
+            message = f"The method name {stable_repr(name)} of {label(operation)} is reserved"
             self.problems.append(_problem("E_RESERVED_NAME", message, operation.id.use_site))
         return name
 
@@ -572,7 +576,7 @@ class Planner:
             explicit = {spec.index for spec in operations if self._explicit_method(spec.contract)}
             for spec in operations:
                 if spec.index in explicit and not scope.take(spec.name):
-                    message = f"The resource {namespace!r} takes the name {spec.name!r} twice"
+                    message = f"The resource {stable_repr(namespace)} takes the name {stable_repr(spec.name)} twice"
                     self.problems.append(_problem("E_NAME_COLLISION", message))
             for name in RESERVED_MEMBERS:
                 scope.take(name)
@@ -619,10 +623,13 @@ class Planner:
             if given is None:
                 continue
             if given in RESERVED_ARGUMENTS:
-                message = f"The {location} parameter {wire_name!r} of {label(operation)} cannot take the name {given!r}"
+                message = (
+                    f"The {location} parameter {stable_repr(wire_name)} of {label(operation)} cannot take the name "
+                    f"{stable_repr(given)}"
+                )
                 self.problems.append(_problem("E_RESERVED_NAME", message, declaration.use_site))
             elif not scope.take(given):
-                message = f"The arguments of {label(operation)} take {given!r} twice"
+                message = f"The arguments of {label(operation)} take {stable_repr(given)} twice"
                 self.problems.append(_problem("E_NAME_COLLISION", message, operation.id.use_site))
         for name in (*RESERVED_ARGUMENTS, *(HELPER_ARGUMENTS if operation.id in self.helpers else ())):
             scope.take(name)
@@ -658,7 +665,8 @@ class Planner:
         self.problems.extend(
             _problem(
                 "E_CONFIG_VALUE",
-                f"The parameter name of the {location} parameter {name!r} of {label(operation)} names no parameter",
+                f"The parameter name of the {location} parameter {stable_repr(name)} of {label(operation)} names no "
+                "parameter",
                 option_path="operations",
             )
             for location, name in explicit
@@ -698,7 +706,9 @@ class Planner:
         additional_part: PartPlan | None = None
         if reason is None and bare == _FORM_DATA and use is not None and use.schema is not None:
             if request:
-                members, extra, parts, additional_part = self._sent(use, media_of=media_of, styles_of=styles_of)
+                members, extra, parts, additional_part = self._sent(
+                    use, declaration, media_of=media_of, styles_of=styles_of
+                )
             else:
                 members, extra = self._received(use, use.schema)
             if members is None:
@@ -742,23 +752,19 @@ class Planner:
 
         A member holding no files takes one JSON or text media type; a file member takes any media types and ranges.
         A style, explode, or allowReserved leaves the contentType ignored, and only a member holding no files takes it.
-        Only a declared header with a schema is returned; a body sent whole cannot carry a required one.
+        Only a declared header with a schema is returned; a body sent whole cannot carry a required one. The encoding
+        of a property the request leaves out applies to no part (`member_encodings`).
         """
-        declared = dict(_parts(use).members)
-        members = {} if use is None else {name: declared[name] for name, _, _ in _members(use)}
+        members = dict(_parts(use).members)
         media_of: dict[str, tuple[str, ...]] = {}
         headers_of: dict[str, tuple[HeaderSpec, ...]] = {}
-        for encoding in children_of(declaration, "encoding"):
+        for encoding in member_encodings(use, children_of(declaration, "encoding")):
             name = encoding.name or ""
             subject = f"The {name} encoding of the {media_type} media of {label(operation)}"
-            if name in members and (headers := self._headers(encoding)):
+            if headers := self._headers(encoding):
                 headers_of[name] = headers
             styled = form_styled(encoding, self.wire.version, multipart=True)
             match content_types(encoding):
-                case _ if name not in members:
-                    self.problems.append(
-                        _problem("E_METADATA_REQUIRED", f"{subject} names no member", encoding.use_site)
-                    )
                 case _ if styled and members[name].file:
                     message = f"{subject} gives a style to a member holding files"
                     self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, encoding.use_site))
@@ -792,6 +798,7 @@ class Planner:
     def _sent(
         self,
         use: TypeUseBinding,
+        declaration: WireDeclaration,
         *,
         media_of: Mapping[str, tuple[str, ...]],
         styles_of: Mapping[str, ParameterPlan],
@@ -799,8 +806,8 @@ class Planner:
         """Return the member plans of a form-data body with file parts, or None when its object is sent whole.
 
         A member holding no files takes values of its field's type, which the part's own type use validates. It
-        repeats as that type says, and one whose type has no one kind, or takes any value without an encoding's media
-        type, is written as JSON; a styled member writes the parts its style gives rather than one for each item. The
+        repeats as that type says, and is written as JSON or text as its type and encoding give (`part_json`); a
+        styled member writes the parts its style gives rather than one for each item. The
         other properties a schema types are written by the same rule, by the type of their values, and those it allows
         without a type as JSON too. A body sent whole
         comes with the plans of the members it writes as JSON, then that of its other properties when they are JSON,
@@ -812,19 +819,24 @@ class Planner:
         if declared_extra == "closed":
             additional = None
         elif isinstance(declared_extra, PartSchema) and declared_extra.file:
-            additional = PartSpec(plan=PartPlan("", repeated=declared_extra.repeated), file=True)
+            additional = PartSpec(
+                plan=PartPlan("", repeated=declared_extra.repeated, text=declared_extra.text), file=True
+            )
         elif (extras := form_extras(self.wire.kinds, use)) is not None:
-            text = extras.kind is not None and not self.wire.kinds.untyped(extras.leaf)
+            text = not part_json(self.wire.kinds, extras.type, None, self.wire.version)
             additional = PartSpec(
                 plan=PartPlan("", "string" if text else "json", repeated=extras.repeated),
                 use=_part_use(use, extras.source, None, TypeUseBinding(use.id, "bound", extras.type, None)),
             )
         declared = dict(parts.members)
+        encodings = {
+            encoding.name or "": encoding for encoding in member_encodings(use, children_of(declaration, "encoding"))
+        }
         specs: list[PartSpec] = []
         for name, member, facts in _members(use):
             part = declared[name]
-            kind, leaf, repeated = self.wire.kinds.member(facts.type)
-            text = kind is not None and (name in styles_of or name in media_of or not self.wire.kinds.untyped(leaf))
+            repeated = self.wire.kinds.member(facts.type)[2]
+            text = not part_json(self.wire.kinds, facts.type, encodings.get(name), self.wire.version)
             specs.append(
                 PartSpec(
                     plan=PartPlan(
@@ -833,6 +845,7 @@ class Planner:
                         repeated=name not in styles_of and (part.repeated if part.file else repeated),
                         content_types=media_of.get(name, ()),
                         style=styles_of.get(name),
+                        text=part.text,
                     ),
                     use=None
                     if part.file
@@ -966,7 +979,10 @@ class Planner:
         if setting is not None and setting.request_media_type is not None:
             default = normalize_media_type(setting.request_media_type)
             if default not in declared or media_range(default):
-                message = f"The request media type {default!r} of {label(operation)} is not a declared concrete type"
+                message = (
+                    f"The request media type {stable_repr(default)} of {label(operation)} is not a declared concrete "
+                    "type"
+                )
                 self.problems.append(_problem("E_CONFIG_VALUE", message, operation.id.use_site, "operations"))
         return BodySpec(required=is_required(declaration), media=media, default=default)
 
@@ -978,7 +994,7 @@ class Planner:
         self.problems.extend(
             _problem(
                 "E_NAME_COLLISION",
-                f"Several media types of {label(operation)} normalize to {media_type!r}",
+                f"Several media types of {label(operation)} normalize to {stable_repr(media_type)}",
                 declaration.use_site,
             )
             for media_type, count in Counter(item.media_type for item in media).items()
@@ -995,7 +1011,7 @@ class Planner:
         self.problems.extend(
             _problem(
                 "E_NAME_COLLISION",
-                f"Several headers of the {status} response of {label(operation)} are named {name!r}",
+                f"Several headers of the {status} response of {label(operation)} are named {stable_repr(name)}",
                 declaration.use_site,
             )
             for name, count in Counter(header.name.lower() for header in headers).items()
@@ -1037,7 +1053,10 @@ class Planner:
             return None
         media_type = normalize_media_type(setting.response_media_type)
         if media_type not in success_media(responses):
-            message = f"The response media type {media_type!r} of {label(operation)} is not a declared success media"
+            message = (
+                f"The response media type {stable_repr(media_type)} of {label(operation)} is not a declared success "
+                "media"
+            )
             self.problems.append(_problem("E_CONFIG_VALUE", message, operation.id.use_site, "operations"))
         return media_type
 
@@ -1088,13 +1107,11 @@ class Planner:
                 children[namespace.rpartition(".")[0]].append(namespace)
         folded: dict[str, list[str]] = {}
         for namespace in members:
-            folded.setdefault(
-                fold_key(namespace, self.names.python_version, rule="legacy-fold-without-nfc"), []
-            ).append(namespace)
+            folded.setdefault(fold_key(namespace, self.names.python_version), []).append(namespace)
         self.problems.extend(
             _problem(
                 "E_NAME_COLLISION",
-                f"The resource namespaces {', '.join(map(repr, spellings))} differ only by case, which their "
+                f"The resource namespaces {', '.join(map(stable_repr, spellings))} differ only by case, which their "
                 "directories cannot; name them explicitly",
             )
             for spellings in folded.values()

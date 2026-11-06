@@ -1,4 +1,4 @@
-"""Warn about the msgspec enums whose values msgspec refuses: neither all str nor all int."""
+"""Warn about the msgspec enums whose values msgspec refuses, and the unions it refuses for their members."""
 
 from __future__ import annotations
 
@@ -147,6 +147,52 @@ def test_msgspec_mixed_operation_enum(output_file: Path, recwarn: pytest.Warning
         ),
         name="warnings",
     )
+
+
+MEMBER_KINDS_OPTION_SETS = {
+    "enum_members": ("msgspec_enum_member_kinds", ("--use-specialized-enum", "--target-python-version", "3.11")),
+    "enum_members_nullable_alias": (
+        "msgspec_enum_member_kinds",
+        ("--use-specialized-enum", "--target-python-version", "3.11", "--use-msgspec-nullable-enum-alias"),
+    ),
+    "union_members": ("msgspec_union_member_kinds", ()),
+    "written_union_members": ("msgspec_union_written_member_kinds", ()),
+}
+
+
+@pytest.mark.parametrize("option_set", MEMBER_KINDS_OPTION_SETS)
+def test_msgspec_refused_member_kinds(output_file: Path, recwarn: pytest.WarningsRecorder, option_set: str) -> None:
+    """Warn about each enum and union msgspec refuses for the members it reads, and about no other.
+
+    An enum holds its members as written (``True`` after ``1`` is an alias, an ``IntEnum`` makes ``2.0`` an int) and
+    msgspec skips a list value, so the null member alone refuses ``Aliased`` and ``Listed``, which
+    --use-msgspec-nullable-enum-alias writes without it, and ``IntegralFloat`` is
+    an int-like Enum beside ``int``. A union holds one dict-like member (``dict`` or Struct types), one array-like and
+    one str-like member (``str`` and its Literal values, an Enum of str values, ``bytes``, ``timedelta``, ...); a member
+    an ``x-python-type`` annotation types counts as the classes the annotation writes, and the values of a map of
+    several types are a union too. Each field's type is decoded alone, so the warned fields are exactly the ones
+    msgspec refuses.
+    """
+    fixture, options = MEMBER_KINDS_OPTION_SETS[option_set]
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{fixture}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--output-model-type", "msgspec.Struct", *options],
+    )
+    warnings = dict.fromkeys(str(warning.message) for warning in recwarn if warning.category is UserWarning)
+    with _generated_model(output_file, f"{fixture}_model", "Model") as model:
+        fields = "".join(f"{field.name}: {_type_verdict(field.type)}\n" for field in msgspec.structs.fields(model))
+    assert_output("".join(f"{message}\n" for message in warnings) + fields)
+
+
+def _type_verdict(type_: object) -> str:
+    """Return whether msgspec builds a JSON decoder for a type."""
+    try:
+        msgspec.json.Decoder(type_)
+    except TypeError:
+        return "refused by msgspec"
+    return "decoded"
 
 
 def _verdict(model: Any, document: object) -> str:

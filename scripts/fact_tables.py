@@ -287,9 +287,10 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         "DataType",
         "enum_member_literals",
         FactKind.FACT,
-        (Fact.FIELD_TYPES,),
-        Phase.CROSS_MODULE,
-        FreezePoint.B1,
+        (Fact.FIELD_TYPES, RenderFact.IMPORT_ALIASES),
+        Phase.IMPORTS,
+        FreezePoint.RENDER,
+        store_ops=("name_enum_member_literal_class",),
         access=Access.CONTAINER,
     ),
     AttributeFact(
@@ -391,6 +392,11 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     AttributeFact(
         "DataType", "BINARY_CONTENT_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
     ),
+    AttributeFact("DataType", "UNIQUE_ITEMS_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY),
+    AttributeFact(
+        "DataType", "_UNIQUE_ITEMS_SET_KEY", FactKind.BOOKKEEPING, (), Phase.MODULES, None, access=Access.DICT_KEY
+    ),
+    AttributeFact("DataType", "ENUM_LITERAL_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY),
     AttributeFact(
         "DataType",
         "_TYPE_NULL_DATA_TYPE_KEY",
@@ -419,6 +425,14 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     AttributeFact(
         "_MetaAnnotatedType",
         "meta",
+        FactKind.FACT,
+        (Fact.CONSTRAINTS,),
+        Phase.PARSE,
+        FreezePoint.B1,
+    ),
+    AttributeFact(
+        "_MetaStrKeyType",
+        "meta_keywords",
         FactKind.FACT,
         (Fact.CONSTRAINTS,),
         Phase.PARSE,
@@ -696,6 +710,16 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     ),
     AttributeFact(
         "DataModelFieldBase",
+        "UNION_SIBLING_CONSTRAINTS_KEY",
+        FactKind.FACT,
+        (Fact.CONSTRAINTS,),
+        Phase.MODULES,
+        FreezePoint.B1,
+        store_ops=("set_field_constraints",),
+        access=Access.DICT_KEY,
+    ),
+    AttributeFact(
+        "DataModelFieldBase",
         "_UNCONSTRAINED_UNION_MEMBERS_KEY",
         FactKind.FACT,
         (Fact.CONSTRAINTS,),
@@ -804,6 +828,15 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     ),
     AttributeFact(
         "DataModelFieldBase", "FIELD_ORIGIN_KEY", FactKind.BOOKKEEPING, (), Phase.MODULES, None, access=Access.DICT_KEY
+    ),
+    AttributeFact(
+        "DataModelFieldBase",
+        "_TYPE_LIST_UNIQUE_ITEMS_KEY",
+        FactKind.BOOKKEEPING,
+        (),
+        Phase.PARSE,
+        None,
+        access=Access.DICT_KEY,
     ),
     AttributeFact(
         "ConstraintsBase", "has_constraints", FactKind.CACHE, (), Phase.RENDER, None, access=Access.CACHED_PROPERTY
@@ -932,6 +965,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     AttributeFact("DataModel", "_nullable", FactKind.FACT, (Fact.NULLABLE,), Phase.PARSE, FreezePoint.B1),
     AttributeFact("DataModel", "_custom_template_dir", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
     AttributeFact("DataModel", "_treat_dot_as_module", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
+    AttributeFact("DataModel", "target_python_version", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
     AttributeFact(
         "DataModel",
         "_field_name_bindings",
@@ -951,6 +985,15 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     ),
     AttributeFact(
         "DataModel", "discriminator_tag", FactKind.FACT, (Fact.DISCRIMINATOR_TAGS,), Phase.CROSS_MODULE, FreezePoint.B1
+    ),
+    AttributeFact(
+        "DataModel",
+        "serialized_as_any",
+        FactKind.FACT,
+        (Fact.FIELD_TYPES,),
+        Phase.DECIDE,
+        FreezePoint.B1,
+        store_ops=("mark_serialized_as_any",),
     ),
     AttributeFact(
         "DataModel",
@@ -1073,6 +1116,13 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         "Reference", "FIELDLESS_SITE_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
     ),
     AttributeFact(
+        "Reference", "ITEM_COUNTS_SITE_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
+    ),
+    AttributeFact(
+        "Reference", "SCHEMA_PATH_KEY", FactKind.BOOKKEEPING, (), Phase.MODULES, None, access=Access.DICT_KEY
+    ),
+    AttributeFact("Reference", "BUILD_RECORD_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY),
+    AttributeFact(
         "Parser",
         "results",
         FactKind.FACT,
@@ -1085,6 +1135,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     AttributeFact("Parser", "_tag_plan", FactKind.FACT, (RenderFact.PLANS,), Phase.CROSS_MODULE, FreezePoint.B1),
     AttributeFact("Parser", "_recursion_facts", FactKind.FACT, (RenderFact.PLANS,), Phase.MODULES, FreezePoint.B1),
     AttributeFact("Parser", "_reuse_groups", FactKind.FACT, (RenderFact.PLANS,), Phase.SETTLE, FreezePoint.B1),
+    AttributeFact("Parser", "_naming_plan", FactKind.FACT, (RenderFact.PLANS,), Phase.SETTLE, FreezePoint.B1),
     AttributeFact(
         "ModuleContext",
         "models",

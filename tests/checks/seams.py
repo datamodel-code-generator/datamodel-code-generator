@@ -62,30 +62,22 @@ SEAMS: Final = (
     Seam(f"{_PACKAGE}.parser.generation", "GenerationStore", "refresh_now", "model_graph.refresh_now"),
     Seam(f"{_PACKAGE}.parser.generation", "GenerationStore", "model_key", "model_graph.model_key"),
     Seam(f"{_PASSES}.modules", None, "collapse_module_root_models", "model_graph.collapse_module_root_models"),
+    Seam(f"{_PACKAGE}.parser.base", "Parser", "_records_naming_claims", "model_graph.records_naming_claims"),
     *(
-        Seam(f"{_PACKAGE}.parser.jsonschema", "JsonSchemaParser", builder, "model_graph.builds_model")
-        for builder in (
-            "_parse_object_common_part",
-            "parse_all_of",
-            "parse_object",
-            "parse_array",
-            "parse_root_type",
-            "parse_enum",
+        Seam(f"{_PACKAGE}.reference", "ModelResolver", method, "naming.recorded")
+        for method in (
+            "add",
+            "_add_ref_at",
+            "_add_affixed",
+            "_delete_at",
+            "delete_names",
+            "get_class_name",
+            "name_past_parent",
+            "refresh_reference_names",
+            "settle_yielding_names",
         )
     ),
-    Seam(f"{_PACKAGE}.parser.jsonschema", "JsonSchemaParser", "_parse_file", "model_graph.parses_document"),
-    Seam(
-        f"{_PACKAGE}.parser.jsonschema",
-        "JsonSchemaParser",
-        "_get_rw_model_variant_reference",
-        "model_graph.get_rw_model_variant_reference",
-    ),
-    Seam(
-        f"{_PACKAGE}.parser.jsonschema",
-        "JsonSchemaParser",
-        "_record_schema_location",
-        "model_graph.record_schema_location",
-    ),
+    Seam(f"{_PASSES}.naming", None, "name_models", "naming.name_models"),
     Seam(f"{_PACKAGE}.parser._schema_graph", "SchemaGraphBuilder", "schema", "schema_graph.schema"),
     Seam(f"{_PACKAGE}.parser.openapi_scope", "ApiOpenAPIParser", "_site_facts", "schema_graph.site_facts"),
     Seam(
@@ -96,6 +88,9 @@ SEAMS: Final = (
         holders=(f"{_PACKAGE}.parser.openapi_scope",),
     ),
     Seam(f"{_PACKAGE}.parser._phases", "_DecisionWriter", "drop_held_null", "parse.drop_held_null"),
+    Seam(f"{_PACKAGE}.parser._phases", "_DecisionWriter", "drop_field_constraints", "parse.drop_field_constraints"),
+    Seam(f"{_PACKAGE}.parser._phases", "_DecisionWriter", "mark_serialized_as_any", "parse.mark_serialized_as_any"),
+    Seam(f"{_PACKAGE}.parser._phases", "_DecisionWriter", "write_sets", "parse.write_sets"),
     Seam(
         f"{_PASSES}._shared",
         None,

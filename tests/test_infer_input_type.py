@@ -118,10 +118,16 @@ def test_infer_input_type() -> None:  # noqa: PLR0912
             "field_validators_multi_fields_config.json",
             "list_only.json",
             "list_only.yaml",
+            "recursive_model_alias_kept.json",
+            "recursive_model_alias_two_users.json",
             "whitespace_only.yaml",
         )):
             continue
         if "ref_to_json_list" in file.parts and file.name == "list.json":
+            continue
+        if "model_name_map_duplicate_suffix" in file.parts and file.name == "ext.json":
+            continue
+        if "schema_version_per_document_dynamic_scope" in file.parts and file.name == "leaf.json":
             continue
         assert_infer_input_type(file, InputFileType.JsonSchema)
     for file in (DATA_PATH / "openapi").rglob("*"):
@@ -137,6 +143,8 @@ def test_infer_input_type() -> None:  # noqa: PLR0912
             continue
         if "paths_external_ref" in file.parts and file.name != "openapi.yaml":
             continue
+        if "discriminator_mapping_other_document" in file.parts and file.name != "openapi.yaml":
+            continue
         if "read_only_write_only_external_directory" in file.parts and "ext" in file.parts:
             continue
         if "paths_ref_with_external_schema" in file.parts and file.name != "openapi.yaml":
@@ -150,6 +158,10 @@ def test_infer_input_type() -> None:  # noqa: PLR0912
         if "component_embedded_ids" in file.parts and file.suffix == ".json":
             continue
         if "anchor_object_documents" in file.parts and file.name != "api.yaml":
+            continue
+        if "dynamic_anchor_held_document" in file.parts and file.name != "api.yaml":
+            continue
+        if "reference_object_siblings" in file.parts and file.name != "api.yaml":
             continue
         if file.name.endswith((
             "aliases.json",
@@ -168,6 +180,8 @@ def test_infer_input_type() -> None:  # noqa: PLR0912
             continue
         assert_infer_input_type(file, InputFileType.OpenAPI)
     for file in (DATA_PATH / "asyncapi").rglob("*"):
+        if "ref_siblings_external_v2" in file.parts and file.name == "notes.yaml":
+            continue
         assert_infer_input_type(file, InputFileType.AsyncAPI)
 
     xmlschema_files = list((DATA_PATH / "xmlschema").rglob("*.xsd"))

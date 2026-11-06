@@ -1,0 +1,20 @@
+openapi: 3.1.0
+info: {title: Tag forms, version: '1'}
+servers: [{url: 'https://tags.example.com'}]
+paths:
+  /oxia:
+    get:
+      operationId: getOxia
+      tags: ["xά"]
+      responses:
+        '200':
+          description: The tag spelled with the oxia, which NFKC reads as the tonos.
+          content: {application/json: {schema: {type: string}}}
+  /tonos:
+    get:
+      operationId: getTonos
+      tags: ["xά"]
+      responses:
+        '200':
+          description: The tag spelled with the tonos.
+          content: {application/json: {schema: {type: string}}}

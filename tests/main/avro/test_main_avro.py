@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import operator
+from contextlib import nullcontext
 from decimal import Inexact, Rounded, localcontext
 from pathlib import Path
 from typing import cast
@@ -141,41 +142,49 @@ def test_main_avro_fixed_reference_default(output_file: Path) -> None:
 def test_avro_container_bytes_defaults(
     output_file: Path, output_model_type: DataModelType, backend: str, entrypoint: str
 ) -> None:
-    """Preserve bytes, fixed leaves, strings, order, scope, and isolated defaults through generation."""
+    """Preserve bytes, fixed leaves, strings, order, scope, and isolated defaults through generation.
+
+    msgspec decodes no union of bytes and str, so msgspec output warns about it.
+    """
     input_path = AVRO_DATA_PATH / "container_bytes_defaults.avsc"
     expected_file = f"container_bytes_defaults_{backend}.py"
-    if entrypoint == "cli":
-        run_main_and_assert(
-            input_path=input_path,
-            output_path=output_file,
-            input_file_type="avro",
-            assert_func=assert_file_content,
-            expected_file=expected_file,
-            extra_args=[
-                "--target-python-version",
-                "3.10",
-                "--output-model-type",
-                output_model_type.value,
-                "--disable-timestamp",
-                "--formatters",
-                "builtin",
-            ],
-            force_exec_validation=True,
-        )
-    else:
-        run_generate_file_and_assert(
-            input_path=input_path,
-            output_path=output_file,
-            input_file_type=InputFileType.Avro,
-            assert_func=assert_file_content,
-            expected_file=expected_file,
-            output_model_type=output_model_type,
-            target_python_version=PythonVersion.PY_310,
-            disable_timestamp=True,
-            formatters=[Formatter.BUILTIN],
-            use_annotated=output_model_type == DataModelType.MsgspecStruct,
-            field_constraints=output_model_type == DataModelType.MsgspecStruct,
-        )
+    with (
+        pytest.warns(UserWarning, match=r"it holds the str-like members (bytes, str|str, bytes),")
+        if output_model_type == DataModelType.MsgspecStruct
+        else nullcontext()
+    ):
+        if entrypoint == "cli":
+            run_main_and_assert(
+                input_path=input_path,
+                output_path=output_file,
+                input_file_type="avro",
+                assert_func=assert_file_content,
+                expected_file=expected_file,
+                extra_args=[
+                    "--target-python-version",
+                    "3.10",
+                    "--output-model-type",
+                    output_model_type.value,
+                    "--disable-timestamp",
+                    "--formatters",
+                    "builtin",
+                ],
+                force_exec_validation=True,
+            )
+        else:
+            run_generate_file_and_assert(
+                input_path=input_path,
+                output_path=output_file,
+                input_file_type=InputFileType.Avro,
+                assert_func=assert_file_content,
+                expected_file=expected_file,
+                output_model_type=output_model_type,
+                target_python_version=PythonVersion.PY_310,
+                disable_timestamp=True,
+                formatters=[Formatter.BUILTIN],
+                use_annotated=output_model_type == DataModelType.MsgspecStruct,
+                field_constraints=output_model_type == DataModelType.MsgspecStruct,
+            )
     with _generated_model(
         output_file, f"generated_container_defaults_{backend}_{entrypoint}", "ContainerDefaults"
     ) as model:
@@ -633,6 +642,28 @@ def test_avro_decimal_defaults_preserve_raw_input(output_file: Path, fixture: st
     )
     rendered = "\n".join(f"{name}: {field['default']!r}" for name, field in converted["properties"].items())
     assert_output(f"{rendered}\n", AVRO_DATA_PATH.parent / f"expected/main/avro/{Path(fixture).stem}_converted.txt")
+
+
+@pytest.mark.parametrize("collapse_args", [[], ["--collapse-root-models"]], ids=["named", "collapsed"])
+def test_main_avro_fixed_type_overrides_keep_physical_defaults(output_file: Path, collapse_args: list[str]) -> None:
+    """Keep the physical defaults of the fixed types that model-level overrides replace, also when roots collapse."""
+    run_main_and_assert(
+        input_path=AVRO_DATA_PATH / "fixed_type_overrides_defaults.avsc",
+        output_path=output_file,
+        input_file_type="avro",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--type-overrides",
+            json.dumps({"Money": "builtins.bytes", "Dur": "builtins.bytes"}),
+            *collapse_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
 
 
 @pytest.mark.parametrize(

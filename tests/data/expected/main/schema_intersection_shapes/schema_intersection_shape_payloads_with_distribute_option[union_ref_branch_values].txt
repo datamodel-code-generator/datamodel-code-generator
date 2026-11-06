@@ -1,0 +1,276 @@
+pydantic_v2.BaseModel default at_least 7 accepted
+pydantic_v2.BaseModel default at_least "s" accepted
+pydantic_v2.BaseModel default at_least 3 rejected
+pydantic_v2.BaseModel default letters "aa" accepted
+pydantic_v2.BaseModel default letters 5 accepted
+pydantic_v2.BaseModel default letters "b" rejected
+pydantic_v2.BaseModel default letters "aaaa" rejected
+pydantic_v2.BaseModel default non_empty ["x"] accepted
+pydantic_v2.BaseModel default non_empty 3 accepted
+pydantic_v2.BaseModel default non_empty [] rejected
+pydantic_v2.BaseModel default at_least_in_all_of 7 accepted
+pydantic_v2.BaseModel default at_least_in_all_of "s" accepted
+pydantic_v2.BaseModel default at_least_in_all_of 3 accepted
+pydantic_v2.BaseModel default at_least_field 7 accepted
+pydantic_v2.BaseModel default at_least_field "s" accepted
+pydantic_v2.BaseModel default at_least_field 3 rejected
+pydantic_v2.BaseModel default at_least_ten 12 accepted
+pydantic_v2.BaseModel default at_least_ten "s" accepted
+pydantic_v2.BaseModel default at_least_ten 7 rejected
+pydantic_v2.BaseModel default at_least_ten 3 rejected
+pydantic_v2.BaseModel default short_letters "abc" accepted
+pydantic_v2.BaseModel default short_letters 5 accepted
+pydantic_v2.BaseModel default short_letters "abcd" rejected
+pydantic_v2.dataclass default at_least 7 accepted
+pydantic_v2.dataclass default at_least "s" accepted
+pydantic_v2.dataclass default at_least 3 rejected
+pydantic_v2.dataclass default letters "aa" accepted
+pydantic_v2.dataclass default letters 5 accepted
+pydantic_v2.dataclass default letters "b" rejected
+pydantic_v2.dataclass default letters "aaaa" rejected
+pydantic_v2.dataclass default non_empty ["x"] accepted
+pydantic_v2.dataclass default non_empty 3 accepted
+pydantic_v2.dataclass default non_empty [] rejected
+pydantic_v2.dataclass default at_least_in_all_of 7 accepted
+pydantic_v2.dataclass default at_least_in_all_of "s" accepted
+pydantic_v2.dataclass default at_least_in_all_of 3 accepted
+pydantic_v2.dataclass default at_least_field 7 accepted
+pydantic_v2.dataclass default at_least_field "s" accepted
+pydantic_v2.dataclass default at_least_field 3 rejected
+pydantic_v2.dataclass default at_least_ten 12 accepted
+pydantic_v2.dataclass default at_least_ten "s" accepted
+pydantic_v2.dataclass default at_least_ten 7 rejected
+pydantic_v2.dataclass default at_least_ten 3 rejected
+pydantic_v2.dataclass default short_letters "abc" accepted
+pydantic_v2.dataclass default short_letters 5 accepted
+pydantic_v2.dataclass default short_letters "abcd" rejected
+msgspec.Struct default at_least 7 accepted
+msgspec.Struct default at_least "s" accepted
+msgspec.Struct default at_least 3 rejected
+msgspec.Struct default letters "aa" accepted
+msgspec.Struct default letters 5 accepted
+msgspec.Struct default letters "b" rejected
+msgspec.Struct default letters "aaaa" rejected
+msgspec.Struct default non_empty ["x"] accepted
+msgspec.Struct default non_empty 3 accepted
+msgspec.Struct default non_empty [] rejected
+msgspec.Struct default at_least_in_all_of 7 accepted
+msgspec.Struct default at_least_in_all_of "s" accepted
+msgspec.Struct default at_least_in_all_of 3 accepted
+msgspec.Struct default at_least_field 7 accepted
+msgspec.Struct default at_least_field "s" accepted
+msgspec.Struct default at_least_field 3 rejected
+msgspec.Struct default at_least_ten 12 accepted
+msgspec.Struct default at_least_ten "s" accepted
+msgspec.Struct default at_least_ten 7 rejected
+msgspec.Struct default at_least_ten 3 rejected
+msgspec.Struct default short_letters "abc" accepted
+msgspec.Struct default short_letters 5 accepted
+msgspec.Struct default short_letters "abcd" rejected
+pydantic_v2.BaseModel --field-constraints at_least 7 accepted
+pydantic_v2.BaseModel --field-constraints at_least "s" accepted
+pydantic_v2.BaseModel --field-constraints at_least 3 rejected
+pydantic_v2.BaseModel --field-constraints letters "aa" accepted
+pydantic_v2.BaseModel --field-constraints letters 5 accepted
+pydantic_v2.BaseModel --field-constraints letters "b" rejected
+pydantic_v2.BaseModel --field-constraints letters "aaaa" rejected
+pydantic_v2.BaseModel --field-constraints non_empty ["x"] accepted
+pydantic_v2.BaseModel --field-constraints non_empty 3 accepted
+pydantic_v2.BaseModel --field-constraints non_empty [] rejected
+pydantic_v2.BaseModel --field-constraints at_least_in_all_of 7 accepted
+pydantic_v2.BaseModel --field-constraints at_least_in_all_of "s" accepted
+pydantic_v2.BaseModel --field-constraints at_least_in_all_of 3 accepted
+pydantic_v2.BaseModel --field-constraints at_least_field 7 accepted
+pydantic_v2.BaseModel --field-constraints at_least_field "s" accepted
+pydantic_v2.BaseModel --field-constraints at_least_field 3 rejected
+pydantic_v2.BaseModel --field-constraints at_least_ten 12 accepted
+pydantic_v2.BaseModel --field-constraints at_least_ten "s" accepted
+pydantic_v2.BaseModel --field-constraints at_least_ten 7 rejected
+pydantic_v2.BaseModel --field-constraints at_least_ten 3 rejected
+pydantic_v2.BaseModel --field-constraints short_letters "abc" accepted
+pydantic_v2.BaseModel --field-constraints short_letters 5 accepted
+pydantic_v2.BaseModel --field-constraints short_letters "abcd" rejected
+pydantic_v2.BaseModel --use-annotated at_least 7 accepted
+pydantic_v2.BaseModel --use-annotated at_least "s" accepted
+pydantic_v2.BaseModel --use-annotated at_least 3 rejected
+pydantic_v2.BaseModel --use-annotated letters "aa" accepted
+pydantic_v2.BaseModel --use-annotated letters 5 accepted
+pydantic_v2.BaseModel --use-annotated letters "b" rejected
+pydantic_v2.BaseModel --use-annotated letters "aaaa" rejected
+pydantic_v2.BaseModel --use-annotated non_empty ["x"] accepted
+pydantic_v2.BaseModel --use-annotated non_empty 3 accepted
+pydantic_v2.BaseModel --use-annotated non_empty [] rejected
+pydantic_v2.BaseModel --use-annotated at_least_in_all_of 7 accepted
+pydantic_v2.BaseModel --use-annotated at_least_in_all_of "s" accepted
+pydantic_v2.BaseModel --use-annotated at_least_in_all_of 3 accepted
+pydantic_v2.BaseModel --use-annotated at_least_field 7 accepted
+pydantic_v2.BaseModel --use-annotated at_least_field "s" accepted
+pydantic_v2.BaseModel --use-annotated at_least_field 3 rejected
+pydantic_v2.BaseModel --use-annotated at_least_ten 12 accepted
+pydantic_v2.BaseModel --use-annotated at_least_ten "s" accepted
+pydantic_v2.BaseModel --use-annotated at_least_ten 7 rejected
+pydantic_v2.BaseModel --use-annotated at_least_ten 3 rejected
+pydantic_v2.BaseModel --use-annotated short_letters "abc" accepted
+pydantic_v2.BaseModel --use-annotated short_letters 5 accepted
+pydantic_v2.BaseModel --use-annotated short_letters "abcd" rejected
+pydantic_v2.BaseModel --collapse-root-models at_least 7 accepted
+pydantic_v2.BaseModel --collapse-root-models at_least "s" accepted
+pydantic_v2.BaseModel --collapse-root-models at_least 3 rejected
+pydantic_v2.BaseModel --collapse-root-models letters "aa" accepted
+pydantic_v2.BaseModel --collapse-root-models letters 5 accepted
+pydantic_v2.BaseModel --collapse-root-models letters "b" rejected
+pydantic_v2.BaseModel --collapse-root-models letters "aaaa" rejected
+pydantic_v2.BaseModel --collapse-root-models non_empty ["x"] accepted
+pydantic_v2.BaseModel --collapse-root-models non_empty 3 accepted
+pydantic_v2.BaseModel --collapse-root-models non_empty [] rejected
+pydantic_v2.BaseModel --collapse-root-models at_least_in_all_of 7 accepted
+pydantic_v2.BaseModel --collapse-root-models at_least_in_all_of "s" accepted
+pydantic_v2.BaseModel --collapse-root-models at_least_in_all_of 3 accepted
+pydantic_v2.BaseModel --collapse-root-models at_least_field 7 accepted
+pydantic_v2.BaseModel --collapse-root-models at_least_field "s" accepted
+pydantic_v2.BaseModel --collapse-root-models at_least_field 3 rejected
+pydantic_v2.BaseModel --collapse-root-models at_least_ten 12 accepted
+pydantic_v2.BaseModel --collapse-root-models at_least_ten "s" accepted
+pydantic_v2.BaseModel --collapse-root-models at_least_ten 7 rejected
+pydantic_v2.BaseModel --collapse-root-models at_least_ten 3 rejected
+pydantic_v2.BaseModel --collapse-root-models short_letters "abc" accepted
+pydantic_v2.BaseModel --collapse-root-models short_letters 5 accepted
+pydantic_v2.BaseModel --collapse-root-models short_letters "abcd" rejected
+msgspec.Struct --collapse-root-models at_least 7 accepted
+msgspec.Struct --collapse-root-models at_least "s" accepted
+msgspec.Struct --collapse-root-models at_least 3 rejected
+msgspec.Struct --collapse-root-models letters "aa" accepted
+msgspec.Struct --collapse-root-models letters 5 accepted
+msgspec.Struct --collapse-root-models letters "b" rejected
+msgspec.Struct --collapse-root-models letters "aaaa" rejected
+msgspec.Struct --collapse-root-models non_empty ["x"] accepted
+msgspec.Struct --collapse-root-models non_empty 3 accepted
+msgspec.Struct --collapse-root-models non_empty [] rejected
+msgspec.Struct --collapse-root-models at_least_in_all_of 7 accepted
+msgspec.Struct --collapse-root-models at_least_in_all_of "s" accepted
+msgspec.Struct --collapse-root-models at_least_in_all_of 3 accepted
+msgspec.Struct --collapse-root-models at_least_field 7 accepted
+msgspec.Struct --collapse-root-models at_least_field "s" accepted
+msgspec.Struct --collapse-root-models at_least_field 3 rejected
+msgspec.Struct --collapse-root-models at_least_ten 12 accepted
+msgspec.Struct --collapse-root-models at_least_ten "s" accepted
+msgspec.Struct --collapse-root-models at_least_ten 7 rejected
+msgspec.Struct --collapse-root-models at_least_ten 3 rejected
+msgspec.Struct --collapse-root-models short_letters "abc" accepted
+msgspec.Struct --collapse-root-models short_letters 5 accepted
+msgspec.Struct --collapse-root-models short_letters "abcd" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs at_least 7 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs at_least "s" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs at_least 3 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs letters "aa" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs letters 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs letters "b" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs letters "aaaa" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs non_empty ["x"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs non_empty 3 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs non_empty [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs at_least_in_all_of 7 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs at_least_in_all_of "s" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs at_least_in_all_of 3 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs at_least_field 7 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs at_least_field "s" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs at_least_field 3 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs at_least_ten 12 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs at_least_ten "s" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs at_least_ten 7 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs at_least_ten 3 rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs short_letters "abc" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs short_letters 5 accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs short_letters "abcd" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs at_least 7 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs at_least "s" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs at_least 3 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs letters "aa" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs letters 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs letters "b" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs letters "aaaa" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs non_empty ["x"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs non_empty 3 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs non_empty [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs at_least_in_all_of 7 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs at_least_in_all_of "s" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs at_least_in_all_of 3 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs at_least_field 7 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs at_least_field "s" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs at_least_field 3 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs at_least_ten 12 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs at_least_ten "s" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs at_least_ten 7 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs at_least_ten 3 rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs short_letters "abc" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs short_letters 5 accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs short_letters "abcd" rejected
+msgspec.Struct --use-site-models-for-constrained-refs at_least 7 accepted
+msgspec.Struct --use-site-models-for-constrained-refs at_least "s" accepted
+msgspec.Struct --use-site-models-for-constrained-refs at_least 3 rejected
+msgspec.Struct --use-site-models-for-constrained-refs letters "aa" accepted
+msgspec.Struct --use-site-models-for-constrained-refs letters 5 accepted
+msgspec.Struct --use-site-models-for-constrained-refs letters "b" rejected
+msgspec.Struct --use-site-models-for-constrained-refs letters "aaaa" rejected
+msgspec.Struct --use-site-models-for-constrained-refs non_empty ["x"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs non_empty 3 accepted
+msgspec.Struct --use-site-models-for-constrained-refs non_empty [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs at_least_in_all_of 7 accepted
+msgspec.Struct --use-site-models-for-constrained-refs at_least_in_all_of "s" accepted
+msgspec.Struct --use-site-models-for-constrained-refs at_least_in_all_of 3 rejected
+msgspec.Struct --use-site-models-for-constrained-refs at_least_field 7 accepted
+msgspec.Struct --use-site-models-for-constrained-refs at_least_field "s" accepted
+msgspec.Struct --use-site-models-for-constrained-refs at_least_field 3 rejected
+msgspec.Struct --use-site-models-for-constrained-refs at_least_ten 12 accepted
+msgspec.Struct --use-site-models-for-constrained-refs at_least_ten "s" accepted
+msgspec.Struct --use-site-models-for-constrained-refs at_least_ten 7 rejected
+msgspec.Struct --use-site-models-for-constrained-refs at_least_ten 3 rejected
+msgspec.Struct --use-site-models-for-constrained-refs short_letters "abc" accepted
+msgspec.Struct --use-site-models-for-constrained-refs short_letters 5 accepted
+msgspec.Struct --use-site-models-for-constrained-refs short_letters "abcd" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least 7 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least "s" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least 3 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs letters "aa" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs letters 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs letters "b" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs letters "aaaa" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs non_empty ["x"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs non_empty 3 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs non_empty [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least_in_all_of 7 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least_in_all_of "s" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least_in_all_of 3 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least_field 7 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least_field "s" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least_field 3 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least_ten 12 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least_ten "s" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least_ten 7 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs at_least_ten 3 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs short_letters "abc" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs short_letters 5 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs short_letters "abcd" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs at_least 7 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs at_least "s" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs at_least 3 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs letters "aa" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs letters 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs letters "b" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs letters "aaaa" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs non_empty ["x"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs non_empty 3 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs non_empty [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs at_least_in_all_of 7 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs at_least_in_all_of "s" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs at_least_in_all_of 3 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs at_least_field 7 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs at_least_field "s" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs at_least_field 3 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs at_least_ten 12 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs at_least_ten "s" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs at_least_ten 7 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs at_least_ten 3 rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs short_letters "abc" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs short_letters 5 accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs short_letters "abcd" rejected

@@ -27,8 +27,12 @@ class FixedLengthArrayTuples(BaseModel):
         populate_by_name=True,
     )
     vector: Annotated[list[float], Field(max_length=3, min_length=3)]
-    all_of_vector: Annotated[list[str], Field(alias='allOfVector')]
-    all_of_empty: Annotated[list[str], Field(alias='allOfEmpty')]
+    all_of_vector: Annotated[
+        list[str], Field(alias='allOfVector', max_length=2, min_length=2)
+    ]
+    all_of_empty: Annotated[
+        list[str], Field(alias='allOfEmpty', max_length=0, min_length=0)
+    ]
     empty: Annotated[list[float], Field(max_length=0, min_length=0)]
     inline_object: Annotated[
         list[InlineObjectItem], Field(alias='inlineObject', max_length=2, min_length=2)

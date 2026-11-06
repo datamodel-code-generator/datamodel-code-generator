@@ -1,0 +1,3 @@
+msgspec checks all float members of a union against the constraints of each of them, so ge, le of one member would reject values another member accepts; IntBranches is generated without these constraints.
+msgspec cannot decode the enum NamedEnum: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes.
+msgspec cannot decode the enum B: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes.

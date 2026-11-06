@@ -1,0 +1,3 @@
+# required-body-errors
+render pydantic_v2.BaseModel
+  Error: Error at schema path 'required-body-errors.yaml#/paths/~1notes/post/requestBody': API_INVALID_OBJECT: required 2 is not a boolean

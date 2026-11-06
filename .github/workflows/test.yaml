@@ -552,6 +552,258 @@ jobs:
             coverage: true
             shard: 8
             shard_total: 8
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 1
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 2
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 3
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 4
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 5
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 6
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 7
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 8
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 9
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 10
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 11
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 12
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 13
+            shard_total: 14
+          - tox_env: py310-parallel
+            name: "3.10"
+            profile: "3.10"
+            os: ubuntu-24.04
+            coverage: true
+            shard: 14
+            shard_total: 14
+    runs-on: ${{ matrix.os }}
+    env: &test-shard-env
+      OS: ${{ matrix.os }}
+      SHARD_INDEX: ${{ matrix.shard }}
+      SHARD_TOTAL: ${{ matrix.shard_total }}
+      TOX_ENV: ${{ matrix.tox_env }}
+      EXTRA_TESTS: ${{ matrix.extra_tests }}
+      EXCLUDE_TESTS: ${{ matrix.exclude_tests }}
+      SHARD_PROFILE: ${{ matrix.profile }}
+      WINDOWS_TOX_UV_VERSION: "1.35.2"
+      WINDOWS_TOX_VERSION: "4.56.1"
+      WINDOWS_UV_VERSION: "0.13.4"
+    steps: &test-shard-steps
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 1
+        persist-credentials: false
+    - name: Install uv (Windows)
+      if: matrix.os == 'windows-latest'
+      uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      with:
+        version: ${{ env.WINDOWS_UV_VERSION }}
+        enable-cache: true
+        cache-local-path: .tox/uv-cache
+        cache-python: true
+        cache-dependency-glob: |
+          pyproject.toml
+          tox.ini
+          uv.lock
+        cache-suffix: "windows-${{ matrix.tox_env }}-uv${{ env.WINDOWS_UV_VERSION }}-tox${{ env.WINDOWS_TOX_VERSION }}-toxuv${{ env.WINDOWS_TOX_UV_VERSION }}"
+        save-cache: ${{ matrix.shard == 1 }}
+    - name: Install the latest version of uv
+      if: matrix.os != 'windows-latest'
+      uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      with:
+        enable-cache: true
+        cache-local-path: .tox/uv-cache
+        cache-dependency-glob: |
+          pyproject.toml
+          tox.ini
+          uv.lock
+        cache-suffix: "${{ matrix.tox_env }}-${{ matrix.os }}-shard"
+        save-cache: ${{ matrix.shard == 1 }}
+    - name: Install tox (Windows)
+      if: matrix.os == 'windows-latest'
+      run: uv tool install --python-preference only-managed --python 3.13 "tox==${{ env.WINDOWS_TOX_VERSION }}" --with "tox-uv==${{ env.WINDOWS_TOX_UV_VERSION }}"
+    - name: Install tox
+      if: matrix.os != 'windows-latest'
+      run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
+    - name: Setup Python test environment
+      run: |
+        tox run -vv --notest --skip-missing-interpreters false -e "$TOX_ENV"
+      shell: bash
+      env:
+        UV_PYTHON_PREFERENCE: "only-managed"
+    - name: Select test shard
+      run: |
+        exclude_args=()
+        if [ -n "$EXCLUDE_TESTS" ]; then
+          exclude_args=(--exclude "$EXCLUDE_TESTS")
+        fi
+        python scripts/select_ci_test_shard.py --profile "$SHARD_PROFILE" "${exclude_args[@]}" --write-recipe .tox/ci-shard-recipe.json
+        python scripts/select_ci_test_shard.py "$SHARD_INDEX" "$SHARD_TOTAL" \
+          --recipe .tox/ci-shard-recipe.json | tee .tox/ci-shard-tests.txt
+        if [ -n "$EXTRA_TESTS" ]; then
+          printf '%s\n' "$EXTRA_TESTS" >> .tox/ci-shard-tests.txt
+        fi
+      shell: bash
+    - name: Run sharded test suite
+      run: |
+        test_paths=()
+        part_args=()
+        part_pattern='^(.+)@[1-9][0-9]*/[1-9][0-9]*$'
+        while IFS= read -r test_path; do
+          test_path="${test_path%$'\r'}"
+          if [[ "$test_path" =~ $part_pattern ]]; then
+            part_args+=("--test-part=$test_path")
+            test_path="${BASH_REMATCH[1]}"
+          fi
+          test_paths+=("$test_path")
+        done < .tox/ci-shard-tests.txt
+        if [ "${#test_paths[@]}" -eq 0 ]; then
+          echo "No tests selected for this shard." >&2
+          exit 1
+        fi
+        coverage_args=()
+        if [ "${{ matrix.coverage }}" = "true" ]; then
+          coverage_args=(
+            --cov datamodel_code_generator
+            --cov tests
+            --cov scripts.ci_coverage
+            --cov scripts.select_ci_test_shard
+            --cov-config=pyproject.toml
+            --cov-fail-under=0
+            --no-cov-on-fail
+            --cov-report=
+          )
+        fi
+        tox run --skip-uv-sync --skip-pkg-install -e "$TOX_ENV" -- \
+          -n auto \
+          --dist=worksteal \
+          --color=yes \
+          -m "not perf" \
+          --junitxml ".tox/junit.$TOX_ENV-shard$SHARD_INDEX-$OS.xml" \
+          "${coverage_args[@]}" \
+          "${part_args[@]}" \
+          "${test_paths[@]}"
+      shell: bash
+      env:
+        UV_PYTHON_PREFERENCE: "only-managed"
+    - name: Upload test durations
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        include-hidden-files: true
+        name: junit.${{ matrix.tox_env }}-shard${{ matrix.shard }}-${{ matrix.os }}
+        path: ".tox/junit.*"
+        retention-days: 3
+    - name: Rename coverage report file
+      if: matrix.coverage == true
+      run: |
+        import os
+
+        os.rename(
+            f".tox/.coverage.{os.environ['TOX_ENV']}",
+            f".tox/.coverage.{os.environ['TOX_ENV']}-shard{os.environ['SHARD_INDEX']}-{os.environ['OS']}",
+        )
+      shell: python
+    - name: Record coverage provenance
+      if: matrix.coverage == true
+      run: python scripts/ci_coverage.py record ".tox/$COVERAGE_NAME" --run-id "$GITHUB_RUN_ID" --sha "$GITHUB_SHA"
+      shell: bash
+      env:
+        COVERAGE_NAME: .coverage.${{ matrix.tox_env }}-shard${{ matrix.shard }}-${{ matrix.os }}
+    - name: Upload coverage data
+      if: matrix.coverage == true
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        include-hidden-files: true
+        name: .coverage.${{ matrix.tox_env }}-shard${{ matrix.shard }}-${{ matrix.os }}
+        path: ".tox/.coverage.*"
+        retention-days: 3
+
+  test-shard-main:
+    # Ubuntu Python 3.11 to 3.13 run after merging; pull requests cover every line on 3.10, 3.14 and 3.15.
+    name: >-
+      ${{ matrix.name }} on
+      ${{ matrix.os == 'windows-latest' && 'Windows' || (matrix.os == 'macos-latest' && 'macOS' || 'Ubuntu') }}
+      shard ${{ matrix.shard }}/${{ matrix.shard_total }}
+    if: github.event_name != 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
           - tox_env: py313-parallel
             name: "3.13"
             profile: "3.13"
@@ -888,246 +1140,9 @@ jobs:
             coverage: true
             shard: 18
             shard_total: 18
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 1
-            shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 2
-            shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 3
-            shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 4
-            shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 5
-            shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 6
-            shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 7
-            shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 8
-            shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 9
-            shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 10
-            shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 11
-            shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 12
-            shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 13
-            shard_total: 14
-          - tox_env: py310-parallel
-            name: "3.10"
-            profile: "3.10"
-            os: ubuntu-24.04
-            coverage: true
-            shard: 14
-            shard_total: 14
     runs-on: ${{ matrix.os }}
-    env: &test-shard-env
-      OS: ${{ matrix.os }}
-      SHARD_INDEX: ${{ matrix.shard }}
-      SHARD_TOTAL: ${{ matrix.shard_total }}
-      TOX_ENV: ${{ matrix.tox_env }}
-      EXTRA_TESTS: ${{ matrix.extra_tests }}
-      EXCLUDE_TESTS: ${{ matrix.exclude_tests }}
-      SHARD_PROFILE: ${{ matrix.profile }}
-      WINDOWS_TOX_UV_VERSION: "1.35.2"
-      WINDOWS_TOX_VERSION: "4.56.1"
-      WINDOWS_UV_VERSION: "0.13.4"
-    steps: &test-shard-steps
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        fetch-depth: 1
-        persist-credentials: false
-    - name: Install uv (Windows)
-      if: matrix.os == 'windows-latest'
-      uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
-      with:
-        version: ${{ env.WINDOWS_UV_VERSION }}
-        enable-cache: true
-        cache-local-path: .tox/uv-cache
-        cache-python: true
-        cache-dependency-glob: |
-          pyproject.toml
-          tox.ini
-          uv.lock
-        cache-suffix: "windows-${{ matrix.tox_env }}-uv${{ env.WINDOWS_UV_VERSION }}-tox${{ env.WINDOWS_TOX_VERSION }}-toxuv${{ env.WINDOWS_TOX_UV_VERSION }}"
-        save-cache: ${{ matrix.shard == 1 }}
-    - name: Install the latest version of uv
-      if: matrix.os != 'windows-latest'
-      uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
-      with:
-        enable-cache: true
-        cache-local-path: .tox/uv-cache
-        cache-dependency-glob: |
-          pyproject.toml
-          tox.ini
-          uv.lock
-        cache-suffix: "${{ matrix.tox_env }}-${{ matrix.os }}-shard"
-        save-cache: ${{ matrix.shard == 1 }}
-    - name: Install tox (Windows)
-      if: matrix.os == 'windows-latest'
-      run: uv tool install --python-preference only-managed --python 3.13 "tox==${{ env.WINDOWS_TOX_VERSION }}" --with "tox-uv==${{ env.WINDOWS_TOX_UV_VERSION }}"
-    - name: Install tox
-      if: matrix.os != 'windows-latest'
-      run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
-    - name: Setup Python test environment
-      run: |
-        tox run -vv --notest --skip-missing-interpreters false -e "$TOX_ENV"
-      shell: bash
-      env:
-        UV_PYTHON_PREFERENCE: "only-managed"
-    - name: Select test shard
-      run: |
-        exclude_args=()
-        if [ -n "$EXCLUDE_TESTS" ]; then
-          exclude_args=(--exclude "$EXCLUDE_TESTS")
-        fi
-        python scripts/select_ci_test_shard.py --profile "$SHARD_PROFILE" "${exclude_args[@]}" --write-recipe .tox/ci-shard-recipe.json
-        python scripts/select_ci_test_shard.py "$SHARD_INDEX" "$SHARD_TOTAL" \
-          --recipe .tox/ci-shard-recipe.json | tee .tox/ci-shard-tests.txt
-        if [ -n "$EXTRA_TESTS" ]; then
-          printf '%s\n' "$EXTRA_TESTS" >> .tox/ci-shard-tests.txt
-        fi
-      shell: bash
-    - name: Run sharded test suite
-      run: |
-        test_paths=()
-        part_args=()
-        part_pattern='^(.+)@[1-9][0-9]*/[1-9][0-9]*$'
-        while IFS= read -r test_path; do
-          test_path="${test_path%$'\r'}"
-          if [[ "$test_path" =~ $part_pattern ]]; then
-            part_args+=("--test-part=$test_path")
-            test_path="${BASH_REMATCH[1]}"
-          fi
-          test_paths+=("$test_path")
-        done < .tox/ci-shard-tests.txt
-        if [ "${#test_paths[@]}" -eq 0 ]; then
-          echo "No tests selected for this shard." >&2
-          exit 1
-        fi
-        coverage_args=()
-        if [ "${{ matrix.coverage }}" = "true" ]; then
-          coverage_args=(
-            --cov datamodel_code_generator
-            --cov tests
-            --cov scripts.ci_coverage
-            --cov scripts.select_ci_test_shard
-            --cov-config=pyproject.toml
-            --cov-fail-under=0
-            --no-cov-on-fail
-            --cov-report=
-          )
-        fi
-        tox run --skip-uv-sync --skip-pkg-install -e "$TOX_ENV" -- \
-          -n auto \
-          --dist=worksteal \
-          --color=yes \
-          -m "not perf" \
-          --junitxml ".tox/junit.$TOX_ENV-shard$SHARD_INDEX-$OS.xml" \
-          "${coverage_args[@]}" \
-          "${part_args[@]}" \
-          "${test_paths[@]}"
-      shell: bash
-      env:
-        UV_PYTHON_PREFERENCE: "only-managed"
-    - name: Upload test durations
-      if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-      with:
-        include-hidden-files: true
-        name: junit.${{ matrix.tox_env }}-shard${{ matrix.shard }}-${{ matrix.os }}
-        path: ".tox/junit.*"
-        retention-days: 3
-    - name: Rename coverage report file
-      if: matrix.coverage == true
-      run: |
-        import os
-
-        os.rename(
-            f".tox/.coverage.{os.environ['TOX_ENV']}",
-            f".tox/.coverage.{os.environ['TOX_ENV']}-shard{os.environ['SHARD_INDEX']}-{os.environ['OS']}",
-        )
-      shell: python
-    - name: Record coverage provenance
-      if: matrix.coverage == true
-      run: python scripts/ci_coverage.py record ".tox/$COVERAGE_NAME" --run-id "$GITHUB_RUN_ID" --sha "$GITHUB_SHA"
-      shell: bash
-      env:
-        COVERAGE_NAME: .coverage.${{ matrix.tox_env }}-shard${{ matrix.shard }}-${{ matrix.os }}
-    - name: Upload coverage data
-      if: matrix.coverage == true
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-      with:
-        include-hidden-files: true
-        name: .coverage.${{ matrix.tox_env }}-shard${{ matrix.shard }}-${{ matrix.os }}
-        path: ".tox/.coverage.*"
-        retention-days: 3
+    env: *test-shard-env
+    steps: *test-shard-steps
 
   test-shard-nocov:
     name: >-
@@ -1876,12 +1891,21 @@ jobs:
 
   coverage:
     name: combine coverage
+    # Pull requests combine the shards they ran, without test-shard-main, and still require 100%.
+    if: >-
+      !cancelled()
+      && needs.test-coverage.result == 'success'
+      && needs.test-formatter-coverage.result == 'success'
+      && needs.test-http-backends.result == 'success'
+      && needs.test-shard.result == 'success'
+      && needs.test-shard-main.result == (github.event_name == 'pull_request' && 'skipped' || 'success')
     runs-on: ubuntu-latest
     needs:
       - test-coverage
       - test-formatter-coverage
       - test-http-backends
       - test-shard
+      - test-shard-main
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -1910,10 +1934,10 @@ jobs:
           pattern: .coverage.*
           merge-multiple: false
       - name: Validate coverage inputs
-        run: python scripts/ci_coverage.py prepare .tox/coverage-input --run-id "$GITHUB_RUN_ID" --sha "$GITHUB_SHA"
+        run: python scripts/ci_coverage.py prepare .tox/coverage-input --run-id "$GITHUB_RUN_ID" --sha "$GITHUB_SHA" --event "$GITHUB_EVENT_NAME"
       - name: Combine and report coverage
         id: coverage
-        run: .tox/coverage/bin/python scripts/ci_coverage.py report .tox --compare-branch "${DIFF_AGAINST:-origin/main}"
+        run: .tox/coverage/bin/python scripts/ci_coverage.py report .tox --compare-branch "${DIFF_AGAINST:-origin/main}" --event "$GITHUB_EVENT_NAME"
         continue-on-error: true
       - name: Show uncovered lines on failure
         if: steps.coverage.outcome == 'failure'
@@ -2236,6 +2260,7 @@ jobs:
       - test-http-backends
       - test-http-backends-nocov
       - test-shard
+      - test-shard-main
       - test-shard-nocov
       - test-shard-nocov-main
       - test-formatter-subset
@@ -2250,7 +2275,7 @@ jobs:
             ${{ github.event.pull_request.stack == null
             || github.event.pull_request.stack.base.ref == github.event.pull_request.base.ref
             || github.event.pull_request.stack.position == github.event.pull_request.stack.size }}
-          MAIN_ONLY_JOBS: ${{ github.event_name == 'pull_request' && 'test-shard-nocov-main' || '' }}
+          MAIN_ONLY_JOBS: ${{ github.event_name == 'pull_request' && 'test-shard-main test-shard-nocov-main' || '' }}
         run: |
           import json
           import os

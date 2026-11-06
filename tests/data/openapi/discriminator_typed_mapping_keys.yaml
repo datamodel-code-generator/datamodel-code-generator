@@ -1,0 +1,132 @@
+openapi: 3.0.3
+info:
+  title: Typed Discriminator Mapping Keys
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        integer:
+          $ref: '#/components/schemas/ByInteger'
+        boolean:
+          $ref: '#/components/schemas/ByBoolean'
+        whole:
+          $ref: '#/components/schemas/ByWholeNumber'
+        fraction:
+          $ref: '#/components/schemas/ByFraction'
+        integerAgain:
+          $ref: '#/components/schemas/ByIntegerAgain'
+        booleanAgain:
+          $ref: '#/components/schemas/ByBooleanAgain'
+    ByInteger:
+      oneOf:
+        - $ref: '#/components/schemas/One'
+        - $ref: '#/components/schemas/Two'
+      discriminator:
+        propertyName: code
+        mapping:
+          '1': '#/components/schemas/One'
+          '-2': '#/components/schemas/Two'
+    One:
+      type: object
+      properties:
+        code:
+          type: integer
+      required: [code]
+    Two:
+      type: object
+      properties:
+        code:
+          type: integer
+        extra:
+          type: string
+      required: [code]
+    ByBoolean:
+      oneOf:
+        - $ref: '#/components/schemas/Yes'
+        - $ref: '#/components/schemas/No'
+      discriminator:
+        propertyName: ok
+        mapping:
+          'true': '#/components/schemas/Yes'
+          'false': '#/components/schemas/No'
+    Yes:
+      type: object
+      properties:
+        ok:
+          type: boolean
+      required: [ok]
+    No:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        reason:
+          type: string
+      required: [ok]
+    ByWholeNumber:
+      oneOf:
+        - $ref: '#/components/schemas/Low'
+        - $ref: '#/components/schemas/High'
+      discriminator:
+        propertyName: level
+        mapping:
+          '0': '#/components/schemas/Low'
+          '10': '#/components/schemas/High'
+    Low:
+      type: object
+      properties:
+        level:
+          type: number
+      required: [level]
+    High:
+      type: object
+      properties:
+        level:
+          type: number
+        boost:
+          type: integer
+      required: [level]
+    ByFraction:
+      oneOf:
+        - $ref: '#/components/schemas/Half'
+        - $ref: '#/components/schemas/Quarter'
+      discriminator:
+        propertyName: share
+        mapping:
+          '0.5': '#/components/schemas/Half'
+          '2.5e-1': '#/components/schemas/Quarter'
+    Half:
+      type: object
+      properties:
+        share:
+          type: number
+      required: [share]
+    Quarter:
+      type: object
+      properties:
+        share:
+          type: number
+        note:
+          type: string
+      required: [share]
+    ByIntegerAgain:
+      oneOf:
+        - $ref: '#/components/schemas/One'
+        - $ref: '#/components/schemas/Two'
+      discriminator:
+        propertyName: code
+        mapping:
+          '1': '#/components/schemas/One'
+          '-2': '#/components/schemas/Two'
+    ByBooleanAgain:
+      oneOf:
+        - $ref: '#/components/schemas/Yes'
+        - $ref: '#/components/schemas/No'
+      discriminator:
+        propertyName: ok
+        mapping:
+          'true': '#/components/schemas/Yes'
+          'false': '#/components/schemas/No'

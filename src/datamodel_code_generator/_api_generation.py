@@ -29,7 +29,15 @@ from datamodel_code_generator._fastapi.packages import (
 from datamodel_code_generator._generation_timestamp import current_timestamp
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._module_paths import is_package_init
-from datamodel_code_generator._paths import concrete, concrete_parent, files_under, lexical, overlaps, resolved
+from datamodel_code_generator._paths import (
+    concrete,
+    concrete_parent,
+    lexical,
+    output_files,
+    output_layout,
+    overlaps,
+    resolved,
+)
 from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator._target_config import (
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
@@ -38,6 +46,7 @@ from datamodel_code_generator._target_config import (
 from datamodel_code_generator._target_documents import ROOT_URN, DocumentTable, RootInput, document_identity, shown
 from datamodel_code_generator._target_naming import fold_key
 from datamodel_code_generator.base_config import implied_target_settings as implied_settings
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     import re
@@ -234,11 +243,13 @@ def prepare_target(
     if (requirement := model_requirement(effective.openapi_scopes, generator.selector)) is not None:
         raise Error(requirement)
     if (backend := effective.output_model_type) not in generator.backends:
-        allowed = english_list((repr(item.value) for item in DataModelType if item in generator.backends), "or", "each")
+        allowed = english_list(
+            (stable_repr(item.value) for item in DataModelType if item in generator.backends), "or", "each"
+        )
         raise config_error(
             code=generator.unsupported_backend,
             option_path="model_config.output_model_type",
-            message=f"The {generator.kind} target does not support {backend.value!r}; use {allowed}",
+            message=f"The {generator.kind} target does not support {stable_repr(backend.value)}; use {allowed}",
         )
     if (problem := python_problem(effective, generator.kind)) is not None:
         raise config_error(code="E_CONFIG_VALUE", option_path="model_config.target_python_version", message=problem)
@@ -248,8 +259,8 @@ def prepare_target(
             option_path="model_config.use_missing_sentinel",
             message=(
                 f"The {generator.kind} target needs model_config.use_missing_sentinel with --target-pydantic-version "
-                f"{PYDANTIC_TARGET_MINIMUM} for {backend.value!r} models, whose fields cannot tell an unset member "
-                "from None"
+                f"{PYDANTIC_TARGET_MINIMUM} for {stable_repr(backend.value)} models, whose fields cannot tell an unset "
+                "member from None"
             ),
         )
     _check_pydantic_target(generator, backend.value, target, sentinel=False)
@@ -258,8 +269,8 @@ def prepare_target(
             _diagnostic(
                 "E_CONFIG_VALUE",
                 f"model_config.{name}",
-                f"The {generator.kind} target needs model_config.{name} for {backend.value!r} models, so that "
-                f"their {decoded} can be decoded",
+                f"The {generator.kind} target needs model_config.{name} for {stable_repr(backend.value)} models, so "
+                f"that their {decoded} can be decoded",
             )
             for enabled, name, decoded in (
                 (model_config.use_msgspec_tagged_unions, "use_msgspec_tagged_unions", "discriminated unions"),
@@ -401,24 +412,32 @@ def _staging(stack: ExitStack, destination: Path, cwd: Path, around: Path | None
 def _staged_models(staged: Path, output: Path, encoding: str) -> tuple[ModelArtifact, ...]:
     from datamodel_code_generator._target_contract import ModelArtifact  # noqa: PLC0415
 
-    if staged.is_file():
-        return (ModelArtifact((output.name,), staged.read_bytes(), encoding),)
-    files = sorted((path.relative_to(staged).parts, path) for path in files_under(staged))
-    return tuple(ModelArtifact(parts, path.read_bytes(), encoding) for parts, path in files)
+    return tuple(
+        ModelArtifact(parts or (output.name,), path.read_bytes(), encoding)
+        for parts, path in sorted(output_files(staged))
+    )
 
 
-def _generate_models(
-    input_: _GenerationInput, config: GenerateConfig, target: TargetConfig, cwd: Path, *, use_output_cwd: bool
+def _generate_models(  # noqa: PLR0913
+    input_: _GenerationInput,
+    config: GenerateConfig,
+    target: TargetConfig,
+    cwd: Path,
+    *,
+    use_output_cwd: bool,
+    compares: bool = False,
 ) -> _Models:
     from datamodel_code_generator import (  # noqa: PLC0415
         _absolute_generation_path,  # pyright: ignore[reportPrivateUsage]
         _default_input_filename,  # pyright: ignore[reportPrivateUsage]
         _output_context_path,  # pyright: ignore[reportPrivateUsage]
         _read_custom_file_header,  # pyright: ignore[reportPrivateUsage]
+        _refuse_output_layout,  # pyright: ignore[reportPrivateUsage]
         _run_generation,  # pyright: ignore[reportPrivateUsage]
         _settings_path_from,  # pyright: ignore[reportPrivateUsage]
     )
     from datamodel_code_generator._openapi_generation import TargetGenerationSession  # noqa: PLC0415
+    from datamodel_code_generator._publication import staged_artifact_path  # noqa: PLC0415
     from datamodel_code_generator._target_binding import MetadataCycleError  # noqa: PLC0415
 
     source = _root_input(input_, cwd)
@@ -430,12 +449,14 @@ def _generate_models(
     formatter_cwd = _output_context_path(_absolute_generation_path(output, cwd), cwd)
     settings_path = _settings_path_from(formatter_cwd, prepared.settings_path)
     with ExitStack() as stack:
-        staged_output = _staging(stack, output, cwd, target.output) / (output.name or "output")
-        if (cwd / output).is_dir():
-            staged_output.mkdir()
+        staged_output = staged_artifact_path(
+            _staging(stack, output, cwd, target.output), output, "output", make_directory=(cwd / output).is_dir()
+        )
         updates: dict[str, Any] = {"output": staged_output}
         if (metadata := config.emit_model_metadata) is not None:
-            updates["emit_model_metadata"] = _staging(stack, metadata, cwd) / (metadata.name or "model-metadata.json")
+            updates["emit_model_metadata"] = staged_artifact_path(
+                _staging(stack, metadata, cwd), metadata, "model-metadata.json", make_directory=False
+            )
         staged = prepared.model_copy(update=updates)
         staged._logical_output = output  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
         staged._logical_model_metadata = prepared.emit_model_metadata  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
@@ -449,6 +470,7 @@ def _generate_models(
         )
         try:
             _run_generation(input_, staged, cwd, use_output_cwd=use_output_cwd, capture=session)
+            _refuse_output_layout(output_layout(staged_output), cwd / output, compares=compares)
             artifacts = _staged_models(staged_output, output, prepared.encoding)
             metadata_file = None if metadata is None else (metadata, updates["emit_model_metadata"].read_bytes())
             product = session.take_product(artifacts, allow_empty_api=True)
@@ -471,7 +493,7 @@ def _generate_models(
         return _Models(
             product=product,
             artifacts=artifacts,
-            single=staged_output.is_file(),
+            single=output_layout(staged_output) == "module",
             metadata=metadata_file,
             lock=lock,
             source=source,
@@ -888,6 +910,7 @@ class _Planner:
         staged files are UTF-8 whatever encoding the files are written in.
         """
         from datamodel_code_generator._format_types import Formatter  # noqa: PLC0415
+        from datamodel_code_generator.format import _RUFF_ENCODING  # noqa: PLC0415
 
         if not paths or not {Formatter.RUFF_CHECK, Formatter.RUFF_FORMAT}.intersection(formatter.formatters):
             return
@@ -896,11 +919,11 @@ class _Planner:
             files = [*((staged, path, texts) for path in paths), *((staged.parent, path, own) for path in own)]
             for base, path, held in files:
                 (location := base.joinpath(*path.parts)).parent.mkdir(parents=True, exist_ok=True)
-                location.write_text(held[path], encoding="utf-8")
+                location.write_text(held[path], encoding=_RUFF_ENCODING)
             for directory in dict.fromkeys((staged, *(staged.parent / path.parts[0] for path in own))):
                 formatter.format_directory(directory)
             for base, path, held in files:
-                held[path] = base.joinpath(*path.parts).read_text(encoding="utf-8")
+                held[path] = base.joinpath(*path.parts).read_text(encoding=_RUFF_ENCODING)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -1083,16 +1106,18 @@ def _quietly(cleanup: Callable[[], None]) -> None:
         cleanup()
 
 
-def _run_models(input_: _GenerationInput, effective: GenerateConfig, config: TargetConfig) -> _Models:
+def _run_models(
+    input_: _GenerationInput, effective: GenerateConfig, config: TargetConfig, *, compares: bool = False
+) -> _Models:
     from datamodel_code_generator import _uses_legacy_process_state  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
     from datamodel_code_generator._process_state import PROCESS_STATE_LOCK  # noqa: PLC0415
 
     if _uses_legacy_process_state(effective):
         with PROCESS_STATE_LOCK:
-            return _generate_models(input_, effective, config, Path.cwd(), use_output_cwd=True)
+            return _generate_models(input_, effective, config, Path.cwd(), use_output_cwd=True, compares=compares)
     with PROCESS_STATE_LOCK:
         cwd = Path.cwd()
-    return _generate_models(input_, effective, config, cwd, use_output_cwd=False)
+    return _generate_models(input_, effective, config, cwd, use_output_cwd=False, compares=compares)
 
 
 def plan_target(  # noqa: PLR0913
@@ -1106,6 +1131,7 @@ def plan_target(  # noqa: PLR0913
     models_module: bool = False,
     shown_root: Path | None = None,
     job: str = "",
+    compares: bool = False,
 ) -> PlannedTarget:
     """Render one target and its models without writing them, for a caller that compares or publishes them later.
 
@@ -1114,7 +1140,8 @@ def plan_target(  # noqa: PLR0913
     published together pass on the `timestamp` of the first, so the models they share carry one generation timestamp;
     without one, the files carry the current time. `models_module` plans models generated as one file as the module
     `<output>.py`, warnings name target paths relative to `shown_root`, or to the working directory without one, and
-    refusals name the batch `job` that plans the target.
+    refusals name the batch `job` that plans the target. A target planned for `compares` against another input reads no
+    destination, so its models are not refused for a layout that cannot replace it.
     """
     effective = prepare_target(input_, model_config, generator)
     config.check_target(effective.target_python_version)
@@ -1129,7 +1156,7 @@ def plan_target(  # noqa: PLR0913
         effective._generation_timestamp = (  # noqa: SLF001
             timestamp or current_timestamp()
         )
-    models = _run_models(input_, effective, config)
+    models = _run_models(input_, effective, config, compares=compares)
     try:
         return _Planner(
             models, effective, config, generator, models_module=models_module, shown_root=shown_root, job=job

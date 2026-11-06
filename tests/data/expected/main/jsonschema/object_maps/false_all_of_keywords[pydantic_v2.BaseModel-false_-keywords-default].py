@@ -2,9 +2,22 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Annotated, Any, Dict
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel, constr
+from typing_extensions import TypeAliasType
+
+AItem = TypeAliasType("AItem", Annotated[list[str], Field(max_length=1)])
+
+
+EAdditionalProperty = TypeAliasType(
+    "EAdditionalProperty", Annotated[list[str], Field(max_length=1)]
+)
+
+
+QAdditionalProperty = TypeAliasType(
+    "QAdditionalProperty", Annotated[list[Any], Field(max_length=0)]
+)
 
 
 class Q(BaseModel):
@@ -12,7 +25,7 @@ class Q(BaseModel):
         extra='allow',
     )
     __annotations__ = {
-        '__pydantic_extra__': Dict[str, list[Any]],
+        '__pydantic_extra__': Dict[str, QAdditionalProperty],
     }
     s: str | None = None
 
@@ -27,8 +40,8 @@ class Model(BaseModel):
     n: list[Any] | None = Field(None, max_length=0)
     m: list[str] | None = Field(None, max_length=1)
     t: list[str] | None = Field(None, max_length=1, min_length=2)
-    a: list[list[str]] | None = None
-    e: dict[str, list[str]] | None = None
+    a: list[AItem] | None = None
+    e: dict[str, EAdditionalProperty] | None = None
     x: dict[constr(pattern=r'^x'), str] | None = None
     y: dict[str, Any] | None = Field(None, max_length=0)
     z: dict[str, Any] | None = None

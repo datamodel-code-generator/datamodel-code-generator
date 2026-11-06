@@ -1,0 +1,10 @@
+{
+  "valid": [
+    {"merged": 1},
+    {"merged": 7},
+    {"merged": 0.5}
+  ],
+  "invalid": [
+    {"merged": -0.5}
+  ]
+}

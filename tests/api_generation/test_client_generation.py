@@ -52,6 +52,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "auth-errors",
         "auth-roles",
         "auth-roles-30",
+        "auth-roles-30-read-as-31",
         "auth-context",
         "auth-wire-conflicts",
         "credential-name-errors",
@@ -85,6 +86,8 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "media-item-parts",
         "parameter-content-defaults-30",
         "parameter-content-defaults-31",
+        "parameter-ref-loop-30",
+        "multipart-read-only-exploded",
         "multipart-referenced-items",
         "forms-reuse-response",
         "forms-allof-cycle",
@@ -97,6 +100,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "binary-mapped",
         "cookie-names",
         "header-names",
+        "required-errors",
         "reference-errors",
         "pointer-errors",
         "setting-errors",
@@ -124,6 +128,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "type-spellings-reuse",
         "merged-nullable-reference",
         "merged-nullable-forms",
+        "merged-nullable-kept",
         "type-spellings-cycle",
         "type-spellings-bound",
         "helpers",
@@ -178,6 +183,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "parts-bound-types-errors",
         "parts-bound-responses",
         "parts-bound-responses-reuse",
+        "multipart-text-files",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
@@ -239,6 +245,7 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "protocols-stream-errors",
         "protocols-references",
         "protocols-querystring",
+        "protocols-reserved-arguments",
         "protocols-pagination-checks",
         "protocols-pagination-querystring-checks",
         "protocols-querystring-target-checks",
@@ -465,13 +472,12 @@ def test_client_config_python_keys(case: str, options: dict[str, Any], tmp_path:
             {"custom_formatters": ["tests.data.python.custom_formatters.add_comment"]},
             ("_operations.py",),
         ),
-        pytest.param(
+        (
             "ruff-utf-16",
             {"encoding": "utf-16", "formatters": ["ruff-check", "ruff-format"]},
             ("resources", "pets", "__init__.py"),
-            marks=pytest.mark.filterwarnings("ignore:Failed to format code:UserWarning"),
         ),
-        pytest.param(
+        (
             "ruff-latin-1",
             {
                 "encoding": "latin-1",
@@ -479,7 +485,6 @@ def test_client_config_python_keys(case: str, options: dict[str, Any], tmp_path:
                 "custom_file_header": "# -*- coding: latin-1 -*-\n# Café",
             },
             ("resources", "pets", "__init__.py"),
-            marks=pytest.mark.filterwarnings("ignore:Failed to format code:UserWarning"),
         ),
     ],
 )
@@ -487,8 +492,7 @@ def test_client_output_options(case: str, options: dict[str, object], module: tu
     """Head, format, and encode the client files with the model output options, exactly like the models.
 
     The formatters and their settings lay out the plan values the templates leave on one line. Ruff reads only UTF-8,
-    so the client files are formatted whatever encoding they are written in; the models file, which Ruff cannot read
-    in another encoding, is left unformatted with a warning.
+    so the client files are formatted whatever encoding they are written in.
     """
     encoding = str(options.get("encoding", "utf-8"))
     (source := tmp_path / "pets.yaml").write_bytes((SOURCE / "pets.yaml").read_text(encoding="utf-8").encode(encoding))

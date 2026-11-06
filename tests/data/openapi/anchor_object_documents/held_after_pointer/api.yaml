@@ -1,0 +1,16 @@
+openapi: 3.1.0
+info:
+  title: A parameter document that a pointer into it loaded first
+  version: "1.0"
+paths:
+  /notes:
+    get:
+      parameters:
+        - $ref: parameter.yaml
+      responses:
+        "200":
+          description: The notes.
+components:
+  schemas:
+    Size:
+      $ref: parameter.yaml#/schema/properties/size

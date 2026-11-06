@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Catalog",
+  "type": "object",
+  "properties": {"order": {"$ref": "#/$defs/api.Order"}},
+  "$defs": {
+    "api.Order": {"type": "object", "properties": {"items": {"$ref": "#/$defs/api.Items"}}},
+    "api.Items": {"type": "array", "items": {"$ref": "#/$defs/annotations.Item"}},
+    "annotations.Item": {"type": "object", "properties": {"sku": {"type": "string"}}}
+  }
+}

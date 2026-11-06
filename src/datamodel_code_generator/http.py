@@ -32,6 +32,7 @@ from datamodel_code_generator._caches import BoundedLru
 from datamodel_code_generator._message_text import extra_requirement, install_command
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.enums import HTTPBackend
+from datamodel_code_generator.python_literal import stable_repr
 
 _HTTPTransportT_co = TypeVar("_HTTPTransportT_co", bound="_HTTPTransport", covariant=True)
 _NetworkStreamT_co = TypeVar("_NetworkStreamT_co", bound="_NetworkStream", covariant=True)
@@ -681,7 +682,7 @@ def _create_pinned_transport_type(
 def _load_http_stack(backend: _HTTPBackendName) -> _HTTPStack[_HTTPTransport]:
     """Import the selected client, keeping its exact paired core name, without probing package metadata."""
     if (core_backend := _HTTP_CORE_BACKENDS.get(backend)) is None:
-        msg = f"Unexpected HTTP backend: {backend!r}"
+        msg = f"Unexpected HTTP backend: {stable_repr(backend)}"
         raise AssertionError(msg)
     from importlib import import_module  # noqa: PLC0415
 
@@ -723,7 +724,7 @@ def _get_http_stack(http_backend: HTTPBackend = HTTPBackend.AUTO) -> _HTTPStack[
         raise Exception(msg) from None  # noqa: TRY002
 
     if (selected := _HTTP_POLICY_BACKENDS.get(http_backend)) is None:
-        msg = f"Unexpected HTTP backend policy: {http_backend!r}"
+        msg = f"Unexpected HTTP backend policy: {stable_repr(http_backend)}"
         raise AssertionError(msg)
     backend, extra = selected
     try:

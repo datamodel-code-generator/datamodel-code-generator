@@ -53,7 +53,9 @@ from typing_extensions import deprecated, override
 from datamodel_code_generator._constraint_applicability import (
     DROPPED_MULTIPLE_OF_KEY,
     TYPE_DEPENDENT_CONSTRAINTS_KEY,
+    UNION_SIBLING_CONSTRAINTS_KEY,
     VALUES_AS_WRITTEN_KEY,
+    WIDENED_VALUES_KEY,
 )
 from datamodel_code_generator._graph_links import (
     add_child,
@@ -88,13 +90,16 @@ if TYPE_CHECKING:
 
     from typing_extensions import Self
 
+    from datamodel_code_generator._constraint_applicability import ConstraintOptions
     from datamodel_code_generator._reference_graph import GraphSnapshot, ReferenceGraph
     from datamodel_code_generator.imports import Import
     from datamodel_code_generator.model._decisions.literal_default import LiteralDefault
+    from datamodel_code_generator.model._views import DataTypeView, ModelView, ReferenceView
     from datamodel_code_generator.model.base import BaseClassDataType, DataModel, DataModelFieldBase
     from datamodel_code_generator.model.enum import Member
     from datamodel_code_generator.parser._field_rows import FieldIdentity
     from datamodel_code_generator.parser._graph_ids import KeyedModels
+    from datamodel_code_generator.parser._phases import DecisionOptions
     from datamodel_code_generator.parser._sites import Position, ProvenanceHow, RefKind
     from datamodel_code_generator.types import DataType
 
@@ -118,6 +123,17 @@ DataTypeOccurrence: TypeAlias = tuple[DataType, int | None, DataTypeRole]
 Refresh: TypeAlias = Literal["now", "deferred"]
 """When a store operation marks the facts stale: ``now``, or ``deferred`` until another mutation marks them; the
 models it noted are recorded again at the next refresh either way."""
+RenameScheme: TypeAlias = Literal[
+    "plan",
+    "module",
+    "flattened-module",
+    "field-type",
+    "imported-name",
+    "internal-module",
+    "shared-module",
+    "collapsed-root",
+]
+"""The scheme a rename after the L2 settle applies (``GenerationStore.rename_model``)."""
 _OrderedSetItem = TypeVar("_OrderedSetItem")
 _REPLACED = MemberFacts("replaced")
 _REPLACEMENT = MemberFacts("replacement")
@@ -165,12 +181,15 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "drop_union_operator",
     "force_field_assignment",
     "mark_forward_references",
+    "mark_serialized_as_any",
     "mark_target_null",
     "override_type_import",
     "name_enum_member",
+    "name_enum_member_literal_class",
     "name_reference",
     "record_dropped_multiple_of",
     "record_values_as_written",
+    "record_widened_values",
     "rename_field",
     "rename_model",
     "replace_model",
@@ -213,6 +232,31 @@ def _bump_field_tree(field_: DataModelFieldBase) -> None:
     bump_field(field_)
     for data_type in field_.data_type.all_data_types:
         bump_node(data_type)
+
+
+def _write_alias_form(field_: DataModelFieldBase, *, inherits: bool | None) -> None:
+    """Write the aliases the field class writes in place of the ones a field built earlier took (``alias_form``).
+
+    ``inherits`` tells whether the class of the field has a generated base class; the model that holds the field says
+    so when it is not given, and a field outside any model has none.
+    """
+    if inherits is None:
+        inherits = field_.parent is not None and any(base.reference for base in field_.parent.base_classes)
+    if form := field_.alias_form(inherits=inherits):
+        for attribute, value in form.items():
+            setattr(field_, attribute, value)
+        bump_field(field_)
+
+
+def _settle_alias_forms(model: DataModel) -> None:
+    """Write the alias form of the fields of a model that has lost every base class.
+
+    A field that took its alias below a generated base class keeps ``alias=`` (``alias_form``); a model left without a
+    base class, as a root model leaves the bases of the models that inherit it, takes the form of a class without one.
+    """
+    if not model.base_classes:
+        for field_ in model.fields:
+            _write_alias_form(field_, inherits=False)
 
 
 def _tree_nodes(roots: Iterable[DataType]) -> Iterator[DataType]:
@@ -259,6 +303,27 @@ class ModelFact:
     def class_name(self) -> str:
         """The model's class name."""
         return self.model.class_name
+
+
+@final
+@record
+class ModelRename:
+    """A rename that ``GenerationStore.rename_model`` made: the names the model had before it and after it."""
+
+    keys: tuple[ModelKey, ...]
+    """The model key of the model, and that of the model sharing its path (row ``legacy-replaced-root-shares-path``)."""
+    path: str
+    """The path of the model after the rename."""
+    class_name: str
+    """The class name the model had before the rename."""
+    import_path: str
+    """The path the model had before the rename, which imports of ``class_name`` were added under."""
+    new_class_name: str
+    """The class name the model has after the rename."""
+    scheme: RenameScheme | None
+    """The scheme of the rename; None for a caller that names none."""
+    reference_name: str
+    """The reference name the model had before the rename."""
 
 
 @record
@@ -953,6 +1018,16 @@ class GenerationIndex:
             return ()
         return tuple(facts.data_type_facts[data_type_id] for data_type_id in data_type_ids)
 
+    def models_inheriting(self, reference: Reference) -> list[DataModel]:
+        """Return the models whose bases name ``reference``, once each, in the order of those bases."""
+        facts = self._view().facts
+        owners = (
+            facts.model_facts[fact.owner_model].model
+            for fact in self.data_type_facts_for_reference(reference)
+            if fact.role == "base"
+        )
+        return list({id(owner): owner for owner in owners}.values())
+
     def has_data_type_references(self, reference: Reference) -> bool:
         """Return whether any tracked data type currently points at ``reference``."""
         return bool(self._view().facts.sites_by_target.get(self._store.model_key(reference)))
@@ -1133,6 +1208,7 @@ class GenerationStore:  # noqa: PLR0904
         self._appended_model_ids: set[int] = set()
         self._changed_model_ids: set[ModelId] = set()
         self._renamed_model_ids: set[ModelId] = set()
+        self._renames: list[ModelRename] = []
         self._defer_refresh_depth = 0
         self._active_root_collapse_reference_scope: _RootCollapseReferenceScope | None = None
         self._root_collapse_internal_mutation_depth = 0
@@ -1178,6 +1254,7 @@ class GenerationStore:  # noqa: PLR0904
         self._clear_pending()
         self._built_models.clear()
         self._retired_models.clear()
+        self._renames.clear()
         self._site_effects.clear()
         self._carried_sites = ()
         self._inlined_owners.clear()
@@ -1341,14 +1418,29 @@ class GenerationStore:  # noqa: PLR0904
         """Mark that the pipeline enters ``phase``; in check mode, the finality checks compare every model here."""
         self.phase = phase
 
-    def seal_facts(self, modules: Iterable[tuple[tuple[str, ...], Iterable[DataModel]]]) -> FinalFacts:  # noqa: PLR6301
+    @property
+    def renames(self) -> Sequence[ModelRename]:
+        """The renames ``rename_model`` made in this run, in the order it made them."""
+        return self._renames
+
+    def seal_facts(  # noqa: PLR6301
+        self,
+        modules: Iterable[tuple[tuple[str, ...], Iterable[DataModel]]],
+        member_keywords: Callable[[DataTypeView, Callable[[ReferenceView], ModelView | None]], frozenset[str] | None],
+        options: DecisionOptions,
+    ) -> FinalFacts:
         """Return the facts final at B1 for the decision phase: the live models of ``modules``, in module order.
 
-        A decision reads each model as its view (``model/_views.py``). This is the only construction of
-        ``FinalFacts``.
+        A decision reads each model as its view (``model/_views.py``), and the keywords of a union member through
+        ``member_keywords``. This is the only construction of ``FinalFacts``.
         """
         module_facts = tuple(ModuleFacts(module, tuple(models)) for module, models in modules)
-        return FinalFacts(module_facts, tuple(model for facts in module_facts for model in facts.live_models))
+        return FinalFacts(
+            module_facts,
+            tuple(model for facts in module_facts for model in facts.live_models),
+            member_keywords,
+            options,
+        )
 
     @deprecated("Use GenerationStore.builder().register_model() instead.", category=None)
     def register_model(self, model: DataModel) -> None:
@@ -1435,6 +1527,16 @@ class GenerationStore:  # noqa: PLR0904
         bump_node(data_type)
 
     @staticmethod
+    @deprecated("Use GenerationStore.builder().record_widened_values() instead.", category=None)
+    def record_widened_values(data_type: DataType, values: Sequence[object]) -> None:
+        """Keep on a new type of an enum or a const the values it is written in place of, which no Literal holds.
+
+        The field holding the type warns that it is generated without them (``widened_values_warning``).
+        """
+        data_type.__dict__[WIDENED_VALUES_KEY] = tuple(values)
+        bump_node(data_type)
+
+    @staticmethod
     @deprecated("Use GenerationStore.builder().restore_required_inherited_field() instead.", category=None)
     def restore_required_inherited_field(model: DataModel, field_: DataModelFieldBase) -> bool:
         """Run the model's ``restore_required_inherited_field_state`` hook for a field; return what it returns.
@@ -1460,6 +1562,13 @@ class GenerationStore:  # noqa: PLR0904
     def mark_forward_references(model: DataModel) -> None:
         """Make a model write its fields for the quoted forward references they hold: unions with ``Union``."""
         model.has_forward_reference = True
+        bump_model(model)
+
+    @staticmethod
+    @deprecated("Use GenerationStore.builder().mark_serialized_as_any() instead.", category=None)
+    def mark_serialized_as_any(model: DataModel, wrapped: bool) -> None:  # noqa: FBT001
+        """Record whether a type naming ``model`` is wrapped in ``SerializeAsAny``, which the types naming it read."""
+        model.serialized_as_any = wrapped
         bump_model(model)
 
     @staticmethod
@@ -1689,21 +1798,48 @@ class GenerationStore:  # noqa: PLR0904
         clear_duplicate_name: bool = False,
         new_path: str | None = None,
         new_file_path: Path | None = None,
+        scheme: RenameScheme | None = None,
+        schema_path: str | None = None,
     ) -> None:
         """Change a model's class or reference name after parsing, the writer of names after the L2 settle.
 
-        The callers apply six schemes: ``module`` (unique among the classes and imports of one module, ``Model``
-        for a taken name), ``flattened-module`` (unique among the live models, with the ``--duplicate-name-suffix``
-        map and ``Model``), ``field-type`` (a type hidden by a field of its user), ``imported-name`` (a local model
-        shadowed by an import), ``internal-module`` (``<name>_<n>`` in a module cycle's ``_internal`` module) and
-        ``collapsed-root`` (the inner model takes the root model's name and path). A rename that also relocates the
-        model passes the new path and output file.
+        The callers name one of eight schemes: ``plan`` (the name the L2 naming plan gives, ``parser/_naming.py``),
+        ``module`` (unique among the classes and imports of one module, ``Model`` for a taken name),
+        ``flattened-module`` (unique among the live models, with the ``--duplicate-name-suffix`` map and ``Model``),
+        ``field-type`` (a type hidden by a field of its user),
+        ``imported-name`` (a local model shadowed by an import), ``internal-module`` (``<name>_<n>`` in a module
+        cycle's ``_internal`` module), ``shared-module`` (``<name>_<n>`` for an earlier canonical model of one name in
+        the tree-scope shared module) and ``collapsed-root`` (the inner model takes the root model's name and path).
+        A rename that also relocates the model passes the new path and output file, and the path of the schema the
+        model stands for there (``schema_path_of``) where that is not the new path, which the reference keeps
+        (``SCHEMA_PATH_KEY``). Every rename is recorded with the names before and after it (``renames``), under the
+        keys the model has then.
         """
+        from datamodel_code_generator.model.base import _path_identity_keys  # noqa: PLC0415
+        from datamodel_code_generator.reference import SCHEMA_PATH_KEY  # noqa: PLC0415
+
+        class_name_before, path_before, name_before = model.class_name, model.reference.path, model.reference.name
         self._update_model_reference(
             model, class_name=class_name, reference_name=reference_name, new_path=new_path, new_file_path=new_file_path
         )
+        if new_path is not None:
+            if schema_path is None or schema_path == new_path:
+                model.reference.__dict__.pop(SCHEMA_PATH_KEY, None)
+            else:
+                model.reference.__dict__[SCHEMA_PATH_KEY] = schema_path
         if clear_duplicate_name:
             model.reference.duplicate_name = None
+        self._renames.append(
+            ModelRename(
+                _path_identity_keys(model),
+                model.reference.path,
+                class_name_before,
+                path_before,
+                model.class_name,
+                scheme,
+                name_before,
+            )
+        )
 
     @deprecated("Use GenerationStore.builder().replace_field_type() instead.", category=None)
     def replace_field_type(
@@ -1751,13 +1887,22 @@ class GenerationStore:  # noqa: PLR0904
         bump_field(field_)
 
     @deprecated("Use GenerationStore.builder().drop_union_member_constraints() instead.", category=None)
-    def drop_union_member_constraints(self, field_: DataModelFieldBase, *, refresh: Refresh = "now") -> None:
+    def drop_union_member_constraints(
+        self, field_: DataModelFieldBase, *, refresh: Refresh = "now", options: ConstraintOptions | None = None
+    ) -> None:
         """Run the field's ``unconstrain_union_members`` hook, which writes members into the union lists it holds.
 
         The hook replaces members inside the lists, so every holder of a list sees them. When the hook changed the
-        field, what reads its type is bumped and the new sites of the field's model are overridden.
+        field, what reads its type is bumped and the new sites of the field's model are overridden. ``options`` are the
+        constraint options the hook reads, passed only under ``--read-msgspec-union-bounds-exactly``, the option it
+        reads them for, so an override that takes no options, as in 0.89.0, runs as before.
         """
-        if field_.unconstrain_union_members() is False:
+        changed = (
+            field_.unconstrain_union_members(options)
+            if options is not None and options.read_msgspec_union_bounds_exactly
+            else field_.unconstrain_union_members()
+        )
+        if changed is False:
             return
         self._state_model_sites("drop_union_member_constraints", field_.parent)
         _bump_field_tree(field_)
@@ -1788,15 +1933,23 @@ class GenerationStore:  # noqa: PLR0904
         """Give a field a new Python name, and ``alias`` as its alias when it has none, so it keeps its wire name."""
         if alias is not None and field_.alias is None:
             field_.alias = alias
+            _write_alias_form(field_, inherits=None)
         field_.name = name
         bump_field(field_)
 
     @staticmethod
     @deprecated("Use GenerationStore.builder().set_field_identity() instead.", category=None)
-    def set_field_identity(field_: DataModelFieldBase, identity: FieldIdentity) -> None:
-        """Give a field the names and aliases ``identity`` holds; it keeps the ones ``identity`` leaves out."""
+    def set_field_identity(
+        field_: DataModelFieldBase, identity: FieldIdentity, *, inherits: bool | None = None
+    ) -> None:
+        """Give a field the names and aliases ``identity`` holds; it keeps the ones ``identity`` leaves out.
+
+        The aliases are written in the form of the field class for a class that ``inherits`` a generated base class
+        or not (``DataModelFieldBase.alias_form``).
+        """
         for attribute, value in identity.items():
             setattr(field_, attribute, value)
+        _write_alias_form(field_, inherits=inherits)
         bump_field(field_)
 
     @staticmethod
@@ -1818,12 +1971,18 @@ class GenerationStore:  # noqa: PLR0904
     @staticmethod
     @deprecated("Use GenerationStore.builder().set_field_constraints() instead.", category=None)
     def set_field_constraints(
-        field_: DataModelFieldBase, constraints: Any, *, type_dependent: Mapping[str, Any] | None = None
+        field_: DataModelFieldBase,
+        constraints: Any,
+        *,
+        type_dependent: Mapping[str, Any] | None = None,
+        union_siblings: Mapping[str, Any] | None = None,
     ) -> None:
-        """Write a field's constraints and, when given, the constraints that its type decides."""
+        """Write a field's constraints and, when given, those its type decides and those declared beside a union."""
         field_.constraints = constraints
         if type_dependent is not None:
             field_.__dict__[TYPE_DEPENDENT_CONSTRAINTS_KEY] = type_dependent
+        if union_siblings is not None:
+            field_.__dict__[UNION_SIBLING_CONSTRAINTS_KEY] = union_siblings
         bump_field(field_)
 
     @staticmethod
@@ -1921,6 +2080,13 @@ class GenerationStore:  # noqa: PLR0904
         """Write the expression the enum member in the default of a field names its enum by, which the field sees."""
         member.alias = alias
         bump_field(field_)
+
+    @staticmethod
+    @deprecated("Use GenerationStore.builder().name_enum_member_literal_class() instead.", category=None)
+    def name_enum_member_literal_class(data_type: DataType, enum_class: str) -> None:
+        """Write the expression the members of an enum member literal name their enum by, which every holder sees."""
+        data_type.enum_member_literals = [(enum_class, member) for _, member in data_type.enum_member_literals]
+        bump_node(data_type)
 
     @staticmethod
     @deprecated("Use GenerationStore.builder().add_model_import() instead.", category=None)
@@ -2135,6 +2301,7 @@ class GenerationStore:  # noqa: PLR0904
         self._state_model_sites("set_base_classes", model)
         model.base_classes = list(base_classes)
         self._model_changed(model)
+        _settle_alias_forms(model)
 
     @deprecated("Use GenerationStore.builder().reset_base_classes() instead.", category=None)
     def reset_base_classes(self, model: DataModel) -> None:
@@ -2145,18 +2312,19 @@ class GenerationStore:  # noqa: PLR0904
 
     @deprecated("Use GenerationStore.builder().redirect_reference_users() instead.", category=None)
     def redirect_reference_users(
-        self, old_reference: Reference, new_reference: Reference, *, merged: bool = False
+        self, old_reference: Reference, new_reference: Reference, *, merged: bool = False, keeps_named: bool = False
     ) -> list[DataType]:
         """Redirect every user of ``old_reference`` to ``new_reference`` and return the redirected users.
 
         Their sites are redirected from ``old_reference``. When the model of ``old_reference`` is ``merged`` into the
-        equal model of ``new_reference``, each user records the null of the schema it names (``_record_named_null``).
+        equal model of ``new_reference``, each user records the null of the schema it names (``_record_named_null``),
+        which decides alone with ``keeps_named``.
         """
         children = data_type_children(old_reference)
         self._state_sites_at("redirect_reference_users", children, via=old_reference)
         cache_owners = [self._cache_owners_for_data_type(child) for child in children]
         if merged:
-            self._record_named_null(children)
+            self._record_named_null(children, keeps_named=keeps_named)
         old_reference.replace_children_references(new_reference)
         self._data_types_changed(children, cache_owners)
         return children
@@ -2175,11 +2343,13 @@ class GenerationStore:  # noqa: PLR0904
         model: DataModel,
         models: list[DataModel],
         new_reference: Reference,
+        *,
+        keeps_named: bool = False,
     ) -> None:
         """Redirect ``model`` reference users owned by ``models`` to ``new_reference``; their sites are redirected.
 
         ``model`` is merged into the model of ``new_reference``, so each user records the null of the schema it names
-        (``_record_named_null``).
+        (``_record_named_null``), which decides alone with ``keeps_named``.
         """
         model_ids = {id(candidate) for candidate in models}
         cache_owners = []
@@ -2194,7 +2364,7 @@ class GenerationStore:  # noqa: PLR0904
                 continue
             cache_owners.append(cache_owners_for_child)
             self._state_sites_at("redirect_model_reference_users", (child,), via=model.reference)
-            self._record_named_null((child,))
+            self._record_named_null((child,), keeps_named=keeps_named)
             child.replace_reference(new_reference)
             self._note_changed_data_types((child,))
         self._invalidate_owner_caches(cache_owners)
@@ -2247,15 +2417,16 @@ class GenerationStore:  # noqa: PLR0904
                 add_child(new_reference, data_type)
 
     @staticmethod
-    def _record_named_null(data_types: Iterable[DataType]) -> None:
+    def _record_named_null(data_types: Iterable[DataType], *, keeps_named: bool) -> None:
         """Record whether each type admits the null of the schema it names, before a merge points it at an equal model.
 
         A reference admits None from the schema it names, not from the model it names after the merge
-        (``model/_decisions/nullability.py:reference_null``), in both directions; each merge records what the type
-        admitted right before it.
+        (``model/_decisions/nullability.py:reference_null``); each merge records what the type admitted right before
+        it. A schema that rejects null keeps rejecting it, and with ``keeps_named``
+        (``--keep-reference-null-on-merged-models``) a schema that admits null keeps admitting it too.
         """
         for data_type in data_types:
-            data_type._update_type_null(named=data_type.names_nullable_model)  # noqa: SLF001
+            data_type._update_type_null(named=data_type.names_nullable_model, keeps_named=keeps_named)  # noqa: SLF001
 
     def _state_model_sites(self, operation: str, *models: object) -> None:
         """State that the new sites of ``models`` take the provenance of ``operation`` (`SITE_EFFECTS`)."""
@@ -2434,9 +2605,11 @@ class GraphBuilder:
         """Drop the None a reference type restates of the model it names, which holds null itself."""
         self._store.drop_held_null(data_type)  # ty: ignore[deprecated]
 
-    def drop_union_member_constraints(self, field_: DataModelFieldBase, *, refresh: Refresh = "now") -> None:
+    def drop_union_member_constraints(
+        self, field_: DataModelFieldBase, *, refresh: Refresh = "now", options: ConstraintOptions | None = None
+    ) -> None:
         """Run the field's ``unconstrain_union_members`` hook, which writes members into the union lists it holds."""
-        self._store.drop_union_member_constraints(field_, refresh=refresh)  # ty: ignore[deprecated]
+        self._store.drop_union_member_constraints(field_, refresh=refresh, options=options)  # ty: ignore[deprecated]
 
     def inline_shared(self, root_type: DataType, site: DataType) -> DataType:
         """Return a copy of ``root_type`` for collapse to put at ``site``, sharing the children of ``root_type``."""
@@ -2453,6 +2626,10 @@ class GraphBuilder:
     def mark_forward_references(self, model: DataModel) -> None:
         """Make a model write its fields for quoted forward references through the store."""
         self._store.mark_forward_references(model)  # ty: ignore[deprecated]
+
+    def mark_serialized_as_any(self, model: DataModel, wrapped: bool) -> None:  # noqa: FBT001
+        """Record whether a type naming ``model`` is wrapped in ``SerializeAsAny`` through the store."""
+        self._store.mark_serialized_as_any(model, wrapped)  # ty: ignore[deprecated]
 
     def mark_target_null(self, data_type: DataType) -> None:
         """Mark the None of a new reference type as the one the schema it references admits."""
@@ -2482,6 +2659,10 @@ class GraphBuilder:
         """Write the expression the enum member in a default names its enum by through ``name_enum_member``."""
         self._store.name_enum_member(field_, member, alias)  # ty: ignore[deprecated]
 
+    def name_enum_member_literal_class(self, data_type: DataType, enum_class: str) -> None:
+        """Write the expression an enum member literal names its enum by through ``name_enum_member_literal_class``."""
+        self._store.name_enum_member_literal_class(data_type, enum_class)  # ty: ignore[deprecated]
+
     def record_dropped_multiple_of(self, data_type: DataType, value: float) -> None:
         """Keep on a new constrained type the ``multipleOf`` it is written without, as the backend refuses it."""
         self._store.record_dropped_multiple_of(data_type, value)  # ty: ignore[deprecated]
@@ -2490,20 +2671,34 @@ class GraphBuilder:
         """Keep on a new enum model or Literal type the values as written of the enum or const it holds some of."""
         self._store.record_values_as_written(owner, values)  # ty: ignore[deprecated]
 
+    def record_widened_values(self, data_type: DataType, values: Sequence[object]) -> None:
+        """Keep on a new type of an enum or a const the values it is written in place of, which no Literal holds."""
+        self._store.record_widened_values(data_type, values)  # ty: ignore[deprecated]
+
     def redirect_model_reference_users(
-        self, model: DataModel, models: list[DataModel], new_reference: Reference
+        self, model: DataModel, models: list[DataModel], new_reference: Reference, *, keeps_named: bool = False
     ) -> None:
-        """Redirect ``model`` reference users owned by ``models`` to ``new_reference``; their sites are redirected."""
-        self._store.redirect_model_reference_users(model, models, new_reference)  # ty: ignore[deprecated]
+        """Redirect ``model`` reference users owned by ``models`` to ``new_reference``; their sites are redirected.
+
+        ``keeps_named`` says each user keeps the null of the schema it names
+        (``--keep-reference-null-on-merged-models``).
+        """
+        self._store.redirect_model_reference_users(  # ty: ignore[deprecated]
+            model, models, new_reference, keeps_named=keeps_named
+        )
 
     def redirect_reference_users(
-        self, old_reference: Reference, new_reference: Reference, *, merged: bool = False
+        self, old_reference: Reference, new_reference: Reference, *, merged: bool = False, keeps_named: bool = False
     ) -> list[DataType]:
         """Redirect every user of ``old_reference`` to ``new_reference`` and return the redirected users.
 
-        ``merged`` says the model of ``old_reference`` is merged into the equal model of ``new_reference``.
+        ``merged`` says the model of ``old_reference`` is merged into the equal model of ``new_reference``, and
+        ``keeps_named`` that each user keeps the null of the schema it names
+        (``--keep-reference-null-on-merged-models``).
         """
-        return self._store.redirect_reference_users(old_reference, new_reference, merged=merged)  # ty: ignore[deprecated]
+        return self._store.redirect_reference_users(  # ty: ignore[deprecated]
+            old_reference, new_reference, merged=merged, keeps_named=keeps_named
+        )
 
     def register_model(self, model: DataModel) -> None:
         """Register a model the output writes."""
@@ -2522,8 +2717,14 @@ class GraphBuilder:
         clear_duplicate_name: bool = False,
         new_path: str | None = None,
         new_file_path: Path | None = None,
+        scheme: RenameScheme | None = None,
+        schema_path: str | None = None,
     ) -> None:
-        """Change a model's class or reference name after parsing, the writer of names after the L2 settle."""
+        """Change a model's class or reference name after parsing, the writer of names after the L2 settle.
+
+        ``scheme`` names the scheme of the rename, which the store records with it (``GenerationStore.renames``), and
+        ``schema_path`` the path of the schema the model stands for at ``new_path`` where that is not ``new_path``.
+        """
         self._store.rename_model(  # ty: ignore[deprecated]
             model,
             class_name=class_name,
@@ -2531,6 +2732,8 @@ class GraphBuilder:
             clear_duplicate_name=clear_duplicate_name,
             new_path=new_path,
             new_file_path=new_file_path,
+            scheme=scheme,
+            schema_path=schema_path,
         )
 
     def replace_data_type_ref(self, data_type: DataType, new_reference: Reference | None) -> None:
@@ -2574,10 +2777,17 @@ class GraphBuilder:
         self._store.set_base_classes(model, base_classes)  # ty: ignore[deprecated]
 
     def set_field_constraints(
-        self, field_: DataModelFieldBase, constraints: Any, *, type_dependent: Mapping[str, Any] | None = None
+        self,
+        field_: DataModelFieldBase,
+        constraints: Any,
+        *,
+        type_dependent: Mapping[str, Any] | None = None,
+        union_siblings: Mapping[str, Any] | None = None,
     ) -> None:
-        """Write a field's constraints and, when given, the constraints that its type decides."""
-        self._store.set_field_constraints(field_, constraints, type_dependent=type_dependent)  # ty: ignore[deprecated]
+        """Write a field's constraints and, when given, those its type decides and those declared beside a union."""
+        self._store.set_field_constraints(  # ty: ignore[deprecated]
+            field_, constraints, type_dependent=type_dependent, union_siblings=union_siblings
+        )
 
     def set_field_default(self, field_: DataModelFieldBase, default: Any) -> None:
         """Write a field's default, which the facts do not record, so they stay current."""
@@ -2591,9 +2801,11 @@ class GraphBuilder:
         """Give a field a new extras dict."""
         self._store.set_field_extras(field_, extras)  # ty: ignore[deprecated]
 
-    def set_field_identity(self, field_: DataModelFieldBase, identity: FieldIdentity) -> None:
+    def set_field_identity(
+        self, field_: DataModelFieldBase, identity: FieldIdentity, *, inherits: bool | None = None
+    ) -> None:
         """Give a field the names and aliases ``identity`` holds, through ``GenerationStore.set_field_identity``."""
-        self._store.set_field_identity(field_, identity)  # ty: ignore[deprecated]
+        self._store.set_field_identity(field_, identity, inherits=inherits)  # ty: ignore[deprecated]
 
     def set_fields(self, model: DataModel, fields: Iterable[DataModelFieldBase]) -> None:
         """Replace all fields on ``model`` and invalidate derived facts; the new sites of ``model`` are copied."""

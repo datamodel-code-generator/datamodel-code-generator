@@ -1,0 +1,2 @@
+{"thing": {"n": 1}, "kind": "disc", "tag": "order"}: accepted Order(thing=Thing(n=1), kind=<Kind.disc: 'disc'>, tag='order')
+{"tag": "other"}: rejected ValidationError

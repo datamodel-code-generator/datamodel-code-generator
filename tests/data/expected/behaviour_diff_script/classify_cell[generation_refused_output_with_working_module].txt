@@ -1,0 +1,14 @@
+{
+  "cls": "violation",
+  "notes": [
+    "generation now fails: Error: Cannot import the module 'class' from module 'main'"
+  ],
+  "accepted_by": [],
+  "changes": [
+    "[import-path-removed] other:Key: from other import Key",
+    "[import-path-removed] other:KeyMap: from other import KeyMap",
+    "[module-added] : added",
+    "[module-removed] main: removed",
+    "[module-removed] other: removed"
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Holder",
+  "type": "object",
+  "required": ["first", "second", "home", "work"],
+  "properties": {
+    "first": {"type": "object", "properties": {"tool": {"type": "object", "properties": {"name": {"type": "string"}}}}},
+    "second": {
+      "type": "object",
+      "required": ["tool"],
+      "properties": {"tool": {"type": ["object", "null"], "properties": {"name": {"type": "string"}}}}
+    },
+    "bar": {"$ref": "#/$defs/Bar"},
+    "foo": {"$ref": "#/$defs/Foo"},
+    "home": {"$ref": "#/$defs/Home"},
+    "homes": {"type": "array", "items": {"$ref": "#/$defs/Home"}},
+    "work": {"$ref": "#/$defs/Work"}
+  },
+  "$defs": {
+    "Bar": {"type": "object", "properties": {"item": {"type": "object", "properties": {"count": {"type": "integer"}}}}},
+    "Foo": {
+      "type": "object",
+      "properties": {"item": {"type": ["object", "null"], "properties": {"count": {"type": "integer"}}}}
+    },
+    "Work": {"type": "object", "properties": {"street": {"type": "string"}}},
+    "Home": {"type": ["object", "null"], "properties": {"street": {"type": "string"}}}
+  }
+}

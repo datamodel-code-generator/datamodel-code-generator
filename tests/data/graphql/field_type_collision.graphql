@@ -1,0 +1,7 @@
+type Pet {
+  name: String
+}
+
+type Owner {
+  Pet: Pet
+}

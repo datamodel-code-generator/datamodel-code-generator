@@ -1,0 +1,34 @@
+{
+  "title": "Back",
+  "allOf": [
+    {
+      "$ref": "loop.json"
+    },
+    {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "x"
+          ],
+          "properties": {
+            "x": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "y"
+          ],
+          "properties": {
+            "y": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

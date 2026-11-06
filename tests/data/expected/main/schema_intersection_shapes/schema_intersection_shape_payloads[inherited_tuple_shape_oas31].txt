@@ -1,0 +1,165 @@
+pydantic_v2.BaseModel default closed ["ab", 1] accepted
+pydantic_v2.BaseModel default closed [] rejected
+pydantic_v2.BaseModel default closed ["a"] rejected
+pydantic_v2.BaseModel default closed ["abcd", 1] rejected
+pydantic_v2.BaseModel default open ["ab", 1] accepted
+pydantic_v2.BaseModel default open ["ab", 1, "extra"] accepted
+pydantic_v2.BaseModel default open ["ab"] rejected
+pydantic_v2.BaseModel default contained ["ab", 1] accepted
+pydantic_v2.BaseModel default contained ["abcd", 1] rejected
+pydantic_v2.BaseModel default contained [1, "ab"] accepted
+pydantic_v2.BaseModel default contained ["ab"] rejected
+pydantic_v2.dataclass default closed ["ab", 1] accepted
+pydantic_v2.dataclass default closed [] rejected
+pydantic_v2.dataclass default closed ["a"] rejected
+pydantic_v2.dataclass default closed ["abcd", 1] rejected
+pydantic_v2.dataclass default open ["ab", 1] accepted
+pydantic_v2.dataclass default open ["ab", 1, "extra"] accepted
+pydantic_v2.dataclass default open ["ab"] rejected
+pydantic_v2.dataclass default contained ["ab", 1] accepted
+pydantic_v2.dataclass default contained ["abcd", 1] rejected
+pydantic_v2.dataclass default contained [1, "ab"] accepted
+pydantic_v2.dataclass default contained ["ab"] rejected
+msgspec.Struct default closed ["ab", 1] accepted
+msgspec.Struct default closed [] rejected
+msgspec.Struct default closed ["a"] rejected
+msgspec.Struct default closed ["abcd", 1] rejected
+msgspec.Struct default open ["ab", 1] accepted
+msgspec.Struct default open ["ab", 1, "extra"] accepted
+msgspec.Struct default open ["ab"] rejected
+msgspec.Struct default contained ["ab", 1] accepted
+msgspec.Struct default contained ["abcd", 1] rejected
+msgspec.Struct default contained [1, "ab"] accepted
+msgspec.Struct default contained ["ab"] rejected
+pydantic_v2.BaseModel --field-constraints closed ["ab", 1] accepted
+pydantic_v2.BaseModel --field-constraints closed [] rejected
+pydantic_v2.BaseModel --field-constraints closed ["a"] rejected
+pydantic_v2.BaseModel --field-constraints closed ["abcd", 1] rejected
+pydantic_v2.BaseModel --field-constraints open ["ab", 1] accepted
+pydantic_v2.BaseModel --field-constraints open ["ab", 1, "extra"] accepted
+pydantic_v2.BaseModel --field-constraints open ["ab"] rejected
+pydantic_v2.BaseModel --field-constraints contained ["ab", 1] accepted
+pydantic_v2.BaseModel --field-constraints contained ["abcd", 1] rejected
+pydantic_v2.BaseModel --field-constraints contained [1, "ab"] accepted
+pydantic_v2.BaseModel --field-constraints contained ["ab"] rejected
+pydantic_v2.BaseModel --use-annotated closed ["ab", 1] accepted
+pydantic_v2.BaseModel --use-annotated closed [] rejected
+pydantic_v2.BaseModel --use-annotated closed ["a"] rejected
+pydantic_v2.BaseModel --use-annotated closed ["abcd", 1] rejected
+pydantic_v2.BaseModel --use-annotated open ["ab", 1] accepted
+pydantic_v2.BaseModel --use-annotated open ["ab", 1, "extra"] accepted
+pydantic_v2.BaseModel --use-annotated open ["ab"] rejected
+pydantic_v2.BaseModel --use-annotated contained ["ab", 1] accepted
+pydantic_v2.BaseModel --use-annotated contained ["abcd", 1] rejected
+pydantic_v2.BaseModel --use-annotated contained [1, "ab"] accepted
+pydantic_v2.BaseModel --use-annotated contained ["ab"] rejected
+pydantic_v2.BaseModel --collapse-root-models closed ["ab", 1] accepted
+pydantic_v2.BaseModel --collapse-root-models closed [] rejected
+pydantic_v2.BaseModel --collapse-root-models closed ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models closed ["abcd", 1] rejected
+pydantic_v2.BaseModel --collapse-root-models open ["ab", 1] accepted
+pydantic_v2.BaseModel --collapse-root-models open ["ab", 1, "extra"] accepted
+pydantic_v2.BaseModel --collapse-root-models open ["ab"] rejected
+pydantic_v2.BaseModel --collapse-root-models contained ["ab", 1] accepted
+pydantic_v2.BaseModel --collapse-root-models contained ["abcd", 1] rejected
+pydantic_v2.BaseModel --collapse-root-models contained [1, "ab"] accepted
+pydantic_v2.BaseModel --collapse-root-models contained ["ab"] rejected
+msgspec.Struct --collapse-root-models closed ["ab", 1] accepted
+msgspec.Struct --collapse-root-models closed [] rejected
+msgspec.Struct --collapse-root-models closed ["a"] rejected
+msgspec.Struct --collapse-root-models closed ["abcd", 1] rejected
+msgspec.Struct --collapse-root-models open ["ab", 1] accepted
+msgspec.Struct --collapse-root-models open ["ab", 1, "extra"] accepted
+msgspec.Struct --collapse-root-models open ["ab"] rejected
+msgspec.Struct --collapse-root-models contained ["ab", 1] accepted
+msgspec.Struct --collapse-root-models contained ["abcd", 1] rejected
+msgspec.Struct --collapse-root-models contained [1, "ab"] accepted
+msgspec.Struct --collapse-root-models contained ["ab"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs closed ["ab", 1] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs closed [] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs closed ["a"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs closed ["abcd", 1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs open ["ab", 1] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs open ["ab", 1, "extra"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs open ["ab"] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs contained ["ab", 1] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs contained ["abcd", 1] rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs contained [1, "ab"] accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs contained ["ab"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs closed ["ab", 1] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs closed [] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs closed ["a"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs closed ["abcd", 1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs open ["ab", 1] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs open ["ab", 1, "extra"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs open ["ab"] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs contained ["ab", 1] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs contained ["abcd", 1] rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs contained [1, "ab"] accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs contained ["ab"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs closed ["ab", 1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs closed [] rejected
+msgspec.Struct --use-site-models-for-constrained-refs closed ["a"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs closed ["abcd", 1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs open ["ab", 1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs open ["ab", 1, "extra"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs open ["ab"] rejected
+msgspec.Struct --use-site-models-for-constrained-refs contained ["ab", 1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs contained ["abcd", 1] rejected
+msgspec.Struct --use-site-models-for-constrained-refs contained [1, "ab"] accepted
+msgspec.Struct --use-site-models-for-constrained-refs contained ["ab"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs closed ["ab", 1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs closed [] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs closed ["a"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs closed ["abcd", 1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs open ["ab", 1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs open ["ab", 1, "extra"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs open ["ab"] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs contained ["ab", 1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs contained ["abcd", 1] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs contained [1, "ab"] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs contained ["ab"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs closed ["ab", 1] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs closed [] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs closed ["a"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs closed ["abcd", 1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs open ["ab", 1] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs open ["ab", 1, "extra"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs open ["ab"] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs contained ["ab", 1] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs contained ["abcd", 1] rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs contained [1, "ab"] accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs contained ["ab"] rejected
+pydantic_v2.BaseModel --allof-merge-mode none closed ["ab", 1] accepted
+pydantic_v2.BaseModel --allof-merge-mode none closed [] accepted
+pydantic_v2.BaseModel --allof-merge-mode none closed ["a"] accepted
+pydantic_v2.BaseModel --allof-merge-mode none closed ["abcd", 1] rejected
+pydantic_v2.BaseModel --allof-merge-mode none open ["ab", 1] accepted
+pydantic_v2.BaseModel --allof-merge-mode none open ["ab", 1, "extra"] accepted
+pydantic_v2.BaseModel --allof-merge-mode none open ["ab"] accepted
+pydantic_v2.BaseModel --allof-merge-mode none contained ["ab", 1] accepted
+pydantic_v2.BaseModel --allof-merge-mode none contained ["abcd", 1] rejected
+pydantic_v2.BaseModel --allof-merge-mode none contained [1, "ab"] accepted
+pydantic_v2.BaseModel --allof-merge-mode none contained ["ab"] accepted
+msgspec.Struct --allof-merge-mode none closed ["ab", 1] accepted
+msgspec.Struct --allof-merge-mode none closed [] accepted
+msgspec.Struct --allof-merge-mode none closed ["a"] accepted
+msgspec.Struct --allof-merge-mode none closed ["abcd", 1] rejected
+msgspec.Struct --allof-merge-mode none open ["ab", 1] accepted
+msgspec.Struct --allof-merge-mode none open ["ab", 1, "extra"] accepted
+msgspec.Struct --allof-merge-mode none open ["ab"] accepted
+msgspec.Struct --allof-merge-mode none contained ["ab", 1] accepted
+msgspec.Struct --allof-merge-mode none contained ["abcd", 1] rejected
+msgspec.Struct --allof-merge-mode none contained [1, "ab"] accepted
+msgspec.Struct --allof-merge-mode none contained ["ab"] accepted
+pydantic_v2.BaseModel --allof-merge-mode none --use-tuple-for-closed-arrays closed ["ab", 1] accepted
+pydantic_v2.BaseModel --allof-merge-mode none --use-tuple-for-closed-arrays closed [] rejected
+pydantic_v2.BaseModel --allof-merge-mode none --use-tuple-for-closed-arrays closed ["a"] rejected
+pydantic_v2.BaseModel --allof-merge-mode none --use-tuple-for-closed-arrays closed ["abcd", 1] rejected
+pydantic_v2.BaseModel --allof-merge-mode none --use-tuple-for-closed-arrays open ["ab", 1] accepted
+pydantic_v2.BaseModel --allof-merge-mode none --use-tuple-for-closed-arrays open ["ab", 1, "extra"] accepted
+pydantic_v2.BaseModel --allof-merge-mode none --use-tuple-for-closed-arrays open ["ab"] accepted
+pydantic_v2.BaseModel --allof-merge-mode none --use-tuple-for-closed-arrays contained ["ab", 1] accepted
+pydantic_v2.BaseModel --allof-merge-mode none --use-tuple-for-closed-arrays contained ["abcd", 1] rejected
+pydantic_v2.BaseModel --allof-merge-mode none --use-tuple-for-closed-arrays contained [1, "ab"] rejected
+pydantic_v2.BaseModel --allof-merge-mode none --use-tuple-for-closed-arrays contained ["ab"] rejected

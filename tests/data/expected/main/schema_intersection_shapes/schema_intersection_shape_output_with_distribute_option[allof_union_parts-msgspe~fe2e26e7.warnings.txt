@@ -1,0 +1,11 @@
+allof_union_parts.json#/$defs/Many has 144 combinations of the branches of its anyOf and oneOf, more than 128; each branch is a union model with the other parts of the allOf, as without --distribute-allof-over-unions.
+msgspec cannot decode the union U1: its Struct types A, B are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union U2: its Struct types C, D are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Inline: its Struct types Inline6, Inline7, Inline8, Inline9 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Refs: its Struct types Refs2, Refs3, Refs4, Refs5 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Roots: its Struct types Roots2, Roots3, Roots4, Roots5 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Same: its Struct types Same2, Same3, Same4 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Hierarchy: its Struct types Hierarchy2, Hierarchy3, Hierarchy4, Hierarchy5 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union WithValue: its Struct types WithValue2, WithValue3 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Many: its Struct types Many18, Many19, Many20, Many21, Many22, Many23, Many24, Many25, Many26, Many27, Many28, Many29, Many30, Many31, Many32, Many33 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Field5: its Struct types Field1, Field2, Field3, Field4 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.

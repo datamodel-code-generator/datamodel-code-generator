@@ -43,6 +43,8 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/Note"}
+        default:
+          $ref: "#/paths/~1notes/get/responses/200"
 components:
   schemas:
     Pet:
@@ -66,12 +68,23 @@ components:
       properties:
         children: {type: array, items: {$ref: "#node"}}
     Label: {$anchor: label, type: string}
+    Keywords:
+      type: object
+      properties:
+        default: {$ref: "#/paths/~1pets~1{id}/get/responses/200/content/application~1json/schema"}
+        example: {$ref: "#/paths/~1pets~1{id}/get/responses/200/content/application~1json/schema"}
+        value: {$ref: "#/paths/~1pets~1{id}/get/responses/200/content/application~1json/schema"}
+        enum: {$ref: "#/paths/~1pets~1{id}/get/responses/200/content/application~1json/schema"}
+        const: {$ref: "#/paths/~1pets~1{id}/get/responses/200/content/application~1json/schema"}
+        x-tag: {$ref: "#/paths/~1pets~1{id}/get/responses/200/content/application~1json/schema"}
+        other: {$ref: "#/paths/~1pets~1{id}/get/responses/200/content/application~1json/schema"}
     Note:
       type: object
       properties:
         examples: {$anchor: listed, type: string}
         label: {$ref: "#label"}
         listed: {$ref: "#listed"}
+        keywords: {$ref: "#/components/schemas/Keywords"}
       examples:
         - {$anchor: label, kind: example-only}
         - {$id: https://example.com/owner.json, kind: example-only}

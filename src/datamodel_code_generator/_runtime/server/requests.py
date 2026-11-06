@@ -273,8 +273,10 @@ class BodyAdapter:
     async def receive(self, request: Request) -> tuple[str | None, object]:
         """Return the received media type with the validated body, or None for both of an omitted optional body.
 
-        An empty body is omitted when it names no media type or names JSON, which is never empty. A JSON `null` that
-        the model refuses is read as FastAPI reads it natively: a missing required body, or an omitted optional one.
+        An empty optional body is omitted whatever media type it names. An empty required body is missing when it names
+        no media type or names JSON, which is never empty; with another media type it is read like any body. A JSON
+        `null` that the model refuses is read as FastAPI reads it natively: a missing required body, or an omitted
+        optional one.
         """
         header = request.headers.get("content-type")
         body = await request.body()

@@ -21,7 +21,7 @@ from datamodel_code_generator._avro_detection import (
 from datamodel_code_generator._json_schema import definition_ref
 from datamodel_code_generator._name_words import first_upper
 from datamodel_code_generator._source import YamlValue, load_yaml
-from datamodel_code_generator._user_keys import class_field_key
+from datamodel_code_generator._user_keys import class_field_key, class_key, model_type_override
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.parser._convert_common import _copy_schema, _name_definitions
 from datamodel_code_generator.parser._null_facts import null_schema
@@ -105,10 +105,11 @@ def _logical_default_expression(kind: str, value: str) -> Any:
     from datamodel_code_generator.python_literal import (  # ruff: ignore[import-outside-top-level]
         PythonRuntimeExpression,
         _isoformat_expression,
+        stable_repr,
     )
 
     if kind == "decimal":
-        return PythonRuntimeExpression.from_import_call(Import(from_="decimal", import_="Decimal"), repr(value))
+        return PythonRuntimeExpression.from_import_call(Import(from_="decimal", import_="Decimal"), stable_repr(value))
     if kind == "timedelta":
         return PythonRuntimeExpression.from_import_call(
             Import(from_="datetime", import_="timedelta"), f"milliseconds={value}"
@@ -140,11 +141,12 @@ class _AvroSchemaConverter:
             {} if default_converters is not None else None
         )
 
-    def convert_raw(self, raw_obj: YamlValue) -> dict[str, YamlValue]:
+    def convert_raw(self, raw_obj: YamlValue, *, placeholder_title: bool = True) -> dict[str, YamlValue]:
         self._collect_named_schemas(raw_obj)
         self._prepare_definition_names()
         schema = self._convert_schema(raw_obj, namespace=None, root=True)
-        schema.setdefault("title", "Model")
+        if placeholder_title:
+            schema.setdefault("title", "Model")
         if self.definitions:
             schema["definitions"] = self.definitions
         schema.setdefault("$schema", "http://json-schema.org/draft-07/schema#")
@@ -246,7 +248,9 @@ class _AvroSchemaConverter:
             case dict() as schema:
                 return self._convert_schema_dict(schema, namespace, root=root)
 
-        msg = f"Unsupported Avro schema value: {schema!r}"
+        from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
+        msg = f"Unsupported Avro schema value: {stable_repr(schema)}"
         raise Error(msg)
 
     def _convert_schema_dict(
@@ -268,7 +272,9 @@ class _AvroSchemaConverter:
             case str() as type_name:
                 return self._convert_schema_object(schema, type_name, namespace, root=root)
             case _:
-                msg = f"Avro schema object requires a string, object, or union type: {schema!r}"
+                from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
+                msg = f"Avro schema object requires a string, object, or union type: {stable_repr(schema)}"
                 raise Error(msg)
 
     def _convert_schema_object(
@@ -330,7 +336,9 @@ class _AvroSchemaConverter:
                     raise Error(msg)
                 union_type = type_value if isinstance(type_value, str) and type_value not in NAMED_TYPES else None
             else:
-                msg = f"Unsupported Avro union value: {item!r}"
+                from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
+                msg = f"Unsupported Avro union value: {stable_repr(item)}"
                 raise Error(msg)
 
             if union_type is None:
@@ -363,7 +371,9 @@ class _AvroSchemaConverter:
         elif type_value == "fixed":
             converted = self._convert_fixed(raw_schema, fullname)
         else:  # pragma: no cover
-            msg = f"Unsupported Avro named type: {type_value!r}"
+            from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
+            msg = f"Unsupported Avro named type: {stable_repr(type_value)}"
             raise Error(msg)
         converted.setdefault("title", definition_key)
         self._building_definitions.remove(fullname)
@@ -840,7 +850,11 @@ class AvroParser(JsonSchemaParser):
                             continue
                         raw_field, physical_default = candidate
                         _, has_default_override = self.model_resolver.resolve_default_value(
-                            raw_field["name"], None, has_default=False, class_name=model.class_name
+                            raw_field["name"],
+                            None,
+                            has_default=False,
+                            class_name=class_key("class-name", model.reference),
+                            output_names=self.model_resolver.output_names(model.reference.path),
                         )
                         if has_default_override:
                             continue
@@ -869,9 +883,10 @@ class AvroParser(JsonSchemaParser):
             name, unique=False, is_root=as_root, preserve_name=preserve_name
         ).name
         if schema["type"] == "fixed":
+            model_overrides = self._model_type_override_imports
             return (
                 {"": override}
-                if not self.collapse_root_models and (override := self._model_type_override_imports.get(class_name))
+                if (override := model_type_override(model_overrides, class_name, row="predicted-class-name"))
                 else {}
             )
         if class_name not in self._reuse_optimization_context.type_override_model_names:
@@ -882,7 +897,10 @@ class AvroParser(JsonSchemaParser):
             if not isinstance(field, dict) or not isinstance(field.get("name"), str):
                 continue
             field_name, _ = self.model_resolver.get_valid_field_name_and_alias(
-                field["name"], excludes=excludes, model_type=self.field_name_model_type, class_name=class_name
+                field["name"],
+                excludes=excludes,
+                model_type=self.field_name_model_type,
+                class_name=class_key("predicted", class_name),
             )
             excludes.add(field_name)
             if override := self._type_override_imports.get(class_field_key(class_name, field_name)):
@@ -910,9 +928,12 @@ class AvroParser(JsonSchemaParser):
         return _logical_default_expression(kind, value)
 
 
-def convert_avro_schema_data(data: YamlValue) -> dict[str, YamlValue]:
-    """Convert in-memory Avro schema data to the JSON Schema shape used by the parser."""
-    return _AvroSchemaConverter().convert_raw(data)
+def convert_avro_schema_data(data: YamlValue, *, placeholder_title: bool = True) -> dict[str, YamlValue]:
+    """Convert in-memory Avro schema data to the JSON Schema shape used by the parser.
+
+    A schema that names no record, enum or fixed takes the title ``Model``, unless ``placeholder_title`` is False.
+    """
+    return _AvroSchemaConverter().convert_raw(data, placeholder_title=placeholder_title)
 
 
 __all__ = ["AvroParser", "convert_avro_schema_data", "is_avro_schema_data"]

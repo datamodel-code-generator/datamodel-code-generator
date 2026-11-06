@@ -1,0 +1,2 @@
+Pydantic does not take pattern on Base64Bytes; Model.plain is generated without this constraint.
+Pydantic does not take pattern on Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)]; Model.sized is generated without this constraint.

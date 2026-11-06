@@ -47,6 +47,7 @@ from datamodel_code_generator._target_contract import (
     operation_schemes,
     parameter_location,
     parameter_place,
+    request_media,
     scheme_catalogues,
     security_requirements,
     symbols_by_id,
@@ -61,9 +62,11 @@ from datamodel_code_generator._target_types import (
     untyped,
     unwrapped,
 )
+from datamodel_code_generator.enums import OpenAPIVersion
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterator, Mapping, Sequence
+    from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 
     from datamodel_code_generator._runtime.model_codecs.media import MediaKind
     from datamodel_code_generator._target_contract import (
@@ -113,7 +116,7 @@ class WirePlan:
     parameters: tuple[tuple[OperationId, tuple[ParameterPlan, ...]], ...]
     diagnostics: tuple[CodecDiagnostic, ...]
     kinds: LexicalKinds
-    version: str = ""
+    version: OpenAPIVersion = OpenAPIVersion.V31
     headers: tuple[tuple[TypeUseId, ParameterPlan], ...] = ()
     forms: tuple[tuple[TypeUseId, tuple[FieldPlan, ...], FieldPlan | None, tuple[ParameterPlan, ...]], ...] = ()
     styles: tuple[tuple[TypeUseId, tuple[ParameterPlan, ...]], ...] = ()
@@ -210,6 +213,7 @@ def plan_wire(
         if use.id in styles and (style := _styles(planner, use, styles[use.id])) is not None
     )
     planner.diagnostics.extend(_binary_text(batch, planned, requested))
+    planner.diagnostics.extend(diagnostic for operation in planned for diagnostic in _unnamed(planner, operation))
     return WirePlan(
         parameters,
         tuple(planner.diagnostics),
@@ -237,12 +241,38 @@ def _binary_text(
     )
 
 
+def _unnamed(planner: _WirePlanner, operation: OperationContract) -> Iterator[CodecDiagnostic]:
+    """Yield a diagnostic for each encoding of an operation's form request body that names no property of its schema.
+
+    The Media Type Object requires every encoding key to name one, a property the request leaves out included.
+    """
+    for media in request_media(operation):
+        media_type = declared_media(media.name or "")[0]
+        if media_kind(media_type) not in {"form", "multipart"}:
+            continue
+        use = next((planner.uses[item] for item in media.schemas if item in planner.uses), None)
+        names = (
+            set() if use is None else {member.wire_name for member in use.members if member.member_kind == "property"}
+        )
+        yield from (
+            CodecDiagnostic(
+                "MC_PARAMETER_ENCODING",
+                encoding.use_site,
+                f"The {encoding.name} encoding of the {media_type} media of {label(operation)} names no property of "
+                "its schema",
+                operation.id,
+            )
+            for encoding in children_of(media, "encoding")
+            if (encoding.name or "") not in names
+        )
+
+
 def _carrier(use: TypeUseId, label: str) -> str:
     """Name the parameter, body, response, header or part header a use's value is, in its operation."""
     where = "request body" if use.role.startswith("request") else f"response {use.status}"
     match use.role:
         case "parameter":
-            return f"The {use.location} parameter {use.name!r} of {label}"
+            return f"The {use.location} parameter {stable_repr(use.name)} of {label}"
         case "request_body" | "response_body":
             return f"The {use.media} {where} of {label}"
         case "response_header":
@@ -258,7 +288,11 @@ def _form(
     """Return the member plans of a URL-encoded use: each member's field, or the parameter plan its encoding gives."""
     try:
         bound = _schema_use(planner, (use.id,), use.id.use_site)
-        styled = {declaration.name or "": declaration for declaration in encodings if _styled(declaration)}
+        styled = {
+            declaration.name or "": declaration
+            for declaration in member_encodings(use, encodings)
+            if _styled(declaration)
+        }
         fields = tuple(_text(member) for member in form_members(planner.kinds, bound) if member.name not in styled)
         additional = _additional(planner, bound)
         members = {name: schema for name, schema, _ in property_members(use)}
@@ -273,13 +307,18 @@ def _form(
 def _styles(
     planner: _WirePlanner, use: TypeUseBinding, encodings: tuple[WireDeclaration, ...]
 ) -> tuple[TypeUseId, tuple[ParameterPlan, ...]] | None:
-    """Return the query parameter plans of the form-data members whose encodings name a style or its options."""
+    """Return the query parameter plans of the form-data members whose encodings name a style or its options.
+
+    The other members that count against their names are those the form's model writes, as for a URL-encoded form: a
+    property the direction leaves out, such as a readOnly one of a request, writes none.
+    """
     try:
         bound = _schema_use(planner, (use.id,), use.id.use_site)
         members = {name: schema for name, schema, _ in property_members(use)}
-        encoded = tuple(_encoding(bound, members, declaration) for declaration in encodings)
+        encoded = tuple(_encoding(bound, members, declaration) for declaration in member_encodings(use, encodings))
         styled = {plan.name for plan in encoded}
-        encoded = _distinct(planner, bound, [name for name in members if name not in styled], encoded)
+        names = [member.name for member in form_members(planner.kinds, bound) if member.name not in styled]
+        encoded = _distinct(planner, bound, names, encoded)
     except _PlanError as error:
         _refused(planner, error, use.id.owner, (use.id,))
         return None
@@ -363,6 +402,37 @@ def property_members(use: TypeUseBinding) -> Iterator[tuple[str, SourceLocation,
             yield member.wire_name, member.schema, member
 
 
+def member_encodings(use: TypeUseBinding | None, encodings: Iterable[WireDeclaration]) -> Iterator[WireDeclaration]:
+    """Yield the encodings of a form that name a member its model has in the form's direction.
+
+    The encoding of a property the direction leaves out, such as a readOnly one of a request, applies to no member,
+    and `plan_wire` refuses one that names no property of the form's schema.
+    """
+    names = (
+        set()
+        if use is None
+        else {
+            name
+            for name, _, member in property_members(use)
+            if member.exclusion is None and member.model_facts is not None
+        }
+    )
+    return (encoding for encoding in encodings if (encoding.name or "") in names)
+
+
+def part_json(kinds: LexicalKinds, value: TypeView, encoding: WireDeclaration | None, version: OpenAPIVersion) -> bool:
+    """Return whether a form-data member holding no files, of a type, is JSON by that type rather than text of its kind.
+
+    A type without one kind is JSON, and so is one that takes any value unless the member's encoding gives it a style
+    the document's version applies, which writes it as text, or a media type, which writes it in that media type.
+    """
+    kind, leaf, _ = kinds.member(value)
+    if kind is None:
+        return True
+    given = encoding is not None and (form_styled(encoding, version, multipart=True) or bool(content_types(encoding)))
+    return kinds.untyped(leaf) and not given
+
+
 def _refused(planner: _WirePlanner, error: _PlanError, owner: object, uses: tuple[TypeUseId, ...]) -> None:
     operation = owner if isinstance(owner, OperationId) else None
     planner.diagnostics.append(replace(error.diagnostic, operation=operation, uses=uses))
@@ -395,8 +465,9 @@ def _distinct(
         or planner.kinds.configured(form)
     ):
         message = (
-            f"The exploded form member {absorbing[0]!r} allows other properties and takes every name no other member "
-            "writes, so the form cannot have another such member, a deepObject member, or other properties of its own"
+            f"The exploded form member {stable_repr(absorbing[0])} allows other properties and takes every name no "
+            "other member writes, so the form cannot have another such member, a deepObject member, or other "
+            "properties of its own"
         )
         raise _PlanError(location, message)
     plans = list(encoded)
@@ -424,8 +495,7 @@ def _encoding(form: TypeUseBinding, members: Mapping[str, SourceLocation], encod
     A style, explode, or allowReserved takes precedence over contentType, as the Encoding Object prescribes.
     """
     name, source = encoding.name or "", encoding.use_site
-    if (member := members.get(name)) is None:
-        raise _PlanError(source, "An encoding names no member of its form")
+    member = members[name]
     style, explode, reserved, content = (
         fact(encoding, key) for key in ("style", "explode", "allowReserved", "contentType")
     )
@@ -458,22 +528,22 @@ def parameter_plans(wire: WirePlan) -> dict[OperationId, dict[tuple[ParameterLoc
     return {operation: {(plan.location, plan.name): plan for plan in planned} for operation, planned in wire.parameters}
 
 
-def form_styled(encoding: WireDeclaration, version: str, *, multipart: bool) -> bool:
+def form_styled(encoding: WireDeclaration, version: OpenAPIVersion, *, multipart: bool) -> bool:
     """Return whether an encoding gives its form member a query parameter's style, explode, or allowReserved.
 
     OpenAPI 3.0 applies them to application/x-www-form-urlencoded alone and ignores them for multipart/form-data,
     whose member is then written as its contentType says; 3.1 and later apply them to both, and write the parts they
     give without percent-encoding.
     """
-    if multipart and (version == "3.0" or version.startswith("3.0.")):
+    if multipart and version == OpenAPIVersion.V30:
         return False
     return any(fact(encoding, key) is not None for key in STYLED)
 
 
-def _allow_reserved(version: str, location: ParameterLocation, declaration: WireDeclaration) -> bool:
+def _allow_reserved(version: OpenAPIVersion, location: ParameterLocation, declaration: WireDeclaration) -> bool:
     """Return the effective allowReserved flag for the root OpenAPI version and parameter location."""
     return fact(declaration, "allowReserved") is True and not (
-        location == "path" and (version in ("3.0", "3.1") or version.startswith(("3.0.", "3.1.")))  # noqa: PLR6201
+        location == "path" and version in {OpenAPIVersion.V30, OpenAPIVersion.V31}
     )
 
 
@@ -603,7 +673,7 @@ def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[
         return _content_parameter(planner, declaration, location, name, required=required)
     shape, kind, fields, additional = _shape(_encoded(_schema_use(planner, declaration.schemas, source)).value)
     style, explode = _style_of(declaration, location)
-    if style == "cookie" and not planner.version.startswith("3.2"):
+    if style == "cookie" and planner.version != OpenAPIVersion.V32:
         raise _PlanError(source, "Cookie style requires OpenAPI 3.2")
     try:
         return ParameterPlan(
@@ -627,8 +697,6 @@ def _content_parameter(
     planner: _WirePlanner, declaration: WireDeclaration, location: ParameterLocation, name: str, *, required: bool
 ) -> ParameterPlan:
     source = declaration.use_site
-    if location == "querystring" and not planner.version.startswith("3.2"):
-        raise _PlanError(source, "Querystring parameters require OpenAPI 3.2")
     media = normalize_media_type(declaration.children[0].name or "")
     if not builtin_content(location, media):
         raise _PlanError(source, "The parameter content has no builtin encoding")

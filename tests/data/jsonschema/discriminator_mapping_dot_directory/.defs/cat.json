@@ -1,0 +1,9 @@
+{
+  "title": "Cat",
+  "type": "object",
+  "properties": {
+    "pet_type": {"type": "string"},
+    "meows": {"type": "integer"}
+  },
+  "required": ["pet_type"]
+}

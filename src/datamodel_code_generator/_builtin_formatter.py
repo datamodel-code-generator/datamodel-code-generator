@@ -8,7 +8,7 @@ import sys
 import tokenize
 from collections import defaultdict
 from enum import IntEnum
-from functools import cache, partial
+from functools import partial
 from io import StringIO
 from typing import TYPE_CHECKING, Any, NamedTuple, TypeGuard, cast
 
@@ -30,12 +30,14 @@ from datamodel_code_generator._python_syntax import (
     module_import,
     normalize_newlines,
 )
+from datamodel_code_generator._python_target_names import target_stdlib_module_names
 from datamodel_code_generator._target_unicode import (
     NEWEST_TARGET,
     HostIdentifiers,
     host_identifiers,
     is_upper,
     lower,
+    string_repr,
     target_pattern,
 )
 from datamodel_code_generator.imports import IMPORT_DATETIME_MODULE
@@ -256,15 +258,6 @@ def _format_from_import(module: str, aliases: list[str], line_length: int) -> st
     return f"from {module} import (\n{imports}\n)"
 
 
-@cache
-def _stdlib_module_names(python_version: PythonVersion | None) -> frozenset[str]:
-    """Return the top-level standard library module names of the target Python version."""
-    from datamodel_code_generator import _target_stdlib_data as data  # noqa: PLC0415
-
-    index = data.TARGETS.index((python_version or PythonVersionMin).value)
-    return frozenset(name for name, (since, until) in data.STDLIB_MODULE_NAMES.items() if since <= index < until)
-
-
 def _import_category(
     module: str, level: int, known_first_party: frozenset[str], python_version: PythonVersion | None = None
 ) -> _ImportCategory:
@@ -273,7 +266,7 @@ def _import_category(
     if level:
         return _ImportCategory.LOCAL
     top_level_module = module.split(".", 1)[0]
-    if top_level_module in _stdlib_module_names(python_version):
+    if top_level_module in target_stdlib_module_names((python_version or PythonVersionMin).version_key):
         return _ImportCategory.STANDARD_LIBRARY
     if top_level_module in known_first_party:
         return _ImportCategory.FIRST_PARTY
@@ -776,7 +769,7 @@ def _split_escaped_string_literal(content: str, max_length: int) -> list[str]:
 
 
 def _format_wrapped_string_literal(value: str, indent: str, line_length: int) -> str:
-    value_repr = repr(value)
+    value_repr = string_repr(value, NEWEST_TARGET)
     quote = value_repr[0]
     escaped = value_repr[1:-1] if quote in {"'", '"'} and value_repr.endswith(quote) else value_repr
     literal_indent = f"{indent}    "
@@ -906,6 +899,11 @@ def _is_multiline(node: ast.stmt | ast.expr) -> bool:
 
 def _is_union(node: ast.AST) -> TypeGuard[ast.Subscript]:
     return isinstance(node, ast.Subscript) and _is_name_or_attr(node.value, "Union")
+
+
+def _is_splittable_type(node: ast.AST) -> TypeGuard[ast.Subscript]:
+    """Return whether ``node`` is a subscripted type black splits at its last bracket (an ``Annotated`` has its own)."""
+    return isinstance(node, ast.Subscript) and not _is_annotated(node)
 
 
 def _is_optional(node: ast.AST) -> TypeGuard[ast.Subscript]:
@@ -1118,14 +1116,15 @@ def _format_bit_or_annotation_assignment(
 
 
 def _iter_subscript_elements(node: ast.Subscript) -> list[ast.AST]:
-    if isinstance(node.slice, ast.Tuple):
+    """Return the elements of a subscript's slice; the empty tuple of ``tuple[()]`` is its one element."""
+    if isinstance(node.slice, ast.Tuple) and node.slice.elts:
         return list(node.slice.elts)
     return [node.slice]
 
 
 def _subscript_comma(subscript: ast.Subscript) -> str:
-    """Return the comma after each element of a split subscript: one only when its slice is a tuple."""
-    return "," if isinstance(subscript.slice, ast.Tuple) else ""
+    """Return the comma after each element of a split subscript: one only when its slice is a tuple of elements."""
+    return "," if isinstance(subscript.slice, ast.Tuple) and subscript.slice.elts else ""
 
 
 def _element_lines(  # noqa: PLR0913
@@ -1343,14 +1342,18 @@ def _format_generated_annotation_assignment(  # noqa: PLR0911, PLR0912
             return f"{target_prefix}{formatted_annotation} = {_parenthesized(value, indent)}"
         return f"{target_prefix}{formatted_annotation}{closing_suffix}"
     value_opening_fits = len(f"{value_prefix}(") <= line_length
-    if _is_union(statement.annotation) and statement.value is not None and not value_opening_fits:
+    if (
+        (_is_union(statement.annotation) or _is_optional(statement.annotation))
+        and statement.value is not None
+        and not value_opening_fits
+    ):
         default = _format_closing_default(
             statement.value, indent, line_length, source, wrap_string_literal=wrap_string_literal
         )
-        return (
-            f"{target_prefix}"
-            f"{_format_union_subscript(statement.annotation, indent, source, f' = {default}', line_length)}"
+        formatted_annotation = _format_subscript_value(
+            statement.annotation, indent, line_length, source, f" = {default}"
         )
+        return f"{target_prefix}{formatted_annotation}"
     if (
         _is_call(statement.value, "Field")
         and len(value_prefix) > line_length - 16
@@ -1414,6 +1417,10 @@ def _format_generated_annotation_assignment(  # noqa: PLR0911, PLR0912
         return f"{target_prefix}{formatted_annotation}"
     if statement.value is not None:
         return f"{value_prefix}{_parenthesized(value, indent)}"
+    if _is_splittable_type(statement.annotation):
+        formatted_annotation = _format_subscript_value(statement.annotation, indent, line_length, source)
+        if len(f"{target_prefix}{formatted_annotation.partition(chr(10))[0]}") <= line_length:
+            return f"{target_prefix}{formatted_annotation}"
     return None
 
 

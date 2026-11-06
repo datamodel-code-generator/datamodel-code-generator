@@ -1,0 +1,15 @@
+[
+  {"null_dropped": {"a": "x", "c": 1}},
+  {"null_dropped": {"a": null, "c": 1}},
+  {"null_dropped": {"a": "x"}},
+  {"type_narrowed": {"b": {"z": 1}, "c": 1, "d": "x"}},
+  {"type_narrowed": {"b": {"y": 1}, "c": 1}},
+  {"required": {"a": null, "c": 1}},
+  {"required": {"c": 1}},
+  {"restated": {"c": 1, "e": true}},
+  {"restated": {"c": "x"}},
+  {"narrowed_again": {"a": "x", "c": 1}},
+  {"narrowed_again": {"a": "y", "c": 1}},
+  {"kept_narrowing": {"a": "x", "c": 1, "f": "y"}},
+  {"kept_narrowing": {"a": null, "c": 1}}
+]

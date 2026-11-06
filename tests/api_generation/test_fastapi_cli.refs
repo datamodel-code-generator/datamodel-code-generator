@@ -645,6 +645,10 @@ no-timestamp-models	main/generation_platform/fastapi/packages/pets/pydantic_v2_B
 no-timestamp-server	main/generation_platform/fastapi/packages/pets/pydantic_v2_BaseModel/models.py
 timestamp-models	main/generation_platform/fastapi/cli/timestamp-models.py
 timestamp-server	main/generation_platform/fastapi/cli/timestamp-models.py
+[test_fastapi_cli_models_package_onto_a_file]
+check	api_generation/fastapi_cli/models_package_onto_a_file[check].txt	= api_generation/client_cli/models_package_onto_a_file[check].txt
+diff	api_generation/fastapi_cli/models_package_onto_a_file[diff].txt	= api_generation/client_cli/models_package_onto_a_file[check].txt
+write	api_generation/fastapi_cli/models_package_onto_a_file[write].txt	= api_generation/client_cli/models_package_onto_a_file[check].txt
 [test_fastapi_cli_naming_hint]
 	api_generation/fastapi_cli/naming_hint.txt
 [test_fastapi_cli_nested_job]
@@ -723,9 +727,13 @@ omitted	main/generation_platform/generate/nothing-written.txt
 	main/generation_platform/fastapi/cli/dependencies-project.txt
 	main/generation_platform/fastapi/cli/dependencies-service.txt
 	main/generation_platform/fastapi/cli/pyproject-paths.txt
+[test_fastapi_cli_quotes_text_alike_whatever_python_runs]
+	api_generation/fastapi_cli/quotes_text_alike_whatever_python_runs.txt
 [test_fastapi_cli_removed_options]
 dependency-format	main/generation_platform/fastapi/cli/removed-options/files.txt
 diagnostics-json	main/generation_platform/fastapi/cli/removed-options/files.txt
+[test_fastapi_cli_request_response_discriminated_enum]
+	main/generation_platform/fastapi/fastapi_cli_request_response_discriminated_enum.py
 [test_fastapi_cli_run_commands]
 flat	main/generation_platform/fastapi/cli/run-commands/server.txt	= main/generation_platform/fastapi/cli/dependencies.txt
 nested	main/generation_platform/fastapi/cli/run-commands/app-server.txt

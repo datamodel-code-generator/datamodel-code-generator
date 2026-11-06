@@ -84,6 +84,19 @@ COVERAGE_RUNS = (
         "--input tests/data/openapi/collapse_root_models_name_strategy/two_holders.yaml --input-file-type openapi "
         "--collapse-root-models --collapse-root-models-name-strategy parent --field-type-collision-strategy rename-type"
     ),
+    (
+        "--input tests/data/jsonschema/field_type_collision_class_keys.json --input-file-type jsonschema "
+        "--field-type-collision-strategy rename-type "
+        """--base-class-map '{"Pet_1": "explicit_alias_base.NamespaceBase"}'"""
+    ),
+    (
+        "--input tests/data/jsonschema/submodule_named_like_package_class.json --input-file-type jsonschema "
+        "--rename-submodules-hidden-by-classes"
+    ),
+    (
+        "--input tests/data/openapi/ref_sibling_cycle_maps.yaml --input-file-type openapi "
+        "--output-model-type typing.TypedDict"
+    ),
 )
 """Runs that reach the passes no golden run reaches, each under the condition it names."""
 

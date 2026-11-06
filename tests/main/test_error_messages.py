@@ -37,7 +37,9 @@ from datamodel_code_generator.parser.openapi import OpenAPIParser
 from tests.conftest import assert_output, assert_warnings_contain, create_assert_file_content, stored_expected
 from tests.main.conftest import (
     DATA_PATH,
+    OPEN_API_DATA_PATH,
     InputFileTypeLiteral,
+    assert_generated_model_json_validation,
     run_generate_file_and_assert,
     run_main_and_assert,
     run_main_with_args,
@@ -319,6 +321,29 @@ def test_invalid_pyproject_configuration_is_a_clean_cli_error(
 
 
 @pytest.mark.parametrize(
+    ("setting", "message"),
+    [
+        pytest.param(
+            'http-headers = "Authorization: x"', "Invalid http_headers value: 'Authorization: x'", id="http-headers"
+        ),
+        pytest.param("http-query-parameters = 5", "Invalid http_query_parameters value: 5", id="http-query-parameters"),
+    ],
+)
+def test_pyproject_http_pairs_that_are_no_list_are_a_clean_cli_error(
+    setting: str,
+    message: str,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An HTTP header or query parameter setting of pyproject.toml that is no list is refused, naming its value."""
+    (tmp_path / "pyproject.toml").write_text(f"[tool.datamodel-codegen]\n{setting}\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    run_main_with_args([], expected_exit=Exit.ERROR, capsys=capsys, expected_stderr_contains=message)
+
+
+@pytest.mark.parametrize(
     ("suffix", "inside_output", "input_file_type", "header", "yaml_key"),
     [
         (".schema", False, "jsonschema", None, None),
@@ -502,6 +527,20 @@ def test_directory_auto_input_does_not_infer_from_generated_files(
     )
 
 
+def test_directory_auto_input_without_files(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A directory that holds only directories has no file to infer the input type from."""
+    source_path = tmp_path / "schemas"
+    (source_path / "empty").mkdir(parents=True)
+    run_main_and_assert(
+        input_path=source_path,
+        output_path=tmp_path / "models",
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains="File not found:",
+        extra_args=["--formatters", "builtin"],
+    )
+
+
 @pytest.mark.parametrize(
     ("directory_name", "extra_args"),
     [
@@ -549,10 +588,8 @@ def test_modular_output_file_is_a_clean_cli_error(tmp_path: Path, capsys: pytest
     assert_output(output_path.read_text(encoding="utf-8"), existing_file)
 
 
-def test_modular_output_below_a_file_keeps_the_filesystem_error(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    """A file above the output path is a filesystem error, not the modular output refusal."""
+def test_modular_output_below_a_file_names_the_file(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A file above the output path is named as the path that is not a directory, not the modular output refusal."""
     occupied_path = tmp_path / "occupied"
 
     run_main_and_assert(
@@ -562,9 +599,105 @@ def test_modular_output_below_a_file_keeps_the_filesystem_error(
         extra_args=["--formatters", "builtin"],
         expected_exit=Exit.ERROR,
         capsys=capsys,
-        expected_stderr_contains=TRACEBACK_HEADER,
+        expected_stderr=f"Output path cannot be created: Not a directory: {occupied_path}\n",
         copy_files=[(stored_expected(DATA_PATH / "expected" / "main" / "person.py"), occupied_path)],
     )
+
+
+_LAYOUT_MISMATCHES = {
+    "module-onto-directory": (
+        DATA_PATH / "jsonschema" / "person.json",
+        "jsonschema",
+        "Single-module output requires a file path, not a directory",
+    ),
+    "package-onto-file": (
+        DATA_PATH / "openapi" / "modular.yaml",
+        "openapi",
+        "Modular references require an output directory, not a file",
+    ),
+}
+_LAYOUT_RUNS = {
+    "direct": [],
+    "check": ["--check"],
+    "json": ["--output-format", "json"],
+    "update-lock": ["--update-lock", "--lockfile", "refs.lock"],
+    "jobs": ["--all-jobs"],
+    "jobs-json": ["--all-jobs", "--output-format", "json"],
+    "jobs-check": ["--all-jobs", "--check"],
+}
+
+
+def _occupy_output(output: Path, layout: str) -> None:
+    """Hold an existing directory at the output of a single module, an existing file at the output of a package."""
+    if layout == "module-onto-directory":
+        output.mkdir()
+        (output / "kept.py").write_text("kept = 1\n", encoding="utf-8")
+    else:
+        output.write_text("kept = 1\n", encoding="utf-8")
+
+
+def _written_files(root: Path) -> str:
+    """Name every file below a run's directory, other than its project config, with its text."""
+    return "".join(
+        f"{path.relative_to(root).as_posix()}: {path.read_text(encoding='utf-8')}"
+        for path in sorted(root.rglob("*"))
+        if path.is_file() and path.name != "pyproject.toml"
+    )
+
+
+@pytest.mark.parametrize("run", _LAYOUT_RUNS)
+@pytest.mark.parametrize("layout", _LAYOUT_MISMATCHES)
+def test_output_layout_mismatch_is_refused_by_every_run(
+    layout: str,
+    run: str,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A run that writes, stages or checks its output refuses a generation whose layout cannot replace it.
+
+    It gives the refusal of a direct write, and leaves the output as it was and writes nothing (#4497, #5617).
+    """
+    source, input_file_type, message = _LAYOUT_MISMATCHES[layout]
+    _occupy_output(tmp_path / "out", layout)
+    options = _LAYOUT_RUNS[run]
+    if options[:1] == ["--all-jobs"]:
+        (tmp_path / "pyproject.toml").write_text(
+            "[tool.datamodel-codegen.jobs.models]\n"
+            f"input = '{source.as_posix()}'\ninput-file-type = '{input_file_type}'\noutput = 'out'\n",
+            encoding="utf-8",
+        )
+    else:
+        options = ["--input", str(source), "--input-file-type", input_file_type, "--output", "out", *options]
+    monkeypatch.chdir(tmp_path)
+    run_main_with_args(
+        [*options, "--formatters", "builtin", "--disable-timestamp"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=f"{message}\n",
+    )
+    assert_output(_written_files(tmp_path))
+
+
+@pytest.mark.parametrize("layout", _LAYOUT_MISMATCHES)
+def test_generate_with_a_lock_update_refuses_an_output_layout_mismatch(
+    layout: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`generate()` publishing with a lock update refuses the layout mismatch a direct write refuses (#4497)."""
+    source, input_file_type, message = _LAYOUT_MISMATCHES[layout]
+    _occupy_output(output := tmp_path / "out", layout)
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(Error, match=f"^{re.escape(message)}$"):
+        generate(
+            source,
+            input_file_type=InputFileType(input_file_type),
+            output=output,
+            update_lock=True,
+            lockfile=tmp_path / "refs.lock",
+            formatters=[Formatter.BUILTIN],
+            disable_timestamp=True,
+        )
+    assert_output(_written_files(tmp_path))
 
 
 def test_model_metadata_directory_is_a_clean_cli_error(
@@ -584,6 +717,50 @@ def test_model_metadata_directory_is_a_clean_cli_error(
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr_contains="Model metadata output requires a file path, not a directory",
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize("scopes", [(), ("--openapi-scopes", "schemas", "api")], ids=["models", "api-scope"])
+@pytest.mark.parametrize(
+    ("documents", "location"),
+    [
+        pytest.param({"input.json": {"components": []}}, "input.json#/components", id="components-list"),
+        pytest.param({"input.json": {"components": None}}, "input.json#/components", id="components-null"),
+        pytest.param(
+            {"input.json": {"components": {"schemas": []}}}, "input.json#/components/schemas", id="schemas-list"
+        ),
+        pytest.param(
+            {
+                "input.json": {"components": {"schemas": {"S": {"$ref": "other.json#/definitions/X"}}}},
+                "other.json": {"components": [], "definitions": {"X": {"type": "string"}}},
+            },
+            "other.json#/components",
+            id="components-list-of-a-referenced-document",
+        ),
+    ],
+)
+def test_openapi_components_that_is_no_object_is_a_clean_cli_error(
+    documents: dict[str, dict[str, YamlValue]],
+    location: str,
+    scopes: tuple[str, ...],
+    tmp_path: Path,
+    output_file: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Report components or its schemas section that is no object as the api scope does, in every scope (#6104)."""
+    head = {"openapi": "3.0.3", "info": {"title": "t", "version": "1"}, "paths": {}}
+    for name, document in documents.items():
+        (tmp_path / name).write_text(json.dumps({**head, **document}), encoding="utf-8")
+
+    run_main_and_assert(
+        input_path=tmp_path / "input.json",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=scopes,
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=f"Error at schema path '{location}': API_INVALID_OBJECT: expected an object",
         output_should_not_exist=True,
     )
 
@@ -618,6 +795,104 @@ def test_cli_input_errors_are_clean(
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=extra_args,
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=expected_stderr_contains,
+        output_should_not_exist=True,
+    )
+
+
+_OPENAPI_HEAD = 'openapi: "3.0.3"\ninfo: {title: T, version: "1"}\n'
+_PETS = "  /pets:\n    get:\n      responses: {'200': {description: ok}}\n"
+
+
+@pytest.mark.parametrize(
+    ("document", "scopes", "expected_stderr_contains"),
+    [
+        pytest.param(
+            f"{_OPENAPI_HEAD}paths: {{}}\ncomponents: []\n",
+            ("schemas",),
+            "Error at schema path 'api.yaml#/components': API_INVALID_OBJECT: expected an object\n",
+            id="components-list",
+        ),
+        pytest.param(
+            f"{_OPENAPI_HEAD}paths: {{}}\ncomponents:\n",
+            ("schemas",),
+            "Error at schema path 'api.yaml#/components': API_INVALID_OBJECT: expected an object\n",
+            id="components-null",
+        ),
+        pytest.param(
+            f"{_OPENAPI_HEAD}paths: {{}}\ncomponents:\n  schemas: []\n",
+            ("schemas",),
+            "Error at schema path 'api.yaml#/components/schemas': API_INVALID_OBJECT: expected an object\n",
+            id="schemas-list",
+        ),
+        pytest.param(
+            f"{_OPENAPI_HEAD}paths: {{}}\ncomponents:\n  schemas:\n    Pet:\n      allOf: 5\n",
+            ("schemas",),
+            "Error at schema path 'api.yaml#/components/schemas/Pet': ValidationError: 1 validation error for "
+            "JsonSchemaObject\nallOf\n  Input should be a valid list",
+            id="all-of-number",
+        ),
+        pytest.param(
+            f"{_OPENAPI_HEAD}paths: []\n",
+            ("paths",),
+            "Error at schema path 'api.yaml/#/paths': API_INVALID_OBJECT: expected an object\n",
+            id="paths-list",
+        ),
+        pytest.param(
+            f"{_OPENAPI_HEAD}paths:\n  parameters: 5\n{_PETS}",
+            ("paths",),
+            "Error at schema path 'api.yaml/#/paths/parameters': API_INVALID_OBJECT: expected parameter array\n",
+            id="paths-parameters-number",
+        ),
+        pytest.param(
+            f"{_OPENAPI_HEAD}paths:\n  /pets: 5\n",
+            ("paths",),
+            "Error at schema path 'api.yaml/#/paths//pets': API_INVALID_OBJECT: expected an object\n",
+            id="path-item-number",
+        ),
+        pytest.param(
+            f"{_OPENAPI_HEAD}paths:\n{_PETS}    parameters:\n",
+            ("paths",),
+            "Error at schema path 'api.yaml/#/paths//pets/parameters': API_INVALID_OBJECT: expected parameter array\n",
+            id="path-item-parameters-null",
+        ),
+        pytest.param(
+            f"{_OPENAPI_HEAD}paths:\n  /pets:\n    get: 5\n",
+            ("paths",),
+            "Error at schema path 'api.yaml/#/paths//pets/get': API_INVALID_OBJECT: expected an object\n",
+            id="operation-number",
+        ),
+        pytest.param(
+            f"{_OPENAPI_HEAD}paths: {{}}\nwebhooks: []\n",
+            ("webhooks",),
+            "Error at schema path 'api.yaml/#/webhooks': API_INVALID_OBJECT: expected an object\n",
+            id="webhooks-list",
+        ),
+        pytest.param(
+            f"{_OPENAPI_HEAD}paths: {{}}\ncomponents:\n  requestBodies:\n    Pet: 5\n",
+            ("requestbodies",),
+            "Error at schema path 'api.yaml/#/components/requestBodies/Pet': API_INVALID_OBJECT: expected an object\n",
+            id="request-body-number",
+        ),
+    ],
+)
+def test_openapi_section_of_the_wrong_type_names_its_location(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    document: str,
+    scopes: tuple[str, ...],
+    expected_stderr_contains: str,
+) -> None:
+    """A section that the schemas or paths walk reads, of the wrong type, is the API scope's located error."""
+    input_path = tmp_path / "api.yaml"
+    input_path.write_text(document, encoding="utf-8")
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=tmp_path / "model.py",
+        input_file_type="openapi",
+        extra_args=["--openapi-scopes", *scopes],
         expected_exit=Exit.ERROR,
         capsys=capsys,
         expected_stderr_contains=expected_stderr_contains,
@@ -1116,6 +1391,14 @@ def test_malformed_input_error_messages(
             id="integer-additional-operation-referenced-api",
         ),
         pytest.param(
+            "additional_operations_list.yaml",
+            "openapi",
+            ["--openapi-scopes", "api"],
+            "Error at schema path 'additional_operations_list.yaml/#/paths//pets/additionalOperations': "
+            "API_INVALID_OBJECT: expected an object",
+            id="additional-operations-list-api",
+        ),
+        pytest.param(
             "integer_header_name.yaml",
             "openapi",
             ["--openapi-scopes", "api"],
@@ -1187,6 +1470,13 @@ def test_malformed_input_error_messages(
             "AsyncAPI message schemaFormat must be a string at "
             "integer_asyncapi_schema_format.yaml/#/channels/1/messages/petAdded",
             id="integer-asyncapi-channel-name-beside-invalid-schema-format",
+        ),
+        pytest.param(
+            "schema_alias_cycle_property.yaml",
+            "openapi",
+            [],
+            "Schema nesting is too deep to generate: parsing the nested schemas exceeded the Python recursion limit",
+            id="schema-alias-cycle",
         ),
         pytest.param(
             "ref_sibling_cycle.yaml",
@@ -1274,8 +1564,6 @@ def test_malformed_input_error_messages(
                 ("pydantic_v2.BaseModel", "C", "Pydantic cannot build"),
                 ("pydantic_v2.dataclass", "Model", "Pydantic cannot build"),
                 ("msgspec.Struct", "Model", "msgspec cannot decode"),
-                ("dataclasses.dataclass", "C", "Python cannot evaluate as the module runs"),
-                ("typing.TypedDict", "C", "Python cannot evaluate as the module runs"),
             )
         ),
         *(
@@ -1291,23 +1579,6 @@ def test_malformed_input_error_messages(
             for case, fixture_name, output_model_type, extra_args, user in (
                 ("unused-alias", "ref_self_reference_unused.yaml", "pydantic_v2.dataclass", [], "C"),
                 ("unused-alias", "ref_self_reference_unused.yaml", "msgspec.Struct", [], "C"),
-                ("unused-alias", "ref_self_reference_unused.yaml", "dataclasses.dataclass", [], "C"),
-                ("unused-alias", "ref_self_reference_unused.yaml", "typing.TypedDict", [], "C"),
-                ("functional", "ref_self_reference_functional.yaml", "typing.TypedDict", [], "Holder"),
-                (
-                    "eager-annotations",
-                    "ref_self_reference.yaml",
-                    "dataclasses.dataclass",
-                    ["--disable-future-imports"],
-                    "Holder",
-                ),
-                (
-                    "eager-annotations",
-                    "ref_self_reference.yaml",
-                    "typing.TypedDict",
-                    ["--disable-future-imports"],
-                    "Holder",
-                ),
             )
         ),
         pytest.param(
@@ -1423,6 +1694,126 @@ def test_schema_location_error_messages(
         capsys=capsys,
         expected_stderr_contains=expected_stderr_contains,
         output_should_not_exist=True,
+    )
+
+
+_DEDUPE_HINT = (
+    " --dedupe-request-response-variants decides the read/write variants from the schema graph and can generate "
+    "such schemas."
+)
+
+
+@pytest.mark.parametrize(
+    ("input_path", "input_file_type", "expected_stderr_contains"),
+    [
+        pytest.param(
+            MALFORMED_DATA_PATH / "request_response_allof_child_before_base.json",
+            "jsonschema",
+            f"p.{_DEDUPE_HINT}",
+            id="allof-child-before-base",
+        ),
+        pytest.param(
+            OPEN_API_DATA_PATH / "recursive_ref_discriminator.yaml",
+            "openapi",
+            "[class: recursive_ref_discriminator.yaml#/components/schemas/CompoundFilter/properties/"
+            "filters/items references: frozenset({'recursive_ref_discriminator.yaml#', "
+            "'recursive_ref_discriminator.yaml#/components/schemas/ComparisonFilter'})]",
+            id="recursive-discriminator-references-sorted",
+        ),
+    ],
+)
+def test_request_response_legacy_error_names_dedupe_option(
+    input_path: Path,
+    input_file_type: InputFileTypeLiteral,
+    expected_stderr_contains: str,
+    output_file: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Name --dedupe-request-response-variants in the error of an input that 0.86.0 facts stop on.
+
+    Without the option the facts of a key come from a temporary parse and the walk reads every reference of a key, as in
+    0.86.0: an allOf child defined before its base put the inline model of the base's property at no owner path (#5266),
+    and a recursive discriminated union left classes that cannot be ordered (#5570, #5613), whose references the
+    message lists in sorted order.
+    """
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type=input_file_type,
+        extra_args=["--read-only-write-only-model-type", "request-response", "--disable-timestamp"],
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=expected_stderr_contains,
+        output_should_not_exist=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("input_path", "input_file_type"),
+    [
+        pytest.param(
+            MALFORMED_DATA_PATH / "request_response_allof_child_before_base.json",
+            "jsonschema",
+            id="allof-child-before-base",
+        ),
+        pytest.param(
+            MALFORMED_DATA_PATH / "request_response_dynamic_ref_in_id_defs.json",
+            "jsonschema",
+            id="dynamic-ref-in-id-defs",
+        ),
+        pytest.param(OPEN_API_DATA_PATH / "recursive_ref_discriminator.yaml", "openapi", id="recursive-discriminator"),
+    ],
+)
+def test_request_response_dedupe_generates_legacy_stops(
+    input_path: Path, input_file_type: InputFileTypeLiteral, output_file: Path
+) -> None:
+    """Generate with --dedupe-request-response-variants the inputs that stop without it."""
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type=input_file_type,
+        assert_func=assert_file_content,
+        extra_args=[
+            "--read-only-write-only-model-type",
+            "request-response",
+            "--dedupe-request-response-variants",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
+def test_request_response_dynamic_ref_to_its_resource_anchor(output_file: Path) -> None:
+    """Generate the request and response models of a `$dynamicRef` to its own resource's `$dynamicAnchor` (#6216).
+
+    The walk of the read/write facts resolves `#node` through the anchors of `https://example.com/node` without
+    --dedupe-request-response-variants too, so the run gives the models the option gives; up to 0.89.0 the walk
+    stopped with "Unresolved $id reference" (#5556).
+    """
+    run_main_and_assert(
+        input_path=MALFORMED_DATA_PATH / "request_response_dynamic_ref_in_id_defs.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--read-only-write-only-model-type",
+            "request-response",
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="request_response_dynamic_ref_to_its_resource_anchor",
+        model_name="TreeResponse",
+        valid_json='{"id": "a", "child": {"id": "b", "next": {"id": "c"}}}',
+        invalid_json='{"child": {"next": {"id": 1}}}',
+        expected_error_type="string_type",
     )
 
 
@@ -1622,6 +2013,36 @@ def test_missing_input_error_messages(
         expected_stderr_contains=expected_stderr_contains,
         output_should_not_exist=True,
     )
+
+
+@pytest.mark.parametrize(
+    ("input_file_type", "expected_stderr_contains"),
+    MISSING_INPUT_CASES,
+    ids=[input_file_type or "auto" for input_file_type, _ in MISSING_INPUT_CASES],
+)
+def test_missing_input_error_messages_over_an_existing_output(
+    input_file_type: InputFileTypeLiteral | None,
+    expected_stderr_contains: str,
+    output_file: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A missing input is reported as missing when the output exists too (#5803)."""
+    output_file.write_text("kept = 1\n", encoding="utf-8")
+    run_main_and_assert(
+        input_path=MALFORMED_DATA_PATH / "missing.json",
+        output_path=output_file,
+        input_file_type=input_file_type,
+        expected_exit=Exit.ERROR,
+        capsys=capsys,
+        expected_stderr_contains=expected_stderr_contains,
+    )
+
+
+def test_generate_missing_input_over_an_existing_output(output_file: Path) -> None:
+    """`generate()` reports a missing input as missing when the output exists too (#5803)."""
+    output_file.write_text("kept = 1\n", encoding="utf-8")
+    with pytest.raises(Error, match=r"^File not found: "):
+        generate(MALFORMED_DATA_PATH / "missing.json", input_file_type=InputFileType.JsonSchema, output=output_file)
 
 
 def test_dangling_local_ref_warns_and_preserves_generated_output(

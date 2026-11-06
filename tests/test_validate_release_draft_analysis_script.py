@@ -188,6 +188,50 @@ def test_generated_output_change_without_removal_claim_passes(tmp_path: Path) ->
     )
 
 
+@pytest.mark.parametrize(
+    "entry",
+    [
+        pytest.param(
+            "* References to non-nullable schemas no longer accept null after model merging - When `--strict-nullable` "
+            "is combined with `--reuse-model --collapse-reuse-models`, a non-nullable object model merged into an "
+            "equally shaped nullable model used to make every reference to it accept `None` (#5410)",
+            id="condition-after-dash",
+        ),
+        pytest.param(
+            "* Models no longer accept null if `--strict-nullable` is set - They reject `None` again.",
+            id="condition-word",
+        ),
+        pytest.param(
+            "* Fields dropped from the output. The option `--use-default` now writes them.", id="next-sentence"
+        ),
+    ],
+)
+def test_option_naming_a_condition_is_not_a_removal_claim(entry: str, tmp_path: Path) -> None:
+    """A token in another clause than the removal wording, such as the option a change applies to, is no claim."""
+    deleted_lines = tmp_path / "deleted-lines.txt"
+    deleted_lines.write_text("--other-option\n", encoding="utf-8")
+
+    validator._validate_removal_claims(f"### Default Behavior Changes\n{entry}", deleted_lines)
+
+
+@pytest.mark.parametrize(
+    "entry",
+    [
+        pytest.param("* Removed the deprecated CLI option `--old-option` - Use `--new-option` instead.", id="removed"),
+        pytest.param("* `--old-option` is deprecated and was removed, as announced.", id="was-removed"),
+        pytest.param("* No longer supports the legacy `--old-option` - Pass `--new-option` instead.", id="no-longer"),
+        pytest.param("* The option `--old-option` is no longer available (it was never stable).", id="reversed"),
+    ],
+)
+def test_removal_claim_in_its_own_clause_still_needs_deleted_lines(entry: str, tmp_path: Path) -> None:
+    """A token that the removal wording governs must appear in the deleted lines, whatever follows in the entry."""
+    deleted_lines = tmp_path / "deleted-lines.txt"
+    deleted_lines.write_text("--other-option\n", encoding="utf-8")
+
+    with pytest.raises(SystemExit):
+        validator._validate_removal_claims(f"### API/CLI Changes\n{entry}", deleted_lines)
+
+
 def test_explicit_removed_token_must_exist_in_deleted_lines(tmp_path: Path) -> None:
     """Explicit removal claims are accepted when the token exists in deleted lines."""
     deleted_lines = tmp_path / "deleted-lines.txt"

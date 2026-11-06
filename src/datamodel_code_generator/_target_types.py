@@ -12,7 +12,7 @@ from dataclasses import replace
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final
 
-from datamodel_code_generator._container_kinds import BUILTIN_CONTAINERS, CONTAINER_CLASSES, ITEM_CONTAINERS, MAPPINGS
+from datamodel_code_generator._container_kinds import BUILTIN_CONTAINERS, ITEM_CONTAINERS, MAPPINGS
 from datamodel_code_generator._target_contract import (
     WRAPPER_KINDS,
     BoundType,
@@ -173,8 +173,11 @@ def type_identity(value: TypeView) -> tuple[str | None, str]:
 
 
 def container_slot(value: TypeView) -> ContainerSlot | None:
-    """Return the container slot whose generic class a type is, or None for a fixed tuple or any other type."""
-    return CONTAINER_CLASSES.get(type_identity(value.base)) if isinstance(value, GenericType) else None
+    """Return the container slot whose generic class a type is, or None for a fixed tuple or any other type.
+
+    The slot is the one the container's kind decided, wherever an import override imports its class from.
+    """
+    return value.slot if isinstance(value, GenericType) else None
 
 
 def unwrapped(

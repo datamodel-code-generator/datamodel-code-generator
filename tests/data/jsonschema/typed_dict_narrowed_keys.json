@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Detail": {"type": "object", "properties": {"z": {"type": "integer"}}, "required": ["z"]},
+    "Base": {
+      "type": "object",
+      "properties": {
+        "a": {"type": ["string", "null"]},
+        "b": {"type": "object"},
+        "c": {"type": "integer"}
+      },
+      "required": ["c"]
+    },
+    "NullDropped": {
+      "allOf": [{"$ref": "#/$defs/Base"}, {"type": "object", "properties": {"a": {"type": "string"}}}]
+    },
+    "TypeNarrowed": {
+      "allOf": [
+        {"$ref": "#/$defs/Base"},
+        {"type": "object", "properties": {"b": {"$ref": "#/$defs/Detail"}, "d": {"type": "string"}}}
+      ]
+    },
+    "Required": {
+      "allOf": [{"$ref": "#/$defs/Base"}, {"type": "object", "required": ["a"]}]
+    },
+    "Restated": {
+      "allOf": [
+        {"$ref": "#/$defs/Base"},
+        {"type": "object", "properties": {"c": {"type": "integer", "description": "The same type."}, "e": {"type": "boolean"}}}
+      ]
+    },
+    "NarrowedAgain": {
+      "allOf": [{"$ref": "#/$defs/NullDropped"}, {"type": "object", "properties": {"a": {"const": "x"}}}]
+    },
+    "KeptNarrowing": {
+      "allOf": [
+        {"$ref": "#/$defs/NullDropped"},
+        {"type": "object", "properties": {"a": {"type": "string"}, "f": {"type": "string"}}}
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "null_dropped": {"$ref": "#/$defs/NullDropped"},
+    "type_narrowed": {"$ref": "#/$defs/TypeNarrowed"},
+    "required": {"$ref": "#/$defs/Required"},
+    "restated": {"$ref": "#/$defs/Restated"},
+    "narrowed_again": {"$ref": "#/$defs/NarrowedAgain"},
+    "kept_narrowing": {"$ref": "#/$defs/KeptNarrowing"}
+  }
+}

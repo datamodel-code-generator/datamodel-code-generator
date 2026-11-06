@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import contextlib
 import re
 import sys
 import warnings
+from copy import deepcopy
 from functools import lru_cache
+from io import BytesIO
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 from typing_extensions import Sentinel
@@ -31,11 +34,16 @@ def _get_toml_loader() -> Callable[[Any], dict[str, Any]]:
     return load_toml_data
 
 
+@lru_cache(maxsize=32)
+def _parse_toml(data: bytes) -> dict[str, Any]:
+    """Parse the bytes of a TOML document; the result depends on the bytes alone, so equal content is parsed once."""
+    return _get_toml_loader()(BytesIO(data))
+
+
 def load_toml(path: Path) -> dict[str, Any]:
-    """Load and parse a TOML file."""
+    """Load and parse a TOML file, returning a document the caller owns."""
     record_watch_dependency(path)
-    with path.open("rb") as f:
-        return _get_toml_loader()(f)
+    return deepcopy(_parse_toml(path.read_bytes()))
 
 
 def _find_pyproject_toml(settings_path: Path) -> Path | None:
@@ -95,14 +103,37 @@ def _is_yaml_deprecated_bool_warning_enabled() -> bool:
     return True
 
 
+def _plain_deprecated_bool_offsets(text: str) -> set[int]:
+    """Return the offsets of the unquoted scalars in ``text`` that spell a YAML 1.1 boolean."""
+    import yaml  # noqa: PLC0415
+
+    offsets: set[int] = set()
+    with contextlib.suppress(yaml.YAMLError):
+        offsets.update(
+            token.start_mark.index
+            for token in yaml.scan(text, Loader=yaml.SafeLoader)
+            if isinstance(token, yaml.ScalarToken) and token.plain and token.value in _YAML_DEPRECATED_BOOL_VALUES
+        )
+    return offsets
+
+
 def warn_yaml_deprecated_bool_values(text: str) -> None:
-    """Warn for YAML 1.1-style boolean scalars when ryaml is used."""
+    """Warn for YAML 1.1-style boolean scalars when ryaml is used.
+
+    Only unquoted scalars warn: a quoted string or a block scalar line such as ``enabled: True`` holds text.
+    """
     if not _is_yaml_deprecated_bool_warning_enabled() or not any(
         value in text for value in _YAML_DEPRECATED_BOOL_VALUES
     ):
         return
 
-    for match in _YAML_DEPRECATED_BOOL_LINE_PATTERN.finditer(text):
+    matches = list(_YAML_DEPRECATED_BOOL_LINE_PATTERN.finditer(text))
+    if not matches:
+        return
+    offsets = _plain_deprecated_bool_offsets(text)
+    for match in matches:
+        if match.start(1) not in offsets:
+            continue
         warnings.warn(
             f"YAML bool '{match.group(1)}' is deprecated. Use lowercase 'true' or 'false' instead. "
             f"In a future version, only lowercase booleans will be recognized.",
@@ -145,10 +176,13 @@ def reject_unsupported_yaml_tags(text: str) -> None:
 def _construct_yaml_bool_with_warning(loader: Any, node: Any) -> bool:
     value = loader.construct_scalar(node)
     if value in _YAML_DEPRECATED_BOOL_VALUES:
+        from datamodel_code_generator.python_literal import stable_repr  # noqa: PLC0415
+
         warn_deprecated(
             "config.yaml-non-lowercase-bool",
             details=(
-                f"YAML bool {value!r} is deprecated. In a future version, only lowercase booleans will be recognized."
+                f"YAML bool {stable_repr(value)} is deprecated. In a future version, only lowercase booleans will be "
+                "recognized."
             ),
             stacklevel=6,
         )
@@ -402,3 +436,9 @@ def camel_to_snake(string: str, target_python_version: PythonVersion | None = No
 
     subbed = _UNDER_SCORE_1.sub(r"\1_\2", string)
     return lower(_UNDER_SCORE_2.sub(r"\1_\2", subbed), target_python_version)
+
+
+def last_camel_word(string: str) -> str:
+    """Return the last word of a camelCase, PascalCase or snake_case name, split where ``camel_to_snake`` splits it."""
+    marked = _UNDER_SCORE_2.sub("\\1\x00\\2", _UNDER_SCORE_1.sub("\\1\x00\\2", string))
+    return re.split(r"[\x00_]", marked)[-1]

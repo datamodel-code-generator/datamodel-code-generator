@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+import sys
 from typing import TYPE_CHECKING, Any
 
+import msgspec
 import pytest
 from jsonschema import Draft202012Validator
 from jsonschema import ValidationError as SchemaValidationError
@@ -24,6 +26,10 @@ if TYPE_CHECKING:
 SITES = JSON_SCHEMA_DATA_PATH / "field_constraint_sites"
 PAYLOADS = DATA_PATH / "payloads" / "field_constraint_sites"
 LITERAL_ENUMS = ["--field-constraints", "--enum-field-as-literal", "all"]
+ANYURL_WITHOUT_CONSTRAINTS = pytest.mark.filterwarnings("ignore:fields holding AnyUrl are written without:UserWarning")
+MODELS_WITHOUT_LENGTH = pytest.mark.filterwarnings(
+    r"ignore:Pydantic does not take max_length on TextOrLoop1 \| Loop; Model\.loop is generated without:UserWarning"
+)
 
 
 @pytest.mark.parametrize(
@@ -44,6 +50,37 @@ LITERAL_ENUMS = ["--field-constraints", "--enum-field-as-literal", "all"]
         ("literal_patterns", [*LITERAL_ENUMS, "--output-model-type", "pydantic_v2.dataclass"]),
         ("literal_patterns", [*LITERAL_ENUMS, "--collapse-root-models"]),
         ("literal_patterns", [*LITERAL_ENUMS, "--use-type-alias"]),
+        ("union_root_keywords", ["--field-constraints"]),
+        ("union_root_keywords", ["--field-constraints", "--collapse-root-models"]),
+        ("union_root_keywords", ["--field-constraints", "--use-type-alias"]),
+        ("union_root_keywords", ["--use-annotated", "--collapse-root-models"]),
+        ("union_root_keywords", ["--field-constraints", "--output-model-type", "pydantic_v2.dataclass"]),
+        pytest.param(
+            "union_root_kept_keywords",
+            ["--field-constraints", "--use-subclass-enum", "--collapse-root-models"],
+            marks=MODELS_WITHOUT_LENGTH,
+        ),
+        ("union_root_kept_keywords", ["--field-constraints", "--use-subclass-enum", "--use-type-alias"]),
+        pytest.param(
+            "union_root_kept_keywords",
+            [
+                "--field-constraints",
+                "--use-specialized-enum",
+                "--target-python-version",
+                "3.11",
+                "--collapse-root-models",
+            ],
+            marks=[
+                pytest.mark.skipif(sys.version_info < (3, 11), reason="StrEnum needs Python 3.11"),
+                MODELS_WITHOUT_LENGTH,
+            ],
+        ),
+        *(
+            pytest.param("union_root_url_keywords", ["--field-constraints", *args], marks=ANYURL_WITHOUT_CONSTRAINTS)
+            for args in (["--use-type-alias"], ["--output-model-type", "pydantic_v2.dataclass"])
+        ),
+        ("union_array_string_lengths", []),
+        ("union_array_string_lengths", ["--collapse-root-models"]),
     ],
 )
 def test_field_constraint_sites(output_file: Path, name: str, extra_args: list[str]) -> None:
@@ -56,7 +93,16 @@ def test_field_constraint_sites(output_file: Path, name: str, extra_args: list[s
     of ``contains`` belong to a field typed as an array, so a string or a model that carries them accepts what the
     schema accepts, and so does a field whose schema declares no array, as a string typed ``datetime.date`` or an
     object with array values; the pattern of a ``Literal`` that a root model or a const writes selects the
-    ``python-re`` regex engine when Rust refuses it, as the pattern of a string does.
+    ``python-re`` regex engine when Rust refuses it, as the pattern of a string does. A keyword beside a union leaves
+    the field that holds the union when a member cannot take it and every member keeps the check without it in the
+    output (the class or type alias of a branch whose call writes it, a value it does not apply to, None), so a valid
+    value raises no ``TypeError`` (#6022), also where a root model collapses into a union of one member. Where a member
+    would lose the check, as a string, a ``str`` enum or an ``AnyUrl`` that writes no copy of it, the field keeps
+    today's output, whose ``TypeError`` for the other members stays (#6053); the payloads of those fields use the
+    members that keep the check. A keyword that no member's value takes, all of them instances of models (the root
+    model of a branch and one that names itself again), is left out with a warning, as each raised ``TypeError``
+    (#6035). Without ``--field-constraints``, a string length beside a union of an array and a string limits the
+    string only, at a property and at the items of an array, as 0.88.0 wrote it (#6189).
     """
     input_path = SITES / f"{name}.json"
     run_main_and_assert(
@@ -94,6 +140,29 @@ def test_root_model_of_a_reference_takes_no_item_counts(output_file: Path) -> No
     )
     with _generated_model(output_file, "field_constraint_sites_array_counts_root_reference", "Model") as model:
         _model_json_validator(model)(json.dumps(["a", "b"]))
+
+
+@pytest.mark.filterwarnings("ignore::datamodel_code_generator.NamingHintWarning")
+def test_msgspec_keeps_its_output_beside_a_union(output_file: Path) -> None:
+    """Keep the msgspec output of the keywords beside a union, which msgspec leaves out itself with a warning.
+
+    ``msgspec.Meta`` takes no keyword on a union, so the field writes none of them and the decision that leaves out what
+    a member cannot take (#6022) has nothing to leave out; the payloads decode as the schema says.
+    """
+    with pytest.warns(UserWarning, match="msgspec.Meta does not take"):
+        run_main_and_assert(
+            input_path=SITES / "union_root_keywords.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--formatters", "builtin", "--output-model-type", "msgspec.Struct", "--field-constraints"],
+        )
+    payloads = json.loads((PAYLOADS / "union_root_keywords.json").read_text(encoding="utf-8"))
+    with _generated_model(output_file, "field_constraint_sites_msgspec_union_root_keywords", "Model") as model:
+        for payload in payloads["valid"]:
+            msgspec.json.decode(json.dumps(payload), type=model)
+        for change in payloads["invalid"]:
+            with pytest.raises(msgspec.ValidationError):
+                msgspec.json.decode(json.dumps({**payloads["valid"][0], **change}), type=model)
 
 
 def _rejected(validate_json: Any, document: object) -> None:

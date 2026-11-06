@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._api_types import Diagnostic
-from datamodel_code_generator._client.naming import CLIENT_KEYWORDS, token
+from datamodel_code_generator._client.naming import CLIENT_KEYWORDS
 from datamodel_code_generator._runtime.client.security import (
     SecurityBinding,
     SecurityRequirement,
@@ -29,6 +29,7 @@ from datamodel_code_generator._target_contract import (
 )
 from datamodel_code_generator._target_naming import NameScope
 from datamodel_code_generator._target_operations import declared_in
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -115,8 +116,6 @@ def _scheme(declaration: WireDeclaration) -> SecuritySchemeEntry:
         return unavailable
     if (place := api_key_place(declaration)) is not None:
         location, wire_name = place
-        if location != "query" and not token(wire_name):
-            return unavailable
         return SecurityScheme(name=name, kind="api_key", location=location, wire_name=wire_name)
     if (scheme := http_scheme(declaration)) in {"basic", "bearer"}:
         return SecurityScheme(
@@ -212,7 +211,7 @@ class SecurityPlanner:
             owners: set[tuple[str, str]] = set()
             for name, scopes in alternative:
                 if not isinstance(name, str) or not isinstance(scheme := schemes.get(name), SecurityScheme):
-                    self.problem(operation, f"requires the unavailable scheme {name!r}")
+                    self.problem(operation, f"requires the unavailable scheme {stable_repr(name)}")
                     continue
                 declaration = operation_schemes(self.declared, operation)[name]
                 if (invalid := scope_problem(name, declaration, scopes, self.openapi)) is not None:

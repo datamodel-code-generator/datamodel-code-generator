@@ -60,13 +60,13 @@ class Package(TypedDict):
 TrackingCode: TypeAlias = str
 
 
-class ForwardDeclaredPickup(ForwardBasePickup):
+class ForwardDeclaredPickup(TypedDict):
     detail: Detail
     forward_events: list[ForwardEvent]
     forward_window: ForwardWindow
 
 
-class ForwardInlineRequiredPickup(ForwardBasePickup):
+class ForwardInlineRequiredPickup(TypedDict):
     detail: Detail
     forward_events: list[ForwardEvent]
     forward_window: ForwardWindow
@@ -81,7 +81,7 @@ class PackageModel(LabelPackage):
     alternative_identifiers: list[str]
 
 
-class Pickup(BasePickup):
+class Pickup(TypedDict):
     contact_details: NotRequired[ContactDetails]
     events: NotRequired[list[Event]]
     packages: NotRequired[list[PackageModel]]
@@ -91,7 +91,7 @@ class Pickup(BasePickup):
     mode: NotRequired[str]
 
 
-class ScheduledPickup(Pickup):
+class ScheduledPickup(TypedDict):
     contact_details: ContactDetails
     events: list[Event]
     packages: list[PackageModel]
@@ -102,8 +102,12 @@ class ScheduledPickup(Pickup):
     fallback_field: Any
 
 
-class ReverseScheduledPickup(Pickup):
-    note: NotRequired[str]
+class ReverseScheduledPickup(TypedDict):
     contact_details: ContactDetails
     events: list[Event]
     packages: list[PackageModel]
+    package: NotRequired[Package]
+    tracking_code: NotRequired[TrackingCode]
+    pickup_window: NotRequired[PickupWindow]
+    mode: NotRequired[str]
+    note: NotRequired[str]

@@ -214,18 +214,34 @@ They follow the same two cases as number keywords: a schema type `string` takes 
 without `type` is written as `Any`, which takes none of them, so `{"minLength": 2}` or `{"type": "integer",
 "pattern": "^1"}` leaves the field unconstrained. For compatibility, a schema type `string` also writes `minItems` and
 `maxItems`, and a schema type `array` also writes `minLength` and `maxLength`, as their length bounds.
+`--read-length-keywords-by-type` (set by the 20261104 presets) reads each keyword for its own kind only, as JSON Schema
+does: such a keyword beside the other kind is left out silently, so `{"type": "array", "maxLength": 2}` leaves the list
+unbounded and `{"type": "string", "maxItems": 2}` leaves the string unbounded, also beside a union branch, in an array
+without `type` and under a type override.
 
 As for number keywords, Pydantic models and dataclasses write a string keyword of a schema type `string` as a
 `Field()` argument only when the Python type written for the field takes it, as the Pydantic column of the table below
 lists, with `minItems` and `maxItems` read as the lengths they are written as. Pydantic cannot validate a field whose
 `Field()` holds any other, so a keyword they leave out, such as `maxLength` on the `AwareDatetime` of format
 `date-time`, `pattern` on the `date` of format `date` or on the `SecretStr` of format `password`, or `minLength` on a
-`UUID`, is named with its field in a warning. A field whose type holds the `AnyUrl` of format `uri` is written without
+`UUID`, is named with its field in a warning. On the `bytes` of format `binary`, `minLength` and `maxLength` count
+octets, as OpenAPI 3.1.1 specifies for unencoded binary data. A field whose type holds the `AnyUrl` of format `uri` is written without
 any of its constraints, also with a warning. The `Literal` of a `const` takes the keywords of its values' type, so
 `{"type": "string", "const": "box", "maxLength": 5}` keeps `max_length`, while a `const` without `type` keeps none of
 them. A `--type-overrides` type decides again the keywords the replaced type left out: an override to `str` takes back
 such a length without a warning. `msgspec.Struct` leaves out, with a warning, a keyword that msgspec does not accept
 on the Python type, such as `pattern` on `bytes` or on the `Literal` of a `const`.
+
+An array that has no field of its own, the member of an `anyOf` or `oneOf`, the items of an array or the values of a
+map, writes its `minItems` and `maxItems` on a type alias of its own in Pydantic models and dataclasses, as the array
+member of a type list does: without `--field-constraints`, `{"anyOf": [{"type": "array", "minItems": 2}, {"type":
+"string"}]}` at a property `a` is `a: A | str` with `A = TypeAliasType("A", Annotated[list[Any], Field(min_length=2)])`;
+with it, `A` is a root model that holds them. In Pydantic `BaseModel` output, the items of an array that declares
+`minItems` or `maxItems` itself are such a root model in either case, as before: the items of `{"type": "array",
+"minItems": 1, "items": {"type": "array", "minItems": 2}}` at a property `rows` are `Row` instances, whose list is
+`.root`, where dataclasses keep the alias form. `--collapse-root-models` inlines a root model whose type names such
+aliases as it inlined the arrays before, and the aliases keep the counts: a property `a` that names a definition `A`,
+`{"anyOf": [{"type": "array", "maxItems": 1}, {"type": "array", "minItems": 3}]}`, is `a: A1 | A2`.
 
 A `typing` alias, an abstract collection, `Annotated[T, ...]`, `Final[T]` and `Literal` are read as for number
 keywords, so `typing.List[int]`, `collections.abc.Sequence[int]` and `Annotated[list[int], ...]` take the keywords of
@@ -236,10 +252,11 @@ keywords, so `typing.List[int]`, `collections.abc.Sequence[int]` and `Annotated[
 | `str`, `constr`, `StrictStr` | `minLength`, `maxLength`, `pattern` | `minLength`, `maxLength`, `pattern` |
 | `bytes`, `StrictBytes` | `minLength`, `maxLength`, `pattern` | `minLength`, `maxLength` |
 | `EmailStr` | `minLength`, `maxLength`, `pattern` | none |
-| `Base64Str`, and the `Base64Bytes` of `--type-mappings byte=binary` | `minLength`, `maxLength`, `pattern`, which Pydantic checks on the decoded value | none |
+| `Base64Str` | `minLength`, `maxLength`, `pattern`, which Pydantic checks on the decoded value | none |
+| the `Base64Bytes` of `--type-mappings byte=binary` | `minLength`, `maxLength`; Pydantic cannot check a `pattern` on its base64 text | none |
 | `conbytes`, `SecretStr` | `minLength`, `maxLength` | none |
 | the `Literal` of a `const` | those of its value's type (a string: `minLength`, `maxLength`, `pattern`) | none |
-| `list`, `set`, `frozenset`, `tuple` and other sequences | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength` | `minItems`, `maxItems`, `minLength`, `maxLength`, except on a fixed-length tuple such as `tuple[int, int]` |
+| `list`, `set`, `frozenset`, `tuple` and other sequences | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength` (`minLength` and `maxLength` only without `--read-length-keywords-by-type`) | `minItems`, `maxItems`, `minLength`, `maxLength`, except on a fixed-length tuple such as `tuple[int, int]` |
 | `deque` | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength` | none |
 | `collections.abc.Sized`, `Iterable`, `Generator` | `minItems`, `maxItems`, `uniqueItems`, `minLength`, `maxLength`; an iterable is checked while it is iterated | none |
 | `typing.AnyStr`, `collections.abc.ByteString` | `minLength`, `maxLength`, `pattern` | none |

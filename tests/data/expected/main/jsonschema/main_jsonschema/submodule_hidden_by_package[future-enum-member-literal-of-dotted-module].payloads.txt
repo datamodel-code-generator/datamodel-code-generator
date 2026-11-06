@@ -1,0 +1,5 @@
+{"item": {"sku": "s"}}: accepted Order(item=Item(sku='s'), kind=<Kind.book: 'book'>)
+{"kind": "book"}: accepted Order(item=None, kind=<Kind.book: 'book'>)
+{"kind": "disc"}: rejected ValidationError
+{"item": {"sku": 1}}: rejected ValidationError
+{"n": 1, "parent": {"n": 2}}: accepted Catalog(n=1, parent=Catalog(n=2, parent=None, Status_1=None), Status_1=None)

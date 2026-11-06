@@ -535,18 +535,6 @@
           "title": "Reason",
           "type": "string"
         },
-        "contested_reason": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "Why the schema also argues against the values; set only for consider entries.",
-          "title": "Contested Reason"
-        },
         "caveats": {
           "items": {
             "type": "string"
@@ -579,7 +567,6 @@
         "set",
         "arguments",
         "reason",
-        "contested_reason",
         "caveats",
         "evidence",
         "trial"
@@ -761,13 +748,6 @@
       "title": "Left Out",
       "type": "array"
     },
-    "consider": {
-      "items": {
-        "$ref": "#/$defs/RecommendOptionPayload"
-      },
-      "title": "Consider",
-      "type": "array"
-    },
     "validation": {
       "description": "Options for checks the schema declares that the models leave out by default; the user decides, and they are never in arguments or config.",
       "items": {
@@ -861,7 +841,6 @@
     "baseline",
     "recommendations",
     "left_out",
-    "consider",
     "validation",
     "policy",
     "not_recommended",

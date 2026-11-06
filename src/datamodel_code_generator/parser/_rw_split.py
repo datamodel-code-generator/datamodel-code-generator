@@ -17,9 +17,8 @@ that tests call or that other parts of the parser call stay on the parser as del
 
 from __future__ import annotations
 
-from contextlib import ExitStack
+from contextlib import ExitStack, contextmanager
 from itertools import chain
-from string import digits
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypeAlias, cast
 
 from typing_extensions import Protocol
@@ -30,10 +29,12 @@ from datamodel_code_generator.model import DataModel
 from datamodel_code_generator.model.base import _field_source_name
 from datamodel_code_generator.model.runtime_validation import _is_internal_schema_runtime_validation
 from datamodel_code_generator.parser._field_rows import uses_default_with_required
+from datamodel_code_generator.parser._naming import rw_variant_name
 from datamodel_code_generator.parser._origins import with_field_origin
 from datamodel_code_generator.parser._passes._shared import (
     _detach_deferred_inherited_field_parents,
     inherited_default_source,
+    with_dedupe_request_response_hint,
 )
 from datamodel_code_generator.parser._schema_dispatch import SchemaSite, TypedChild
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
@@ -52,10 +53,11 @@ from datamodel_code_generator.reference import (
 
 if TYPE_CHECKING:
     from collections import defaultdict
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Generator, Iterable, Sequence
     from contextlib import AbstractContextManager
     from pathlib import Path
 
+    from datamodel_code_generator._user_keys import ClassScope
     from datamodel_code_generator.enums import DataclassArguments
     from datamodel_code_generator.model import DataModelFieldBase
     from datamodel_code_generator.model.output import OutputModelContext
@@ -89,6 +91,7 @@ __all__ = [
     "get_separate_model_fields",
     "inherited_default_source",
     "join_rw_model_property_flags",
+    "legacy_rw_errors",
     "legacy_rw_variants",
     "lightweight_type_keys",
     "merge_inherited_field_overrides",
@@ -293,7 +296,7 @@ class RwSplitHost(Protocol):
         field: DataModelFieldBase,
         inherited_field: DataModelFieldBase,
         *,
-        class_name: str,
+        scope: ClassScope,
     ) -> None:
         """Resolve an inherited schema default in the derived class scope."""
 
@@ -493,9 +496,9 @@ class RwSplitHost(Protocol):
         """Resolve Request/Response variant reachability once per graph node."""
 
     def _resolve_base_class(
-        self, class_name: str, custom_base_path: str | list[str] | None = None
+        self, scope: ClassScope, custom_base_path: str | list[str] | None = None
     ) -> str | list[str] | None:
-        """Resolve base class(es) with priority: base_class_map > customBasePath > base_class."""
+        """Resolve base class(es) with priority: base_class_map (each name of a scope) > customBasePath > base_class."""
 
     def _resolve_external_ref_mapping(self, ref: str) -> tuple[str, str] | None:
         """Return the package and fragment ``--external-ref-mapping`` maps a reference to, if any."""
@@ -699,11 +702,11 @@ def merge_inherited_field_overrides(
         ):
             result.append(field)
             continue
-        if class_name := field.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY):
-            parser._apply_inherited_field_default(resolved_field, inherited_field, class_name=class_name)  # noqa: SLF001
-        elif class_name := field.__dict__.get(_DEFERRED_INHERITED_CLASS_KEY):
+        if scope := field.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY):
+            parser._apply_inherited_field_default(resolved_field, inherited_field, scope=scope)  # noqa: SLF001
+        elif scope := field.__dict__.get(_DEFERRED_INHERITED_CLASS_KEY):
             source = inherited_default_source(parser.allof_merge_mode, field, inherited_field)
-            parser._apply_inherited_field_default(resolved_field, source, class_name=class_name)  # noqa: SLF001
+            parser._apply_inherited_field_default(resolved_field, source, scope=scope)  # noqa: SLF001
         result.append(resolved_field)
     return result
 
@@ -832,6 +835,22 @@ def legacy_rw_variants(parser: RwSplitHost) -> frozenset[str]:
     if parser.dedupe_request_response_variants:
         return frozenset()
     return frozenset({"legacy-rw-parsed-facts", "legacy-rw-unowned-parent-fields"})
+
+
+@contextmanager
+def legacy_rw_errors(parser: RwSplitHost) -> Generator[None]:
+    """Name ``--dedupe-request-response-variants`` in an error that the kept 0.86.0 decisions raise.
+
+    Without the option the facts of a key come from a temporary parse, the walk reads every reference of a key and the
+    inline models of an allOf parent's own fields are parsed at no owner path, as in 0.86.0. An input those reads stop
+    on stops with its error; the option decides from the schema graph and generates it.
+    """
+    try:
+        yield
+    except Error as error:
+        if parser._legacy_rw_variants:  # noqa: SLF001
+            error.message = with_dedupe_request_response_hint(error.message)
+        raise
 
 
 def collect_all_fields_for_request_response(
@@ -1099,8 +1118,6 @@ def get_rw_model_variant_graph_node(parser: RwSplitHost, resolved_ref: str) -> t
     and the models its parsed fields reference are edges too.
     """
     if "legacy-rw-parsed-facts" not in parser._legacy_rw_variants:  # noqa: SLF001
-        if _is_special_path(resolved_ref):
-            return False, ()
         return parser._get_ref_schema_rw_model_reference_facts(resolved_ref)  # noqa: SLF001
     facts = parser._get_ref_schema_rw_model_field_facts(resolved_ref)  # noqa: SLF001
     fields = parser._raw_inherited_fields_cache.get(resolved_ref)  # noqa: SLF001
@@ -1112,7 +1129,8 @@ def get_rw_model_variant_graph_node(parser: RwSplitHost, resolved_ref: str) -> t
         for data_type in field.data_type.all_data_types
         if (reference := data_type.reference) is not None
     }
-    has_inline_variant, raw_refs = parser._get_ref_schema_rw_model_reference_facts(resolved_ref)  # noqa: SLF001
+    with legacy_rw_errors(parser):
+        has_inline_variant, raw_refs = parser._get_ref_schema_rw_model_reference_facts(resolved_ref)  # noqa: SLF001
     nested_refs.update(dict.fromkeys(raw_refs))
     return (facts is not None and (facts[0] or facts[1])) or has_inline_variant, tuple(nested_refs)
 
@@ -1162,8 +1180,11 @@ def get_ref_schema_rw_model_reference_facts(
     The walk asks the dispatch tables what the model of the key types (``_DEFINITION_TABLE``,
     ``_typed_model_children``) and follows what that types in turn. It stops at the first flagged property: the
     references of a node that needs variants are never read (under ``legacy-rw-parsed-facts`` it reads them all,
-    as 0.86.0 did). A key that names no loadable schema has neither.
+    as 0.86.0 did). A key that names no loadable schema has neither, nor has a special path, which the parser makes
+    and no ``$ref`` names.
     """
+    if _is_special_path(resolved_ref):
+        return False, ()
     if (cached := parser._rw_model_references_cache.get(resolved_ref)) is not None:  # noqa: SLF001
         return cached
     try:
@@ -1226,9 +1247,9 @@ def typed_field_site(
 
     A $ref beside sibling keywords is read merged with them, relative to the schema that defines the site: by the steps
     of the field table, and before the table chooses at the positions that ``merges_ref_first`` names (a property,
-    ``parse_object_fields``, and a oneOf or anyOf member, ``parse_combined_schema``), where the python-type row reads
-    the schema the $ref names. ``parent`` is the schema the item is an item or a member of, as ``parse_item`` gets it
-    there, which the rows that write the constraints of an item on a root model read.
+    ``parse_object_fields``), where the python-type row reads the schema the $ref names. ``parent`` is the schema
+    the item is an item, a member or a value of, as ``parse_item`` gets it there, which the rows that write the
+    constraints of an item on a root model read.
     """
     if not isinstance(item, JsonSchemaObject):
         return ()
@@ -1378,27 +1399,26 @@ def get_rw_model_variant_reference(
             reference.loaded |= loaded
             return reference
 
-    if parser._ref_schema_exists(source_variant_ref := _get_rw_model_variant_source_path(base_reference, suffix)):  # noqa: SLF001
+    with legacy_rw_errors(parser):
+        source_variant_exists = parser._ref_schema_exists(  # noqa: SLF001
+            source_variant_ref := _get_rw_model_variant_source_path(base_reference, suffix)
+        )
+    if source_variant_exists:
         parser.model_resolver.add_ref(source_variant_ref, resolved=True)
 
-    class_name_suffix = parser.model_resolver.class_name_suffix
-    base_name_without_index = base_reference.name.rstrip(digits)
-    numeric_index = base_reference.name.removeprefix(base_name_without_index)
-    variant_name = (
-        f"{base_name_without_index[: -len(class_name_suffix)]}{suffix}{class_name_suffix}{numeric_index}"
-        if class_name_suffix and base_name_without_index.endswith(class_name_suffix)
-        else f"{base_reference.name}{suffix}"
-    )
+    variant_name = rw_variant_name(base_reference.name, suffix, parser.model_resolver.class_name_suffix)
     yielding = parser.model_resolver.is_yielding(base_reference)
+    variant_path = _rw_variant_path(base_reference.path, _rw_direction(suffix))
     unique_name = parser.model_resolver.get_class_name(
         variant_name,
         unique=True,
         skip_affix=True,
         preserve_name=True,
         yields=yielding,
+        path=parser.model_resolver.join_path(tuple(variant_path)),
     ).name
     reference = parser.model_resolver.add(
-        _rw_variant_path(base_reference.path, _rw_direction(suffix)),
+        variant_path,
         unique_name,
         class_name=False,
         unique=False,
@@ -1530,7 +1550,9 @@ def create_object_model(  # noqa: PLR0913
         reference=reference,
         fields=fields,
         base_classes=base_classes,
-        custom_base_class=parser._resolve_base_class(reference.name, obj.custom_base_path),  # noqa: SLF001
+        custom_base_class=parser._resolve_base_class(  # noqa: SLF001
+            parser.model_resolver.class_scope("reference-name", reference, reference.path), obj.custom_base_path
+        ),
         custom_template_dir=parser.custom_template_dir,
         extra_template_data=parser.extra_template_data,
         path=parser.current_source_path,

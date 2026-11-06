@@ -639,7 +639,7 @@ def test_parser_simple_field_call_keywords_match_model_fields() -> None:
     assert len(builder_calls) > 1
     assert {keyword.arg for call in builder_calls for keyword in call.keywords} <= fact_names | {
         "source_name",
-        "class_name",
+        "scope",
     }
 
 

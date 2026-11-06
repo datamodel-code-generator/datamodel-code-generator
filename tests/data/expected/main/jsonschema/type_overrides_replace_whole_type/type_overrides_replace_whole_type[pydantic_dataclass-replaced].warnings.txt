@@ -1,0 +1,3 @@
+--type-overrides writes Any in place of dict[str, float]; Inventory.amounts is generated without this constraint.
+--type-overrides writes Mapping in place of dict[Annotated[str, StringConstraints(max_length=2)], str]; Inventory.keyed is generated without this constraint.
+--type-overrides writes str in place of list[str]; Inventory.notes is generated without this constraint.

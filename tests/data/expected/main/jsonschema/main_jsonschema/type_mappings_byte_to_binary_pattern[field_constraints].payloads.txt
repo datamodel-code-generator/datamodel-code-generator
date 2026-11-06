@@ -1,0 +1,8 @@
+plain YWFh: accepted
+plain ZWFh: accepted
+plain YWFhYWFhYWFh: accepted
+sized YWFh: accepted
+sized ZWFh: accepted
+sized YWFhYWFhYWFh: rejected
+plain: b'aaa'
+sized: b'aaa'

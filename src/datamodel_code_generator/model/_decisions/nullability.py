@@ -51,6 +51,8 @@ class TypeNull:
     named: bool | None = None
     """Whether the type admits the null of the schema it named, recorded each time a merge points the type at an
     equal model (``GenerationStore.redirect_reference_users``); None while it names the model built for that schema."""
+    keeps_named: bool = False
+    """``--keep-reference-null-on-merged-models`` made the merges record ``named``, which then decides alone."""
     target: bool = False
     """The type's own None is the one the schema it references admits (``GenerationStore.mark_target_null``)."""
     reference_written: bool = False
@@ -67,14 +69,18 @@ NO_TYPE_NULL: Final = TypeNull()
 _TYPING: Final = frozenset({"typing", "typing_extensions"})
 
 
-def reference_null(*, named: bool | None, names_nullable: bool) -> bool:
+def reference_null(*, named: bool | None, names_nullable: bool, keeps_named: bool = False) -> bool:
     """Return whether a reference admits the None of the schema it names.
 
-    ``names_nullable`` tells that the model the type names now admits null and is not a type alias; ``named`` is
-    `TypeNull.named`. A reference whose schema rejects null keeps rejecting it after its model is merged into an equal
-    one that admits null (#5410). Row ``legacy-merged-reference-null``: a reference whose schema admits null takes the
-    null of the model it names after the merge, so it loses the None when that model rejects null (#4816, #5411).
+    ``names_nullable`` tells that the model the type names now admits null and is not a type alias; ``named`` and
+    ``keeps_named`` are `TypeNull.named` and `TypeNull.keeps_named`. A reference whose schema rejects null keeps
+    rejecting it after its model is merged into an equal one that admits null (#5410). With ``keeps_named``
+    (``--keep-reference-null-on-merged-models``) a reference whose schema admits null keeps admitting it after its model
+    is merged into an equal one that rejects null (#4816, #5163, #5411). Without it, row
+    ``legacy-merged-reference-null``: such a reference takes the null of the model it names after the merge.
     """
+    if keeps_named and named is not None:
+        return named
     return names_nullable and named is not False
 
 
@@ -83,7 +89,9 @@ def reference_adds_null(*, null: TypeNull, names_nullable: bool) -> bool:
 
     It does not after a msgspec field stripped the type's None or ``--omit-redundant-reference-null`` dropped it.
     """
-    return not (null.stripped or null.held_dropped) and reference_null(named=null.named, names_nullable=names_nullable)
+    return not (null.stripped or null.held_dropped) and reference_null(
+        named=null.named, names_nullable=names_nullable, keeps_named=null.keeps_named
+    )
 
 
 def rendered_nullability(*, own: bool, reference: bool, member_nulls: Iterable[bool] = ()) -> NullSource | None:
@@ -104,9 +112,12 @@ def rendered_nullability(*, own: bool, reference: bool, member_nulls: Iterable[b
     return None
 
 
-def takes_member_null(*, is_tuple: bool, keeps_member_order: bool, member_count: int) -> bool:
-    """Return whether a type takes over the None of its members: a union that is no tuple and keeps no member order."""
-    return member_count > 1 and not is_tuple and not keeps_member_order
+def takes_member_null(*, is_container: bool, keeps_member_order: bool, member_count: int) -> bool:
+    """Return whether a type takes over the None of its members: a union that keeps no member order.
+
+    A container is no union: the None of an item stays with its items, inside the container.
+    """
+    return member_count > 1 and not is_container and not keeps_member_order
 
 
 def member_null(*, is_none: bool, is_any: bool) -> bool | None:

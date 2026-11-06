@@ -358,11 +358,11 @@ msgspec.Struct default nullable_map {"k": null} accepted
 msgspec.Struct default nullable_map {"k": 0} accepted
 msgspec.Struct default outer_prop 0 accepted
 msgspec.Struct default outer_prop 9 accepted
-msgspec.Struct default outer_prop -1 accepted
+msgspec.Struct default outer_prop -1 rejected
 msgspec.Struct default outer_prop 10 rejected
 msgspec.Struct default outer_items [0] accepted
 msgspec.Struct default outer_items [9] accepted
-msgspec.Struct default outer_items [-1] accepted
+msgspec.Struct default outer_items [-1] rejected
 msgspec.Struct default outer_items [10] rejected
 msgspec.Struct default outer_map {"k": 0} accepted
 msgspec.Struct default outer_map {"k": 9} accepted
@@ -370,12 +370,12 @@ msgspec.Struct default outer_map {"k": -1} rejected
 msgspec.Struct default outer_map {"k": 10} rejected
 msgspec.Struct default multiple_prop 6 accepted
 msgspec.Struct default multiple_prop 12 accepted
-msgspec.Struct default multiple_prop 2 accepted
-msgspec.Struct default multiple_prop 3 accepted
+msgspec.Struct default multiple_prop 2 rejected
+msgspec.Struct default multiple_prop 3 rejected
 msgspec.Struct default multiple_items [6] accepted
 msgspec.Struct default multiple_items [12] accepted
-msgspec.Struct default multiple_items [2] accepted
-msgspec.Struct default multiple_items [3] accepted
+msgspec.Struct default multiple_items [2] rejected
+msgspec.Struct default multiple_items [3] rejected
 msgspec.Struct default multiple_map {"k": 6} accepted
 msgspec.Struct default multiple_map {"k": 12} accepted
 msgspec.Struct default multiple_map {"k": 2} rejected
@@ -501,28 +501,28 @@ pydantic_v2.BaseModel --field-constraints nullable_map {"k": null} accepted
 pydantic_v2.BaseModel --field-constraints nullable_map {"k": 0} accepted
 pydantic_v2.BaseModel --field-constraints outer_prop 0 accepted
 pydantic_v2.BaseModel --field-constraints outer_prop 9 accepted
-pydantic_v2.BaseModel --field-constraints outer_prop -1 accepted
+pydantic_v2.BaseModel --field-constraints outer_prop -1 rejected
 pydantic_v2.BaseModel --field-constraints outer_prop 10 rejected
 pydantic_v2.BaseModel --field-constraints outer_items [0] accepted
 pydantic_v2.BaseModel --field-constraints outer_items [9] accepted
-pydantic_v2.BaseModel --field-constraints outer_items [-1] accepted
+pydantic_v2.BaseModel --field-constraints outer_items [-1] rejected
 pydantic_v2.BaseModel --field-constraints outer_items [10] rejected
 pydantic_v2.BaseModel --field-constraints outer_map {"k": 0} accepted
 pydantic_v2.BaseModel --field-constraints outer_map {"k": 9} accepted
-pydantic_v2.BaseModel --field-constraints outer_map {"k": -1} accepted
+pydantic_v2.BaseModel --field-constraints outer_map {"k": -1} rejected
 pydantic_v2.BaseModel --field-constraints outer_map {"k": 10} rejected
 pydantic_v2.BaseModel --field-constraints multiple_prop 6 accepted
 pydantic_v2.BaseModel --field-constraints multiple_prop 12 accepted
-pydantic_v2.BaseModel --field-constraints multiple_prop 2 accepted
-pydantic_v2.BaseModel --field-constraints multiple_prop 3 accepted
+pydantic_v2.BaseModel --field-constraints multiple_prop 2 rejected
+pydantic_v2.BaseModel --field-constraints multiple_prop 3 rejected
 pydantic_v2.BaseModel --field-constraints multiple_items [6] accepted
 pydantic_v2.BaseModel --field-constraints multiple_items [12] accepted
-pydantic_v2.BaseModel --field-constraints multiple_items [2] accepted
-pydantic_v2.BaseModel --field-constraints multiple_items [3] accepted
+pydantic_v2.BaseModel --field-constraints multiple_items [2] rejected
+pydantic_v2.BaseModel --field-constraints multiple_items [3] rejected
 pydantic_v2.BaseModel --field-constraints multiple_map {"k": 6} accepted
 pydantic_v2.BaseModel --field-constraints multiple_map {"k": 12} accepted
-pydantic_v2.BaseModel --field-constraints multiple_map {"k": 2} accepted
-pydantic_v2.BaseModel --field-constraints multiple_map {"k": 3} accepted
+pydantic_v2.BaseModel --field-constraints multiple_map {"k": 2} rejected
+pydantic_v2.BaseModel --field-constraints multiple_map {"k": 3} rejected
 pydantic_v2.BaseModel --field-constraints const_conflict_prop "a" accepted
 pydantic_v2.BaseModel --field-constraints const_conflict_prop "b" accepted
 pydantic_v2.BaseModel --field-constraints const_conflict_items ["a"] accepted
@@ -644,11 +644,11 @@ pydantic_v2.BaseModel --use-annotated nullable_map {"k": null} accepted
 pydantic_v2.BaseModel --use-annotated nullable_map {"k": 0} accepted
 pydantic_v2.BaseModel --use-annotated outer_prop 0 accepted
 pydantic_v2.BaseModel --use-annotated outer_prop 9 accepted
-pydantic_v2.BaseModel --use-annotated outer_prop -1 accepted
+pydantic_v2.BaseModel --use-annotated outer_prop -1 rejected
 pydantic_v2.BaseModel --use-annotated outer_prop 10 rejected
 pydantic_v2.BaseModel --use-annotated outer_items [0] accepted
 pydantic_v2.BaseModel --use-annotated outer_items [9] accepted
-pydantic_v2.BaseModel --use-annotated outer_items [-1] accepted
+pydantic_v2.BaseModel --use-annotated outer_items [-1] rejected
 pydantic_v2.BaseModel --use-annotated outer_items [10] rejected
 pydantic_v2.BaseModel --use-annotated outer_map {"k": 0} accepted
 pydantic_v2.BaseModel --use-annotated outer_map {"k": 9} accepted
@@ -656,12 +656,12 @@ pydantic_v2.BaseModel --use-annotated outer_map {"k": -1} rejected
 pydantic_v2.BaseModel --use-annotated outer_map {"k": 10} rejected
 pydantic_v2.BaseModel --use-annotated multiple_prop 6 accepted
 pydantic_v2.BaseModel --use-annotated multiple_prop 12 accepted
-pydantic_v2.BaseModel --use-annotated multiple_prop 2 accepted
-pydantic_v2.BaseModel --use-annotated multiple_prop 3 accepted
+pydantic_v2.BaseModel --use-annotated multiple_prop 2 rejected
+pydantic_v2.BaseModel --use-annotated multiple_prop 3 rejected
 pydantic_v2.BaseModel --use-annotated multiple_items [6] accepted
 pydantic_v2.BaseModel --use-annotated multiple_items [12] accepted
-pydantic_v2.BaseModel --use-annotated multiple_items [2] accepted
-pydantic_v2.BaseModel --use-annotated multiple_items [3] accepted
+pydantic_v2.BaseModel --use-annotated multiple_items [2] rejected
+pydantic_v2.BaseModel --use-annotated multiple_items [3] rejected
 pydantic_v2.BaseModel --use-annotated multiple_map {"k": 6} accepted
 pydantic_v2.BaseModel --use-annotated multiple_map {"k": 12} accepted
 pydantic_v2.BaseModel --use-annotated multiple_map {"k": 2} rejected
@@ -930,11 +930,11 @@ msgspec.Struct --collapse-root-models nullable_map {"k": null} accepted
 msgspec.Struct --collapse-root-models nullable_map {"k": 0} accepted
 msgspec.Struct --collapse-root-models outer_prop 0 accepted
 msgspec.Struct --collapse-root-models outer_prop 9 accepted
-msgspec.Struct --collapse-root-models outer_prop -1 accepted
+msgspec.Struct --collapse-root-models outer_prop -1 rejected
 msgspec.Struct --collapse-root-models outer_prop 10 rejected
 msgspec.Struct --collapse-root-models outer_items [0] accepted
 msgspec.Struct --collapse-root-models outer_items [9] accepted
-msgspec.Struct --collapse-root-models outer_items [-1] accepted
+msgspec.Struct --collapse-root-models outer_items [-1] rejected
 msgspec.Struct --collapse-root-models outer_items [10] rejected
 msgspec.Struct --collapse-root-models outer_map {"k": 0} accepted
 msgspec.Struct --collapse-root-models outer_map {"k": 9} accepted
@@ -942,12 +942,12 @@ msgspec.Struct --collapse-root-models outer_map {"k": -1} rejected
 msgspec.Struct --collapse-root-models outer_map {"k": 10} rejected
 msgspec.Struct --collapse-root-models multiple_prop 6 accepted
 msgspec.Struct --collapse-root-models multiple_prop 12 accepted
-msgspec.Struct --collapse-root-models multiple_prop 2 accepted
-msgspec.Struct --collapse-root-models multiple_prop 3 accepted
+msgspec.Struct --collapse-root-models multiple_prop 2 rejected
+msgspec.Struct --collapse-root-models multiple_prop 3 rejected
 msgspec.Struct --collapse-root-models multiple_items [6] accepted
 msgspec.Struct --collapse-root-models multiple_items [12] accepted
-msgspec.Struct --collapse-root-models multiple_items [2] accepted
-msgspec.Struct --collapse-root-models multiple_items [3] accepted
+msgspec.Struct --collapse-root-models multiple_items [2] rejected
+msgspec.Struct --collapse-root-models multiple_items [3] rejected
 msgspec.Struct --collapse-root-models multiple_map {"k": 6} accepted
 msgspec.Struct --collapse-root-models multiple_map {"k": 12} accepted
 msgspec.Struct --collapse-root-models multiple_map {"k": 2} rejected
@@ -1359,11 +1359,11 @@ msgspec.Struct --use-site-models-for-constrained-refs nullable_map {"k": null} a
 msgspec.Struct --use-site-models-for-constrained-refs nullable_map {"k": 0} accepted
 msgspec.Struct --use-site-models-for-constrained-refs outer_prop 0 accepted
 msgspec.Struct --use-site-models-for-constrained-refs outer_prop 9 accepted
-msgspec.Struct --use-site-models-for-constrained-refs outer_prop -1 accepted
+msgspec.Struct --use-site-models-for-constrained-refs outer_prop -1 rejected
 msgspec.Struct --use-site-models-for-constrained-refs outer_prop 10 rejected
 msgspec.Struct --use-site-models-for-constrained-refs outer_items [0] accepted
 msgspec.Struct --use-site-models-for-constrained-refs outer_items [9] accepted
-msgspec.Struct --use-site-models-for-constrained-refs outer_items [-1] accepted
+msgspec.Struct --use-site-models-for-constrained-refs outer_items [-1] rejected
 msgspec.Struct --use-site-models-for-constrained-refs outer_items [10] rejected
 msgspec.Struct --use-site-models-for-constrained-refs outer_map {"k": 0} accepted
 msgspec.Struct --use-site-models-for-constrained-refs outer_map {"k": 9} accepted
@@ -1371,12 +1371,12 @@ msgspec.Struct --use-site-models-for-constrained-refs outer_map {"k": -1} reject
 msgspec.Struct --use-site-models-for-constrained-refs outer_map {"k": 10} rejected
 msgspec.Struct --use-site-models-for-constrained-refs multiple_prop 6 accepted
 msgspec.Struct --use-site-models-for-constrained-refs multiple_prop 12 accepted
-msgspec.Struct --use-site-models-for-constrained-refs multiple_prop 2 accepted
-msgspec.Struct --use-site-models-for-constrained-refs multiple_prop 3 accepted
+msgspec.Struct --use-site-models-for-constrained-refs multiple_prop 2 rejected
+msgspec.Struct --use-site-models-for-constrained-refs multiple_prop 3 rejected
 msgspec.Struct --use-site-models-for-constrained-refs multiple_items [6] accepted
 msgspec.Struct --use-site-models-for-constrained-refs multiple_items [12] accepted
-msgspec.Struct --use-site-models-for-constrained-refs multiple_items [2] accepted
-msgspec.Struct --use-site-models-for-constrained-refs multiple_items [3] accepted
+msgspec.Struct --use-site-models-for-constrained-refs multiple_items [2] rejected
+msgspec.Struct --use-site-models-for-constrained-refs multiple_items [3] rejected
 msgspec.Struct --use-site-models-for-constrained-refs multiple_map {"k": 6} accepted
 msgspec.Struct --use-site-models-for-constrained-refs multiple_map {"k": 12} accepted
 msgspec.Struct --use-site-models-for-constrained-refs multiple_map {"k": 2} rejected
@@ -1502,28 +1502,28 @@ pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable_map {"k": 0} accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs outer_prop 0 accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs outer_prop 9 accepted
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs outer_prop -1 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs outer_prop -1 rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs outer_prop 10 rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs outer_items [0] accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs outer_items [9] accepted
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs outer_items [-1] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs outer_items [-1] rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs outer_items [10] rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs outer_map {"k": 0} accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs outer_map {"k": 9} accepted
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs outer_map {"k": -1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs outer_map {"k": -1} rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs outer_map {"k": 10} rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs multiple_prop 6 accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs multiple_prop 12 accepted
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs multiple_prop 2 accepted
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs multiple_prop 3 accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs multiple_prop 2 rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs multiple_prop 3 rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs multiple_items [6] accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs multiple_items [12] accepted
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs multiple_items [2] accepted
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs multiple_items [3] accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs multiple_items [2] rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs multiple_items [3] rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs multiple_map {"k": 6} accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs multiple_map {"k": 12} accepted
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs multiple_map {"k": 2} accepted
-pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs multiple_map {"k": 3} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs multiple_map {"k": 2} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs multiple_map {"k": 3} rejected
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs const_conflict_prop "a" accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs const_conflict_prop "b" accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs const_conflict_items ["a"] accepted

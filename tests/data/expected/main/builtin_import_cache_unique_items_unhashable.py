@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Set
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
 
 class Item(BaseModel):
-    values: Optional[Set[Dict[str, Any]]] = [{'a': 1}]
+    values: Optional[List[Dict[str, Any]]] = [{'a': 1}]
 
 
 class Left(BaseModel):

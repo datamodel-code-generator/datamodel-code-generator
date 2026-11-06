@@ -79,6 +79,8 @@ def main() -> None:
         resolver = pickle.loads(payload)
         direction = "main -> current" if args.direction == "main-to-current" else "main slotted -> current"
         _report(direction, resolver)
+        print(f"item class: {resolver.get_class_name('Pets', singular_name=True).name}")
+        print(f"numbered enum member: {resolver.get_valid_field_name('a', {'a'}, model_type=ModelType.ENUM)}")
         if args.direction == "main-slotted-to-current":
             print(f"slot marker: {resolver.slot_marker}")
         return

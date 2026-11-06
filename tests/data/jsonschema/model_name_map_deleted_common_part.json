@@ -1,0 +1,58 @@
+{
+  "$defs": {
+    "Base": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "string"
+        }
+      }
+    },
+    "Holder": {
+      "type": "object",
+      "properties": {
+        "pet": {
+          "type": "object",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Base"
+            }
+          ]
+        }
+      }
+    },
+    "Pet": {
+      "type": "object",
+      "properties": {
+        "z": {
+          "type": "integer"
+        }
+      }
+    },
+    "Other": {
+      "type": "object",
+      "properties": {
+        "pet": {
+          "type": "object",
+          "properties": {
+            "w": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "h": {
+      "$ref": "#/$defs/Holder"
+    },
+    "p": {
+      "$ref": "#/$defs/Pet"
+    },
+    "o": {
+      "$ref": "#/$defs/Other"
+    }
+  }
+}

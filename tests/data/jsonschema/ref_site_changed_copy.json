@@ -1,0 +1,9 @@
+{"$schema": "https://json-schema.org/draft/2020-12/schema", "title": "Holder", "type": "object",
+ "properties": {
+   "changed": {"$ref": "#/$defs/A", "properties": {"next": {"description": "changed", "required": ["w"]}}},
+   "plain": {"$ref": "#/$defs/A", "description": "plain"}
+ },
+ "$defs": {
+   "A": {"type": "object", "properties": {"next": {"$ref": "#/$defs/B", "required": ["v"]}}},
+   "B": {"type": "object", "properties": {"v": {"type": "integer"}, "w": {"type": "string"}}}
+ }}

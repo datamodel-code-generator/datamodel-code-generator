@@ -23,6 +23,7 @@ from datamodel_code_generator._json_pointer import join_pointer, reference_token
 from datamodel_code_generator._json_schema import INSTANCE_DATA_KEYWORDS, NAMED_SCHEMA_MAPS, subschema_entries
 from datamodel_code_generator._openapi_objects import COMPONENT_KINDS, COMPONENT_ROLES, OBJECT_MEMBERS, object_members
 from datamodel_code_generator._url_redaction import redact_reference
+from datamodel_code_generator.enums import OpenAPIVersion
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
@@ -36,7 +37,10 @@ JSON: TypeAlias = "bool | int | float | str | list[JSON] | dict[str, JSON] | Non
 Key: TypeAlias = "tuple[int, tuple[str, ...]]"
 
 _DECLARING: Final = frozenset({"root", "schema"})
-_SINCE: Final = {"pathItems": (3, 1), "mediaTypes": (3, 2)}
+_SINCE: Final = {
+    "pathItems": frozenset({OpenAPIVersion.V31, OpenAPIVersion.V32}),
+    "mediaTypes": frozenset({OpenAPIVersion.V32}),
+}
 _KEPT: Final = "securitySchemes"
 _NAME: Final = re.compile(r"[^A-Za-z0-9._-]")
 _URL: Final = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://")
@@ -45,18 +49,18 @@ _URL: Final = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://")
 class SourceDocument:
     """Copy the selected operations' part of the loaded documents into one JSON document."""
 
-    def __init__(self, lease: SourceLease) -> None:
+    def __init__(self, lease: SourceLease, version: OpenAPIVersion) -> None:
         """Index the loaded documents, and the schema resources and anchors they declare, by their URIs.
 
         A document is a resource at the location it was read from and at its `$self`; from OpenAPI 3.1 on, a schema's
-        `$id` declares a resource, and `$anchor` and `$dynamicAnchor` a name in the resource around them.
+        `$id` declares a resource, and `$anchor` and `$dynamicAnchor` a name in the resource around them. `version` is
+        the OpenAPI version the parser reads the root document by.
         """
         held = lease.documents()
         self.uris = [_uri(location) for location, _ in held]
         self.documents = [document for _, document in held]
         root = self.documents[0]
-        version = re.match(r"(\d+)\.(\d+)", str(root.get("openapi", "")))
-        self.version = (int(version[1]), int(version[2])) if version else (3, 1)
+        self.version = version
         self.bases = [
             urljoin(uri, own) if isinstance(own := document.get("$self"), str) else uri
             for uri, document in zip(self.uris, self.documents, strict=True)
@@ -92,7 +96,7 @@ class SourceDocument:
             if not isinstance(node, dict) or (identity := (id(node), role)) in seen:
                 continue
             seen.add(identity)
-            if role == "schema" and isinstance(own := node.get("$id"), str) and self.version >= (3, 1):
+            if role == "schema" and isinstance(own := node.get("$id"), str) and self.version != OpenAPIVersion.V30:
                 around = (urljoin(around[0], own).partition("#")[0],)
                 self.resources.setdefault(around[0], (document, at))
             if role in _DECLARING:
@@ -237,7 +241,7 @@ class SourceDocument:
         A schema's `$id` only sets the base its references resolve against, which the copy has applied to them, so the
         copy leaves it out: every reference in the document is relative to the document itself.
         """
-        if role == "schema" and isinstance(own := value.get("$id"), str) and self.version >= (3, 1):
+        if role == "schema" and isinstance(own := value.get("$id"), str) and self.version != OpenAPIVersion.V30:
             base = urljoin(base, own)
         children = OBJECT_MEMBERS.get(role, {})
         copied: dict[str, JSON] = {}
@@ -331,7 +335,7 @@ class SourceDocument:
         since = _SINCE.get(COMPONENT_KINDS.get(role, ""))
         if (
             since is None
-            or self.version >= since
+            or self.version in since
             or not isinstance(ref := value.get("$ref"), str)
             or (resolved := self.resolve(document, base, ref)) is None
         ):

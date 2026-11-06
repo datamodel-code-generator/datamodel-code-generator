@@ -17,3 +17,4 @@ class Tag(BaseModel):
 
 class TagsGetParametersQuery(BaseModel):
     tag: Tag | None = None
+    page: int | None = None

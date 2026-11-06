@@ -36,6 +36,7 @@ from datamodel_code_generator.model._render_plan import (
     NESTED_MODEL_FACTORY,
     PLAIN_ANNOTATION,
     REQUIRED_FIELD,
+    TYPE_OVERRIDE,
     UNTAKEN_BY_TYPE,
     CallPlan,
     FieldDefault,
@@ -55,16 +56,19 @@ from datamodel_code_generator.model.base import (
     _normalized_constraint_kwargs,
 )
 from datamodel_code_generator.python_literal import represent_python_value
-from datamodel_code_generator.types import UnionIntFloat as _UnionIntFloat
 from datamodel_code_generator.types import (
+    DataTypeManager,
     _non_finite_as_written,
     chain_as_tuple,
 )
+from datamodel_code_generator.types import UnionIntFloat as _UnionIntFloat
 
 if TYPE_CHECKING:
     from collections import defaultdict
+    from collections.abc import Mapping
 
     from datamodel_code_generator.imports import Import
+    from datamodel_code_generator.model._views import ModelView, ReferenceView
     from datamodel_code_generator.reference import Reference
     from datamodel_code_generator.types import DataType
 
@@ -94,7 +98,6 @@ _USE_FIELD_DESCRIPTION = Why(
 )
 _DECLARED_FACTORY = Why(RuleId("D4.default.declared-factory"), keyword="default_factory")
 _FACTORY_NOT_APPLICABLE = Why(RuleId("D4.default.factory-of-required-or-valued"), keyword="default_factory")
-_OVERRIDE = Why(RuleId("D2.type-override"), option="--type-overrides")
 _ANYURL = RuleId("legacy-anyurl-keeps-string-keywords")
 _CONSTRAINT = RuleId("D2.pydantic.constraint")
 _NONE_TYPE = RuleId("D2.pydantic.none-type-number")
@@ -115,6 +118,11 @@ class _PydanticFieldRenderPlan(NamedTuple):
 
 
 _EMPTY_FIELD_TEXT = _PydanticFieldRenderPlan("", None, (), None)
+
+
+def _model_of_reference(reference: ReferenceView) -> ModelView | None:
+    """Return the model a reference names, as the written output holds it, or None when it names no model."""
+    return source if isinstance(source := cast("Reference", reference).source, DataModel) else None
 
 
 def _put_discriminator_last(args: _FieldArguments) -> None:
@@ -155,6 +163,11 @@ class DataModelField(DataModelFieldBase):
     _INTEGER_CONSTRAINTS: ClassVar[set[str]] = set(_applicability.NUMBER_FIELD_KEYWORDS)
     _CONSTRAINT_ARGUMENTS: ClassVar[dict[str, str]] = _FIELD_CONSTRAINT_ARGUMENTS
     """The ``Field()`` argument that the constraints model of the field writes each schema keyword as."""
+    _UNWRITTEN_CONSTRAINT_ARGUMENTS: ClassVar[frozenset[str]] = frozenset()
+    """The constraint arguments ``Field()`` of the output model cannot express, which ``_process_field_arguments``
+    leaves out."""
+    _TYPE_MANAGER: ClassVar[type[DataTypeManager]] = DataTypeManager
+    """The type manager of the output model, whose tables give the keywords the value of an enum's base takes."""
     constraints: Optional[Constraints] = None  # noqa: UP045
 
     @property
@@ -268,10 +281,13 @@ class DataModelField(DataModelFieldBase):
         needs_required_nullable_field = self.nullable and requires_value(self)
         return bool(has_field_metadata or needs_required_nullable_field or self._takes_nested_model_factory())
 
-    def _normalized_constraint_arguments(self, omitted: list[Omitted]) -> dict[str, Kwarg]:
+    def _normalized_constraint_arguments(
+        self, omitted: list[Omitted], *, beside_models: bool = True
+    ) -> dict[str, Kwarg]:
         """Return the constraint arguments with integer-safe values, merging colliding bounds into one argument.
 
-        A constraint the type expresses, or a number constraint of a ``None`` type, goes to ``omitted``.
+        A constraint the type expresses, a number constraint of a ``None`` type, or, with ``beside_models``, one that
+        no value of a type of model instances takes (``_untaken_beside_models``, which warns), goes to ``omitted``.
         """
         assert self.constraints is not None
         dumped = self.constraints._exclude_unset_dump  # noqa: SLF001
@@ -286,6 +302,13 @@ class DataModelField(DataModelFieldBase):
                 if key in none_dropped
             )
             dumped = {key: value for key, value in dumped.items() if key not in none_dropped}
+        if beside_models and (untaken := self._untaken_beside_models(dumped)):
+            omitted.extend(
+                Omitted(f"constraint:{key}", value, "untaken-by-type", Why(UNTAKEN_BY_TYPE, untaken[key]), warns=True)
+                for key, value in dumped.items()
+                if key in untaken
+            )
+            dumped = {key: value for key, value in dumped.items() if key not in untaken}
         has_integer_constraints = bool(self._INTEGER_CONSTRAINTS & dumped.keys())
         is_float_type = has_integer_constraints and self._has_numeric_data_type("float", "Float")
         is_int_type = has_integer_constraints and not is_float_type and self._has_numeric_data_type("int", "Int")
@@ -307,6 +330,32 @@ class DataModelField(DataModelFieldBase):
         if self._has_strict_decimal():
             arguments["strict"] = Kwarg("strict", True, _STRICT_DECIMAL)  # noqa: FBT003
         return arguments
+
+    def _untaken_beside_models(self, declared: Mapping[str, Any]) -> dict[str, str]:
+        """Return, by name, the schema keyword of each declared constraint no value of the field's type takes.
+
+        Only a type whose every value is the instance of a model is decided: Pydantic applies a constraint to the value
+        the type validates to and raises ``TypeError`` where that value cannot take it, as the instance of a root
+        model, an object model, a dataclass or a plain enum (``DataTypeManager.model_value_constraint_keywords``, which
+        reads the models the type names as it is written, with the tables of ``_TYPE_MANAGER``). The field assembly
+        keeps such constraints, as the item counts beside a model (row ``legacy-property-counts-beside-models``), for
+        the written type to decide, as msgspec decides its ``Meta``. A constraint ``Field()`` never writes
+        (``_UNWRITTEN_CONSTRAINT_ARGUMENTS``) is left to the call.
+        """
+        if (
+            taken := self._TYPE_MANAGER.model_value_constraint_keywords(
+                self.data_type, self.target_version_key(self.data_type), _model_of_reference
+            )
+        ) is None:
+            return {}
+        fields = type(cast("Constraints", self.constraints)).model_fields
+        return {
+            key: keyword
+            for key in declared
+            if key not in self._UNWRITTEN_CONSTRAINT_ARGUMENTS
+            and (keyword := fields[key].alias or key) in _applicability.TYPE_DEPENDENT_KEYWORDS
+            and keyword not in taken
+        }
 
     def _has_strict_decimal(self) -> bool:
         """Return whether the field's type, or a member of the union it is, is a strict ``Decimal``, aliased or not.
@@ -392,10 +441,7 @@ class DataModelField(DataModelFieldBase):
         """
         omitted: list[Omitted] = []
         constraints = self.constraints
-        anyurl = (
-            constraints is not None
-            and self._constraints_blocked_by(anyurl_outside_container=self._has_anyurl_outside_container()) == "anyurl"
-        )
+        anyurl = self._drops_constraints_for_anyurl()
         if constraints is not None and anyurl:
             fields = type(constraints).model_fields
             omitted.extend(
@@ -423,9 +469,67 @@ class DataModelField(DataModelFieldBase):
         if overridden := self.overridden_constraints:
             replaced, count = overridden
             omitted.append(
-                Omitted("override", count, "override-type-does-not-take", _OVERRIDE, warns=True, detail=replaced)
+                Omitted("override", count, "override-type-does-not-take", TYPE_OVERRIDE, warns=True, detail=replaced)
             )
         return omitted, anyurl
+
+    def _drops_constraints_for_anyurl(self) -> bool:
+        """Return whether the field writes no constraint because its type holds ``AnyUrl`` outside a container."""
+        return (
+            self.constraints is not None
+            and self._constraints_blocked_by(anyurl_outside_container=self._has_anyurl_outside_container()) == "anyurl"
+        )
+
+    def _constraint_arguments(
+        self, omitted: list[Omitted], *, anyurl: bool, beside_models: bool = True
+    ) -> dict[str, Kwarg]:
+        """Return the ``Field()`` arguments that write the field's constraints; those it cannot write go to ``omitted``.
+
+        A field whose type holds ``AnyUrl`` outside a container (``anyurl``, which ``_warned_omissions`` omits) writes
+        none, nor does a field whose call cannot write them (``_constraints_blocked_by``); ``beside_models`` leaves out
+        those that no value of a type of model instances takes (``_normalized_constraint_arguments``).
+        """
+        if (constraints := self.constraints) is None or anyurl:
+            return {}
+        if (blocked := self._constraints_blocked_by()) is not None:
+            omitted.extend(
+                Omitted(f"constraint:{key}", value, blocked, Why(_CONSTRAINT, key))
+                for key, value in constraints._exclude_unset_dump.items()  # noqa: SLF001
+            )
+            return {}
+        return self._normalized_constraint_arguments(omitted, beside_models=beside_models)
+
+    @property
+    @override
+    def written_constraints(self) -> dict[str, Any]:
+        """The constraint values the field's ``Field()`` call writes, by schema keyword, as its render plan writes them.
+
+        They leave out what the call cannot write (``_constraint_arguments``) and what ``Field()`` of the output model
+        cannot express (``_UNWRITTEN_CONSTRAINT_ARGUMENTS``); a class variable writes none. They keep those that no
+        value of a type of model instances takes, which the call leaves out only after the decision phase, which reads
+        these, has left out the keywords beside a union whose every member keeps the check (#6022).
+        """
+        written = (
+            set()
+            if self.is_class_var
+            else {
+                item
+                for name, argument in self._constraint_arguments(
+                    [], anyurl=self._drops_constraints_for_anyurl(), beside_models=False
+                ).items()
+                if name not in self._UNWRITTEN_CONSTRAINT_ARGUMENTS and argument.value is not None
+                for item in argument.items
+            }
+        )
+        if not written:
+            return {}
+        constraints = cast("Constraints", self.constraints)
+        fields = type(constraints).model_fields
+        return {
+            fields[name].alias or name: value
+            for name, value in constraints._exclude_unset_dump.items()  # noqa: SLF001
+            if f"constraint:{name}" in written
+        }
 
     def _render_plan_text(self, plan: FieldRenderPlan) -> tuple[object, ...]:
         """Return what the field writes from ``plan``, to compare a frozen plan with a rebuilt one."""
@@ -462,15 +566,8 @@ class DataModelField(DataModelFieldBase):
             args.put(key, value, Why(_EXTRA, key), (f"extra:{key}",))
         if self.alias is not None:
             args.put("alias", self.alias, EXPLICIT_ALIAS, ("alias",))
-        if self.constraints is not None and not anyurl:
-            if (blocked := self._constraints_blocked_by()) is not None:
-                args.omitted.extend(
-                    Omitted(f"constraint:{key}", value, blocked, Why(_CONSTRAINT, key))
-                    for key, value in self.constraints._exclude_unset_dump.items()  # noqa: SLF001
-                )
-            else:
-                for name, argument in self._normalized_constraint_arguments(args.omitted).items():
-                    args.put(name, argument.value, argument.why, argument.items)
+        for name, argument in self._constraint_arguments(args.omitted, anyurl=anyurl).items():
+            args.put(name, argument.value, argument.why, argument.items)
 
         if self.use_field_description:
             args.pop("description", "use-field-description", _USE_FIELD_DESCRIPTION)

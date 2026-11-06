@@ -1,0 +1,4 @@
+{
+  "title": "Child",
+  "allOf": [{"$ref": "base.json"}, {"type": "object", "properties": {"a": {"type": "string"}, "c": {"type": "string"}}}]
+}

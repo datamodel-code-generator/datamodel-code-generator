@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "class_name": "Person",
+      "name": "Person",
+      "module": "",
+      "source_ref": "person.json#",
+      "source_path": [],
+      "title": "Person",
+      "fields": [
+        {
+          "name": "firstName",
+          "alias": "firstName",
+          "original_name": "firstName",
+          "type": "str | None",
+          "required": false
+        },
+        {
+          "name": "lastName",
+          "alias": "lastName",
+          "original_name": "lastName",
+          "type": "str | None",
+          "required": false
+        },
+        {
+          "name": "age",
+          "alias": "age",
+          "original_name": "age",
+          "type": "conint(ge=0) | None",
+          "required": false
+        },
+        {
+          "name": "friends",
+          "alias": "friends",
+          "original_name": "friends",
+          "type": "list[Any] | None",
+          "required": false
+        },
+        {
+          "name": "comment",
+          "alias": "comment",
+          "original_name": "comment",
+          "type": "None",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

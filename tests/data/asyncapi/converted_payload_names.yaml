@@ -1,0 +1,43 @@
+asyncapi: 2.6.0
+info: {title: t, version: '1'}
+channels:
+  text:
+    publish:
+      message:
+        name: Text
+        schemaFormat: application/vnd.apache.avro;version=1.9.0
+        payload: string
+  ping:
+    publish:
+      message:
+        name: Ping
+        schemaFormat: application/vnd.apache.avro;version=1.9.0
+        payload: {type: array, items: string}
+  pong:
+    publish:
+      message:
+        name: Pong
+        schemaFormat: application/vnd.apache.avro;version=1.9.0
+        payload: {type: map, values: int}
+  rec:
+    publish:
+      message:
+        name: Rec
+        schemaFormat: application/vnd.apache.avro;version=1.9.0
+        payload: {type: record, name: Model, fields: [{name: a, type: string}]}
+  uni:
+    publish:
+      message:
+        name: Uni
+        schemaFormat: application/vnd.apache.avro;version=1.9.0
+        payload: ["null", "string"]
+  xml:
+    publish:
+      message:
+        name: Xml
+        schemaFormat: application/xml;version=1.0
+        payload: |
+          <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+            <xs:element name="A" type="xs:string"/>
+            <xs:element name="B" type="xs:int"/>
+          </xs:schema>

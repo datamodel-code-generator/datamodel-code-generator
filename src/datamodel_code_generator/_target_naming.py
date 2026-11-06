@@ -16,12 +16,13 @@ from __future__ import annotations
 
 import re
 from copy import copy
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Final, TypeAlias
 
 from datamodel_code_generator._format_types import PythonVersionMin
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._runtime.model_codecs.parameters import PLACEHOLDER as PATH_PLACEHOLDER
-from datamodel_code_generator._target_unicode import casefold, is_nfkc, is_python_name, nfc, target_pattern
+from datamodel_code_generator._target_unicode import casefold, is_nfkc, is_python_name, nfc, nfkc, target_pattern
+from datamodel_code_generator._user_keys import scoped_key
 from datamodel_code_generator.enums import NamingStrategy
 
 if TYPE_CHECKING:
@@ -33,7 +34,6 @@ if TYPE_CHECKING:
 __all__ = (
     "WINDOWS_DEVICES",
     "Candidate",
-    "FoldRule",
     "NameScope",
     "TargetNames",
     "explicit_name",
@@ -45,7 +45,8 @@ __all__ = (
 
 _WORDS_SOURCE: Final = r"(?:(?!_)\w)+"
 _WORDS: Final = re.compile(_WORDS_SOURCE)
-_PREFIXED: Final = frozenset({NamingStrategy.ParentPrefixed, NamingStrategy.FullPath})
+_PREFIXED: Final = frozenset({NamingStrategy.ParentPrefixed, NamingStrategy.FullPath, NamingStrategy.EnclosingModel})
+_DECLARED_FIRST: Final = frozenset({NamingStrategy.PrimaryFirst, NamingStrategy.DefinitionsFirst})
 WINDOWS_DEVICES: Final = frozenset({
     "aux",
     "con",
@@ -54,7 +55,6 @@ WINDOWS_DEVICES: Final = frozenset({
     *(f"com{index}" for index in range(1, 10)),
     *(f"lpt{index}" for index in range(1, 10)),
 })
-FoldRule: TypeAlias = Literal["nfc", "legacy-fold-without-nfc"]
 
 
 def explicit_name(value: object, target_python_version: PythonVersion) -> bool:
@@ -67,14 +67,12 @@ def explicit_name(value: object, target_python_version: PythonVersion) -> bool:
     )
 
 
-def fold_key(text: str, target_python_version: PythonVersion | None, *, rule: FoldRule = "nfc") -> str:
+def fold_key(text: str, target_python_version: PythonVersion | None) -> str:
     """Return the key two names or paths of generated files compare in, as case-insensitive file systems compare them.
 
-    Row `nfc` normalizes the text to NFC, then case-folds it, as the target does; `legacy-fold-without-nfc` only
-    case-folds it (the folded name scopes and the client's resource namespaces).
+    The text is normalized to NFC, then case-folded, as the target does.
     """
-    normalized = nfc(text, target_python_version) if rule == "nfc" else text
-    return casefold(normalized, target_python_version)
+    return casefold(nfc(text, target_python_version), target_python_version)
 
 
 def windows_device(name: str, target_python_version: PythonVersion) -> bool:
@@ -107,8 +105,8 @@ def operation_basis(method: str, path: str, operation_id: str | None, target_pyt
 class NameScope:
     """The names one namespace already holds: its support names first, then each name claimed in order.
 
-    A folded scope compares names case-insensitively, as the target case-folds them, because its names become paths
-    on case-insensitive file systems.
+    A folded scope compares names by `fold_key`, as case-insensitive file systems compare paths, because its names
+    become paths.
     """
 
     __slots__ = ("_folded", "_taken", "_target_python_version")
@@ -126,7 +124,7 @@ class NameScope:
         self._taken = {self._key(name) for name in reserved}
 
     def _key(self, name: str) -> str:
-        return fold_key(name, self._target_python_version, rule="legacy-fold-without-nfc") if self._folded else name
+        return fold_key(name, self._target_python_version) if self._folded else name
 
     def __contains__(self, name: object) -> bool:
         """Return whether the scope already holds a name."""
@@ -196,23 +194,30 @@ class TargetNames:
         )
 
     def function(self, text: str) -> str:
-        """Return the snake_case name of a method, handler, resource, or module."""
-        return self._function.get_valid_name(text)
+        """Return the snake_case name of a method, handler, resource, or module, in NFKC form."""
+        return self._written(self._function.get_valid_name(self._written(text)))
 
     def pascal(self, text: str) -> str:
-        """Return the UpperCamel class name the models would give."""
-        return self._resolver.get_valid_name(text, ignore_snake_case_field=True, upper_camel=True)
+        """Return the UpperCamel class name the models would give, in NFKC form."""
+        return self._written(
+            self._resolver.get_valid_name(self._written(text), ignore_snake_case_field=True, upper_camel=True)
+        )
+
+    def _written(self, text: str) -> str:
+        """Return text in the NFKC form Python reads an identifier in, before naming it and after its case changed."""
+        return nfkc(text, self.python_version)
 
     def claim(self, scope: NameScope, candidates: Sequence[Candidate], *, camel: bool = False) -> list[str]:
         """Claim derived names in their scope, in order, telling a name the scope already holds apart as models do.
 
         `numbered` suffixes it; `parent-prefixed` first prefixes it with its innermost enclosing scope, `full-path`
-        with every enclosing scope; `primary-first` claims the names declared in the root document before those
-        another document declares, as models claim primary definitions before external ones.
+        and `enclosing-model` with every enclosing scope; `primary-first` and `definitions-first` claim the names
+        declared in the root document before those another document declares, as models claim primary definitions
+        before external ones.
         A class takes the duplicate class suffix.
         """
         order: Iterable[int] = range(len(candidates))
-        if self.strategy is NamingStrategy.PrimaryFirst:
+        if self.strategy in _DECLARED_FIRST:
             order = sorted(order, key=lambda index: not candidates[index][1])
         names = [""] * len(candidates)
         for index in order:
@@ -231,7 +236,8 @@ class TargetNames:
     def aliased(self, wire_name: str, name: str) -> bool:
         """Return whether a model field took its name from a flat or a scoped `--aliases` entry for its wire name."""
         return any(
-            value == name and (key == wire_name or key.endswith(f".{wire_name}"))
+            value == name
+            and (key == wire_name or any(part == wire_name for _, part in scoped_key(key, row="every-dot")))
             for key, value in self._resolver.aliases.items()
             if isinstance(value, str)
         )

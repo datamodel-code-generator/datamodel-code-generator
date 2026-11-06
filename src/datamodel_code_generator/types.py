@@ -96,7 +96,7 @@ from datamodel_code_generator.imports import (
     _import_key,
     _import_path,
 )
-from datamodel_code_generator.python_literal import represent_python_value
+from datamodel_code_generator.python_literal import represent_python_value, stable_repr
 from datamodel_code_generator.reference import Reference, _BaseModel
 from datamodel_code_generator.util import create_module_getattr
 
@@ -200,6 +200,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import StrictTypes
     from datamodel_code_generator.model._decisions.nullability import NullSource, TypeNull
     from datamodel_code_generator.model._decisions.union_assembly import MemberRole, MergedMembers, UnionRow
+    from datamodel_code_generator.model._views import DataTypeView, ModelView, ReferenceView
 
     class DataModelFieldBase(Protocol):
         """Type-checking contract for a field that owns a DataType."""
@@ -1013,6 +1014,10 @@ class DataType(_BaseModel):  # noqa: PLR0904
         """
         return type_
 
+    def _get_wrapped_alias_type_hint(self, alias: str) -> str:  # noqa: PLR6301
+        """Wrap the expression a reference type names its model by, its alias, as subclasses decide; here never."""
+        return alias
+
     @staticmethod
     def _wrap_discriminator_type_hint(type_: str, discriminator: str) -> str:
         """Preserve the historical discriminator rendering for direct DataType users.
@@ -1020,7 +1025,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
         Output-specific DataType subclasses should override this compatibility
         fallback so their generated syntax remains owned by the output backend.
         """
-        return subscript_text("Annotated", (type_, f"Field(discriminator={discriminator!r})"))
+        return subscript_text("Annotated", (type_, f"Field(discriminator={stable_repr(discriminator)})"))
 
     _TYPE_HINT_CONTAINER_ORDER: ClassVar[tuple[str, ...]] = WRITTEN_CONTAINERS
     _BASE_TYPE_HINT_CONTAINER_ORDER: ClassVar[tuple[str, ...]] = ("list", "set", "dict")
@@ -1053,8 +1058,9 @@ class DataType(_BaseModel):  # noqa: PLR0904
         null keeps rejecting it after merging that model into an equal one that admits null
         (``GenerationStore.redirect_reference_users``).
         """
+        null = self._type_null
         return _nullability_core().reference_null(
-            named=self._type_null.named, names_nullable=self._names_nullable_target()
+            named=null.named, names_nullable=self._names_nullable_target(), keeps_named=null.keeps_named
         )
 
     @property
@@ -1154,7 +1160,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
     def _takes_member_null(self, core: ModuleType) -> bool:
         """Return whether the type, as a union, takes over the None of its members."""
         return core.takes_member_null(
-            is_tuple=self.is_tuple,
+            is_container=self._is_container,
             keeps_member_order=self.preserve_union_member_order,
             member_count=len(self.data_types),
         )
@@ -1408,14 +1414,18 @@ def _render_apply(expr: TypeApply) -> str:
         text = render_type_expr(expr.args[0])
     elif not text:
         text, member_null = _render_form(expr)
+    elif node.reference is not None and text == node.alias:
+        text = node._get_wrapped_alias_type_hint(text)  # noqa: SLF001
     if (container := expr.container) is not None:
+        if member_null:
+            text, member_null = node._optional_hint(text, node.use_union_operator), False  # noqa: SLF001
         if expr.mapping:
             key = STR if expr.key is None else render_type_expr(expr.key)
             text = subscript_text(container, (key, text or ANY)) if expr.key is not None or text else container
         else:
             text = subscript_text(container, (text,)) if text else container
     if not expr.base and node._is_forward_reference:  # noqa: SLF001
-        text = repr(text) if '"' in text or "\\" in text else f'"{text}"'
+        text = stable_repr(text) if '"' in text or "\\" in text else f'"{text}"'
     if (node.is_optional or member_null or (expr.form != "base" and node.adds_reference_null)) and text != ANY:
         return node._optional_hint(text, node.use_union_operator)  # noqa: SLF001
     if not expr.base and node.is_func and node.kwargs:
@@ -1444,7 +1454,7 @@ def _render_form(expr: TypeApply) -> tuple[str, bool]:
             parts = (
                 [f"{enum_class}.{member}" for enum_class, member in node.enum_member_literals]
                 if node.enum_member_literals
-                else [repr(literal) for literal in node.literals]
+                else [stable_repr(literal) for literal in node.literals]
             )
             text = subscript_text(node._literal_name, parts)  # noqa: SLF001
     return text, member_null
@@ -1745,6 +1755,18 @@ def _is_plain_none(data_type: DataType) -> bool:
     return data_type.type == NONE and not data_type.data_types
 
 
+def _value_members(data_type: DataType) -> Iterator[DataType]:
+    """Yield the types a value of a type validates as: each member of its union, through types that write only members.
+
+    The plain None of a union is left out.
+    """
+    if data_type._writes_nothing_of_its_own and data_type.data_types:  # noqa: SLF001
+        for member in data_type.data_types:
+            yield from _value_members(member)
+    elif not _is_plain_none(data_type):
+        yield data_type
+
+
 def _is_value_literal(data_type: DataType) -> bool:
     """Return whether a type is the ``Literal`` of the values of a const or an enum."""
     return bool(data_type.literals) and not data_type.type and data_type.import_ is None
@@ -1761,7 +1783,13 @@ class DataTypeManager(ABC):
         r"([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]{0,61}[A-Za-z0-9])$"
     )
     omit_redundant_constraints: bool = False
+    read_length_keywords_by_type: bool = False
+    read_msgspec_union_bounds_exactly: bool = False
     use_decimal_in_field_forms: bool = False
+    use_encoded_str_for_constrained_base64: bool = False
+    use_msgspec_meta_for_map_keys: bool = False
+    WRITES_ENCODED_STR: ClassVar[bool] = False
+    """Whether the output writes a string decoded from base64 text with its constraints in front of the decoding."""
     CONSTRAINED_TYPE_CONSUMED_KEYS: ClassVar[dict[str, tuple[str, ...]]] = dict(
         _applicability.BASE_OUTPUT.zero_bound_classes
     )
@@ -1779,6 +1807,7 @@ class DataTypeManager(ABC):
     ANNOTATION_UNIONS_TAKE_CONSTRAINTS: ClassVar[bool] = _applicability.BASE_OUTPUT.annotation_unions_take
     FIXED_TUPLES_TAKE_LENGTH: ClassVar[bool] = _applicability.BASE_OUTPUT.fixed_tuples_take_length
     LITERALS_TAKE_CONSTRAINTS: ClassVar[bool] = _applicability.BASE_OUTPUT.literals_take
+    REFUSED_LITERAL_TYPES: ClassVar[tuple[type, ...]] = _applicability.BASE_OUTPUT.refused_literal_types
     _WRITES_CONSTRAINED_TYPES: ClassVar[bool] = _applicability.BASE_OUTPUT.writes_constrained_types
     """Whether the type manager writes scalar constraints into ``con*`` types (``OutputKeywords``)."""
 
@@ -1832,6 +1861,10 @@ class DataTypeManager(ABC):
         """Map a Types enum value to a DataType. Must be implemented by subclasses."""
         raise NotImplementedError
 
+    def get_map_key_str_type(self, **kwargs: Any) -> DataType:
+        """Return the string key type of a dict whose keys a ``pattern``, ``minLength`` or ``maxLength`` constrains."""
+        return self.get_data_type(Types.string, **kwargs)
+
     def _non_finite_multiple_of(self, types: Types, kwargs: Mapping[str, Any]) -> float | None:  # noqa: ARG002, PLR6301
         """Return the ``multipleOf`` that ``get_data_type`` leaves out of the type as the backend refuses it, if any."""
         return None
@@ -1866,10 +1899,13 @@ class DataTypeManager(ABC):
         return copied_data_type
 
     @staticmethod
-    def _shape_constraint_keywords(data_type: DataType) -> frozenset[str] | None:
+    def _shape_constraint_keywords(data_type: DataType, *, counts_keys: bool = False) -> frozenset[str] | None:
         """Return the keywords a container or a referenced model takes, or None for any other type."""
         return _applicability.shape_keywords(
-            mapping=data_type in MAPPINGS, sequence=data_type in ARRAYS, reference=bool(data_type.reference)
+            mapping=data_type in MAPPINGS,
+            sequence=data_type in ARRAYS,
+            reference=bool(data_type.reference),
+            counts_keys=counts_keys,
         )
 
     @property
@@ -1878,7 +1914,15 @@ class DataTypeManager(ABC):
         return _applicability.ConstraintOptions(
             omit_redundant_constraints=self.omit_redundant_constraints,
             use_decimal_in_field_forms=self.use_decimal_in_field_forms,
+            use_encoded_str_for_constrained_base64=self.use_encoded_str_for_constrained_base64,
+            read_length_keywords_by_type=self.read_length_keywords_by_type,
+            read_msgspec_union_bounds_exactly=self.read_msgspec_union_bounds_exactly,
         )
+
+    @property
+    def encodes_constrained_base64(self) -> bool:
+        """Whether a field form writes a string decoded from base64 text with its constraints in front of decoding."""
+        return self.WRITES_ENCODED_STR and _applicability.encoded_str_field_form(self.constraint_options)
 
     @classmethod
     def constraint_keywords(
@@ -1888,6 +1932,7 @@ class DataTypeManager(ABC):
         *,
         number_values: bool = False,
         target_model_version: TargetPydanticVersion | str | None = None,
+        counts_keys: bool = False,
     ) -> frozenset[str]:
         """Return the type-dependent keywords that every member of an emitted type takes in this output model.
 
@@ -1896,47 +1941,176 @@ class DataTypeManager(ABC):
         annotation does. With ``number_values`` the keywords that a number value of the type meets are returned
         instead: those a member takes, as a number validates as that member, where the ``Literal`` of a const or an
         enum with a number value and a type of ``NUMBER_VALUE_TYPES`` take the number keywords, and an explicit
-        ``target_model_version`` adds the ``TARGET_NUMBER_KEYWORDS`` it reaches.
+        ``target_model_version`` adds the ``TARGET_NUMBER_KEYWORDS`` it reaches. A type that names a model takes them
+        all, as the model's own type decides them (row ``legacy-reference-takes-every-keyword`` of
+        ``_constraint_keywords``). With ``counts_keys`` the keywords a value of the type takes as the property counts of
+        a map are returned instead: the lengths where every member counts its keys, a mapping or a mapping class
+        (``_constraint_applicability.key_count_keywords``), which no value of a ``Literal`` does.
         """
-        if (keywords := cls._shape_constraint_keywords(data_type)) is not None:
+        return cast(
+            "frozenset[str]",
+            cls._constraint_keywords(
+                data_type,
+                target_version,
+                None,
+                frozenset(),
+                number_values=number_values,
+                target_model_version=target_model_version,
+                counts_keys=counts_keys,
+            ),
+        )
+
+    @classmethod
+    def member_constraint_keywords(
+        cls,
+        data_type: DataTypeView,
+        target_version: tuple[int, int],
+        model_of: Callable[[ReferenceView], ModelView | None],
+        seen: frozenset[int] = frozenset(),
+    ) -> frozenset[str] | None:
+        """Return the type-dependent keywords the value a union member validates to takes, or None for None.
+
+        These are the keywords of ``constraint_keywords``, where a type that names a model reads the model
+        (``_constraint_keywords`` with ``model_of``).
+        """
+        return cls._constraint_keywords(data_type, target_version, model_of, seen)
+
+    @classmethod
+    def model_value_constraint_keywords(
+        cls,
+        data_type: DataType,
+        target_version: tuple[int, int],
+        model_of: Callable[[ReferenceView], ModelView | None],
+        seen: frozenset[int] = frozenset(),
+    ) -> frozenset[str] | None:
+        """Return the type-dependent keywords one value of a type takes where every value is the instance of a model.
+
+        A keyword none of them takes fails on every value of the type. Each member of the union the type is, other than
+        None, counts: one that names a type alias stands for its type, read the same way, and one that names another
+        model takes what ``member_constraint_keywords`` gives (an enum whose base is its value type what that type
+        takes; a root model, an object model, a dataclass or a plain enum none), and the length keywords too where its
+        instance has a length (``ModelView.has_length``, the sequence interface of a root model), which Pydantic checks
+        by ``len()``. The answer is None where a value is no instance of a model, whose keywords the field assembly
+        decided, or names a model ``model_of`` does not hold or an alias that names itself again (``seen``). The values
+        of the aliases a member names are read from a stack of their own, so a long chain of aliases takes no call per
+        alias.
+        """
+        keywords: set[str] = set()
+        pending: list[tuple[DataType, frozenset[int]]] = [(data_type, seen)]
+        while pending:
+            current, current_seen = pending.pop()
+            if not (members := tuple(_value_members(current))):
+                return None
+            for member in members:
+                if (
+                    (reference := member.reference) is None
+                    or id(reference) in current_seen
+                    or (model := model_of(reference)) is None
+                    or (model.form == "alias" and not model.fields)
+                ):
+                    return None
+                if model.form != "alias":
+                    keywords.update(cls.member_constraint_keywords(member, target_version, model_of) or ())
+                    if model.has_length:
+                        keywords.update(_applicability.LENGTH_KEYWORDS | _applicability.ITEM_COUNT_KEYWORDS)
+                else:
+                    pending.append((cast("DataType", model.fields[0].data_type), current_seen | {id(reference)}))
+        return frozenset(keywords)
+
+    @classmethod
+    def _constraint_keywords(  # noqa: PLR0911, PLR0913
+        cls,
+        data_type: DataTypeView,
+        target_version: tuple[int, int],
+        model_of: Callable[[ReferenceView], ModelView | None] | None,
+        seen: frozenset[int],
+        *,
+        number_values: bool = False,
+        target_model_version: TargetPydanticVersion | str | None = None,
+        counts_keys: bool = False,
+    ) -> frozenset[str] | None:
+        """Return the keywords of ``constraint_keywords``, reading the model a type names with ``model_of``.
+
+        Without ``model_of`` a type that names a model takes every keyword (row
+        ``legacy-reference-takes-every-keyword``: the L1 field assembly and msgspec read it so), and the answer is
+        never None. With it, the value the type validates to decides: a union takes what every member other than None
+        takes, and the type None, an alias of it and a union of only those give None. A type alias
+        (``ModelView.form``) stands for its type; an enum whose base is its value type (``class E(str, Enum)``, a
+        ``StrEnum``, an ``IntEnum``) takes what that type takes; any other model, a root model, an object model, a
+        dataclass or a plain enum, takes none, as its instance is no value of a keyword's kind. A model ``model_of``
+        does not hold, an alias without a field and an alias the type names again inside itself (``seen``) take them
+        all, as without ``model_of``.
+        """
+        node = cast("DataType", data_type)
+        if model_of is not None:
+            if (reference := node.reference) is not None:
+                if (model := None if id(reference) in seen else model_of(reference)) is None:
+                    return cls.constraint_keywords(node, target_version)
+                if model.form == "alias":
+                    fields = model.fields
+                    return (
+                        cls._constraint_keywords(fields[0].data_type, target_version, model_of, seen | {id(reference)})
+                        if fields
+                        else cls.constraint_keywords(node, target_version)
+                    )
+                return (
+                    _applicability.NO_KEYWORDS
+                    if (value_base := model.value_base) is None
+                    else cls.type_constraint_keywords(value_base, target_version)
+                )
+            if _is_plain_none(node):
+                return None
+        if (keywords := cls._shape_constraint_keywords(node, counts_keys=counts_keys)) is not None:
             return keywords
-        if data_type.data_types:
-            return _applicability.member_keywords(
-                (
-                    cls.constraint_keywords(
+        if node.data_types:
+            members = [
+                keywords
+                for member in node.data_types
+                if not _is_plain_none(member)
+                and (
+                    keywords := cls._constraint_keywords(
                         member,
                         target_version,
+                        model_of,
+                        seen,
                         number_values=number_values,
                         target_model_version=target_model_version,
+                        counts_keys=counts_keys,
                     )
-                    for member in data_type.data_types
-                    if not _is_plain_none(member)
-                ),
-                number_values=number_values,
+                )
+                is not None
+            ]
+            return (
+                _applicability.member_keywords(members, number_values=number_values)
+                if members or model_of is None
+                else None
             )
-        if _is_value_literal(data_type):
+        if _is_value_literal(node):
             if number_values:
                 return _applicability.literal_number_keywords(
                     literals_take=cls.LITERALS_TAKE_CONSTRAINTS,
-                    has_non_string_value=any(type(value) is not str for value in data_type.literals),
+                    has_non_string_value=any(type(value) is not str for value in node.literals),
                 )
             return cls._literal_keywords(
-                {_LITERAL_VALUE_TYPE_PATHS.get(type(value), "") for value in data_type.literals if value is not None},
+                {_LITERAL_VALUE_TYPE_PATHS.get(type(value), "") for value in node.literals if value is not None},
                 target_version,
+                counts_keys=counts_keys,
             )
-        if data_type.python_type is None:
-            import_ = data_type.import_
+        if node.python_type is None:
+            import_ = node.import_
             return cls.type_constraint_keywords(
-                _import_path(import_) if import_ and import_.from_ else data_type.type or "",
+                _import_path(import_) if import_ and import_.from_ else node.type or "",
                 target_version,
                 number_values=number_values,
                 target_model_version=target_model_version,
+                counts_keys=counts_keys,
             )
         return cls._annotation_constraint_keywords(
-            data_type.python_type.expression,
+            node.python_type.expression,
             target_version,
             number_values=number_values,
             target_model_version=target_model_version,
+            counts_keys=counts_keys,
         )
 
     @classmethod
@@ -1947,6 +2121,7 @@ class DataTypeManager(ABC):
         *,
         number_values: bool = False,
         target_model_version: TargetPydanticVersion | str | None = None,
+        counts_keys: bool = False,
     ) -> frozenset[str]:
         """Return the keywords every member of a union takes, or those of the type that Annotated or Final qualifies.
 
@@ -1982,6 +2157,7 @@ class DataTypeManager(ABC):
                         target_version,
                         number_values=number_values,
                         target_model_version=target_model_version,
+                        counts_keys=counts_keys,
                     )
                     for member in members
                 ),
@@ -1989,7 +2165,10 @@ class DataTypeManager(ABC):
             )
         if path == "typing.Literal" and base is not expression:
             return cls._literal_keywords(
-                set(cls._literal_value_paths(expression)), target_version, number_values=number_values
+                set(cls._literal_value_paths(expression)),
+                target_version,
+                number_values=number_values,
+                counts_keys=counts_keys,
             )
         if (
             path == "tuple"
@@ -1999,24 +2178,35 @@ class DataTypeManager(ABC):
         ):
             return _applicability.NO_KEYWORDS
         return cls.type_constraint_keywords(
-            path, target_version, number_values=number_values, target_model_version=target_model_version
+            path,
+            target_version,
+            number_values=number_values,
+            target_model_version=target_model_version,
+            counts_keys=counts_keys,
         )
 
     @classmethod
     def _literal_keywords(
-        cls, value_paths: Iterable[str], target_version: tuple[int, int], *, number_values: bool = False
+        cls,
+        value_paths: Iterable[str],
+        target_version: tuple[int, int],
+        *,
+        number_values: bool = False,
+        counts_keys: bool = False,
     ) -> frozenset[str]:
         """Return the keywords a ``Literal`` takes: those every value takes as an instance of its type at its path.
 
         A value of a type the generator cannot classify (path ``""``) takes none, or all of them with
         ``number_values``, where a ``Literal`` takes what one value takes; an output model that checks no keyword on
-        a ``Literal`` takes none.
+        a ``Literal`` takes none. With ``counts_keys`` a value takes the property counts of a map, which none does.
         """
         if not cls.LITERALS_TAKE_CONSTRAINTS:
             return _applicability.NO_KEYWORDS
         return _applicability.member_keywords(
             (
-                cls.type_constraint_keywords(value, target_version, number_values=number_values)
+                cls.type_constraint_keywords(
+                    value, target_version, number_values=number_values, counts_keys=counts_keys
+                )
                 if value or not number_values
                 else TYPE_DEPENDENT_KEYWORDS
                 for value in value_paths
@@ -2052,6 +2242,7 @@ class DataTypeManager(ABC):
         *,
         number_values: bool = False,
         target_model_version: TargetPydanticVersion | str | None = None,
+        counts_keys: bool = False,
     ) -> frozenset[str]:
         """Return the type-dependent keywords a type takes: its table entry, none for a known type, else all of them.
 
@@ -2060,9 +2251,25 @@ class DataTypeManager(ABC):
         A known type is a Python builtin or a standard-library type of the import registry that the target has, or a
         type that the generator itself imports; a type the generator cannot classify keeps the keywords the schema
         declares. With ``number_values`` a type of ``NUMBER_VALUE_TYPES`` takes the number keywords, and a type of
-        ``TARGET_NUMBER_KEYWORDS`` also those an explicit ``target_model_version`` reaches.
+        ``TARGET_NUMBER_KEYWORDS`` also those an explicit ``target_model_version`` reaches. With ``counts_keys`` the
+        keywords it takes as the property counts of a map are returned instead (``key_count_keywords``).
         """
         path = _standard_type_path(path, target_version)
+        keywords = cls._listed_or_unlisted_keywords(
+            path, target_version, number_values=number_values, target_model_version=target_model_version
+        )
+        return _applicability.key_count_keywords(path, keywords) if counts_keys else keywords
+
+    @classmethod
+    def _listed_or_unlisted_keywords(
+        cls,
+        path: str,
+        target_version: tuple[int, int],
+        *,
+        number_values: bool,
+        target_model_version: TargetPydanticVersion | str | None,
+    ) -> frozenset[str]:
+        """Return the keywords of a classified path: its table entry, else none for a known type and all for another."""
         if (
             keywords := _applicability.listed_type_keywords(
                 path,

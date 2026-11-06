@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import sys
 from datetime import datetime, timezone
 from functools import partial
 from typing import TYPE_CHECKING, Any, Final
@@ -460,6 +461,8 @@ def _unstored(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) ->
         ("valued public", user(1, **{"cache-control": "public=1, max-age=60"})),
         ("unquoted private", user(1, **{"cache-control": "private=x, max-age=60"})),
         ("bad quoting", user(1, **{"cache-control": 'private="a'})),
+        ("quoted control character", user(1, **{"cache-control": 'max-age=60, private="a\x01b"'})),
+        ("quoted delete", user(1, **{"cache-control": 'max-age=60, private="a\x7fb"'})),
         ("unlisted status", user(1, status=203, **{"cache-control": "max-age=60"})),
         ("no freshness or validator", user(1)),
     ):
@@ -678,6 +681,8 @@ def _records(cache: Caching, lines: list[str]) -> None:
         ("entry naive time", {"stored_at": datetime(2020, 1, 1)}),  # noqa: DTZ001
         ("entry negative freshness", {"freshness_seconds": -1}),
         ("entry infinite age", {"initial_age_seconds": float("inf")}),
+        ("entry age rounding to the largest float", {"initial_age_seconds": int(sys.float_info.max) + 1}),
+        ("entry freshness past every float", {"freshness_seconds": 10**400}),
         ("entry text freshness", {"freshness_seconds": "1"}),
         ("entry text body", {"body": "{}"}),
     ):

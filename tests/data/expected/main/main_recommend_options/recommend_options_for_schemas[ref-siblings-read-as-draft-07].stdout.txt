@@ -1,0 +1,161 @@
+{
+  "version": 1,
+  "format": "json",
+  "kind": "recommend-options",
+  "mode": "quick",
+  "rules_revision": "2026-10-19",
+  "calibrated_presets": "20261017",
+  "input": {
+    "source": "file",
+    "input_file_type": "openapi",
+    "document": "OpenAPI 3.1.0",
+    "analysed": true
+  },
+  "context": {
+    "output_model_type": "pydantic_v2.BaseModel",
+    "target_python_version": "3.14"
+  },
+  "signals": {
+    "all_enums": 0,
+    "boolean_exclusive_bounds": 0,
+    "coercible_scalars": 0,
+    "component_enums": 0,
+    "component_title_duplicate_groups": 0,
+    "component_titles_equal_other_key": 0,
+    "component_titles_equal_own_key": 0,
+    "component_titles_in_duplicate_groups": 0,
+    "components": 2,
+    "decimal_formats": 0,
+    "discriminated_unions": 0,
+    "dotted_key_namespaces": 0,
+    "dotted_keys": 0,
+    "dotted_namespace_reference_cycles": 0,
+    "duplicate_inline_enum_shapes": 0,
+    "duplicate_inline_enums": 0,
+    "duplicate_inline_objects": 0,
+    "duplicate_inline_shapes": 0,
+    "enums_beside_const": 0,
+    "estimated_models": 2,
+    "formats": 0,
+    "inline_enums": 0,
+    "inline_names_equal_component": 0,
+    "inline_object_bodies": 0,
+    "inline_object_union_variants": 0,
+    "inline_objects": 0,
+    "inline_scalar_union_variants": 0,
+    "inline_tagged_union_branches": 0,
+    "inline_title_max_repeat": 0,
+    "inline_titled_objects": 0,
+    "inline_titled_union_variants": 0,
+    "inline_union_variants": 0,
+    "integer_range_formats": 0,
+    "max_inline_depth": 0,
+    "multiple_of": 0,
+    "nullable_keywords": 0,
+    "operations": 0,
+    "parent_copy_union_branches": 0,
+    "pattern_properties": 0,
+    "property_counts_beside_ignored_ref": 0,
+    "redundant_constraints": 0,
+    "ref_siblings_read_as_draft_07": 1,
+    "root_is_object": 0,
+    "root_title_words": 0,
+    "shared_inline_enum_names": 0,
+    "shared_inline_names": 0,
+    "shared_inline_object_names": 0,
+    "single_key_required_open": 0,
+    "single_key_union_branches": 0,
+    "single_value_enum_union_branches": 0,
+    "single_value_enums": 0,
+    "tagged_behind_ref": 0,
+    "titled_components": 0,
+    "unions": 0,
+    "unique_items": 1,
+    "unmodeled_pattern_properties": 0,
+    "variants_with_differing_tags": 0
+  },
+  "facts": {
+    "schema": "OpenAPI 3.1.0",
+    "scopes": "schemas",
+    "shared_inline_name_examples": "",
+    "inline_title_examples": "",
+    "duplicate_title_examples": "",
+    "key_style": "PascalCase (2 of 2)",
+    "root_title": "",
+    "format_examples": ""
+  },
+  "baseline": {
+    "preset": "standard-py314-20261104",
+    "family": "standard",
+    "configured": false,
+    "covers": [
+      {
+        "rule": "versions.read-per-document",
+        "decision": "schema-version-scope",
+        "set": {
+          "read_schema_version_per_document": true
+        },
+        "arguments": [
+          "--read-schema-version-per-document"
+        ],
+        "reason": "The keywords beside a $ref apply in the version the document declares otherwise than the parse reads them (validation keywords beside a $ref of an OpenAPI 3.1 or AsyncAPI 3 document, read as draft 7, which ignores them: 1; minProperties or maxProperties beside an allOf $ref in a version that ignores them, which --generate-schema-validators checks: 0). Read in the version each document declares, they apply or are left out as that version says.",
+        "caveats": [],
+        "evidence": [
+          "OpenAPI 3.1 uniqueItems beside a $ref (#5699): with --generate-schema-validators Holder(tags=['a', 'a']) is rejected, as the same schema in JSON Schema 2020-12 is",
+          "Draft-07 minProperties beside an allOf $ref (#5700): with --generate-schema-validators Holder(a='x') is accepted, as draft 7 ignores the keyword",
+          "Directory of draft-07 and 2020-12 documents (#5380): each module equals the output of its document read alone, so Wd keeps le=10 beside its allOf $ref"
+        ],
+        "trial": null
+      }
+    ]
+  },
+  "recommendations": [],
+  "left_out": [],
+  "validation": [
+    {
+      "rule": "validation.check-unique-items-and-pattern-properties",
+      "decision": "schema-validators",
+      "set": {
+        "generate_schema_validators": true
+      },
+      "arguments": [
+        "--generate-schema-validators"
+      ],
+      "reason": "The models leave out checks the schema declares (uniqueItems: 1; patternProperties that a typed map cannot express, beside declared properties, with several patterns, or with other keys allowed: 0 of 0): duplicate items pass, and those properties are checked wrongly or not at all. The experimental schema validators check both when a model validates.",
+      "caveats": [
+        "Experimental: on some schemas the generated validators reject valid data or fail to import; validate sample data with the generated models before adopting it."
+      ],
+      "evidence": [
+        "SchemaStore tsconfig and dependabot schemas, compose spec: 13 documents checked against the schemas, 5 judged wrongly by the preset (3 with duplicate items accepted, 2 with x- extension keys rejected), 0 with the validators",
+        "Six patternProperties shapes a typed map cannot express (other keys allowed, several patterns, declared properties beside them), 22 documents: 7 judged wrongly by the preset, 0 with the validators; one pattern on a closed object without declared properties is exact without them"
+      ],
+      "trial": null
+    }
+  ],
+  "policy": [],
+  "not_recommended": [],
+  "disagreements": [],
+  "trial": null,
+  "notes": [
+    "The rules were calibrated on the 20261017 presets."
+  ],
+  "arguments": [
+    "--input",
+    "ref_siblings_oas31.yaml",
+    "--preset",
+    "standard-py314-20261104",
+    "--target-python-version",
+    "3.14"
+  ],
+  "config": {
+    "tool": {
+      "datamodel-codegen": {
+        "input": "ref_siblings_oas31.yaml",
+        "preset": "standard-py314-20261104",
+        "target-python-version": "3.14"
+      }
+    }
+  },
+  "config_complete": true,
+  "content": "Option recommendations (experimental; quick mode; rules 2026-10-19)\n\nSchema  OpenAPI 3.1.0 (OpenAPI scopes: schemas)\n  components                       2, 0 operations\n  inline objects / enums           0 / 0, nesting depth 0\n  shared property names            0 (none)\n  inline names = component names   0\n  repeated inline objects / enums  0 of 0 shapes / 0 of 0 value sets\n  titled components                0: 0 shared titles (none), 0 equal another key, 0 equal their own key\n  inline titles                    0 objects, most repeated 0 (none)\n  unions                           0 oneOf/anyOf, 0 with a discriminator, 0 inline variants\n  union branch tags                0 tagged, 0 single required key, 0 tagged only through allOf $ref, 0 copy their parent\n  component keys                   PascalCase (2 of 2); 0 dotted in 0 namespaces\n  constraint keywords              uniqueItems 1, patternProperties 0 (0 beyond a typed map), multipleOf 0, OpenAPI 3.0 nullable 0, boolean exclusive bounds 0\n  formats                          0 (none), decimal 0; int32/int64 0, ranges not enforced\n  integer/number/boolean schemas   0\n\nStart from  --preset standard-py314-20261104\n  already sets --read-schema-version-per-document   [versions.read-per-document]\n\nAdd  nothing on top of the preset\n\nOptional (validation; not in the command)\n  --generate-schema-validators   [validation.check-unique-items-and-pattern-properties]\n      The models leave out checks the schema declares (uniqueItems: 1; patternProperties that a\n      typed map cannot express, beside declared properties, with several patterns, or with other\n      keys allowed: 0 of 0): duplicate items pass, and those properties are checked wrongly or not\n      at all. The experimental schema validators check both when a model validates.\n      caveat: Experimental: on some schemas the generated validators reject valid data or fail to\n      import; validate sample data with the generated models before adopting it.\n      measured: SchemaStore tsconfig and dependabot schemas, compose spec: 13 documents checked\n      against the schemas, 5 judged wrongly by the preset (3 with duplicate items accepted, 2 with\n      x- extension keys rejected), 0 with the validators\n      measured: Six patternProperties shapes a typed map cannot express (other keys allowed, several\n      patterns, declared properties beside them), 22 documents: 7 judged wrongly by the preset, 0\n      with the validators; one pattern on a closed object without declared properties is exact\n      without them\n\nNotes\n  - The rules were calibrated on the 20261017 presets.\n\nCommand\n  datamodel-codegen --input ref_siblings_oas31.yaml --preset standard-py314-20261104 --target-python-version 3.14\n\npyproject.toml\n  [tool.datamodel-codegen]\n  input = \"ref_siblings_oas31.yaml\"\n  preset = \"standard-py314-20261104\"\n  target-python-version = \"3.14\"\n"
+}

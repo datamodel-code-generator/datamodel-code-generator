@@ -23,7 +23,7 @@ from datamodel_code_generator._json_schema import (
     NAMED_SCHEMA_MAPS,
     json_nodes,
 )
-from datamodel_code_generator._recommend._signals import normalize_name
+from datamodel_code_generator._recommend._signals import definition_schemas, normalize_name
 from datamodel_code_generator.reference import _special_token_pattern
 
 if TYPE_CHECKING:
@@ -125,7 +125,7 @@ def _component_names(document: Mapping[str, Any]) -> tuple[set[str], set[str]]:
     A section that is not a mapping has no keys, so a document generation rejects still has a vocabulary.
     """
     if "components" not in document:
-        names = set(map(_norm, as_mapping(document.get("definitions", document.get("$defs")))))
+        names = set(map(_norm, definition_schemas(document)))
         return names, names
     sections = as_mapping(document["components"])
     components = {_norm(key) for items in sections.values() for key in as_mapping(items)}

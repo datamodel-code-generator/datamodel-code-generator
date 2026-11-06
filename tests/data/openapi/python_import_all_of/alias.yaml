@@ -1,0 +1,24 @@
+openapi: 3.1.0
+info:
+  title: an allOf member that names an alias with x-python-import
+  version: '1'
+paths: {}
+components:
+  schemas:
+    Stem:
+      type: object
+      properties:
+        id:
+          type: integer
+    ImportedTwig:
+      $ref: '#/components/schemas/Stem'
+      x-python-import:
+        module: python_import_bases.models
+        name: Twig
+    Branch:
+      allOf:
+        - $ref: '#/components/schemas/ImportedTwig'
+        - type: object
+          properties:
+            name:
+              type: string

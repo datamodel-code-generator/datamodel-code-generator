@@ -16,8 +16,8 @@ allowreserved-path-31	main/generation_platform/client/runtime/allowreserved-path
 allowreserved-path-31-shorthand	main/generation_platform/client/packages/allowreserved-path-31/pydantic_v2_BaseModel//*.py
 allowreserved-path-31-shorthand	main/generation_platform/client/runtime/allowreserved-path-31.txt
 allowreserved-path-32	main/generation_platform/client/runtime/allowreserved-path-32.txt
-allowreserved-path-32-unknown	main/generation_platform/client/packages/allowreserved-path-32/pydantic_v2_BaseModel//*.py
-allowreserved-path-32-unknown	main/generation_platform/client/runtime/allowreserved-path-32.txt
+allowreserved-path-32-unknown	main/generation_platform/client/packages/allowreserved-path-32/pydantic_v2_BaseModel//*.py	= main/generation_platform/client/packages/allowreserved-path-32/pydantic_v2_BaseModel~client_runtime[allowreserved-path-32-unknown]//*.py
+allowreserved-path-32-unknown	main/generation_platform/client/runtime/allowreserved-path-32.txt	= main/generation_platform/client/runtime/allowreserved-path-32~client_runtime[allowreserved-path-32-unknown].txt
 auth-errors	main/generation_platform/client/runtime/auth-errors.txt
 auth-flows	main/generation_platform/client/runtime/auth-flows.txt
 auth-values	main/generation_platform/client/runtime/auth-values.txt
@@ -59,7 +59,10 @@ multipart-kinds	main/generation_platform/client/runtime/multipart-kinds.txt
 multipart-replay	main/generation_platform/client/runtime/multipart-replay.txt
 multipart-split	main/generation_platform/client/runtime/multipart-split.txt
 multipart-split-all	main/generation_platform/client/runtime/multipart-split-all.txt
+multipart-text-files	main/generation_platform/client/runtime/multipart-text-files.txt
 naming	main/generation_platform/client/runtime/naming.txt
+naming-definitions-first	main/generation_platform/client/runtime/naming-definitions-first.txt
+naming-enclosing-model	main/generation_platform/client/runtime/naming-enclosing-model.txt
 naming-full-path	main/generation_platform/client/runtime/naming-full-path.txt
 naming-parent-prefixed	main/generation_platform/client/runtime/naming-parent-prefixed.txt
 naming-primary-first	main/generation_platform/client/runtime/naming-primary-first.txt

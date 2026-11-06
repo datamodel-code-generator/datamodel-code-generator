@@ -1,0 +1,1 @@
+Unresolved local $ref '#/properties/name/definitions/Name' in ref_siblings_ignored_identifier_draft07.json: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.

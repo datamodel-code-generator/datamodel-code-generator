@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "A": {"type": "object", "properties": {"x": {"type": "string"}}},
+    "B": {"type": "object", "properties": {"x": {"type": "string"}}},
+    "Sub": {"allOf": [{"$ref": "#/$defs/B"}, {"type": "object", "properties": {"y": {"type": "integer"}}}]},
+    "C": {"type": "object", "properties": {"z": {"type": "string"}}},
+    "Mid": {"allOf": [{"$ref": "#/$defs/C"}]},
+    "Leaf": {"allOf": [{"$ref": "#/$defs/Mid"}, {"type": "object", "properties": {"w": {"type": "integer"}}}]},
+    "Holder": {
+      "type": "object",
+      "properties": {"a": {"$ref": "#/$defs/A"}, "b": {"$ref": "#/$defs/B"}, "c": {"$ref": "#/$defs/C"}}
+    }
+  }
+}

@@ -25,6 +25,7 @@ from collections.abc import (
     Set as AbstractSet,
 )
 from contextlib import contextmanager, nullcontext
+from contextvars import ContextVar
 from copy import deepcopy
 from dataclasses import is_dataclass
 from enum import Enum as PyEnum
@@ -36,6 +37,7 @@ from pydantic import BaseModel
 from typing_extensions import Self, Sentinel, TypeIs
 
 from datamodel_code_generator._all_or_none import all_or_none
+from datamodel_code_generator._context_scope import context_values
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._input_model_transport import PythonTypeExpressionCollector
@@ -63,6 +65,7 @@ from datamodel_code_generator.enums import (
     _get_output_model_family,
     _OutputModelFamily,
 )
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable, Iterator, Sequence
@@ -152,15 +155,21 @@ def _cwd_import_scope(cwd_entry: str) -> Generator[None]:
         restore_entry(sys.path_importer_cache, cwd_entry, importer_cache_entry)
 
 
-def _load_model_schema_isolated(
+_READ_DATACLASS_FIELDS_BY_ALIAS: ContextVar[bool] = ContextVar("_READ_DATACLASS_FIELDS_BY_ALIAS", default=False)
+"""Whether a load reads the fields of a Pydantic dataclass, as a model's, by the names of their properties."""
+
+
+def _load_model_schema_isolated(  # ruff: ignore[too-many-arguments]
     input_models: list[str],
     input_file_type: InputFileType,
     ref_strategy: InputModelRefStrategy | None,
     output_model_type: DataModelType | None,
     expression_collector: PythonTypeExpressionCollector | None = None,
+    *,
+    read_dataclass_fields_by_alias: bool = False,
 ) -> dict[str, object]:
     """Load a schema while restoring cwd-local import state afterwards."""
-    with PROCESS_STATE_LOCK:
+    with PROCESS_STATE_LOCK, context_values({_READ_DATACLASS_FIELDS_BY_ALIAS: read_dataclass_fields_by_alias}):
         cwd_entry = str(Path.cwd())
         with nullcontext() if cwd_entry in sys.path else _cwd_import_scope(cwd_entry):
             return _load_model_schema(
@@ -197,7 +206,7 @@ def _load_module_from_path(file_path: Path, modname: str) -> tuple[types.ModuleT
     module_name = _get_path_module_name(file_path)
     spec = importlib.util.spec_from_file_location(module_name, file_path)
     if spec is None or spec.loader is None:
-        msg = f"Cannot load module from {modname!r}"
+        msg = f"Cannot load module from {stable_repr(modname)}"
         raise Error(msg)
 
     previous_module = sys.modules.get(module_name, ABSENT)
@@ -216,7 +225,10 @@ def _split_input_model(input_model: str) -> tuple[str, str]:
     if separator and modname:
         return modname, qualname
 
-    msg = f"Invalid --input-model format: {input_model!r}. Expected 'module:Object' or 'path/to/file.py:Object'."
+    msg = (
+        f"Invalid --input-model format: {stable_repr(input_model)}. Expected 'module:Object' or "
+        "'path/to/file.py:Object'."
+    )
     raise Error(msg)
 
 
@@ -228,17 +240,17 @@ def _load_input_model_module(modname: str) -> tuple[types.ModuleType, _ModuleRes
     if _is_path_input_model_module(modname):
         file_path = Path(modname).resolve()
         if not file_path.exists():
-            msg = f"File not found: {modname!r}"
+            msg = f"File not found: {stable_repr(modname)}"
             raise Error(msg)
         return _load_module_from_path(file_path, modname)
 
     try:
         if importlib.util.find_spec(modname) is None:
-            msg = f"Cannot find module {modname!r}"
+            msg = f"Cannot find module {stable_repr(modname)}"
             raise Error(msg)
         return importlib.import_module(modname), None
     except ImportError as e:
-        msg = f"Cannot import module {modname!r}: {e}"
+        msg = f"Cannot import module {stable_repr(modname)}: {e}"
         raise Error(msg) from e
 
 
@@ -257,7 +269,7 @@ def _load_input_model_object(
     try:
         return qualname, getattr(module, qualname)
     except AttributeError as e:
-        msg = f"Module {modname!r} has no attribute {qualname!r}"
+        msg = f"Module {stable_repr(modname)} has no attribute {stable_repr(qualname)}"
         raise Error(msg) from e
 
 
@@ -721,12 +733,18 @@ def _input_model_field_wire_name(field_name: str, field_info: Any) -> str:
 def _iter_owned_properties(
     properties: dict[str, Any], model_fields: dict[str, Any]
 ) -> Iterator[tuple[Any, dict[str, Any]]]:
-    """Pair each field with its property, skipping a property that another field of the same wire name owns."""
+    """Pair each field with its property, skipping a property that another field of the same wire name owns.
+
+    The owner is the field the schema marks (``InputModelJsonSchema``), else the last field of the wire name, whose
+    schema Pydantic writes for the property.
+    """
+    wire_names = {name: _input_model_field_wire_name(name, field_info) for name, field_info in model_fields.items()}
+    last_fields = {wire_name: name for name, wire_name in wire_names.items()}
     for field_name, field_info in model_fields.items():
-        if (prop := properties.get(_input_model_field_wire_name(field_name, field_info))) is None:
+        if (prop := properties.get(wire_name := wire_names[field_name])) is None:
             continue
         owner = prop.get(_FIELD_SCHEMA_NAME)
-        if not isinstance(owner, _FieldSchemaOwner) or owner.field_name == field_name:
+        if (owner.field_name if isinstance(owner, _FieldSchemaOwner) else last_fields[wire_name]) == field_name:
             yield field_info, prop
 
 
@@ -928,8 +946,13 @@ def _add_python_type_to_model_properties(
     expression_collector: PythonTypeExpressionCollector | None,
     generic_names: dict[type, str] | None,
 ) -> None:
-    """Supplement one definition using the fields of its actual Python model."""
-    if model_fields := getattr(model, "model_fields", None):
+    """Supplement one definition using the fields of its actual Python model.
+
+    A Pydantic dataclass is read by its annotations, keyed by field name, unless the load reads its fields by alias.
+    """
+    if (model_fields := getattr(model, "model_fields", None)) or (
+        _READ_DATACLASS_FIELDS_BY_ALIAS.get() and (model_fields := getattr(model, "__pydantic_fields__", None))
+    ):
         _add_python_type_to_properties(properties, model_fields, expression_collector, generic_names)
         return
     for field_name, field_type in _get_type_hints_safe(model).items():
@@ -1096,7 +1119,8 @@ def _reused_python_type_expression(tp: object) -> PythonTypeExpr:
             owner = _reused_python_type_expression(type(argument))
             if not isinstance(owner, PythonTypeRuntimeSymbol):
                 msg = (
-                    f"Cannot safely reuse enum member {argument!r}: no importable type expression. Use regenerate-all."
+                    f"Cannot safely reuse enum member {stable_repr(argument)}: no importable type expression. Use "
+                    "regenerate-all."
                 )
                 raise Error(msg)
             replacements[PythonTypeOpaqueText(str(argument))] = PythonTypeRuntimeSymbol(
@@ -1365,8 +1389,9 @@ def _partition_inherited_fields(
             or (child_wire in required_names) != (parent_wire in parent_required)
         ):
             overrides[child_wire] = parent_wire
-        elif child_wire in parent_fields:
+        else:
             inherited_names.add(child_wire)
+    inherited_names -= overrides.keys()
     return (
         {k: v for k, v in original_props.items() if k not in inherited_names},
         [name for name in original_required if name not in inherited_names],
@@ -1525,12 +1550,21 @@ def load_model_schema(
     input_file_type: InputFileType,
     ref_strategy: InputModelRefStrategy | None = None,
     output_model_type: DataModelType | None = None,
+    *,
+    read_dataclass_fields_by_alias: bool = False,
 ) -> dict[str, object]:
     """Load and merge schemas from 'module.path:ObjectName' import paths with inheritance support.
 
     Several import paths merge into one schema whose anyOf references every root model.
+    ``read_dataclass_fields_by_alias`` gives an aliased field of a Pydantic dataclass its Python type too.
     """
-    return _load_model_schema_isolated(input_models, input_file_type, ref_strategy, output_model_type)
+    return _load_model_schema_isolated(
+        input_models,
+        input_file_type,
+        ref_strategy,
+        output_model_type,
+        read_dataclass_fields_by_alias=read_dataclass_fields_by_alias,
+    )
 
 
 def _load_model_schema_with_python_type_expressions(
@@ -1538,6 +1572,8 @@ def _load_model_schema_with_python_type_expressions(
     input_file_type: InputFileType,
     ref_strategy: InputModelRefStrategy | None = None,
     output_model_type: DataModelType | None = None,
+    *,
+    read_dataclass_fields_by_alias: bool = False,
 ) -> LoadedInputModelSchema:
     """Load the CLI-only schema transport without rendering runtime expressions."""
     expression_collector = PythonTypeExpressionCollector()
@@ -1547,6 +1583,7 @@ def _load_model_schema_with_python_type_expressions(
         ref_strategy,
         output_model_type,
         expression_collector,
+        read_dataclass_fields_by_alias=read_dataclass_fields_by_alias,
     )
     return expression_collector.loaded_schema(schema)
 
@@ -1710,7 +1747,10 @@ def _load_single_model_schema(
             schema = _add_python_type_info(schema, model, expression_collector, definition_types, schema_types)
             _add_reused_definitions(nested_models, definition_types)
         else:
-            msg = f"{qualname!r} is not a supported type. Supported: dict, Pydantic v2 BaseModel, dataclass, TypedDict"
+            msg = (
+                f"{stable_repr(qualname)} is not a supported type. "
+                "Supported: dict, Pydantic v2 BaseModel, dataclass, TypedDict"
+            )
             raise Error(msg)
 
         if ref_strategy and nested_models is not None:

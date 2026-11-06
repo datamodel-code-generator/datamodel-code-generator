@@ -88,7 +88,6 @@ paths:
                 h: {type: string, format: binary}
                 i: {type: string}
             encoding:
-              other: {contentType: text/plain}
               a:
                 headers:
                   X-Trace:

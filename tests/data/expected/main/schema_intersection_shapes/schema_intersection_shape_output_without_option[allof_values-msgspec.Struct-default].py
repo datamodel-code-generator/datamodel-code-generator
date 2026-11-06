@@ -8,10 +8,10 @@ from typing import Annotated, Any, TypeAlias
 
 from msgspec import UNSET, Meta, Struct, UnsetType
 
-LevelProp: TypeAlias = int
+LevelProp: TypeAlias = Annotated[int, Meta(ge=0, le=10)]
 
 
-LevelItem: TypeAlias = int
+LevelItem: TypeAlias = Annotated[int, Meta(ge=0, le=10)]
 
 
 LevelMap: TypeAlias = Annotated[int, Meta(ge=0, le=10)]
@@ -44,7 +44,7 @@ UntypedItem: TypeAlias = Any
 UntypedMap: TypeAlias = Any
 
 
-P: TypeAlias = str
+P: TypeAlias = Annotated[str, Meta(min_length=2)]
 
 
 Level: TypeAlias = Annotated[int, Meta(ge=0, le=10)]

@@ -8,12 +8,16 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, Literal, NewType, TypeAlias, TypeVar, get_args
 
 from datamodel_code_generator._all_or_none import all_or_none
+from datamodel_code_generator._runtime.model_codecs.media import is_token
 from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation
+from datamodel_code_generator.enums import OpenAPIVersion
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, Sequence
     from decimal import Decimal
 
+    from datamodel_code_generator._container_kinds import ContainerSlot
     from datamodel_code_generator._generation_contract import AttemptId
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator._runtime.model_codecs.media import LexicalKind
@@ -220,12 +224,17 @@ class BoundType:
 
 @dataclass(frozen=True, slots=True)
 class GenericType:
-    """Preserve ordered container arguments and fixed versus variadic tuple shape."""
+    """Preserve ordered container arguments and fixed versus variadic tuple shape.
+
+    `slot` is the container slot whose class `base` writes, decided from the container's kind before any import
+    override moves where `base` is imported from; None for a fixed tuple or any other generic type.
+    """
 
     base: TypeView
     arguments: tuple[TypeView, ...]
     tuple_form: Literal["not_tuple", "fixed"] = "not_tuple"
     hint: ModelHint | None = dataclasses.field(default=None, compare=False, repr=False)
+    slot: ContainerSlot | None = dataclasses.field(default=None, repr=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -409,16 +418,18 @@ class FieldUseBinding:
 class PartSchema:
     """How the members of a multipart body are sent as parts, by the types the models give them.
 
-    A member holds files when the models hold its values, or its items', as raw octets (BINARY_CONTENT); it repeats as
-    an item container, one part for each item; and its values, or its items', are structured when one of their types
-    is a model, a mapping or an item container. `value` is the type the body's direction gives its values, which a
-    part read on its own is read by.
+    A member holds files when the parser reads its values, or its items', as raw octets (BINARY_CONTENT) and the models
+    type them as bytes or as plain `str` (`text` says a type is `str`, whose text is sent as UTF-8). A binary string
+    the models give any other type is sent as the part of that type. A member repeats as an item container, one part
+    for each item; and its values, or its items', are structured when one of their types is a model, a mapping or an
+    item container. `value` is the type the body's direction gives its values, which a part read on its own is read by.
     """
 
     file: bool
     repeated: bool
     structured: bool
     value: TypeView | None = None
+    text: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -599,9 +610,10 @@ class OperationContract:
 class GeneratedTypeContractBatch:
     """Own one accepted attempt's immutable contracts, with no parser or source mappings.
 
-    `document_facts` are the OpenAPI version, info, tags and servers the root document declares. `hint_type` is the
-    model generator's configured type class, which composes model types as the models spell them, and `hint_imports`
-    the names its spellings write as they are. `names` names generated API code with the models' naming options.
+    `openapi` is the OpenAPI version the parser reads the root document by: `--schema-version`, else the version it
+    declares. `document_facts` are the info, tags and servers the root document declares. `hint_type` is the model
+    generator's configured type class, which composes model types as the models spell them, and `hint_imports` the
+    names its spellings write as they are. `names` names generated API code with the models' naming options.
     """
 
     attempt: AttemptId
@@ -614,16 +626,11 @@ class GeneratedTypeContractBatch:
     fields: tuple[FieldUseBinding, ...]
     security_schemes: tuple[WireDeclaration, ...] = ()
     api_scope: bool = False
+    openapi: OpenAPIVersion = OpenAPIVersion.V31
     document_facts: tuple[tuple[str, FrozenLiteral], ...] = ()
     hint_type: type[DataType] | None = None
     hint_imports: tuple[Import, ...] = ()
     names: TargetNames | None = None
-
-    @property
-    def openapi(self) -> str:
-        """Return the OpenAPI version the root document declares, empty when it declares none."""
-        version = literal_fact(self.document_facts, "openapi")
-        return str(version.value) if isinstance(version, LiteralScalar) else ""
 
 
 ApiKeyLocation: TypeAlias = Literal["query", "header", "cookie"]
@@ -695,12 +702,13 @@ def api_key_place(declaration: WireDeclaration) -> tuple[ApiKeyLocation, str] | 
     """Return where an apiKey security scheme sends its credential: its location and its name.
 
     None when the declaration is not an apiKey scheme, or names no location of query, header or cookie or no nonempty
-    string name.
+    string name, or a header or cookie name that is no token (RFC 9110 section 5.6.2, RFC 6265 section 4.1.1), which
+    no request can send.
     """
     location, name = API_KEY_LOCATIONS.get(fact(declaration, "in")), fact(declaration, "name")
     if fact(declaration, "type") != "apiKey" or location is None or not isinstance(name, str) or not name:
         return None
-    return location, name
+    return (location, name) if location == "query" or is_token(name) else None
 
 
 def is_required(declaration: WireDeclaration) -> bool:
@@ -756,7 +764,9 @@ def _named_scopes(entry: RequirementEntry) -> tuple[str, tuple[str, ...]] | None
     return (name, scopes) if isinstance(name, str) and scopes is not None else None
 
 
-def scope_problem(name: str, declaration: WireDeclaration, scopes: tuple[str, ...] | None, openapi: str) -> str | None:
+def scope_problem(
+    name: str, declaration: WireDeclaration, scopes: tuple[str, ...] | None, openapi: OpenAPIVersion
+) -> str | None:
     """Return what a requirement gets wrong in the scopes it lists for a scheme, or None when they are valid.
 
     An oauth2 or openIdConnect scheme lists scope tokens (RFC 6749 section 3.3). Any other scheme lists role names,
@@ -764,12 +774,12 @@ def scope_problem(name: str, declaration: WireDeclaration, scopes: tuple[str, ..
     None when the requirement lists them as anything but an array of strings.
     """
     if scopes is None:
-        return f"must list its scopes as an array of strings for scheme {name!r}"
+        return f"must list its scopes as an array of strings for scheme {stable_repr(name)}"
     tokens = fact(declaration, "type") in _SCOPE_SCHEMES
     if tokens and not all(map(_SCOPE_TOKEN.fullmatch, scopes)):
-        return f"requires valid scope tokens for scheme {name!r}"
-    if scopes and not tokens and openapi.startswith("3.0"):
-        return f"lists scopes for scheme {name!r}, whose type takes none in OpenAPI 3.0"
+        return f"requires valid scope tokens for scheme {stable_repr(name)}"
+    if scopes and not tokens and openapi == OpenAPIVersion.V30:
+        return f"lists scopes for scheme {stable_repr(name)}, whose type takes none in OpenAPI 3.0"
     return None
 
 

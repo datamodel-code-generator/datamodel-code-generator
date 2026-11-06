@@ -18,14 +18,13 @@
   "signals": {},
   "facts": {},
   "baseline": {
-    "preset": "standard-py314-20261027",
+    "preset": "standard-py314-20261104",
     "family": "standard",
     "configured": false,
     "covers": []
   },
   "recommendations": [],
   "left_out": [],
-  "consider": [],
   "validation": [],
   "policy": [],
   "not_recommended": [],

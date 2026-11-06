@@ -48,6 +48,7 @@ NullSite: TypeAlias = Literal[
     "all-of-map",
     "all-of-value",
     "all-of-parts",
+    "all-of-union",
     "root-type",
     "multiple-types-root",
     "array-field",
@@ -70,7 +71,7 @@ NullSite: TypeAlias = Literal[
 * ``root-model``: the ``nullable`` of a root model (``JsonSchemaParser._create_registered_root_model``).
 * ``ref-target``: the null a referenced schema gives every reference to it (``JsonSchemaParser.get_ref_data_type``).
 * ``ref-nullable-only``: a ``$ref`` beside only ``nullable: true`` (``JsonSchemaParser._parse_ref_nullable_only_item``).
-* ``type-union``: the union of the types of a ``type`` list (``JsonSchemaParser._parse_constrained_type_union``,
+* ``type-union``: the union of the types of a ``type`` list (``JsonSchemaParser._build_constrained_type_union``,
   ``JsonSchemaParser.parse_array_fields``).
 * ``object-map``: the dict of an object map (``parser/_object_maps.py:object_map_admits_null``).
 * ``all-of-map``, ``all-of-value``: the map or the value an ``allOf`` merges its parts into
@@ -78,6 +79,9 @@ NullSite: TypeAlias = Literal[
 * ``all-of-parts``: the intersection of the dumped parts of an ``allOf``, a ``$ref`` with siblings or an inherited
   override, whose last part is the site's own keywords (``parser/_intersection.py:intersect_keywords``, which
   ``parser/_schema_reading.py:_dump_parts_admit_null`` answers).
+* ``all-of-union``: one schema object among the parts of an ``allOf`` whose members give a union of variants, by its
+  own keywords; the union admits null when every part does, its ``$ref`` targets, ``anyOf`` or ``oneOf`` branches and
+  nested ``allOf`` members read the same way (``JsonSchemaParser._all_of_part_admits_null``).
 * ``root-type``: the root field of a root model (``JsonSchemaParser._parse_root_type_with_context``).
 * ``multiple-types-root``: the root field of a ``type`` list holding an object with properties
   (``JsonSchemaParser._parse_multiple_types_with_properties``).
@@ -128,6 +132,8 @@ NullRule: TypeAlias = Literal[
     "all-of-own-declares-null",
     "all-of-every-part-declares-null",
     "all-of-part-excludes-null",
+    "all-of-union-part-admits-null",
+    "all-of-union-part-excludes-null",
     "force-optional",
     "legacy-root-type-nullable-ungated",
     "root-type-not-nullable",
@@ -197,6 +203,10 @@ NullRule: TypeAlias = Literal[
 * ``all-of-every-part-declares-null``: also when every typed part declares it so; ``all-of-every-part-null`` of a
   merged map counts only ``type`` lists.
 * ``all-of-part-excludes-null``: otherwise a typed part excludes null.
+* ``all-of-union-part-admits-null``: a part of an allOf union admits null by its own keywords: a ``type`` that
+  declares null (``nullable: true``, a null ``type`` or list), an ``enum`` listing null and a ``const`` of null, each
+  where set; a part that sets none of them constrains no type.
+* ``all-of-union-part-excludes-null``: otherwise one of them excludes null.
 * ``force-optional``: ``--force-optional`` makes a root field optional and leaves its nullability undecided.
 * ``legacy-root-type-nullable-ungated``: a root field is optional and nullable by its ``nullable``, also without
   ``--strict-nullable``; ``type`` lists do not count.
@@ -259,8 +269,8 @@ class NullSources:
     object. ``typed``: ``type`` is set; ``type_string``: it is the string string. ``member_null``: a direct ``anyOf``
     or ``oneOf`` member is typed null or has a ``type`` list holding null. ``nullable``: the keyword's value, None
     when unset; ``copied_nullable``: a combined schema copied it into this branch. ``enum_null``: the ``enum`` lists
-    null. The ``type`` facts are those of the ``type`` list OpenAPI reads once ``legacy-nullable-as-type-list``
-    applied.
+    null; ``enum_set``: an ``enum`` is set. ``const_set``: a ``const`` is set; ``const_null``: it is null. The
+    ``type`` facts are those of the ``type`` list OpenAPI reads once ``legacy-nullable-as-type-list`` applied.
     """
 
     type_has_null: bool = False
@@ -274,6 +284,9 @@ class NullSources:
     nullable: bool | None = None
     copied_nullable: bool = False
     enum_null: bool = False
+    enum_set: bool = False
+    const_set: bool = False
+    const_null: bool = False
 
 
 @final
@@ -345,7 +358,7 @@ class NullFacts:
     required: bool | None = None
 
 
-def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0913
+def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0913, PLR0915
     sources: NullSources,
     site: NullSite,
     mode: NullMode = NO_NULL_MODE,
@@ -407,6 +420,8 @@ def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0913
             if site == "all-of-map" and all(part.type_lists_null for part in parts):
                 return NullFacts("all-of-every-part-null", admits_null=True)
             return NullFacts("all-of-not-null", admits_null=False)
+        case "all-of-union":
+            return _all_of_union_part_facts(sources)
         case "all-of-parts":
             if _declares_null(sources):
                 return NullFacts("all-of-own-declares-null", admits_null=True)
@@ -470,6 +485,15 @@ def resolve_null_facts(  # noqa: PLR0911, PLR0912, PLR0913
     if sources.nullable is False:
         return NullFacts("inherited-declared-not-null", admits_null=False)
     return NullFacts("inherited-keeps-null")
+
+
+def _all_of_union_part_facts(sources: NullSources) -> NullFacts:
+    """Return whether the own keywords of one part of an allOf union admit null (site ``all-of-union``)."""
+    type_excludes = _type_excludes_null(sources)
+    enum_excludes = sources.enum_set and not sources.enum_null
+    if type_excludes or enum_excludes or (sources.const_set and not sources.const_null):
+        return NullFacts("all-of-union-part-excludes-null", admits_null=False)
+    return NullFacts("all-of-union-part-admits-null", admits_null=True)
 
 
 def _declares_null(sources: NullSources) -> bool:

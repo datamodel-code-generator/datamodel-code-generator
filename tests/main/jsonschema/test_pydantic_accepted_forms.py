@@ -231,3 +231,31 @@ def test_same_named_dataclasses_keep_their_own_config(output_dir: Path, tmp_path
         ],
         force_exec_validation=True,
     )
+
+
+@pytest.mark.parametrize("config", ["not a config", [], None, 1], ids=["string", "list", "null", "integer"])
+def test_dataclass_regex_engine_ignores_a_config_that_is_no_mapping(
+    output_file: Path, tmp_path: Path, config: object
+) -> None:
+    """Select Python's regex engine for a dataclass whose template-data ``config`` is no mapping, as for a model.
+
+    A model drops such a config and writes ``regex_engine`` alone; the dataclass spread it into a dict and raised
+    ``TypeError: ... is not a mapping`` (#5637).
+    """
+    extra_template_data = tmp_path / "extra-template-data.json"
+    extra_template_data.write_text(json.dumps({"#all#": {"config": config}}), encoding="utf-8")
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_pattern.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.dataclass",
+            "--extra-template-data",
+            str(extra_template_data),
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )

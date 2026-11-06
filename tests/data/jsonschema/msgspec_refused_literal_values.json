@@ -1,0 +1,18 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "lone": {"type": "number", "x-python-type": "typing.Literal[5.0]"},
+    "data": {"type": "string", "x-python-type": "typing.Literal[b'ab']"},
+    "mixed": {"type": "number", "x-python-type": "typing.Literal[1, 2.5, 'a']"},
+    "nested": {"x-python-type": "typing.Optional[typing.Literal[typing.Literal[5.0], 'a']]"},
+    "listed": {"type": "array", "items": {"type": "number", "x-python-type": "typing.Literal[5.0, 6.0]"}},
+    "beside": {
+      "anyOf": [
+        {"type": "number", "minimum": 1},
+        {"type": "number", "x-python-type": "typing.Literal[5.0]"}
+      ]
+    },
+    "text": {"type": "string", "x-python-type": "typing.Literal['a', 'b']"}
+  }
+}

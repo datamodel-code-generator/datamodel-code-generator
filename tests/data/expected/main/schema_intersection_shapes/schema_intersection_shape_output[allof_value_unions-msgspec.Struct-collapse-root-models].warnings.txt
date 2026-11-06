@@ -1,0 +1,6 @@
+msgspec checks all int members of a union against the constraints of each of them, so ge, le of one member would reject values another member accepts; Model.ranges is generated without these constraints.
+msgspec checks all int members of a union against the constraints of each of them, so ge, le of one member would reject values another member accepts; Model.twice is generated without these constraints.
+msgspec checks all int members of a union against the constraints of each of them, so ge, le of one member would reject values another member accepts; Model.two_bases is generated without these constraints.
+msgspec checks all int members of a union against the constraints of each of them, so ge, le of one member would reject values another member accepts; Model.two_bases_items is generated without these constraints.
+msgspec cannot decode the union WithProperties: its Struct types WithProperties4, WithProperties5 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union SiteProperties: its Struct types SiteProperties4, SiteProperties5 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.

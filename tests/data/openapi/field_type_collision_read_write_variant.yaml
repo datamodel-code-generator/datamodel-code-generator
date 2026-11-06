@@ -1,0 +1,20 @@
+openapi: 3.0.0
+info:
+  title: Read and write variants
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        name:
+          type: string
+        kind:
+          type: string
+          readOnly: true
+    Holder:
+      type: object
+      properties:
+        PetRequest:
+          $ref: '#/components/schemas/Pet'

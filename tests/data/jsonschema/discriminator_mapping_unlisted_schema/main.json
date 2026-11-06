@@ -1,0 +1,14 @@
+{
+  "title": "Kennel",
+  "type": "object",
+  "properties": {
+    "pet": {
+      "oneOf": [{"$ref": "./defs/cat.json"}, {"$ref": "./defs/dog.json"}],
+      "discriminator": {
+        "propertyName": "pet_type",
+        "mapping": {"c": "./defs/cat.json", "d": "./defs/dog.json", "b": "./sub/../defs/bird.json"}
+      }
+    }
+  },
+  "required": ["pet"]
+}

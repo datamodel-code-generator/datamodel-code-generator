@@ -1,0 +1,6 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {"Cat": {"$ref": "#/$defs/Pet"}},
+  "$defs": {"Pet": {"type": "object", "properties": {"name": {"type": "string"}}}}
+}

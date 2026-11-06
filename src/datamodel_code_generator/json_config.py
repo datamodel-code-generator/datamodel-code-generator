@@ -20,6 +20,7 @@ from datamodel_code_generator._json_output import (
     schema_document,
 )
 from datamodel_code_generator.deprecations import warn_deprecated
+from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.validators import ValidatorsConfig, format_validation_error
 
 _JSON_STRING_OR_BRACKET = re.compile(r'"[^"\\]*(?:\\.[^"\\]*)*"?|[\[\]{}]')
@@ -218,7 +219,7 @@ def _read_json_or_inline(value: str) -> str:
     try:
         return path.read_text(encoding=DEFAULT_ENCODING)
     except (OSError, UnicodeDecodeError) as e:
-        msg = f"Unable to read JSON file {value!r}: {e}"
+        msg = f"Unable to read JSON file {stable_repr(value)}: {e}"
         raise JsonConfigError(msg) from e
 
 
@@ -264,7 +265,9 @@ def _load_json_source(
             return value
         case TextIOBase() as data:
             with data:
-                return _loads_json(data.read(), option_name=option_name, load_error_name=load_error_name)
+                return _loads_json(
+                    data.read(), option_name=option_name, load_error_name=load_error_name, max_depth=max_depth
+                )
 
     text = _read_json_or_inline(str(value))
     return _loads_json(text, option_name=option_name, load_error_name=load_error_name, max_depth=max_depth)

@@ -2,3 +2,5 @@
 # Each line records the expected output a test compares; to accept changed output add --inline-snapshot=fix (see AGENTS.md).
 [test_is_pydantic_version_at_least]
 	enums/pydantic_version_at_least.txt
+[test_version_bounds_are_the_lowest_and_highest_target_python_version]
+	enums/version_bounds_are_the_lowest_and_highest_target_python_version.txt

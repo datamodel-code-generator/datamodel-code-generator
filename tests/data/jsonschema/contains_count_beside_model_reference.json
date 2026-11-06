@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ContainsCountBesideModelReference",
+  "type": "object",
+  "$defs": {
+    "Tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "Owner": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "Color": {
+      "type": "string",
+      "enum": ["red", "green"]
+    }
+  },
+  "properties": {
+    "tags": {
+      "$ref": "#/$defs/Tags",
+      "contains": true,
+      "minContains": 2
+    },
+    "tagsAsFloats": {
+      "$ref": "#/$defs/Tags",
+      "contains": true,
+      "minContains": 2.0,
+      "maxContains": 3.0
+    },
+    "owner": {
+      "$ref": "#/$defs/Owner",
+      "contains": true
+    },
+    "color": {
+      "$ref": "#/$defs/Color",
+      "contains": true
+    },
+    "ownerOrColor": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Owner"
+        },
+        {
+          "$ref": "#/$defs/Color"
+        }
+      ],
+      "contains": true,
+      "maxContains": 3
+    }
+  }
+}

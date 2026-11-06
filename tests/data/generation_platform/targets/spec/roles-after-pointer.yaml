@@ -1,0 +1,23 @@
+openapi: 3.1.0
+info:
+  title: Notes
+  version: "1.0"
+paths:
+  /notes:
+    get:
+      operationId: listNotes
+      parameters:
+        - $ref: roles-after-pointer-filter.yaml
+      responses:
+        "200":
+          description: The notes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+components:
+  schemas:
+    Term:
+      $ref: roles-after-pointer-filter.yaml#/schema/properties/term

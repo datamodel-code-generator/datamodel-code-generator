@@ -1,1 +1,2 @@
 Pydantic does not take max_length on AwareDatetime; StampMap is generated without this constraint.
+Pydantic does not take ge on Point; PointItem is generated without this constraint.

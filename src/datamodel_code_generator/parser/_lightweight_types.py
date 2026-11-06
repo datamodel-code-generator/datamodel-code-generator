@@ -23,6 +23,7 @@ from datamodel_code_generator.parser._intersection import (
     intersect_multiple_of,
     intersects_all_of_constraints,
 )
+from datamodel_code_generator.parser._origins import with_unique_items
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import _numeric_type_domain
 from datamodel_code_generator.types import ANY, DataType, UnionIntFloat
@@ -190,7 +191,6 @@ def merge_schema_constraints(
                 named_location(
                     next((item.schema_location for item in items if item.schema_location), None),
                     "allOf",
-                    row="legacy-unredacted-locations",
                 ),
             ),
         )
@@ -234,11 +234,14 @@ def build_lightweight_array_type(  # noqa: PLR0913, PLR0917
     )
     if not item_types and not (is_homogeneous_tuple and tuple_item_count == 0):
         item_types = [DataType(type=ANY, import_=IMPORT_ANY)]
-    return parser.data_type(
-        data_types=item_types,
-        is_list=not is_homogeneous_tuple,
-        is_tuple=is_homogeneous_tuple,
-        tuple_item_count=tuple_item_count if is_homogeneous_tuple else None,
+    return with_unique_items(
+        parser.data_type(
+            data_types=item_types,
+            is_list=not is_homogeneous_tuple,
+            is_tuple=is_homogeneous_tuple,
+            tuple_item_count=tuple_item_count if is_homogeneous_tuple else None,
+        ),
+        schema.uniqueItems,
     )
 
 

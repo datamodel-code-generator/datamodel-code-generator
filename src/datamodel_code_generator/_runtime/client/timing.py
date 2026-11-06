@@ -8,29 +8,36 @@ from collections.abc import Awaitable, Callable  # noqa: TC003 - Public annotati
 from dataclasses import dataclass, field
 from datetime import datetime
 from sys import float_info
-from typing import Final, Literal, TypeGuard, final
+from typing import Final, Literal, TypeAlias, TypeGuard, final
 
 from ..model_codecs.media import json_number
 from ..model_codecs.unset import UNSET
 from .errors import ConfigurationError
 
+SecondsRow: TypeAlias = Literal["float", "legacy-compare-before-float"]
 
-def finite_number(value: object) -> float | None:
-    """Return a number as a finite float, or None for booleans, other types, and values no finite float holds."""
-    if not json_number(value):
-        return None
+
+def usable_seconds(value: object, *, allow_zero: bool = True, row: SecondsRow = "float") -> TypeGuard[int | float]:
+    """Return whether a value is a number of seconds, no boolean, finite as a float, not negative, zero only if allowed.
+
+    `float` reads the float nearest the value, so an integer just past the largest float, which rounds to it, is one,
+    and one that no float holds is not. `legacy-compare-before-float` (an option limit, an OAuth token's expires_in)
+    compares the value with the largest float first and refuses that integer.
+    """
+    if not json_number(value) or (row == "legacy-compare-before-float" and value > float_info.max):
+        return False
     try:
         number = float(value)
     except OverflowError:
-        return None
-    return number if math.isfinite(number) else None
+        return False
+    return math.isfinite(number) and number >= 0 and (allow_zero or number > 0)
 
 
-def seconds(value: object, path: tuple[str, ...]) -> float:
-    """Validate and normalize a finite nonnegative duration at its option path."""
-    if (number := finite_number(value)) is None or number < 0:
+def seconds(value: object, path: tuple[str, ...], *, allow_zero: bool = True) -> float:
+    """Validate and normalize a finite nonnegative duration, positive unless zero is allowed, at its option path."""
+    if not usable_seconds(value, allow_zero=allow_zero):
         raise ConfigurationError(field_path=path, reason="out_of_range")
-    return number
+    return float(value)
 
 
 def checked_count(
@@ -64,7 +71,7 @@ def positive_count(value: object, name: str, *, allow_zero: bool = False) -> Non
 
 def checked_seconds(value: object, name: str, *, allow_zero: bool = False) -> None:
     """Validate a finite duration in seconds, excluding booleans, that is positive or, if allowed, zero."""
-    if not (json_number(value) and 0 <= value <= float_info.max and (allow_zero or value > 0)):
+    if not usable_seconds(value, allow_zero=allow_zero, row="legacy-compare-before-float"):
         raise ConfigurationError(field_path=(name,), reason="invalid_value")
 
 

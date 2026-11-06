@@ -1,0 +1,12 @@
+{
+  "title": "Keeper",
+  "oneOf": [{"$ref": "../defs/cat.json"}, {"$ref": "../defs/dog.json"}, {"$ref": "../defs/bird.json"}],
+  "discriminator": {
+    "propertyName": "pet_type",
+    "mapping": {
+      "c": "../../r/defs/cat.json",
+      "d": "../defs/dog.json",
+      "b": "../../../discriminator_mapping_reentered_directory/r/defs/bird.json"
+    }
+  }
+}

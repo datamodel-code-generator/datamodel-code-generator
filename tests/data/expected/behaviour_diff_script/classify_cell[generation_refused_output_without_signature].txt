@@ -1,0 +1,8 @@
+{
+  "cls": "violation",
+  "notes": [
+    "generation now fails: Error: Cannot import the module 'class' from module 'main'"
+  ],
+  "accepted_by": [],
+  "changes": []
+}

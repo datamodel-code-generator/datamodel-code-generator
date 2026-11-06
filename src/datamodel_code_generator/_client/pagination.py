@@ -29,6 +29,7 @@ from datamodel_code_generator._runtime.model_codecs.parameters import parameter_
 from datamodel_code_generator._runtime.protocols.records import canonical_json
 from datamodel_code_generator._target_contract import BuiltinType, GeneratedSymbolType, GenericType, UnionType, label
 from datamodel_code_generator._target_types import admits_none, sole_present
+from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Container, Iterator
@@ -314,7 +315,7 @@ class _Pages(HelperPlanner):
         if (expected := self.schema_type(reference, direction)) == "missing":
             message = missing_schema(helper, noun, reference)
         elif value is None or expected is None or self.present(value) not in self.read_as(expected):
-            message = f"The {noun} {reference.pointer!r} of {helper.name!r} is not {mismatch}"
+            message = f"The {noun} {stable_repr(reference.pointer)} of {stable_repr(helper.name)} is not {mismatch}"
         else:
             return None
         return _problem("E_CONFIG_VALUE", "config", at, message, spec)
@@ -325,7 +326,7 @@ class _Pages(HelperPlanner):
         """Refuse a value written where a request carries credentials, which no helper writes."""
         if (place := credential_place(target, self.secret_headers, self.secret_queries, spec)) is None:
             return None
-        message = f"The {what} of {helper.name!r} writes {place}, which carries credentials no helper writes"
+        message = f"The {what} of {stable_repr(helper.name)} writes {place}, which carries credentials no helper writes"
         return _problem("E_CONFIG_VALUE", "config", at, message, spec)
 
     def helper(self, helper: Helper, spec: OperationSpec) -> tuple[PaginationSpec | None, list[Diagnostic]]:
@@ -338,9 +339,14 @@ class _Pages(HelperPlanner):
                 problems.append(_reads_input(helper, spec, f"binding {index}", f"{at}.bindings[{index}]"))
         problems.extend(_credentials(helper, spec, self))
         if spec.body is not None and any(media.kind != "json" for media in spec.body.media):
-            message = f"The pagination helper {name!r} sends a request body other than JSON, which is not supported yet"
+            message = (
+                f"The pagination helper {stable_repr(name)} sends a request body other than JSON, which is not "
+                "supported yet"
+            )
             problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", at, message, spec))
-        if isinstance(single := self.single(spec, f"{at}.operation", f"pagination helper {name!r}"), Diagnostic):
+        if isinstance(
+            single := self.single(spec, f"{at}.operation", f"pagination helper {stable_repr(name)}"), Diagnostic
+        ):
             problems.append(single)
             return None, problems
         response, page, body = single
@@ -372,16 +378,23 @@ class _Pages(HelperPlanner):
         reached = self.walk(body, pointer)
         if reached == "unsupported":
             message = (
-                f"The items pointer {pointer!r} of {name!r} reads through a union or map, which is not supported yet"
+                f"The items pointer {stable_repr(pointer)} of {stable_repr(name)} reads through a union or map, which "
+                "is not supported yet"
             )
             problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", f"{at}.items", message, spec))
             return None
         if reached == "absent":
-            message = f"The items pointer {pointer!r} of {name!r} names no property of the {label} response"
+            message = (
+                f"The items pointer {stable_repr(pointer)} of {stable_repr(name)} names no property of the {label} "
+                "response"
+            )
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.items", message, spec))
             return None
         if not _sequence(reached.value):
-            message = f"The items pointer {pointer!r} of {name!r} selects no JSON array of the {label} response"
+            message = (
+                f"The items pointer {stable_repr(pointer)} of {stable_repr(name)} selects no JSON array of the {label} "
+                "response"
+            )
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.items", message, spec))
             return None
         item = reached.value.arguments[0]
@@ -414,19 +427,23 @@ class _Pages(HelperPlanner):
                 reached = self.walk(body, pointer := read["pointer"])
                 if reached == "unsupported":
                     message = (
-                        f"The {what} pointer {pointer!r} of {name!r} reads through a union or map, which is not "
-                        "supported yet"
+                        f"The {what} pointer {stable_repr(pointer)} of {stable_repr(name)} reads through a union or "
+                        "map, which is not supported yet"
                     )
                     return _problem("E_CLIENT_UNSUPPORTED", "target", at, message, spec)
                 if isinstance(reached, str) or (member := reached.member) is None or member.model_facts is None:
-                    message = f"The {what} pointer {pointer!r} of {name!r} names no property of the {label} response"
+                    message = (
+                        f"The {what} pointer {stable_repr(pointer)} of {stable_repr(name)} names no property of the "
+                        f"{label} response"
+                    )
                     return _problem("E_CONFIG_VALUE", "config", at, message, spec)
                 types = self.facts.field_types(member.model_facts)
             case "header":
                 uses = {header.name.lower(): header.use for header in headers}
                 if (key := read["name"].lower()) not in uses:
                     message = (
-                        f"The {what} of {name!r} reads the header {read['name']!r}, which {label} does not declare"
+                        f"The {what} of {stable_repr(name)} reads the header {stable_repr(read['name'])}, which "
+                        f"{label} does not declare"
                     )
                     return _problem("E_CONFIG_VALUE", "config", at, message, spec)
                 types = frozenset({"array" if read["occurrence"] == "all" else "string"})
@@ -451,27 +468,30 @@ class _Pages(HelperPlanner):
             place = f"the request body of {label}"
             if not body.required and body.default is None:
                 message = (
-                    f"The {what} of {helper.name!r} writes {place}, which is optional and has no media type a call "
-                    "without one sends"
+                    f"The {what} of {stable_repr(helper.name)} writes {place}, which is optional and has no media type "
+                    "a call without one sends"
                 )
                 return _problem("E_CONFIG_VALUE", "config", at, message, spec)
             uses, carries = [media.use for media in body.media], True
         elif where == "querystring":
-            place = f"the querystring {target['name']!r} of {label}"
+            place = f"the querystring {stable_repr(target['name'])} of {label}"
             found = [item for item in spec.parameters if item.location == "querystring"]
             uses = [item.use for item in found]
             carries = all(media_kind(item.plan.content_media_type or "") == "json" for item in found)
         else:
             key = _target_key(target)
-            place = f"the {where} parameter {target['name']!r} of {label}"
+            place = f"the {where} parameter {stable_repr(target['name'])} of {label}"
             uses = [item.use for item in spec.parameters if parameter_key(item.location, item.wire_name) == key]
         schemas: list[_Types] = []
         for use in uses:
             if (found := self.declared(None if use is None else use.type, pointer)) == "absent":
-                message = f"The {what} of {helper.name!r} writes {pointer!r}, which names no property of {place}"
+                message = (
+                    f"The {what} of {stable_repr(helper.name)} writes {stable_repr(pointer)}, which names no property "
+                    f"of {place}"
+                )
                 return _problem("E_CONFIG_VALUE", "config", at, message, spec)
             schemas.append(found)
-        return schemas, f"the property {pointer!r} of {place}" if pointer else place, carries
+        return schemas, f"the property {stable_repr(pointer)} of {place}" if pointer else place, carries
 
     def cursor(
         self, helper: Helper, spec: OperationSpec, body: TypeView, headers: tuple[HeaderSpec, ...]
@@ -492,11 +512,14 @@ class _Pages(HelperPlanner):
         at, name = f"{helper.at}.continuation", helper.name
         ends = helper.tree["continuation"]["end"]
         if types is not None and "null" in types and {"kind": "null"} not in ends:
-            message = f"The {what} of {name!r} can read null, which no end condition covers"
+            message = f"The {what} of {stable_repr(name)} can read null, which no end condition covers"
             yield _problem("E_CONFIG_VALUE", "config", f"{at}.end", message, spec)
         for index, end in enumerate(ends):
             if end["kind"] == "value" and types is not None and not _fits(kind := _json_type(end["value"]), types):
-                message = f"The end value {end['value']!r} of {name!r} is {kind}, which its {what} never reads"
+                message = (
+                    f"The end value {stable_repr(end['value'])} of {stable_repr(name)} is {kind}, which its {what} "
+                    "never reads"
+                )
                 yield _problem("E_CONFIG_VALUE", "config", f"{at}.end[{index}].value", message, spec)
 
     def next_url(
@@ -512,11 +535,13 @@ class _Pages(HelperPlanner):
         if continuation["repeat_request_body"]:
             message = None
             if spec.body is None:
-                message = f"The next URL of {name!r} repeats the request body, which {_label(spec)} does not take"
+                message = (
+                    f"The next URL of {stable_repr(name)} repeats the request body, which {_label(spec)} does not take"
+                )
             elif not body_replay_safe(spec.contract.method.upper(), spec.retry_safety, None):
                 message = (
-                    f"The next URL of {name!r} repeats the request body of {_label(spec)}, which is not safe to send "
-                    "again; declare the operation's retry_safety idempotent"
+                    f"The next URL of {stable_repr(name)} repeats the request body of {_label(spec)}, which is not "
+                    "safe to send again; declare the operation's retry_safety idempotent"
                 )
             if message is not None:
                 yield _problem("E_CONFIG_VALUE", "config", f"{at}.repeat_request_body", message, spec)
@@ -526,8 +551,8 @@ class _Pages(HelperPlanner):
             return
         if types is not None and (others := sorted(types - _URL_TYPES)):
             message = (
-                f"The next URL of {name!r} reads {english_list(others, 'or', 'serial')} values, "
-                "where only string values fit"
+                f"The next URL of {stable_repr(name)} reads {english_list(others, 'or', 'serial')} values, where only "
+                "string values fit"
             )
             yield _problem("E_CONFIG_VALUE", "config", f"{at}.read", message, spec)
         yield from self.ends(helper, spec, types, "next URL")
@@ -541,11 +566,15 @@ class _Pages(HelperPlanner):
         at, name = f"{helper.at}.continuation", helper.name
         continuation = helper.tree["continuation"]
         if (header := continuation["header"]).lower() not in {item.name.lower() for item in headers}:
-            message = f"The links of {name!r} come from the header {header!r}, which {_label(spec)} does not declare"
+            message = (
+                f"The links of {stable_repr(name)} come from the header {stable_repr(header)}, which {_label(spec)} "
+                "does not declare"
+            )
             yield _problem("E_CONFIG_VALUE", "config", f"{at}.header", message, spec)
         if not _RELATION.fullmatch(rel := continuation["rel"]):
             message = (
-                f"The relation {rel!r} of {name!r} is no RFC 8288 relation type: a registered name or an absolute URI"
+                f"The relation {stable_repr(rel)} of {stable_repr(name)} is no RFC 8288 relation type: a registered "
+                "name or an absolute URI"
             )
             yield _problem("E_CONFIG_VALUE", "config", f"{at}.rel", message, spec)
 
@@ -561,7 +590,9 @@ class _Pages(HelperPlanner):
         continuation = helper.tree["continuation"]
         kind = continuation["kind"]
         if kind == "page" and "page_items_count" in continuation["step"]:
-            message = f"The page number of {name!r} advances by a literal step, never by the page's item count"
+            message = (
+                f"The page number of {stable_repr(name)} advances by a literal step, never by the page's item count"
+            )
             yield _problem("E_CONFIG_VALUE", "config", f"{at}.step", message, spec)
         yield from self.fits(
             helper, spec, continuation["write"], frozenset({"integer"}), f"{at}.write", _WRITES[kind], null=False
@@ -569,7 +600,7 @@ class _Pages(HelperPlanner):
         chosen = evidence(continuation)
         expected, read, where = _EVIDENCE[chosen], continuation[chosen], f"{at}.{chosen}"
         if chosen == "total" and read["from"] == "status":
-            message = f"The total of {name!r} reads the response status, which counts no items"
+            message = f"The total of {stable_repr(name)} reads the response status, which counts no items"
             yield _problem("E_CONFIG_VALUE", "config", where, message, spec)
             return
         types = self.read(helper, spec, body, headers, read, where, chosen)
@@ -577,8 +608,8 @@ class _Pages(HelperPlanner):
             yield types
         elif types is not None and (others := sorted(types - {expected})):
             message = (
-                f"The {chosen} of {name!r} reads {english_list(others, 'or', 'serial')} values, "
-                f"where only {expected} values fit"
+                f"The {chosen} of {stable_repr(name)} reads {english_list(others, 'or', 'serial')} values, where only "
+                f"{expected} values fit"
             )
             yield _problem("E_CONFIG_VALUE", "config", where, message, spec)
 
@@ -603,7 +634,7 @@ class _Pages(HelperPlanner):
             return
         schemas, place, carries = accepted
         if null and types is not None and "null" in types and not carries:
-            message = f"The {what} of {helper.name!r} can give null, which cannot be written to {place}"
+            message = f"The {what} of {stable_repr(helper.name)} can give null, which cannot be written to {place}"
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
             null = False
         if refused := sorted(
@@ -611,7 +642,7 @@ class _Pages(HelperPlanner):
         ):
             verb = "reads" if what == "cursor" else "gives"
             message = (
-                f"The {what} of {helper.name!r} {verb} {english_list(refused, 'or', 'serial')} values, "
+                f"The {what} of {stable_repr(helper.name)} {verb} {english_list(refused, 'or', 'serial')} values, "
                 f"which {place} does not accept"
             )
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
@@ -661,7 +692,7 @@ class _Pages(HelperPlanner):
         for index, item in enumerate(bindings):
             where, owner, value, target = f"{at}[{index}]", f"{what} {index}", item["value"], item["target"]
             if followed is not None and (unsent := _unsent(target, followed)) is not None:
-                message = f"The {owner} of {name!r} writes {unsent}, which no request after the first sends"
+                message = f"The {owner} of {stable_repr(name)} writes {unsent}, which no request after the first sends"
                 yield _problem("E_CONFIG_VALUE", "config", f"{where}.target", message, spec)
                 continue
             if (
@@ -674,7 +705,7 @@ class _Pages(HelperPlanner):
             if (
                 clash := next(((other, holder) for other, holder in writes if _overlaps(key, other)), None)
             ) is not None:
-                message = f"The {owner} of {name!r} writes {_relation(key, clash[0])} its {clash[1]}"
+                message = f"The {owner} of {stable_repr(name)} writes {_relation(key, clash[0])} its {clash[1]}"
                 yield _problem("E_CONFIG_CONFLICT", "config", f"{where}.target", message, spec)
                 continue
             writes.append((key, owner))
@@ -685,8 +716,8 @@ class _Pages(HelperPlanner):
             if "literal" in value:
                 if index in dotted:
                     message = (
-                        f"The {owner} of {name!r} gives {value['literal']!r}, which makes the segment of the path "
-                        f"parameter {target['name']!r} of {_label(spec)} a dot segment"
+                        f"The {owner} of {stable_repr(name)} gives {stable_repr(value['literal'])}, which makes the "
+                        f"segment of the path parameter {stable_repr(target['name'])} of {_label(spec)} a dot segment"
                     )
                     yield _problem("E_CONFIG_VALUE", "config", f"{where}.value.literal", message, spec)
                     continue
@@ -701,7 +732,7 @@ class _Pages(HelperPlanner):
 
 def _reads_input(helper: Helper, spec: OperationSpec, owner: str, where: str) -> Diagnostic:
     """Refuse a binding, `owner` at `where`, that reads the helper's input, which no helper supports yet."""
-    message = f"The {owner} of {helper.name!r} reads the helper's input, which is not supported yet"
+    message = f"The {owner} of {stable_repr(helper.name)} reads the helper's input, which is not supported yet"
     return _problem("E_CLIENT_UNSUPPORTED", "target", f"{where}.value.source", message, spec)
 
 
@@ -739,15 +770,15 @@ def credential_place(
     place = None
     match target["in"]:
         case "cookie":
-            place = f"the cookie {name!r}"
+            place = f"the cookie {stable_repr(name)}"
         case "header" if name.lower() in headers:
-            place = f"the header {name!r}"
+            place = f"the header {stable_repr(name)}"
         case "query" if name in queries:
-            place = f"the query parameter {name!r}"
+            place = f"the query parameter {stable_repr(name)}"
         case "querystring" if field in queries:
-            place = f"the query field {field!r}"
+            place = f"the query field {stable_repr(field)}"
         case "query" if (sent := _sent_field(operation, name, queries)) is not None:
-            place = f"the query field {sent!r}"
+            place = f"the query field {stable_repr(sent)}"
         case _:
             pass
     return place
@@ -772,7 +803,7 @@ def _unsent(target: Mapping[str, Any], continuation: Mapping[str, Any]) -> str |
     unsent = None
     match where := target["in"]:
         case "path" | "query" | "querystring":
-            unsent = f"the {where} parameter {target['name']!r}"
+            unsent = f"the {where} parameter {stable_repr(target['name'])}"
         case "body" if not continuation.get("repeat_request_body"):
             unsent = "the request body"
     return unsent

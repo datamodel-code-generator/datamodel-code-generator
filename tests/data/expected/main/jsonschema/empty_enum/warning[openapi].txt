@@ -1,0 +1,2 @@
+The schema at empty_enum.yaml#/components/schemas/Pet/properties/kind admits no value: its enum is empty. It is generated as if it had no enum.
+The schema at empty_enum.yaml#/components/schemas/Size admits no value: its enum is empty. It is generated as if it had no enum.

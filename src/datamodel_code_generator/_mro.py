@@ -11,8 +11,10 @@ caller names its rule (``C3Rule``):
   whose orders conflict (`parser/_inheritance_check.py:check_model_inheritance`, the target bindings of
   `_target_binding.py`).
 
-``resolve_members`` reads the members of a class and its bases through such an order: the fields a model has with its
-bases (`model/base.py:_effective_field_owners`), the fields a target binds, the struct options msgspec takes.
+``resolve_members`` reads the members of a class and its bases through such an order, the nearest declaration of each:
+the struct options msgspec takes. ``collect_members`` reads the fields a model has with its bases
+(`model/base.py:_effective_field_owners`) and the fields a target binds, as dataclasses, Pydantic and msgspec collect
+them (each base with the fields its own bases gave it) or, for a TypedDict, as `resolve_members` reads them.
 """
 
 from __future__ import annotations
@@ -28,21 +30,80 @@ _T = TypeVar("_T")
 _K = TypeVar("_K")
 _M = TypeVar("_M")
 C3Rule: TypeAlias = Literal["first-head", "python"]
+MemberRule: TypeAlias = Literal["collected", "nearest"]
+"""How a class takes a member it does not declare from its bases (`collect_members`).
+
+* ``collected``: as dataclasses, Pydantic and msgspec collect fields, each base with the members its own bases gave it,
+  the first base that has the member giving it.
+* ``nearest``: the declaration nearest in the order (`resolve_members`).
+"""
 
 
 def resolve_members(
-    order: Sequence[_T], members_of: Callable[[_T], Iterable[_M]], key: Callable[[_M], _K | None]
+    order: Sequence[_T], members_of: Callable[[_T], Iterable[_M]], key: Callable[[_M], _K]
 ) -> dict[_K, tuple[_T, _M]]:
     """Return the member each key resolves to and its owner, searching ``order``: a class, then its bases in order.
 
-    The first owner that declares a key gives its member, at the place where the last one declares it; a member whose
-    key is None is left out.
+    The first owner that declares a key gives its member, at the place where the last one declares it.
     """
     resolved: dict[_K, tuple[_T, _M]] = {}
     for owner in reversed(order):
         for member in members_of(owner):
-            if (member_key := key(member)) is not None:
-                resolved[member_key] = owner, member
+            resolved[key(member)] = owner, member
+    return resolved
+
+
+def collect_members(  # noqa: PLR0913
+    order: Sequence[_T],
+    members_of: Callable[[_T], Iterable[_M]],
+    key: Callable[[_M], _K | None],
+    parents_of: Callable[[_T], Iterable[_T]],
+    node: Callable[[_T], Hashable],
+    *,
+    rule: MemberRule = "collected",
+) -> dict[_K, tuple[_T, _M]]:
+    """Return the member each key of ``order[0]`` takes by ``rule`` and its owner, as its class takes it.
+
+    A key keeps the place where the last owner in ``order`` declares it; a member whose key is None is left out. Row
+    ``collected``: a class takes the members each of its bases collected, its bases in reverse order, then its
+    own, so a key it does not declare takes the member of the first base whose own bases or itself declare the key.
+    ``parents_of`` gives the bases of an item, ``node`` tells the items apart. The keys that one owner, or one that
+    ``parents_of`` reaches, declares, and every key of row ``nearest``, resolve as `resolve_members` resolves them.
+    """
+    members = [
+        {member_key: member for member in members_of(owner) if (member_key := key(member)) is not None}
+        for owner in order
+    ]
+    owners: dict[_K, list[int]] = {}
+    for index, owned in enumerate(members):
+        for member_key in owned:
+            owners.setdefault(member_key, []).append(index)
+    resolved = {
+        member_key: (order[index], member)
+        for index in reversed(range(len(order)))
+        for member_key, member in members[index].items()
+    }
+    if rule == "nearest" or all(len(indexes) == 1 for indexes in owners.values()):
+        return resolved
+    position = {node(item): index for index, item in enumerate(order)}
+    ancestors: list[frozenset[int]] = [frozenset()] * len(order)
+    for index in reversed(range(len(order))):
+        parents = {
+            parent_index
+            for parent in parents_of(order[index])
+            if (parent_index := position.get(node(parent), -1)) > index
+        }
+        ancestors[index] = frozenset(parents).union(*(ancestors[parent] for parent in parents))
+    reached = ancestors[0] | {0}
+    for member_key, owner_indexes in owners.items():
+        if len(indexes := [owner for owner in owner_indexes if owner in reached]) < 2:  # noqa: PLR2004
+            continue
+        index = 0
+        while member_key not in members[index]:
+            index = min(
+                base for base in ancestors[index] if any(owner == base or owner in ancestors[base] for owner in indexes)
+            )
+        resolved[member_key] = order[index], members[index][member_key]
     return resolved
 
 

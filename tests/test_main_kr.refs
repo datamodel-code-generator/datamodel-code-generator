@@ -18,6 +18,8 @@
 	main_kr/input_output/output.py
 [test_custom_formatters_kwargs_option]
 	main_kr/input_output/output.py
+[test_empty_profile_name_selects_no_profile]
+	main_kr/empty_profile_name_selects_no_profile.txt
 [test_encoding_option]
 	main_kr/encoding/output.py
 [test_fail_on_multi_module_stdout_single_file]
@@ -57,6 +59,11 @@ typed_dict_closed.json-typing.TypedDict-generate_cli_command/no_use_closed_typed
 	main_kr/generate_cli_command/with_profile.txt
 [test_generate_cli_command_with_spaces_in_values]
 	main_kr/generate_cli_command/spaces_in_values.txt
+[test_generate_cli_command_writes_an_empty_formatters_list_as_no_formatters]
+	main_kr/generate_cli_command_writes_an_empty_formatters_list_as_no_formatters.stdout.txt
+	main_kr/generate_cli_command_writes_an_empty_formatters_list_as_no_formatters.txt
+[test_generate_cli_command_writes_an_empty_list_as_the_option_off]
+	main_kr/generate_cli_command_writes_an_empty_list_as_the_option_off.stdout.txt
 [test_generate_prompt_basic]
 	main_kr/generate_prompt/basic.txt
 [test_generate_prompt_json]
@@ -90,6 +97,11 @@ typed_dict_closed.json-typing.TypedDict-generate_cli_command/no_use_closed_typed
 	main_kr/generate_pyproject_config/list_options.txt
 [test_generate_pyproject_config_with_multiple_options]
 	main_kr/generate_pyproject_config/multiple_options.txt
+[test_generate_pyproject_config_writes_no_formatters_as_an_empty_formatters_list]
+	main_kr/generate_pyproject_config_writes_no_formatters_as_an_empty_formatters_list.stdout.txt
+[test_generated_config_leaves_out_the_option_only_the_command_line_reads]
+command	main_kr/generated_config_leaves_out_the_option_only_the_command_line_reads[command].stdout.txt
+config	main_kr/generated_config_leaves_out_the_option_only_the_command_line_reads[config].stdout.txt
 [test_help_shows_new_options]
 	main_kr/help_shows_new_options.txt	= main/help/color.txt
 [test_http_ignore_tls]
@@ -157,6 +169,8 @@ modular	main_kr/multi_module_stdout/error.txt
 	main_kr/no_alias/with_option.py
 [test_no_alias_without_option]
 	main_kr/no_alias/without_option.py
+[test_no_formatters_option]
+	main_kr/no_formatters_option.py
 [test_no_subclass_enum_no_capitalise_builtin_names]
 	main_kr/no_subclass_enum_no_capitalise_builtin_names.py
 [test_output_format_json_check_missing_output_directory]
@@ -236,6 +250,8 @@ modular	main_kr/multi_module_stdout/error.txt
 [test_pyproject_all_jobs_runs_every_job]
 	main/person.py
 	main_kr/jobs/strict.py
+[test_pyproject_delimited_list_options_accept_toml_lists]
+	main_kr/pyproject_delimited_list_options_accept_toml_lists.py
 [test_pyproject_job_command_header_uses_batch_invocation]
 	main_kr/jobs/strict_command_header.py
 [test_pyproject_job_custom_formatter_resolves_relative_resources_from_original_output]
@@ -261,6 +277,10 @@ output_format1-stale generated output\n	main_kr/jobs/stale_output.txt
 [test_pyproject_jobs_json_is_one_ordered_payload]
 	main_kr/jobs/json_generation.txt
 	main_kr/jobs/ordered_outputs.txt
+[test_pyproject_jobs_json_keeps_unicode_line_separators_inside_strings]
+u0085	main_kr/pyproject_jobs_json_keeps_unicode_line_separators_inside_strings[u0085].txt
+u2028	main_kr/pyproject_jobs_json_keeps_unicode_line_separators_inside_strings[u2028].txt
+u2029	main_kr/pyproject_jobs_json_keeps_unicode_line_separators_inside_strings[u2029].txt
 [test_pyproject_jobs_json_publish_failure_has_no_batch_payload]
 	__init__.py
 [test_pyproject_jobs_json_rejects_invalid_inner_payload_without_stdout]

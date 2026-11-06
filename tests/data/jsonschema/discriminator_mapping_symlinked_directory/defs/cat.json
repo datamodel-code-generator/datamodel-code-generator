@@ -1,0 +1,1 @@
+{"title": "Cat", "type": "object", "properties": {"pet_type": {"type": "string"}, "purrs": {"type": "boolean"}}, "required": ["pet_type"]}

@@ -1,0 +1,16 @@
+openapi: 3.1.0
+info:
+  title: A request body document that a pointer into it loaded first
+  version: "1.0"
+paths:
+  /notes:
+    post:
+      requestBody:
+        $ref: request_body.yaml
+      responses:
+        "200":
+          description: The note.
+components:
+  schemas:
+    Title:
+      $ref: request_body.yaml#/content/application~1json/schema/properties/title

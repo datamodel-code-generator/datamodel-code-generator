@@ -1,0 +1,31 @@
+{
+  "adapters": {
+    "Model": "ok"
+  },
+  "items": {
+    "Model": {
+      "bases": [
+        "WireModel"
+      ],
+      "config": {},
+      "fields": {
+        "name": {
+          "alias": null,
+          "ctype": "str",
+          "default": null,
+          "required": true,
+          "serialization_alias": null,
+          "type": "str",
+          "validation_alias": null
+        }
+      },
+      "kind": "BaseModel"
+    }
+  },
+  "names": [
+    "Model"
+  ],
+  "probes": {
+    "Model": "accept"
+  }
+}

@@ -1,0 +1,8 @@
+msgspec cannot decode the union Model.pet: its Struct types Pet1, Pet2 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.pet_inline_member: its Struct types PetInlineMember1, PetInlineMember2 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.pet_mixed: its Struct types PetMixed2, PetMixed1 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.pet_inline: its Struct types PetInline1, PetInline2 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.pet_props: its Struct types PetProps1, PetProps2 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.pet_field: its Struct types PetField, PetField1 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.items: its Struct types Items, Items1 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Model.values: its Struct types Values, Values1 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.

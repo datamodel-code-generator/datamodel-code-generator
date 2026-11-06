@@ -1,0 +1,11 @@
+{
+  "title": "Base",
+  "type": "object",
+  "properties": {
+    "a": {"type": ["string", "null"]},
+    "detail": {"$ref": "#/$defs/Detail"},
+    "other": {"$ref": "other.json"}
+  },
+  "required": ["detail"],
+  "$defs": {"Detail": {"type": "object", "properties": {"z": {"type": "integer"}}}}
+}

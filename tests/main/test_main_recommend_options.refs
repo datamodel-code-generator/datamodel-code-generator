@@ -29,12 +29,13 @@ one-job	main/recommend_options/naming_hint.txt
 	main/main_recommend_options/recommend_options.stdout.txt
 [test_recommend_options_compares_candidates]
 candidate-limit	main/main_recommend_options/recommend_options_compares_candidates[candidate-limit].stdout.txt
-contested-option	main/main_recommend_options/recommend_options_compares_candidates[contested-option].stdout.txt
+definitions-and-defs	main/main_recommend_options/recommend_options_compares_candidates[definitions-and-defs].stdout.txt
 diff-against	main/main_recommend_options/recommend_options_compares_candidates[diff-against].stdout.txt
 graphql	main/main_recommend_options/recommend_options_compares_candidates[graphql].stdout.txt
 input-model	main/main_recommend_options/recommend_options_compares_candidates[input-model].stdout.txt
 json	main/main_recommend_options/recommend_options_compares_candidates[json].stdout.txt
 json-data	main/main_recommend_options/recommend_options_compares_candidates[json-data].stdout.txt
+left-out-option	main/main_recommend_options/recommend_options_compares_candidates[left-out-option].stdout.txt
 package-output	main/main_recommend_options/recommend_options_compares_candidates[package-output].stdout.txt
 preset-argument	main/main_recommend_options/recommend_options_compares_candidates[preset-argument].stdout.txt
 rejected-candidates	main/main_recommend_options/recommend_options_compares_candidates[rejected-candidates].stdout.txt
@@ -63,13 +64,22 @@ size-unknown	main/main_recommend_options/recommend_options_default_skips_large_c
 [test_recommend_options_for_projects]
 changes	main/main_recommend_options/recommend_options_for_projects[changes].stdout.txt
 current	main/main_recommend_options/recommend_options_for_projects[current].stdout.txt
+empty-profile	main/main_recommend_options/recommend_options_for_projects[empty-profile].stdout.txt	= main/main_recommend_options/recommend_options_for_projects[changes].stdout.txt
+inexpressible-under-preset-argument	main/main_recommend_options/recommend_options_for_projects[inexpressible-under-preset-argument].stdout.txt
 job	main/main_recommend_options/recommend_options_for_projects[job].stdout.txt
 preset-argument	main/main_recommend_options/recommend_options_for_projects[preset-argument].stdout.txt
 preset-argument-json	main/main_recommend_options/recommend_options_for_projects[preset-argument-json].stdout.txt
 profile	main/main_recommend_options/recommend_options_for_projects[profile].stdout.txt
 unicode-profile	main/main_recommend_options/recommend_options_for_projects[unicode-profile].stdout.txt
 [test_recommend_options_for_schemas]
+api-scope-31-operations	main/main_recommend_options/recommend_options_for_schemas[api-scope-31-operations].stdout.txt
+api-scope-32-operations	main/main_recommend_options/recommend_options_for_schemas[api-scope-32-operations].stdout.txt
+api-scope-excluded-path-operations	main/main_recommend_options/recommend_options_for_schemas[api-scope-excluded-path-operations].stdout.txt
 asyncapi	main/main_recommend_options/recommend_options_for_schemas[asyncapi].stdout.txt
+asyncapi-avro-merged-names	main/main_recommend_options/recommend_options_for_schemas[asyncapi-avro-merged-names].stdout.txt
+asyncapi-avro-messages	main/main_recommend_options/recommend_options_for_schemas[asyncapi-avro-messages].stdout.txt
+asyncapi-avro-payload	main/main_recommend_options/recommend_options_for_schemas[asyncapi-avro-payload].stdout.txt
+asyncapi-avro-shared-names	main/main_recommend_options/recommend_options_for_schemas[asyncapi-avro-shared-names].stdout.txt
 asyncapi-multi-format-extension	main/main_recommend_options/recommend_options_for_schemas[asyncapi-multi-format-extension].stdout.txt
 asyncapi-v3	main/main_recommend_options/recommend_options_for_schemas[asyncapi-v3].stdout.txt
 blank-union-titles	main/main_recommend_options/recommend_options_for_schemas[blank-union-titles].stdout.txt
@@ -79,7 +89,7 @@ explicit-options	main/main_recommend_options/recommend_options_for_schemas[expli
 integer-definition-keys	main/main_recommend_options/recommend_options_for_schemas[integer-definition-keys].stdout.txt
 json	main/main_recommend_options/recommend_options_for_schemas[json].stdout.txt
 jsonschema	main/main_recommend_options/recommend_options_for_schemas[jsonschema].stdout.txt
-jsonschema-contested-option-set	main/main_recommend_options/recommend_options_for_schemas[jsonschema-contested-option-set].stdout.txt
+jsonschema-naming-strategy-set	main/main_recommend_options/recommend_options_for_schemas[jsonschema-naming-strategy-set].stdout.txt
 older-preset	main/main_recommend_options/recommend_options_for_schemas[older-preset].stdout.txt
 openapi-schema-key-component	main/main_recommend_options/recommend_options_for_schemas[openapi-schema-key-component].stdout.txt
 openapi-scopes	main/main_recommend_options/recommend_options_for_schemas[openapi-scopes].stdout.txt
@@ -89,10 +99,14 @@ paths-bodies-included-paths	main/main_recommend_options/recommend_options_for_sc
 paths-bodies-object-map	main/main_recommend_options/recommend_options_for_schemas[paths-bodies-object-map].stdout.txt
 paths-bodies-referenced-path-item	main/main_recommend_options/recommend_options_for_schemas[paths-bodies-referenced-path-item].stdout.txt
 paths-scope	main/main_recommend_options/recommend_options_for_schemas[paths-scope].stdout.txt
+paths-scope-32-operations	main/main_recommend_options/recommend_options_for_schemas[paths-scope-32-operations].stdout.txt
 paths-scope-integer-schema-key	main/main_recommend_options/recommend_options_for_schemas[paths-scope-integer-schema-key].stdout.txt
 pattern-properties	main/main_recommend_options/recommend_options_for_schemas[pattern-properties].stdout.txt
 preset-value	main/main_recommend_options/recommend_options_for_schemas[preset-value].stdout.txt
+property-counts-beside-ignored-ref	main/main_recommend_options/recommend_options_for_schemas[property-counts-beside-ignored-ref].stdout.txt
+redundant-constraint-on-root	main/main_recommend_options/recommend_options_for_schemas[redundant-constraint-on-root].stdout.txt
 redundant-constraints	main/main_recommend_options/recommend_options_for_schemas[redundant-constraints].stdout.txt
+ref-siblings-read-as-draft-07	main/main_recommend_options/recommend_options_for_schemas[ref-siblings-read-as-draft-07].stdout.txt
 referenced-holders	main/main_recommend_options/recommend_options_for_schemas[referenced-holders].stdout.txt
 referenced-holders-api-scope	main/main_recommend_options/recommend_options_for_schemas[referenced-holders-api-scope].stdout.txt
 root-name-taken	main/main_recommend_options/recommend_options_for_schemas[root-name-taken].stdout.txt
@@ -101,6 +115,10 @@ swagger-definitions	main/main_recommend_options/recommend_options_for_schemas[sw
 swagger-json	main/main_recommend_options/recommend_options_for_schemas[swagger-json].stdout.txt
 typed-dict	main/main_recommend_options/recommend_options_for_schemas[typed-dict].stdout.txt
 union-edges	main/main_recommend_options/recommend_options_for_schemas[union-edges].stdout.txt
+unions-merge-shared-variant-tags	main/main_recommend_options/recommend_options_for_schemas[unions-merge-shared-variant-tags].stdout.txt
+unions-merge-shared-variant-tags-older-preset	main/main_recommend_options/recommend_options_for_schemas[unions-merge-shared-variant-tags-older-preset].stdout.txt
+unions-merge-shared-variant-tags-remote-mapping-value	main/main_recommend_options/recommend_options_for_schemas[unions-merge-shared-variant-tags-remote-mapping-value].stdout.txt
+unions-shared-variant-tags-msgspec	main/main_recommend_options/recommend_options_for_schemas[unions-shared-variant-tags-msgspec].stdout.txt
 validation-keywords	main/main_recommend_options/recommend_options_for_schemas[validation-keywords].stdout.txt
 validation-keywords-json	main/main_recommend_options/recommend_options_for_schemas[validation-keywords-json].stdout.txt
 validation-options-set	main/main_recommend_options/recommend_options_for_schemas[validation-options-set].stdout.txt

@@ -1,0 +1,1 @@
+{"title": "Dog", "type": "object", "properties": {"pet_type": {"type": "string"}, "walks": {"type": "integer"}}, "required": ["pet_type"]}

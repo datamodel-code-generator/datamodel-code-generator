@@ -18,3 +18,4 @@ class C(RootModel[list[A]]):
 
 
 A.model_rebuild()
+B.model_rebuild()

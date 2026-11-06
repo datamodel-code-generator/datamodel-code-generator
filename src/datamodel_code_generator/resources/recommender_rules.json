@@ -115,19 +115,10 @@
           }
         ]
       },
-      "contested_when": {
-        "ratio": [
-          "inline_union_variants",
-          "shared_inline_names"
-        ],
-        "op": ">=",
-        "value": 10
-      },
-      "contested_reason": "Inline union variants are named after their parent property ({inline_union_variants} variants), and full-path prefixes the parent again on those (doubled names such as EnvFileEnvFile), so whether it helps depends on the schema.",
       "set": {
-        "naming_strategy": "full-path"
+        "naming_strategy": "enclosing-model"
       },
-      "reason": "Inline schemas under different parents share property names (names: {shared_inline_names}, e.g. {shared_inline_name_examples}; inline names equal to a component name: {inline_names_equal_component}). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; full-path names each inline model after its parent.",
+      "reason": "Inline schemas under different parents share property names (names: {shared_inline_names}, e.g. {shared_inline_name_examples}; inline names equal to a component name: {inline_names_equal_component}). Numbered names (Status, Status1) depend on parse order and shift when the schema grows; enclosing-model names each inline model after the model it is built for, once, and leaves definitions their own names.",
       "evidence": [
         "GitHub REST API description: numbered names 663 -> 53; locations renamed between two versions 17% -> 0.0%",
         "Petstore: Status and Status1 became OrderStatus and PetStatus",
@@ -349,6 +340,29 @@
       ]
     },
     {
+      "id": "unions.merge-shared-variant-tags",
+      "decision": "shared-variant-tags",
+      "applies_to": {
+        "output_model_types": [
+          "pydantic_v2.BaseModel",
+          "pydantic_v2.dataclass"
+        ]
+      },
+      "when": {
+        "signal": "variants_with_differing_tags",
+        "op": ">=",
+        "value": 1
+      },
+      "set": {
+        "merge_shared_variant_tags": true
+      },
+      "reason": "Discriminated unions tag {variants_with_differing_tags} variants differently, for example one by a mapping key and one by the schema name. A variant has one tag field, so without merged tags it keeps the tags of the first union, and the other union rejects every document that selects the variant by its own tag; merged, the variant takes every tag its unions give it.",
+      "evidence": [
+        "#5361: Cat listed by ByName (tag Cat) and ByKey (mapping key cat); without the option ByKey rejected {\"kind\": \"cat\"}, with it Cat takes Literal['Cat', 'cat'] and both unions decode their documents",
+        "#4666: a variant two discriminator mappings tag differently; with the option each union decodes its own tag"
+      ]
+    },
+    {
       "id": "validation.check-unique-items-and-pattern-properties",
       "decision": "schema-validators",
       "optional": "validation",
@@ -408,6 +422,33 @@
       "reason": "Pydantic validates in lax mode, which coerces input into the {coercible_scalars} integer, number and boolean schemas: it accepts the string \"5\" and true as integers, \"1.5\" as a number, and \"true\" or 1 as booleans. Strict types reject such input. Whether to accept it depends on the project's clients, not on the schema; strict int also rejects 5.0, which JSON Schema counts as an integer, so leave int out to accept it.",
       "evidence": [
         "11 JSON documents for integer, number, boolean and string properties, 6 of them invalid: lax mode accepted 5 invalid ones; with int float bool, 0 accepted and 1 valid one rejected (5.0 as an integer); with float bool, 2 accepted (\"5\" and true as integers) and none rejected"
+      ]
+    },
+    {
+      "id": "versions.read-per-document",
+      "decision": "schema-version-scope",
+      "when": {
+        "any": [
+          {
+            "signal": "ref_siblings_read_as_draft_07",
+            "op": ">=",
+            "value": 1
+          },
+          {
+            "signal": "property_counts_beside_ignored_ref",
+            "op": ">=",
+            "value": 1
+          }
+        ]
+      },
+      "set": {
+        "read_schema_version_per_document": true
+      },
+      "reason": "The keywords beside a $ref apply in the version the document declares otherwise than the parse reads them (validation keywords beside a $ref of an OpenAPI 3.1 or AsyncAPI 3 document, read as draft 7, which ignores them: {ref_siblings_read_as_draft_07}; minProperties or maxProperties beside an allOf $ref in a version that ignores them, which --generate-schema-validators checks: {property_counts_beside_ignored_ref}). Read in the version each document declares, they apply or are left out as that version says.",
+      "evidence": [
+        "OpenAPI 3.1 uniqueItems beside a $ref (#5699): with --generate-schema-validators Holder(tags=['a', 'a']) is rejected, as the same schema in JSON Schema 2020-12 is",
+        "Draft-07 minProperties beside an allOf $ref (#5700): with --generate-schema-validators Holder(a='x') is accepted, as draft 7 ignores the keyword",
+        "Directory of draft-07 and 2020-12 documents (#5380): each module equals the output of its document read alone, so Wd keeps le=10 beside its allOf $ref"
       ]
     }
   ],
@@ -483,6 +524,10 @@
     "capitalise_enum_members": {
       "not_recommended": "style",
       "reason": "Enum member naming convention of the project."
+    },
+    "capitalise_numbered_enum_members": {
+      "not_recommended": "preset",
+      "reason": "Under --capitalise-enum-members only: set by the 20261104 presets; the recommendation starts from a preset."
     },
     "check": {
       "not_recommended": "command",
@@ -645,6 +690,10 @@
     "disable_warnings": {
       "not_recommended": "debug",
       "reason": "Hides warnings; it does not change the models."
+    },
+    "distribute_allof_over_unions": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
     },
     "duplicate_name_suffix": {
       "not_recommended": "style",
@@ -812,6 +861,10 @@
       "not_recommended": "command",
       "reason": "Ignores pyproject.toml configuration."
     },
+    "ignore_ref_siblings_by_schema_version": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "import_overrides": {
       "not_recommended": "style",
       "reason": "Imports symbols from the project's modules."
@@ -853,9 +906,21 @@
       "not_recommended": "preset",
       "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
+    "intersect_combined_schema_keywords": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "job": {
       "not_recommended": "command",
       "reason": "Selects a pyproject.toml job; the recommendation keeps it."
+    },
+    "keep_constrained_root_models_in_every_container": {
+      "not_recommended": "preset",
+      "reason": "Under --collapse-root-models with --field-constraints only: set by the 20261104 presets; the recommendation starts from a preset."
+    },
+    "keep_enum_literal_aliases": {
+      "not_recommended": "preset",
+      "reason": "Under --collapse-root-models only: set by the 20261104 presets; the recommendation starts from a preset."
     },
     "keep_enum_member_values": {
       "not_recommended": "preset",
@@ -865,9 +930,17 @@
       "not_recommended": "preset",
       "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
+    "keep_first_character_of_path_keys": {
+      "not_recommended": "preset",
+      "reason": "OpenAPI paths scope only: set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "keep_model_order": {
       "not_recommended": "style",
       "reason": "Keeps the schema order of models in the output."
+    },
+    "keep_reference_null_on_merged_models": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
     },
     "keyword_only": {
       "not_recommended": "style",
@@ -889,6 +962,11 @@
       "not_recommended": "io",
       "reason": "Selects the remote reference lock file."
     },
+    "merge_shared_variant_tags": {
+      "rules": [
+        "unions.merge-shared-variant-tags"
+      ]
+    },
     "model_extra_keys": {
       "not_recommended": "style",
       "reason": "Copies x- schema keys into model configuration; a project need."
@@ -904,6 +982,14 @@
     "module_split_mode": {
       "not_recommended": "style",
       "reason": "Writes one module per model; a package layout choice."
+    },
+    "name_allof_union_members_after_branches": {
+      "not_recommended": "preset",
+      "reason": "allOf with a oneOf or anyOf only: set by the 20261104 presets; the recommendation starts from a preset."
+    },
+    "name_converted_payloads_by_message": {
+      "not_recommended": "preset",
+      "reason": "AsyncAPI Avro and XML Schema payloads only: set by the 20261104 presets; the recommendation starts from a preset."
     },
     "naming_strategy": {
       "rules": [
@@ -1001,6 +1087,26 @@
         "enums.read-as-their-const"
       ]
     },
+    "read_dynamic_anchors_in_document_order": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
+    },
+    "read_escaped_ref_pointers": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
+    },
+    "read_input_model_dataclass_fields_by_alias": {
+      "not_recommended": "preset",
+      "reason": "--input-model only: set by the 20261104 presets; the recommendation starts from a preset."
+    },
+    "read_length_keywords_by_type": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
+    },
+    "read_msgspec_union_bounds_exactly": {
+      "not_recommended": "preset",
+      "reason": "msgspec.Struct output only: set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "read_nullable_beside_type_list": {
       "not_recommended": "preset",
       "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
@@ -1009,6 +1115,11 @@
       "not_recommended": "style",
       "reason": "Whether request and response models are split; the project decides which models it needs."
     },
+    "read_schema_version_per_document": {
+      "rules": [
+        "versions.read-per-document"
+      ]
+    },
     "recommend_options": {
       "not_recommended": "command",
       "reason": "Prints these recommendations and exits."
@@ -1016,6 +1127,10 @@
     "remove_special_field_name_prefix": {
       "not_recommended": "style",
       "reason": "Removes leading underscores of field names; a project convention."
+    },
+    "rename_submodules_hidden_by_classes": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
     },
     "reuse_model": {
       "rules": [
@@ -1110,6 +1225,10 @@
       "not_recommended": "style",
       "reason": "Module name for models shared across modules; a package layout choice."
     },
+    "singularize_last_word_of_item_names": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "skill_scope": {
       "not_recommended": "command",
       "reason": "Scope of --install-skill."
@@ -1172,6 +1291,10 @@
       "not_recommended": "style",
       "reason": "Replaces models with the project's own types."
     },
+    "type_overrides_replace_whole_type": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "union_mode": {
       "not_recommended": "runtime-behaviour",
       "reason": "pydantic union validation mode; changes validation."
@@ -1220,6 +1343,14 @@
       "not_recommended": "formatting",
       "reason": "Quote style of the formatter."
     },
+    "use_duplicate_name_suffix_for_every_collision": {
+      "not_recommended": "preset",
+      "reason": "Under --duplicate-name-suffix only: set by the 20261104 presets; the recommendation starts from a preset."
+    },
+    "use_encoded_str_for_constrained_base64": {
+      "not_recommended": "preset",
+      "reason": "Pydantic v2 output in the field forms only: set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "use_enum_values_in_discriminator": {
       "not_recommended": "style",
       "reason": "Discriminator literal spelling; a typing style choice."
@@ -1256,6 +1387,10 @@
       "not_recommended": "runtime-behaviour",
       "reason": "MISSING instead of None for absent fields; changes field values."
     },
+    "use_msgspec_meta_for_map_keys": {
+      "not_recommended": "preset",
+      "reason": "msgspec.Struct output only: set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "use_msgspec_nullable_enum_alias": {
       "not_recommended": "runtime-behaviour",
       "reason": "msgspec.Struct output only: changes how enums that list null decode."
@@ -1276,6 +1411,10 @@
       "not_recommended": "style",
       "reason": "Defaults one-value literals; an API choice of the project."
     },
+    "use_one_model_per_ref_site": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261104 presets; the recommendation starts from a preset."
+    },
     "use_operation_id_as_name": {
       "not_recommended": "style",
       "reason": "Names operation models; the schemas scope the recommender analyses has none."
@@ -1283,6 +1422,10 @@
     "use_pendulum": {
       "not_recommended": "style",
       "reason": "pendulum types for dates and times; a library choice of the project."
+    },
+    "use_plain_alias_for_recursive_models": {
+      "not_recommended": "preset",
+      "reason": "Pydantic output only: set by the 20261104 presets; the recommendation starts from a preset."
     },
     "use_root_model_sequence_interface": {
       "not_recommended": "style",
@@ -1303,6 +1446,10 @@
     "use_serialize_as_any": {
       "not_recommended": "runtime-behaviour",
       "reason": "Serializes subclasses by their runtime type; changes serialization."
+    },
+    "use_serialize_as_any_for_every_subclass": {
+      "not_recommended": "preset",
+      "reason": "Pydantic v2 output under --use-serialize-as-any only: set by the 20261104 presets; the recommendation starts from a preset."
     },
     "read_unevaluated_properties": {
       "not_recommended": "preset",
@@ -1399,6 +1546,10 @@
     "use_unique_items_as_set": {
       "not_recommended": "runtime-behaviour",
       "reason": "A set drops duplicate items instead of rejecting them and loses their order (serialized in a different order per process), so it does not check uniqueItems; the practical presets choose it as a typing style."
+    },
+    "use_unique_items_as_set_by_value": {
+      "not_recommended": "preset",
+      "reason": "Under --use-unique-items-as-set only: set by the 20261104 presets; the recommendation starts from a preset."
     },
     "validation": {
       "not_recommended": "compat",

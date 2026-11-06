@@ -1,0 +1,276 @@
+pydantic_v2.BaseModel default inline {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel default inline {"c": "y"} rejected
+pydantic_v2.BaseModel default inline {"a": "x"} rejected
+pydantic_v2.BaseModel default refs {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel default refs {"c": "y"} rejected
+pydantic_v2.BaseModel default refs {"a": "x"} rejected
+pydantic_v2.BaseModel default roots {"b": "x", "d": "y"} accepted
+pydantic_v2.BaseModel default roots {"b": "x"} rejected
+pydantic_v2.BaseModel default same {"a": "x"} accepted
+pydantic_v2.BaseModel default same {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel default same {"c": "x"} rejected
+pydantic_v2.BaseModel default hierarchy {"a": "x"} accepted
+pydantic_v2.BaseModel default hierarchy {"name": "n", "meow": true} accepted
+pydantic_v2.BaseModel default hierarchy "x" rejected
+pydantic_v2.BaseModel default withvalue {"a": "p", "c": "q", "x": 1} accepted
+pydantic_v2.BaseModel default withvalue {"a": "p", "c": "q"} rejected
+pydantic_v2.BaseModel default withvalue "s" rejected
+pydantic_v2.BaseModel default nulls {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel default nulls {"a": "x"} rejected
+pydantic_v2.BaseModel default field {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel default field {"c": "y"} rejected
+pydantic_v2.BaseModel default many {"p0": "a", "q0": "b", "r0": "c"} accepted
+pydantic_v2.BaseModel default many {"p0": "a"} accepted
+pydantic_v2.dataclass default inline {"a": "x", "c": "y"} accepted
+pydantic_v2.dataclass default inline {"c": "y"} rejected
+pydantic_v2.dataclass default inline {"a": "x"} rejected
+pydantic_v2.dataclass default refs {"a": "x", "c": "y"} accepted
+pydantic_v2.dataclass default refs {"c": "y"} rejected
+pydantic_v2.dataclass default refs {"a": "x"} rejected
+pydantic_v2.dataclass default roots {"b": "x", "d": "y"} accepted
+pydantic_v2.dataclass default roots {"b": "x"} rejected
+pydantic_v2.dataclass default same {"a": "x"} accepted
+pydantic_v2.dataclass default same {"a": "x", "b": "y"} accepted
+pydantic_v2.dataclass default same {"c": "x"} rejected
+pydantic_v2.dataclass default hierarchy {"a": "x"} accepted
+pydantic_v2.dataclass default hierarchy {"name": "n", "meow": true} accepted
+pydantic_v2.dataclass default hierarchy "x" rejected
+pydantic_v2.dataclass default withvalue {"a": "p", "c": "q", "x": 1} accepted
+pydantic_v2.dataclass default withvalue {"a": "p", "c": "q"} rejected
+pydantic_v2.dataclass default withvalue "s" rejected
+pydantic_v2.dataclass default nulls {"a": "x", "c": "y"} accepted
+pydantic_v2.dataclass default nulls {"a": "x"} rejected
+pydantic_v2.dataclass default field {"a": "x", "c": "y"} accepted
+pydantic_v2.dataclass default field {"c": "y"} rejected
+pydantic_v2.dataclass default many {"p0": "a", "q0": "b", "r0": "c"} accepted
+pydantic_v2.dataclass default many {"p0": "a"} accepted
+msgspec.Struct default inline {"a": "x", "c": "y"} import error
+msgspec.Struct default inline {"c": "y"} import error
+msgspec.Struct default inline {"a": "x"} import error
+msgspec.Struct default refs {"a": "x", "c": "y"} import error
+msgspec.Struct default refs {"c": "y"} import error
+msgspec.Struct default refs {"a": "x"} import error
+msgspec.Struct default roots {"b": "x", "d": "y"} import error
+msgspec.Struct default roots {"b": "x"} import error
+msgspec.Struct default same {"a": "x"} import error
+msgspec.Struct default same {"a": "x", "b": "y"} import error
+msgspec.Struct default same {"c": "x"} import error
+msgspec.Struct default hierarchy {"a": "x"} import error
+msgspec.Struct default hierarchy {"name": "n", "meow": true} import error
+msgspec.Struct default hierarchy "x" import error
+msgspec.Struct default withvalue {"a": "p", "c": "q", "x": 1} import error
+msgspec.Struct default withvalue {"a": "p", "c": "q"} import error
+msgspec.Struct default withvalue "s" import error
+msgspec.Struct default nulls {"a": "x", "c": "y"} import error
+msgspec.Struct default nulls {"a": "x"} import error
+msgspec.Struct default field {"a": "x", "c": "y"} import error
+msgspec.Struct default field {"c": "y"} import error
+msgspec.Struct default many {"p0": "a", "q0": "b", "r0": "c"} import error
+msgspec.Struct default many {"p0": "a"} import error
+pydantic_v2.BaseModel --field-constraints inline {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --field-constraints inline {"c": "y"} rejected
+pydantic_v2.BaseModel --field-constraints inline {"a": "x"} rejected
+pydantic_v2.BaseModel --field-constraints refs {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --field-constraints refs {"c": "y"} rejected
+pydantic_v2.BaseModel --field-constraints refs {"a": "x"} rejected
+pydantic_v2.BaseModel --field-constraints roots {"b": "x", "d": "y"} accepted
+pydantic_v2.BaseModel --field-constraints roots {"b": "x"} rejected
+pydantic_v2.BaseModel --field-constraints same {"a": "x"} accepted
+pydantic_v2.BaseModel --field-constraints same {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --field-constraints same {"c": "x"} rejected
+pydantic_v2.BaseModel --field-constraints hierarchy {"a": "x"} accepted
+pydantic_v2.BaseModel --field-constraints hierarchy {"name": "n", "meow": true} accepted
+pydantic_v2.BaseModel --field-constraints hierarchy "x" rejected
+pydantic_v2.BaseModel --field-constraints withvalue {"a": "p", "c": "q", "x": 1} accepted
+pydantic_v2.BaseModel --field-constraints withvalue {"a": "p", "c": "q"} rejected
+pydantic_v2.BaseModel --field-constraints withvalue "s" rejected
+pydantic_v2.BaseModel --field-constraints nulls {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --field-constraints nulls {"a": "x"} rejected
+pydantic_v2.BaseModel --field-constraints field {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --field-constraints field {"c": "y"} rejected
+pydantic_v2.BaseModel --field-constraints many {"p0": "a", "q0": "b", "r0": "c"} accepted
+pydantic_v2.BaseModel --field-constraints many {"p0": "a"} accepted
+pydantic_v2.BaseModel --use-annotated inline {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --use-annotated inline {"c": "y"} rejected
+pydantic_v2.BaseModel --use-annotated inline {"a": "x"} rejected
+pydantic_v2.BaseModel --use-annotated refs {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --use-annotated refs {"c": "y"} rejected
+pydantic_v2.BaseModel --use-annotated refs {"a": "x"} rejected
+pydantic_v2.BaseModel --use-annotated roots {"b": "x", "d": "y"} accepted
+pydantic_v2.BaseModel --use-annotated roots {"b": "x"} rejected
+pydantic_v2.BaseModel --use-annotated same {"a": "x"} accepted
+pydantic_v2.BaseModel --use-annotated same {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --use-annotated same {"c": "x"} rejected
+pydantic_v2.BaseModel --use-annotated hierarchy {"a": "x"} accepted
+pydantic_v2.BaseModel --use-annotated hierarchy {"name": "n", "meow": true} accepted
+pydantic_v2.BaseModel --use-annotated hierarchy "x" rejected
+pydantic_v2.BaseModel --use-annotated withvalue {"a": "p", "c": "q", "x": 1} accepted
+pydantic_v2.BaseModel --use-annotated withvalue {"a": "p", "c": "q"} rejected
+pydantic_v2.BaseModel --use-annotated withvalue "s" rejected
+pydantic_v2.BaseModel --use-annotated nulls {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --use-annotated nulls {"a": "x"} rejected
+pydantic_v2.BaseModel --use-annotated field {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --use-annotated field {"c": "y"} rejected
+pydantic_v2.BaseModel --use-annotated many {"p0": "a", "q0": "b", "r0": "c"} accepted
+pydantic_v2.BaseModel --use-annotated many {"p0": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models inline {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --collapse-root-models inline {"c": "y"} rejected
+pydantic_v2.BaseModel --collapse-root-models inline {"a": "x"} rejected
+pydantic_v2.BaseModel --collapse-root-models refs {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --collapse-root-models refs {"c": "y"} rejected
+pydantic_v2.BaseModel --collapse-root-models refs {"a": "x"} rejected
+pydantic_v2.BaseModel --collapse-root-models roots {"b": "x", "d": "y"} accepted
+pydantic_v2.BaseModel --collapse-root-models roots {"b": "x"} rejected
+pydantic_v2.BaseModel --collapse-root-models same {"a": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models same {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --collapse-root-models same {"c": "x"} rejected
+pydantic_v2.BaseModel --collapse-root-models hierarchy {"a": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models hierarchy {"name": "n", "meow": true} accepted
+pydantic_v2.BaseModel --collapse-root-models hierarchy "x" rejected
+pydantic_v2.BaseModel --collapse-root-models withvalue {"a": "p", "c": "q", "x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models withvalue {"a": "p", "c": "q"} rejected
+pydantic_v2.BaseModel --collapse-root-models withvalue "s" rejected
+pydantic_v2.BaseModel --collapse-root-models nulls {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --collapse-root-models nulls {"a": "x"} rejected
+pydantic_v2.BaseModel --collapse-root-models field {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --collapse-root-models field {"c": "y"} rejected
+pydantic_v2.BaseModel --collapse-root-models many {"p0": "a", "q0": "b", "r0": "c"} accepted
+pydantic_v2.BaseModel --collapse-root-models many {"p0": "a"} accepted
+msgspec.Struct --collapse-root-models inline {"a": "x", "c": "y"} import error
+msgspec.Struct --collapse-root-models inline {"c": "y"} import error
+msgspec.Struct --collapse-root-models inline {"a": "x"} import error
+msgspec.Struct --collapse-root-models refs {"a": "x", "c": "y"} import error
+msgspec.Struct --collapse-root-models refs {"c": "y"} import error
+msgspec.Struct --collapse-root-models refs {"a": "x"} import error
+msgspec.Struct --collapse-root-models roots {"b": "x", "d": "y"} import error
+msgspec.Struct --collapse-root-models roots {"b": "x"} import error
+msgspec.Struct --collapse-root-models same {"a": "x"} import error
+msgspec.Struct --collapse-root-models same {"a": "x", "b": "y"} import error
+msgspec.Struct --collapse-root-models same {"c": "x"} import error
+msgspec.Struct --collapse-root-models hierarchy {"a": "x"} import error
+msgspec.Struct --collapse-root-models hierarchy {"name": "n", "meow": true} import error
+msgspec.Struct --collapse-root-models hierarchy "x" import error
+msgspec.Struct --collapse-root-models withvalue {"a": "p", "c": "q", "x": 1} import error
+msgspec.Struct --collapse-root-models withvalue {"a": "p", "c": "q"} import error
+msgspec.Struct --collapse-root-models withvalue "s" import error
+msgspec.Struct --collapse-root-models nulls {"a": "x", "c": "y"} import error
+msgspec.Struct --collapse-root-models nulls {"a": "x"} import error
+msgspec.Struct --collapse-root-models field {"a": "x", "c": "y"} import error
+msgspec.Struct --collapse-root-models field {"c": "y"} import error
+msgspec.Struct --collapse-root-models many {"p0": "a", "q0": "b", "r0": "c"} import error
+msgspec.Struct --collapse-root-models many {"p0": "a"} import error
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline {"c": "y"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline {"a": "x"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs refs {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs refs {"c": "y"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs refs {"a": "x"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs roots {"b": "x", "d": "y"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs roots {"b": "x"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs same {"a": "x"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs same {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs same {"c": "x"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs hierarchy {"a": "x"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs hierarchy {"name": "n", "meow": true} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs hierarchy "x" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs withvalue {"a": "p", "c": "q", "x": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs withvalue {"a": "p", "c": "q"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs withvalue "s" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nulls {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nulls {"a": "x"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs field {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs field {"c": "y"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs many {"p0": "a", "q0": "b", "r0": "c"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs many {"p0": "a"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline {"a": "x", "c": "y"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline {"c": "y"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline {"a": "x"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs refs {"a": "x", "c": "y"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs refs {"c": "y"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs refs {"a": "x"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs roots {"b": "x", "d": "y"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs roots {"b": "x"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs same {"a": "x"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs same {"a": "x", "b": "y"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs same {"c": "x"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs hierarchy {"a": "x"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs hierarchy {"name": "n", "meow": true} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs hierarchy "x" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs withvalue {"a": "p", "c": "q", "x": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs withvalue {"a": "p", "c": "q"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs withvalue "s" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nulls {"a": "x", "c": "y"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nulls {"a": "x"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs field {"a": "x", "c": "y"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs field {"c": "y"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs many {"p0": "a", "q0": "b", "r0": "c"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs many {"p0": "a"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs inline {"a": "x", "c": "y"} import error
+msgspec.Struct --use-site-models-for-constrained-refs inline {"c": "y"} import error
+msgspec.Struct --use-site-models-for-constrained-refs inline {"a": "x"} import error
+msgspec.Struct --use-site-models-for-constrained-refs refs {"a": "x", "c": "y"} import error
+msgspec.Struct --use-site-models-for-constrained-refs refs {"c": "y"} import error
+msgspec.Struct --use-site-models-for-constrained-refs refs {"a": "x"} import error
+msgspec.Struct --use-site-models-for-constrained-refs roots {"b": "x", "d": "y"} import error
+msgspec.Struct --use-site-models-for-constrained-refs roots {"b": "x"} import error
+msgspec.Struct --use-site-models-for-constrained-refs same {"a": "x"} import error
+msgspec.Struct --use-site-models-for-constrained-refs same {"a": "x", "b": "y"} import error
+msgspec.Struct --use-site-models-for-constrained-refs same {"c": "x"} import error
+msgspec.Struct --use-site-models-for-constrained-refs hierarchy {"a": "x"} import error
+msgspec.Struct --use-site-models-for-constrained-refs hierarchy {"name": "n", "meow": true} import error
+msgspec.Struct --use-site-models-for-constrained-refs hierarchy "x" import error
+msgspec.Struct --use-site-models-for-constrained-refs withvalue {"a": "p", "c": "q", "x": 1} import error
+msgspec.Struct --use-site-models-for-constrained-refs withvalue {"a": "p", "c": "q"} import error
+msgspec.Struct --use-site-models-for-constrained-refs withvalue "s" import error
+msgspec.Struct --use-site-models-for-constrained-refs nulls {"a": "x", "c": "y"} import error
+msgspec.Struct --use-site-models-for-constrained-refs nulls {"a": "x"} import error
+msgspec.Struct --use-site-models-for-constrained-refs field {"a": "x", "c": "y"} import error
+msgspec.Struct --use-site-models-for-constrained-refs field {"c": "y"} import error
+msgspec.Struct --use-site-models-for-constrained-refs many {"p0": "a", "q0": "b", "r0": "c"} import error
+msgspec.Struct --use-site-models-for-constrained-refs many {"p0": "a"} import error
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline {"c": "y"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline {"a": "x"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs refs {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs refs {"c": "y"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs refs {"a": "x"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs roots {"b": "x", "d": "y"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs roots {"b": "x"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs same {"a": "x"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs same {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs same {"c": "x"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs hierarchy {"a": "x"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs hierarchy {"name": "n", "meow": true} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs hierarchy "x" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs withvalue {"a": "p", "c": "q", "x": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs withvalue {"a": "p", "c": "q"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs withvalue "s" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nulls {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nulls {"a": "x"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs field {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs field {"c": "y"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs many {"p0": "a", "q0": "b", "r0": "c"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs many {"p0": "a"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline {"c": "y"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline {"a": "x"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs refs {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs refs {"c": "y"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs refs {"a": "x"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs roots {"b": "x", "d": "y"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs roots {"b": "x"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs same {"a": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs same {"a": "x", "b": "y"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs same {"c": "x"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs hierarchy {"a": "x"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs hierarchy {"name": "n", "meow": true} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs hierarchy "x" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs withvalue {"a": "p", "c": "q", "x": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs withvalue {"a": "p", "c": "q"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs withvalue "s" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nulls {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nulls {"a": "x"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs field {"a": "x", "c": "y"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs field {"c": "y"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs many {"p0": "a", "q0": "b", "r0": "c"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs many {"p0": "a"} accepted

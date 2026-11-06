@@ -1,0 +1,23 @@
+openapi: 3.1.0
+info:
+  title: Responses Object extensions
+  version: "1"
+servers:
+  - url: https://api.example.com
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      responses:
+        "200":
+          description: The pets.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+        x-note: internal
+        x-ordinal: 3
+        x-tags: [a, b]

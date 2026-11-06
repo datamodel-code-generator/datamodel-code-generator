@@ -10,15 +10,15 @@ class Cat(BaseModel):
     first: str | None = None
 
 
-class Pet(BaseModel):
+class PetModel(BaseModel):
     second: str | None = None
 
 
-class PetModel(BaseModel):
+class PetModel1(BaseModel):
     third: str | None = None
 
 
 class Holder(BaseModel):
     first: Cat | None = None
-    second: Pet | None = None
-    third: PetModel | None = None
+    second: PetModel | None = None
+    third: PetModel1 | None = None

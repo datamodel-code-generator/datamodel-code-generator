@@ -2,10 +2,10 @@
 
 A path field is listed once with the stages that read it: the pyproject.toml join (a relative path of a value read from
 pyproject.toml resolves against its directory), the command line (``Config`` expands ``~`` and resolves it),
-``generate()`` (a relative path resolves against the caller's working directory) and ``--watch`` (the file, directory
-or output it watches). A JSON field holds an inline JSON value or names a JSON file; a target's JSON fields are those
-with the prefix of the target's settings. The defaults that the help text and the config models state of the encoding
-and the watch delay are read from here.
+``generate()`` (``GenerateConfig`` expands ``~`` in the paths the run writes, and a relative path resolves against the
+caller's working directory) and ``--watch`` (the file, directory or output it watches). A JSON field holds an inline
+JSON value or names a JSON file; a target's JSON fields are those with the prefix of the target's settings. The
+defaults that the help text and the config models state of the encoding and the watch delay are read from here.
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Final, Literal, TypeAlias
 
 from datamodel_code_generator._json_config_fields import JSON_CONFIG_FIELDS
+from datamodel_code_generator._option_names import option_flag
 from datamodel_code_generator._records import record
 
 WatchedAs: TypeAlias = Literal["input", "file", "directory", "output", "file-output", "directory-output"]
@@ -38,7 +39,7 @@ class PathField:
 PATH_FIELDS: Final[tuple[PathField, ...]] = (
     PathField("input", cli_resolved=True, caller_relative=False, watched_as="input"),
     PathField("output", cli_resolved=True, caller_relative=True, watched_as="output"),
-    PathField("emit_model_metadata", cli_resolved=False, caller_relative=True, watched_as="file-output"),
+    PathField("emit_model_metadata", cli_resolved=True, caller_relative=True, watched_as="file-output"),
     PathField("server_output", cli_resolved=True, caller_relative=False, watched_as="directory-output"),
     PathField("client_output", cli_resolved=True, caller_relative=False, watched_as="directory-output"),
     PathField("custom_file_header_path", cli_resolved=True, caller_relative=True, watched_as="file"),
@@ -51,6 +52,7 @@ PATH_FIELDS: Final[tuple[PathField, ...]] = (
 resolves ``http_local_ref_path`` against the directory of the output instead of the caller's. The order is the order
 in which ``--watch`` adds the outputs and the files."""
 
+PATH_FIELD_NAMES: Final = tuple(field.name for field in PATH_FIELDS)
 CLI_RESOLVED_PATH_FIELDS: Final = tuple(field.name for field in PATH_FIELDS if field.cli_resolved)
 CALLER_RELATIVE_PATH_FIELDS: Final = tuple(field.name for field in PATH_FIELDS if field.caller_relative)
 WATCHED_PATH_FIELDS: Final = tuple(
@@ -73,6 +75,8 @@ WATCHED_OUTPUT_FIELDS: Final = tuple(
     if field.watched_as in _OUTPUT_IS_DIRECTORY
 )
 """The output fields with whether each is a directory (None: judged by what the path names)."""
+OUTPUT_PATH_FIELDS: Final = tuple(name for name, _ in WATCHED_OUTPUT_FIELDS)
+"""The fields of the paths a run writes: the model output, the model metadata and the package of a target."""
 
 TARGET_SELECTORS: Final[tuple[tuple[str, str], ...]] = (("generate_server", "server_"), ("generate_client", "client_"))
 """The field that selects each target and the prefix of the fields that configure it."""
@@ -110,9 +114,30 @@ def _path_is_file(path: Path) -> bool:
         return False
 
 
+def option_path(name: str, value: str | Path) -> Path:
+    """Return the path the value of a path or JSON field names, with ``~`` expanded.
+
+    A ``~user`` that names no user is an invalid option value: ``Error`` names the option and the value.
+    """
+    try:
+        return Path(value).expanduser()
+    except RuntimeError as exc:
+        from datamodel_code_generator import Error  # noqa: PLC0415
+
+        msg = f"Invalid path for {option_flag(name)}: {value}: the user after '~' has no home directory"
+        raise Error(msg) from exc
+
+
 def json_file(value: str | Path) -> Path | None:
-    """Return the file a JSON option value names, or None for inline JSON."""
-    return path if _path_is_file(path := Path(value).expanduser()) else None
+    """Return the file a JSON option value names, or None for inline JSON.
+
+    A ``~user`` that names no user names no file, so the value is read as inline JSON and the JSON error reports it.
+    """
+    try:
+        path = Path(value).expanduser()
+    except RuntimeError:
+        return None
+    return path if _path_is_file(path) else None
 
 
 def names_file(name: str, value: object) -> bool:
@@ -131,7 +156,9 @@ __all__ = [
     "DEFAULT_WATCH_DELAY",
     "JSON_FIELDS",
     "MODEL_JSON_FIELDS",
+    "OUTPUT_PATH_FIELDS",
     "PATH_FIELDS",
+    "PATH_FIELD_NAMES",
     "PYPROJECT_API_PATH_FIELDS",
     "PYPROJECT_PATH_FIELDS",
     "TARGET_JSON_FIELDS",
@@ -145,4 +172,5 @@ __all__ = [
     "json_file",
     "names_file",
     "names_path",
+    "option_path",
 ]

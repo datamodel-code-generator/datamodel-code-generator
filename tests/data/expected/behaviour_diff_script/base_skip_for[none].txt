@@ -1,0 +1,25 @@
+{
+  "versions": {
+    "0.85.0": [
+      null,
+      false
+    ],
+    "0.86.0": [
+      null,
+      false
+    ],
+    "0.86.1": [
+      null,
+      false
+    ],
+    "0.87.0": [
+      null,
+      false
+    ],
+    "0.100.0": [
+      null,
+      false
+    ]
+  },
+  "other_input": null
+}

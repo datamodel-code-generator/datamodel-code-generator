@@ -12,8 +12,9 @@ the names other modules import from it.
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
+from datamodel_code_generator._user_keys import ClassScope
 from datamodel_code_generator.enums import AllOfMergeMode
 from datamodel_code_generator.model.base import _overlay_constraints
 from datamodel_code_generator.parser._passes._keys import (
@@ -46,26 +47,9 @@ def _copy_data_model_field(
 
     The copy owns its extras, validation aliases and mutable default: copies of the source's, or the ones ``facts``
     gives. It takes every value ``identity`` and ``facts`` give when it is made, so no caller writes them on it later.
+    ``DataModelFieldBase.copy_owning`` makes it, the one copy that ``DataModelFieldBase.copy_deep`` makes too.
     """
-    copied_data_type = data_type or _copy_data_type(
-        field.data_type,
-        register_references=register_references,
-    )
-    update: dict[str, Any] = {"data_type": copied_data_type, "parent": None}
-    if "extras" not in facts:
-        update["extras"] = deepcopy(field.extras)
-    if field.validation_aliases is not None:
-        update["validation_aliases"] = list(field.validation_aliases)
-    if "default" not in facts:
-        match field.default:
-            case dict() | list() | set():
-                update["default"] = deepcopy(field.default)
-    update.update(facts)
-    if identity is not None:
-        update.update(identity)
-    copied_field = field.model_copy(update=update)
-    copied_data_type.parent = copied_field
-    return copied_field
+    return field.copy_owning(data_type=data_type, register_references=register_references, **facts, **(identity or {}))
 
 
 def _get_inherited_type_modifiers(
@@ -229,7 +213,7 @@ def _copy_resolved_inherited_field(  # noqa: PLR0913
             _apply_inherited_field_nullability(copied_field, current_type)
             if takes_default and _RAW_SCHEMA_DEFAULT_KEY in field.__dict__:
                 copied_field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = field.__dict__[_RAW_SCHEMA_DEFAULT_KEY]
-        case _, str():
+        case _, ClassScope():
             identity = placeholder_identity(field)
             if inherited_field.name and (
                 inherited_field.name == field.name

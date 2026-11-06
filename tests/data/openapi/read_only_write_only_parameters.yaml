@@ -1,0 +1,76 @@
+openapi: 3.0.3
+info: {title: read/write variants of parameter schemas, version: "1"}
+paths:
+  /ref:
+    get:
+      parameters:
+        - {name: filter, in: query, schema: {$ref: '#/components/schemas/Filter'}}
+      responses: {'200': {description: ok}}
+  /component:
+    get:
+      parameters:
+        - $ref: '#/components/parameters/FilterParameter'
+      responses: {'200': {description: ok}}
+  /array:
+    get:
+      parameters:
+        - name: filters
+          in: query
+          schema: {type: array, items: {$ref: '#/components/schemas/Filter'}}
+      responses: {'200': {description: ok}}
+  /nested:
+    get:
+      parameters:
+        - {name: holder, in: query, schema: {$ref: '#/components/schemas/Holder'}}
+      responses: {'200': {description: ok}}
+  /inline:
+    get:
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: object
+            properties:
+              token: {type: string, readOnly: true}
+              text: {type: string}
+      responses: {'200': {description: ok}}
+  /content:
+    get:
+      parameters:
+        - name: page
+          in: query
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Page'}
+      responses: {'200': {description: ok}}
+  /plain:
+    get:
+      parameters:
+        - {name: plain, in: query, schema: {$ref: '#/components/schemas/Plain'}}
+      responses: {'200': {description: ok}}
+components:
+  parameters:
+    FilterParameter:
+      name: filter
+      in: query
+      schema: {$ref: '#/components/schemas/Filter'}
+  schemas:
+    Filter:
+      type: object
+      properties:
+        id: {type: string, readOnly: true}
+        q: {type: string}
+        secret: {type: string, writeOnly: true}
+    Holder:
+      type: object
+      properties:
+        filter: {$ref: '#/components/schemas/Filter'}
+    Page:
+      type: object
+      properties:
+        cursor: {type: string, readOnly: true}
+        size: {type: integer}
+    Plain:
+      type: object
+      properties:
+        p: {type: string}

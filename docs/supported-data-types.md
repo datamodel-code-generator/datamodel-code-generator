@@ -224,6 +224,7 @@ The JSON Schema and OpenAPI feature matrix below is generated from the same code
 | `dependentSchemas` | 2019-09 | ❌ Not Supported | Conditional schema application based on property presence |
 | `$recursiveRef/$recursiveAnchor` | 2019-09 | ✅ Supported | Recursive reference resolution via anchors |
 | `$dynamicRef/$dynamicAnchor` | 2020-12 | ✅ Supported | Dynamic reference resolution across schemas |
+| `$ref with sibling keywords` | 2019-09 | ⚠️ Partial | Keywords beside `$ref` apply with the referenced schema (ignored in Draft 4-7 and OAS 3.0) |
 
 #### OpenAPI-Specific Features
 
@@ -232,7 +233,6 @@ The JSON Schema and OpenAPI feature matrix below is generated from the same code
 | `nullable` | OAS 3.0 | ✅ Supported | Uses `nullable: true` for nullable types (deprecated in 3.1) |
 | `discriminator` | OAS 3.0 | ✅ Supported | Polymorphism support via `discriminator` keyword |
 | `webhooks` | OAS 3.1 | ✅ Supported | Top-level webhooks object for incoming events |
-| `$ref with sibling keywords` | OAS 3.1 | ⚠️ Partial | $ref can coexist with description, summary (no allOf workaround) |
 | `itemSchema` | OAS 3.2 | ✅ Supported | Media Type Object item schema for sequential media |
 | `$self` | OAS 3.2 | ✅ Supported | Root document URI for relative and absolute reference resolution |
 | `querystring` | OAS 3.2 | ✅ Supported | Query string parameter object without a parameter name |

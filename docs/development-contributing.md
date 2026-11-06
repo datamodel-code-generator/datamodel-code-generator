@@ -410,7 +410,7 @@ sha256, as the newest version, and the version pinned before becomes the baselin
 is made by hand in a pull request.
 
 The grid scores only the decisions it lists (`[grid]` in the manifest, keyed by rule `decision`), and a rule is judged
-by its own `when`: `contested_when` and the order of rules within a decision are not modelled.
+by its own `when`: the order of rules within a decision is not modelled.
 
 ## Writing a recommender rule
 
@@ -448,8 +448,6 @@ the report is written by `_report.py`. This rule from the file (evidence shorten
 | `reason` | Yes | Why the option helps this schema. `{name}` placeholders are filled from the schema's signals. |
 | `caveats` | No | Texts printed as `caveat:` after the reason, with placeholders filled. |
 | `evidence` | Yes | Measurements printed as `measured:`, as written (no placeholders). |
-| `contested_when` | No | A condition that argues against the rule on this schema. |
-| `contested_reason` | No | Why, printed as `against:` with placeholders filled. |
 | `optional` | No | `validation` or `policy`: the rule's values are only listed in that section of the report. |
 
 How rules are decided:
@@ -464,9 +462,6 @@ How rules are decided:
   not set the field. Values the preset already gives are listed under "Start from"; a rule that only sets fields to
   `false` and that the preset already follows is listed under "Not recommended". When the user set a field to
   another value, the user's value is kept and the difference is listed under "Your configuration".
-- When `contested_when` also matches, the rule is listed under "Consider" with `contested_reason`. Quick mode keeps
-  it out of the command. Full mode compares the recommendation with it (`recommended + DECISION`), and when that
-  candidate is selected, its values join the command and the configuration.
 - An `optional` rule is listed under "Optional (validation; not in the command)" or "Optional (policy; not in the
   command)". Its values never join the command, the configuration, or the compared candidates.
 - A value no CLI option can express (`false` for a field without a `--no-` option) makes the recommender start from
@@ -490,9 +485,9 @@ datamodel-codegen --input schema.yaml --recommend-options quick --output-format 
 ```
 
 The payload's `signals` are the counts conditions read; `signals` and `facts` (example texts such as
-`inline_title_examples`, or `none` when empty) are the placeholders `reason`, `caveats` and `contested_reason` may
-use. Write a literal brace as `{{` or `}}`. A new signal goes into `SignalName` and is counted in `measure_signals()`;
-it then appears in every JSON report, so record the changed expected reports.
+`inline_title_examples`, or `none` when empty) are the placeholders `reason` and `caveats` may use. Write a literal
+brace as `{{` or `}}`. A new signal goes into `SignalName` and is counted in `measure_signals()`; it then appears in
+every JSON report, so record the changed expected reports.
 
 ### Validation
 

@@ -1,0 +1,5 @@
+a Literal of the output model cannot hold the values inf, -inf, nan and 1.5, so they are written as their types, which admit other values; NonFinite is generated without this constraint.
+a Literal of the output model cannot hold the values inf and 1.5, so they are written as their types, which admit other values; Model.positive is generated without this constraint.
+a Literal of the output model cannot hold the values -inf and 1.5, so they are written as their types, which admit other values; Model.negative is generated without this constraint.
+a Literal of the output model cannot hold the values nan and 1.5, so they are written as their types, which admit other values; Model.notNumber is generated without this constraint.
+a Literal of the output model cannot hold the values {'limit': inf}, [1.5, -inf] and 1.5, so they are written as their types, which admit other values; Model.nested is generated without this constraint.

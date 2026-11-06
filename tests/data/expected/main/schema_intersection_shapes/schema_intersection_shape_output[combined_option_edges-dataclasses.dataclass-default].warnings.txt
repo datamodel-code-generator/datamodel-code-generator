@@ -1,0 +1,1 @@
+combined_option_edges.json#/properties/ordered: no value satisfies every part of this schema (the referenced or inherited schema and its own keywords), since no value meets all of their `type`; the generated code keeps its earlier `type`.

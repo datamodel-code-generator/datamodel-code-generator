@@ -18,7 +18,7 @@ import keyword
 import re
 import unicodedata
 from bisect import bisect_left, bisect_right
-from functools import cache, cached_property
+from functools import cache, cached_property, partial
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias, TypeVar
 
@@ -37,6 +37,7 @@ __all__ = (
     "host_parsable",
     "is_dotted_python_name",
     "is_identifier",
+    "is_importable_part",
     "is_nfkc",
     "is_numeric",
     "is_python_name",
@@ -45,6 +46,7 @@ __all__ = (
     "nfc",
     "nfkc",
     "replace_non_word",
+    "string_repr",
     "target_pattern",
     "title",
     "upper",
@@ -64,6 +66,8 @@ _TITLECASE: Final = 4
 _CASE_IGNORABLE: Final = 8
 _CASED: Final = _LOWERCASE | _UPPERCASE | _TITLECASE
 _ASCII_END: Final = 0x80
+_LATIN_1_END: Final = 0x100
+_BMP_END: Final = 0x10000
 _HANGUL_SYLLABLE: Final = 0xAC00
 _HANGUL_LEADING: Final = 0x1100
 _HANGUL_VOWEL: Final = 0x1161
@@ -193,6 +197,11 @@ class _TargetUnicode:
     def unassigned(self) -> re.Pattern[str]:
         """Match a character the target does not have."""
         return re.compile(f"[^{_class(self.assigned)}]")
+
+    @cached_property
+    def repr_special(self) -> re.Pattern[str]:
+        """Match a character `repr()` of text may write other than as itself: a backslash, a quote, or unprintable."""
+        return re.compile(f"[\\\\'\"{_class(self._set('UNPRINTABLE'))}]|[^{_class(self.assigned)}]")
 
     def _latest(
         self,
@@ -354,27 +363,43 @@ def is_identifier(value: str, target: PythonVersion | None) -> bool:
     return value.isidentifier() if value.isascii() else _unicode(target).identifier.fullmatch(value) is not None
 
 
-NameRule: TypeAlias = Literal["target", "ascii", "host", "legacy-host-identifiers"]
+NameRule: TypeAlias = Literal["target", "ascii"]
 """Whose identifier characters `is_python_name` reads.
 
-`target` reads the target's (`is_identifier`), `ascii` only ASCII identifiers (Starlette's path placeholders, the
-field names the Pydantic resolver keeps as given), `host` the running interpreter's, for text its tokenizer or parser
-gave, and `legacy-host-identifiers` the running interpreter's where the names are checked or written for the target.
+`target` reads the target's (`is_identifier`), and `ascii` only ASCII identifiers (Starlette's path placeholders, the
+field names the Pydantic resolver keeps as given).
 """
 
 
 def is_python_name(value: str, target: PythonVersion | None = None, *, rule: NameRule = "target") -> bool:
     """Return whether text is a name Python binds: an identifier by the rule's characters, and no keyword."""
-    if rule == "target":
-        identifier = is_identifier(value, target)
-    else:
-        identifier = (rule != "ascii" or value.isascii()) and value.isidentifier()
+    identifier = is_identifier(value, target) if rule == "target" else value.isascii() and value.isidentifier()
     return identifier and not keyword.iskeyword(value)
 
 
 def is_dotted_python_name(value: str, target: PythonVersion | None = None, *, rule: NameRule = "target") -> bool:
     """Return whether text is Python names joined by dots, each by `is_python_name` with the rule."""
     return all(is_python_name(part, target, rule=rule) for part in value.split("."))
+
+
+ModulePartRow: TypeAlias = Literal["target", "keyword", "legacy-keyword-directory-kept"]
+"""How `is_importable_part` reads a part of a module path.
+
+`target` reads a name by the target's rule (`is_python_name`), for the parts `--treat-dot-as-module` writes for the dots
+of a directory or file name. `keyword` refuses a keyword alone, for the parts written without it, whose dots are `_`.
+`legacy-keyword-directory-kept` reads an identifier and keeps a keyword, for a directory of the input that keeps its
+name; a module that imports a keyword one is refused.
+"""
+
+
+def is_importable_part(part: str, target: PythonVersion | None, *, row: ModulePartRow = "target") -> bool:
+    """Return whether Python imports a module by the part ``part`` of its path, as the row reads it."""
+    match row:
+        case "keyword":
+            return not keyword.iskeyword(part)
+        case "legacy-keyword-directory-kept":
+            return is_identifier(part, target)
+    return is_python_name(part, target)
 
 
 def replace_non_word(value: str, target: PythonVersion | None) -> str:
@@ -489,6 +514,35 @@ def nfc(value: str, target: PythonVersion | None) -> str:
 def nfkc(value: str, target: PythonVersion | None) -> str:
     """Return the NFKC form of text in the target, which Python gives an identifier when it parses it."""
     return _normalized(value, target, compatibility=True)
+
+
+_REPR_ESCAPES: Final = {"\\": "\\\\", "\t": "\\t", "\n": "\\n", "\r": "\\r"}
+
+
+def _repr_escape(quote: str, match: re.Match[str]) -> str:
+    """Return how `repr()` writes a character `repr_special` matches inside text quoted with `quote`."""
+    character = match.group()
+    if character in "'\"":
+        return f"\\{character}" if character == quote else character
+    if (escape := _REPR_ESCAPES.get(character)) is not None:
+        return escape
+    code_point = ord(character)
+    if code_point < _LATIN_1_END:
+        return f"\\x{code_point:02x}"
+    return f"\\u{code_point:04x}" if code_point < _BMP_END else f"\\U{code_point:08x}"
+
+
+def string_repr(value: str, target: PythonVersion | None) -> str:
+    """Return `repr()` of text as the target's interpreter writes it, whatever interpreter runs.
+
+    `repr()` writes a character as an escape unless the interpreter prints it, and which characters it prints follows
+    its Unicode version, so a message or a literal that quotes text the same way on every interpreter quotes it for a
+    fixed target.
+    """
+    if value.isascii():
+        return repr(value)
+    quote = '"' if "'" in value and '"' not in value else "'"
+    return f"{quote}{_unicode(target).repr_special.sub(partial(_repr_escape, quote), value)}{quote}"
 
 
 def is_nfkc(value: str, target: PythonVersion | None) -> bool:

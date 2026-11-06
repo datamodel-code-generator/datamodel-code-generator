@@ -180,13 +180,20 @@ ALLOF_REF_SIBLING_DIAGNOSTICS = json.loads(
     (DATA_PATH / "payloads/allof_ref_sibling_diagnostics.json").read_text(encoding="utf-8")
 )
 EXCLUDED_CASES: dict[str, str] = {
+    "jsonschema/diamond_inherited_field_override.json": (
+        "D's allOf types p as an integer and as a string, so no payload holds d; "
+        "test_main_jsonschema_diamond_inherited_field_override pins its output and imports it"
+    ),
     "jsonschema/enum_const_unsatisfiable.json": (
         "each const is none of its enum values, so no payload holds those properties; "
         "test_main_jsonschema_enum_const_unsatisfiable pins its output and warnings"
     ),
+    "openapi/empty_enum.yaml::components.schemas.Size": (
+        "its enum is empty, so the schema accepts no payload; test_empty_enum_warning pins its output and warnings"
+    ),
     "openapi/discriminator_pattern_mismatch.yaml::components.schemas.Cat": (
         "its const tag is outside its pattern, so the schema accepts no payload; "
-        "test_main_openapi_discriminator_pattern_mismatch pins its source"
+        "test_main_openapi_discriminator_pattern_mismatch pins its output and warnings"
     ),
     "jsonschema/number_constraints_on_mapped_formats.json": (
         "the boolean numeric format needs --type-mappings; "
@@ -306,6 +313,14 @@ EXCLUDED_CASES: dict[str, str] = {
         "pins the 0.85.0 output G01 PR 5 fixes: an item allOf of two scalar references is an empty model that "
         "rejects valid values; test_schema_intersection_shape_payloads records it"
     ),
+    "jsonschema/schema_intersection/allof_union_parts.json": (
+        "pins the 0.89.0 output --distribute-allof-over-unions fixes: the branches of a second anyOf of an allOf "
+        "replace the first's and $ref branches join one union; test_schema_intersection_shape_payloads records it"
+    ),
+    "jsonschema/schema_intersection/allof_union_through_ref.json": (
+        "pins the 0.89.0 output --distribute-allof-over-unions fixes: an allOf member naming an allOf over a union "
+        "is a base later passes drop; test_schema_intersection_shape_payloads records it"
+    ),
     "jsonschema/schema_intersection/allof_patterns.json": (
         "hypothesis-jsonschema cannot draw a $ref whose sibling pattern differs from its target's; "
         "test_schema_intersection_shape_payloads checks the pattern conjunctions"
@@ -334,10 +349,6 @@ EXCLUDED_CASES: dict[str, str] = {
     ),
     "openapi/discriminator.yaml::components.schemas.Demo": (
         "discriminator branches overlap under JSON Schema validation; see payload_validation_future_work.md"
-    ),
-    "openapi/discriminator_float_mapping.yaml::components.schemas.Base": (
-        "numeric discriminator mapping needs an explicit backend compatibility policy; "
-        "see payload_validation_future_work.md"
     ),
     "openapi/discriminator_in_array_oneof.yaml::components.schemas.Demo": (
         "array item discriminator tags conflict with inherited JSON Schema constraints; "
@@ -490,6 +501,9 @@ PAYLOAD_BACKEND_EXTRA_ARGS_BY_CASE_ID: dict[str, dict[PayloadBackend, tuple[str,
     ),
     "jsonschema/nullable_reuse_collapse.json": dict.fromkeys(
         PayloadBackend, ("--strict-nullable", "--reuse-model", "--collapse-reuse-models")
+    ),
+    "jsonschema/keep_reference_null_on_merged_models.json": dict.fromkeys(
+        PayloadBackend, ("--strict-nullable", "--reuse-model", "--keep-reference-null-on-merged-models")
     ),
 }
 ROUND_TRIP_EXCLUDED_CASES: dict[str, str] = {

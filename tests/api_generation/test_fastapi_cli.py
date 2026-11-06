@@ -125,6 +125,41 @@ def _methods(services: Path) -> str:
     return f"# {services.parent.name}/services.py\n" + "".join(f"{method}\n" for method in methods)
 
 
+_NEW_LETTER_DOCUMENT = {
+    "openapi": "3.1.0",
+    "info": {"title": "Pets", "version": "1"},
+    "servers": [{"url": "https://example.com"}],
+    "paths": {
+        "/pets": {
+            "get": {
+                "operationId": "listPets",
+                "summary": "List \U0001e4d0 pets",
+                "tags": ["pets"],
+                "parameters": [{"name": "q\U0001e4d0", "in": "query", "schema": {"type": "string"}}],
+                "responses": {
+                    "200": {
+                        "description": "ok \U0001e4d0",
+                        "content": {"application/json": {"schema": {"type": "string"}}},
+                    }
+                },
+            }
+        }
+    },
+}
+"""An operation whose summary, query parameter and response hold U+1E4D0, a letter Python 3.11 does not print."""
+
+
+def test_fastapi_cli_quotes_text_alike_whatever_python_runs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Write the text of an operation in the router as the newest Python writes it, whatever Python generates it.
+
+    ``repr()`` of Python 3.11 escapes U+1E4D0, which later Pythons print as itself.
+    """
+    monkeypatch.chdir(tmp_path)
+    Path("api.json").write_text(json.dumps(_NEW_LETTER_DOCUMENT), encoding="utf-8")
+    run_main_with_args(["--input", "api.json", "--input-file-type", "openapi", "--output", "models.py", *_server()])
+    assert_output((tmp_path / "server" / "routers" / "pets.py").read_text(encoding="utf-8"))
+
+
 def test_fastapi_cli_generate(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -216,6 +251,27 @@ def test_fastapi_cli_model_dependencies(
         expected_stderr_path=expected / f"{MODEL_DEPENDENCY_NOTICES.get(case_name, case_name)}.txt",
         assert_func=assert_file_content,
         expected_file=expected / f"{case_name}.py",
+        skip_code_validation=True,
+    )
+
+
+def test_fastapi_cli_request_response_discriminated_enum(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Generate a server beside request-response models of a discriminated union whose target has an enum tag.
+
+    The split read the marker path of the enum the tag property builds as a ``$ref`` into the document, and stopped
+    with ``NotImplementedError`` (#5706); the marker names no schema, so the split reads nothing there.
+    """
+    monkeypatch.chdir(tmp_path)
+    run_main_and_assert(
+        input_path=Path("pets.yaml"),
+        output_path=Path("models.py"),
+        input_file_type="openapi",
+        extra_args=_server("--read-only-write-only-model-type", "request-response"),
+        copy_files=[(CLI / "request-response-discriminator.yaml", tmp_path / "pets.yaml")],
+        capsys=capsys,
+        assert_func=assert_file_content,
         skip_code_validation=True,
     )
 
@@ -975,13 +1031,12 @@ def test_fastapi_cli_check_after_generate(
         ),
         ("encoding", ["--encoding", "latin-1", "--custom-file-header", "# -*- coding: latin-1 -*-\n# Café"]),
         ("formatters", ["--formatters", "ruff-format", "--enable-command-header"]),
-        pytest.param(
+        (
             "ruff-latin-1",
             [
                 *("--encoding", "latin-1", "--custom-file-header", "# -*- coding: latin-1 -*-\n# Café"),
                 *("--formatters", "ruff-check", "ruff-format"),
             ],
-            marks=pytest.mark.filterwarnings("ignore:Failed to format code:UserWarning"),
         ),
     ],
 )
@@ -990,8 +1045,7 @@ def test_fastapi_cli_output_options(
 ) -> None:
     """Head, format, and encode the server files with the model output options, exactly like the models.
 
-    Ruff reads only UTF-8, so the server files are formatted whatever encoding they are written in; the models file,
-    which Ruff cannot read in another encoding, is left unformatted with a warning.
+    Ruff reads only UTF-8, so the server files are formatted whatever encoding they are written in.
     """
     monkeypatch.chdir(tmp_path)
     run_main_and_assert(
@@ -1401,6 +1455,39 @@ def test_fastapi_cli_job(tmp_path: Path, capsys: pytest.CaptureFixture[str], mon
         capsys=capsys,
         expected_stdout_path=EXPECTED / "cli" / "check-model-readme.txt",
         assert_no_stderr=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "option", [[], ["--check"], ["--diff-against", str(CLI / "layout-clash.yaml")]], ids=["write", "check", "diff"]
+)
+def test_fastapi_cli_models_package_onto_a_file(
+    option: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse a models package whose output is an existing file, as a model run does, and write nothing (#4497).
+
+    --diff-against reads no destination, so it compares the two inputs instead.
+    """
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "models").write_text("kept = 1\n", encoding="utf-8")
+    compares = bool(option) and option[0] == "--diff-against"
+    run_main_and_assert(
+        input_path=CLI / "layout-clash.yaml",
+        output_path=Path("models"),
+        input_file_type="openapi",
+        extra_args=_server(*option),
+        expected_exit=Exit.OK if compares else Exit.ERROR,
+        capsys=capsys,
+        expected_stderr=None if compares else "Error: Modular references require an output directory, not a file\n",
+        expected_output="kept = 1\n" if compares else None,
+        assert_no_stderr=compares,
+    )
+    assert_output(
+        "".join(
+            f"{path.relative_to(tmp_path).as_posix()}: {path.read_text(encoding='utf-8')}"
+            for path in sorted(tmp_path.rglob("*"))
+            if path.is_file()
+        )
     )
 
 

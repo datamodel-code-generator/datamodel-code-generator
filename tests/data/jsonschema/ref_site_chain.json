@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Chain",
+  "$ref": "#/$defs/Link0",
+  "$defs": {
+    "Link0": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer"
+        },
+        "next": {
+          "$ref": "#/$defs/Link1",
+          "required": [
+            "v"
+          ],
+          "description": "link 0"
+        }
+      }
+    },
+    "Link1": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer"
+        },
+        "next": {
+          "$ref": "#/$defs/Link2",
+          "required": [
+            "v"
+          ],
+          "description": "link 1"
+        }
+      }
+    },
+    "Link2": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer"
+        },
+        "next": {
+          "$ref": "#/$defs/Link3",
+          "required": [
+            "v"
+          ],
+          "description": "link 2"
+        }
+      }
+    },
+    "Link3": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer"
+        },
+        "next": {
+          "$ref": "#/$defs/Link4",
+          "required": [
+            "v"
+          ],
+          "description": "link 3"
+        }
+      }
+    },
+    "Link4": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

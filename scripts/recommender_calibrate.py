@@ -37,8 +37,8 @@ generated code runs.
 Runs use only the pinned refs. With --check-upstream, `git ls-remote` asks each schema's source repository for its
 HEAD, and the report proposes rotating the entries whose head is not the newest pinned ref.
 
-Known limitations: a rule is judged by its own `when`; `contested_when` and the order of rules within a decision are
-not modelled. Each grid point is a full trial, which also generates the recommendation's neighbours when rules decide
+Known limitations: a rule is judged by its own `when`; the order of rules within a decision is not modelled. Each grid
+point is a full trial, which also generates the recommendation's neighbours when rules decide
 fields the grid leaves unset, and generates the baseline too, so large schemas take a while.
 """
 

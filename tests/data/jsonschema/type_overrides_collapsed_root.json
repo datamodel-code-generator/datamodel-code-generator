@@ -1,0 +1,1 @@
+{"title": "Model", "type": "object", "properties": {"a": {"$ref": "#/$defs/Code"}, "b": {"type": "array", "items": {"$ref": "#/$defs/Code"}}}, "$defs": {"Code": {"type": "integer", "minimum": 0}}}

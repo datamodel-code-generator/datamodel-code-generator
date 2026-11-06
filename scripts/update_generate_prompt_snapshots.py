@@ -24,7 +24,18 @@ CASES = (
             "What other options should I use?",
         ],
     ),
-    ("with_list_options.txt", ["--strict-types", "str", "int", "--generate-prompt"]),
+    (
+        "with_list_options.txt",
+        [
+            "--strict-types",
+            "str",
+            "int",
+            "--no-deserialize-default-values",
+            "--model-name-map",
+            '{"A": "B"}',
+            "--generate-prompt",
+        ],
+    ),
     (
         "json_output.txt",
         [

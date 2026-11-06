@@ -1,0 +1,52 @@
+openapi: 3.0.3
+info: {title: definitions first, version: "1"}
+paths: {}
+components:
+  schemas:
+    build:
+      type: object
+      properties:
+        package:
+          type: object
+          properties:
+            id: {type: string, readOnly: true}
+            path: {type: string}
+          additionalProperties:
+            type: object
+            title: PackageExtra
+            properties:
+              size: {type: integer}
+    package:
+      type: object
+      properties:
+        id: {type: string, readOnly: true}
+        name: {type: string}
+      additionalProperties:
+        type: object
+        properties:
+          weight: {type: integer}
+    holder:
+      type: object
+      properties:
+        pkg: {$ref: '#/components/schemas/package'}
+    application_fee:
+      type: object
+      properties:
+        charge:
+          anyOf:
+            - {type: string, maxLength: 5000}
+            - $ref: '#/components/schemas/charge'
+    charge:
+      type: object
+      properties:
+        id: {type: string}
+    event:
+      allOf:
+        - $ref: '#/components/schemas/holder'
+        - oneOf:
+            - type: object
+              properties:
+                created: {type: string}
+            - type: object
+              properties:
+                deleted: {type: string}

@@ -19,9 +19,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, cast, get_args
 from urllib.parse import ParseResult
 
+from pydantic import ValidationError
 from typing_extensions import override
 
-from datamodel_code_generator import Error
+from datamodel_code_generator import Error, SchemaParseError
 from datamodel_code_generator._container_kinds import (
     CONTAINER_FLAGS,
     CONTAINERS,
@@ -36,7 +37,7 @@ from datamodel_code_generator._document_reader import MISSING, as_mapping, desce
 from datamodel_code_generator._generation_contract import AttemptId
 from datamodel_code_generator._json_pointer import reference_tokens
 from datamodel_code_generator._module_paths import written_path
-from datamodel_code_generator._mro import linearize, resolve_members
+from datamodel_code_generator._mro import collect_members, linearize
 from datamodel_code_generator._openapi_paths import inherited_security
 from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalized
@@ -111,7 +112,7 @@ from datamodel_code_generator._target_types import (
     untyped,
     unwrapped,
 )
-from datamodel_code_generator.enums import DataclassArguments
+from datamodel_code_generator.enums import DataclassArguments, OpenAPIVersion
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import, _import_path, _stored_import
 from datamodel_code_generator.model import dataclass as dataclass_model
 from datamodel_code_generator.model import msgspec, pydantic_v2, typed_dict
@@ -120,7 +121,6 @@ from datamodel_code_generator.model._decisions.nullability import reference_null
 from datamodel_code_generator.model._decisions.tag_value import field_source_name
 from datamodel_code_generator.model._decisions.union_assembly import WrittenMember, merge_members
 from datamodel_code_generator.model.base import (
-    _REUSE_PATH_SUFFIX,
     UNDEFINED,
     DataModel,
     DataModelFieldBase,
@@ -139,8 +139,9 @@ from datamodel_code_generator.model.type_alias import TypeAlias as TypeAliasMode
 from datamodel_code_generator.model.type_alias import TypeAliasTypeBackport, TypeStatement
 from datamodel_code_generator.parser.generation import GenerationStore
 from datamodel_code_generator.parser.jsonschema import Discriminator, JsonSchemaObject
+from datamodel_code_generator.parser.openapi import HeaderObject, ParameterObject, RequestBodyObject
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
-from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression
+from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression, stable_repr
 from datamodel_code_generator.reference import (
     _RW_DIRECTIONS,
     Reference,
@@ -173,6 +174,7 @@ _ENUMS: Final = frozenset({Enum, IntEnum, StrEnum})
 _ALIASES: Final = frozenset({TypeAliasModel, TypeAliasTypeBackport, TypeStatement, PydanticCompatibleTypeAlias})
 _ROOTS: Final = frozenset({pydantic_v2.RootModel, pydantic_v2.RootModelTypeAlias})
 _BUILTINS: Final[dict[str, BuiltinType]] = {name: BuiltinType(name) for name in get_args(BuiltinName)}
+_FILE_TYPES: Final = frozenset({"bytes", "str"})
 _FORMS: Final = frozenset({"form", "multipart"})
 _TEXT_MEDIA: Final = frozenset({"json", "form", "text"})
 _RAW_MEDIA: Final = frozenset({"text", "binary"})
@@ -181,7 +183,7 @@ _HEADER_ROLES: Final[frozenset[TypeUseRole]] = frozenset({
     "request_encoding_header",
     "response_encoding_header",
 })
-_DOCUMENT_FACTS: Final = ("openapi", "info", "tags", "servers")
+_DOCUMENT_FACTS: Final = ("info", "tags", "servers")
 _DEFAULT_KINDS: Final = cast(
     "dict[type, Literal['bool', 'int', 'float', 'str']]", {kind: kind.__name__ for kind in (bool, int, float, str)}
 )
@@ -198,6 +200,8 @@ _PARAMETER_FACTS: Final = (
     "example",
     "examples",
 )
+_HEADER_FACTS: Final = tuple(name for name in _PARAMETER_FACTS if name not in {"name", "in"})
+"""The facts of a Header Object: a parameter's but its name and location, which its headers map implies."""
 _OPERATION_FACTS: Final = (
     "operationId",
     "tags",
@@ -297,18 +301,22 @@ class RecordingGenerationStore(GenerationStore):
         self.redirects: list[tuple[Reference, Reference, bool]] = []
 
     def redirect_reference_users(
-        self, old_reference: Reference, new_reference: Reference, *, merged: bool = False
+        self, old_reference: Reference, new_reference: Reference, *, merged: bool = False, keeps_named: bool = False
     ) -> list[DataType]:
         """Record a global redirect, and whether it merges a model, then redirect every user and return them."""
         self.redirects.append((old_reference, new_reference, merged))
-        return super().redirect_reference_users(old_reference, new_reference, merged=merged)  # ty: ignore[deprecated]
+        return super().redirect_reference_users(  # ty: ignore[deprecated]
+            old_reference, new_reference, merged=merged, keeps_named=keeps_named
+        )
 
     def redirect_model_reference_users(
-        self, model: DataModel, models: list[DataModel], new_reference: Reference
+        self, model: DataModel, models: list[DataModel], new_reference: Reference, *, keeps_named: bool = False
     ) -> None:
         """Record a redirect scoped to some models, which merges a model, then redirect their users."""
         self.redirects.append((model.reference, new_reference, True))
-        super().redirect_model_reference_users(model, models, new_reference)  # ty: ignore[deprecated]
+        super().redirect_model_reference_users(  # ty: ignore[deprecated]
+            model, models, new_reference, keeps_named=keeps_named
+        )
 
 
 @dataclass(slots=True)
@@ -406,12 +414,21 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.object_facts: dict[SchemaLocation | None, _ObjectFacts] = {}
         self.nullable_fields: dict[int, DataModelFieldBase] = {}
         self.document_facts: dict[str, tuple[tuple[str, FrozenLiteral], ...]] = {}
+        self.document_versions: dict[str, OpenAPIVersion] = {}
         self._walked_items: list[_WalkedPathItem] = []
         self._walked_operations: list[int] = []
         self._visits: list[_WalkedHolder] = []
         self._callback_origin: SchemaLocation | None = None
         super().__init__(source, config=config)
-        self._reader = _Reader(self._site_facts, versions=[])
+        self._reader = _Reader(self._site_facts, siblings=self._reads_ref_siblings_at)
+
+    def _reads_ref_siblings_at(self, location: SchemaLocation) -> bool:
+        """Return whether the models read the keywords beside a ``$ref`` at a location with the schema it names.
+
+        They do in every version, unless --ignore-ref-siblings-by-schema-version reads the ``$ref`` alone where the
+        version of the location ignores them (``reads_ref_alone``).
+        """
+        return not (self.config.ignore_ref_siblings_by_schema_version and self._ignores_ref_siblings_at(location))
 
     def _resolve_local_ref_path(self, path: Path, ref: str) -> Path:
         """Refuse a local file that a served source document would publish, before reading it.
@@ -596,9 +613,10 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.left_out[key] = tuple(source_fields), tuple(field for field in source_fields if id(field) not in kept)
 
     def _parse_specification(self, specification: dict[str, YamlValue], path_parts: list[str]) -> None:
-        """Record the OpenAPI version, info, tags and servers of each walked document before walking it."""
-        self.document_facts["/".join(path_parts)] = _keywords(self._document_as_written(specification), _DOCUMENT_FACTS)
-        self._reader.versions.append(str(specification.get("openapi", "")))
+        """Record the OpenAPI version the parser reads each walked document by, and its info, tags and servers."""
+        key = "/".join(path_parts)
+        self.document_facts[key] = _keywords(self._document_as_written(specification), _DOCUMENT_FACTS)
+        self.document_versions[key] = cast("OpenAPIVersion", self._read_dialect(specification).version)
         super()._parse_specification(specification, path_parts)
 
     def get_object_field(self, **options: Any) -> DataModelFieldBase:  # pyright: ignore[reportIncompatibleMethodOverride]
@@ -731,11 +749,21 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         self.object_facts.clear()
         self.nullable_fields.clear()
         self.document_facts.clear()
+        self.document_versions.clear()
         self._walked_items.clear()
         self._walked_operations.clear()
         self._visits.clear()
         self._callback_origin = None
         cast("RecordingGenerationStore", self.generation_store).redirects.clear()
+
+
+def _builtin_name(value: object) -> str | None:
+    """Return the name of the builtin a type is: the builtin itself, or an unaliased import of it from ``builtins``."""
+    if isinstance(value, BuiltinType):
+        return value.name
+    if isinstance(value, ImportedType) and value.import_.from_ == "builtins" and value.import_.alias is None:
+        return value.import_.import_
+    return None
 
 
 def _imported_names(imports: Imports) -> Iterator[str]:
@@ -926,6 +954,26 @@ def _facts(
     return tuple(facts)
 
 
+def _read_required(
+    raw: dict[str, YamlValue],
+    declaration: SchemaLocation,
+    object_type: type[ParameterObject | HeaderObject | RequestBodyObject],
+) -> dict[str, YamlValue]:
+    """Return an object with its `required` read as the parser's ``object_type`` reads it, a boolean.
+
+    A value the parser reads as a boolean, such as `'yes'` or `1`, is that boolean; the parser refuses any other, and so
+    do the targets.
+    """
+    if isinstance(required := raw.get("required", False), bool):
+        return raw
+    try:
+        read = object_type.model_validate({"required": required}).required
+    except ValidationError as error:
+        message = f"API_INVALID_OBJECT: required {stable_repr(required)} is not a boolean"
+        raise SchemaParseError(message, [str(declaration)]) from error
+    return {**raw, "required": read}
+
+
 def _backend_value(value: object) -> KnownBackendValue:
     return KnownBackendValue(_freeze_argument(value))
 
@@ -965,12 +1013,12 @@ def _ordered_union(
 def _constraint_base(data_type: DataType, *, encoded: bool = False) -> str | None:
     """Return the name of the scalar a constrained scalar constrains, as the model generator reads it, or None.
 
-    With ``encoded``, bytes decoded from base64 text with lengths constrain bytes.
+    With ``encoded``, a value decoded from base64 text with constraints constrains the type its decoding writes.
     """
     if getattr(data_type, "annotated_string", False):
         return "str"
-    if encoded and getattr(data_type, "annotated_bytes", False):
-        return "bytes"
+    if encoded and (base := getattr(data_type, "encoded_base", None)):
+        return base
     return None if (import_ := data_type.import_) is None else _ANNOTATED_CONSTRAINT_BASES.get(_identity(import_))
 
 
@@ -1055,25 +1103,22 @@ class _Binder:
             self.anchors.append(node)
         return identity
 
-    def reuse_origin(self, reference: Reference) -> str | None:
-        """Return the path of the reference reuse replaced with this one, or None if reuse did not make it.
+    @staticmethod
+    def reuse_origin(reference: Reference) -> Reference | None:
+        """Return the reference of the model reuse replaced with this one's model, or None if reuse did not make it.
 
-        A model that reuse makes of another has its schema's path with a reuse suffix that no resolver key holds.
+        It is the model's `reused_reference`, wherever a later step moved either model.
         """
-        path = reference.path
-        if id(reference) in self.keys or not path.endswith(_REUSE_PATH_SUFFIX):
-            return None
-        return path.removesuffix(_REUSE_PATH_SUFFIX)
+        return model.reused_reference if isinstance(model := reference.source, DataModel) else None
 
     def source(self, reference: Reference) -> str:
         """Return the path of the schema a model is generated from, through read and write variants and reuse."""
-        origin = self.reuse_origin(reference)
-        return _source_path(reference.path if origin is None else origin)
+        return _source_path((self.reuse_origin(reference) or reference).path)
 
-    def reused(self, model: DataModel) -> DataModel | None:
+    @staticmethod
+    def reused(model: DataModel) -> DataModel | None:
         """Return the model that reuse replaced with a model inheriting from an equal one, if reuse made this one."""
-        origin = self.reuse_origin(model.reference)
-        original = None if origin is None else self.parser.model_resolver.references.get(origin)
+        original = model.reused_reference
         return original.source if original is not None and isinstance(original.source, DataModel) else None
 
     def kept(self, model: DataModel) -> DataModel:
@@ -1094,10 +1139,19 @@ class _Binder:
 
         Each merge that pointed the schema's model at an equal one recorded the null the use admitted right before it
         (``GenerationStore.redirect_reference_users``), so a schema that rejects null keeps rejecting it in a merged
-        nullable model (``nullability.reference_null``, #5410).
+        nullable model (``nullability.reference_null``, #5410), and under ``--keep-reference-null-on-merged-models`` a
+        schema that admits null keeps admitting it in a merged model that rejects null.
         """
         found, named = self._final(reference, direction)
-        return found is not None and reference_null(named=named, names_nullable=reference_names_nullable(found))
+        return found is not None and self._reference_null(found, named=named)
+
+    def _reference_null(self, reference: Reference, *, named: bool | None) -> bool:
+        """Return whether a use that recorded ``named`` admits null where it names ``reference``."""
+        return reference_null(
+            named=named,
+            names_nullable=reference_names_nullable(reference),
+            keeps_named=self.parser.keep_reference_null_on_merged_models,
+        )
 
     def _final(self, reference: Reference, direction: Direction) -> tuple[Reference | None, bool | None]:
         key = id(reference), direction
@@ -1121,7 +1175,7 @@ class _Binder:
             if current is not reference and self.emitted(current.source):
                 terminals[id(current)] = current, named
                 continue
-            null = reference_null(named=named, names_nullable=reference_names_nullable(current))
+            null = self._reference_null(current, named=named)
             pending.extend((new, null if merged else named) for new, merged in self.redirects.get(id(current), ()))
         return next(iter(terminals.values())) if len(terminals) == 1 else (None, None)
 
@@ -1631,7 +1685,7 @@ class _Projector:
         for modifier in WRITTEN_CONTAINERS:
             if not getattr(data_type, flag := CONTAINER_FLAGS[modifier]):
                 continue
-            written = SLOT_CLASSES[written_slot(modifier, generic=generic)]
+            written = SLOT_CLASSES[slot := written_slot(modifier, generic=generic)]
             base = (
                 ImportedType(Import(import_=written.name, from_=module))
                 if written.abstract
@@ -1641,9 +1695,9 @@ class _Projector:
                 key = self._project(data_type.dict_key) if data_type.dict_key is not None else None
                 value = value if value is not None else ImportedType(IMPORT_ANY)
                 hint = self.hints.composed(data_type, base=value, key=key, container=flag)
-                return GenericType(base, (BuiltinType("str") if key is None else key, value), hint=hint)
+                return GenericType(base, (BuiltinType("str") if key is None else key, value), hint=hint, slot=slot)
             hint = self.hints.composed(data_type, base=value, container=flag)
-            return GenericType(base, (value,) if value is not None else (), hint=hint)
+            return GenericType(base, (value,) if value is not None else (), hint=hint, slot=slot)
         if value is None:
             raise _UnsupportedError
         return value
@@ -1742,9 +1796,9 @@ def _emitted_default(  # ruff: ignore[too-many-return-statements]
     try:
         value = _freeze_argument(field.default)
     except _UnsupportedError:
-        return "expression", SourceExpression(repr(field.default))
+        return "expression", SourceExpression(stable_repr(field.default))
     if isinstance(value, (SourceExpression, ImportedExpression)):
-        return "expression", SourceExpression(repr(field.default))
+        return "expression", SourceExpression(stable_repr(field.default))
     return "literal", value
 
 
@@ -1773,7 +1827,7 @@ def _constructor_keywords(field: DataModelFieldBase, backend: BackendName) -> tu
         try:
             frozen = _freeze_argument(value)
         except _UnsupportedError:
-            frozen = SourceExpression(repr(value))
+            frozen = SourceExpression(stable_repr(value))
         keywords.append((name, frozen))
     return tuple(keywords)
 
@@ -1951,37 +2005,40 @@ def _wire_name(field: DataModelFieldBase) -> str:
 class _Reader:
     """Read the loaded API documents by declaration while the walk reads them, recording what the models do not say.
 
-    It reads the site of each location (``ApiOpenAPIParser._site_facts``).
+    It reads the site of each location (``ApiOpenAPIParser._site_facts``), and the keywords beside a reference at a
+    location with the schema it names where the models do (``siblings``, the parser's ``_reads_ref_siblings_at``).
     """
 
-    def __init__(self, site: Callable[[SchemaLocation], SiteFacts], *, versions: list[str]) -> None:
+    def __init__(
+        self, site: Callable[[SchemaLocation], SiteFacts], *, siblings: Callable[[SchemaLocation], bool]
+    ) -> None:
         self.site = site
-        self.versions = versions
+        self.siblings = siblings
 
-    @property
-    def legacy(self) -> bool:
-        """Return whether the entry document is OpenAPI 3.0, whose schemas ignore the siblings of a reference."""
-        return next(iter(self.versions), "").startswith("3.0")
+    def annotations(self, declaration: SchemaLocation) -> dict[str, YamlValue]:
+        """Return the documentation keywords and default a schema gives its values, through its reference chain.
 
-    def chain(self, declaration: SchemaLocation) -> SiteFacts:
-        """Follow a schema's reference chain to the schema it leads to, and return its site.
-
-        The chain follows a reference beside which identification keywords alone sit, or in OpenAPI 3.0 any keywords,
-        which say nothing of its values there. It does not read the keywords beside a reference with its target, as
-        the parser does (`legacy-target-ref-chain`).
+        The schema a chain leads to gives its own, and the keywords beside each reference that the models read add
+        theirs, the nearer one's first. A chain that loops back leads to no schema: the keywords beside its references
+        are all it gives.
         """
-        site = self.site(declaration)
+        location, site = declaration, self.site(declaration)
         seen = {declaration}
-        while (target := site.ref) is not None and target not in seen and (self.legacy or site.bare):
+        found: dict[str, YamlValue] = {}
+        while (target := site.ref) is not None:
+            if self.siblings(location):
+                found = {**site.annotations, **found}
+            if target in seen:
+                return found
             seen.add(target)
-            site = self.site(target)
-        return site
+            location, site = target, self.site(target)
+        return {**site.annotations, **found}
 
     def record(self, declaration: SchemaLocation, role: TypeUseRole) -> _SchemaRecord:
         """Record what an acquired parameter schema says that its model types do not: its default and keywords."""
         if role != "parameter":
             return _UNRECORDED
-        annotations = self.chain(declaration).annotations
+        annotations = self.annotations(declaration)
         return _SchemaRecord(_default(annotations.get("default")), _keywords(annotations))
 
 
@@ -2359,10 +2416,13 @@ class _Models:
             )
             if order is None or any(owner in unknown for owner in order):
                 continue
-            fields = resolve_members(
+            fields = collect_members(
                 order[::-1] if functional else order,
                 lambda owner: models[owner].fields,
                 _wire_name if functional else lambda field: self.slots[id(field)].name,
+                bases.__getitem__,
+                lambda item: item,
+                rule="nearest" if functional else model._BASE_FIELDS,  # noqa: SLF001
             )
             members = self.variant_exclusions(
                 model, symbol, [self.member(symbol, models[owner], field) for owner, field in fields.values()]
@@ -2938,6 +2998,8 @@ class _UseFacts(_SchemaUses):
                 if form
                 else TextShape("scalar", KindAt(holder, self.kind(value)))
             )
+        if isinstance(found := unwrapped(value, self.symbol_table, self.members), UnionType):
+            return self.union_shape(present(found), source, direction, form=form)
         others = self.others(value, members, holder, direction)
         if others.patterns:
             return TextShape("object", problem=(holder, _PATTERNS))
@@ -2955,6 +3017,39 @@ class _UseFacts(_SchemaUses):
             ),
             additional=additional,
         )
+
+    def union_shape(
+        self, alternatives: tuple[TypeView, ...], source: SourceLocation, direction: Direction, *, form: bool
+    ) -> TextShape:
+        """Return how the values of a union of objects are written as text: the members of its objects, merged by name.
+
+        A name several objects declare has the kind they agree on, and none (refused, ``_kind``) when they differ; an
+        object that does not declare it but allows other properties of one kind takes part in that agreement too. Other
+        properties are those of the objects that allow them, in their kind when all agree on one, else any string; an
+        object with pattern properties has no members and allows any string.
+        """
+        shapes = [
+            self.shape(item, source, self.held_members(item, direction), direction, form=form) for item in alternatives
+        ]
+        merged: dict[str, MemberShape] = {}
+        for shape in shapes:
+            for member in shape.members:
+                merged[member.name] = _agreed(merged[member.name], member) if member.name in merged else member
+        others = [MemberShape("") if shape.problem else shape.additional for shape in shapes]
+        for shape, other in zip(shapes, others, strict=True):
+            if other is not None and other.kind is not None:
+                declared = {member.name for member in shape.members}
+                for name in merged.keys() - declared:
+                    merged[name] = _agreed(merged[name], other)
+        allowed = [other for other in others if other is not None]
+        additional = (
+            None
+            if not allowed
+            else allowed[0]
+            if all(_same_kind(allowed[0], other) for other in allowed)
+            else MemberShape("")
+        )
+        return TextShape("object", members=tuple(merged.values()), additional=additional)
 
     def encoding(self, use: TypeUseBinding, *, members: bool) -> EncodingFacts:
         """Return how a use's value is written as text: as one value, as form members, and member by member.
@@ -3094,12 +3189,27 @@ class _Octets(_UseFacts):
             )
         )
 
+    def builtin_types(self, leaf: DataType, direction: Direction) -> frozenset[str]:
+        """Return the builtins a node's type is, constrained or not; empty when any member is another type.
+
+        ``builtins.str`` imported (a ``--type-overrides`` value) is the builtin ``str``.
+        """
+        value = self.view(leaf, direction)
+        names = [
+            _builtin_name(member.base if isinstance(member, ConstructorType) else member)
+            for member in (() if value is None else present(value))
+        ]
+        return frozenset() if None in names else frozenset(cast("list[str]", names))
+
     def part_of(self, node: Reference | DataType | None, value: TypeView | None, direction: Direction) -> PartSchema:
         """Return how the values of a type are sent as parts.
 
         They are files when every node they, or their items when they repeat, are one of holds raw octets as the
-        parser reads them (``reference.binary_content_of``); they repeat as an item container, one part for each item;
-        and they are structured when one of their alternatives is a model, a mapping or an item container.
+        parser reads them (``reference.binary_content_of``) and the models type it as bytes or as plain ``str``
+        (``octet``, ``text_files``), which is sent as UTF-8 text; a binary string the models give another type, such as
+        one a ``--type-overrides`` names, is sent as the part of that type. They repeat as an item container, one part
+        for each item; and they are structured when one of their alternatives is a model, a mapping or an item
+        container.
         """
         leaves = [] if node is None else [leaf for leaf, _ in self.alternatives(node, direction)]
         if (item := self.items(value)) is not None:
@@ -3110,11 +3220,22 @@ class _Octets(_UseFacts):
                 for inner, _ in self.alternatives(leaf.data_types[0], direction)
             ]
         found = unwrapped(value if item is None else item, self.symbol_table, self.members)
+        binary = [leaf for leaf in leaves if isinstance(leaf, DataType) and binary_content_of(leaf)]
+        types = [self.builtin_types(leaf, direction) for leaf in binary]
+        file = (
+            bool(leaves)
+            and len(binary) == len(leaves)
+            and all(
+                self.octet(leaf, direction) or (bool(names) and names <= _FILE_TYPES)
+                for leaf, names in zip(binary, types, strict=True)
+            )
+        )
         return PartSchema(
-            file=bool(leaves) and all(isinstance(leaf, DataType) and binary_content_of(leaf) for leaf in leaves),
+            file=file,
             repeated=item is not None,
             structured=found is not None and any(self.layout(member) != "scalar" for member in present(found)),
             value=value,
+            text=file and any("str" in names for names in types),
         )
 
     def part(self, member: FieldUseBinding) -> PartSchema:
@@ -3327,6 +3448,18 @@ class _Octets(_UseFacts):
 def _child(location: SourceLocation, token: str) -> SourceLocation:
     """Return the location of a keyword's schema below a schema's location."""
     return replace(location, pointer=f"{location.pointer}/{token}")
+
+
+def _same_kind(first: MemberShape, other: MemberShape) -> bool:
+    """Return whether two members of objects are written alike: in one lexical kind, both repeated or both not."""
+    return first.repeated == other.repeated and (first.kind and first.kind.kind) == (other.kind and other.kind.kind)
+
+
+def _agreed(first: MemberShape, other: MemberShape) -> MemberShape:
+    """Return the member two objects declare by one name: the first when both write it alike, else with no kind."""
+    if _same_kind(first, other):
+        return first
+    return replace(first, kind=KindAt(cast("KindAt", first.kind).source, None))
 
 
 def _typed(members: tuple[FieldUseBinding, ...]) -> Iterator[tuple[str, SourceLocation, ModelFieldFacts]]:
@@ -3562,7 +3695,8 @@ class _Contracts(_Octets):
     ) -> WireDeclaration:
         """Bind one parameter or header; a path parameter naming a placeholder is required, as OpenAPI requires."""
         declared, value, wire_name = walked.declaration, walked.value, walked.key
-        location = str(value["in"]) if "in" in value else None
+        header = role != "parameter"
+        location = None if header or "in" not in value else str(value["in"])
         schemas: tuple[TypeUseId, ...] = ()
         if (schema := next(iter(walked.schemas), None)) is not None:
             use = self.use(
@@ -3582,7 +3716,7 @@ class _Contracts(_Octets):
                 binary = self.first(node, use.direction, schema)
             self.uses[use] = replace(
                 self.uses[use],
-                default=record.default if role == "parameter" else None,
+                default=None if header else record.default,
                 keywords=record.keywords,
                 binary=binary,
             )
@@ -3591,15 +3725,16 @@ class _Contracts(_Octets):
         children = self.media(
             walked, use_site, owner, role, status=status, parameter_name=wire_name, parameter_location=location
         )
+        read = _read_required(value, declared, HeaderObject if header else ParameterObject)
         locate = self.documents.location
         return WireDeclaration(
-            "parameter" if role == "parameter" else "header",
+            "header" if header else "parameter",
             wire_name,
             DeclarationId(locate(declared, "declaration")),
             locate(use_site, "use"),
             _facts(
-                {**value, "required": True} if location == "path" and wire_name in placeholders else value,
-                _PARAMETER_FACTS,
+                {**read, "required": True} if location == "path" and wire_name in placeholders else read,
+                _HEADER_FACTS if header else _PARAMETER_FACTS,
                 declared,
             ),
             schemas,
@@ -3679,7 +3814,11 @@ class _Contracts(_Octets):
                 None,
                 DeclarationId(locate(requested.declaration, "declaration")),
                 locate(used, "use"),
-                _facts(requested.value, ("required", "description"), requested.declaration),
+                _facts(
+                    _read_required(requested.value, requested.declaration, RequestBodyObject),
+                    ("required", "description"),
+                    requested.declaration,
+                ),
                 children=self.media(requested, used, identity, "request_body"),
             )
         responses = tuple(
@@ -3796,7 +3935,8 @@ def bind_operations(
             fields,
             security_schemes,
             api_scope=True,
-            document_facts=parser.document_facts.get(next(iter(documents.ids), ""), ()),
+            openapi=parser.document_versions.get(root := next(iter(documents.ids), ""), OpenAPIVersion.V31),
+            document_facts=parser.document_facts.get(root, ()),
             hint_type=builder.binder.hints.hint_type,
             hint_imports=tuple(builder.binder.hints.fixed),
             names=TargetNames.of(parser.model_resolver),

@@ -103,6 +103,9 @@ DocumentationAnnotationWarning: <root>/docs_resources: /paths/~1owners~1{id}/get
                 }
               }
             }
+          },
+          "default": {
+            "$ref": "#/paths/~1api~1notes/get/responses/200"
           }
         }
       }
@@ -158,6 +161,32 @@ DocumentationAnnotationWarning: <root>/docs_resources: /paths/~1owners~1{id}/get
         "$anchor": "label",
         "type": "string"
       },
+      "Keywords": {
+        "type": "object",
+        "properties": {
+          "default": {
+            "$ref": "#/paths/~1api~1pets~1{id}/get/responses/200/content/application~1json/schema"
+          },
+          "example": {
+            "$ref": "#/paths/~1api~1pets~1{id}/get/responses/200/content/application~1json/schema"
+          },
+          "value": {
+            "$ref": "#/paths/~1api~1pets~1{id}/get/responses/200/content/application~1json/schema"
+          },
+          "enum": {
+            "$ref": "#/paths/~1api~1pets~1{id}/get/responses/200/content/application~1json/schema"
+          },
+          "const": {
+            "$ref": "#/paths/~1api~1pets~1{id}/get/responses/200/content/application~1json/schema"
+          },
+          "x-tag": {
+            "$ref": "#/paths/~1api~1pets~1{id}/get/responses/200/content/application~1json/schema"
+          },
+          "other": {
+            "$ref": "#/paths/~1api~1pets~1{id}/get/responses/200/content/application~1json/schema"
+          }
+        }
+      },
       "Note": {
         "type": "object",
         "properties": {
@@ -170,6 +199,9 @@ DocumentationAnnotationWarning: <root>/docs_resources: /paths/~1owners~1{id}/get
           },
           "listed": {
             "$ref": "#/components/schemas/Note/properties/examples"
+          },
+          "keywords": {
+            "$ref": "#/components/schemas/Keywords"
           }
         },
         "examples": [

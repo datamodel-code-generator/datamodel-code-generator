@@ -1,0 +1,61 @@
+openapi: 3.1.0
+info: {title: Merged nullable references kept, version: "1.0"}
+servers: [{url: "https://merged.example.com"}]
+paths:
+  /home:
+    get:
+      operationId: getHome
+      responses:
+        "200":
+          description: A home address, which may be null.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Home"}
+    put:
+      operationId: putHome
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Home"}
+      responses:
+        "204": {description: Stored.}
+  /work:
+    get:
+      operationId: getWork
+      responses:
+        "200":
+          description: A work address, which is never null.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Work"}
+  /person:
+    put:
+      operationId: putPerson
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/Person"}
+      responses:
+        "200":
+          description: The stored person, whose home address may be null and whose work address is never null.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Person"}
+components:
+  schemas:
+    Work:
+      type: object
+      properties:
+        street: {type: string}
+    Home:
+      type: [object, "null"]
+      properties:
+        street: {type: string}
+    Person:
+      type: object
+      required: [home, work]
+      properties:
+        home: {$ref: "#/components/schemas/Home"}
+        work: {$ref: "#/components/schemas/Work"}

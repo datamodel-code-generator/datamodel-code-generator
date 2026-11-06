@@ -1,0 +1,1 @@
+{"title": "Fish", "type": "object", "properties": {"pet_type": {"type": "string"}}, "required": ["pet_type"]}

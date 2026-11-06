@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Tagged",
+  "type": "object",
+  "properties": {
+    "external": {"$ref": "defs.json#/$defs/Tag%23"},
+    "external_again": {"$ref": "defs.json#/%24defs/Tag%23"},
+    "local": {"$ref": "#/$defs/Count%23"}
+  },
+  "$defs": {
+    "Count#": {"type": "integer", "minimum": 1}
+  }
+}

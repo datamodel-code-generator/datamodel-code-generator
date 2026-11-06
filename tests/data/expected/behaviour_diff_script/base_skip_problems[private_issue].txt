@@ -1,0 +1,1 @@
+base_skip entry 1 (tests/data/*.json): issue 'owner chat 2026-11-04' is not a list of public issue references (#1234, #1235)

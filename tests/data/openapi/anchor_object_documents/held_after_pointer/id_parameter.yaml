@@ -1,0 +1,11 @@
+name: page
+in: query
+schema:
+  $id: https://example.com/page.json
+  title: Page
+  type: object
+  properties:
+    size:
+      type: integer
+    limit:
+      $ref: "#/properties/size"

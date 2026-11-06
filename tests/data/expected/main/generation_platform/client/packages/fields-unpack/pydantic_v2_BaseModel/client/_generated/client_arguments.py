@@ -92,7 +92,9 @@ class Operation0Arguments4(TypedDict):
     birthDate: NotRequired[date | UNSET]
     owner: NotRequired[models.Owner | UNSET]
     secret: NotRequired[str | UNSET]
-    media_type: NotRequired[Literal['application/json', 'application/x-www-form-urlencoded'] | None]
+    media_type: NotRequired[
+        Literal['application/json', 'application/x-www-form-urlencoded'] | None
+    ]
     response_media_type: NotRequired[Literal['application/json'] | None]
     options: NotRequired[RequestOptions | None]
 

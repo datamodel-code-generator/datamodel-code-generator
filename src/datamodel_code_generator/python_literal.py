@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
+from functools import partial
 from itertools import chain
 from math import isfinite, isnan
-from typing import TYPE_CHECKING, Any, Protocol, cast
+from pprint import PrettyPrinter
+from typing import IO, TYPE_CHECKING, Any, ClassVar, Final, Protocol, cast
 
-from typing_extensions import Self, Sentinel
+from typing_extensions import Self, Sentinel, override
 
 from datamodel_code_generator._copy_on_change import unchanged
 from datamodel_code_generator._python_syntax import (
@@ -18,12 +21,13 @@ from datamodel_code_generator._python_syntax import (
     set_display,
     tuple_display,
 )
-from datamodel_code_generator._target_unicode import is_dotted_python_name, is_python_name
+from datamodel_code_generator._target_unicode import NEWEST_TARGET, is_dotted_python_name, is_python_name, string_repr
 from datamodel_code_generator.imports import IMPORT_DATETIME_MODULE, _import_key
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
 
+    from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator.imports import Import
 
 
@@ -103,12 +107,12 @@ def _datetime_expression(suffix: str, *, prefix: str = "") -> PythonRuntimeExpre
 
 def _isoformat_expression(kind: str, text: str) -> PythonRuntimeExpression:
     """Return the expression that builds the ``datetime`` module's ``kind`` (date, time, datetime) from ISO ``text``."""
-    return _datetime_expression(call_text(f".{kind}.fromisoformat", (repr(text),)))
+    return _datetime_expression(call_text(f".{kind}.fromisoformat", (stable_repr(text),)))
 
 
 def _text_constructor_expression(import_: Import, text: str) -> PythonRuntimeExpression:
     """Return the call of the constructor ``import_`` on the string literal of ``text``, whose value is ``text``."""
-    return PythonRuntimeExpression.from_import_call(import_, repr(text), value=text)
+    return PythonRuntimeExpression.from_import_call(import_, stable_repr(text), value=text)
 
 
 _RUNTIME_EXPRESSION_CONTAINERS = frozenset({list, tuple, set, frozenset})
@@ -284,31 +288,35 @@ def _make_referencing_type_expression(source: _TypeHintSource) -> _InternalTypeE
     return _InternalTypeExpression(source.type_hint, _INTERNAL_TYPE_EXPRESSION_TOKEN, source=source)
 
 
-def _normalized_safe_python_name(value: object, *, dotted: bool = False) -> str | None:
+def _normalized_safe_python_name(value: object, target: PythonVersion, *, dotted: bool = False) -> str | None:
     """Return untrusted data as a plain string when it is a Python name, or Python names joined by dots with ``dotted``.
 
-    Only a ``str`` counts, read without its subclass's overrides, and its names follow the running interpreter's
-    Unicode (row ``legacy-host-identifiers``). Template keys, option names and the simple type names of built-in
-    templates (``str``, ``datetime.date``) take this form; more expressive type syntax belongs to the parser-owned
-    boundary above, since accepting it here would parse source at runtime and make this public extension point an
-    execution sink.
+    Only a ``str`` counts, read without its subclass's overrides, and its names are names of the target Python.
+    Template keys, option names and the simple type names of built-in templates (``str``, ``datetime.date``) take this
+    form; more expressive type syntax belongs to the parser-owned boundary above, since accepting it here would parse
+    source at runtime and make this public extension point an execution sink.
     """
     if not isinstance(value, str):
         return None
     normalized_value = _normalize_string(value)
     is_name = is_dotted_python_name if dotted else is_python_name
-    return normalized_value if is_name(normalized_value, rule="legacy-host-identifiers") else None
+    return normalized_value if is_name(normalized_value, target) else None
 
 
-def is_safe_public_type_name(value: object) -> bool:
-    """Return whether public data is a bare or dotted Python identifier."""
-    return _normalized_safe_python_name(value, dotted=True) is not None
+def is_safe_public_type_name(value: object, *, target: PythonVersion | None = None) -> bool:
+    """Return whether public data is a bare or dotted Python identifier of the target Python, the newest by default."""
+    return _normalized_safe_python_name(value, NEWEST_TARGET if target is None else target, dotted=True) is not None
 
 
-def represent_untrusted_public_type_name(value: Any) -> str:
-    """Render a public type name without admitting executable source syntax."""
+def represent_untrusted_public_type_name(value: Any, *, target: PythonVersion | None = None) -> str:
+    """Render a public type name without admitting executable source syntax.
+
+    A name of the target Python, the newest by default, is written as a name, and any other text as a string.
+    """
     if isinstance(value, str):
-        if normalized_value := _normalized_safe_python_name(value, dotted=True):
+        if normalized_value := _normalized_safe_python_name(
+            value, NEWEST_TARGET if target is None else target, dotted=True
+        ):
             return normalized_value
         return represent_untrusted_python_value(_normalize_string(value))
     return represent_untrusted_python_value(value)
@@ -317,7 +325,8 @@ def represent_untrusted_public_type_name(value: Any) -> str:
 def _represent_container(value: object, render: Callable[[Any], str], *, sort_sets_by_repr: bool) -> str | None:
     """Render a dict, list, tuple or set with ``render`` for its items; None for any other value.
 
-    Set items are ordered by type name, then by their ``repr`` or their rendered text.
+    Set items are ordered by type name, then by their ``repr`` or their rendered text; a string's ``repr`` is its
+    rendered text, as ``stable_repr`` writes it.
     """
     match value:
         case dict():
@@ -330,7 +339,7 @@ def _represent_container(value: object, render: Callable[[Any], str], *, sort_se
             from operator import itemgetter  # noqa: PLC0415
 
             rows = [
-                (type(item).__name__, repr(item) if sort_sets_by_repr else text, text)
+                (type(item).__name__, repr(item) if sort_sets_by_repr and type(item) is not str else text, text)
                 for item in value
                 for text in (render(item),)
             ]
@@ -339,11 +348,119 @@ def _represent_container(value: object, render: Callable[[Any], str], *, sort_se
     return None
 
 
+def stable_repr(value: object) -> str:
+    """Return ``repr()`` of a value as the newest target writes it, whatever interpreter runs.
+
+    ``repr()`` escapes the characters of a string that the running interpreter does not print, which follow its
+    Unicode version; here they follow the newest target's, in a string, also of a class that keeps the ``repr()`` of
+    ``str``, and in the tuples, lists, sets and dicts that hold one, so a message or a literal reads the same on every
+    interpreter. A container that holds itself is written as ``repr()`` writes it again (``[...]``). Any other value
+    is its ``repr()``.
+    """
+    return _stable_repr(value, set())
+
+
+def _stable_repr(value: object, active: set[int]) -> str:
+    """Return ``stable_repr`` of a value inside the containers whose ids ``active`` holds."""
+    if isinstance(value, str) and type(value).__repr__ is str.__repr__:
+        return string_repr(_normalize_string(value), NEWEST_TARGET)
+    if (display := _CONTAINER_REPRS.get(type(value))) is None:
+        return repr(value)
+    if (key := id(value)) in active:
+        return _RECURSIVE_REPRS[type(value)]
+    active.add(key)
+    try:
+        return display(value, partial(_stable_repr, active=active))
+    finally:
+        active.discard(key)
+
+
+_CONTAINER_REPRS: Final[dict[type, Callable[[Any, Callable[[object], str]], str]]] = {
+    tuple: lambda value, item: tuple_display(map(item, value)),
+    list: lambda value, item: list_display(map(item, value)),
+    set: lambda value, item: set_display(map(item, value)),
+    dict: lambda value, item: dict_display((item(key), item(entry)) for key, entry in value.items()),
+}
+"""How ``stable_repr`` writes each container whose ``repr()`` holds the ``repr()`` of its items, as ``repr()`` does."""
+_RECURSIVE_REPRS: Final[dict[type, str]] = {tuple: "(...)", list: "[...]", set: "set(...)", dict: "{...}"}
+"""What ``repr()`` writes for a container inside itself."""
+
+
+class _StablePrettyPrinter(PrettyPrinter):
+    """A ``pprint.PrettyPrinter`` that writes strings as ``stable_repr`` writes them, wrapped where ``pprint`` wraps."""
+
+    @override
+    def format(self, object: object, context: dict[int, int], maxlevels: int, level: int) -> tuple[str, bool, bool]:
+        """Write a string as ``stable_repr`` does; any other value as ``pprint`` does, its strings so too."""
+        if isinstance(object, str) and type(object).__repr__ is str.__repr__:
+            return stable_repr(object), True, False
+        return super().format(object, context, maxlevels, level)
+
+    def _pprint_stable_str(
+        self,
+        text: str,
+        stream: IO[str],
+        indent: int,
+        allowance: int,
+        _context: object,
+        level: int,
+    ) -> None:
+        """Write a string too long for its line as the strings ``pprint`` splits it into, each by ``stable_repr``.
+
+        An empty string is written whole, as ``pprint`` writes it, however narrow its line.
+        """
+        if not text:
+            stream.write(stable_repr(text))
+            return
+        width = self._width  # ty: ignore[unresolved-attribute]
+        if level == 1:
+            indent += 1
+            allowance += 1
+        chunks: list[str] = []
+        lines = text.splitlines(keepends=True)
+        for index, line in enumerate(lines):
+            last_line = index == len(lines) - 1
+            if len(rep := stable_repr(line)) <= width - indent - (allowance if last_line else 0):
+                chunks.append(rep)
+                continue
+            parts = re.findall(r"\S*\s*", line)[:-1]
+            current = ""
+            for part_index, part in enumerate(parts):
+                candidate = current + part
+                limit = width - indent - (allowance if last_line and part_index == len(parts) - 1 else 0)
+                if len(stable_repr(candidate)) > limit:
+                    if current:
+                        chunks.append(stable_repr(current))
+                    current = part
+                else:
+                    current = candidate
+            chunks.append(stable_repr(current))
+        if len(chunks) == 1:
+            stream.write(chunks[0])
+            return
+        body = f"\n{' ' * indent}".join(chunks)
+        stream.write(f"({body})" if level == 1 else body)
+
+    _dispatch: ClassVar = {**vars(PrettyPrinter)["_dispatch"], str.__repr__: _pprint_stable_str}
+
+
+def stable_pformat(value: object) -> str:
+    """Return ``pprint.pformat()`` of a value with its strings written as ``stable_repr`` writes them."""
+    return _StablePrettyPrinter().pformat(value)
+
+
+def message_repr(value: object) -> str:
+    """Return how a message quotes a value a user gave: ``stable_repr`` of it, a string read past its subclass."""
+    return stable_repr(_normalize_string(value) if isinstance(value, str) else value)
+
+
 def represent_python_value(value: Any) -> str:
     """Render a value as a Python expression safe for generated source."""
     match value:
         case PythonRuntimeExpression() | PythonCode():
             return value.code
+        case str() if type(value) is str:
+            return string_repr(value, NEWEST_TARGET)
         case float() if isnan(value):
             return "float('nan')"
         case float() if not isfinite(value):
@@ -366,7 +483,7 @@ def represent_untrusted_python_value(value: Any) -> str:
     if isinstance(value, float):
         return represent_python_value(float.__float__(value))  # noqa: PLC2801 - bypass untrusted subclass overrides
     if isinstance(value, str):
-        return repr(_normalize_string(value))
+        return stable_repr(_normalize_string(value))
     if (rendered := _represent_container(value, represent_untrusted_python_value, sort_sets_by_repr=False)) is not None:
         return rendered
-    return repr(_normalize_string(str(value)))
+    return stable_repr(_normalize_string(str(value)))

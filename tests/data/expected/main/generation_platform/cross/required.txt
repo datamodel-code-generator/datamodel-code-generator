@@ -1,0 +1,51 @@
+models shared True
+# required in-process sync
+post_items
+  > POST /items?q=a&n=1 [application/json]
+  post_items(q='a', n=1, X_Off=None, body=ItemsPostRequest(name='x'))
+  < 200 application/json
+  = ItemsPostResponse(root='ok')
+post_items X-Rate
+  > POST /items?q=a&n=1 [application/json]
+  post_items(q='a', n=1, X_Off=None, body=ItemsPostRequest(name='x'))
+  < 200 application/json
+  = ItemsPostResponse200XRateHeader(root=[1, 2])
+post_items without q
+  ! TypeError: DefaultResource.post_items() missing 1 required keyword-only argument: 'q' []
+post without q
+  > POST /items?n=1 [application/json]
+  < 422 application/json
+  = 422
+post without n
+  > POST /items?q=a [application/json]
+  < 422 application/json
+  = 422
+post without a body
+  > POST /items?q=a&n=1
+  < 422 application/json
+  = 422
+# required in-process async
+post_items
+  > POST /items?q=a&n=1 [application/json]
+  post_items(q='a', n=1, X_Off=None, body=ItemsPostRequest(name='x'))
+  < 200 application/json
+  = ItemsPostResponse(root='ok')
+post_items X-Rate
+  > POST /items?q=a&n=1 [application/json]
+  post_items(q='a', n=1, X_Off=None, body=ItemsPostRequest(name='x'))
+  < 200 application/json
+  = ItemsPostResponse200XRateHeader(root=[1, 2])
+post_items without q
+  ! TypeError: AsyncDefaultResource.post_items() missing 1 required keyword-only argument: 'q' []
+post without q
+  > POST /items?n=1 [application/json]
+  < 422 application/json
+  = 422
+post without n
+  > POST /items?q=a [application/json]
+  < 422 application/json
+  = 422
+post without a body
+  > POST /items?q=a&n=1
+  < 422 application/json
+  = 422

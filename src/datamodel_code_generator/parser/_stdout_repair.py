@@ -19,9 +19,8 @@ from typing_extensions import Protocol
 from datamodel_code_generator._module_paths import is_within, normalized_path
 from datamodel_code_generator._parse_memo import MemoTable
 from datamodel_code_generator.model.base import forget_model_memos
-from datamodel_code_generator.model.enum import Enum
 from datamodel_code_generator.parser._model_shapes import stdout_fingerprint
-from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
+from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver, suffix_kind
 from datamodel_code_generator.parser._passes._state import ContextT, ResultT
 from datamodel_code_generator.reference import split_module_name
 
@@ -290,7 +289,7 @@ def flatten_invalid_modules(
             [str(index)],
             model.class_name,
             class_name=True,
-            model_type="enum" if isinstance(model, Enum) else "model",
+            model_type=suffix_kind(model),
             preserve_class_name=True,
         ).name
 
@@ -304,7 +303,9 @@ def flatten_invalid_modules(
         )
 
     for model, new_name in new_names.items():
-        parser._graph_builder.rename_model(model, reference_name=new_name, clear_duplicate_name=True)  # noqa: SLF001
+        parser._graph_builder.rename_model(  # noqa: SLF001
+            model, reference_name=new_name, clear_duplicate_name=True, scheme="flattened-module"
+        )
     resolver.refresh_reference_names()
     for model in models_to_clear:
         forget_model_memos(model, MemoTable.DEDUP_KEYS)

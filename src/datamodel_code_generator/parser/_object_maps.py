@@ -13,10 +13,12 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator._regex_syntax import literal_pattern_value
 from datamodel_code_generator._url_redaction import named_location
+from datamodel_code_generator.parser._naming import Composed, composed_name
 from datamodel_code_generator.parser._origins import with_field_origin, with_type_origin
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import _merges_ref_siblings, _object_map_other_types
 from datamodel_code_generator.parser.base import get_special_path
+from datamodel_code_generator.reference import unique_items_of
 from datamodel_code_generator.types import ANY, Types, build_union
 
 if TYPE_CHECKING:
@@ -26,8 +28,9 @@ if TYPE_CHECKING:
     from datamodel_code_generator.enums import TargetPydanticVersion
     from datamodel_code_generator.model import DataModel, DataModelFieldBase
     from datamodel_code_generator.model.output import OutputModelContext
+    from datamodel_code_generator.parser._naming import Claim, NamingScope
     from datamodel_code_generator.parser._null_facts import NullFacts, NullSite
-    from datamodel_code_generator.reference import ModelResolver
+    from datamodel_code_generator.reference import ModelResolver, Reference
     from datamodel_code_generator.types import DataType, DataTypeManager
 
 __all__ = [
@@ -111,6 +114,9 @@ class ObjectMapsHost(Protocol):
     def _legacy_object_maps(self) -> frozenset[str]:
         """The rows of 0.86.0 object maps kept."""
 
+    def _claiming(self, claim: Claim | None) -> NamingScope:
+        """Return the naming frame that makes ``claim`` for the model its block builds, while L1 records them."""
+
     @property
     def _output_model_context(self) -> OutputModelContext:
         """The capabilities of the output model types."""
@@ -139,6 +145,7 @@ class ObjectMapsHost(Protocol):
         effective_has_default: bool | None = None,
         use_default_with_required: bool = False,
         class_name: str | None = None,
+        output_names: tuple[str, ...] = (),
     ) -> DataModelFieldBase:
         """Build an output field using the shared JSON Schema field policy; without a schema, without its keywords."""
 
@@ -257,12 +264,30 @@ def _nullable_map_value_schema(obj: JsonSchemaObject, *, beside_other_types: boo
     )
 
 
-def _pattern_value_groups(patterns: list[str], value_types: list[DataType]) -> dict[str, tuple[list[str], DataType]]:
-    """Group the patterns of row ``legacy-map-union-of-dicts`` by the rendered hint of their value types."""
-    groups: dict[str, tuple[list[str], DataType]] = {}
+def _pattern_value_groups(
+    patterns: list[str], value_types: list[DataType]
+) -> dict[str, tuple[list[str], list[DataType]]]:
+    """Group the patterns of row ``legacy-map-union-of-dicts`` by the rendered hint of their value types.
+
+    A group keeps the value type of its first pattern and that of each later pattern whose schemas declare
+    ``uniqueItems`` at other nodes, which are written alike as one; --use-unique-items-as-set then writes an array as a
+    set where every value of the group declares it.
+    """
+    groups: dict[str, tuple[list[str], list[DataType]]] = {}
     for pattern, value_type in zip(patterns, value_types, strict=True):
-        groups.setdefault(value_type.type_hint, ([], value_type))[0].append(pattern)
+        group_patterns, group_values = groups.setdefault(value_type.type_hint, ([], []))
+        group_patterns.append(pattern)
+        if _unique_items_paths(value_type) not in map(_unique_items_paths, group_values):
+            group_values.append(value_type)
     return groups
+
+
+def _unique_items_paths(data_type: DataType, path: tuple[int, ...] = ()) -> frozenset[tuple[int, ...]]:
+    """Return the paths of indexes to the nodes of a type tree that record ``uniqueItems`` (``unique_items_of``)."""
+    paths = {path} if unique_items_of(data_type) else set()
+    for index, nested in enumerate(data_type.data_types):
+        paths |= _unique_items_paths(nested, (*path, index))
+    return frozenset(paths)
 
 
 def _is_plain_any(data_type: DataType) -> bool:
@@ -287,26 +312,32 @@ def _schema_assertions(schema: JsonSchemaObject) -> dict[str, Any]:
 
 def get_typed_additional_properties_field(
     parser: ObjectMapsHost,
+    reference: Reference,
     class_name: str,
     obj: JsonSchemaObject,
     path: list[str],
 ) -> DataModelFieldBase | None:
-    """Build the output model's typed extra field for schema-valued extras (``_typed_extra_field_schema``).
+    """Build the typed extra field of the model of ``reference`` for its schema-valued extras.
 
-    The field and its dict record the location of the additionalProperties schema as their origin
-    (``reference.field_origin_of``, ``reference.type_origin_of``).
+    The extras are those of ``_typed_extra_field_schema``. The field and its dict record the location of the
+    additionalProperties schema as their origin (``reference.field_origin_of``, ``reference.type_origin_of``). The model
+    of the values is named after ``class_name``, the model's name, which L1 records as its claim (``Composed``) while
+    it records naming frames.
     """
     if (additional_props := parser._typed_extra_field_schema(obj)) is None:  # noqa: SLF001
         return None
     additional_props = parser._add_nullable_combined_schema_branches(additional_props)  # noqa: SLF001
-    additional_property_name = f"{class_name}AdditionalProperty"
-    extra_value_type = parser._parse_additional_properties_value(  # noqa: SLF001
-        additional_property_name,
-        [*path, "additionalProperties"],
-        obj,
-        additional_properties=additional_props,
-        constrained_name=additional_property_name,
-    )
+    additional_property_name = composed_name(class_name, "additional-property")
+    with parser._claiming(Composed(reference, "additional-property")) as claimed:  # noqa: SLF001
+        extra_value_type = claimed.built(
+            parser._parse_additional_properties_value(  # noqa: SLF001
+                additional_property_name,
+                [*path, "additionalProperties"],
+                obj,
+                additional_properties=additional_props,
+                constrained_name=additional_property_name,
+            )
+        )
     dict_key = parser._object_map_key_type(obj.propertyNames, "extra-field")  # noqa: SLF001
 
     location = additional_props.schema_location
@@ -465,8 +496,8 @@ def parse_pattern_properties(
         return build_union(
             parser.data_type,
             [
-                pattern_map_type(parser, group_patterns, [value_type], property_names, joins_patterns=True)
-                for group_patterns, value_type in groups.values()
+                pattern_map_type(parser, group_patterns, group_values, property_names, joins_patterns=True)
+                for group_patterns, group_values in groups.values()
             ],
         )
     return pattern_map_type(parser, patterns, value_types, property_names, joins_patterns=True)
@@ -597,8 +628,14 @@ def object_map_admits_null(parser: ObjectMapsHost, obj: JsonSchemaObject) -> boo
 def parse_property_name_key_schema(  # noqa: PLR0911
     parser: ObjectMapsHost,
     property_names: JsonSchemaObject | bool,  # noqa: FBT001
+    *,
+    member: bool = False,
 ) -> DataType:
-    """Return the key type a propertyNames schema gives the keys of a dict."""
+    """Return the key type a propertyNames schema gives the keys of a dict.
+
+    Constrained string keys take the type manager's map key type, except a ``member`` of a union of keys, which takes
+    its string type (msgspec decodes a union of strings by one of them).
+    """
     if isinstance(property_names, bool):
         return parser.data_type_manager.get_data_type(Types.string)
     if (python_type := parser._get_x_python_type(property_names)) is not None:  # noqa: SLF001
@@ -631,19 +668,19 @@ def parse_property_name_key_schema(  # noqa: PLR0911
         kwargs.update(
             (key, value) for key in ("minLength", "maxLength") if (value := getattr(property_names, key)) is not None
         )
-        return parser.data_type_manager.get_data_type(
-            Types.string,
-            use_annotated=parser.use_annotated,
-            target_pydantic_version=parser.target_pydantic_version,
-            **kwargs,
-        )
+        kwargs.update(use_annotated=parser.use_annotated, target_pydantic_version=parser.target_pydantic_version)
+        manager = parser.data_type_manager
+        return manager.get_data_type(Types.string, **kwargs) if member else manager.get_map_key_str_type(**kwargs)
     return parser.data_type_manager.get_data_type(Types.string)
 
 
 def parse_string_property_name_union(
-    parser: ObjectMapsHost, schema: JsonSchemaObject, *, discard_nonstring: bool = False
+    parser: ObjectMapsHost, schema: JsonSchemaObject, *, discard_nonstring: bool = False, member: bool = False
 ) -> tuple[DataType | None, bool]:
-    """Build constrained string keys, retaining unions already dominated by a plain string branch."""
+    """Build constrained string keys, retaining unions already dominated by a plain string branch.
+
+    ``member`` reads a branch of a union of keys; the one branch an ``anyOf`` keeps is read as the ``anyOf`` is.
+    """
     if (
         schema.model_fields_set - parser.STRING_PROPERTY_NAME_FIELDS
         or type(parser)._property_names_forbids_all_keys(schema)  # noqa: SLF001
@@ -655,23 +692,31 @@ def parse_string_property_name_union(
     ):
         return None, False
     if not schema.anyOf:
-        return parse_property_name_key_schema(parser, schema), not schema.has_constraint
+        return parse_property_name_key_schema(parser, schema, member=member), not schema.has_constraint
     if schema.has_constraint:
         return None, False
+    branches = [
+        branch
+        for branch in schema.anyOf
+        if not (
+            branch is False
+            or (
+                discard_nonstring
+                and isinstance(branch, JsonSchemaObject)
+                and not branch.model_fields_set - parser.STRING_PROPERTY_NAME_FIELDS
+                and type(parser)._property_names_forbids_all_keys(branch)  # noqa: SLF001
+            )
+        )
+    ]
     data_types: list[DataType] = []
     branch_count = 0
-    for branch in schema.anyOf:
-        if branch is False or (
-            discard_nonstring
-            and isinstance(branch, JsonSchemaObject)
-            and not branch.model_fields_set - parser.STRING_PROPERTY_NAME_FIELDS
-            and type(parser)._property_names_forbids_all_keys(branch)  # noqa: SLF001
-        ):
-            continue
+    for branch in branches:
         data_type, unrestricted = (
-            (parser.data_type_manager.get_data_type(Types.string), True)
-            if branch is True
-            else parse_string_property_name_union(parser, branch, discard_nonstring=discard_nonstring)
+            parse_string_property_name_union(
+                parser, branch, discard_nonstring=discard_nonstring, member=member or len(branches) > 1
+            )
+            if isinstance(branch, JsonSchemaObject)
+            else (parser.data_type_manager.get_data_type(Types.string), True)
         )
         if unrestricted and (not parser.field_constraints or branch_count == 0 or len(data_types) != branch_count):
             return None, True
@@ -828,7 +873,7 @@ def object_map_key_type(  # noqa: PLR0913
                 if schema.pattern is None
                 else parser._conjoined_pattern(  # noqa: SLF001
                     (schema.pattern, pattern),
-                    named_location(property_names.schema_location, "propertyNames", row="legacy-unredacted-locations"),
+                    named_location(property_names.schema_location, "propertyNames"),
                 )
             )
         if schema.ref:
@@ -837,8 +882,7 @@ def object_map_key_type(  # noqa: PLR0913
         return (
             None
             if pattern is None
-            else parser.data_type_manager.get_data_type(
-                Types.string,
+            else parser.data_type_manager.get_map_key_str_type(
                 pattern=pattern,
                 use_annotated=parser.use_annotated,
                 target_pydantic_version=parser.target_pydantic_version,

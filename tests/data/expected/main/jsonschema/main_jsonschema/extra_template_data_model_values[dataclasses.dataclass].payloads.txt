@@ -1,0 +1,2 @@
+Old: 'Overridden description.' final=True abc=True double=None
+New: 'New from the schema.' final=False abc=False double=None

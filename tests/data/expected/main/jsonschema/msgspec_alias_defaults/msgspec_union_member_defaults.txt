@@ -1,0 +1,137 @@
+{
+  "defaults": {
+    "listBesideStruct": [
+      "x"
+    ],
+    "objectBesideList": {
+      "a": "y"
+    },
+    "listBesideAlias": [
+      "z"
+    ],
+    "listOfStructs": [
+      {
+        "a": "w"
+      }
+    ],
+    "objectBesideListOfStructs": {
+      "a": "q"
+    },
+    "listOfStructsBesideString": [
+      {
+        "a": "v"
+      }
+    ],
+    "listOfStructsOrNull": [
+      {
+        "a": "u"
+      }
+    ],
+    "secondTaggedVariant": {
+      "kind": "dog",
+      "bark": "loud"
+    },
+    "structMapsBesideString": [
+      {
+        "k": {
+          "a": "m"
+        }
+      }
+    ],
+    "nullItemBesideString": [
+      null,
+      {
+        "a": "n"
+      }
+    ],
+    "nullItem": [
+      null
+    ],
+    "countsInOneMember": {
+      "k": 1
+    }
+  },
+  "default_types": {
+    "listBesideStruct": "list",
+    "objectBesideList": "PodSpec",
+    "listBesideAlias": "list",
+    "listOfStructs": "list",
+    "objectBesideListOfStructs": "PodSpec",
+    "listOfStructsBesideString": "list",
+    "listOfStructsOrNull": "list",
+    "secondTaggedVariant": "Dog",
+    "structMapsBesideString": "list",
+    "nullItemBesideString": "list",
+    "nullItem": "list",
+    "countsInOneMember": "dict"
+  },
+  "list_item_types": {
+    "listBesideStruct": [
+      "str"
+    ],
+    "listBesideAlias": [
+      "str"
+    ],
+    "listOfStructs": [
+      "PodSpec"
+    ],
+    "listOfStructsBesideString": [
+      "PodSpec"
+    ],
+    "listOfStructsOrNull": [
+      "PodSpec"
+    ],
+    "structMapsBesideString": [
+      "dict"
+    ],
+    "nullItemBesideString": [
+      "NoneType",
+      "NullablePod"
+    ],
+    "nullItem": [
+      "NoneType"
+    ]
+  },
+  "valid": {
+    "listBesideStruct": {
+      "a": "s"
+    },
+    "objectBesideList": [
+      "t"
+    ],
+    "listBesideAlias": 3,
+    "listOfStructs": [
+      {
+        "a": "w"
+      }
+    ],
+    "objectBesideListOfStructs": {
+      "a": "q"
+    },
+    "listOfStructsBesideString": "r",
+    "listOfStructsOrNull": null,
+    "secondTaggedVariant": {
+      "kind": "cat",
+      "meow": "m"
+    },
+    "structMapsBesideString": [
+      {
+        "j": {
+          "a": "p"
+        }
+      }
+    ],
+    "nullItemBesideString": "o",
+    "nullItem": [
+      null,
+      {
+        "a": "l"
+      }
+    ],
+    "countsInOneMember": {
+      "k": 1
+    }
+  },
+  "invalid": "rejected: Expected `str`, got `int` - at `$.listBesideStruct[0]`",
+  "invalid_tag": "rejected: Invalid value 'cow' - at `$.secondTaggedVariant.kind`"
+}

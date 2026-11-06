@@ -7,7 +7,11 @@ backend class, which hashes frozen instances by their values, or hashes by ident
 ``set_items_may_keep_builtin_hash`` decides whether a parse whose backend allows it lets any set item model keep it.
 ``dict_key_takes_root_type`` decides whether a dict key that names a root model takes the model's root type, as the
 model's instances cannot be dict keys. ``value_hashes`` and ``field_value_hashes`` decide whether the values Pydantic
-validates for a field hash as builtin values.
+validates for a field hash as builtin values. ``set_items_can_hash`` decides whether some value that the items of an
+array take hashes, so that a set can hold it, and ``class_set_item_hash`` how the instances of a model class hash: by
+the values of their fields, by identity or never. Under --use-unique-items-as-set-by-value, ``every_value_hashes``
+decides whether every value of an item type hashes consistently with equality, and ``hashes_by_value`` whether the
+instances of a model do.
 
 Every input is an immutable fact; the adapters read them from the live objects and are listed in
 ``docs/architecture.md``.
@@ -16,7 +20,7 @@ Every input is an immutable fact; the adapters read them from the live objects a
 from __future__ import annotations
 
 from types import NoneType
-from typing import TYPE_CHECKING, final
+from typing import TYPE_CHECKING, Literal, TypeAlias, final
 
 from datamodel_code_generator._records import record
 
@@ -27,14 +31,26 @@ if TYPE_CHECKING:
 
 __all__ = [
     "HashClassFacts",
+    "SetItemFacts",
+    "SetItemHash",
     "ValueHashFacts",
+    "ValueHashItem",
+    "class_set_item_hash",
     "dict_key_takes_root_type",
+    "every_value_hashes",
     "field_value_hashes",
     "frozen_by_config",
+    "hashes_by_value",
     "keeps_builtin_hash",
+    "set_items_can_hash",
     "set_items_may_keep_builtin_hash",
     "value_hashes",
 ]
+
+SetItemHash: TypeAlias = Literal["value", "identity", "never", "alias"]
+"""How the instances of a model class hash as set items: by the values of their fields (a frozen class that compares
+by value), by identity (``eq=False``, class code of its own, the hash a Pydantic class takes as a set item), never (a
+dict, or a class that compares by value without being frozen), or as the value of a type alias."""
 
 _BUILTIN_VALUE_KINDS: frozenset[type] = frozenset({str, int, float, bool, NoneType})
 """The kinds of literal and default values whose hash is builtin."""
@@ -73,6 +89,102 @@ class ValueHashFacts:
     literals: tuple[object, ...]
     builtin_name: str | None
     """The type's name where it imports nothing."""
+
+
+@final
+@record
+class SetItemFacts:
+    """The facts of one type that the items of an array take that tell whether a value of it can be a set member."""
+
+    unhashable: bool = False
+    """The type is a container whose values do not hash, as it is written: a list, a sequence, a set, a dict or a
+    mapping, or it names a model whose instances never hash (``instances_never_hash``)."""
+    null: bool = False
+    """The type takes None too."""
+    members: tuple[SetItemFacts, ...] = ()
+    """The types of a union, which takes the values of each."""
+    positions: tuple[SetItemFacts, ...] | None = None
+    """The types of the positions of a tuple, which takes a value of each; None for a type that is no tuple."""
+
+
+def set_items_can_hash(items: Sequence[SetItemFacts]) -> bool:
+    """Return whether some value that the items of an array take hashes, so that a set can hold it.
+
+    A container whose values do not hash takes none, a tuple takes one where each of its positions does, a union where
+    one of its members does and any other type does; items of no type take any value.
+    """
+    return not items or any(map(_takes_hashable_value, items))
+
+
+def _takes_hashable_value(facts: SetItemFacts) -> bool:
+    """Return whether some value of the type of ``facts`` hashes.
+
+    The types it is made of are read first, with a stack of their own, so the facts of a chain of type aliases of any
+    length are read.
+    """
+    taken: dict[int, bool] = {}
+    pending = [facts]
+    while pending:
+        current = pending[-1]
+        if unread := [part for part in _read_parts(current) if id(part) not in taken]:
+            pending.extend(unread)
+            continue
+        pending.pop()
+        values = [taken[id(part)] for part in _read_parts(current)]
+        if current.null:
+            taken[id(current)] = True
+        elif current.positions is not None:
+            taken[id(current)] = all(values)
+        else:
+            taken[id(current)] = not current.unhashable and (not current.members or any(values))
+    return taken[id(facts)]
+
+
+def _read_parts(facts: SetItemFacts) -> tuple[SetItemFacts, ...]:
+    """Return the facts whose values ``_takes_hashable_value`` reads for ``facts``: its positions or its members."""
+    if facts.null or facts.unhashable:
+        return ()
+    return facts.members if facts.positions is None else facts.positions
+
+
+def class_set_item_hash(*, dicts: bool, compares_by_value: bool, frozen: bool, own_hash: bool) -> SetItemHash:
+    """Return how the instances of a model class hash: by the values of their fields, by identity or never.
+
+    Instances that are dicts (a TypedDict) never hash; a class that compares its instances by value (a dataclass or
+    msgspec Struct by default, a RootModel without the hash a Pydantic class takes as a set item) hashes them by value
+    where it is frozen, or hashes the values of its fields as a dataclass with ``unsafe_hash`` does, and never
+    otherwise, unless it may have a hash of its own (class code, a custom base class or templates), which hashes by
+    identity as far as the set rule knows, as does a class that does not compare by value (``eq=False``).
+    """
+    if dicts:
+        return "never"
+    if not compares_by_value or own_hash:
+        return "identity"
+    return "value" if frozen else "never"
+
+
+@final
+@record
+class ValueHashItem:
+    """The facts of one item type that tell whether every value of it hashes consistently with equality.
+
+    ``hashes``: a scalar, a ``Literal``, an enum, a custom or imported type, None, or a model that hashes by value
+    (``hashes_by_value``); not: ``Any`` or ``object``, a list, sequence, set, dict or mapping, a model that hashes by
+    identity or never. ``members`` are what a union, a tuple or a frozen set takes, every one of which must hash.
+    """
+
+    hashes: bool = True
+    members: tuple[ValueHashItem, ...] | None = None
+
+
+def every_value_hashes(item: ValueHashItem) -> bool:
+    """Return whether every value of an item type hashes consistently with equality."""
+    return item.hashes if item.members is None else all(map(every_value_hashes, item.members))
+
+
+def hashes_by_value(class_hash: SetItemHash, field_values: Iterable[bool]) -> bool:
+    """Return whether the instances of a model hash by value: its class does and every value of its fields does."""
+    return class_hash == "value" and all(field_values)
 
 
 def frozen_by_config(chain: Iterable[HashClassFacts]) -> bool:

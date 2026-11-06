@@ -11,13 +11,23 @@ from __future__ import annotations
 import re
 from collections import defaultdict
 from copy import deepcopy
+from dataclasses import replace
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias
 
 from typing_extensions import Protocol, final, override
 
 from datamodel_code_generator._constraint_applicability import TYPE_DEPENDENT_CONSTRAINTS_KEY
-from datamodel_code_generator._container_kinds import ITEM_CONTAINERS
+from datamodel_code_generator._container_kinds import (
+    ARRAYS,
+    CONTAINER_FLAGS,
+    CONTAINERS,
+    MAPPINGS,
+    SETS,
+    UNHASHABLE_CONTAINERS,
+    WRITTEN_CONTAINERS,
+    written_slot,
+)
 from datamodel_code_generator._graph_links import clear_parents
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._module_paths import (
@@ -31,10 +41,12 @@ from datamodel_code_generator._module_paths import (
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
 from datamodel_code_generator._target_unicode import target_pattern
-from datamodel_code_generator._user_keys import class_field_key, type_override_classes
+from datamodel_code_generator._user_keys import class_field_key, model_type_override, type_override_classes
 from datamodel_code_generator.imports import Import, _override_module
 from datamodel_code_generator.model._decisions.assignment import requires_value
+from datamodel_code_generator.model._decisions.hashability import SetItemFacts, set_items_can_hash
 from datamodel_code_generator.model._decisions.tag_value import (
+    FieldTag,
     enum_tag_literal,
     enum_tag_members,
     field_tag,
@@ -48,13 +60,14 @@ from datamodel_code_generator.model.base import (
     _effective_field_owners,
     _find_base_classes,
     _ModelKeys,
-    _path_identity_keys,
     direct_base_models,
     get_inherited_fields,
     linearize_data_models,
+    python_base_classes,
+    sort_data_models_for_mro,
 )
 from datamodel_code_generator.model.enum import Enum, get_raw_enum_member_value
-from datamodel_code_generator.model.type_alias import TypeAliasBase
+from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
 from datamodel_code_generator.parser._field_rows import uses_default_with_required
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._intersection import inherits_keyword
@@ -65,24 +78,35 @@ from datamodel_code_generator.parser._passes._keys import (
     _DEFERRED_INHERITED_TYPE_KEY,
     _DERIVED_FROM_KEY,
     declares_raw_schema_default,
+    declares_type_list_unique_items,
+    is_unique_items_set,
     raw_schema_default,
 )
 from datamodel_code_generator.parser._passes._state import RecursionFacts, _ModuleNames
-from datamodel_code_generator.python_literal import _text_constructor_expression
-from datamodel_code_generator.reference import _SPECIAL_PATH_FORMAT, ModelType, _source_path, _special_path
+from datamodel_code_generator.python_literal import _text_constructor_expression, stable_repr
+from datamodel_code_generator.reference import (
+    _SPECIAL_PATH_FORMAT,
+    ModelType,
+    _source_path,
+    _special_path,
+    schema_path_of,
+    unique_items_of,
+)
 from datamodel_code_generator.types import DataType, DefaultValueRecipe, union_members
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 
     from typing_extensions import Unpack
 
     from datamodel_code_generator import AllOfMergeMode, ReuseScope
+    from datamodel_code_generator._container_kinds import ContainerSlot
     from datamodel_code_generator._format_types import PythonVersion
     from datamodel_code_generator._model_keys import ModelKey
+    from datamodel_code_generator._user_keys import ClassScope
     from datamodel_code_generator.enums import DefaultValueType, TargetPydanticVersion
     from datamodel_code_generator.imports import Imports
-    from datamodel_code_generator.model._decisions.tag_value import EnumTagMembers, TagFieldMatch
+    from datamodel_code_generator.model._decisions.tag_value import EnumTagMembers, FieldTagSite, TagFieldMatch
     from datamodel_code_generator.model._render_plan import AssignmentFacts
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.parser._field_rows import FieldCopyFacts, FieldIdentity
@@ -90,15 +114,23 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
     from datamodel_code_generator.parser._model_shapes import BaseDedup, ModelShapes, ReuseGroups, ShapeRow
     from datamodel_code_generator.parser._null_facts import NullRule
-    from datamodel_code_generator.parser._passes._state import (
-        ModuleContextView,
-        ModulePath,
-        _FinalizeState,
-        _RenamedType,
-    )
+    from datamodel_code_generator.parser._passes._state import ModuleContextView, ModulePath, _FinalizeState
     from datamodel_code_generator.parser.generation import GenerationStore, GraphBuilder
     from datamodel_code_generator.reference import ModelResolver, Reference
     from datamodel_code_generator.types import DataTypeManager, DefaultValueDescriptor
+
+
+def with_dedupe_request_response_hint(message: str) -> str:
+    """End the message of an error that the 0.86.0 read/write facts raise with the option that avoids it.
+
+    Without ``--dedupe-request-response-variants`` the facts of a key come from a temporary parse and the walk reads
+    every reference of a key, as 0.86.0 did, so an input can stop where the option generates it.
+    """
+    stop = "" if message.endswith(".") else "."
+    return (
+        f"{message}{stop} --dedupe-request-response-variants decides the read/write variants from the schema graph"
+        " and can generate such schemas."
+    )
 
 
 @record
@@ -237,7 +269,23 @@ class GenerationStoreHost(GraphBuilderHost, Protocol):
         """The generation store of the parse."""
 
 
-class CollapsedReuseHost(GraphBuilderHost, Protocol):
+class MergedDuplicatesHost(Protocol):
+    """The duplicates deduplication and reuse merged into each model."""
+
+    @property
+    def _merged_duplicates(self) -> dict[int, list[DataModel]]:
+        """The duplicates merged into a model, removed or made empty subclasses of it, by the id of that model."""
+
+
+class MergedReferenceNullHost(GraphBuilderHost, Protocol):
+    """The builder that merges a model into an equal one, with the option that keeps the null its users named."""
+
+    @property
+    def keep_reference_null_on_merged_models(self) -> bool:
+        """Whether a reference keeps the null of the schema it names after its model is merged into an equal one."""
+
+
+class CollapsedReuseHost(GenerationStoreHost, MergedReferenceNullHost, MergedDuplicatesHost, Protocol):
     """The duplicates collapsed reuse removed and the users it redirected, with the builder that redirects them."""
 
     @property
@@ -267,6 +315,23 @@ class OutputOptionsHost(DataModelTypeHost, Protocol):
     @property
     def target_pydantic_version(self) -> TargetPydanticVersion | None:
         """The Pydantic version the output targets, if configured."""
+
+
+class GenericBaseHost(Protocol):
+    """The generic base class the output's models inherit from (--use-generic-base-class)."""
+
+    @property
+    def generic_base_class_config(self) -> dict[str, Any]:
+        """The configuration of the generated base class."""
+
+    @property
+    def use_generic_base_class(self) -> bool:
+        """Whether the models share a generated base class."""
+
+
+def generic_base_config(host: GenericBaseHost) -> dict[str, Any] | None:
+    """Return the configuration of the generic base class the output's models inherit from, or None without one."""
+    return host.generic_base_class_config if host.use_generic_base_class else None
 
 
 class RootModelTypeHost(Protocol):
@@ -447,20 +512,43 @@ def _distinct_bases(host: GraphBuilderHost, base_dedup: BaseDedup, model: DataMo
         )
 
 
+def settle_python_bases(host: GenerationStoreHost, reference: Reference) -> None:
+    """Give every model that inherits ``reference``, however distant, bases Python creates its class from.
+
+    A merge changes what these models inherit, which may list a base twice or put a base before a model that inherits
+    it; each model Python would refuse takes the bases of `python_base_classes`, its ancestors first.
+    """
+    index = host.generation_store.index
+    descendants: dict[int, DataModel] = {}
+    pending = index.models_inheriting(reference)
+    while pending:
+        if id(model := pending.pop()) not in descendants:
+            descendants[id(model)] = model
+            pending.extend(index.models_inheriting(model.reference))
+    refused = [model for model in descendants.values() if python_base_classes(model) is not None]
+    for model in reversed(sort_data_models_for_mro(refused)):
+        if (bases := python_base_classes(model)) is not None:
+            host._graph_builder.set_base_classes(model, bases)  # noqa: SLF001
+
+
 def merge_duplicate(
     host: CollapsedReuseHost, duplicate: DataModel, canonical: DataModel, row: ShapeRow, *, keeps_duplicate_tags: bool
 ) -> list[DataType]:
     """Hand every user of a duplicate that leaves the output to the equal canonical model, and retire the duplicate.
 
-    Every user, in any module, names the canonical model and records the null of the schema it named (``merged``).
+    Every user, in any module, names the canonical model and records the null of the schema it named (``merged``),
+    which it keeps under ``--keep-reference-null-on-merged-models``.
     With ``keeps_duplicate_tags``, for a duplicate that reuse removes instead of making it a subclass, a discriminated
     union that named the duplicate keeps mapping it to the tags of its own schema, which are compared with the tags of
     the canonical model. The children of the duplicate take their bases once each, told apart as the user of ``row``
     tells them (``ShapeRow.base_dedup``; None keeps them as redirected). The caller drops the duplicate from its
-    module's models. Return the redirected users.
+    module's models. The canonical model records the duplicate (``merged_models``). Return the redirected users.
     """
     builder = host._graph_builder  # noqa: SLF001
-    users = builder.redirect_reference_users(duplicate.reference, canonical.reference, merged=True)
+    host._merged_duplicates.setdefault(id(canonical), []).append(duplicate)  # noqa: SLF001
+    users = builder.redirect_reference_users(
+        duplicate.reference, canonical.reference, merged=True, keeps_named=host.keep_reference_null_on_merged_models
+    )
     if keeps_duplicate_tags:
         collapsed_users = host._collapsed_reuse_users  # noqa: SLF001
         for user in users:
@@ -468,8 +556,19 @@ def merge_duplicate(
         host._collapsed_reuse_models.setdefault(id(canonical), []).append(duplicate)  # noqa: SLF001
     if (base_dedup := row.base_dedup) is not None:
         _distinct_bases(host, base_dedup, duplicate)
+    settle_python_bases(host, canonical.reference)
     builder.retire_model(duplicate)
     return users
+
+
+def merged_models(host: MergedDuplicatesHost, model: DataModel) -> list[DataModel]:
+    """Return the duplicates merged into ``model``, with those merged into each of them before."""
+    merged: list[DataModel] = []
+    pending = [model]
+    while pending:
+        merged.extend(found := host._merged_duplicates.get(id(pending.pop()), []))  # noqa: SLF001
+        pending.extend(found)
+    return merged
 
 
 def normalize_default_value_constraints(
@@ -556,14 +655,14 @@ def apply_inherited_field_default(
     field: DataModelFieldBase,
     inherited_field: DataModelFieldBase,
     *,
-    class_name: str,
+    scope: ClassScope,
     model_resolver: ModelResolver,
     apply_default_values_for_required_fields: bool,
 ) -> None:
     """Resolve an inherited schema default in the derived class scope."""
     if model_resolver.default_value_overrides and (raw := raw_schema_default(inherited_field)) is not None:
         field.default, field.has_default = model_resolver.resolve_default_value(
-            field.original_name or field.name or "", *raw, class_name=class_name
+            field.original_name or field.name or "", *raw, class_name=scope.name, output_names=scope.output_names
         )
         match field.default:
             case dict() | list() | set():
@@ -649,15 +748,15 @@ def override_required_field(
                     original_field, identity=placeholder_identity(model_field), required=True
                 )
             default_source = original_field
-            if not (class_name := model_field.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY)) and (
-                class_name := model_field.__dict__.get(_DEFERRED_INHERITED_CLASS_KEY)
+            if not (scope := model_field.__dict__.get(_DEFERRED_INHERITED_FIELD_KEY)) and (
+                scope := model_field.__dict__.get(_DEFERRED_INHERITED_CLASS_KEY)
             ):
                 default_source = inherited_default_source(host.allof_merge_mode, model_field, original_field)
-            if class_name:
+            if scope:
                 apply_inherited_field_default(
                     copied_original_field,
                     default_source,
-                    class_name=class_name,
+                    scope=scope,
                     model_resolver=host.model_resolver,
                     apply_default_values_for_required_fields=host.apply_default_values_for_required_fields,
                 )
@@ -751,6 +850,57 @@ def _is_pydantic_v2_root_model(model: DataModel, root_model_type: type[DataModel
     )
 
 
+DefinitionReadsRow: TypeAlias = Literal[
+    "definition",
+    "legacy-class-body-without-alias-values",
+    "legacy-keep-order-type-statement",
+    "legacy-evaluated-without-root-model",
+]
+"""Which fields of a model ``definition_reads`` reads, for each pass that orders or checks what a module evaluates.
+
+``definition`` reads those that the statement defining the model evaluates, for the forward references the module
+quotes (``render_prep.py:update_type_aliases``). The legacy rows keep what their passes read before:
+
+- ``legacy-class-body-without-alias-values``: only a root model's fields, for the order of the models whose class body
+  evaluates others (``_sort_models_by_class_body_references``, ``settle.py:sort_data_models``); a type alias's value,
+  the functional TypedDict and evaluated annotations are left out.
+- ``legacy-keep-order-type-statement``: ``--keep-model-order`` (``modules.py:_keep_model_order_deps``) also reads the
+  value of a ``type`` statement, and the functional TypedDict as a class.
+- ``legacy-evaluated-without-root-model``: the check of the root models that name themselves
+  (``imports.py:reject_alias_cycles_without_schema``) reads a root model as a class, and the own fields of the
+  functional TypedDict when the module evaluates annotations.
+"""
+
+
+def definition_reads(
+    model: DataModel,
+    *,
+    row: DefinitionReadsRow = "definition",
+    root_model_type: type[DataModel] | None = None,
+    evaluates_annotations: bool = False,
+) -> Sequence[DataModelFieldBase] | None:
+    """Return the fields whose types the statement that defines ``model`` evaluates as the module runs, or None.
+
+    A ``type`` statement defers its value. The functional TypedDict evaluates the fields of its dict literal, the
+    inherited ones included (``fields_evaluated_at_definition``); any other type alias evaluates its value, a root
+    model of ``root_model_type`` its root type (``_is_pydantic_v2_root_model``), and a class its annotations when
+    ``evaluates_annotations`` tells that the module does not defer them. A read of the model's own fields returns its
+    ``fields`` list itself. ``row`` keeps what a pass read before (``DefinitionReadsRow``).
+    """
+    if row == "legacy-class-body-without-alias-values":
+        return model.fields if _is_pydantic_v2_root_model(model, root_model_type) else None
+    reads_own_fields = evaluates_annotations or isinstance(model, TypeAliasBase)
+    if row == "legacy-keep-order-type-statement":
+        return model.fields if reads_own_fields or _is_pydantic_v2_root_model(model, root_model_type) else None
+    if isinstance(model, TypeStatement):
+        return None
+    if row == "legacy-evaluated-without-root-model":
+        return model.fields if reads_own_fields else model.fields_evaluated_at_definition() or None
+    if evaluated := model.fields_evaluated_at_definition():
+        return evaluated
+    return model.fields if reads_own_fields or _is_pydantic_v2_root_model(model, root_model_type) else None
+
+
 @record
 class _ReuseOptimizationContext:
     """Parser-owned semantic constraints for model reuse optimizations."""
@@ -803,6 +953,7 @@ def _sort_models_by_class_body_references(
 ) -> list[DataModel]:
     """Define first the models a class body evaluates: base classes, root types and runtime rule types.
 
+    The root types are those of a root model (``definition_reads``, row ``legacy-class-body-without-alias-values``).
     The rule types are by default those the rules name in any module (``_runtime_validation_reference_keys``).
     """
     if runtime_validation_references is None:
@@ -815,13 +966,15 @@ def _sort_models_by_class_body_references(
             keyed.key_of(base_class.reference) for base_class in model.base_classes if base_class.reference
         }
         model_targets.update(runtime_validation_references.get(model_key, ()))
-        if _is_pydantic_v2_root_model(model, pydantic_v2_root_model_type):
-            model_targets.update(
-                keyed.key_of(data_type.reference)
-                for field in model.fields
-                for data_type in field.data_type.all_data_types
-                if data_type.reference
+        model_targets.update(
+            keyed.key_of(data_type.reference)
+            for field in definition_reads(
+                model, row="legacy-class-body-without-alias-values", root_model_type=pydantic_v2_root_model_type
             )
+            or ()
+            for data_type in field.data_type.all_data_types
+            if data_type.reference
+        )
         model_targets.discard(model_key)
     graph = reference_graph(GraphSnapshot.CLASS_BODY_ORDER, keyed.models, {EdgeKind.CLASS_BODY: targets})
     sorted_keys = graph.dependency_order((EdgeKind.CLASS_BODY,), list(order_index), order_index.__getitem__)
@@ -898,10 +1051,16 @@ def add_model_path_to_list(
 
 
 def _get_schema_path(model: DataModel | Reference) -> str:
-    """Return the path of the schema a model is generated from, through read and write variants and reuse."""
-    source = model if isinstance(model, DataModel) else model.source
+    """Return the path of the schema a model is generated from, through read and write variants and reuse.
+
+    It is the path the model had before the merge of an import cycle moved it (``schema_path_of``).
+    """
+    if isinstance(model, DataModel):
+        source, reference = model, model.reference
+    else:
+        source, reference = model.source, model
     reused = source.reused_reference if isinstance(source, DataModel) else None
-    return _source_path((reused or model).path)
+    return _source_path(schema_path_of(reused or reference))
 
 
 def _get_mapping_discriminator_values(discriminator_model: DataModel, mapping: dict[str, str]) -> list[str]:
@@ -943,7 +1102,9 @@ def require_update_action(
     )
 
 
-class ReuseSubclassHost(GraphBuilderHost, RecursionFactsHost, Protocol):
+class ReuseSubclassHost(
+    GenerationStoreHost, MergedReferenceNullHost, MergedDuplicatesHost, RecursionFactsHost, Protocol
+):
     """The builder that replaces a reuse duplicate by a subclass, and the recursion facts the subclass may join."""
 
 
@@ -961,14 +1122,20 @@ def subclass_duplicate(
 ) -> DataModel | None:
     """Replace a duplicate in ``models`` and in the store by an empty subclass of the equal canonical model.
 
-    The subclass keeps the duplicate's name; the users that ``users`` own name it. Return the subclass when the
-    canonical model needs a reference update action, which the caller adds once with ``require_update_action``.
+    The subclass keeps the duplicate's name; the users that ``users`` own name it and record the null of the schema
+    they named, which they keep under ``--keep-reference-null-on-merged-models``, and the canonical model records the
+    duplicate (``merged_models``). Return the subclass when the canonical model needs a reference update action, which
+    the caller adds once with ``require_update_action``.
     """
     builder = host._graph_builder  # noqa: SLF001
+    host._merged_duplicates.setdefault(id(canonical), []).append(duplicate)  # noqa: SLF001
     inherited = duplicate.create_reuse_model(canonical.reference)
-    builder.redirect_model_reference_users(duplicate, users, inherited.reference)
+    builder.redirect_model_reference_users(
+        duplicate, users, inherited.reference, keeps_named=host.keep_reference_null_on_merged_models
+    )
     replace_model_in_list(models, duplicate, inherited)
     builder.replace_model(duplicate, inherited)
+    settle_python_bases(host, inherited.reference)
     return inherited if model_key_of(canonical.reference) in host._recursion_facts["require_update"] else None  # noqa: SLF001
 
 
@@ -985,9 +1152,14 @@ def _module_name_of(model_path_to_module_name: Mapping[str, str], reference: Ref
 @final
 @record
 class _FieldTagFacts:
-    """The facts of a field that ``field_tag`` reads: its ``const``, its ``Literal`` and the Enum its type names."""
+    """The facts of a field that ``field_tag`` reads: its ``const``, its ``Literal`` and the models its type names.
+
+    The models are the Enum and the root model or type alias its type names.
+    """
 
     field: DataModelFieldBase
+    read: frozenset[int] = frozenset()
+    """The root models whose fields the facts are read through, so a cycle of root models gives no tag."""
 
     def has_const(self) -> bool:
         """Return whether the field has a ``const`` other than None."""
@@ -1010,8 +1182,24 @@ class _FieldTagFacts:
         fields = enum_source.fields if (enum_source := _annotated_enum(self.field.data_type)) else []
         return (len(fields), get_raw_enum_member_value(fields[0].default)) if fields else (0, None)
 
-    def referenced_tag(self) -> None:
-        """Return no tag: a field has no ``$ref`` of its own."""
+    def referenced_tag(self) -> FieldTag | None:
+        """Return the tag of the root model or type alias the field's type names, as ``variant-field`` reads its field.
+
+        A one-value enum the field references is such a model under ``--enum-field-as-literal``.
+        """
+        data_type = self.field.data_type
+        if data_type.data_types or (reference := data_type.reference) is None:
+            return None
+        source = reference.source
+        if (
+            not isinstance(source, DataModel)
+            or not _is_discriminator_wrapper(source)
+            or len(source.fields) != 1
+            or id(source) in self.read
+        ):
+            return None
+        tag = field_tag("variant-field", _FieldTagFacts(source.fields[0], self.read | {id(source)}))
+        return None if tag is None else FieldTag(tag.value, "referenced-schema")
 
 
 def _is_discriminator_wrapper(model: DataModel) -> bool:
@@ -1120,13 +1308,440 @@ def _declares_unique_items(field: DataModelFieldBase) -> bool:
     return False
 
 
-def _unique_items_tuple(data_type: DataType) -> DataType | None:
-    """Return the tuple a unique array is written as, where --use-unique-items-as-set writes a list as a set."""
+@final
+@record(eq=False)
+class UniqueItemsPlan:
+    """The arrays of a field's type that --use-unique-items-as-set writes as sets, and the default the field takes."""
+
+    sets: tuple[DataType, ...] = ()
+    """The lists that become sets."""
+    default: set[Any] | None = None
+    """The field's list default as a set, where a list of the field's own level becomes one; None keeps the default."""
+    tuples: tuple[DataType, ...] = ()
+    """The tuples that a uniqueItems array is written as under --use-tuple-for-closed-arrays, which would lose their
+    positions as a set: the lists beside them stay lists."""
+
+
+_NO_UNIQUE_ITEMS: Final = UniqueItemsPlan()
+
+UniqueItemsSources: TypeAlias = Literal["field", "merged", "all"]
+"""Which schemas declaring ``uniqueItems`` a plan reads: ``field`` the field's own schema, but that of a type list,
+which every release since 0.52.0 decides before reuse; ``merged`` the others, the type list's (0.89.0) and those of the
+nodes that record it, decided once deduplication and reuse merged models, with the lists of the field's own schema that
+``field`` kept, which the sets of the others may let hold their items; ``all`` both."""
+_Path: TypeAlias = tuple[int, ...]
+
+
+def unique_items_plan(
+    field: DataModelFieldBase,
+    *,
+    keeps_tuples: bool,
+    sources: UniqueItemsSources = "all",
+    merged: Sequence[DataModelFieldBase | None] = (),
+) -> UniqueItemsPlan:
+    """Return the arrays of a field's type that --use-unique-items-as-set writes as sets.
+
+    A schema that declares ``uniqueItems`` declares it for the arrays of the type built from it, the type itself or the
+    members of its union (``_unique_items_arrays``): the field's own schema for the field's type, and the schema of
+    each node that records it (``reference.unique_items_of``), such as a member of an anyOf, the items of an array or
+    the values of a map; ``sources`` picks among them. A list among them becomes a set where some value its items take
+    hashes, read after the lists those items hold (``set_items_can_hash``), and, at the field's own level, where the
+    field's list default can be a set. Under --use-tuple-for-closed-arrays (``keeps_tuples``), a tuple among the arrays
+    of a schema keeps all of them as they are. ``merged`` are the fields of the same name of the models merged into the
+    field's model (None for a model without one): a list of ``sources="merged"`` counts only where each of them declares
+    ``uniqueItems`` at the same position of its type too, so a merge never makes a set of the array of a model that
+    does not declare it. A list but those of the field's own schema (``_own_unique_arrays``) stays a list in a union
+    beside another member of its kind that keeps its lists (``_beside_its_kind``), which the set would split from a
+    member written alike, decided again until no such set is left. A model item is read as a value that hashes,
+    whatever its class: collapse may still inline the model it names, and ``unhashable_unique_sets`` reads the class
+    once it has.
+    """
+    return _unique_items_plan(field, _PlanReading(keeps_tuples, sources, None, reads_classes=False), merged)
+
+
+@final
+@record(eq=False)
+class _PlanReading:
+    """How a plan reads a field's type: the options of ``unique_items_plan`` and the type aliases it is read inside."""
+
+    keeps_tuples: bool
+    sources: UniqueItemsSources
+    generic_base_config: Mapping[str, Any] | None
+    reads_classes: bool = True
+    """Whether a model item takes no hashable value where its class never hashes its instances."""
+    aliases: frozenset[int] = frozenset()
+    """The type aliases, by id, whose values the plan is read in."""
+
+
+def _unique_items_plan(
+    field: DataModelFieldBase, reading: _PlanReading, merged: Sequence[DataModelFieldBase | None]
+) -> UniqueItemsPlan:
+    """Return ``unique_items_plan`` of a field as ``reading`` reads it."""
+    if not (arrays := _declared_unique_arrays(field, reading.sources)):
+        return _NO_UNIQUE_ITEMS
+    if merged:
+        declared = [{path for path, _ in _declared_unique_arrays(other, "all")} if other else set() for other in merged]
+        arrays = [(path, group) for path, group in arrays if all(path in paths for paths in declared)]
+    return plan_unique_sets(
+        field,
+        [group for _, group in arrays],
+        default=default if isinstance(default := field.default, list) else None,
+        keeps_tuples=reading.keeps_tuples,
+        can_hold=lambda node, sets: _items_can_hash(node, sets, reading),
+    )
+
+
+def unhashable_unique_sets(
+    field: DataModelFieldBase,
+    *,
+    keeps_tuples: bool,
+    generic_base_config: Mapping[str, Any] | None,
+    lists: Collection[_Path] = (),
+) -> list[_Path]:
+    """Return the paths of the sets --use-unique-items-as-set wrote in a field's type that turn back into lists.
+
+    ``unique_items_plan`` decides them before collapse, which may still inline the model their items name, so it reads
+    a model item as a value that hashes. Once collapse has, a set (``is_unique_items_set``) is a list again where no
+    value of its items hashes as the plan reads them, now with the class of each model they name: a model whose class
+    never hashes its instances takes none (``DataModel._instances_never_hash``). So is a set but those of the field's
+    own schema that sits beside a member of its kind that keeps its lists, as the plan reads it (``_beside_its_kind``),
+    where that member holds one of ``lists``, the paths of the sets that turned back into lists before: the plan would
+    have kept it a list beside them. The sets are read as they are written, so a set that holds one of them as a frozen
+    set, or sits beside it, is asked for again once it is a list. ``generic_base_config`` is the configuration of the
+    generic base class that the output's models inherit from (--use-generic-base-class), which a model item reads.
+    """
+    if not any(map(is_unique_items_set, field.data_type.all_data_types)):
+        return []
+    reading = _PlanReading(keeps_tuples, "all", generic_base_config)
+    own = _own_unique_arrays(field, sets=True)
+    nodes = dict(_nodes_with_paths(field.data_type, ()))
+    return [
+        path
+        for path, node in nodes.items()
+        if is_unique_items_set(node)
+        and (
+            not _items_can_hash(node, (), reading) or (id(node) not in own and _beside_its_kind(path, nodes, (), lists))
+        )
+    ]
+
+
+def holds_own_unique_items_set(field: DataModelFieldBase) -> bool:
+    """Return whether a set --use-unique-items-as-set wrote is the field's type or a member of its union."""
+    return any(map(is_unique_items_set, _unique_items_arrays(field.data_type, sets=True)))
+
+
+def _items_can_hash(node: DataType, sets: Collection[int], reading: _PlanReading) -> bool:
+    """Return whether some value of the items of ``node`` hashes once the lists of ``sets`` (by id) are sets."""
+    return set_items_can_hash(tuple(_set_item_facts(item, sets, reading) for item in node.data_types))
+
+
+def plan_unique_sets(
+    field: DataModelFieldBase,
+    arrays: Iterable[tuple[DataType, ...]],
+    *,
+    default: Sequence[Any] | None,
+    keeps_tuples: bool,
+    can_hold: Callable[[DataType, Collection[int]], bool],
+) -> UniqueItemsPlan:
+    """Return the plan of a field whose schemas declare ``arrays`` unique, each group the arrays of one schema.
+
+    The lists of a group become sets, inner lists first, where ``can_hold`` says a set can hold the items of the list
+    once the lists of ``sets`` (by id) are sets; under ``keeps_tuples`` a tuple among a group keeps all of it. A list
+    but those of the field's own schema (``_own_unique_arrays``) stays a list in a union beside another member of its
+    kind that keeps its lists (``_beside_its_kind``), decided again until no such set is left. The field's array
+    ``default`` becomes the set of its values where a list of the field's own level becomes one and they hash;
+    otherwise those lists stay. A list inside the field's type stays a list where the field's default holds an array
+    (``_arrays_a_default_holds``), which the default would hold as a list where the type promises a set.
+    """
+    lists: dict[int, DataType] = {}
+    tuples: dict[int, DataType] = {}
+    for group in arrays:
+        if keeps_tuples and any(array.is_tuple for array in group):
+            tuples.update((id(array), array) for array in group if array.is_tuple)
+        else:
+            lists.update((id(array), array) for array in group if array.is_list)
+    own = _own_unique_arrays(field)
+    nodes = dict(_nodes_with_paths(field.data_type, ()))
+    own_level = {*map(id, _unique_items_arrays(field.data_type))}
+    kept = {
+        path for path in _arrays_a_default_holds(field.data_type, field.default, ()) if id(nodes[path]) not in own_level
+    }
+    while True:
+        sets: dict[int, DataType] = {}
+        for path, node in nodes.items():
+            if id(node) in lists and path not in kept and can_hold(node, sets):
+                sets[id(node)] = node
+        if not (
+            beside := {
+                path
+                for path, node in nodes.items()
+                if id(node) in sets and id(node) not in own and _beside_its_kind(path, nodes, sets)
+            }
+        ):
+            break
+        kept |= beside
+    default_set = None
+    if (own_level := [array for array in _unique_items_arrays(field.data_type) if id(array) in sets]) and (
+        default is not None
+    ):
+        try:
+            default_set = set(default)
+        except TypeError:
+            for array in own_level:
+                del sets[id(array)]
+    return UniqueItemsPlan(tuple(sets.values()), default_set, tuple(tuples.values()))
+
+
+def _arrays_a_default_holds(data_type: DataType, value: Any, path: _Path) -> Iterator[_Path]:
+    """Yield the paths of the array-like nodes of a type tree, at ``path``, where a default ``value`` holds an array.
+
+    The items of an array and the values of a map are read in every node the container holds, and a union in each of
+    its members, so every node that may take an array of the default is found.
+    """
+    if isinstance(value, (list, tuple)) and data_type in ARRAYS:
+        yield path
+        items: Iterable[Any] = value
+    elif isinstance(value, dict) and data_type in MAPPINGS:
+        items = value.values()
+    elif data_type not in CONTAINERS:
+        items = (value,)
+    else:
+        return
+    for item in items:
+        for index, nested in enumerate(data_type.data_types):
+            yield from _arrays_a_default_holds(nested, item, (*path, index))
+
+
+def _own_unique_arrays(field: DataModelFieldBase, *, sets: bool = False) -> set[int]:
+    """Return, by id, the arrays that the field's own schema declares unique, but those of a type list.
+
+    They are decided as every release since 0.52.0 decides them, so ``_beside_its_kind`` does not keep them lists.
+    With ``sets``, the sets --use-unique-items-as-set wrote from them are among them (``_unique_items_arrays``).
+    """
+    return {id(array) for _, group in _declared_unique_arrays(field, "field", sets=sets) for array in group}
+
+
+def _beside_its_kind(
+    path: _Path, nodes: Mapping[_Path, DataType], sets: Collection[int], lists: Collection[_Path] | None = None
+) -> bool:
+    """Return whether the list at ``path``, as a set, sits in a union beside a member of its kind that keeps its lists.
+
+    ``nodes`` are the nodes of the field's type by their paths, ``sets`` the lists that become sets by id. The member
+    of the union is the list, or the node that holds it as its only member (``list[int] | list[str]``,
+    ``dict[str, list[int]] | dict[str, list[int]]``, the values of a map of two patterns); the other member is of its
+    kind where both are array-like or both are maps, and keeps its lists where it holds no set, one it is or one of
+    ``sets``. A msgspec union holds one member of each kind, so such a union either decodes because the output writes
+    its members alike as one, which the set would split, or never decodes; the list keeps the output either way.
+    With ``lists``, the paths of the sets that turned back into lists, the other member counts only where it holds one.
+    """
+    while path and len(nodes[path[:-1]].data_types) == 1:
+        path = path[:-1]
+    if not path or (holder := nodes[path[:-1]]).is_tuple or (kind := _union_kind(member := nodes[path])) is None:
+        return False
+    return any(
+        other is not member
+        and _union_kind(other) == kind
+        and not any(id(nested) in sets or nested in SETS for _, nested in _nodes_with_paths(other, ()))
+        and (lists is None or any(at in lists for at, _ in _nodes_with_paths(other, (*path[:-1], index))))
+        for index, other in enumerate(holder.data_types)
+    )
+
+
+def _union_kind(data_type: DataType) -> Literal["array", "map"] | None:
+    """Return whether a union member is array-like or a map, read through the nodes that hold one member only."""
+    while not (data_type in ARRAYS or data_type in MAPPINGS) and len(data_type.data_types) == 1:
+        data_type = data_type.data_types[0]
+    if data_type in ARRAYS:
+        return "array"
+    return "map" if data_type in MAPPINGS else None
+
+
+def _declared_unique_arrays(
+    field: DataModelFieldBase, sources: UniqueItemsSources, *, sets: bool = False
+) -> list[tuple[_Path, tuple[DataType, ...]]]:
+    """Return the arrays that the schemas ``sources`` picks declare unique, by schema, each with its node's position.
+
+    The position is the path of indexes from the field's type to the node built from the schema; the arrays of the
+    field's own schema but a type list's are the ``field`` source, so ``merged`` leaves them out wherever a node
+    records the keyword too, and reads those of them that are still lists once more, as one schema at the field's
+    level: the lists the arrays of the other schemas become sets in may let them hold their items. With ``sets``, the
+    sets --use-unique-items-as-set wrote are among the arrays.
+    """
+    field_type = field.data_type
+    own = _declares_unique_items(field)
+    own_released = own and not declares_type_list_unique_items(field)
+    released = {*map(id, _unique_items_arrays(field_type, sets=sets))} if own_released else set()
+    found: list[tuple[_Path, tuple[DataType, ...]]] = []
+    if sources != "merged" and own_released:
+        found.append(((), tuple(_unique_items_arrays(field_type, sets=sets))))
+    if sources == "field":
+        return found
+    if own and (sources == "merged" or not own_released):
+        found.append(((), tuple(_unique_items_arrays(field_type, sets=sets))))
+    for path, node in _nodes_with_paths(field_type, ()):
+        if unique_items_of(node) and (
+            group := tuple(
+                array
+                for array in _unique_items_arrays(node, sets=sets)
+                if sources == "all" or id(array) not in released
+            )
+        ):
+            found.append((path, group))
+    return found
+
+
+def unique_items_positions(model: DataModel) -> tuple[tuple[_Path, ...], ...]:
+    """Return, field by field, the positions of the arrays whose schemas declare ``uniqueItems`` in the field's type.
+
+    Two models that differ in them are no duplicates under --use-unique-items-as-set-by-value, which writes sets on the
+    final types only where a schema declares the keyword.
+    """
+    return tuple(tuple(path for path, _ in _declared_unique_arrays(field, "all")) for field in model.fields)
+
+
+def _nodes_with_paths(data_type: DataType, path: _Path) -> Iterator[tuple[_Path, DataType]]:
+    """Yield the nodes of a type tree, each after the nodes it holds, with its path of indexes from the root."""
+    for index, nested in enumerate(data_type.data_types):
+        yield from _nodes_with_paths(nested, (*path, index))
+    yield path, data_type
+
+
+def _unique_items_arrays(data_type: DataType, *, sets: bool = False) -> Iterator[DataType]:
+    """Yield the lists and tuples that the ``uniqueItems`` of the schema of ``data_type`` declares unique.
+
+    They are the type itself or the members of its union; the arrays a container holds are its items or its values,
+    which the keyword does not reach. With ``sets``, the sets --use-unique-items-as-set wrote from such lists
+    (``is_unique_items_set``) are yielded too.
+    """
+    if data_type.is_list or data_type.is_tuple or (sets and is_unique_items_set(data_type)):
+        yield data_type
+    elif data_type not in CONTAINERS:
+        for nested in data_type.data_types:
+            yield from _unique_items_arrays(nested, sets=sets)
+
+
+def takes_hashable_value(
+    data_type: DataType, *, keeps_tuples: bool, generic_base_config: Mapping[str, Any] | None
+) -> bool:
+    """Return whether some value of ``data_type`` hashes, as ``unhashable_unique_sets`` reads the items of a set."""
+    return set_items_can_hash((_set_item_facts(data_type, (), _PlanReading(keeps_tuples, "all", generic_base_config)),))
+
+
+def aliases_first(models: Sequence[DataModel]) -> list[DataModel]:
+    """Return ``models`` with their type aliases first, each after the aliases of ``models`` that its value names.
+
+    A pass that writes the uniqueItems lists of the models as sets in this order decides an alias before the models
+    that name it, so they read the sets of its value as written (``_set_item_facts``); an alias that its own value
+    names, through other aliases or not, is read as any other model. The aliases are walked with a stack of their own,
+    so a chain of aliases of any length is ordered.
+    """
+    aliases = {id(model): model for model in models if isinstance(model, TypeAliasBase)}
+    ordered: dict[int, DataModel] = {}
+    visiting: set[int] = set()
+
+    def named(alias: DataModel) -> Iterator[DataModel]:
+        for field in alias.fields:
+            for nested in field.data_type.all_data_types:
+                if (reference := nested.reference) is not None and id(reference.source) in aliases:
+                    yield aliases[id(reference.source)]
+
+    for alias in aliases.values():
+        if id(alias) in visiting:
+            continue
+        visiting.add(id(alias))
+        stack: list[tuple[DataModel, Iterator[DataModel]]] = [(alias, named(alias))]
+        while stack:
+            current, pending = stack[-1]
+            if (target := next((other for other in pending if id(other) not in visiting), None)) is None:
+                stack.pop()
+                ordered[id(current)] = current
+            else:
+                visiting.add(id(target))
+                stack.append((target, named(target)))
+    return [*ordered.values(), *(model for model in models if id(model) not in aliases)]
+
+
+@final
+@record
+class _Combined:
+    """The facts of a tuple (``positions``) or a union of the ``count`` types read last (``_set_item_facts``)."""
+
+    positions: bool
+    count: int
+
+
+_ItemRead: TypeAlias = "tuple[DataType, Collection[int], _PlanReading]"
+"""A type to read, with the lists of the type that become sets by id and the reading."""
+
+
+def _set_item_facts(data_type: DataType, sets: Collection[int], reading: _PlanReading) -> SetItemFacts:
+    """Return the facts of an item type of an array that ``set_items_can_hash`` reads.
+
+    ``sets`` holds the lists of the type that become sets, by id. A container is read as it is written: a set under
+    --use-generic-container-types is a frozen set, whose values hash. The positions of a tuple of one repeated type are
+    that type. A type alias is read as its value as it is written now, whose lists the passes write as sets before the
+    models that name the alias read it (``aliases_first``), and takes None where its value admits it, also where the
+    alias's field holds the None (``DataModel.holds_null``); one that holds itself is read as any other model the type
+    names. A model takes no hashable value where its class never hashes its instances
+    (``DataModel._instances_never_hash``) and the reading reads classes (``_PlanReading.reads_classes``). The types are
+    read with a stack of their own (``_set_item_step``), so a chain of aliases of any length is read.
+    """
+    facts: list[SetItemFacts] = []
+    pending: list[_ItemRead | _Combined] = [(data_type, sets, reading)]
+    while pending:
+        if isinstance(read := pending.pop(), _Combined):
+            start = len(facts) - read.count
+            parts = tuple(facts[start:])
+            del facts[start:]
+            facts.append(SetItemFacts(positions=parts) if read.positions else SetItemFacts(members=parts))
+        elif isinstance(step := _set_item_step(*read), SetItemFacts):
+            facts.append(step)
+        else:
+            combined, nested = step
+            if combined is not None:
+                pending.append(combined)
+            pending.extend(reversed(nested))
+    return facts[0]
+
+
+def _set_item_step(
+    data_type: DataType, sets: Collection[int], reading: _PlanReading
+) -> SetItemFacts | tuple[_Combined | None, list[_ItemRead]]:
+    """Return the facts of ``data_type`` (``_set_item_facts``), or the types they are made of and how they combine.
+
+    The value of a type alias is the one type its facts are; a tuple and a union combine theirs (``_Combined``).
+    """
+    if data_type.is_optional:
+        return SetItemFacts(null=True)
+    if (
+        (reference := data_type.reference) is not None
+        and isinstance(alias := reference.source, TypeAliasBase)
+        and id(alias) not in reading.aliases
+        and alias.fields
+    ):
+        value = (alias.fields[0].data_type, (), replace(reading, aliases=reading.aliases | {id(alias)}))
+        return SetItemFacts(null=True) if alias.holds_null else (None, [value])
+    if (
+        reading.reads_classes
+        and reference is not None
+        and isinstance(model := reference.source, DataModel)
+        and model._instances_never_hash(reading.generic_base_config)  # noqa: SLF001
+    ):
+        return SetItemFacts(unhashable=True)
     if data_type.is_tuple:
-        return data_type
-    if data_type in ITEM_CONTAINERS.without("legacy-unique-tuple-inside-sequence"):
-        return None
-    return next((found for nested in data_type.data_types if (found := _unique_items_tuple(nested)) is not None), None)
+        count = data_type.tuple_item_count
+        positions = data_type.data_types if count is None else data_type.data_types[: min(count, 1)]
+        return _Combined(positions=True, count=len(positions)), [(position, sets, reading) for position in positions]
+    if id(data_type) in sets:
+        slot: ContainerSlot | None = "set"
+    else:
+        slot = next((slot for slot in WRITTEN_CONTAINERS if getattr(data_type, CONTAINER_FLAGS[slot])), None)
+    if slot is None:
+        members = data_type.data_types
+        return _Combined(positions=False, count=len(members)), [(member, sets, reading) for member in members]
+    return SetItemFacts(
+        unhashable=written_slot(slot, generic=data_type.use_generic_container) in UNHASHABLE_CONTAINERS.slots
+    )
 
 
 def _annotated_reference(data_type: DataType) -> Reference | None:
@@ -1186,29 +1801,6 @@ def _derived_models(models: Iterable[DataModel]) -> dict[ModelKey, list[DataMode
     return derived_models
 
 
-class RenamedTypesHost(Protocol):
-    """The class names renamed types had, which the passes that rename a type record."""
-
-    @property
-    def _renamed_type_paths(self) -> dict[str, list[_RenamedType]]:
-        """The class names renamed types had, by the path imports of them were added under."""
-
-    @property
-    def _renamed_types(self) -> dict[ModelKey, list[_RenamedType]]:
-        """The class names renamed types had, by model key."""
-
-
-def record_renamed_type(host: RenamedTypesHost, model: DataModel, renamed_type: _RenamedType) -> None:
-    """Record a class name that ``model`` had before a rename, under its model key and its current path.
-
-    A model that shares its path with the root model it took the name of, or with the inner model that took its name,
-    records it under the key of that model too (row ``legacy-replaced-root-shares-path``).
-    """
-    for key in _path_identity_keys(model):
-        host._renamed_types.setdefault(key, []).append(renamed_type)  # noqa: SLF001
-    host._renamed_type_paths.setdefault(model.path, []).append(renamed_type)  # noqa: SLF001
-
-
 class BaseStandInHost(Protocol):
     """The stand-ins: models of schemas that bases name and the output types by an import, which are never written."""
 
@@ -1240,7 +1832,7 @@ def enum_site_override_import(host: TypeOverrideHost, reference: Reference) -> I
     """
     if (target := reference.__dict__.get(_DERIVED_FROM_KEY)) is None or not isinstance(reference.source, Enum):
         return None
-    return host._model_type_override_imports.get(target.name)  # noqa: SLF001
+    return model_type_override(host._model_type_override_imports, target, row="class-name")  # noqa: SLF001
 
 
 _ConstructorFieldAdjustment: TypeAlias = Literal["assignment", "keyword_only"]
@@ -1315,7 +1907,11 @@ def get_inherited_constructor_info(
                         inherited_stripped_none_names.add(field_name)
     effective_fields = {
         name: (field, owner, None if owner is model else inherited_defaults.get(id(field)))
-        for name, (owner, field) in _effective_field_owners(model, inherited_models).items()
+        for name, (owner, field) in _effective_field_owners(
+            model,
+            inherited_models,
+            stand_ins={} if early else host._base_stand_ins,  # noqa: SLF001
+        ).items()
     }
     conflicts = get_constructor_ordering_conflicts(model, effective_fields, required_assignment_names)
     return _InheritedConstructorInfo(
@@ -1393,7 +1989,7 @@ def _keeps_instance_field(field: DataModelFieldBase, source_name: str) -> bool:
 
 def _format_tags(tags: list[DiscriminatorValue]) -> str:
     """Spell discriminator tags as the document writes them."""
-    return ", ".join(map(repr, tags))
+    return ", ".join(map(stable_repr, tags))
 
 
 def enum_discriminator_literal(enum_source: Enum, value: DiscriminatorValue) -> DiscriminatorValue:
@@ -1410,28 +2006,49 @@ def enum_discriminator_members(enum_source: Enum, values: Iterable[Discriminator
     )
 
 
-def _get_discriminator_field_value(discriminator_field: DataModelFieldBase) -> DiscriminatorValue | None:
-    """Return the one tag a variant's tag field holds (``field_tag``)."""
-    tag = field_tag("variant-field", _FieldTagFacts(discriminator_field))
+def _get_discriminator_field_value(
+    discriminator_field: DataModelFieldBase, site: FieldTagSite = "variant-field"
+) -> DiscriminatorValue | None:
+    """Return the one tag a variant's tag field holds (``field_tag``) at ``site``, a variant-field site."""
+    tag = field_tag(site, _FieldTagFacts(discriminator_field))
     return None if tag is None else tag.value
 
 
 def _get_enum_from_base(
     discriminator_model: DataModel, field_name: str, *, use_field_name: bool = False
 ) -> Enum | None:
-    for base_class in discriminator_model.base_classes:
-        if not base_class.reference or not base_class.reference.source:  # pragma: no cover
+    """Return the Enum typing the tag field a variant inherits, from the nearest ancestor whose field it types.
+
+    The direct bases come first, in their order, then the ancestors above them in method resolution order, so a
+    variant two levels below the schema whose Enum types the tag property takes that Enum, as a direct subclass does.
+    """
+    match_mode: TagFieldMatch = "python-name" if use_field_name else "python-or-original-name"
+    direct = [
+        base_class.reference.source
+        for base_class in discriminator_model.base_classes
+        if base_class.reference and base_class.reference.source
+    ]
+    return _declared_tag_enum(direct, field_name, match_mode) or _declared_tag_enum(
+        [
+            ancestor
+            for ancestor in linearize_data_models([discriminator_model])[1:]
+            if all(ancestor is not base for base in direct)
+        ],
+        field_name,
+        match_mode,
+    )
+
+
+def _declared_tag_enum(models: Iterable[object], field_name: str, match_mode: TagFieldMatch) -> Enum | None:
+    """Return the Enum typing the first field of ``models`` that holds the tag property, by models that inherit one."""
+    for model in models:
+        if not isinstance(model, DataModel) or not model.SUPPORTS_INHERITED_DISCRIMINATOR_ENUM:
             continue
-        base_model = base_class.reference.source
-        if not isinstance(base_model, DataModel) or not base_model.SUPPORTS_INHERITED_DISCRIMINATOR_ENUM:
-            continue
-        for base_field in base_model.fields:  # pragma: no branch
-            if not _tag_field_matches(
-                base_field, "python-name" if use_field_name else "python-or-original-name", field_name
+        for field_ in model.fields:
+            if _tag_field_matches(field_, match_mode, field_name) and (
+                enum_source := field_.data_type.find_source(Enum)
             ):
-                continue
-            if enum_from_base := base_field.data_type.find_source(Enum):  # pragma: no branch
-                return enum_from_base
+                return enum_source
     return None
 
 

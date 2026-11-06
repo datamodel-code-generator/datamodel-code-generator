@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Child",
+  "$defs": {
+    "Union": {"type": ["string", "integer"]},
+    "Base": {
+      "type": "object",
+      "properties": {
+        "to_null": {"type": ["string", "null"]},
+        "to_string": {"type": ["string", "integer"]},
+        "to_int_or_null": {"type": ["string", "integer", "null"]},
+        "to_int": {"type": "number"},
+        "drop_null": {"type": ["string", "null"]},
+        "bounded_to_null": {"type": ["string", "null"], "maxLength": 3},
+        "to_object": {"type": ["object", "string"], "properties": {"x": {"type": "integer"}}},
+        "ref_to_string": {"$ref": "#/$defs/Union"},
+        "items_to_string": {"type": "array", "items": {"type": ["string", "integer"]}},
+        "nested_to_string": {"type": "object", "properties": {"x": {"type": ["string", "integer"]}, "y": {"type": "integer"}}},
+        "restated": {"type": "object", "properties": {"x": {"type": "string"}}},
+        "add_items": {"type": "array"},
+        "positions": {"type": "array", "prefixItems": [{"type": ["string", "integer"]}, {"type": "integer"}]},
+        "open_map": {"type": "object", "additionalProperties": {"type": "integer"}}
+      }
+    }
+  },
+  "allOf": [
+    {"$ref": "#/$defs/Base"},
+    {
+      "type": "object",
+      "properties": {
+        "to_null": {"type": "null"},
+        "to_string": {"type": "string"},
+        "to_int_or_null": {"type": ["integer", "null"]},
+        "to_int": {"type": "integer"},
+        "drop_null": {"type": "string"},
+        "bounded_to_null": {"type": "null"},
+        "to_object": {"type": "object"},
+        "ref_to_string": {"type": "string"},
+        "items_to_string": {"items": {"type": "string"}},
+        "nested_to_string": {"properties": {"x": {"type": "string"}}},
+        "restated": {"type": "object", "properties": {"x": {"type": "string"}}},
+        "add_items": {"items": {"type": "string"}},
+        "positions": {"prefixItems": [{"type": "string"}]},
+        "open_map": {"additionalProperties": true}
+      }
+    }
+  ]
+}

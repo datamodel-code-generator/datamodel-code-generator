@@ -1,5 +1,6 @@
 # ref-instance-data
 render pydantic_v2.BaseModel
+  warning UserWarning: a Literal of the output model cannot hold the value {'$ref': '#/components/schemas/Target'}, so it is written as its type, which admits other values; Thing.fixed is generated without this constraint.
   client/README.md
   client/__init__.py
   client/_async_client.py
