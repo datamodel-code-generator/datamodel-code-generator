@@ -222,3 +222,12 @@ match = "^\\[config\\] (?:ClosedFilters|NestedClosedFilters|MergedClosedFilters|
 reason = "an inline allOf member with unevaluatedProperties: false, or the object beside its allOf, admits no property but those it evaluates, but the model inherited the open config of its base and accepted extra properties the schema rejects; it closes the model as additionalProperties: false does (Pydantic extra='forbid', TypedDict closed=True), where the schemas it evaluates, its $ref among them, evaluate no property that no properties names (no patternProperties, additionalProperties, anyOf, oneOf or if) (schema-mismatch fix: class names, field names and the parsed values of valid payloads stay)"
 decision = "#4742"
 release_note = "unevaluatedProperties: false in an inline allOf member, such as allOf [{$ref: Base}, {properties: {name: ...}, unevaluatedProperties: false}], closes the model as additionalProperties: false does (extra='forbid', closed=True), so it rejects the extra properties the schema rejects"
+
+[[accepted]]
+input = "tests/data/openapi/discriminator_enum.yaml"
+backends = [ "pydantic_v2.BaseModel" ]
+aspects = [ "type" ]
+match = "^\\[type\\] \\w+:\\w+: Literal\\[<(\\w+)\\.(\\w+): ('[^']*')>\\] -> Literal\\[\\3, <\\1\\.\\2: \\3>\\]$"
+reason = "with --use-enum-values-in-discriminator, the tag Literal[Kind.a] of a plain Enum member made the discriminated union reject every payload, as such a member equals no value a payload carries; the tag now holds the value beside the member, Literal[Kind.a, 'a'], so the union parses payloads and still takes the member a Python caller passes (rejects-all fix)"
+decision = "#6390"
+release_note = "with --use-enum-values-in-discriminator, a variant tagged by a member of a plain Enum (no --use-subclass-enum) is written Literal[PetType.cat, 'cat'] instead of Literal[PetType.cat], so the discriminated union accepts the payloads its schema accepts instead of rejecting every one, and Python callers passing PetType.cat keep working"

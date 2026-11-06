@@ -52,6 +52,7 @@ from datamodel_code_generator._constraint_applicability import TAG_LITERAL_UNTAK
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
+from datamodel_code_generator.model._decisions.enum_kind import values_no_literal_holds
 from datamodel_code_generator.model._decisions.tag_value import (
     SCALAR_TAG_TYPES,
     MappingPath,
@@ -160,6 +161,7 @@ __all__ = [
     "tag_satisfies_pattern",
     "tags_of_variant",
     "union_site",
+    "writes_member_values",
 ]
 
 InlineVariantTags: TypeAlias = "Mapping[int, tuple[tuple[DataModelFieldBase, DiscriminatorValue], ...]]"
@@ -256,6 +258,26 @@ def tag_capabilities(model_type: type[DataModel], field_type: type[DataModelFiel
 def site_mode(*, writes_argument: bool) -> ValidityMode:
     """Return the names a union is checked by: those of the schema where it writes ``discriminator=``."""
     return "source-name" if writes_argument else "python-or-original-name"
+
+
+def writes_member_values(variant: DataModel, enum_source: Enum) -> bool:
+    """Return whether the members of ``enum_source`` that tag a variant are written with their values beside them.
+
+    ``--use-enum-values-in-discriminator`` writes the members, ``Literal[Kind.a]``. A member of a plain ``Enum`` equals
+    no value a payload carries, so its tags also hold the values, ``Literal[Kind.a, 'a']``, where the variant's
+    ``Literal`` holds members and each value: Pydantic then reads the value of a payload and the member a Python caller
+    passes. A member of an Enum with a value base (``Enum.value_base``) equals its value already, and msgspec writes
+    the values in place of the members (``write_enum_member_tags_as_values``).
+    """
+    model_type = type(variant)
+    return (
+        enum_source.value_base is None
+        and model_type._LITERAL_HOLDS_ENUM_MEMBERS  # noqa: SLF001
+        and not values_no_literal_holds(
+            (enum_source.get_member(member).value for member in enum_source.fields),
+            bool_literals=model_type.SUPPORTS_BOOLEAN_LITERAL,
+        )
+    )
 
 
 @final
@@ -848,9 +870,9 @@ def _written_enum_member_keys(
 
     A member is its value where members equal their values at runtime, as Pydantic compares discriminator choices: those
     of an Enum with a value base (``Enum.value_base``: an ``IntEnum``, a ``StrEnum``, an Enum that subclasses its value
-    type), else only itself (its Enum and its value). A variant tagged by no member takes every member, so its tags are
-    their values whatever the Enum compares. A tag field that already is the one ``Literal`` of the variant's tag is
-    kept as it is.
+    type), else only itself (its Enum and its value), and also its value where the value is written beside it
+    (``writes_member_values``). A variant tagged by no member takes every member, so its tags are their values whatever
+    the Enum compares. A tag field that already is the one ``Literal`` of the variant's tag is kept as it is.
     """
     literal_kept = any(
         _tag_field_matches(field_, site_mode(writes_argument=use_field_name), tag_name)
@@ -865,10 +887,12 @@ def _written_enum_member_keys(
         return []
     tags = enum_discriminator_members(enum_source, values)
     values_of_members = [tag_key(member.value, "legacy-python-equality") for member in tags.members]
-    keys: list[object] = (
-        values_of_members if enum_source.value_base is not None else [(id(enum_source), v) for v in values_of_members]
+    if enum_source.value_base is not None:
+        return values_of_members
+    keys: list[object] = [(id(enum_source), v) for v in values_of_members]
+    return (
+        [*keys, *values_of_members] if tags.rule == "all-members" or writes_member_values(model, enum_source) else keys
     )
-    return [*keys, *values_of_members] if tags.rule == "all-members" else keys
 
 
 @final
