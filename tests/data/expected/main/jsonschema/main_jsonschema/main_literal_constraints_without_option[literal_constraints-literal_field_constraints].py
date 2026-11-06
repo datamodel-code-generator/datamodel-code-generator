@@ -37,7 +37,7 @@ class LiteralConstraints(BaseModel):
     number_const: Literal[5] | None = Field(None, ge=1)
     codes: list[Literal['a', 'bb', 'ccc']] | None = None
     branch: Literal['a', 'bb'] | int | None = None
-    consts: Literal['a', 'bb', 'ccc'] | None = None
+    consts: Literal['a', 'bb', 'ccc'] | None = Field(None, min_length=2)
     branch_consts: Literal['a', 'bb', 'ccc'] | None = None
     mixed: Literal['a', 'bb', 1, 5, True] | None = None
     size_ref: Size | None = None

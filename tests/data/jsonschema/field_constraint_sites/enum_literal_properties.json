@@ -2,9 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Model",
   "type": "object",
+  "$defs": {
+    "Consts": {"type": "string", "oneOf": [{"const": "a"}, {"const": "bb"}], "maxLength": 1}
+  },
   "properties": {
     "short": {"type": "string", "enum": ["a", "bb"], "maxLength": 1},
     "small": {"type": "integer", "enum": [1, 5], "maximum": 3},
-    "nullable": {"type": ["string", "null"], "enum": ["a", "bb", null], "maxLength": 1}
+    "nullable": {"type": ["string", "null"], "enum": ["a", "bb", null], "maxLength": 1},
+    "consts": {"type": "integer", "anyOf": [{"const": 1}, {"const": 5}], "maximum": 3},
+    "referenced_consts": {"$ref": "#/$defs/Consts"}
   }
 }

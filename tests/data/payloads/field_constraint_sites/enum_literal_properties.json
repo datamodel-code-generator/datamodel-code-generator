@@ -1,12 +1,14 @@
 {
   "valid": [
-    {"short": "a", "small": 1, "nullable": "a"},
+    {"short": "a", "small": 1, "nullable": "a", "consts": 1, "referenced_consts": "a"},
     {"nullable": null},
     {}
   ],
   "invalid": [
     {"short": "bb"},
     {"small": 5},
-    {"nullable": "bb"}
+    {"nullable": "bb"},
+    {"consts": 5},
+    {"referenced_consts": "bb"}
   ]
 }
