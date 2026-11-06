@@ -305,3 +305,12 @@ match = "^\\[type\\] Root:(?:tags|pairs): Union\\[msgspec\\.UnsetType, set\\[lis
 reason = "with --use-unique-items-as-set (the practical presets), a uniqueItems array of arrays was set[list[...]], which rejects every non-empty array; it stays a list (crash-class fix)"
 decision = "#6190"
 release_note = "with --use-unique-items-as-set, a uniqueItems array whose items can never be set members (objects, arrays, a tuple holding an array) stays a list instead of a set that rejects every non-empty array, and a list default that cannot be a set keeps its list"
+
+[[accepted]]
+input = "*well_known_wrappers*"
+backends = [ "pydantic_v2.BaseModel", "msgspec.Struct" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] (?:\\w+:)?(?:ExampleWktWrapperBucket:uint(?:64|32)_value|Uint(?:64|32)Value): .* -> .*(?:Interval\\(ge=0,le=(?:18446744073709551615|4294967295)\\)|Meta\\(ge=0,le=4294967295\\)).*$"
+reason = "the protobuf wrappers google.protobuf.UInt64Value and UInt32Value read only the lower bound of their scalar, so the models accepted integers above the wire range that plain uint64 and uint32 fields reject; the wrappers now take the schema of their scalar, upper bound included (class and field names, types and the parsed values of valid payloads stay)"
+decision = "#5537"
+release_note = "protobuf `google.protobuf.UInt64Value` and `UInt32Value` fields get the upper bound of `uint64` and `uint32`, like plain fields of those types, so out-of-range integers are rejected"

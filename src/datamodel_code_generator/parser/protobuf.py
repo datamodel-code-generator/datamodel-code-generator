@@ -144,15 +144,20 @@ WELL_KNOWN_SCHEMAS: dict[str, dict[str, Any]] = {
     "google.protobuf.Any": {"type": "object", "additionalProperties": True},
     "google.protobuf.Empty": {"type": "object", "properties": {}, "additionalProperties": False},
     "google.protobuf.FieldMask": {"type": "string"},
-    "google.protobuf.DoubleValue": with_null({"type": "number", "format": "double"}, "member"),
-    "google.protobuf.FloatValue": with_null({"type": "number", "format": "float"}, "member"),
-    "google.protobuf.Int64Value": with_null({"type": "integer", "format": "int64"}, "member"),
-    "google.protobuf.UInt64Value": with_null({"type": "integer", "format": "int64", "minimum": 0}, "member"),
-    "google.protobuf.Int32Value": with_null({"type": "integer", "format": "int32"}, "member"),
-    "google.protobuf.UInt32Value": with_null({"type": "integer", "format": "int32", "minimum": 0}, "member"),
-    "google.protobuf.BoolValue": with_null({"type": "boolean"}, "member"),
-    "google.protobuf.StringValue": with_null({"type": "string"}, "member"),
-    "google.protobuf.BytesValue": with_null({"type": "string", "format": "binary"}, "member"),
+    **{
+        f"google.protobuf.{name}Value": with_null(SCALAR_SCHEMAS[type_], "member")
+        for name, type_ in (
+            ("Double", TYPE_DOUBLE),
+            ("Float", TYPE_FLOAT),
+            ("Int64", TYPE_INT64),
+            ("UInt64", TYPE_UINT64),
+            ("Int32", TYPE_INT32),
+            ("UInt32", TYPE_UINT32),
+            ("Bool", TYPE_BOOL),
+            ("String", TYPE_STRING),
+            ("Bytes", TYPE_BYTES),
+        )
+    },
 }
 
 
