@@ -145,6 +145,7 @@ from datamodel_code_generator.model.enum import (
 )
 from datamodel_code_generator.model.enum import escape_characters as _enum_escape_characters
 from datamodel_code_generator.model.output import (
+    OutputModelContext,
     prepare_output_model_config,
 )
 from datamodel_code_generator.parser import _inheritance_check, _init_exports, _stdout_repair, _type_overrides
@@ -1039,6 +1040,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._self_named_root_models: list[DataModel] = []
         """The root models whose root names the model itself, which the deduplication of root models dropped while
         their users still name them, for ``reject_alias_cycles_without_schema``."""
+        self._folded_ref_chains: dict[str, tuple[tuple[str, str], ...]] = {}
+        """The definitions parsed as their ``$ref`` alone whose users a model that named them took, so that its root
+        names itself, by the path of that model: the name and path of each, from the one it named."""
         self._recursion_facts: RecursionFacts = _NO_RECURSION
         self._quotes_hidden_types = False
 
@@ -1324,6 +1328,15 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if self.use_annotated and not self.field_constraints:  # pragma: no cover
             msg = "`use_annotated=True` has to be used with `field_constraints=True`"
             raise Exception(msg)  # noqa: TRY002
+        self._output_model_context = OutputModelContext.from_generation_types(
+            data_model_type=self.data_model_type,
+            data_model_root_type=self.data_model_root_type,
+            data_model_field_type=self.data_model_field_type,
+            data_type_manager_type=type(self.data_type_manager),
+            configured_types_are_builtin=self._configured_generation_types_are_builtin,
+            use_annotated=self.use_annotated,
+        )
+        """The capabilities of the output model types."""
         self.use_serialize_as_any: bool = config.use_serialize_as_any
         self.use_non_positive_negative_number_constrained_types = (
             config.use_non_positive_negative_number_constrained_types

@@ -256,6 +256,10 @@ class FinishHost(ReuseOptionsHost, RootModelHost, OutputOptionsHost, TagPlanHost
         """The root models naming themselves that the deduplication of root models dropped, whose users name them."""
 
     @property
+    def _folded_ref_chains(self) -> dict[str, tuple[tuple[str, str], ...]]:
+        """The name and path of each definition parsed as its ``$ref`` alone that a model naming itself took in."""
+
+    @property
     def _reuse_groups(self) -> ReuseGroups:
         """The plan of which model of a group of duplicates stays canonical."""
 
@@ -1209,9 +1213,15 @@ def _alias_loops(models: Sequence[DataModel], self_named: Sequence[DataModel]) -
     return {id(keyed.models[key]): tuple(map(keyed.models.__getitem__, loop)) for key, loop in loops.items()}
 
 
-def _loop_error(model: DataModel, cycle: Sequence[DataModel], failure: str) -> Error:
-    """Return the error for a model that uses a ``$ref`` chain looping back without reaching a schema."""
-    chain = " -> ".join(f"{member.class_name} ({redact_reference(member.path)})" for member in (*cycle, cycle[0]))
+def _loop_error(
+    model: DataModel, cycle: Sequence[DataModel], failure: str, folded: Mapping[str, tuple[tuple[str, str], ...]]
+) -> Error:
+    """Return the error for a model that uses a ``$ref`` chain looping back without reaching a schema.
+
+    The chain names the definitions parsed as their ``$ref`` alone that each member took in (``folded``) after it.
+    """
+    members = [link for member in cycle for link in ((member.class_name, member.path), *folded.get(member.path, ()))]
+    chain = " -> ".join(f"{name} ({redact_reference(path)})" for name, path in (*members, members[0]))
     return Error(
         f"{model.class_name} uses a $ref chain that loops back without reaching a schema, which {failure}: {chain}"
     )
@@ -1244,7 +1254,8 @@ def reject_alias_cycles_without_schema(
     no type either: deduplication dropped it while its users still name it (``_self_named_root_models``). A class
     whose fields reach one, directly or through type aliases, could never be built or decode a value. Aliases that no
     class reaches keep their output, unless the module evaluates the name of a dropped root model as it runs, in an
-    alias or, with ``evaluates_annotations``, in a class: it then fails to import, whatever reads the output.
+    alias or, with ``evaluates_annotations``, in a class: it then fails to import. Output that nothing builds from its
+    annotations has no such user left, as ``type_users_of_dropped_root_models_by_any`` typed them ``Any``.
     """
     self_named_models = parser._self_named_root_models  # noqa: SLF001
     self_named = {id(model): (model,) for model in self_named_models}
@@ -1261,7 +1272,7 @@ def reject_alias_cycles_without_schema(
                 if (reference := pending.pop().reference) is None or id(source := reference.source) in seen:
                     continue
                 if (cycle := cycles.get(id(source))) is not None:
-                    raise _loop_error(model, cycle, failure)
+                    raise _loop_error(model, cycle, failure, parser._folded_ref_chains)  # noqa: SLF001
                 seen.add(id(source))
                 if isinstance(source, TypeAliasBase):
                     pending.extend(source.all_data_types)
@@ -1270,7 +1281,12 @@ def reject_alias_cycles_without_schema(
     for model in models:
         for data_type in _evaluated_data_types(model, evaluates_annotations=evaluates_annotations):
             if (reference := data_type.reference) is not None and (cycle := self_named.get(id(reference.source))):
-                raise _loop_error(model, cycle, "Python cannot evaluate as the module runs")
+                raise _loop_error(
+                    model,
+                    cycle,
+                    "Python cannot evaluate as the module runs",
+                    parser._folded_ref_chains,  # noqa: SLF001
+                )
 
 
 def record_pydantic_floor(parser: FinishHost, contexts: Sequence[ModuleContextView]) -> None:

@@ -317,8 +317,10 @@ def _drop_duplicate_root_model(parser: StructureHost, model: DataModel, root_ref
     """Redirect the users of a duplicated root model to the reference its root names, detach its types and retire it.
 
     A root model whose root names the model itself has no other model to redirect them to: the models that inherit
-    it drop it from their bases, as they drop every other root model, and the fields that use it keep naming it,
-    which ``reject_alias_cycles_without_schema`` reads from ``_self_named_root_models``.
+    it drop it from their bases, as they drop every other root model, and the fields that use it keep naming it until
+    every module is processed (``_self_named_root_models``): ``type_users_of_dropped_root_models_by_any`` then types
+    them ``Any`` where nothing builds from the annotations, and ``reject_alias_cycles_without_schema`` rejects them
+    where Pydantic builds or msgspec decodes the output.
     """
     parser._graph_builder.redirect_reference_users(model.reference, root_reference)  # noqa: SLF001
     parser._graph_builder.detach_model_data_type_refs(model)  # noqa: SLF001

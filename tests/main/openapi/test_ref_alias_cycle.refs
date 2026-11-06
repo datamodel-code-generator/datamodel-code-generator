@@ -8,6 +8,14 @@ pydantic-dataclass	main/openapi/ref_alias_cycle/no_class_uses[pydantic-dataclass
 [test_ref_alias_cycle_no_class_uses_msgspec]
 	main/openapi/ref_alias_cycle/no_class_uses_msgspec.parsed.txt
 	main/openapi/ref_alias_cycle/no_class_uses_msgspec.py
+[test_ref_self_reference_any]
+eager-annotations-dataclass	main/openapi/ref_alias_cycle/ref_self_reference_any[eager-annotations-dataclass].py
+eager-annotations-typeddict	main/openapi/ref_alias_cycle/ref_self_reference_any[eager-annotations-typeddict].py
+functional-typeddict	main/openapi/ref_alias_cycle/ref_self_reference_any[functional-typeddict].py
+through-alias-dataclass	main/openapi/ref_alias_cycle/ref_self_reference_any[through-alias-dataclass].py
+through-alias-typeddict	main/openapi/ref_alias_cycle/ref_self_reference_any[through-alias-typeddict].py
+unused-alias-dataclass	main/openapi/ref_alias_cycle/ref_self_reference_any[unused-alias-dataclass].py
+unused-alias-typeddict	main/openapi/ref_alias_cycle/ref_self_reference_any[unused-alias-typeddict].py	= main/openapi/ref_alias_cycle/ref_self_reference_any[unused-alias-dataclass].py
 [test_ref_self_reference_unnamed_imports]
 dataclasses.dataclass	main/openapi/ref_alias_cycle/ref_self_reference_unnamed_imports[dataclasses.dataclass].instance.txt
 dataclasses.dataclass	main/openapi/ref_alias_cycle/ref_self_reference_unnamed_imports[dataclasses.dataclass].py
@@ -16,6 +24,11 @@ typing.TypedDict	main/openapi/ref_alias_cycle/ref_self_reference_unnamed_imports
 [test_ref_self_reference_unnamed_type_statement]
 dataclasses.dataclass	main/openapi/ref_alias_cycle/ref_self_reference_unnamed_type_statement[dataclasses.dataclass].py
 typing.TypedDict	main/openapi/ref_alias_cycle/ref_self_reference_unnamed_type_statement[typing.TypedDict].py
+[test_ref_sibling_cycle_any]
+dataclasses.dataclass-field	main/openapi/ref_alias_cycle/ref_sibling_cycle_any[dataclasses.dataclass-field].py
+dataclasses.dataclass-maps	main/openapi/ref_alias_cycle/ref_sibling_cycle_any[dataclasses.dataclass-maps].py
+typing.TypedDict-field	main/openapi/ref_alias_cycle/ref_sibling_cycle_any[typing.TypedDict-field].py
+typing.TypedDict-maps	main/openapi/ref_alias_cycle/ref_sibling_cycle_any[typing.TypedDict-maps].py
 [test_ref_sibling_cycle_description_collapse_root_models]
 dataclasses.dataclass	main/openapi/ref_alias_cycle/ref_sibling_cycle_description_collapse_root_models[dataclasses.dataclass].py
 msgspec.Struct	main/openapi/ref_alias_cycle/ref_sibling_cycle_description_collapse_root_models[msgspec.Struct].py
