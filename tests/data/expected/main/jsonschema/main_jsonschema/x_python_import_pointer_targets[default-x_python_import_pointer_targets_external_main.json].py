@@ -16,8 +16,14 @@ class Count(RootModel[conint(ge=0)]):
     root: conint(ge=0)
 
 
+class Entry(BaseModel):
+    label: str | None = None
+    totals: Counter | None = None
+
+
 class Root(BaseModel):
     empty: Empty | None = None
     options: OrderedDict | None = None
     count: Count | None = None
     tally: Counter | None = None
+    entry: Entry | None = None

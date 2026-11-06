@@ -9121,7 +9121,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         object_paths, reference_paths = _split_json_pointer(raw, path, names=self._pointer_slash_names)
         if not object_paths:  # pragma: no cover
             reference = self.model_resolver.add_ref(ref)
-            self.parse_obj(reference.name, self._validate_schema_object(raw, [ref]), [ref])
+            self._parse_document_root(
+                reference.name, self._validate_schema_object(raw, [ref]), raw, [ref], referenced=True
+            )
             return
         models = self._get_model_by_json_pointer(raw, object_paths, ref)
         self._parse_pointer_target(models, ref, reference_paths, path_parts, self._member_location(raw, *object_paths))
@@ -9385,7 +9387,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     raw, reserved_path.split("#", 1)[-1], names=self._pointer_slash_names
                 )
                 if not object_paths:
-                    self.parse_obj(reference.name, self._validate_schema_object(raw, [reserved_path]), [reserved_path])
+                    self._parse_document_root(
+                        reference.name,
+                        self._validate_schema_object(raw, [reserved_path]),
+                        raw,
+                        [reserved_path],
+                        referenced=True,
+                    )
                     continue
                 models = self._get_model_by_json_pointer(raw, object_paths, reserved_path)
                 tokens = self._pointer_path_tokens(reserved_path, reference_paths)
