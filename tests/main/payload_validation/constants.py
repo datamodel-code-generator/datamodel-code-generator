@@ -531,6 +531,7 @@ ROUND_TRIP_EXCLUDED_CASES: dict[str, str] = {
     **dict.fromkeys(
         (
             "jsonschema/decimal_multiple_of_field_forms.json",
+            "jsonschema/msgspec_union_shared_bounds.json",
             "jsonschema/strict_types_matrix.json",
         ),
         "pydantic serializes Decimal JSON values as strings while the source schema requires number",

@@ -183,7 +183,7 @@ class Model(Struct):
     nullable: Nullable1 | None | UnsetType = UNSET
     common: int | UnsetType = UNSET
     refs: Refs1 | int | UnsetType = UNSET
-    ranges: int | UnsetType = UNSET
+    ranges: Annotated[int, Meta(ge=1)] | UnsetType = UNSET
     twice: int | UnsetType = UNSET
     beside: (
         Annotated[
@@ -202,8 +202,8 @@ class Model(Struct):
     many: Many8 | UnsetType = UNSET
     inline: Any | UnsetType = UNSET
     one_base: OneBase3 | UnsetType = UNSET
-    two_bases: int | UnsetType = UNSET
-    two_bases_items: list[int] | UnsetType = UNSET
+    two_bases: Annotated[int, Meta(le=100)] | UnsetType = UNSET
+    two_bases_items: list[Annotated[int, Meta(le=100)]] | UnsetType = UNSET
     via_union_field: ViaUnionField1 | int | UnsetType = UNSET
 
 

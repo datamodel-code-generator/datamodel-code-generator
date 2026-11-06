@@ -1,0 +1,40 @@
+{
+  "valid": {
+    "apart": ["ab", "abc", "a", "bcd"],
+    "bounded": [1, 3, 5, 7, 100],
+    "bounded_or_null": [null, 3, 7],
+    "bounded_or_number": [0, 6, -1.5],
+    "bounded_or_decimal": [0, 6, -1, 2.5],
+    "weight": [-0.5, -1, 3, 15],
+    "height": [-1.0, -1, -5, 0.5, 11.5],
+    "span": [0, 7.5, 20],
+    "loose": [0, 0.5],
+    "tagged": ["xyzw", "ab", "a"],
+    "listed": [["ab", "a", "bcd"]],
+    "parted_twice": ["ab", "a"],
+    "parted_or_long": ["ab", "a", "abcdefg"],
+    "parted_or_any": ["ab", "abcdefgh", ""],
+    "prefixed": ["a", "abcdefgh"],
+    "ranked": [1, 5],
+    "ranked_or_decimal": [0, -3, 1.5]
+  },
+  "invalid": {
+    "apart": ["abcd", "b", ""],
+    "bounded": [0, 6, -1],
+    "bounded_or_null": [0, 6],
+    "bounded_or_number": ["1"],
+    "bounded_or_decimal": ["1"],
+    "weight": [-2, -1.5],
+    "height": [-6.0, -6, -0.5],
+    "span": [-1, 21, 25.5],
+    "loose": [-1, -0.5],
+    "tagged": ["abcd", "b"],
+    "listed": [["abcd"], ["b"]],
+    "parted_twice": ["abcd", "b"],
+    "parted_or_long": ["abcd", "abcdefghijk", "b"],
+    "parted_or_any": [3],
+    "prefixed": ["b", "ba"],
+    "ranked": [0, -1],
+    "ranked_or_decimal": [true]
+  }
+}

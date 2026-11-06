@@ -23,7 +23,7 @@ OneBase: TypeAlias = Annotated[int, Meta(ge=1, le=5)]
 OneBase1: TypeAlias = Annotated[int, Meta(ge=7)]
 
 
-OneBase2: TypeAlias = int
+OneBase2: TypeAlias = Annotated[int, Meta(ge=1)]
 
 
 TwoBases: TypeAlias = Annotated[int, Meta(le=5)]
@@ -32,7 +32,7 @@ TwoBases: TypeAlias = Annotated[int, Meta(le=5)]
 TwoBases1: TypeAlias = Annotated[int, Meta(ge=7, le=100)]
 
 
-TwoBases2: TypeAlias = int
+TwoBases2: TypeAlias = Annotated[int, Meta(le=100)]
 
 
 TwoBasesItem: TypeAlias = Annotated[int, Meta(le=5)]
@@ -41,7 +41,7 @@ TwoBasesItem: TypeAlias = Annotated[int, Meta(le=5)]
 TwoBasesItem1: TypeAlias = Annotated[int, Meta(ge=7, le=100)]
 
 
-TwoBasesItem2: TypeAlias = int
+TwoBasesItem2: TypeAlias = Annotated[int, Meta(le=100)]
 
 
 ViaUnionField: TypeAlias = Annotated[str, Meta(min_length=2)]
@@ -113,7 +113,7 @@ Ranges1: TypeAlias = Annotated[int, Meta(ge=1, le=5)]
 Ranges2: TypeAlias = Annotated[int, Meta(ge=7)]
 
 
-Ranges: TypeAlias = int
+Ranges: TypeAlias = Annotated[int, Meta(ge=1)]
 
 
 Twice1: TypeAlias = Annotated[int, Meta(le=5)]

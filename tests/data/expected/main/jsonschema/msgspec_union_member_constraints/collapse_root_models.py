@@ -109,5 +109,5 @@ class Upload(Struct):
     pair: Pair1 | int | list[int]
     same: Same
     shared: str | Shared1
-    apart: str
+    apart: Annotated[str, Meta(max_length=3)]
     mixed: str
