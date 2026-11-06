@@ -53,6 +53,8 @@ class EdgeKind(Enum):
     ALIAS = "alias"
     """The type alias that a type alias writes as its whole value, by nothing but its name; a root model whose root
     names the model itself names itself."""
+    ALIAS_VALUE = "alias-value"
+    """The type aliases that the value of a type alias names, at any nesting."""
     RULE_TYPE = "rule-type"
     """The other models that the schema validator rules of a model name, which its class body evaluates."""
     CLASS_BODY = "class-body"
@@ -88,6 +90,8 @@ class GraphSnapshot(Enum):
     """L6: the msgspec structs below tagged bases, each after the bases among the processed models it inherits from."""
     ALIAS_LOOPS = "alias loops"
     """IMPORTS: the type aliases of a ``$ref`` chain that loops back without reaching a schema."""
+    MSGSPEC_ALIAS_RECURSION = "msgspec alias recursion"
+    """IMPORTS: the msgspec type aliases on a cycle that no Struct breaks."""
     INHERITED_FIELDS = "inherited fields"
     """On demand: the models whose fields a model inherits, each once, bases first."""
     ANCESTORS = "ancestors"

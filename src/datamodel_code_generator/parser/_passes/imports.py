@@ -36,7 +36,7 @@ from datamodel_code_generator._module_paths import (
     written_path,
 )
 from datamodel_code_generator._python_target_names import is_builtin_type_name
-from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph
+from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, reference_graph, walk_graph
 from datamodel_code_generator._requirements import pydantic_floor
 from datamodel_code_generator._target_unicode import is_importable_part
 from datamodel_code_generator._url_redaction import redact_reference
@@ -54,7 +54,7 @@ from datamodel_code_generator.imports import (
 from datamodel_code_generator.model._decisions.enum_kind import enum_member_kinds, literal_value_kind
 from datamodel_code_generator.model._decisions.tag_value import struct_tag_clash
 from datamodel_code_generator.model._render_plan import RENDER_READY
-from datamodel_code_generator.model.base import BaseClassDataType, DataModel, _bare_loads_of
+from datamodel_code_generator.model.base import BaseClassDataType, DataModel, _bare_loads_of, _model_key_of_model
 from datamodel_code_generator.model.enum import Enum, Member, get_raw_enum_member_value
 from datamodel_code_generator.model.output import _model_field_name_collisions
 from datamodel_code_generator.model.type_alias import TypeAliasBase
@@ -1020,6 +1020,55 @@ def _msgspec_wide_int_enum_message(model: Enum) -> str | None:
     return f"msgspec cannot decode the enum {model.class_name}: its value {value} {_BEYOND_MSGSPEC_INTS}."
 
 
+def _alias_value_aliases(model: DataModel) -> Iterator[DataModel]:
+    """Yield the type aliases that the value of a type alias names, at any nesting."""
+    for data_type in model.all_data_types:
+        if (reference := data_type.reference) is not None and isinstance(source := reference.source, TypeAliasBase):
+            yield source
+
+
+def _msgspec_recursive_alias_messages(models: Sequence[DataModel]) -> Iterator[str]:
+    """Describe each cycle of type aliases whose values name each other through no Struct, in the order of the models.
+
+    msgspec decodes a recursive type only through a Struct: it refuses such an alias in every form the output writes,
+    and every type that uses it. The ``$ref`` chains that loop back without reaching a schema are
+    ``reject_alias_cycles_without_schema``'s (``_alias_loops``).
+    """
+    walk = walk_graph(
+        GraphSnapshot.MSGSPEC_ALIAS_RECURSION,
+        EdgeKind.ALIAS_VALUE,
+        (model for model in models if isinstance(model, TypeAliasBase)),
+        _model_key_of_model,
+        _alias_value_aliases,
+    )
+    if not (cycles := walk.graph.circular_components((EdgeKind.ALIAS_VALUE,))):
+        return
+    loops = _alias_loops(models, ())
+    order = {id(model): index for index, model in enumerate(models)}
+
+    def position(model: DataModel) -> int:
+        return order.get(id(model), len(order))
+
+    ordered = sorted(
+        (sorted((walk.node_of[key] for key in cycle), key=position) for cycle in cycles),
+        key=lambda cycle: position(cycle[0]),
+    )
+    for cycle in ordered:
+        if id(cycle[0]) in loops:
+            continue
+        names = ", ".join(model.class_name for model in cycle)
+        if len(cycle) == 1:
+            yield (
+                f"msgspec cannot decode the type alias {names}, or a type that uses it: its value names itself "
+                "through no Struct, while msgspec decodes a recursive type only through a Struct."
+            )
+        else:
+            yield (
+                f"msgspec cannot decode the type aliases {names}, or a type that uses them: their values name each "
+                "other through no Struct, while msgspec decodes a recursive type only through a Struct."
+            )
+
+
 def _remap_imports(ledger: ModuleImportLedger, imports: Imports, overrides: Mapping[str, str]) -> None:
     """Move overridden names to their modules, converting import override conflicts to a user-facing generator error."""
     try:
@@ -1327,6 +1376,8 @@ def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleCon
                     UserWarning,
                     stacklevel=2,
                 )
+    for message in _msgspec_recursive_alias_messages(models):
+        warn_as_parser_base(message, UserWarning, stacklevel=2)
 
 
 def _names_written_as_text(models: Iterable[DataModel]) -> set[str]:
