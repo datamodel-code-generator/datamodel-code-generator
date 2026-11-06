@@ -498,7 +498,10 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         the keywords beside such a $ref overlay its target, as
                         in 0.88.0. The version is the one --read-schema-
                         version-per-document reads, else that of the document
-                        parsed.
+                        parsed. A schema converted from Avro, XML Schema or
+                        Protocol Buffers keeps the keywords its converter
+                        writes beside a $ref, such as the default of a field
+                        typed by a named type.
   --input INPUT         Input file/directory (default: stdin)
   --input-file-type {auto,openapi,asyncapi,jsonschema,mcp-tools,xmlschema,protobuf,avro,json,yaml,dict,csv,graphql}
                         Input file type (default: auto). Use 'jsonschema',

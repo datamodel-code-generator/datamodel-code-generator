@@ -565,3 +565,27 @@ def test_nullvalue_enum_backends(backend: DataModelType, strict: bool, entrypoin
             json.dumps(value.value if isinstance(value, Enum) else value) + "\n",
             EXPECTED_PROTOBUF_PATH / "referenced_standard/enum_value.txt",
         )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--ignore-ref-siblings-by-schema-version"], id="ignore-ref-siblings"),
+        pytest.param(
+            ["--ignore-ref-siblings-by-schema-version", "--read-schema-version-per-document"], id="per-document"
+        ),
+    ],
+)
+def test_main_protobuf_enum_field_defaults_beside_ref(output_file: Path, extra_args: list[str]) -> None:
+    """Keep the ``[default = ...]`` of an enum field under --ignore-ref-siblings-by-schema-version (#6394).
+
+    The converter writes it beside the ``$ref`` to the enum, as a part of the field, so the option, which ignores the
+    keywords beside a draft 7 ``$ref``, keeps ``status = 'LEGACY_ACTIVE'`` as without it.
+    """
+    run_main_and_assert(
+        input_path=PROTOBUF_DATA_PATH / "proto2.proto",
+        output_path=output_file,
+        input_file_type="protobuf",
+        extra_args=["--schema-version", "proto2", *extra_args],
+        force_exec_validation=True,
+    )

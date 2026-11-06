@@ -116,6 +116,7 @@ __all__ = [
     "loads_document",
     "mount_converted_schema",
     "normalize_external_ref",
+    "note_converted_document",
     "note_plain_name",
     "parse_converted_sources",
     "parse_id",
@@ -896,16 +897,25 @@ def index_document(parser: SchemaDocumentsHost, raw: dict[str, Any], path_parts:
     """
     if (graph := parser._schema_graph) is None or graph.is_mounted(raw):  # noqa: SLF001
         return raw
-    root = SchemaLocation(parser.model_resolver.join_path(tuple(path_parts)).partition("#")[0], ())
     indexed = graph.index_document(
         raw,
-        root,
+        document_root(parser, path_parts),
         DocumentId(parser._schema_resource_document(path_parts)),  # noqa: SLF001
         parser._ref_reading("root"),  # noqa: SLF001
     )
     if (entry := parser._documents_as_written.get(id(raw))) is not None and entry[0] is raw:  # noqa: SLF001
         parser._documents_as_written[id(indexed)] = indexed, entry[1]  # noqa: SLF001
     return indexed
+
+
+def document_root(parser: SchemaDocumentsHost, path_parts: list[str]) -> SchemaLocation:
+    """Return the location of the root of the document read at ``path_parts``, named as reference paths name it."""
+    return SchemaLocation(parser.model_resolver.join_path(tuple(path_parts)).partition("#")[0], ())
+
+
+def note_converted_document(parser: SchemaDocumentsHost, path_parts: list[str]) -> None:
+    """Record that the document read at ``path_parts`` is a schema converted from another format (L0)."""
+    cast("SchemaGraphBuilder", parser._schema_graph).note_converted(document_root(parser, path_parts))  # noqa: SLF001
 
 
 def mount_converted_schema(
@@ -928,6 +938,7 @@ def mount_converted_schema(
         return f"#{location.pointer}{ref.partition('#')[2].removeprefix(container)}"
 
     document = DocumentId(parser._schema_resource_document([location.document]))  # noqa: SLF001
+    graph.note_converted(location)
     return graph.mount(converted, location, document, parser._ref_reading("object"), ConvertedRefs(mounted_ref, home))  # noqa: SLF001
 
 
@@ -1050,6 +1061,7 @@ def parse_converted_sources(parser: SchemaDocumentsHost, make_converter: Callabl
     with parser._parsing_session():  # noqa: SLF001
         for source, path_parts in get_context_source_path_parts(parser):
             raw_obj = source.raw_data = make_converter().convert(source)
+            note_converted_document(parser, path_parts)
             parse_source(parser, source, raw_obj, path_parts)
 
 

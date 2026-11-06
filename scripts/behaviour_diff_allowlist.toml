@@ -370,3 +370,43 @@ match = "^\\[probe\\] Model: accept -> reject$"
 reason = "a field typed by the one $ref of an allOf site (allOf: [$ref] beside maxLength, a second member with minItems or pattern, a $ref beside a bound to an allOf of one $ref) kept only that target and dropped what the site adds, so it accepted values the schema rejects; where the field's type is no class (a type collapse inlined, a type alias of msgspec, Pydantic dataclasses or --use-type-alias) it now writes them, decided by the type it stands for; a Pydantic dataclass field takes them in the Field() call it writes, or in Annotated metadata where it writes none, so it keeps its place in the constructor (schema-mismatch fix)"
 decision = "#6024, #6234"
 release_note = "the keywords an allOf site adds to its one $ref (maxLength beside allOf: [$ref], the minItems or pattern of another member, a bound beside a $ref to an allOf of one $ref) are checked where the field's type is no class: in the default msgspec and Pydantic dataclass output, which write such types as type aliases, and under --use-type-alias and --collapse-root-models; the default Pydantic BaseModel output, whose field names a root model class, is unchanged. As a $ref beside the same keyword already does, the $ref siblings are read in every dialect, also draft-07 and OpenAPI 3.0; --ignore-ref-siblings-by-schema-version reads them as those specifications do"
+
+[[accepted]]
+input = "tests/data/avro/*"
+aspects = [ "default", "type" ]
+match = "^\\[default\\] [\\w:]+: '(?:None|UNSET)' -> .+$|^\\[type\\] [\\w:]+: (?:Union\\[None, (.+)\\] -> \\1|Union\\[(.+), None\\] -> \\2)$"
+reason = "under --ignore-ref-siblings-by-schema-version (the 20261104 presets) a schema converted from Avro, XML Schema or Protocol Buffers, which declares draft 7, lost the keywords its converter writes beside the $ref to a named type, so a field typed by a named enum, fixed or record lost its default and description and took None; the converted schema keeps them, as without the option, and a field with a default is no longer nullable under the presets' --strict-nullable (fix of the 0.90.0 option, owner decision 11-06)"
+decision = "#6394"
+release_note = "--ignore-ref-siblings-by-schema-version keeps the default and annotations of an Avro field, XML Schema element or Protocol Buffers field typed by a named type (also in an AsyncAPI payload), which 0.90.0 left out because the converted schema declares draft 7"
+
+[[accepted]]
+input = "tests/data/xmlschema/*"
+aspects = [ "default", "type" ]
+match = "^\\[default\\] [\\w:]+: '(?:None|UNSET)' -> .+$|^\\[type\\] [\\w:]+: (?:Union\\[None, (.+)\\] -> \\1|Union\\[(.+), None\\] -> \\2)$"
+reason = "under --ignore-ref-siblings-by-schema-version (the 20261104 presets) a schema converted from Avro, XML Schema or Protocol Buffers, which declares draft 7, lost the keywords its converter writes beside the $ref to a named type, so a field typed by a named enum, fixed or record lost its default and description and took None; the converted schema keeps them, as without the option, and a field with a default is no longer nullable under the presets' --strict-nullable (fix of the 0.90.0 option, owner decision 11-06)"
+decision = "#6394"
+release_note = "--ignore-ref-siblings-by-schema-version keeps the default and annotations of an Avro field, XML Schema element or Protocol Buffers field typed by a named type (also in an AsyncAPI payload), which 0.90.0 left out because the converted schema declares draft 7"
+
+[[accepted]]
+input = "tests/data/protobuf/*"
+aspects = [ "default", "type" ]
+match = "^\\[default\\] [\\w:]+: '(?:None|UNSET)' -> .+$|^\\[type\\] [\\w:]+: (?:Union\\[None, (.+)\\] -> \\1|Union\\[(.+), None\\] -> \\2)$"
+reason = "under --ignore-ref-siblings-by-schema-version (the 20261104 presets) a schema converted from Avro, XML Schema or Protocol Buffers, which declares draft 7, lost the keywords its converter writes beside the $ref to a named type, so a field typed by a named enum, fixed or record lost its default and description and took None; the converted schema keeps them, as without the option, and a field with a default is no longer nullable under the presets' --strict-nullable (fix of the 0.90.0 option, owner decision 11-06)"
+decision = "#6394"
+release_note = "--ignore-ref-siblings-by-schema-version keeps the default and annotations of an Avro field, XML Schema element or Protocol Buffers field typed by a named type (also in an AsyncAPI payload), which 0.90.0 left out because the converted schema declares draft 7"
+
+[[accepted]]
+input = "tests/data/asyncapi/converted_payload_ref_siblings_v2.yaml"
+aspects = [ "default", "type" ]
+match = "^\\[default\\] [\\w:]+: '(?:None|UNSET)' -> .+$|^\\[type\\] [\\w:]+: (?:Union\\[None, (.+)\\] -> \\1|Union\\[(.+), None\\] -> \\2)$"
+reason = "under --ignore-ref-siblings-by-schema-version (the 20261104 presets) a schema converted from Avro, XML Schema or Protocol Buffers, which declares draft 7, lost the keywords its converter writes beside the $ref to a named type, so a field typed by a named enum, fixed or record lost its default and description and took None; the converted schema keeps them, as without the option, and a field with a default is no longer nullable under the presets' --strict-nullable (fix of the 0.90.0 option, owner decision 11-06)"
+decision = "#6394"
+release_note = "--ignore-ref-siblings-by-schema-version keeps the default and annotations of an Avro field, XML Schema element or Protocol Buffers field typed by a named type (also in an AsyncAPI payload), which 0.90.0 left out because the converted schema declares draft 7"
+
+[[accepted]]
+input = "tests/data/avro/container_bytes_defaults.avsc"
+aspects = [ "probe" ]
+match = "^\\[probe\\] (?:[\\w]+:)?ContainerDefaults: accept -> reject$"
+reason = "the probe example of ContainerDefaults reaches the depth cap of the recursive Node one level deeper once its recursive field, which has an Avro default, is Node instead of Node | None under the 20261104 presets, and writes data: null there, which the Avro schema rejects too (bytes is required); the model accepts every payload the schema accepts"
+decision = "#6394"
+release_note = "--ignore-ref-siblings-by-schema-version keeps the default and annotations of an Avro field, XML Schema element or Protocol Buffers field typed by a named type (also in an AsyncAPI payload), which 0.90.0 left out because the converted schema declares draft 7"

@@ -1504,3 +1504,38 @@ def test_main_xmlschema_warn_invalid_duration_defaults(output_file: Path) -> Non
         ),
         name="warnings",
     )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--ignore-ref-siblings-by-schema-version"], id="ignore-ref-siblings"),
+        pytest.param(
+            ["--ignore-ref-siblings-by-schema-version", "--read-schema-version-per-document"], id="per-document"
+        ),
+    ],
+)
+def test_main_xmlschema_named_type_element_defaults(output_file: Path, extra_args: list[str]) -> None:
+    """Keep the default and documentation of an element of a named type under the option (#6394).
+
+    The converter writes them beside the ``$ref`` to the named type, as parts of the element, so
+    --ignore-ref-siblings-by-schema-version, which ignores the keywords beside a draft 7 ``$ref``, keeps them.
+    """
+    run_main_and_assert(
+        input_path=XML_SCHEMA_DATA_PATH / "named_type_element_defaults.xsd",
+        output_path=output_file,
+        input_file_type="xmlschema",
+        extra_args=[*extra_args, "--target-python-version", "3.10", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="xmlschema_named_type_element_defaults",
+        model_name="Paint",
+        valid_json="{}",
+        invalid_json='{"color": "green"}',
+        expected_error_type="enum",
+        expected_attribute_path=("color",),
+        expected_attribute_value="blue",
+    )

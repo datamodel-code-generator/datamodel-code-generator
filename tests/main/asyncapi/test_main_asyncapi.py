@@ -487,6 +487,42 @@ def test_main_asyncapi_invalid_schema_version(output_file: Path, capsys: pytest.
 @pytest.mark.parametrize(
     "extra_args",
     [
+        pytest.param([], id="default"),
+        pytest.param(["--ignore-ref-siblings-by-schema-version"], id="ignore-ref-siblings"),
+        pytest.param(
+            ["--ignore-ref-siblings-by-schema-version", "--read-schema-version-per-document"], id="per-document"
+        ),
+    ],
+)
+def test_main_asyncapi_v2_converted_payload_ref_siblings(output_file: Path, extra_args: list[str]) -> None:
+    """Keep the defaults an Avro or XML Schema payload of an AsyncAPI 2 document writes beside a ``$ref`` (#6394).
+
+    AsyncAPI 2 ignores the keywords beside a ``$ref``, so --ignore-ref-siblings-by-schema-version leaves out the
+    ``default`` beside ``Tone`` in the JSON Schema payload; the converted payloads write theirs as parts of a field
+    typed by a named type, so ``suit`` and ``color`` keep them.
+    """
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / "converted_payload_ref_siblings_v2.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=[*PY310_TARGET_ARGS, *extra_args],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="asyncapi_v2_converted_payload_ref_siblings",
+        model_name="PaintsPublishPayload",
+        valid_json="{}",
+        invalid_json='{"color": "green"}',
+        expected_error_type="enum",
+        expected_attribute_path=("color",),
+        expected_attribute_value="blue",
+    )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
         pytest.param(["--ignore-ref-siblings-by-schema-version"], id="first-read"),
         pytest.param(
             ["--ignore-ref-siblings-by-schema-version", "--read-schema-version-per-document"], id="per-document"
