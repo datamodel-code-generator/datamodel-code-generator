@@ -1853,7 +1853,11 @@ def guarded_facts(finality: _Finality, facts: FinalFacts) -> FinalFacts:
     view = _ReadGuard(finality).view
     modules = tuple(ModuleFacts(item.module, tuple(map(view, item.live_models))) for item in facts.modules)
     return FinalFacts(
-        modules, tuple(model for item in modules for model in item.live_models), facts.member_keywords, facts.options
+        modules,
+        tuple(model for item in modules for model in item.live_models),
+        facts.member_keywords,
+        facts.constrained_member,
+        facts.options,
     )
 
 

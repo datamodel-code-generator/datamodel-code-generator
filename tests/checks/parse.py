@@ -330,8 +330,8 @@ def seal_facts(original: Callable[..., Any]) -> Callable[..., Any]:
     """
 
     @wraps(original)
-    def seal_facts(self: Any, modules: Any, member_keywords: Any, options: Any) -> Any:
-        facts = original(self, modules, member_keywords, options)
+    def seal_facts(self: Any, modules: Any, member_keywords: Any, options: Any, constrained_member: Any) -> Any:
+        facts = original(self, modules, member_keywords, options, constrained_member)
         checks = PARSE_CHECKS.get()
         return facts if checks is None or checks.finality is None else _views(checks.finality, facts)
 
@@ -354,11 +354,13 @@ def drop_held_null(original: Callable[..., None]) -> Callable[..., None]:
 
 
 def drop_field_constraints(original: Callable[..., None]) -> Callable[..., None]:
-    """Wrap ``_DecisionWriter.drop_field_constraints``: it writes the field that the guarded view it gets names."""
+    """Wrap ``_DecisionWriter.drop_field_constraints``: it writes the objects that the guarded views it gets name."""
 
     @wraps(original)
-    def drop_field_constraints(self: Any, model: Any, field: Any, keywords: frozenset[str]) -> None:
-        return original(self, viewed(model), viewed(field), keywords)
+    def drop_field_constraints(self: Any, model: Any, field: Any, keywords: frozenset[str], members: Any) -> None:
+        return original(
+            self, viewed(model), viewed(field), keywords, [(viewed(member), written) for member, written in members]
+        )
 
     return drop_field_constraints
 

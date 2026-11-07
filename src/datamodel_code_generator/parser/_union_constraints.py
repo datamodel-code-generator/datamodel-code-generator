@@ -22,7 +22,7 @@ from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping, Sequence
 
     from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView, ReferenceView
     from datamodel_code_generator.parser._phases import FinalFacts
@@ -33,8 +33,17 @@ __all__ = ["OMIT_UNTAKEN_UNION_CONSTRAINTS", "UnionConstraintsWriter"]
 class UnionConstraintsWriter(DecisionWriter, Protocol):
     """The write of the decision: leave keywords out of the constraints of a field."""
 
-    def drop_field_constraints(self, model: ModelView, field: FieldView, keywords: frozenset[str]) -> None:
-        """Write the constraints of ``field`` of ``model`` without those of ``keywords``."""
+    def drop_field_constraints(
+        self,
+        model: ModelView,
+        field: FieldView,
+        keywords: frozenset[str],
+        members: Sequence[tuple[DataTypeView, object]],
+    ) -> None:
+        """Write the constraints of ``field`` of ``model`` without those of ``keywords``, ``members`` in place.
+
+        Each member of ``members``, a type of the field, is written as the type paired with it.
+        """
 
 
 def _keeps_check(  # noqa: PLR0913, PLR0917
@@ -73,12 +82,43 @@ def _keeps_check(  # noqa: PLR0913, PLR0917
     return True
 
 
+def _members_constrained_in_place(
+    facts: FinalFacts,
+    model_of: Callable[[ReferenceView], ModelView | None],
+    data_type: DataTypeView,
+    untaken: Mapping[str, object],
+) -> list[tuple[DataTypeView, object]] | None:
+    """Return each member of ``data_type`` that loses a check of ``untaken`` with the type that holds it in place.
+
+    A member keeps a check as ``_keeps_check`` says; one that loses some is written with them where it is a plain
+    string (``FinalFacts.constrained_member``). None when a member that loses a check is anything else.
+    """
+    planned: list[tuple[DataTypeView, object]] = []
+    pending = [data_type]
+    while pending:
+        current = pending.pop()
+        if current.data_types and current not in CONTAINERS:
+            pending.extend(reversed(current.data_types))
+            continue
+        if not (
+            lost := {
+                key: value for key, value in untaken.items() if not _keeps_check(facts, model_of, current, key, value)
+            }
+        ):
+            continue
+        if (written := facts.constrained_member(current, lost)) is None:
+            return None
+        planned.append((current, written))
+    return planned
+
+
 def _omit_untaken_union_constraints(facts: FinalFacts, writer: UnionConstraintsWriter) -> None:
     """Leave out of each field the keywords beside a union that its type does not take, when no check is lost.
 
     The keywords are those the call of the field writes (``written_constraints``) at the value the union declares them
-    with. They all go when every
-    member keeps each check without the field; otherwise the field keeps them all, and its output stays as it was.
+    with. They all go when every member keeps each check without the field, or a member that would lose one is a plain
+    string written in place, which then holds the keywords it loses (``O | constr(max_length=3)``, #6053); otherwise
+    the field keeps them all, and its output stays as it was.
     """
     models = {model_key_of(model.reference): model for model in facts.live_models}
 
@@ -92,10 +132,11 @@ def _omit_untaken_union_constraints(facts: FinalFacts, writer: UnionConstraintsW
             taken = facts.member_keywords(field.data_type, model_of) or frozenset()
             written = field.written_constraints
             untaken = {key: value for key, value in siblings.items() if key not in taken and written.get(key) == value}
-            if untaken and all(
-                _keeps_check(facts, model_of, field.data_type, key, value) for key, value in untaken.items()
+            if (
+                untaken
+                and (members := _members_constrained_in_place(facts, model_of, field.data_type, untaken)) is not None
             ):
-                writer.drop_field_constraints(model, field, frozenset(untaken))
+                writer.drop_field_constraints(model, field, frozenset(untaken), members)
 
 
 OMIT_UNTAKEN_UNION_CONSTRAINTS = DecisionPass(

@@ -1935,6 +1935,28 @@ class DataTypeManager(ABC):
         """Return the string key type of a dict whose keys a ``pattern``, ``minLength`` or ``maxLength`` constrains."""
         return self.get_data_type(Types.string, **kwargs)
 
+    def constrained_string_member(
+        self, member: DataTypeView, keywords: Mapping[str, Any], **options: Any
+    ) -> DataType | None:
+        """Return the string type that holds ``keywords`` in place of ``member``, or None where it is no plain string.
+
+        A plain string is the type ``get_data_type`` gives a string without keywords; the type that replaces it is the
+        one it gives with them and ``options`` (``use_annotated``, ``target_pydantic_version``), as a dict key holds
+        its ``propertyNames`` lengths.
+        """
+        plain = self.get_data_type(Types.string)
+        if (
+            member.reference is not None
+            or member.data_types
+            or member.kwargs
+            or member.literals
+            or member.python_type is not None
+        ):
+            return None
+        if (member.type, member.strict, member.is_func) != (plain.type, plain.strict, plain.is_func):
+            return None
+        return self.get_data_type(Types.string, **keywords, **options)
+
     @property
     def checks_map_key_patterns(self) -> bool:
         """Whether the key type ``get_map_key_str_type`` gives for a ``pattern`` rejects the keys it does not match."""

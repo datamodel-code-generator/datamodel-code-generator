@@ -382,6 +382,7 @@ jsonschema/field_constraint_sites/array_item_roots.json	payloads/native_numeric_
 jsonschema/field_constraint_sites/enum_literal_properties.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/field_constraint_sites/literal_patterns.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/field_constraint_sites/union_array_string_lengths.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/field_constraint_sites/union_member_in_place.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/field_constraint_sites/union_root_url_keywords.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/field_discriminator_mapping.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/field_discriminator_not_a_name.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2459,6 +2460,7 @@ jsonschema/field_constraint_sites/array_item_roots.json	payloads/native_numeric_
 jsonschema/field_constraint_sites/enum_literal_properties.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/field_constraint_sites/literal_patterns.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/field_constraint_sites/union_array_string_lengths.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+jsonschema/field_constraint_sites/union_member_in_place.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/field_constraint_sites/union_root_url_keywords.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/field_discriminator_mapping.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/field_discriminator_not_a_name.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
