@@ -435,15 +435,27 @@ def mark_set_item_models_hashable(parser: RenderPrepHost, models: list[DataModel
             model.enable_identity_hash()
 
 
+def omit_incomplete_model_defaults(parser: RenderPrepHost, models: list[DataModel]) -> None:
+    """Give the default None to each field whose object default lacks required fields of its model.
+
+    Under --omit-incomplete-model-defaults such a field (``_required_fields_a_default_lacks``) is written as a field
+    without a default, so this runs before the constructor ordering, which then places it as one.
+    """
+    for model in models:
+        for model_field in model.fields:
+            if _applies_default(model_field) and _required_fields_a_default_lacks(model_field):
+                parser._graph_builder.set_field_default(model_field, None)  # noqa: SLF001
+
+
 def set_validate_default_on_fields(
     parser: RenderPrepHost,
     models: list[DataModel],
 ) -> None:
     """Set validate_default=True on fields with structured defaults needing validation.
 
-    Under --omit-incomplete-model-defaults a field whose object default lacks required fields of its model
-    (``_required_fields_a_default_lacks``) takes the default None instead, which it writes as a field without a default;
-    without it, the fields whose output validates such a default are named in one warning.
+    The fields whose output validates an object default that lacks required fields of its model
+    (``_required_fields_a_default_lacks``) are named in one warning; --omit-incomplete-model-defaults gave them the
+    default None before (``omit_incomplete_model_defaults``).
     """
     deserialized_default = False
     incomplete: list[str] = []
@@ -453,12 +465,8 @@ def set_validate_default_on_fields(
         for model_field in model.fields:
             if not _applies_default(model_field):
                 continue
-            if lacks := _required_fields_a_default_lacks(model_field):
-                if parser.omit_incomplete_model_defaults:
-                    parser._graph_builder.set_field_default(model_field, None)  # noqa: SLF001
-                    continue
-                if model_field.VALIDATES_STRUCTURED_DEFAULTS:
-                    incomplete.append(_incomplete_model_default(model, model_field, *lacks))
+            if model_field.VALIDATES_STRUCTURED_DEFAULTS and (lacks := _required_fields_a_default_lacks(model_field)):
+                incomplete.append(_incomplete_model_default(model, model_field, *lacks))
             deserialized_default = (
                 deserialize_default_value(
                     parser,

@@ -146,6 +146,7 @@ CHECKED_MODELS: Final[dict[str, Callable[[Any, Any], Sequence[Any]]]] = {
     "tag_fields_of_tagged_bases": _context_models,
     "flatten_narrowed_inherited_fields": _context_models,
     "write_enum_member_tags_as_values": _context_models,
+    "omit_incomplete_model_defaults": _models_before_override_removal,
     "assign_forward_reference_fields": _model_list,
     "fix_constructor_field_ordering": _models_before_override_removal,
     "unbind_hidden_type_fields": _model_list,

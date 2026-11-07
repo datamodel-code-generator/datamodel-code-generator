@@ -40,6 +40,7 @@ __all__ = [
     "FLATTEN_NARROWED_INHERITED_FIELDS",
     "HOOK_BODIES",
     "NAME_MODELS",
+    "OMIT_INCOMPLETE_MODEL_DEFAULTS",
     "PASS_DECLS",
     "REJECT_LONE_SURROGATES_PYDANTIC_READS",
     "RENAME_SUBMODULES_HIDDEN_BY_CLASSES",
@@ -1123,6 +1124,28 @@ APPLY_GENERIC_BASE_CLASS = PassDecl(
     ),
 )
 
+OMIT_INCOMPLETE_MODEL_DEFAULTS = PassDecl(
+    "omit_incomplete_model_defaults",
+    Phase.RENDER_PREPARATION,
+    Scope.GLOBAL,
+    PassKind.TRANSFORM,
+    reads=_facts(
+        Fact.DEFAULTS,
+        Fact.FIELD_TYPES,
+        Fact.NULLABLE,
+        Fact.MODEL_KIND,
+        Fact.BASES,
+        Fact.FIELD_SET,
+        Fact.FIELD_NAMES,
+        Fact.REQUIRED,
+    ),
+    writes=_facts(Fact.DEFAULTS, RenderFact.DEFAULT_EXPRESSION),
+    summary=(
+        "Gives the default None to each field whose object default lacks required fields of its model, before the "
+        "constructor ordering, which then places it as a field without a default."
+    ),
+    condition="--omit-incomplete-model-defaults",
+)
 ASSIGN_FORWARD_REFERENCE_FIELDS = PassDecl(
     "assign_forward_reference_fields",
     Phase.RENDER_PREPARATION,
