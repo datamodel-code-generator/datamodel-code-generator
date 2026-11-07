@@ -16024,6 +16024,57 @@ def test_main_jsonschema_allof_closed_member(
         )
 
 
+@pytest.mark.parametrize(
+    ("output_model_type", "expected_error_type"),
+    [
+        ("pydantic_v2.BaseModel", "extra_forbidden"),
+        ("pydantic_v2.dataclass", "unexpected_keyword_argument"),
+        ("typing.TypedDict", "extra_forbidden"),
+    ],
+)
+def test_main_jsonschema_allof_unevaluated_closed_member(
+    output_file: Path, output_model_type: str, expected_error_type: str
+) -> None:
+    """Test an inline allOf member with unevaluatedProperties false closes the combined model (#4742).
+
+    It closes the model as additionalProperties false does, whether the other member is an open base class, the closed
+    member sits in a nested inline allOf, or the members are merged into one model. A member whose
+    additionalProperties evaluate every property, or whose $ref evaluates the keys its patternProperties match, keeps
+    the model open.
+    """
+    input_path = JSON_SCHEMA_DATA_PATH / "allof_unevaluated_closed_member.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            *("--output-model-type", output_model_type, "--formatters", "builtin"),
+            *("--disable-timestamp", "--target-python-version", "3.10"),
+        ],
+        force_exec_validation=True,
+    )
+    validator = Draft202012Validator(json.loads(input_path.read_text(encoding="utf-8")))
+    filters = {"status": "open", "owner": "me"}
+    valid = dict.fromkeys(("closed", "nested", "merged"), filters) | {
+        "open": filters | {"note": "kept"},
+        "pattern": {"status": "open", "x_1": "kept"},
+    }
+    validator.validate(valid)
+    for field_name in ("closed", "nested", "merged"):
+        invalid = valid | {field_name: filters | {"note": "kept"}}
+        with pytest.raises(SchemaValidationError):
+            validator.validate(invalid)
+        assert_generated_model_json_validation(
+            output_file,
+            module_name=f"allof_unevaluated_closed_member_{output_model_type.replace('.', '_')}",
+            model_name="Filters",
+            valid_json=json.dumps(valid),
+            invalid_json=json.dumps(invalid),
+            expected_error_type=expected_error_type,
+        )
+
+
 def test_main_jsonschema_allof_closed_member_pattern(output_file: Path) -> None:
     """Test a closed allOf member with patternProperties keeps the combined model open.
 
