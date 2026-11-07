@@ -198,7 +198,8 @@ LEGACY_ROWS: Final[Mapping[str, Mapping[str, str]]] = {
     "distribute_allof_over_unions": {
         "legacy-ref-branch-without-site-parts": (
             "a `$ref` branch of an anyOf or oneOf takes the `properties` and `required` beside it, not the allOf "
-            "members nor the value keywords beside it"
+            "members nor the value keywords beside it, and the subtypes of a discriminated `$ref` branch take none of "
+            "the allOf members"
         ),
         "legacy-operation-all-of-before-union": (
             "an OpenAPI request or response body with an allOf beside an anyOf or oneOf is parsed by its allOf, the "
@@ -206,7 +207,7 @@ LEGACY_ROWS: Final[Mapping[str, Mapping[str, str]]] = {
         ),
         "legacy-union-parts-joined": (
             "every anyOf and oneOf of an allOf is parsed at the site's path and their branches join one union, each "
-            "with the other parts"
+            "with the other parts; a discriminated `$ref` branch of them is left out"
         ),
         "legacy-ref-member-union-dropped": (
             "an allOf member naming an allOf that holds an anyOf or oneOf is a base, which later passes drop as a "

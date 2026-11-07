@@ -445,6 +445,7 @@ from datamodel_code_generator.reference import (
     get_inferred_module_name,  # noqa: F401  # Preserve the established parser.jsonschema export.
     is_url,
     location_of,
+    subtype_ref_of,
 )
 from datamodel_code_generator.types import (
     ANY,
@@ -854,6 +855,22 @@ def _excluded_null_members(
         and not (member.anyOf or member.oneOf)
     ]
     return null_members if len(null_members) < len(members) else []
+
+
+def _expanded_variants(data_type: DataType) -> list[tuple[str, Reference]] | None:
+    """Return the ``$ref`` and the reference of each subtype a discriminator expanded a ``$ref`` branch's type to.
+
+    The type is the union the OpenAPI parser built for a ``$ref`` to a discriminated schema, each member recording the
+    ``$ref`` of the subtype it stands for (``subtype_ref_of``); None for any other type.
+    """
+    if data_type.reference is not None or not data_type.data_types:
+        return None
+    variants = [
+        (ref, member.reference)
+        for member in data_type.data_types
+        if member.reference is not None and (ref := subtype_ref_of(member)) is not None
+    ]
+    return variants if len(variants) == len(data_type.data_types) else None
 
 
 def _declared_value_types(schema: JsonSchemaObject) -> tuple[str, ...]:
@@ -4271,7 +4288,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Parse combined schema (anyOf, oneOf, allOf) into a list of data types.
 
         Each member records the location of the branch it is parsed from as its origin (``reference.type_origin_of``),
-        also the member that stands for a referenced branch.
+        also the member that stands for a referenced branch. The model paths of ``$ref`` branches number the variants
+        in union order, a branch a discriminator expanded counting its subtypes where the site distributes its
+        ``allOf`` members.
         """
         combined_schemas, refs = self._combined_schema_members(obj, target_attribute_name)
         variant_keys: dict[int, str] = {}
@@ -4287,22 +4306,56 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         if not parsed_schemas:
             _all_of_values.raise_unsatisfiable_schema(self, obj, path, target_attribute_name)
-        common_path_keyword = f"{target_attribute_name}Common"
-        return [
-            with_type_origin(
-                self._parse_ref_branch_model(
-                    name,
-                    obj.with_schema_location(combined_schemas[i].schema_location),
-                    [*get_special_path(common_path_keyword, path), str(i)],
-                    combined_schemas[i],
-                    d.reference,
-                ),
-                combined_schemas[i].schema_location,
-            )
-            if i in refs and d.reference
-            else d
-            for i, d in enumerate(parsed_schemas)
-        ]
+        special_path = get_special_path(f"{target_attribute_name}Common", path)
+        distributes_expansions = (
+            bool(obj.allOf) and "legacy-ref-branch-without-site-parts" not in self._legacy_intersection
+        )
+        data_types: list[DataType] = []
+        position = 0
+        for i, d in enumerate(parsed_schemas):
+            branch = combined_schemas[i]
+            location = branch.schema_location
+            if i in refs and d.reference:
+                data_types.append(
+                    with_type_origin(
+                        self._parse_ref_branch_model(
+                            name,
+                            obj.with_schema_location(location),
+                            [*special_path, str(position)],
+                            branch,
+                            d.reference,
+                        ),
+                        location,
+                    )
+                )
+                position += 1
+            elif i in refs and distributes_expansions and (variants := _expanded_variants(d)):
+                data_types.append(
+                    with_type_origin(
+                        build_union(
+                            self.data_type,
+                            [
+                                with_type_origin(
+                                    self._parse_ref_branch_model(
+                                        name,
+                                        obj.with_schema_location(location),
+                                        [*special_path, str(position + j)],
+                                        branch.model_copy(update={"ref": ref}),
+                                        reference,
+                                    ),
+                                    location,
+                                )
+                                for j, (ref, reference) in enumerate(variants)
+                            ],
+                        ),
+                        location,
+                    )
+                )
+                position += len(variants)
+            else:
+                data_types.append(d)
+                position += 1
+        return data_types
 
     def _parse_ref_branch_model(
         self, name: str, obj: JsonSchemaObject, path: list[str], branch: JsonSchemaObject, reference: Reference
@@ -4314,6 +4367,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         an inline branch merged with the site takes them: the ``allOf`` of the branch and those members with the
         site's other keywords (``parse_all_of``), the branch's class ``reference`` (``_BRANCH_REFERENCE_KEY``), a
         dynamic scope's specialization included, its base. A branch the site adds nothing to is the branch's own class.
+        ``parse_combined_schema`` calls it, where the site distributes its ``allOf`` members, for each subtype a
+        discriminator expanded a ``$ref`` branch to (``_expanded_variants``), numbering the models in union order.
         """
         if obj.allOf and "legacy-ref-branch-without-site-parts" not in self._legacy_intersection:
             member = branch.model_copy()
@@ -4924,7 +4979,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         A part holds the models of its branches. Under ``legacy-union-parts-joined`` every part is parsed at the site's
         path; else the first part of the site is, and part ``p`` at ``union_part-<p>`` below it, so the branches of two
         parts are different models. ``branch_schemas`` takes, by the path of each model, the branch it is parsed from
-        (``_combined_schema_members``, read again without its warnings).
+        (``_combined_schema_members``, read again without its warnings). Unless ``legacy-union-parts-joined`` is kept, a
+        ``$ref`` branch a discriminator expanded holds the models of its subtypes (``_expanded_variants``).
         """
         for keyword, parse in (("anyOf", self.parse_any_of), ("oneOf", self.parse_one_of)):
             if getattr(schema, keyword):
@@ -4941,7 +4997,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     for data_type, branch in zip(parsed, branches, strict=True)
                     if data_type.reference
                 )
-                union_parts.append([d.reference for d in parsed if d.reference])
+                part: list[Reference] = []
+                for data_type in parsed:
+                    if data_type.reference:
+                        part.append(data_type.reference)
+                    elif "legacy-union-parts-joined" not in self._legacy_intersection and (
+                        variants := _expanded_variants(data_type)
+                    ):
+                        part.extend(reference for _, reference in variants)
+                union_parts.append(part)
 
     def _build_all_of_ref_root_model(
         self,

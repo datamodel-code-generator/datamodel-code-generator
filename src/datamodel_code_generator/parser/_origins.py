@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 from datamodel_code_generator.reference import (
     ENUM_LITERAL_KEY,
     FIELD_ORIGIN_KEY,
+    SUBTYPE_REF_KEY,
     TYPE_ORIGIN_KEY,
     UNIQUE_ITEMS_KEY,
     FieldOrigin,
@@ -23,7 +24,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.reference import FieldOriginKind, SchemaLocation
     from datamodel_code_generator.types import DataType
 
-__all__ = ["with_enum_literal", "with_field_origin", "with_type_origin", "with_unique_items"]
+__all__ = ["with_enum_literal", "with_field_origin", "with_subtype_ref", "with_type_origin", "with_unique_items"]
 
 
 def with_field_origin(
@@ -55,6 +56,12 @@ def with_type_origin(data_type: DataType, location: SchemaLocation | None) -> Da
 def with_enum_literal(data_type: DataType) -> DataType:
     """Record on ``data_type`` that it is the ``Literal`` of the values of an ``enum``."""
     data_type.__dict__[ENUM_LITERAL_KEY] = True
+    return data_type
+
+
+def with_subtype_ref(data_type: DataType, ref: str) -> DataType:
+    """Record on ``data_type`` the ``$ref`` of the subtype it stands for, which --distribute-allof-over-unions reads."""
+    data_type.__dict__[SUBTYPE_REF_KEY] = ref
     return data_type
 
 

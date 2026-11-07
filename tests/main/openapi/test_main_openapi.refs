@@ -336,6 +336,8 @@ url-api	payloads/external_discriminator_outputs/url_dog.txt
 url-cli	main/openapi/external_discriminator_base/url.py
 url-cli	payloads/external_discriminator_outputs/url_cat.txt
 url-cli	payloads/external_discriminator_outputs/url_dog.txt
+[test_external_discriminator_base_distributed]
+	main/openapi/main_openapi/external_discriminator_base_distributed.py
 [test_external_discriminator_multiple_inputs]
 formatters0-api	main/openapi/external_discriminator_base/multiple//*.py
 formatters0-api	payloads/external_discriminator_outputs/local_cat.txt

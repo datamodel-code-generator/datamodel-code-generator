@@ -49,7 +49,7 @@ from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import OpenAPIAsDefinitions, OpenAPIVersion, VersionMode
 from datamodel_code_generator.parser import _union_tags
 from datamodel_code_generator.parser._naming import composed_name
-from datamodel_code_generator.parser._origins import with_type_origin
+from datamodel_code_generator.parser._origins import with_subtype_ref, with_type_origin
 from datamodel_code_generator.parser._rw_split import update_field_refs_for_variant
 from datamodel_code_generator.parser._schema_dispatch import Default, DispatchTable, Row, SchemaSite
 from datamodel_code_generator.parser._schema_graph import keep_resolved_ref, validate_resolved_ref
@@ -729,9 +729,9 @@ class OpenAPIParser(JsonSchemaParser):
         return self._derived_ref(normalized, mapping, name, normalized)
 
     def _get_discriminator_subtype_data_type(self, ref: str) -> DataType:
-        """Resolve one subtype without recursively expanding its discriminator."""
+        """Resolve one subtype without recursively expanding its discriminator, recording the `$ref` it stands for."""
         self.resolve_ref(ref)
-        return super().get_ref_data_type(ref)
+        return with_subtype_ref(super().get_ref_data_type(ref), ref)
 
     def _get_discriminator_union_type(self, ref: str) -> DataType | None:
         """Create a union type for discriminator subtypes if available.

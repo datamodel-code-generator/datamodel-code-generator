@@ -1,0 +1,5 @@
+msgspec cannot decode the union Owned: its Struct types Owned1, Owned2, Owned3 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union OwnedListed: its Struct types OwnedListed1, OwnedListed2, OwnedListed3 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Based: its Struct types Based1, Based2 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Nested: its Struct types Nested2, Nested3, Nested4 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
+msgspec cannot decode the union Holder.field_: its Struct types Field, Field1, Field2 are not all tagged, and only the variants of a discriminated union are tagged, with --use-msgspec-tagged-unions.
