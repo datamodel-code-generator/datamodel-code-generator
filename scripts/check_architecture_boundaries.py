@@ -141,10 +141,12 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
             "typing_extensions",
             "datamodel_code_generator._free_names",
             "datamodel_code_generator._model_keys",
+            "datamodel_code_generator._records",
         }),
         (
             "the names of the models are a leaf that the parsers and their passes read: import only the standard "
-            "library, typing_extensions, datamodel_code_generator._free_names and datamodel_code_generator._model_keys"
+            "library, typing_extensions, datamodel_code_generator._free_names, datamodel_code_generator._model_keys "
+            "and datamodel_code_generator._records"
         ),
     ),
     "graph-links": (
@@ -234,10 +236,10 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
         ),
     ),
     "regex": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions"}),
+        frozenset({*sys.stdlib_module_names, "typing_extensions", "datamodel_code_generator._records"}),
         (
             "the static regex scan is a leaf that the keyword table, the literal check and the backends read: import "
-            "only the standard library and typing_extensions"
+            "only the standard library, typing_extensions and datamodel_code_generator._records"
         ),
     ),
     "json-schema": (

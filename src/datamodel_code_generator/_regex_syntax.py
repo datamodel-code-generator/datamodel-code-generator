@@ -8,11 +8,12 @@ decisions made from it do not depend on the environment that generates. A leaf: 
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
 from functools import cache
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from typing_extensions import final
+
+from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -250,7 +251,7 @@ def literal_pattern_value(pattern: str) -> str | None:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class _Structure:
     """What a scan of a pattern's groups, classes and escapes (the Rust grammar) finds."""
 
@@ -426,7 +427,7 @@ def pattern_admits(pattern: str, value: str) -> bool | None:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class PatternConjunction:
     """The pattern that a value meets exactly when it meets every pattern of the parts, and those it leaves out.
 
