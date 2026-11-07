@@ -1,0 +1,3 @@
+{"labels": {"a": "b"}}: accepted
+{"labels": {}}: rejected
+{"sized": {}}: rejected
