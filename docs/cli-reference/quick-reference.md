@@ -31,6 +31,7 @@ datamodel-codegen [OPTIONS]
 | [`--read-escaped-ref-pointers`](base-options.md#read-escaped-ref-pointers) | Read the escapes of a `$ref` JSON pointer as the characters they encode. |
 | [`--read-input-model-dataclass-fields-by-alias`](base-options.md#read-input-model-dataclass-fields-by-alias) | Read the fields of a Pydantic dataclass by their aliases with --input-model. |
 | [`--read-schema-version-per-document`](base-options.md#read-schema-version-per-document) | Read each document by the schema version it declares. |
+| [`--reuse-every-reached-input-model-type`](base-options.md#reuse-every-reached-input-model-type) | Reach the types to reuse through every model kind and write no copy of an import... |
 | [`--schema-version`](base-options.md#schema-version) | Schema version to use for parsing. |
 | [`--schema-version-mode`](base-options.md#schema-version-mode) | Schema version validation mode. |
 | [`--url`](base-options.md#url) | Fetch a schema from a URL with custom HTTP headers. |
@@ -516,6 +517,7 @@ All options sorted alphabetically:
 - [`--recommend-options`](general-options.md#recommend-options) - Recommend options for the input schema on top of the latest ...
 - [`--remove-special-field-name-prefix`](field-customization.md#remove-special-field-name-prefix) - Remove the special prefix from field names.
 - [`--rename-submodules-hidden-by-classes`](template-customization.md#rename-submodules-hidden-by-classes) - Rename a submodule named like a class of its package.
+- [`--reuse-every-reached-input-model-type`](base-options.md#reuse-every-reached-input-model-type) - Reach the types to reuse through every model kind and write ...
 - [`--reuse-model`](model-customization.md#reuse-model) - Reuse identical model definitions instead of generating dupl...
 - [`--reuse-scope`](model-customization.md#reuse-scope) - Scope for model reuse detection (root or tree).
 - [`--schema-validator-base-class-name`](template-customization.md#schema-validator-base-class-name) - Set the generated shared Pydantic v2 schema runtime validato...

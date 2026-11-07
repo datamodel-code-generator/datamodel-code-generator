@@ -243,6 +243,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         _C.BASE,
         "--input --output --emit-model-metadata --http-backend --url --input-model --input-model-ref-strategy",
         "--read-input-model-dataclass-fields-by-alias --no-read-input-model-dataclass-fields-by-alias",
+        "--reuse-every-reached-input-model-type --no-reuse-every-reached-input-model-type",
         "--input-file-type --encoding --schema-version --schema-version-mode",
         "--read-schema-version-per-document --no-read-schema-version-per-document",
         "--read-escaped-ref-pointers --no-read-escaped-ref-pointers",

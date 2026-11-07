@@ -157,6 +157,11 @@ def _cwd_import_scope(cwd_entry: str) -> Generator[None]:
 
 _READ_DATACLASS_FIELDS_BY_ALIAS: ContextVar[bool] = ContextVar("_READ_DATACLASS_FIELDS_BY_ALIAS", default=False)
 """Whether a load reads the fields of a Pydantic dataclass, as a model's, by the names of their properties."""
+_IMPORTED_TYPES: ContextVar[set[type] | None] = ContextVar("_IMPORTED_TYPES", default=None)
+"""The classes the Python types of fields name by their import, collected under --reuse-every-reached-input-model-type.
+
+None without the option; the descent of reuse follows the fields of every model kind, not of models only, while set.
+"""
 
 
 def _load_model_schema_isolated(  # ruff: ignore[too-many-arguments]
@@ -167,9 +172,16 @@ def _load_model_schema_isolated(  # ruff: ignore[too-many-arguments]
     expression_collector: PythonTypeExpressionCollector | None = None,
     *,
     read_dataclass_fields_by_alias: bool = False,
+    reuse_every_reached_type: bool = False,
 ) -> dict[str, object]:
     """Load a schema while restoring cwd-local import state afterwards."""
-    with PROCESS_STATE_LOCK, context_values({_READ_DATACLASS_FIELDS_BY_ALIAS: read_dataclass_fields_by_alias}):
+    with (
+        PROCESS_STATE_LOCK,
+        context_values({
+            _READ_DATACLASS_FIELDS_BY_ALIAS: read_dataclass_fields_by_alias,
+            _IMPORTED_TYPES: set() if reuse_every_reached_type else None,
+        }),
+    ):
         cwd_entry = str(Path.cwd())
         with nullcontext() if cwd_entry in sys.path else _cwd_import_scope(cwd_entry):
             return _load_model_schema(
@@ -806,9 +818,7 @@ def _preserved_python_type_expr(tp: type, generic_names: dict[type, str] | None 
 
     if origin is Annotated:
         if args:
-            return _preserved_python_type_expr(args[0], generic_names) or _runtime_python_type_expr(
-                args[0], full_name=True
-            )
+            return _preserved_python_type_expr(args[0], generic_names) or _imported_python_type_expr(args[0])
         return None  # pragma: no cover
 
     type_name: str | None = None
@@ -841,9 +851,19 @@ def _with_full_fallback(
         if all(expression is None for expression in nested):
             return None
     return tuple(
-        expression or _runtime_python_type_expr(argument, full_name=True)
-        for expression, argument in zip(nested, args, strict=True)
+        expression or _imported_python_type_expr(argument) for expression, argument in zip(nested, args, strict=True)
     )
+
+
+def _imported_python_type_expr(tp: object) -> PythonTypeExpr:
+    """Spell a type of a field by its full runtime name, which the output imports, and note the classes it names."""
+    if (imported := _IMPORTED_TYPES.get()) is not None:
+        pending = [tp]
+        while pending:
+            if _plain_class(annotation := pending.pop()):
+                imported.add(annotation)
+            pending.extend(get_args(annotation))
+    return _runtime_python_type_expr(tp, full_name=True)
 
 
 def _simple_type_name(tp: type) -> str:
@@ -866,8 +886,14 @@ def _full_type_name(tp: type) -> str:
     return render_python_type_expr(_runtime_python_type_expr(tp, full_name=True))
 
 
-def _collect_nested_models(model: type, visited: set[type] | None = None) -> dict[str, type]:
-    """Collect all nested types (BaseModel, Enum, dataclass) from a model's fields."""
+def _collect_nested_models(
+    model: type, visited: set[type] | None = None, *, every_kind: bool = False
+) -> dict[str, type]:
+    """Collect all nested types (BaseModel, Enum, dataclass) from a model's fields.
+
+    The fields of nested models are followed; with ``every_kind`` those of dataclasses, TypedDicts and msgspec Structs
+    too.
+    """
     if visited is None:
         visited = set()
 
@@ -882,21 +908,21 @@ def _collect_nested_models(model: type, visited: set[type] | None = None) -> dic
         if model_fields is not None
         else _get_type_hints_safe(model).values()
     ):
-        _find_models_in_type(tp, result, visited)
+        _find_models_in_type(tp, result, visited, every_kind=every_kind)
     return result
 
 
-def _find_models_in_type(tp: type, result: dict[str, type], visited: set[type]) -> None:
+def _find_models_in_type(tp: type, result: dict[str, type], visited: set[type], *, every_kind: bool = False) -> None:
     """Recursively find BaseModel, Enum, dataclass, TypedDict, and msgspec in a type annotation."""
     if _plain_class(tp) and tp not in visited:
-        if _model_class(tp):
+        if _model_class(tp) or (every_kind and _is_model_like(tp)):
             result[tp.__name__] = tp
-            result.update(_collect_nested_models(tp, visited))
+            result.update(_collect_nested_models(tp, visited, every_kind=every_kind))
         elif issubclass(tp, PyEnum) or _is_model_like(tp):
             result[tp.__name__] = tp
 
     for arg in get_args(tp):
-        _find_models_in_type(arg, result, visited)
+        _find_models_in_type(arg, result, visited, every_kind=every_kind)
 
 
 def _get_type_hints_safe(obj: type) -> dict[str, Any]:
@@ -1069,7 +1095,7 @@ def _prepare_reused_model_types(
     if not strategy or strategy == InputModelRefStrategy.RegenerateAll:
         return None, None
     visited: set[type] = set()
-    nested = _collect_nested_models(model, visited)
+    nested = _collect_nested_models(model, visited, every_kind=_IMPORTED_TYPES.get() is not None)
     identities = (
         {}
         if (strategy is InputModelRefStrategy.ReuseAll and nested)
@@ -1270,7 +1296,9 @@ def _filter_defs_by_strategy(  # ruff: ignore[too-many-arguments, too-many-posit
 ) -> dict[str, Any]:
     """Filter $defs of a reuse strategy, marking reused types with x-python-import.
 
-    Only ReuseForeign has an output family; it reuses enums and the types of that family.
+    Only ReuseForeign has an output family; it reuses enums and the types of that family, and under
+    --reuse-every-reached-input-model-type also a type the Python type of a field names by its import, of which the
+    output would otherwise hold an unused copy.
     """
     if "$defs" not in schema:  # pragma: no cover
         return schema
@@ -1286,7 +1314,11 @@ def _filter_defs_by_strategy(  # ruff: ignore[too-many-arguments, too-many-posit
         nested_type = nested_models[def_name]
         type_family = _get_type_family(nested_type)
 
-        if strategy is InputModelRefStrategy.ReuseAll or type_family in {_TYPE_FAMILY_ENUM, output_family}:
+        if (
+            strategy is InputModelRefStrategy.ReuseAll
+            or type_family in {_TYPE_FAMILY_ENUM, output_family}
+            or ((imported := _IMPORTED_TYPES.get()) is not None and nested_type in imported)
+        ):
             if metadata := _pydantic_generic_metadata(nested_type):
                 if (expression := _exported_generic_expression(nested_type, None)) is None:
                     if native_paths is None:
@@ -1545,18 +1577,21 @@ class _InputModelDefinitions:
         return schema
 
 
-def load_model_schema(
+def load_model_schema(  # ruff: ignore[too-many-arguments]
     input_models: list[str],
     input_file_type: InputFileType,
     ref_strategy: InputModelRefStrategy | None = None,
     output_model_type: DataModelType | None = None,
     *,
     read_dataclass_fields_by_alias: bool = False,
+    reuse_every_reached_type: bool = False,
 ) -> dict[str, object]:
     """Load and merge schemas from 'module.path:ObjectName' import paths with inheritance support.
 
     Several import paths merge into one schema whose anyOf references every root model.
     ``read_dataclass_fields_by_alias`` gives an aliased field of a Pydantic dataclass its Python type too.
+    ``reuse_every_reached_type`` makes a reuse strategy reach types through the fields of every model kind and reuse a
+    type the Python type of a field names by its import instead of writing a copy of it.
     """
     return _load_model_schema_isolated(
         input_models,
@@ -1564,16 +1599,18 @@ def load_model_schema(
         ref_strategy,
         output_model_type,
         read_dataclass_fields_by_alias=read_dataclass_fields_by_alias,
+        reuse_every_reached_type=reuse_every_reached_type,
     )
 
 
-def _load_model_schema_with_python_type_expressions(
+def _load_model_schema_with_python_type_expressions(  # ruff: ignore[too-many-arguments]
     input_models: list[str],
     input_file_type: InputFileType,
     ref_strategy: InputModelRefStrategy | None = None,
     output_model_type: DataModelType | None = None,
     *,
     read_dataclass_fields_by_alias: bool = False,
+    reuse_every_reached_type: bool = False,
 ) -> LoadedInputModelSchema:
     """Load the CLI-only schema transport without rendering runtime expressions."""
     expression_collector = PythonTypeExpressionCollector()
@@ -1584,6 +1621,7 @@ def _load_model_schema_with_python_type_expressions(
         output_model_type,
         expression_collector,
         read_dataclass_fields_by_alias=read_dataclass_fields_by_alias,
+        reuse_every_reached_type=reuse_every_reached_type,
     )
     return expression_collector.loaded_schema(schema)
 

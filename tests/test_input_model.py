@@ -1106,6 +1106,139 @@ def test_input_model_dataclass_fields_of_one_alias(
     )
 
 
+@pytest.mark.cli_doc(
+    options=["--reuse-every-reached-input-model-type"],
+    option_description="""Reach the types to reuse through every model kind and write no copy of an imported type.
+
+With `--input-model-ref-strategy reuse-all` or `reuse-foreign` the types an input model reaches are imported from its
+module instead of generated. Reuse follows the fields of Pydantic models only, so a type reached through a dataclass
+field is still generated: `Color`, which only the dataclass `Box` uses, is written although `Box` is imported
+(reuse-all), or written beside the imported `Size` (reuse-foreign). A field whose Python type the output keeps, such as
+`Mapping[str, Item]`, imports `Item`, and a copy of `Item` (`ItemModel`) is written too. With this option reuse follows
+the fields of dataclasses, TypedDicts and msgspec Structs too, and a type that the Python type of a field imports is
+reused instead of copied, so references to it name the import.""",
+    cli_args=[
+        "--input-model",
+        "mymodule:Order",
+        "--input-model-ref-strategy",
+        "reuse-foreign",
+        "--reuse-every-reached-input-model-type",
+    ],
+    input_model="mymodule:Order",
+    golden_output="input_model/reuse_every_reached_input_model_type[order-reuse-foreign-option].txt",
+    comparison_output="input_model/reuse_every_reached_input_model_type[order-reuse-foreign].txt",
+)
+@pytest.mark.parametrize(
+    ("input_models", "extra_args"),
+    [
+        pytest.param(["Order"], ["--input-model-ref-strategy", "reuse-all"], id="order-reuse-all"),
+        pytest.param(
+            ["Order"],
+            ["--input-model-ref-strategy", "reuse-all", "--reuse-every-reached-input-model-type"],
+            id="order-reuse-all-option",
+        ),
+        pytest.param(["Order"], ["--input-model-ref-strategy", "reuse-foreign"], id="order-reuse-foreign"),
+        pytest.param(
+            ["Order"],
+            ["--input-model-ref-strategy", "reuse-foreign", "--reuse-every-reached-input-model-type"],
+            id="order-reuse-foreign-option",
+        ),
+        pytest.param(
+            ["Order"],
+            [
+                "--input-model-ref-strategy",
+                "reuse-foreign",
+                "--reuse-every-reached-input-model-type",
+                "--no-reuse-every-reached-input-model-type",
+            ],
+            id="order-reuse-foreign-no-option",
+        ),
+        pytest.param(
+            ["Order"],
+            ["--input-model-ref-strategy", "reuse-foreign", "--preset", "standard-py310-20261106"],
+            id="order-reuse-foreign-preset",
+        ),
+        pytest.param(
+            ["Outer"],
+            ["--input-model-ref-strategy", "reuse-foreign", "--output-model-type", "typing.TypedDict"],
+            id="outer-reuse-foreign",
+        ),
+        pytest.param(
+            ["Outer"],
+            [
+                "--input-model-ref-strategy",
+                "reuse-foreign",
+                "--output-model-type",
+                "typing.TypedDict",
+                "--reuse-every-reached-input-model-type",
+            ],
+            id="outer-reuse-foreign-option",
+        ),
+        pytest.param(
+            ["Outer", "Plain"],
+            ["--input-model-ref-strategy", "reuse-foreign", "--output-model-type", "typing.TypedDict"],
+            id="outer-plain-reuse-foreign",
+        ),
+        pytest.param(
+            ["Outer", "Plain"],
+            [
+                "--input-model-ref-strategy",
+                "reuse-foreign",
+                "--output-model-type",
+                "typing.TypedDict",
+                "--reuse-every-reached-input-model-type",
+            ],
+            id="outer-plain-reuse-foreign-option",
+        ),
+    ],
+)
+def test_input_model_reuse_every_reached_input_model_type(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, input_models: list[str], extra_args: list[str]
+) -> None:
+    """Reuse the types reached through a dataclass and import a type a field's Python type imports (#5949, #5542).
+
+    Without the option ``Color``, reached only through the dataclass ``Box``, is generated (reuse-all), or generated
+    beside the imported ``Size`` (reuse-foreign), and ``Outer`` writes ``ItemModel``, an unused copy of the ``Item`` its
+    ``Mapping[str, Item]`` and ``Mapping[str, list[Item]]`` fields import, as in 0.89.0. With it ``Color`` is imported
+    or left out, and ``Item`` is imported only, also where ``Plain`` names it by a reference. The input module is
+    written for the test, as tests/data/python holds no new modules.
+    """
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delitem(sys.modules, "reached_types", raising=False)
+    (tmp_path / "reached_types.py").write_text(
+        "from collections.abc import Mapping\n"
+        "from dataclasses import dataclass\n"
+        "from enum import Enum\n\n"
+        "from pydantic import BaseModel\n\n\n"
+        "class Color(Enum):\n"
+        "    RED = 'red'\n"
+        "    BLUE = 'blue'\n\n\n"
+        "class Size(Enum):\n"
+        "    S = 's'\n"
+        "    L = 'l'\n\n\n"
+        "@dataclass\n"
+        "class Box:\n"
+        "    color: Color\n\n\n"
+        "class Order(BaseModel):\n"
+        "    box: Box\n"
+        "    size: Size\n\n\n"
+        "class Item(BaseModel):\n"
+        "    name: str\n\n\n"
+        "class Outer(BaseModel):\n"
+        "    items: Mapping[str, Item] | None = None\n"
+        "    groups: Mapping[str, list[Item]] | None = None\n\n\n"
+        "class Plain(BaseModel):\n"
+        "    item: Item\n",
+        encoding="utf-8",
+    )
+    first, *others = input_models
+    run_input_model_and_assert(
+        input_model=f"reached_types:{first}",
+        output_path=tmp_path / "output.py",
+        extra_args=[*(arg for other in others for arg in ("--input-model", f"reached_types:{other}")), *extra_args],
+    )
+
+
 # ============================================================================
 # --input-model-ref-strategy tests
 # ============================================================================
