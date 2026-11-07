@@ -326,7 +326,7 @@ class ModulesHost(
 
     @property
     def _python_import_target_paths(self) -> set[str]:
-        """The paths of the models parsed for schemas whose ``x-python-import`` types their uses."""
+        """The paths of the empty models parsed for schemas whose ``x-python-import`` types their uses."""
 
     @property
     def _output_model_context(self) -> OutputModelContext:
@@ -2793,7 +2793,7 @@ def remove_overridden_models(parser: ModulesHost, state: ModuleStateView) -> Non
     Under --remove-unused-models-beside-type-overrides the models leave the list the module structure recorded, which
     stays the list the module writes, so unused-model removal takes the models collapse left out of it
     (``unused_model_lists``); without it the module writes a new list, which keeps them, as in 0.90.0.
-    Imports replace the stand-ins, and the unnamed models of ``x-python-import`` schemas leave first
+    Imports replace the stand-ins, and the unnamed empty models of ``x-python-import`` schemas leave first
     (``_drop_unnamed_python_import_models``).
     """
     if imported := parser._python_import_target_paths:  # noqa: SLF001
@@ -2820,11 +2820,12 @@ def remove_overridden_models(parser: ModulesHost, state: ModuleStateView) -> Non
 
 
 def _drop_unnamed_python_import_models(parser: ModulesHost, models: list[DataModel], imported: set[str]) -> None:
-    """Take the models of schemas whose ``x-python-import`` types every field that names them out of ``models`` (#5533).
+    """Take the empty models of schemas whose ``x-python-import`` types every field that names them out of ``models``.
 
-    Such a model, or the empty subclass reuse makes of it, leaves once reuse and collapse settled the bases, where no
-    model names it as a base: neither one of the module, where reuse builds its subclasses, nor a reference the parse
-    recorded. The list stays the one the module writes, from which unused-model removal takes the models collapse left.
+    Such a model (#5533), or the empty subclass reuse makes of it, leaves once reuse and collapse settled the bases,
+    where no model names it as a base: neither one of the module, where reuse builds its subclasses, nor a reference the
+    parse recorded. The list stays the one the module writes, from which unused-model removal takes the models collapse
+    left.
     """
     has_references = parser.generation_store.index.has_data_type_references
     module_bases = {model_key_of(base.reference) for model in models for base in model.base_classes if base.reference}

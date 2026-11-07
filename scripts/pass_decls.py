@@ -701,7 +701,7 @@ REMOVE_OVERRIDDEN_MODELS = PassDecl(
     reads=_facts(Fact.TYPE_OVERRIDES, Fact.BASES, RenderFact.CLASS_NAMES),
     writes=_facts(Fact.MODELS_EXIST),
     summary=(
-        "Keeps the models that a model-level --type-overrides replaces, the stand-ins and the models of "
+        "Keeps the models that a model-level --type-overrides replaces, the stand-ins and the empty models of "
         "x-python-import schemas that no model names (#5533) out of the module."
     ),
 )

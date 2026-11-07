@@ -3,9 +3,13 @@
 
 from __future__ import annotations
 
-from collections import OrderedDict
+from collections import Counter, OrderedDict
 
 from pydantic import BaseModel
+
+
+class Labels(BaseModel):
+    text: str | None = None
 
 
 class Options(BaseModel):
@@ -23,3 +27,4 @@ class Named(Base):
 class Root(BaseModel):
     options: OrderedDict | None = None
     named: Named | None = None
+    labels: Counter | None = None
