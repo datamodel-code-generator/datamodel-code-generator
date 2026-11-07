@@ -3492,9 +3492,27 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return self._enum_literal(schema)
 
         if schema.is_array:
-            return _lightweight_types.build_lightweight_array_type(
+            array_type = _lightweight_types.build_lightweight_array_type(
                 self, schema, depth, visited, max_depth, max_union_elements
             )
+            if non_array_types := self._get_array_union_non_array_types(schema):
+                data_types = [array_type]
+                non_array_count = self._add_array_union_non_array_types(
+                    data_types,
+                    schema,
+                    non_array_types,
+                    name="",
+                    path=[],
+                    localize_constraints=False,
+                )
+                return build_union(
+                    self.data_type,
+                    data_types,
+                    "legacy-non-array-first",
+                    nullable=bool(self._null_facts(schema, "type-union").admits_null),
+                    roles=("member", *("non-array",) * non_array_count),
+                )
+            return array_type
 
         if schema.allOf:
             return self._build_allof_type(
