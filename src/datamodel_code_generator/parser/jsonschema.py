@@ -2173,8 +2173,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         constraints = assembled.constraints
         nullable = self._null_facts(field, "field", required=required, has_default=has_default).admits_null
         extras = self.get_field_extras(field)
-        read_only = _rw_split.resolve_field_flag(self, field, "readOnly")
-        write_only = _rw_split.resolve_field_flag(self, field, "writeOnly")
+        read_only, write_only = _rw_split.resolve_field_flags(self, field)
         model_field = self._build_field(
             "property",
             field_type,

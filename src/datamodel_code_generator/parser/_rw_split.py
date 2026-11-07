@@ -105,7 +105,7 @@ __all__ = [
     "ref_schema_has_rw_model_facts",
     "register_object_model",
     "request_response_ref_schema_generates_variant",
-    "resolve_field_flag",
+    "resolve_field_flags",
     "resolve_rw_model_reference",
     "rw_model_fields_split",
     "rw_model_writes_variant_beside_fields",
@@ -536,18 +536,22 @@ class RwSplitHost(Protocol):
         """Rewrite TypedDict extra-item metadata to the matching model variant."""
 
 
-def resolve_field_flag(parser: RwSplitHost, obj: JsonSchemaObject, flag: Literal["readOnly", "writeOnly"]) -> bool:
-    """Resolve a field flag (readOnly/writeOnly) from direct value, $ref, and compositions.
+def resolve_field_flags(parser: RwSplitHost, obj: JsonSchemaObject, *, either: bool = False) -> tuple[bool, bool]:
+    """Resolve the readOnly and writeOnly flags of a field from direct value, $ref, and compositions, in one walk.
 
     Visits the $ref target, then the allOf, anyOf and oneOf members, depth first on an explicit stack; each schema
-    node a $ref names is read once, in the contexts of the $refs leading to it.
+    node a $ref names is read once, in the contexts of the $refs leading to it. The walk ends once both flags are
+    found, or with ``either`` once readOnly is: it loads the $ref targets that a walk per flag loads, in their order.
     """
     visited: set[_TargetNode] = set()
     pending: list[tuple[JsonSchemaObject, tuple[str, ...]]] = [(obj, ())]
+    read_only = write_only = False
     while pending:
         schema, contexts = pending.pop()
-        if getattr(schema, flag) is True:
-            return True
+        read_only = read_only or schema.readOnly is True
+        write_only = write_only or schema.writeOnly is True
+        if read_only and (write_only or either):
+            return read_only, write_only
         pending.extend(
             (sub, contexts)
             for schemas in (schema.oneOf, schema.anyOf, schema.allOf)
@@ -563,7 +567,7 @@ def resolve_field_flag(parser: RwSplitHost, obj: JsonSchemaObject, flag: Literal
                 continue
             visited.add(node)
             pending.append((parser._load_ref_schema_object(schema.ref), (*contexts, resolved_ref)))  # noqa: SLF001
-    return False
+    return read_only, write_only
 
 
 def collect_inherited_fields_for_request_response(
@@ -1032,8 +1036,9 @@ def join_rw_model_property_flags(parser: RwSplitHost, resolved_ref: str, flags: 
             for name, prop in (schema.properties or {}).items():
                 read_only, write_only = flags.get(name, (False, False))
                 if isinstance(prop, JsonSchemaObject):
-                    read_only |= resolve_field_flag(parser, prop, "readOnly")
-                    write_only |= resolve_field_flag(parser, prop, "writeOnly")
+                    prop_read_only, prop_write_only = resolve_field_flags(parser, prop)
+                    read_only |= prop_read_only
+                    write_only |= prop_write_only
                 flags[name] = read_only, write_only
             pending.extend(sub for sub in schema.allOf if isinstance(sub, JsonSchemaObject) and not sub.ref)
 
@@ -1369,8 +1374,7 @@ def schema_has_rw_model_fields(
     """Resolve read/write flags on fields exactly as object parsing does."""
     with parser._inherited_ref_context(defining_ref):  # noqa: SLF001
         return any(
-            isinstance(prop, JsonSchemaObject)
-            and (resolve_field_flag(parser, prop, "readOnly") or resolve_field_flag(parser, prop, "writeOnly"))
+            isinstance(prop, JsonSchemaObject) and any(resolve_field_flags(parser, prop, either=True))
             for prop in (schema.properties or {}).values()
         )
 
