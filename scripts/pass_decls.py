@@ -370,7 +370,7 @@ FLATTEN_CONFLICTING_BASE_LAYOUTS = PassDecl(
     Scope.GLOBAL,
     PassKind.TRANSFORM,
     reads=_facts(Fact.BASES, Fact.FIELD_SET, Fact.DISCRIMINATOR_TAGS, Fact.FIELD_TYPES),
-    writes=_facts(Fact.BASES, Fact.FIELD_SET, RenderFact.FIELD_ORDER),
+    writes=_facts(Fact.BASES, Fact.FIELD_SET, RenderFact.FIELD_ORDER, RenderFact.BACKEND_CONFIG),
     summary="Copies base fields into msgspec Structs whose generated bases have conflicting layouts.",
     condition="msgspec",
 )

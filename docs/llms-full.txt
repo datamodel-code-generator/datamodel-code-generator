@@ -79769,7 +79769,7 @@ entry.
 | STRUCTURE | `configure_code_formatter` | global | setup | - | MODULE_MEMBERSHIP | Runs when: format_. |
 | STRUCTURE | `detect_standard_generation_templates` | global | setup | - | - |  |
 | PLAN | `reset_per_run_state` | global | bookkeeping | - | - |  |
-| PLAN | `flatten_conflicting_base_layouts` | global | transform | BASES, FIELD_ORDER, FIELD_SET | BASES, DISCRIMINATOR_TAGS, FIELD_SET, FIELD_TYPES | Copies base fields into msgspec Structs whose generated bases have conflicting layouts. Runs when: msgspec. |
+| PLAN | `flatten_conflicting_base_layouts` | global | transform | BACKEND_CONFIG, BASES, FIELD_ORDER, FIELD_SET | BASES, DISCRIMINATOR_TAGS, FIELD_SET, FIELD_TYPES | Copies base fields into msgspec Structs whose generated bases have conflicting layouts. Runs when: msgspec. |
 | PLAN | `unconstrain_union_members` | global | transform | CONSTRAINTS, FIELD_TYPES | FIELD_TYPES | Runs when: msgspec. After `flatten_conflicting_base_layouts`: layouts are flattened with the union members as parsed. |
 | PLAN | `set_circular_root_model_paths` | global | plan | PLANS | FIELD_TYPES, MODULE_MEMBERSHIP | Runs when: collapse_root_models. |
 | PLAN | `record_emitting_modules` | global | bookkeeping | - | MODULE_MEMBERSHIP | Records the module that writes each model, for the names --collapse-root-models-name-strategy gives. |
