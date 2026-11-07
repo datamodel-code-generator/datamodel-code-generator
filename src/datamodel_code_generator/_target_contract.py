@@ -340,7 +340,8 @@ class ModelFieldFacts:
 
     `schema_null` says the None the field's annotation accepts comes from its schema's nullability or its own type,
     rather than from an optional fallback or the model configuration. `annotation_null` says the emitted annotation
-    accepts None at all, whether its type holds None or the field adds it.
+    accepts None at all, whether its type holds None or the field adds it. `explicit_name` says an `--aliases` entry
+    of the field's class scope gave its name, which is never renamed.
     """
 
     required: bool
@@ -353,6 +354,7 @@ class ModelFieldFacts:
     backend: BackendFieldFacts
     schema_null: bool
     annotation_null: bool
+    explicit_name: bool
 
 
 @dataclass(frozen=True, slots=True)

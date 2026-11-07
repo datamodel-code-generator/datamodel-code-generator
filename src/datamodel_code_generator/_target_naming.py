@@ -22,7 +22,6 @@ from datamodel_code_generator._format_types import PythonVersionMin
 from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._runtime.model_codecs.parameters import PLACEHOLDER as PATH_PLACEHOLDER
 from datamodel_code_generator._target_unicode import casefold, is_nfkc, is_python_name, nfc, nfkc, target_pattern
-from datamodel_code_generator._user_keys import scoped_key
 from datamodel_code_generator.enums import NamingStrategy
 
 if TYPE_CHECKING:
@@ -232,15 +231,6 @@ class TargetNames:
     def alias(self, wire_name: str) -> str | None:
         """Return the flat `--aliases` entry for a wire name, which names its argument as given."""
         return alias if isinstance(alias := self._resolver.aliases.get(wire_name), str) else None
-
-    def aliased(self, wire_name: str, name: str) -> bool:
-        """Return whether a model field took its name from a flat or a scoped `--aliases` entry for its wire name."""
-        return any(
-            value == name
-            and (key == wire_name or any(part == wire_name for _, part in scoped_key(key, row="every-dot")))
-            for key, value in self._resolver.aliases.items()
-            if isinstance(value, str)
-        )
 
     def argument(self, wire_name: str) -> str:
         """Return the name a model field named after a wire name takes."""

@@ -107,7 +107,7 @@ class ModelField:
     """A field of a generated model by its wire name: its attribute, or key, its type, and what its model gives it.
 
     `required` says the model's constructor needs the field, and `missing` that it defaults to Pydantic's MISSING;
-    `member` is the field's binding in its consumer.
+    `explicit` that an `--aliases` entry of its class gave its name; `member` is the field's binding in its consumer.
     """
 
     wire_name: str
@@ -118,6 +118,7 @@ class ModelField:
     write_only: bool
     member: FieldUseBinding
     missing: bool = False
+    explicit: bool = False
 
 
 def _partial(symbol: FinalModelSymbol) -> bool:
@@ -189,6 +190,7 @@ class ModelFacts:
                 write_only=facts.write_only,
                 member=member,
                 missing=facts.backend.emitted.emitted_default_kind == "pydantic_missing",
+                explicit=facts.explicit_name,
             )
 
     def root(self, symbol: SymbolId) -> TypeView | None:

@@ -592,20 +592,36 @@ class FieldNameResolver:
         A field that recorded no class is keyed by the original name of ``reference``, then by ``output_names``, the
         names the class has in the output.
         """
-        aliases = self.aliases
         for field in fields:
-            if (original_name := _wire_name(field)) is None:
+            if _wire_name(field) is None:
                 continue
-            scope = (
-                field.__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY]
-                if _ALIAS_RESOLUTION_CLASS_NAME_KEY in field.__dict__
-                else ClassScope(class_key("original-name", reference), output_names)
-            )
-            if isinstance(alias := first_given(aliases, field_keys(scope, original_name)), str):
-                field.__dict__[_EXPLICIT_FIELD_ALIAS_KEY] = (alias, original_name)
+            if (explicit := self.explicit_field_alias(field, reference, output_names=output_names)) is not None:
+                field.__dict__[_EXPLICIT_FIELD_ALIAS_KEY] = explicit
             else:
                 field.__dict__.pop(_EXPLICIT_FIELD_ALIAS_KEY, None)
         self.validate_explicit_field_aliases(fields, final=False)
+
+    def explicit_field_alias(
+        self,
+        field: model_base.DataModelFieldBase,
+        reference: Reference,
+        *,
+        output_names: tuple[str, ...] = (),
+    ) -> tuple[str, str] | None:
+        """Return the string ``--aliases`` entry of a field's class scope and its wire name, the name it is given as is.
+
+        The keys are those of ``field_keys`` under the class the field recorded, or else the original name of
+        ``reference`` and ``output_names``; a list entry is no explicit name.
+        """
+        if (original_name := _wire_name(field)) is None or not self.aliases:
+            return None
+        scope = (
+            field.__dict__[_ALIAS_RESOLUTION_CLASS_NAME_KEY]
+            if _ALIAS_RESOLUTION_CLASS_NAME_KEY in field.__dict__
+            else ClassScope(class_key("original-name", reference), output_names)
+        )
+        alias = first_given(self.aliases, field_keys(scope, original_name))
+        return (alias, original_name) if isinstance(alias, str) else None
 
     @classmethod
     def validate_explicit_field_aliases(
@@ -2470,6 +2486,14 @@ class ModelResolver:  # noqa: PLR0904
         """Record explicit choices before model transforms can combine fields."""
         self._field_name_resolvers[model_type].prepare_explicit_field_aliases(
             fields, reference, output_names=self.output_names(reference.path)
+        )
+
+    def explicit_field_alias(
+        self, field: model_base.DataModelFieldBase, reference: Reference, model_type: ModelType
+    ) -> tuple[str, str] | None:
+        """Return the ``--aliases`` entry that names a field of the model of ``reference`` as is, with its wire name."""
+        return self._field_name_resolvers[model_type].explicit_field_alias(
+            field, reference, output_names=self.output_names(reference.path)
         )
 
     @staticmethod
