@@ -838,11 +838,14 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
 
     def _type_hint_from_data_type(self, data_type: DataType, *, base: bool = False) -> str:
         """Get the type hint string, or with ``base`` the base hint, for a field data type, including nullability."""
-        type_hint = data_type.base_type_hint if base else data_type.type_hint
+        if base:
+            type_hint, hint_has_none = data_type.base_type_hint, None
+        else:
+            type_hint, hint_has_none = data_type._type_hint_and_null()  # noqa: SLF001
 
         if not type_hint:
             return NONE
-        if self._field_null_source(data_type) is None:
+        if self._field_null_source(data_type, hint_has_none=hint_has_none) is None:
             return type_hint
         return data_type._optional_hint(type_hint, self._use_union_operator)  # noqa: SLF001
 
@@ -851,15 +854,18 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         data_type: DataType,
         *,
         pending_reference_null: bool = False,
+        hint_has_none: bool | None = None,
     ) -> FieldNullSource | None:
         """Return why the field writes None around the hint of ``data_type`` (``field_renders_none``).
 
-        Without ``pending_reference_null`` the hint is the one ``type_hint`` renders; with it, imports collected
-        without a hint read the type's own None and pass its model's.
+        Without ``pending_reference_null`` the hint is the one ``type_hint`` renders, whose None ``hint_has_none``
+        gives when the caller rendered it; with it, imports collected without a hint read the type's own None and pass
+        its model's.
         """
-        hint_has_none = (
-            data_type.is_optional if pending_reference_null else data_type._hint_null_source() is not None  # noqa: SLF001
-        )
+        if hint_has_none is None:
+            hint_has_none = (
+                data_type.is_optional if pending_reference_null else data_type._hint_null_source() is not None  # noqa: SLF001
+            )
         return _field_imports.field_none_source(
             self, hint_has_none=hint_has_none and data_type.type != ANY, pending_reference_null=pending_reference_null
         )
