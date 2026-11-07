@@ -488,11 +488,13 @@ class DataTypeManager(_DataTypeManagerBase):
     def _encoded_str_type(self, kwargs: Mapping[str, Any]) -> DataType | None:
         """Return a string decoded from base64 text with the string constraints of ``kwargs``, or None without any.
 
-        It writes them in front of the decoding ``EncodedStr``, so Pydantic checks them on the text. Under
-        ``--strict-types str`` it is the strict string that ``EncodedStr`` decodes, with or without constraints.
+        It writes them in front of the decoding ``EncodedStr``, so Pydantic checks them on the text. Where the string
+        is strict (``strict_encoded_str``: ``--strict-types str`` with ``--use-strict-str-for-base64``) it is the
+        ``StrictStr`` that ``EncodedStr`` decodes, with or without constraints.
         """
         data_type_kwargs = self.transform_kwargs(dict(kwargs), _applicability.STRING_KEYWORD_ORDER)
-        if not (strict := StrictTypes.str in self.strict_types) and not data_type_kwargs:
+        strict = _applicability.strict_encoded_str(self.constraint_options, strict=StrictTypes.str in self.strict_types)
+        if not strict and not data_type_kwargs:
             return None
         if self.PATTERN_KEY in data_type_kwargs:
             data_type_kwargs[self.PATTERN_KEY] = _get_regex_literal(data_type_kwargs[self.PATTERN_KEY])

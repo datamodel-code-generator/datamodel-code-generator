@@ -1109,6 +1109,14 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
+        title="Strict base64 strings",
+        config=PresetConfig(use_strict_str_for_base64=True),
+        description=(
+            "Under --strict-types str, write a format: byte string as the StrictStr that EncodedStr decodes, so "
+            "Pydantic 2.10 or later refuses bytes for it as for any other strict string, instead of Base64Str."
+        ),
+    ),
+    PresetOptionGroup(
         title="Content media type strings as bytes",
         config=PresetConfig(use_bytes_for_content_media_type=True),
         description=(
@@ -1551,6 +1559,9 @@ def render_presets_markdown() -> str:
             "`--apply-field-options-to-every-field`: a GraphQL field, a property whose schema is `true` or `false`, a "
             "required name without a property and an appended discriminator tag take the field options the other "
             "fields take (`p_q: Annotated[Any, Field(alias='p-q')]` under `--use-annotated`), and "
+            "`--use-strict-str-for-base64`: under `--strict-types str` a `format: byte` string is the `StrictStr` "
+            "that `EncodedStr` decodes (`Annotated[StrictStr, EncodedStr(encoder=Base64Encoder)]`), which refuses "
+            "bytes as any other strict string does, instead of `Base64Str`, and "
             "`--use-bytes-for-content-media-type`: a string of an OpenAPI document that has a `contentMediaType` and "
             "no `contentEncoding`, raw binary content, is typed `bytes`, as a `format: binary` string is, instead of "
             "`str`, and "

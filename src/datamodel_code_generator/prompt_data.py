@@ -265,6 +265,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--use-standard-collections": "Use built-in dict/list instead of typing.Dict/List.",
     "--use-standard-primitive-types": "Use Python standard library types for string formats instead of str.",
     "--use-status-code-in-response-name": "Include HTTP status code in response model names.",
+    "--use-strict-str-for-base64": "Make a `format: byte` string strict under `--strict-types str`.",
     "--use-subclass-enum": "Generate typed Enum subclasses for enums with specific field types.",
     "--use-tag-as-union-variant-name": "Name inline oneOf/anyOf branch models after their tag: what `--infer-union-...",
     "--use-title-as-name": "Use schema title as the generated class name.",

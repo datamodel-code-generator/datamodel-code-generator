@@ -69,6 +69,7 @@
 - `--no-use-specialized-enum`: Disable specialized Enum classes for Python 3.11+ code generation.
 - `--no-use-standard-collections`: Use typing.Dict/List instead of built-in dict/list for container types.
 - `--no-use-standard-primitive-types`
+- `--no-use-strict-str-for-base64`
 - `--no-use-tuple-for-closed-arrays`
 - `--no-use-tuple-for-fixed-items`
 - `--no-use-typed-map-values-beside-other-types`
@@ -103,6 +104,7 @@
 - `--use-specialized-enum`: Generate StrEnum/IntEnum for string/integer enums (Python 3.11+).
 - `--use-standard-collections`: Use built-in dict/list instead of typing.Dict/List.
 - `--use-standard-primitive-types`: Use Python standard library types for string formats instead of str.
+- `--use-strict-str-for-base64`: Make a `format: byte` string strict under `--strict-types str`.
 - `--use-total-false-for-typed-dict`: Generate TypedDict declarations with `total=False`.
 - `--use-tuple-for-closed-arrays`: Generate tuple types for positional arrays that no other item can follow.
 - `--use-tuple-for-fixed-items`: Generate tuple types for arrays with items array syntax.

@@ -1091,6 +1091,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.data_type_manager.read_msgspec_union_bounds_exactly = config.read_msgspec_union_bounds_exactly
         self.data_type_manager.use_decimal_in_field_forms = config.use_decimal_in_field_forms
         self.data_type_manager.use_encoded_str_for_constrained_base64 = config.use_encoded_str_for_constrained_base64
+        self.data_type_manager.use_strict_str_for_base64 = config.use_strict_str_for_base64
         self.data_type_manager.use_msgspec_meta_for_map_keys = config.use_msgspec_meta_for_map_keys
         self.data_model_type: type[DataModel] = config.data_model_type
         self.data_model_root_type: type[DataModel] = config.data_model_root_type

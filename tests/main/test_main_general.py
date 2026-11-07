@@ -2052,6 +2052,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "use_serialize_as_any_for_every_subclass",
         "use_decimal_in_field_forms",
         "use_encoded_str_for_constrained_base64",
+        "use_strict_str_for_base64",
         "merge_shared_variant_tags",
         "use_standard_collections",
         "use_object_type",

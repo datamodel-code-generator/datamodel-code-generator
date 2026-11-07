@@ -92,6 +92,7 @@ OPT_IN_OPTIONS_20261106: tuple[str, ...] = (
     "--keep-reference-null-on-collapsed-root-models",
     "--read-allof-parents-in-mro-order",
     "--apply-field-options-to-every-field",
+    "--use-strict-str-for-base64",
     "--use-bytes-for-content-media-type",
     "--collapse-constrained-root-models-as-annotated",
     "--remove-unused-models-beside-type-overrides",
@@ -346,6 +347,12 @@ CASES_20261106: tuple[pytest.ParameterSet, ...] = (
         "openapi",
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="apply-field-options-to-every-field",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "encoded_str_for_constrained_base64.json",
+        "jsonschema",
+        ["--output-model-type", "pydantic_v2.BaseModel", "--strict-types", "str"],
+        id="use-strict-str-for-base64",
     ),
     pytest.param(
         OPEN_API_DATA_PATH / "content_media_type_bytes.yaml",

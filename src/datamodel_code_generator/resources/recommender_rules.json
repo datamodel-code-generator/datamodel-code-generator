@@ -1560,6 +1560,10 @@
       "not_recommended": "style",
       "reason": "Names response models; the schemas scope the recommender analyses has none."
     },
+    "use_strict_str_for_base64": {
+      "not_recommended": "preset",
+      "reason": "Pydantic v2 output under --strict-types str only: set by the 20261106 presets; the recommendation starts from a preset."
+    },
     "use_subclass_enum": {
       "not_recommended": "preset",
       "reason": "Set by every dated preset; the recommendation starts from the preset."

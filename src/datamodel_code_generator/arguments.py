@@ -1075,6 +1075,14 @@ _toggle(
     "checks the constraints on the base64 text, as the schema does; without it Annotated[Base64Str, Field(...)] and "
     "an optional Base64Str with Field(...) check them on the decoded text, as in 0.88.0 (Pydantic v2 only)",
 )
+_toggle(
+    typing_options,
+    "--use-strict-str-for-base64",
+    help="Under --strict-types str, write a format: byte string as the StrictStr that EncodedStr decodes "
+    "(Annotated[StrictStr, EncodedStr(encoder=Base64Encoder)]), so Pydantic 2.10 or later refuses bytes for it as "
+    "for any other strict string; without it the string is Base64Str, or the str of "
+    "--use-encoded-str-for-constrained-base64, which accept bytes, as in 0.90.0 (Pydantic v2 only)",
+)
 _flag(typing_options, "--use-one-literal-as-default", help="Use one literal as default value for one literal field")
 _flag(
     typing_options,
