@@ -11,7 +11,14 @@
       "items": {"anyOf": [{"$ref": "#/$defs/PodSpec"}, {"type": "object", "additionalProperties": {"type": "integer"}}]},
       "default": [{"name": "x"}]
     },
-    "aliasBesideCounts": {"$ref": "#/$defs/PodOrCounts", "default": {"name": "y"}}
+    "aliasBesideCounts": {"$ref": "#/$defs/PodOrCounts", "default": {"name": "y"}},
+    "countsThenStruct": {
+      "type": "array",
+      "prefixItems": [{"type": "object", "additionalProperties": {"type": "integer"}}, {"$ref": "#/$defs/PodSpec"}],
+      "minItems": 2,
+      "maxItems": 2,
+      "default": [{"a": 1}, {"name": "z"}]
+    }
   },
   "$defs": {
     "PodSpec": {"type": "object", "properties": {"name": {"type": "string"}}},

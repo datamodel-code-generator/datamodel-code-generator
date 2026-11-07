@@ -558,8 +558,9 @@ def _names_structs(data_type: DataType, aliases: frozenset[int], *, containers: 
 
     A type that holds a union of a mapping beside other members, or of Structs msgspec refuses (``_refused_structs``),
     converts to none: msgspec takes neither, and the default stays the value, as beside a dict member of the field's
-    union. ``aliases`` holds the aliases, by id, whose values are read already. Without ``containers`` the items and
-    values of arrays and mappings are left out, as an empty default holds none.
+    union. The members of a tuple are its positions, no union, and each is read on its own. ``aliases`` holds the
+    aliases, by id, whose values are read already. Without ``containers`` the items and values of arrays and mappings
+    are left out, as an empty default holds none.
     """
     pending, followed, found = [data_type], set(aliases), False
     while pending:
@@ -570,8 +571,11 @@ def _names_structs(data_type: DataType, aliases: frozenset[int], *, containers: 
                 followed.add(id(source))
                 pending.append(source.fields[0].data_type)
         elif containers or not (current in ARRAYS or current in MAPPINGS):
-            if len(members := current.data_types) > 1 and (
-                any(member in MAPPINGS for member in members) or _refused_structs(members)
+            members = current.data_types
+            if (
+                not current.is_tuple
+                and len(members) > 1
+                and (any(member in MAPPINGS for member in members) or _refused_structs(members))
             ):
                 return False
             pending.extend(members)

@@ -10,5 +10,12 @@
   ],
   "aliasBesideCounts": {
     "name": "str"
-  }
+  },
+  "countsThenStruct": [
+    "tuple",
+    {
+      "a": "int"
+    },
+    "PodSpec"
+  ]
 }

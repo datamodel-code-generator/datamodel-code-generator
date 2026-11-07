@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
-from msgspec import UNSET, Struct, UnsetType, field
+from msgspec import UNSET, Struct, UnsetType, convert, field
 
 
 class Circle(Struct):
@@ -24,3 +24,8 @@ class Model(Struct):
         default_factory=lambda: [{'radius': 1}]
     )
     aliasShapes: Shapes | UnsetType = field(default_factory=lambda: [{'side': 2}])
+    pair: tuple[Circle, Square] | UnsetType = field(
+        default_factory=lambda: convert(
+            [{'radius': 1}, {'side': 2}], type=tuple[Circle, Square]
+        )
+    )

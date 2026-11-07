@@ -27,6 +27,27 @@
           "side": 2
         }
       ]
+    },
+    "pair": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/Circle"
+        },
+        {
+          "$ref": "#/$defs/Square"
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2,
+      "default": [
+        {
+          "radius": 1
+        },
+        {
+          "side": 2
+        }
+      ]
     }
   },
   "$defs": {
