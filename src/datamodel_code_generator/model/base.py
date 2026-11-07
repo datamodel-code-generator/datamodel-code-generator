@@ -123,8 +123,9 @@ from datamodel_code_generator.model._render_plan import (
     visible_nested_factories,
 )
 from datamodel_code_generator.model._rendered_names import (
+    FieldNameBindings,
     _bare_loads_of,  # noqa: F401  # Preserve the established model.base export.
-    _bind_builtin_names,
+    _bind_bare_loads,
     _bind_field_expressions,
 )
 from datamodel_code_generator.python_literal import (
@@ -2247,7 +2248,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     Handles template rendering, import collection, and model relationships.
     """
 
-    _field_name_bindings: Mapping[str, str] | None = None
+    _field_name_bindings: FieldNameBindings | None = None
     _builtin_name_bindings: Mapping[str, str] | None = None
     target_python_version: PythonVersion = NEWEST_TARGET
     """The target Python whose names the model writes from template data: the newest unless it was built for one."""
@@ -3089,11 +3090,16 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
 
     @override
     def _render(self, *args: Any, **kwargs: Any) -> str:
-        """Render the template, writing the bare builtins that the module imports under aliases through the aliases."""
+        """Render the template, writing the bare names that the module imports under aliases through the aliases.
+
+        The aliases are those of the builtins a submodule hides and of the imports a field name hides, which the module
+        binds only under the alias, so every model of the module writes them.
+        """
         rendered = self._render_template(*args, **kwargs)
-        if self._builtin_name_bindings is None:
+        field_loads = {} if self._field_name_bindings is None else self._field_name_bindings.loads
+        if not (bindings := {**field_loads, **(self._builtin_name_bindings or {})}):
             return rendered
-        return _bind_builtin_names(rendered, self._builtin_name_bindings)
+        return _bind_bare_loads(rendered, bindings)
 
     def _render_template(self, *args: Any, **kwargs: Any) -> str:
         """Render project-owned built-ins without loading Jinja."""
@@ -3624,12 +3630,12 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             ),
             path=self.path,
         )
-        if self._field_name_bindings is None:
+        if self._field_name_bindings is None or not self._field_name_bindings.expressions:
             return rendered
-        return _bind_field_expressions(rendered, rendered_class_name, self._field_name_bindings)
+        return _bind_field_expressions(rendered, rendered_class_name, self._field_name_bindings.expressions)
 
-    def set_field_name_bindings(self, bindings: Mapping[str, str]) -> None:
-        """Set module import names used by rendered field expressions."""
+    def set_field_name_bindings(self, bindings: FieldNameBindings) -> None:
+        """Set the aliases of the names the module's field names hide, which the rendered text writes."""
         self._field_name_bindings = bindings
         self.invalidate_render_caches()
 
