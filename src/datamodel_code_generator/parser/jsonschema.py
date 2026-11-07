@@ -2721,7 +2721,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         return {}
 
     def _is_compatible_python_type(self, schema_type: str | None, python_type: PythonTypeExpr) -> bool:
-        """Check if x-python-type is compatible with the JSON Schema type."""
+        """Check if x-python-type is compatible with the JSON Schema type.
+
+        A compatible x-python-type leaves the schema's type to the field; any other one types it. A union spelled
+        ``X | Y`` is never compatible. Row ``legacy-spelled-union-takes-schema-type``: without
+        --use-x-python-type-unions a union spelled ``Optional[...]`` or ``Union[...]`` is compatible with every
+        declared type, so the field takes the schema's type.
+        """
         from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
             is_union_python_type_expr,
             iter_python_type_expr_names,
@@ -2733,8 +2739,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             return False
         if schema_type is None:
             return not is_union_python_type_expr(python_type)
-        if base_type in _PYTHON_UNION_BASE_TYPES:  # pragma: no cover
-            return True
+        if base_type in _PYTHON_UNION_BASE_TYPES:
+            return not self.use_x_python_type_unions
         compatible = self.COMPATIBLE_PYTHON_TYPES.get(schema_type, frozenset())
         return base_type in compatible
 

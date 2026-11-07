@@ -2061,6 +2061,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "use_closed_typed_dict",
         "use_plain_alias_for_recursive_models",
         "type_overrides_replace_whole_type",
+        "use_x_python_type_unions",
         "capitalise_numbered_enum_members",
         "snake_case_field",
         "strict_nullable",

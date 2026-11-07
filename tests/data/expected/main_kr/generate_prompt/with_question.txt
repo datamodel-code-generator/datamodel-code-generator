@@ -77,6 +77,7 @@ How do I convert enums to Literal types?
 - `--no-use-union-operator`: Use Union[X, Y] / Optional[X] instead of X | Y union operator.
 - `--no-use-unique-items-as-set`
 - `--no-use-unique-items-as-set-by-value`
+- `--no-use-x-python-type-unions`
 - `--output-date-class`: Specify date class type for date schema fields.
 - `--output-datetime-class`: Specify datetime class type for date-time schema fields.
 - `--read-const-beside-enum`: Read a `const` beside an `enum` as JSON Schema does.
@@ -112,6 +113,7 @@ How do I convert enums to Literal types?
 - `--use-union-operator`: Use | operator for Union types (PEP 604).
 - `--use-unique-items-as-set`: Generate set types for arrays with uniqueItems constraint.
 - `--use-unique-items-as-set-by-value`: Write a uniqueItems set only where its final items hash by value.
+- `--use-x-python-type-unions`: Type a field by an `x-python-type` union spelled `Optional[...]` or `Union[...]`.
 
 ### Field Customization
 - `--aliases`: Apply custom field and class name aliases via inline JSON or a JSON file path.
@@ -931,6 +933,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         sets are decided before root models collapse, set item
                         models hash by identity and such models merge, as in
                         0.89.0
+  --use-x-python-type-unions, --no-use-x-python-type-unions
+                        Type a field by its x-python-type when that is a union
+                        spelled Optional[...] or Union[...], such as
+                        Optional[Literal['a', 'b']], as one spelled X | Y
+                        already is; without it such a union is ignored where
+                        the schema declares one type, and the field takes the
+                        schema's type, as in 0.89.0
 
 [36;1mField customization[0m:
   --capitalise-enum-members, --capitalize-enum-members

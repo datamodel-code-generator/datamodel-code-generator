@@ -111,3 +111,5 @@ use-typed-map-values-beside-other-types-practical	main/preset_opt_in_options/pre
 use-typed-map-values-beside-other-types-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-typed-map-values-beside-other-types-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-typed-map-values-beside-other-types-practical].py
 use-unique-items-as-set-by-value-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-unique-items-as-set-by-value-practical].py
 use-unique-items-as-set-by-value-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-unique-items-as-set-by-value-standard].py
+use-x-python-type-unions-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-x-python-type-unions-practical].py
+use-x-python-type-unions-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-x-python-type-unions-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-x-python-type-unions-practical].py

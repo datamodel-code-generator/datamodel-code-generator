@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Settings",
+  "type": "object",
+  "properties": {
+    "mode": {"type": "string", "x-python-type": "Optional[Literal['a', 'b']]"},
+    "level": {"type": "string", "x-python-type": "typing.Union[typing.Literal['low'], typing.Literal['high']]"},
+    "spelled": {"type": "string", "x-python-type": "Literal['a', 'b'] | None"},
+    "modes": {"type": "array", "items": {"type": "string", "x-python-type": "Optional[Literal['a', 'b']]"}},
+    "by_key": {"type": "object", "additionalProperties": {"type": "string", "x-python-type": "Union[Literal['x'], Literal['y']]"}},
+    "kind": {"$ref": "#/$defs/Kind"}
+  },
+  "$defs": {
+    "Kind": {"type": "string", "x-python-type": "Optional[Literal['k1', 'k2']]"}
+  }
+}
