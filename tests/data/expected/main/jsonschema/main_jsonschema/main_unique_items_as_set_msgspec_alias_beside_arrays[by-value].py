@@ -50,6 +50,9 @@ class Pet(Struct):
     name: str | UnsetType = UNSET
 
 
+UniqueInts: TypeAlias = set[int]
+
+
 Tags: TypeAlias = set[str]
 
 
@@ -59,6 +62,7 @@ class Holder(Struct):
     besideListAndPet: list[int] | Pet | UnsetType = UNSET
     nestedLists: list[list[int]] | UnsetType = UNSET
     pet: Pet | UnsetType = UNSET
+    nestedAnyOf: list[int] | UnsetType = UNSET
 
 
 class Refused(Struct):
@@ -70,7 +74,7 @@ class Refused(Struct):
 Mixed: TypeAlias = Pet | list[int] | str
 
 
-class Kept(Struct):
+class Varied(Struct):
     boundedBesideList: BoundedBesideList | list[int] | UnsetType = UNSET
     besideOtherItems: BesideOtherItems | list[str] | UnsetType = UNSET
     besideListAndMixed: BesideListAndMixed | list[int] | Mixed | UnsetType = UNSET
@@ -81,4 +85,4 @@ class Kept(Struct):
 class Model(Struct):
     holder: Holder | UnsetType = UNSET
     refused: Refused | UnsetType = UNSET
-    kept: Kept | UnsetType = UNSET
+    varied: Varied | UnsetType = UNSET

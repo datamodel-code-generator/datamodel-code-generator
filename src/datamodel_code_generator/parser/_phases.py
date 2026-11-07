@@ -72,6 +72,9 @@ class DecisionStore(Protocol):
     def set_field_default(self, field_: Any, default: Any) -> None:
         """Write a field's default."""
 
+    def set_nested_data_types(self, data_type: Any, nested_data_types: Any) -> None:
+        """Replace the nested data types of a data type."""
+
     def replace_additional_properties_type(self, model: Any, data_type: Any) -> None:
         """Give a model the type of the additional properties its settings write (TypedDict ``extra_items``)."""
 
@@ -85,6 +88,8 @@ class DecisionOptions:
     """--use-tuple-for-closed-arrays writes a closed array as a tuple, which keeps its positions."""
     user_imports: bool = False
     """--additional-imports may shadow the builtin annotations that hashability reads."""
+    decodes_value_unions: bool = True
+    """The output decodes a union of any value types; msgspec decodes one array-like member only."""
     meta_field_keys: frozenset[str] = frozenset()
     """The keys of a field the output writes as metadata beside its type (msgspec's ``Meta()`` arguments)."""
 
@@ -212,21 +217,29 @@ class _DecisionWriter:
         self._changed[id(model)] = cast("DataModel", model)
 
     def write_members_as_lists(
-        self, model: ModelView, field: FieldView, members: Sequence[tuple[DataTypeView, DataTypeView]]
+        self, model: ModelView, field: FieldView, members: Sequence[tuple[DataTypeView, DataTypeView | None]]
     ) -> None:
-        """Write each node of ``members`` in the type of ``field`` as its set's list (``SetAliasMembersWriter``).
+        """Write each node of ``members`` in the type of ``field`` as its set's list, or leave it out.
 
-        The field takes a copy of its type tree whose copies of the nodes are list copies of their sets
-        (``rewrite_copied_type``); the nodes and the sets stay as the other fields see them.
+        The field takes a copy of its type tree, whose copies of the nodes are list copies of their sets or leave the
+        nodes that hold them (``SetAliasMembersWriter``); the nodes and the sets stay as the other fields see them.
         """
-        rewrites = {id(node): self._list_copy(alias_set) for node, alias_set in members}
         original: Any = field.data_type
-        self._store.replace_field_type(field, rewrite_copied_type(self._store, self._copy, original, rewrites))
+        copied = self._copy(original)
+        targets = {
+            id(source): target for source, target in zip(original.all_data_types, copied.all_data_types, strict=True)
+        }
+        self._store.replace_field_type(field, copied)
+        for node, alias_set in members:
+            target = targets[id(node)]
+            if alias_set is None:
+                holder = target.parent
+                self._store.set_nested_data_types(
+                    holder, [member for member in holder.data_types if member is not target]
+                )
+            else:
+                self._store.swap_data_type(target, _set_of(self._copy(alias_set), is_set=False))
         self._changed[id(model)] = cast("DataModel", model)
-
-    def _list_copy(self, alias_set: DataTypeView) -> Callable[[Any], Any]:
-        """Return the rewrite of a node into a list copy of ``alias_set``, which holds copies of its items."""
-        return lambda _: _set_of(self._copy(alias_set), is_set=False)
 
     def outcome(self, live_models: Iterable[DataModel]) -> DecisionOutcome:
         """Return the models of ``live_models`` that the writes changed, in their order."""

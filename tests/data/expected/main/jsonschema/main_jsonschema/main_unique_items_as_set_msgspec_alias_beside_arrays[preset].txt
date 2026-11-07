@@ -1,0 +1,9 @@
+{
+  "beside_list": "[1, 1]",
+  "beside_string": "{2}",
+  "beside_list_and_pet": "[3, 3]",
+  "nested_lists": "[[4, 4]]",
+  "pet": "Pet(name='a')",
+  "nested_any_of": "[5, 5]",
+  "BesideList": "{1}"
+}

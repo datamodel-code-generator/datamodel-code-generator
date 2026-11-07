@@ -4,43 +4,50 @@ msgspec decodes a union that holds at most one array-like type (``list``, ``tupl
 --use-unique-items-as-set, an anyOf or oneOf member written as a type alias of a uniqueItems set, ``V: TypeAlias =
 set[int]``, sits beside the list another member writes, ``V | list[int]``, and the union fails on every decode. The
 decision writes such a member, at that union only, as the list of the alias's set where that list is the type the
-other array-like members write: the union then writes that type once (``list[int]``) and decodes. An alias that writes
-anything beside its set (a ``Meta()`` argument), or a union whose array-like members stay apart, keeps the member, as
-msgspec refuses the union either way; the alias keeps its set wherever it is written.
+other array-like members write: the union then writes that type once (``list[int]``) and decodes. The member leaves
+the node that holds it beside a member that stays, which the union writes, so a nested union writes the list once too.
+An alias that writes anything beside its set (a ``Meta()`` argument), or a union whose array-like members stay apart,
+keeps the member, as msgspec refuses the union either way; the alias keeps its set wherever it is written. Under
+--use-unique-items-as-set-by-value the decision on the final types reads the members picked here as the list the union
+writes, so a default the union takes stays the list (``listed_members``).
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Protocol, cast
+from typing import TYPE_CHECKING, Any, Protocol, TypeAlias, cast
 
 from datamodel_code_generator._container_kinds import ARRAYS, CONTAINERS
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView
     from datamodel_code_generator.parser._phases import FinalFacts
 
-__all__ = ["LIST_SET_ALIAS_MEMBERS", "SetAliasMembersWriter"]
+__all__ = ["LIST_SET_ALIAS_MEMBERS", "ListedMember", "SetAliasMembersWriter", "listed_members"]
+
+ListedMember: TypeAlias = "tuple[DataTypeView, DataTypeView | None]"
+"""A union member the decision picks, with the set of its alias it is written as the list of, or None where it leaves
+the node that holds it, beside a member that stays."""
 
 
 class SetAliasMembersWriter(DecisionWriter, Protocol):
     """The write of the decision: write members of a union as the lists of the sets their type aliases write."""
 
-    def write_members_as_lists(
-        self, model: ModelView, field: FieldView, members: Sequence[tuple[DataTypeView, DataTypeView]]
-    ) -> None:
-        """Write each member of ``members``, a node of the type of ``field`` of ``model``, as the list of its set.
+    def write_members_as_lists(self, model: ModelView, field: FieldView, members: Sequence[ListedMember]) -> None:
+        """Write each node of ``members``, in the type of ``field`` of ``model``, as its set's list, or leave it out.
 
         The field gets a copy of its type tree with the lists; the nodes and the sets stay as other fields see them.
         """
 
 
-def _alias_set(model: ModelView, meta_keys: Collection[str]) -> DataTypeView | None:
-    """Return the set a type alias writes as its value alone, or None.
+def _alias_set(
+    model: ModelView, meta_keys: Collection[str], is_set: Callable[[DataTypeView], bool]
+) -> DataTypeView | None:
+    """Return the set a type alias writes as its value alone (``is_set``), or None.
 
     The alias writes nothing beside it where its field holds none of ``meta_keys``, the metadata and constraints
     msgspec writes as ``Meta()`` arguments, and neither the set nor a node that holds it alone admits None.
@@ -54,7 +61,7 @@ def _alias_set(model: ModelView, meta_keys: Collection[str]) -> DataTypeView | N
     value = field.data_type
     while not value.admits_none and _joins_union(value) and len(value.data_types) == 1:
         value = value.data_types[0]
-    return value if value.is_set and not value.admits_none else None
+    return value if is_set(value) and not value.admits_none else None
 
 
 def _written(data_type: DataTypeView, *, as_list: bool = False) -> tuple[object, ...]:
@@ -92,13 +99,13 @@ def _joins_union(data_type: DataTypeView) -> bool:
     return data_type.reference is None and data_type not in CONTAINERS and bool(data_type.data_types)
 
 
-def _members(holder: DataTypeView) -> Iterator[DataTypeView]:
-    """Yield the members of the union of ``holder``'s types, those of the unions among them too."""
+def _members(holder: DataTypeView) -> Iterator[tuple[DataTypeView, DataTypeView]]:
+    """Yield the members of the union of ``holder``'s types, those of the unions it joins too, each with its holder."""
     for member in holder.data_types:
         if _joins_union(member):
             yield from _members(member)
         else:
-            yield member
+            yield holder, member
 
 
 def _unions(data_type: DataTypeView, *, joined: bool = False) -> Iterator[DataTypeView]:
@@ -115,9 +122,11 @@ class _Aliases:
 
     __slots__ = ("live", "sets")
 
-    def __init__(self, facts: FinalFacts, meta_keys: Collection[str]) -> None:
-        self.live: Mapping[ModelKey, ModelView] = {model_key_of(model.reference): model for model in facts.live_models}
-        self.sets = {key: found for key, model in self.live.items() if (found := _alias_set(model, meta_keys))}
+    def __init__(
+        self, live_models: Iterable[ModelView], is_set: Callable[[DataTypeView], bool], meta_keys: Collection[str]
+    ) -> None:
+        self.live: Mapping[ModelKey, ModelView] = {model_key_of(model.reference): model for model in live_models}
+        self.sets = {key: found for key, model in self.live.items() if (found := _alias_set(model, meta_keys, is_set))}
 
     def holds_array(self, key: ModelKey) -> bool:
         """Return whether the value of the alias ``key`` may write an array-like member of a union that names it.
@@ -127,7 +136,8 @@ class _Aliases:
         if (model := self.live.get(key)) is None or model.form != "alias" or not model.fields:
             return False
         value = model.fields[0].data_type
-        return any(map(self._array, _members(value) if _joins_union(value) else (value,)))
+        members = (member for _, member in _members(value)) if _joins_union(value) else (value,)
+        return any(map(self._array, members))
 
     def _array(self, data_type: DataTypeView) -> bool:
         """Return whether a member of an alias's value is array-like or names an alias."""
@@ -135,45 +145,67 @@ class _Aliases:
             return data_type in ARRAYS
         return (model := self.live.get(model_key_of(reference))) is not None and model.form == "alias"
 
-    def listed(self, holder: DataTypeView) -> list[tuple[DataTypeView, DataTypeView]]:
-        """Return the members of the union of ``holder`` to write as the lists of their aliases' sets, with the sets.
+    def listed(self, holder: DataTypeView) -> list[ListedMember]:
+        """Return the members of the union of ``holder`` that name an alias of a set the union writes as a list.
 
-        They are written so where each such list is the type every other array-like member writes, one of which
-        writes it itself: the union then holds that one array-like type. Otherwise the union keeps its members.
+        They are picked where each such list is the type every other array-like member writes, one of which writes
+        it itself: the union then holds that one array-like type. Otherwise the union keeps its members.
+        A member leaves the node that holds it beside a member that stays, as the union writes its list already;
+        the first of the members of a node that would hold none is written as its alias's list.
         """
-        listed: list[tuple[DataTypeView, DataTypeView]] = []
+        picked: list[tuple[DataTypeView, DataTypeView, DataTypeView]] = []
         forms: list[tuple[object, ...]] = []
         written = False
-        for member in _members(holder):
+        for parent, member in _members(holder):
             if (reference := member.reference) is None:
                 if member in ARRAYS:
                     forms.append(_written(member))
                     written = True
             elif (alias_set := self.sets.get(key := model_key_of(reference))) is not None and not member.admits_none:
-                listed.append((member, alias_set))
+                picked.append((parent, member, alias_set))
                 forms.append(_written(alias_set, as_list=True))
             elif self.holds_array(key):
                 return []
-        if not (listed and written and all(form == forms[0] for form in forms)):
+        if not (picked and written and all(form == forms[0] for form in forms)):
             return []
+        listed: list[ListedMember] = []
+        for parent in {id(parent): parent for parent, _, _ in picked}.values():
+            members = [(member, alias_set) for holding, member, alias_set in picked if holding is parent]
+            stays = len(parent.data_types) > len(members)
+            listed.extend(
+                (member, None if stays or index else alias_set) for index, (member, alias_set) in enumerate(members)
+            )
         return listed
 
 
+def listed_members(
+    live_models: Sequence[ModelView], is_set: Callable[[DataTypeView], bool], meta_keys: Collection[str]
+) -> list[tuple[ModelView, FieldView, list[ListedMember]]]:
+    """Return, for each field of ``live_models``, the union members ``_Aliases.listed`` picks, where it picks any.
+
+    ``is_set`` tells whether the node of an alias's value is a set: the decision on the final types
+    (``parser/_unique_sets.py``) reads it from its plans, to write the defaults as the listed unions write them.
+    ``meta_keys`` are the keys of a field the output writes as ``Meta()`` arguments (``DecisionOptions``).
+    """
+    aliases = _Aliases(live_models, is_set, meta_keys)
+    if not aliases.sets:
+        return []
+    return [
+        (model, field, listed)
+        for model in live_models
+        for field in model.fields
+        if (listed := [member for holder in _unions(field.data_type) for member in aliases.listed(holder)])
+    ]
+
+
 def _list_set_alias_members(facts: FinalFacts, writer: SetAliasMembersWriter) -> None:
-    """Write the members of the unions of every live model's fields that ``_Aliases.listed`` picks as lists.
+    """Write the members of the unions of every live model's fields that ``_Aliases.listed`` picks.
 
     Every pick is read before the first write, so a union reads the aliases' sets as their models write them.
     """
-    aliases = _Aliases(facts, facts.options.meta_field_keys)
-    if not aliases.sets:
-        return
-    picks = [
-        (model, field, listed)
-        for model in facts.live_models
-        for field in model.fields
-        if (listed := [pair for holder in _unions(field.data_type) for pair in aliases.listed(holder)])
-    ]
-    for model, field, listed in picks:
+    for model, field, listed in listed_members(
+        facts.live_models, lambda node: node.is_set, facts.options.meta_field_keys
+    ):
         writer.write_members_as_lists(model, field, listed)
 
 
