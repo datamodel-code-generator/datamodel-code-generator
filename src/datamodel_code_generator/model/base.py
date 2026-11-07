@@ -182,6 +182,7 @@ _ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY = "additionalPropertiesType"
 # This key remains part of the legacy template contract, including custom outputs.
 _USE_TYPED_DICT_BACKPORT_TEMPLATE_DATA_KEY = "use_typeddict_backport"
 _USE_CLOSED_TYPED_DICT_TEMPLATE_DATA_KEY = "use_closed_typed_dict"
+_KEEP_FALSE_DATACLASS_ARGUMENTS_TEMPLATE_DATA_KEY = "keep_false_dataclass_arguments"
 _MODULE_NAME_INVALID_CHAR_PATTERN = re.compile(r"[^0-9a-zA-Z_]")
 _MODULE_NAME_INVALID_CHAR_WITH_DOTS_PATTERN = re.compile(r"[^0-9a-zA-Z_.]")
 _MAX_MISSING_CUSTOM_TEMPLATE_SUBDIRS = 128
@@ -373,6 +374,18 @@ def _normalize_template_data_keys(extra_template_data: dict[str, Any]) -> dict[s
             raise Error(msg)
         normalized_template_data[normalized_key] = value
     return normalized_template_data
+
+
+def _written_dataclass_arguments(arguments: Mapping[str, Any], *, keep_false: bool) -> dict[str, Any]:
+    """Return the decorator arguments a dataclass writes: those set, and those set to False when ``keep_false``.
+
+    The built-in templates write them by the same rule, reading ``keep_false_dataclass_arguments`` of the template
+    data (``--keep-false-dataclass-arguments``). An argument the decorator leaves out takes its default, so ``eq=False``
+    left out compares by value, as ``eq`` does by default.
+    """
+    return {
+        name: value for name, value in arguments.items() if value is not None and (keep_false or value is not False)
+    }
 
 
 def _safe_dataclass_arguments(dataclass_arguments: Any) -> dict[str, bool]:
@@ -2440,6 +2453,25 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """
         if not use_closed_typed_dict:
             extra_template_data[ALL_MODEL][_USE_CLOSED_TYPED_DICT_TEMPLATE_DATA_KEY] = False
+
+    @classmethod
+    def configure_dataclass_arguments(
+        cls,
+        extra_template_data: defaultdict[str, dict[str, Any]],
+        *,
+        keep_false_dataclass_arguments: bool,
+    ) -> None:
+        """Record ``--keep-false-dataclass-arguments``, which an output that writes dataclass arguments reads."""
+        if keep_false_dataclass_arguments and cls.USES_DATACLASS_ARGUMENTS:
+            extra_template_data[ALL_MODEL][_KEEP_FALSE_DATACLASS_ARGUMENTS_TEMPLATE_DATA_KEY] = True
+
+    @property
+    def written_dataclass_arguments(self) -> dict[str, Any]:
+        """Return the dataclass arguments the decorator writes (``_written_dataclass_arguments``)."""
+        return _written_dataclass_arguments(
+            self.dataclass_arguments,
+            keep_false=bool(self.extra_template_data.get(_KEEP_FALSE_DATACLASS_ARGUMENTS_TEMPLATE_DATA_KEY)),
+        )
 
     @staticmethod
     def requires_extra_items_backport(target_python_version: PythonVersion) -> bool:

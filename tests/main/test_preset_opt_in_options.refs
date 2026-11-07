@@ -35,6 +35,8 @@ keep-enum-literal-aliases-practical	main/preset_opt_in_options/preset_sets_opt_i
 keep-enum-literal-aliases-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-enum-literal-aliases-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-enum-literal-aliases-practical].py
 keep-enum-member-values-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-enum-member-values-practical].py
 keep-enum-member-values-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-enum-member-values-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-enum-member-values-practical].py
+keep-false-dataclass-arguments-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-false-dataclass-arguments-practical].py
+keep-false-dataclass-arguments-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-false-dataclass-arguments-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-false-dataclass-arguments-practical].py
 keep-field-defaults-off-branch-roots-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-field-defaults-off-branch-roots-practical].py
 keep-field-defaults-off-branch-roots-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-field-defaults-off-branch-roots-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-field-defaults-off-branch-roots-practical].py
 keep-first-character-of-path-keys-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-first-character-of-path-keys-practical].py

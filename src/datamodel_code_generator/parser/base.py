@@ -1258,6 +1258,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.data_model_type.configure_closed_typed_dict(
             self.extra_template_data, use_closed_typed_dict=self.use_closed_typed_dict
         )
+        self.data_model_type.configure_dataclass_arguments(
+            self.extra_template_data, keep_false_dataclass_arguments=config.keep_false_dataclass_arguments
+        )
 
         self.use_generic_base_class: bool = config.use_generic_base_class
         self.generic_base_class_config = prepare_output_model_config(

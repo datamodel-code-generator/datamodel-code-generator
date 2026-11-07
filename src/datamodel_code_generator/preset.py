@@ -1019,7 +1019,17 @@ _STANDARD_20261104_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
     ),
 )
 
-_STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (*_STANDARD_20261104_OPTION_GROUPS,)
+_STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
+    *_STANDARD_20261104_OPTION_GROUPS,
+    PresetOptionGroup(
+        title="Dataclass arguments set to false written",
+        config=PresetConfig(keep_false_dataclass_arguments=True),
+        description=(
+            "Write every dataclass decorator argument set to false, such as eq=False from --dataclass-arguments, "
+            "instead of leaving it out, which gives it its default."
+        ),
+    ),
+)
 """The 20261104 groups and the opt-in options of the release after 0.90.0."""
 
 _STANDARD_OPTION_GROUPS_BY_DATE: dict[str, tuple[PresetOptionGroup, ...]] = {
@@ -1348,7 +1358,11 @@ def render_presets_markdown() -> str:
             "place it is written instead of one per path that reaches it."
         ),
         "",
-        "The 20261106 presets keep the 20261104 options.",
+        (
+            "The 20261106 presets keep the 20261104 options and add `--keep-false-dataclass-arguments`: a dataclass "
+            "decorator argument set to false, such as `eq=False` from `--dataclass-arguments`, is written instead of "
+            "left out, which gave it its default."
+        ),
         "",
         "## Override Preset Options",
         "",

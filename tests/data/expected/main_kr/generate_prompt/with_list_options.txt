@@ -185,6 +185,7 @@
 - `--frozen-dataclasses`: Generate frozen dataclasses with optional keyword-only fields.
 - `--keep-constrained-root-models-in-every-container`: Keep constrained root models named in every container of ...
 - `--keep-enum-literal-aliases`: Keep a named enum written as a Literal type alias named under collapse.
+- `--keep-false-dataclass-arguments`: Write every dataclass decorator argument set to false.
 - `--keep-field-defaults-off-branch-roots`: Leave a property's default off the root models extracted from its `a...
 - `--keep-model-order`: Keep generated model order deterministic while respecting dependency constraints.
 - `--keep-reference-null-on-merged-models`: Keep the null a reference's schema admits when its model is merged.
@@ -200,6 +201,7 @@
 - `--no-collapse-shared-parent-wrappers`
 - `--no-keep-constrained-root-models-in-every-container`
 - `--no-keep-enum-literal-aliases`
+- `--no-keep-false-dataclass-arguments`
 - `--no-keep-field-defaults-off-branch-roots`
 - `--no-keep-reference-null-on-merged-models`
 - `--no-name-converted-payloads-by-message`
@@ -1146,6 +1148,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         its uses (`Status = Literal['open', 'resolved']`, `a:
                         Status`); without it every use repeats the `Literal`,
                         as in 0.89.0
+  --keep-false-dataclass-arguments, --no-keep-false-dataclass-arguments
+                        Write every dataclass decorator argument set to false,
+                        such as eq=False from --dataclass-arguments '{"eq":
+                        false}', so the dataclass compares by identity as
+                        asked; without it an argument set to false is left out
+                        and takes its default (eq=True), as in 0.89.0
   --keep-model-order    Keep generated models' order
   --keyword-only        Defined models as keyword only (for example
                         dataclass(kw_only=True)).

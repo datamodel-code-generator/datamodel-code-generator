@@ -926,6 +926,10 @@
       "not_recommended": "preset",
       "reason": "Set by the 20261027 presets; the recommendation starts from a preset."
     },
+    "keep_false_dataclass_arguments": {
+      "not_recommended": "preset",
+      "reason": "With --dataclass-arguments only: set by the 20261106 presets; the recommendation starts from a preset."
+    },
     "keep_field_defaults_off_branch_roots": {
       "not_recommended": "preset",
       "reason": "Set by the 20261027 presets; the recommendation starts from a preset."

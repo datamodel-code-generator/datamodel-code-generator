@@ -183,6 +183,7 @@
 - `--frozen-dataclasses`: Generate frozen dataclasses with optional keyword-only fields.
 - `--keep-constrained-root-models-in-every-container`: Keep constrained root models named in every container of ...
 - `--keep-enum-literal-aliases`: Keep a named enum written as a Literal type alias named under collapse.
+- `--keep-false-dataclass-arguments`: Write every dataclass decorator argument set to false.
 - `--keep-field-defaults-off-branch-roots`: Leave a property's default off the root models extracted from its `a...
 - `--keep-model-order`: Keep generated model order deterministic while respecting dependency constraints.
 - `--keep-reference-null-on-merged-models`: Keep the null a reference's schema admits when its model is merged.
@@ -198,6 +199,7 @@
 - `--no-collapse-shared-parent-wrappers`
 - `--no-keep-constrained-root-models-in-every-container`
 - `--no-keep-enum-literal-aliases`
+- `--no-keep-false-dataclass-arguments`
 - `--no-keep-field-defaults-off-branch-roots`
 - `--no-keep-reference-null-on-merged-models`
 - `--no-name-converted-payloads-by-message`

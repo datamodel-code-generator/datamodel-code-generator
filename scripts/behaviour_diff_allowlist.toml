@@ -63,6 +63,14 @@ decision = "#6190"
 release_note = "with --use-unique-items-as-set, a uniqueItems array whose items can never be set members (objects, arrays, a tuple holding an array) stays a list instead of a set that rejects every non-empty array, and a list default that cannot be a set keeps its list"
 
 [[accepted]]
+input = "tests/data/jsonschema/keep_false_dataclass_arguments.json"
+aspects = [ "type" ]
+match = "^\\[type\\] Basket:items: set\\[Item\\] -> list\\[Item\\]$"
+reason = "with --use-unique-items-as-set (the practical presets), a uniqueItems array of objects was set[Item] of a model that hashes by no value, which Pydantic rejects as set_item_not_hashable for every non-empty array; it stays a list (crash-class fix). The input is the fixture of --keep-false-dataclass-arguments (#6331), new in this cycle"
+decision = "#6190"
+release_note = "with --use-unique-items-as-set, a uniqueItems array whose items can never be set members (objects, arrays, a tuple holding an array) stays a list instead of a set that rejects every non-empty array, and a list default that cannot be a set keeps its list"
+
+[[accepted]]
 input = "*root_sequence_final"
 aspects = [ "type" ]
 match = "^\\[type\\] nested:Values: set\\[list\\[int\\]\\] -> list\\[list\\[int\\]\\]$"

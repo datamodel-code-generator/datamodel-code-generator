@@ -2014,6 +2014,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "collapse_reuse_models",
         "singularize_last_word_of_item_names",
         "disable_timestamp",
+        "keep_false_dataclass_arguments",
         "tag_msgspec_by_payload_name",
         "use_msgspec_meta_for_map_keys",
         "reuse_model",

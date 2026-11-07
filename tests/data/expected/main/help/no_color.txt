@@ -783,6 +783,12 @@ Model customization:
                         its uses (`Status = Literal['open', 'resolved']`, `a:
                         Status`); without it every use repeats the `Literal`,
                         as in 0.89.0
+  --keep-false-dataclass-arguments, --no-keep-false-dataclass-arguments
+                        Write every dataclass decorator argument set to false,
+                        such as eq=False from --dataclass-arguments '{"eq":
+                        false}', so the dataclass compares by identity as
+                        asked; without it an argument set to false is left out
+                        and takes its default (eq=True), as in 0.89.0
   --keep-model-order    Keep generated models' order
   --keyword-only        Defined models as keyword only (for example
                         dataclass(kw_only=True)).

@@ -110,6 +110,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--keep-constrained-root-models-in-every-container": "Keep constrained root models named in every container of ...",
     "--keep-enum-literal-aliases": "Keep a named enum written as a Literal type alias named under collapse.",
     "--keep-enum-member-values": "Give an enum class a value base only when it keeps every member value.",
+    "--keep-false-dataclass-arguments": "Write every dataclass decorator argument set to false.",
     "--keep-field-defaults-off-branch-roots": "Leave a property's default off the root models extracted from its `a...",
     "--keep-first-character-of-path-keys": "Strip only a leading slash from a paths key when naming its operation m...",
     "--keep-model-order": "Keep generated model order deterministic while respecting dependency constraints.",
