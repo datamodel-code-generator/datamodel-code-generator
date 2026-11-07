@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 
 class Row(BaseModel):
     closed: tuple[str, int] | None = None
+    ended_by_false: list[str] | None = Field(None, max_length=1)
     fixed: tuple[str, int] | None = None
     head: list[Any] | None = None
     same_types: list[str] | None = Field(None, max_length=2)

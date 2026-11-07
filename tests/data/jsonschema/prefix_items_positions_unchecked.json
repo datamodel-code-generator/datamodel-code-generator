@@ -16,6 +16,18 @@
       "items": false,
       "minItems": 2
     },
+    "ended_by_false": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "string"
+        },
+        false,
+        {
+          "type": "integer"
+        }
+      ]
+    },
     "fixed": {
       "type": "array",
       "prefixItems": [

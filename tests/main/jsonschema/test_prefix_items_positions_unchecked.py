@@ -24,7 +24,8 @@ def test_prefix_items_positions_unchecked(output_file: Path, recwarn: pytest.War
 
     An open array, one closed without a ``minItems`` that fixes its length, and one with a schema-valued ``items`` are
     lists. ``--use-tuple-for-closed-arrays`` is named only where the schema's length bounds fix the length, and the
-    arrays written as tuples, and the list whose positions all accept the same values, are not warned about.
+    arrays written as tuples, the list whose positions all accept the same values and the list whose ``false`` position
+    ends it after positions that accept the same values are not warned about.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "prefix_items_positions_unchecked.json",
