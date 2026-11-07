@@ -32,6 +32,7 @@ from datamodel_code_generator._module_paths import is_package_init
 from datamodel_code_generator._paths import (
     concrete,
     concrete_parent,
+    file_uri,
     lexical,
     output_files,
     output_layout,
@@ -370,7 +371,7 @@ def _root_input(input_: _GenerationInput, cwd: Path) -> RootInput:
     match input_:
         case Path():
             path = resolved(input_, cwd)
-            return RootInput(path.as_uri(), path.parent)
+            return RootInput(file_uri(path), path.parent)
         case ParseResult():
             return RootInput(input_.geturl(), cwd)
     return RootInput(ROOT_URN, cwd)
