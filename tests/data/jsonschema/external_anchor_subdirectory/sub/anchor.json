@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "properties": {
+    "label": {"$ref": "defs.json#Label"},
+    "same_label": {"$ref": "./defs.json#Label"},
+    "count": {"$ref": "defs.json#$defs/Count"}
+  }
+}

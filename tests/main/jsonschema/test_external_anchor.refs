@@ -6,6 +6,9 @@
 	main/jsonschema/anchor_keyword_locations.txt
 [test_jsonschema_external_id_resolved_to_local_ref_skips_anchor_normalization]
 	main/jsonschema/normalized_external_id_ref.txt
+[test_main_jsonschema_external_anchor_in_subdirectory]
+file	main/jsonschema/external_anchor/main_jsonschema_external_anchor_in_subdirectory[file].py
+modules	main/jsonschema/external_anchor/main_jsonschema_external_anchor_in_subdirectory[modules]/
 [test_main_jsonschema_external_anchor_with_legacy_shorthand]
 	main/jsonschema/external_anchor.py
 [test_main_jsonschema_external_id_resolved_to_local_ref]

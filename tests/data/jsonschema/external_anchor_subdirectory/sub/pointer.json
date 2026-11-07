@@ -1,0 +1,1 @@
+{"type": "object", "properties": {"label": {"$ref": "defs.json#/$defs/Label"}}}

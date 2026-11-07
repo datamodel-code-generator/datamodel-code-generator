@@ -420,7 +420,8 @@ def lenient_ref(parser: SchemaDocumentsHost, ref: str) -> str:
 def normalize_external_ref(parser: SchemaDocumentsHost, ref: str) -> str:
     """Resolve an external anchor before falling back to legacy shorthand pointers.
 
-    A name several schemas of the document declare names the first of them under
+    Only the fragment is rewritten: the document part stays as written, relative to the document parsed now, since the
+    reference is resolved again from there. A name several schemas of the document declare names the first of them under
     --read-dynamic-anchors-in-document-order, as a local reference to it does (``duplicate_name_location``).
     """
     if get_ref_type(ref := parser._lenient_ref(ref)) == JSONReference.LOCAL:  # noqa: SLF001
@@ -436,14 +437,15 @@ def normalize_external_ref(parser: SchemaDocumentsHost, ref: str) -> str:
 
     ref_body = parser._get_ref_body(relative_path)  # noqa: SLF001
     document = parser._schema_resource_document([relative_path])  # noqa: SLF001
+    file_part = ref.partition("#")[0]
     if location := duplicate_name_location(
         parser,
         parser._schema_resource_registry.plain_name_uri(document, "", f"#{object_path}"),  # noqa: SLF001
     ):
-        return keep_resolved_ref(ref, f"{relative_path}#{location.partition('#')[2]}")
+        return keep_resolved_ref(ref, f"{file_part}#{location.partition('#')[2]}")
     if (anchor_pointer := _find_json_schema_anchor_pointer(ref_body, object_path)) is not None:
-        return keep_resolved_ref(ref, f"{relative_path}#{'' if anchor_pointer == '/' else anchor_pointer}")
-    return keep_resolved_ref(ref, f"{relative_path}#/{object_path}")
+        return keep_resolved_ref(ref, f"{file_part}#{'' if anchor_pointer == '/' else anchor_pointer}")
+    return keep_resolved_ref(ref, f"{file_part}#/{object_path}")
 
 
 def read_document(
