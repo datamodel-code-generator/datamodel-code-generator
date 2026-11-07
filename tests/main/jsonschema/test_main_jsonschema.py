@@ -42167,6 +42167,28 @@ def test_main_jsonschema_builtin_named_fields(output_file: Path, output_model_ty
         get_type_hints(model)
 
 
+def test_main_jsonschema_builtin_named_fields_import_overrides(output_file: Path) -> None:
+    """Import the builtin class a field name hides from the module ``--import-overrides`` names for it.
+
+    The field ``str`` hides the builtin that ``name`` writes, so the class takes it under an alias, which the override
+    imports from ``my_project.compat`` as it does every other name it maps.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "builtin_named_fields.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "dataclasses.dataclass",
+            "--import-overrides",
+            '{"str": "my_project.compat"}',
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+
+
 @pytest.mark.parametrize(
     "extra_args",
     [

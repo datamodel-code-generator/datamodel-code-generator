@@ -6212,6 +6212,8 @@ msgspec.Struct	main/jsonschema/main_jsonschema/builtin_named_fields[msgspec.Stru
 pydantic_v2.BaseModel	main/jsonschema/main_jsonschema/builtin_named_fields[pydantic_v2.BaseModel].py
 pydantic_v2.dataclass	main/jsonschema/main_jsonschema/builtin_named_fields[pydantic_v2.dataclass].py
 typing.TypedDict	main/jsonschema/main_jsonschema/builtin_named_fields[typing.TypedDict].py
+[test_main_jsonschema_builtin_named_fields_import_overrides]
+	main/jsonschema/main_jsonschema/builtin_named_fields_import_overrides.py
 [test_main_jsonschema_builtin_submodule_beside_package_init]
 init-input-dataclasses.dataclass	main/jsonschema/main_jsonschema/builtin_submodule_beside_package_init[init-input-dataclasses.dataclass].payloads.txt
 init-input-dataclasses.dataclass	main/jsonschema/main_jsonschema/builtin_submodule_beside_package_init[init-input-dataclasses.dataclass]/
