@@ -6,10 +6,16 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, RootModel
+
+
+class Consts(RootModel[Literal['a', 'bb']]):
+    root: Literal['a', 'bb'] = Field(..., max_length=1)
 
 
 class Model(BaseModel):
     short: Literal['a', 'bb'] | None = Field(None, max_length=1)
     small: Literal[1, 5] | None = Field(None, le=3)
     nullable: Literal['a', 'bb'] | None = Field(None, max_length=1)
+    consts: Literal[1, 5] | None = Field(None, le=3)
+    referenced_consts: Consts | None = None

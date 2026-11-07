@@ -623,7 +623,10 @@ def create_synthetic_enum_obj(  # noqa: PLR0913, PLR0917
     nullable: bool,  # noqa: FBT001
     values_as_written: list[Any] | None = None,
 ) -> JsonSchemaObject:
-    """Create a synthetic JsonSchemaObject for enum parsing, which keeps the consts as written when given."""
+    """Create a synthetic JsonSchemaObject for enum parsing, which keeps the consts as written when given.
+
+    It carries the constraint keywords of ``original`` that an enum beside them reads (``_carried_constraints``).
+    """
     final_enum = [*enum_values, None] if nullable else enum_values
     final_varnames = varnames if len(varnames) == len(enum_values) else []
     enum_metadata = {"x-enum-varnames": final_varnames}
@@ -636,6 +639,7 @@ def create_synthetic_enum_obj(  # noqa: PLR0913, PLR0917
         nullable=nullable,
         title=original.title,
         description=original.description,
+        **_carried_constraints(original, enum_type),
         **(enum_metadata | ({"default": original.default} if original.has_default else {})),
     )
     if values_as_written is not None:
@@ -643,22 +647,37 @@ def create_synthetic_enum_obj(  # noqa: PLR0913, PLR0917
     return _locate(synthetic, original.schema_location)
 
 
+def _carried_constraints(original: JsonSchemaObject, enum_type: str | None) -> dict[str, Any]:
+    """Return the constraint keywords beside a oneOf or anyOf of consts that the enum of its consts carries.
+
+    A field writes them beside the ``Literal`` of the consts as it writes those beside an enum. Only a schema that
+    declares the one type of the enum (``enum_type``) passes them on: the ``Literal`` of an enum takes no keyword of a
+    kind its schema does not declare (row ``legacy-undeclared-keywords-off-literal``), as an untyped one declares none.
+    """
+    if non_null_types(declared_types(original.type), distinct=True) != [enum_type]:
+        return {}
+    return {
+        key: getattr(original, key) for key in original.__constraint_field_order__ if key in original.model_fields_set
+    }
+
+
 def is_constraints_field(parser: ValueKeywordsHost, obj: JsonSchemaObject, data_type: DataType | None = None) -> bool:
     """Check if a field should include constraints.
 
     An array's keywords are always written on its field; the others only under ``--field-constraints`` and not beside
     a ``$ref``, a combinator, an object or an enum (#1083), whose model or class holds them. An enum written as a
-    ``Literal`` (``data_type``) leaves them to its field as a const does, unless the literal check removed the values
-    they reject.
+    ``Literal`` (``data_type``), and a oneOf or anyOf whose consts are, leave them to its field as a const does, unless
+    the literal check removed the values they reject.
     """
+    holds_literal = _field_holds_literal(parser, data_type)
     return obj.is_array or (
         parser.field_constraints
         and not (
             obj.ref
-            or is_union_schema(obj)
+            or (is_union_schema(obj) and not holds_literal)
             or obj.allOf
             or obj.is_object
-            or (obj.enum and not parser.ignore_enum_constraints and not _field_holds_literal(parser, data_type))
+            or (obj.enum and not parser.ignore_enum_constraints and not holds_literal)
         )
     )
 
