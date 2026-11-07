@@ -510,6 +510,13 @@ _toggle(
 )
 _toggle(
     model_options,
+    "--keep-reference-null-on-collapsed-root-models",
+    help="Under --collapse-root-models, keep the null of a root model that admits null where a field, item or map "
+    "value that names it takes its type (an OpenAPI 3.0 `nullable: true` root: `list[str] | None`), as the root "
+    "model admits it; without it the inlined type rejects null, as in 0.89.0",
+)
+_toggle(
+    model_options,
     "--collapse-reuse-models",
     help="When used with --reuse-model, collapse duplicate models by replacing references instead of creating "
     "empty inheritance subclasses. This eliminates 'class Foo(Bar): pass' patterns",

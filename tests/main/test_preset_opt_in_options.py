@@ -89,6 +89,7 @@ OPT_IN_OPTIONS_20261106: tuple[str, ...] = (
     "--use-x-python-type-unions",
     "--use-typed-nullable-map-values",
     "--use-msgspec-forbid-unknown-fields",
+    "--keep-reference-null-on-collapsed-root-models",
 )
 """The options the 20261106 presets set beyond the 20261104 presets."""
 
@@ -315,6 +316,12 @@ CASES_20261106: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--output-model-type", "msgspec.Struct"],
         id="use-msgspec-forbid-unknown-fields",
+    ),
+    pytest.param(
+        OPEN_API_DATA_PATH / "collapse_nullable_roots.yaml",
+        "openapi",
+        ["--output-model-type", "msgspec.Struct", "--collapse-root-models"],
+        id="keep-reference-null-on-collapsed-root-models",
     ),
 )
 """The inputs each opt-in option of the 20261106 presets changes."""

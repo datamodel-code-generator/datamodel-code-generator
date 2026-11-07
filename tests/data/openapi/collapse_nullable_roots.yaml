@@ -1,0 +1,49 @@
+openapi: 3.0.3
+info:
+  title: collapse nullable roots
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Names:
+      type: array
+      items:
+        type: string
+      nullable: true
+    NamesAlias:
+      $ref: '#/components/schemas/Names'
+    Label:
+      type: string
+      nullable: true
+    Pet:
+      type: object
+      properties:
+        n:
+          type: string
+    NullablePet:
+      $ref: '#/components/schemas/Pet'
+      nullable: true
+    Holder:
+      type: object
+      required:
+        - names
+        - label
+      properties:
+        names:
+          $ref: '#/components/schemas/Names'
+        label:
+          $ref: '#/components/schemas/Label'
+        alias:
+          $ref: '#/components/schemas/NamesAlias'
+        listed:
+          type: array
+          items:
+            $ref: '#/components/schemas/Names'
+        mapped:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Names'
+        first:
+          $ref: '#/components/schemas/NullablePet'
+        second:
+          $ref: '#/components/schemas/NullablePet'

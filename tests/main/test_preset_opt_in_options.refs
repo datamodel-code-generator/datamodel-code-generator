@@ -45,6 +45,8 @@ keep-field-defaults-off-branch-roots-practical	main/preset_opt_in_options/preset
 keep-field-defaults-off-branch-roots-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-field-defaults-off-branch-roots-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-field-defaults-off-branch-roots-practical].py
 keep-first-character-of-path-keys-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-first-character-of-path-keys-practical].py
 keep-first-character-of-path-keys-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-first-character-of-path-keys-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-first-character-of-path-keys-practical].py
+keep-reference-null-on-collapsed-root-models-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-reference-null-on-collapsed-root-models-practical].py
+keep-reference-null-on-collapsed-root-models-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-reference-null-on-collapsed-root-models-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[keep-reference-null-on-collapsed-root-models-practical].py
 keep-reference-null-on-merged-models-practical	main/preset_opt_in_options/preset_sets_opt_in_option[keep-reference-null-on-merged-models-practical].py
 keep-reference-null-on-merged-models-standard	main/preset_opt_in_options/preset_sets_opt_in_option[keep-reference-null-on-merged-models-standard].py
 merge-shared-variant-tags-practical	main/preset_opt_in_options/preset_sets_opt_in_option[merge-shared-variant-tags-practical].py
