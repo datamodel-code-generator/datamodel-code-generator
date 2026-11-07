@@ -68,12 +68,38 @@ CallableSchema = Callable[[str], str]
 DumpResolveReferenceAction = Callable[[Iterable[str]], str]
 _CONFIG_REBUILD_LOCK = RLock()
 DefaultPutDictSchema = DefaultPutDict[str, str]
+_FORMAT_PARSER_CONFIGS = frozenset({
+    "AsyncAPIParserConfig",
+    "AvroParserConfig",
+    "GraphQLParserConfig",
+    "OpenAPIParserConfig",
+    "ProtobufParserConfig",
+    "XMLSchemaParserConfig",
+})
 if TYPE_CHECKING:
     from datamodel_code_generator._parser_context import ParserSourceContext
 
     ExtraTemplateDataType = defaultdict[str, dict[str, Any]]
 else:
     ExtraTemplateDataType = defaultdict[str, Annotated[dict[str, Any], Field(default_factory=dict)]]
+
+    def __getattr__(name: str) -> type[ParserConfig] | list[str]:
+        """Build the parser config models of the other input formats on the first access to one of them (PEP 562).
+
+        ``__all__`` lists the names a star import took when they were built at import.
+        """
+        if name == "__all__":
+            return [member for member in __dir__() if not member.startswith("_")]
+        if name not in _FORMAT_PARSER_CONFIGS:
+            msg = f"module {__name__!r} has no attribute {name!r}"
+            raise AttributeError(msg)
+        with _CONFIG_REBUILD_LOCK:
+            return globals().get(name) or _define_format_parser_configs(name)
+
+    def __dir__() -> list[str]:
+        """List the names of the module, the models not built yet included, as if they were built at import."""
+        hooks = {"__dir__", "__getattr__", "_FORMAT_PARSER_CONFIGS", "_define_format_parser_configs"}
+        return sorted(globals().keys() - hooks | _FORMAT_PARSER_CONFIGS)
 
 
 def validate_schema_validator_base_class_name(value: str | None) -> str | None:
@@ -399,70 +425,11 @@ class ParserConfig(BaseModel):
     )
 
 
-class GraphQLParserConfig(ParserConfig):
-    """Configuration model for GraphQLParser.__init__()."""
-
-    data_model_scalar_type: type[DataModel] = DataTypeScalar
-    data_model_union_type: type[DataModel] = DataTypeUnion
-    graphql_no_typename: bool = False
-
-
 class JSONSchemaParserConfig(ParserConfig):
     """Configuration model for JsonSchemaParser.__init__()."""
 
     jsonschema_version: JsonSchemaVersion | None = None
     schema_version_mode: VersionMode | None = None
-
-
-class AvroParserConfig(JSONSchemaParserConfig):
-    """Configuration model for AvroParser.__init__()."""
-
-
-class OpenAPIParserConfig(JSONSchemaParserConfig):
-    """Configuration model for OpenAPIParser.__init__()."""
-
-    openapi_scopes: list[OpenAPIScope] | None = None
-    include_path_parameters: bool = False
-    use_status_code_in_response_name: bool = False
-    keep_first_character_of_path_keys: bool = False
-    keep_content_parameter_refs: bool = False
-    skip_path_extension_keys: bool = False
-    use_enum_field_as_literal_in_operations: bool = False
-    openapi_include_paths: list[str] | None = None
-    openapi_include_info_version: bool = False
-    openapi_as_definitions: Sequence[OpenAPIAsDefinitions] = ()
-    openapi_version: OpenAPIVersion | None = None
-
-
-class AsyncAPIParserConfig(JSONSchemaParserConfig):
-    """Configuration model for AsyncAPIParser.__init__()."""
-
-    openapi_scopes: list[OpenAPIScope] | None = None
-    include_path_parameters: bool = False
-    use_status_code_in_response_name: bool = False
-    keep_first_character_of_path_keys: bool = False
-    keep_content_parameter_refs: bool = False
-    skip_path_extension_keys: bool = False
-    use_enum_field_as_literal_in_operations: bool = False
-    openapi_include_paths: list[str] | None = None
-    openapi_include_info_version: bool = False
-    openapi_as_definitions: Sequence[OpenAPIAsDefinitions] = ()
-    openapi_version: OpenAPIVersion | None = None
-    asyncapi_version: AsyncAPIVersion | None = None
-    name_converted_payloads_by_message: bool = False
-    merge_message_trait_headers: bool = False
-
-
-class XMLSchemaParserConfig(JSONSchemaParserConfig):
-    """Configuration model for XMLSchemaParser.__init__()."""
-
-    xmlschema_version: XMLSchemaVersion | None = None
-
-
-class ProtobufParserConfig(JSONSchemaParserConfig):
-    """Configuration model for ProtobufParser.__init__()."""
-
-    protobuf_version: ProtobufVersion | None = None
 
 
 class ParseConfig(BaseModel):
@@ -478,3 +445,63 @@ class ParseConfig(BaseModel):
     all_exports_collision_strategy: AllExportsCollisionStrategy | None = None
     module_split_mode: ModuleSplitMode | None = None
     collect_model_metadata: bool = False
+
+
+def _define_format_parser_configs(name: str) -> type[ParserConfig]:
+    """Build the parser config models of the input formats besides JSON Schema, which a JSON Schema run never reads."""
+    global AsyncAPIParserConfig, AvroParserConfig, GraphQLParserConfig, OpenAPIParserConfig, ProtobufParserConfig, XMLSchemaParserConfig  # noqa: E501, PLW0603  # ty: ignore[unresolved-global]
+
+    class GraphQLParserConfig(ParserConfig):
+        """Configuration model for GraphQLParser.__init__()."""
+
+        data_model_scalar_type: type[DataModel] = DataTypeScalar
+        data_model_union_type: type[DataModel] = DataTypeUnion
+        graphql_no_typename: bool = False
+
+    class AvroParserConfig(JSONSchemaParserConfig):
+        """Configuration model for AvroParser.__init__()."""
+
+    class OpenAPIParserConfig(JSONSchemaParserConfig):
+        """Configuration model for OpenAPIParser.__init__()."""
+
+        openapi_scopes: list[OpenAPIScope] | None = None
+        include_path_parameters: bool = False
+        use_status_code_in_response_name: bool = False
+        keep_first_character_of_path_keys: bool = False
+        keep_content_parameter_refs: bool = False
+        skip_path_extension_keys: bool = False
+        use_enum_field_as_literal_in_operations: bool = False
+        openapi_include_paths: list[str] | None = None
+        openapi_include_info_version: bool = False
+        openapi_as_definitions: Sequence[OpenAPIAsDefinitions] = ()
+        openapi_version: OpenAPIVersion | None = None
+
+    class AsyncAPIParserConfig(JSONSchemaParserConfig):
+        """Configuration model for AsyncAPIParser.__init__()."""
+
+        openapi_scopes: list[OpenAPIScope] | None = None
+        include_path_parameters: bool = False
+        use_status_code_in_response_name: bool = False
+        keep_first_character_of_path_keys: bool = False
+        keep_content_parameter_refs: bool = False
+        skip_path_extension_keys: bool = False
+        use_enum_field_as_literal_in_operations: bool = False
+        openapi_include_paths: list[str] | None = None
+        openapi_include_info_version: bool = False
+        openapi_as_definitions: Sequence[OpenAPIAsDefinitions] = ()
+        openapi_version: OpenAPIVersion | None = None
+        asyncapi_version: AsyncAPIVersion | None = None
+        name_converted_payloads_by_message: bool = False
+        merge_message_trait_headers: bool = False
+
+    class XMLSchemaParserConfig(JSONSchemaParserConfig):
+        """Configuration model for XMLSchemaParser.__init__()."""
+
+        xmlschema_version: XMLSchemaVersion | None = None
+
+    class ProtobufParserConfig(JSONSchemaParserConfig):
+        """Configuration model for ProtobufParser.__init__()."""
+
+        protobuf_version: ProtobufVersion | None = None
+
+    return globals()[name]
