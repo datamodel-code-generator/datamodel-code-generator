@@ -585,3 +585,57 @@ match = "^\\[type\\] (?:items_beside_other_types:)?(?:Model:\\w+|NullableString)
 reason = "items or prefixItems beside declared types without array, such as type [string, null] with items, typed the schema as a list, which rejected every value the schema accepts; items apply only to arrays, so the schema is typed by its declared types, and a value that parsed before parses the same (rejects-valid fix)"
 decision = "#6382"
 release_note = "a schema whose declared types leave out array, such as type: [string, \"null\"] with items, is typed by those types (str | None) instead of a list that rejected every valid value; items and prefixItems apply only to arrays"
+
+[[accepted]]
+input = "*object_maps*"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] [\\w:]+: .*\\bdict\\[.* -> .*\\bdict\\[.*Annotated\\[[^\\[\\]]*(?:\\[[^\\[\\]]*\\][^\\[\\]]*)*, (?:MinLen|MaxLen|Ge|Gt|Le|Lt|MultipleOf|_PydanticGeneralMetadata)\\(.*$"
+reason = "a patternProperties value was parsed without a field, so its constraints were dropped under --field-constraints and --use-annotated (the presets), and the item counts of an array value in every mode, and the dict accepted values the schema rejects; the value keeps its type and is written as a type alias that holds them, where the dict admits no key that matches none of its patterns, so the valid values parse as before (schema-mismatch fix)"
+decision = "#6248, #5078, #6334, #5179"
+release_note = "the value of a patternProperties map keeps the constraints of its schema that no field holds: under --field-constraints and --use-annotated (as in the presets) its bounds, lengths and pattern, and in every mode the item counts of an array, are written on a type alias of the value (PmPatternProperty = TypeAliasType(\"PmPatternProperty\", Annotated[int, Field(ge=0)])) instead of being dropped; the patternProperties rules of --generate-schema-validators take the same alias, and msgspec maps take it under --use-msgspec-meta-for-map-keys"
+
+[[accepted]]
+input = "*pattern_string_adapters*"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] [\\w:]+: .*\\bdict\\[.* -> .*\\bdict\\[.*Annotated\\[[^\\[\\]]*(?:\\[[^\\[\\]]*\\][^\\[\\]]*)*, (?:MinLen|MaxLen|Ge|Gt|Le|Lt|MultipleOf|_PydanticGeneralMetadata)\\(.*$"
+reason = "a patternProperties value was parsed without a field, so its constraints were dropped under --field-constraints and --use-annotated (the presets), and the item counts of an array value in every mode, and the dict accepted values the schema rejects; the value keeps its type and is written as a type alias that holds them, where the dict admits no key that matches none of its patterns, so the valid values parse as before (schema-mismatch fix)"
+decision = "#6248, #5078, #6334, #5179"
+release_note = "the value of a patternProperties map keeps the constraints of its schema that no field holds: under --field-constraints and --use-annotated (as in the presets) its bounds, lengths and pattern, and in every mode the item counts of an array, are written on a type alias of the value (PmPatternProperty = TypeAliasType(\"PmPatternProperty\", Annotated[int, Field(ge=0)])) instead of being dropped; the patternProperties rules of --generate-schema-validators take the same alias, and msgspec maps take it under --use-msgspec-meta-for-map-keys"
+
+[[accepted]]
+input = "tests/data/jsonschema/property_names_*pattern_properties*"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] [\\w:]+: .*\\bdict\\[.* -> .*\\bdict\\[.*Annotated\\[[^\\[\\]]*(?:\\[[^\\[\\]]*\\][^\\[\\]]*)*, (?:MinLen|MaxLen|Ge|Gt|Le|Lt|MultipleOf|_PydanticGeneralMetadata)\\(.*$"
+reason = "a patternProperties value was parsed without a field, so its constraints were dropped under --field-constraints and --use-annotated (the presets), and the item counts of an array value in every mode, and the dict accepted values the schema rejects; the value keeps its type and is written as a type alias that holds them, where the dict admits no key that matches none of its patterns, so the valid values parse as before (schema-mismatch fix)"
+decision = "#6248, #5078, #6334, #5179"
+release_note = "the value of a patternProperties map keeps the constraints of its schema that no field holds: under --field-constraints and --use-annotated (as in the presets) its bounds, lengths and pattern, and in every mode the item counts of an array, are written on a type alias of the value (PmPatternProperty = TypeAliasType(\"PmPatternProperty\", Annotated[int, Field(ge=0)])) instead of being dropped; the patternProperties rules of --generate-schema-validators take the same alias, and msgspec maps take it under --use-msgspec-meta-for-map-keys"
+
+[[accepted]]
+input = "*schema_intersection*"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] [\\w:]+: .*\\bdict\\[.* -> .*\\bdict\\[.*Annotated\\[[^\\[\\]]*(?:\\[[^\\[\\]]*\\][^\\[\\]]*)*, (?:MinLen|MaxLen|Ge|Gt|Le|Lt|MultipleOf|_PydanticGeneralMetadata)\\(.*$"
+reason = "a patternProperties value was parsed without a field, so its constraints were dropped under --field-constraints and --use-annotated (the presets), and the item counts of an array value in every mode, and the dict accepted values the schema rejects; the value keeps its type and is written as a type alias that holds them, where the dict admits no key that matches none of its patterns, so the valid values parse as before (schema-mismatch fix)"
+decision = "#6248, #5078, #6334, #5179"
+release_note = "the value of a patternProperties map keeps the constraints of its schema that no field holds: under --field-constraints and --use-annotated (as in the presets) its bounds, lengths and pattern, and in every mode the item counts of an array, are written on a type alias of the value (PmPatternProperty = TypeAliasType(\"PmPatternProperty\", Annotated[int, Field(ge=0)])) instead of being dropped; the patternProperties rules of --generate-schema-validators take the same alias, and msgspec maps take it under --use-msgspec-meta-for-map-keys"
+
+[[accepted]]
+input = "*type_alias_annotated*"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] [\\w:]+: .*\\bdict\\[.* -> .*\\bdict\\[.*Annotated\\[[^\\[\\]]*(?:\\[[^\\[\\]]*\\][^\\[\\]]*)*, (?:MinLen|MaxLen|Ge|Gt|Le|Lt|MultipleOf|_PydanticGeneralMetadata)\\(.*$"
+reason = "a patternProperties value was parsed without a field, so its constraints were dropped under --field-constraints and --use-annotated (the presets), and the item counts of an array value in every mode, and the dict accepted values the schema rejects; the value keeps its type and is written as a type alias that holds them, where the dict admits no key that matches none of its patterns, so the valid values parse as before (schema-mismatch fix)"
+decision = "#6248, #5078, #6334, #5179"
+release_note = "the value of a patternProperties map keeps the constraints of its schema that no field holds: under --field-constraints and --use-annotated (as in the presets) its bounds, lengths and pattern, and in every mode the item counts of an array, are written on a type alias of the value (PmPatternProperty = TypeAliasType(\"PmPatternProperty\", Annotated[int, Field(ge=0)])) instead of being dropped; the patternProperties rules of --generate-schema-validators take the same alias, and msgspec maps take it under --use-msgspec-meta-for-map-keys"
+
+[[accepted]]
+input = "*allof_ref_siblings*"
+backends = [ "pydantic_v2.BaseModel", "pydantic_v2.dataclass" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] [\\w:]+: .*\\bdict\\[.* -> .*\\bdict\\[.*Annotated\\[[^\\[\\]]*(?:\\[[^\\[\\]]*\\][^\\[\\]]*)*, (?:MinLen|MaxLen|Ge|Gt|Le|Lt|MultipleOf|_PydanticGeneralMetadata)\\(.*$"
+reason = "a patternProperties value was parsed without a field, so its constraints were dropped under --field-constraints and --use-annotated (the presets), and the item counts of an array value in every mode, and the dict accepted values the schema rejects; the value keeps its type and is written as a type alias that holds them, where the dict admits no key that matches none of its patterns, so the valid values parse as before (schema-mismatch fix)"
+decision = "#6248, #5078, #6334, #5179"
+release_note = "the value of a patternProperties map keeps the constraints of its schema that no field holds: under --field-constraints and --use-annotated (as in the presets) its bounds, lengths and pattern, and in every mode the item counts of an array, are written on a type alias of the value (PmPatternProperty = TypeAliasType(\"PmPatternProperty\", Annotated[int, Field(ge=0)])) instead of being dropped; the patternProperties rules of --generate-schema-validators take the same alias, and msgspec maps take it under --use-msgspec-meta-for-map-keys"

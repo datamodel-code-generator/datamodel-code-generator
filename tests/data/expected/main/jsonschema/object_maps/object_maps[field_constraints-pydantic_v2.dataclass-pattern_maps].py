@@ -10,6 +10,36 @@ from pydantic import Field, constr
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
+POverlapPatternProperty = TypeAliasType(
+    "POverlapPatternProperty", Annotated[int, Field(ge=0)]
+)
+
+
+POverlapPatternProperty1 = TypeAliasType(
+    "POverlapPatternProperty1", Annotated[int, Field(le=9)]
+)
+
+
+IOverlapPatternProperty = TypeAliasType(
+    "IOverlapPatternProperty", Annotated[int, Field(ge=0)]
+)
+
+
+IOverlapPatternProperty1 = TypeAliasType(
+    "IOverlapPatternProperty1", Annotated[int, Field(le=9)]
+)
+
+
+MOverlapPatternProperty = TypeAliasType(
+    "MOverlapPatternProperty", Annotated[int, Field(ge=0)]
+)
+
+
+MOverlapPatternProperty1 = TypeAliasType(
+    "MOverlapPatternProperty1", Annotated[int, Field(le=9)]
+)
+
+
 ClosedOne = TypeAliasType("ClosedOne", dict[Annotated[str, Field(pattern=r'^a')], int])
 
 
@@ -28,7 +58,23 @@ OpenTwo = TypeAliasType(
 )
 
 
-Overlap = TypeAliasType("Overlap", dict[Annotated[str, Field(pattern=r'^a|b$')], int])
+OverlapPatternProperty = TypeAliasType(
+    "OverlapPatternProperty", Annotated[int, Field(ge=0)]
+)
+
+
+OverlapPatternProperty1 = TypeAliasType(
+    "OverlapPatternProperty1", Annotated[int, Field(le=9)]
+)
+
+
+Overlap = TypeAliasType(
+    "Overlap",
+    dict[
+        Annotated[str, Field(pattern=r'^a|b$')],
+        OverlapPatternProperty | OverlapPatternProperty1,
+    ],
+)
 
 
 AnyMember = TypeAliasType(
@@ -61,7 +107,9 @@ class Model:
     rClosedTwo: ClosedTwo
     pOpenTwo: dict[constr(pattern=r'^a|^b'), int | str]
     rOpenTwo: OpenTwo
-    pOverlap: dict[constr(pattern=r'^a|b$'), int]
+    pOverlap: dict[
+        constr(pattern=r'^a|b$'), POverlapPatternProperty | POverlapPatternProperty1
+    ]
     rOverlap: Overlap
     pAnyMember: dict[constr(pattern=r'^a|^b'), Any]
     rAnyMember: AnyMember
@@ -79,8 +127,12 @@ class Model:
     mClosedTwo: dict[str, dict[constr(pattern=r'^a|^b'), int | str]] | None = None
     iOpenTwo: list[dict[constr(pattern=r'^a|^b'), int | str]] | None = None
     mOpenTwo: dict[str, dict[constr(pattern=r'^a|^b'), int | str]] | None = None
-    iOverlap: list[dict[constr(pattern=r'^a|b$'), int]] | None = None
-    mOverlap: dict[str, dict[constr(pattern=r'^a|b$'), int]] | None = None
+    iOverlap: (
+        list[dict[constr(pattern=r'^a|b$'), IOverlapPatternProperty | IOverlapPatternProperty1]] | None
+    ) = None
+    mOverlap: (
+        dict[str, dict[constr(pattern=r'^a|b$'), MOverlapPatternProperty | MOverlapPatternProperty1]] | None
+    ) = None
     iAnyMember: list[dict[constr(pattern=r'^a|^b'), Any]] | None = None
     mAnyMember: dict[str, dict[constr(pattern=r'^a|^b'), Any]] | None = None
     iAnnotatedSame: list[dict[constr(pattern=r'^a|^b'), int]] | None = None

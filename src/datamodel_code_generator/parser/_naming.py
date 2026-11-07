@@ -2,10 +2,10 @@
 
 L1 names a model it builds for another one, the parent, after the parent's name and the word of the child's role
 (``ComposedRole``): the enum of a nullable enum (``Enum``), the model of a map's values (``AdditionalProperty``), the
-enum of an allOf array's items (``Item``), the map branch of a type list (``Object``), the constrained branch of a type
-list (the titled type), the response of a status code (the capitalized code), the request and response variants of a
-model (``rw_variant_name``) and a union branch without a name of its own, which takes the parent's name as it is. Each
-string is released output.
+alias that holds the constraints of a patternProperties value (``PatternProperty``), the enum of an allOf array's items
+(``Item``), the map branch of a type list (``Object``), the constrained branch of a type list (the titled type), the
+response of a status code (the capitalized code), the request and response variants of a model (``rw_variant_name``)
+and a union branch without a name of its own, which takes the parent's name as it is. Each string is released output.
 
 While a naming rule reads them, L1 records for every model the frames of the model builders open when the model is
 recorded (``NamingFrames``, ``BuildRecord``), which name its owner, the model whose builder built it, and what the
@@ -65,11 +65,14 @@ __all__ = [
     "rw_variant_name",
 ]
 
-ComposedRole: TypeAlias = Literal["enum", "additional-property", "item", "object", "type", "status", "variant-parent"]
+ComposedRole: TypeAlias = Literal[
+    "enum", "additional-property", "pattern-property", "item", "object", "type", "status", "variant-parent"
+]
 """The role of a model that L1 names after the model it is built for (see the module docstring)."""
 _ROLE_WORDS: Final[Mapping[ComposedRole, str | Callable[[str], str]]] = {
     "enum": "Enum",
     "additional-property": "AdditionalProperty",
+    "pattern-property": "PatternProperty",
     "item": "Item",
     "object": "Object",
     "type": str.title,

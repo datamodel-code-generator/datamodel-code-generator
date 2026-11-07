@@ -386,6 +386,11 @@ class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPyth
     ) -> DataType:
         """Parse a mapping value schema while preserving supported Annotated constraints."""
 
+    def _pattern_value_alias(
+        self, name: str, schema: JsonSchemaObject, value_type: DataType, path: list[str]
+    ) -> DataType | None:
+        """Return the type alias that writes a patternProperties value with the constraints its type leaves out."""
+
     def _plain_pattern_root_annotations(self, obj: JsonSchemaObject, patterns: list[tuple[str, DataType]]) -> bool:
         """Recognize inert root annotations only in the standard generation context."""
 
@@ -1840,23 +1845,19 @@ def collect_pattern_property_validators(
                 case True:
                     pattern_value_types.append((pattern, parser.data_type_manager.get_data_type(Types.any)))
                 case JsonSchemaObject() if not _is_false_all_of(schema):
-                    pattern_value_types.append((
-                        pattern,
-                        parser.data_type_manager.get_data_type(
+                    if schema is parser._root_pattern_string_constraints:  # noqa: SLF001
+                        value_type = parser.data_type_manager.get_data_type(
                             Types.string,
                             field_constraints=False,
                             **_constraint_values(schema, constrained_type_keyword_order("string"), as_numbers=True),
                         )
-                        if schema is parser._root_pattern_string_constraints  # noqa: SLF001
-                        else parser.parse_item(
-                            name,
-                            schema,
-                            get_special_path(
-                                f"schemaValidators/patternProperties/{source_index}/{pattern_index}",
-                                path,
-                            ),
-                        ),
-                    ))
+                    else:
+                        value_path = get_special_path(
+                            f"schemaValidators/patternProperties/{source_index}/{pattern_index}", path
+                        )
+                        value_type = parser.parse_item(name, schema, value_path)
+                        value_type = parser._pattern_value_alias(name, schema, value_type, value_path) or value_type  # noqa: SLF001
+                    pattern_value_types.append((pattern, value_type))
                 case False | JsonSchemaObject():
                     rejected_patterns.append(pattern)
 

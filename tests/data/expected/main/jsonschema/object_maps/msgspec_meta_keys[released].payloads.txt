@@ -1,0 +1,18 @@
+valid: accepted
+invalid pInt: rejected
+invalid pLook: rejected
+invalid pStr: rejected
+invalid pArr: rejected
+invalid pRef: rejected
+invalid pRefSib: rejected
+invalid pRefSib: rejected
+invalid pNull: rejected
+invalid pSame: accepted
+invalid pSame: accepted
+invalid pItems: rejected
+invalid pObjCount: rejected
+invalid pOther: rejected
+invalid pOther: rejected
+invalid pEnumKeys: accepted
+invalid pAny: accepted
+invalid rPat: rejected

@@ -1865,6 +1865,11 @@ class DataTypeManager(ABC):
         """Return the string key type of a dict whose keys a ``pattern``, ``minLength`` or ``maxLength`` constrains."""
         return self.get_data_type(Types.string, **kwargs)
 
+    @property
+    def checks_map_key_patterns(self) -> bool:
+        """Whether the key type ``get_map_key_str_type`` gives for a ``pattern`` rejects the keys it does not match."""
+        return False
+
     def _non_finite_multiple_of(self, types: Types, kwargs: Mapping[str, Any]) -> float | None:  # noqa: ARG002, PLR6301
         """Return the ``multipleOf`` that ``get_data_type`` leaves out of the type as the backend refuses it, if any."""
         return None

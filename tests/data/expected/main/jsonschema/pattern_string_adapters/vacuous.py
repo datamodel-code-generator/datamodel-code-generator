@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping as _Mapping
-from typing import Any, ClassVar
+from typing import Annotated, Any, ClassVar
 
 from pydantic import (
     BaseModel,
@@ -15,6 +15,7 @@ from pydantic import (
     TypeAdapter,
     model_validator,
 )
+from typing_extensions import TypeAliasType
 
 
 class _JsonSchemaRuntimeValidationBase(BaseModel):
@@ -75,6 +76,11 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
         return values
 
 
+RootItemPatternProperty = TypeAliasType(
+    "RootItemPatternProperty", Annotated[str, Field(min_length=0)]
+)
+
+
 class RootItem(_JsonSchemaRuntimeValidationBase):
     model_config = ConfigDict(
         extra='allow',
@@ -84,7 +90,7 @@ class RootItem(_JsonSchemaRuntimeValidationBase):
         {
             'declared_properties': (),
             'rejected_patterns': (),
-            'pattern_properties': (('^x', str),),
+            'pattern_properties': (('^x', RootItemPatternProperty),),
             'additional_property_type': None,
             'allow_unmatched': True,
         },

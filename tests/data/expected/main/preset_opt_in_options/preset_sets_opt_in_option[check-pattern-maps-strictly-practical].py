@@ -15,6 +15,7 @@ from pydantic import (
     TypeAdapter,
     model_validator,
 )
+from typing_extensions import TypeAliasType
 
 
 class _JsonSchemaRuntimeValidationBase(BaseModel):
@@ -76,6 +77,11 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
         return values
 
 
+HeadersPatternProperty = TypeAliasType(
+    "HeadersPatternProperty", Annotated[str, Field(max_length=3)]
+)
+
+
 class Headers(_JsonSchemaRuntimeValidationBase):
     model_config = ConfigDict(
         extra='allow',
@@ -86,7 +92,7 @@ class Headers(_JsonSchemaRuntimeValidationBase):
         {
             'declared_properties': ('x-id', 'x_id'),
             'rejected_patterns': (),
-            'pattern_properties': (('^x-', str),),
+            'pattern_properties': (('^x-', HeadersPatternProperty),),
             'additional_property_type': None,
             'allow_unmatched': True,
         },
