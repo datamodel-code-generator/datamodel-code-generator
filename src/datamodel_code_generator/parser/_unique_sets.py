@@ -33,7 +33,9 @@ from datamodel_code_generator.model._decisions.hashability import (
 from datamodel_code_generator.parser._passes._shared import (
     UniqueItemsPlan,
     _declared_unique_arrays,
+    names_alias_beside_arrays,
     plan_unique_sets,
+    without_own_unique_sets,
 )
 from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter
 
@@ -70,7 +72,7 @@ class _ByValue:
     ``value_keys`` (``read_aliases``).
     """
 
-    __slots__ = ("_alias_order", "_keeps_tuples", "aliases", "class_hash", "live", "value_keys")
+    __slots__ = ("_alias_order", "_beside_arrays", "_keeps_tuples", "aliases", "class_hash", "live", "value_keys")
 
     def __init__(self, facts: FinalFacts) -> None:
         self.live: dict[ModelKey, ModelView] = {model_key_of(model.reference): model for model in facts.live_models}
@@ -81,6 +83,7 @@ class _ByValue:
         self._keeps_tuples = facts.options.keeps_tuples
         self._alias_order = self._aliases_first()
         self.aliases: dict[ModelKey, bool] = {}
+        self._beside_arrays = set() if facts.options.decodes_value_unions else self._aliases_beside_arrays()
 
     def _named_aliases(self, key: ModelKey) -> Iterator[ModelKey]:
         """Yield the type aliases with a value that the value of the alias ``key`` names, by key."""
@@ -115,6 +118,25 @@ class _ByValue:
                     stack.append((target, self._named_aliases(target)))
         return list(ordered)
 
+    def _aliases_beside_arrays(self) -> set[int]:
+        """Return, by id, the fields of the type aliases that every site names beside an array-like member.
+
+        A site is a node of a field's type that names the alias (``names_alias_beside_arrays``); the lists of such an
+        alias's own level stay lists, as a union of an output that decodes one member of each kind decodes there.
+        """
+        sites: dict[ModelKey, list[tuple[Any, Any]]] = {}
+        for model in self.live.values():
+            for field in model.fields:
+                pending = [field.data_type]
+                while pending:
+                    if (reference := (node := pending.pop()).reference) is None:
+                        pending.extend(node.data_types)
+                    elif self.class_hash.get(key := model_key_of(reference)) == "alias":
+                        sites.setdefault(key, []).append((field.data_type, node))
+        return {
+            id(self.live[key].fields[0]) for key in self._alias_order if names_alias_beside_arrays(sites.get(key, ()))
+        }
+
     def read_aliases(self) -> None:
         """Read whether every value of each type alias hashes, as ``value_keys`` reads the models, in alias order.
 
@@ -129,9 +151,9 @@ class _ByValue:
             self.aliases[key] = every_value_hashes(self.item(value.data_type, sets))
 
     def plan(self, field: FieldView) -> UniqueItemsPlan:
-        """Return the arrays of ``field`` that become sets."""
+        """Return the arrays of ``field`` that become sets, but those of the own level of an alias beside arrays."""
         live = cast("Any", field)
-        return plan_unique_sets(
+        plan = plan_unique_sets(
             live,
             (group for _, group in _declared_unique_arrays(live, "all")),
             default=list(default) if isinstance(default := field.default, (list, tuple)) else None,
@@ -140,6 +162,7 @@ class _ByValue:
                 every_value_hashes(self.item(item, sets)) for item in cast("Any", node).data_types
             ),
         )
+        return without_own_unique_sets(live, plan) if id(field) in self._beside_arrays else plan
 
     def item(self, data_type: DataTypeView, sets: Collection[int]) -> ValueHashItem:  # noqa: PLR0911
         """Return the facts of an item type that ``every_value_hashes`` reads.

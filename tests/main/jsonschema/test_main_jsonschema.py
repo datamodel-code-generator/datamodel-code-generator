@@ -9122,6 +9122,45 @@ def test_main_unique_items_as_set_by_value_recursive_aliases(output_file: Path) 
     assert_output(f"{json.dumps(validated, indent=2)}\n")
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="without-option"), pytest.param(["--use-unique-items-as-set-by-value"], id="by-value")],
+)
+def test_main_unique_items_as_set_msgspec_alias_beside_arrays(extra_args: list[str], output_file: Path) -> None:
+    """Keep the uniqueItems list of a msgspec type alias that every site names in a union beside a list a list.
+
+    msgspec decodes a union of one array-like member only: ``BesideList`` as a set would split it from the list beside
+    it, so it stays a list and ``Holder`` decodes; ``BesideString`` sits beside no array and stays a set. ``Tags`` is
+    also named alone, and ``BesideUniqueList`` beside a list that becomes a set too, so both stay sets and msgspec
+    cannot decode their unions, which generation warns about.
+    """
+    name = "msgspec_unique_alias_beside_arrays"
+    with pytest.warns(
+        UserWarning,
+        match=r"msgspec cannot decode the union Refused\.(sharedBesideList|besideUniqueList): it holds the array-like",
+    ):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                *extra_args,
+                "--output-model-type",
+                "msgspec.Struct",
+                "--use-unique-items-as-set",
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+            ],
+        )
+    with _generated_model(output_file, name, "Holder") as model:
+        decoded = msgspec.json.decode(
+            b'{"besideList": [1, 1], "besideString": [2, 2], "pet": {"name": "a"}}', type=model
+        )
+        results = {field: type(getattr(decoded, field)).__name__ for field in model.__struct_fields__}
+    assert_output(f"{json.dumps(results, indent=2)}\n")
+
+
 def _validated_container(model: Any, field: str, value: object) -> object:
     """Return the class name and length of the container a model validates for one field, or the error type."""
     try:
