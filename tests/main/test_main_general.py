@@ -3671,6 +3671,24 @@ def test_render_memos_record_the_stale_values_legacy_rows_keep(
     assert_output(report_path.read_text(encoding="utf-8"), name="report")
 
 
+def test_render_memo_report_of_issue_6490_records_the_stale_plan_of_a_cyclic_type(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Issue 6490: a memoized msgspec field plan of a cyclic model differs in ``is_optional`` when computed again.
+
+    The report records the finding and never raises; it changes when 6490 is fixed.
+    """
+    report_path = tmp_path / "checks.jsonl"
+    monkeypatch.setenv(CHECK_RENDER_MEMOS_ENV, f"report:{report_path}")
+    generate(
+        JSON_SCHEMA_DATA_PATH / "type_union_constraints" / "modeled_root.json",
+        output=tmp_path / "model.py",
+        output_model_type=DataModelType.MsgspecStruct,
+        formatters=[Formatter.BUILTIN],
+    )
+    assert_output(report_path.read_text(encoding="utf-8"), name="report")
+
+
 _FIELD_TYPE_SCHEMA = (
     '{"title": "M", "type": "object", "required": ["a"], "properties": {"a": {"type": "integer"},'
     ' "b": {"type": "string", "default": "x"}, "c": {"type": "integer"}}}'
@@ -6496,6 +6514,45 @@ def test_generate_serializes_cwd_dependent_extensions(tmp_path: Path) -> None:
     }
     assert_file_content(first_output, "generate_with_empty_formatters.py")
     assert_file_content(second_output, "generate_with_empty_formatters.py")
+
+
+def test_generate_in_overlapping_threads_keeps_the_warning_hook(recwarn: pytest.WarningsRecorder) -> None:
+    """Show the warning of a later generation after two generations overlap in threads, each inside its parse.
+
+    The parse that ends first leaves the hook its warnings are shown through to the other, and the one that ends last
+    puts back the hook it replaced, so no hook of an ended parse stays to drop the warning a later generation shows.
+    """
+    warnings.simplefilter("always")
+    hook = warnings.showwarning
+    options = {
+        "input_": JSON_SCHEMA_DATA_PATH / "closed_pattern_properties.json",
+        "input_file_type": InputFileType.JsonSchema,
+        "formatters": [],
+    }
+
+    def generate_held(entered: Event, release: Event) -> str | GeneratedModules | None:
+        def hold(name: str) -> str:
+            entered.set()
+            release.wait(timeout=5)
+            return name
+
+        return generate(**options, custom_class_name_generator=hold)
+
+    first_entered, first_release, second_entered, second_release = Event(), Event(), Event(), Event()
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        first = executor.submit(generate_held, first_entered, first_release)
+        observations = [f"first_inside={first_entered.wait(timeout=5)}"]
+        second = executor.submit(generate_held, second_entered, second_release)
+        observations.append(f"second_inside={second_entered.wait(timeout=5)}")
+        first_release.set()
+        first.result(timeout=5)
+        second_release.set()
+        second.result(timeout=5)
+    observations.append(f"hook_kept={warnings.showwarning is hook}")
+    shown_before = len(recwarn)
+    generate(**options)
+    observations.extend(str(warning.message) for warning in list(recwarn)[shown_before:])
+    assert_output("\n".join((*observations, "")))
 
 
 @pytest.mark.allow_direct_assert
