@@ -97,8 +97,8 @@ from datamodel_code_generator._target_contract import (
     UnionDiscriminator,
     UnionType,
     WireDeclaration,
+    property_members,
     response_key,
-    wrapped_type,
 )
 from datamodel_code_generator._target_module import TypeComposer
 from datamodel_code_generator._target_naming import TargetNames, path_placeholders
@@ -106,11 +106,13 @@ from datamodel_code_generator._target_types import (
     admits_none,
     contained,
     is_none,
+    kept_values,
     lexical_kind,
     present,
     sole_present,
     untyped,
     unwrapped,
+    wrapper_chain,
 )
 from datamodel_code_generator.enums import DataclassArguments, OpenAPIVersion
 from datamodel_code_generator.imports import IMPORT_ANY, IMPORT_DECIMAL, Import, _import_path, _stored_import
@@ -1783,6 +1785,14 @@ def _bound(value: BoundPythonType, resolve: Callable[[Import], Import]) -> Bound
     return BoundPythonType(rewrite_python_type_expr(value.expression, leaf), resolved)
 
 
+def _frozen_or_source(value: object) -> TypeArgument:
+    """Return a value as a frozen argument, or as the source text of its repr when it has no frozen form."""
+    try:
+        return _freeze_argument(value)
+    except _UnsupportedError:
+        return SourceExpression(stable_repr(value))
+
+
 def _emitted_default(  # ruff: ignore[too-many-return-statements]
     field: DataModelFieldBase, backend: BackendName
 ) -> tuple[DefaultKind, FrozenLiteral | SourceExpression | None]:
@@ -1800,11 +1810,7 @@ def _emitted_default(  # ruff: ignore[too-many-return-statements]
         return "msgspec_unset", None
     if field.default is None or field.default is UNDEFINED:
         return "none", LiteralScalar("none", None)
-    try:
-        value = _freeze_argument(field.default)
-    except _UnsupportedError:
-        return "expression", SourceExpression(stable_repr(field.default))
-    if isinstance(value, (SourceExpression, ImportedExpression)):
+    if isinstance(value := _frozen_or_source(field.default), (SourceExpression, ImportedExpression)):
         return "expression", SourceExpression(stable_repr(field.default))
     return "literal", value
 
@@ -1831,11 +1837,7 @@ def _constructor_keywords(field: DataModelFieldBase, backend: BackendName) -> tu
         if name == "default_factory":
             keywords.append((name, SourceExpression(str(value))))
             continue
-        try:
-            frozen = _freeze_argument(value)
-        except _UnsupportedError:
-            frozen = SourceExpression(stable_repr(value))
-        keywords.append((name, frozen))
+        keywords.append((name, _frozen_or_source(value)))
     return tuple(keywords)
 
 
@@ -2644,41 +2646,18 @@ class _SchemaUses(_Models):
             media,
         )
 
-    def own_use(self, declaration: SchemaLocation) -> TypeUseId:
-        """Return the id of a schema's neutral value use of itself, the use `schema_uses` binds first."""
-        owner = self.documents.location(declaration, "schema")
-        return self.use_id(owner, "schema", declaration, declaration, declaration)
-
-    def use(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
-        self,
-        owner: OperationId | SourceLocation,
-        role: TypeUseRole,
-        declaration: SchemaLocation,
-        use_site: SchemaLocation,
-        schema: SchemaLocation,
-        schema_use: SchemaLocation,
-        *,
-        projection: Projection = "value",
-        location: str | None = None,
-        name: str | None = None,
-        status: str | None = None,
-        media: str | None = None,
-        direction: Direction | None = None,
+    def own_use(
+        self, declaration: SchemaLocation, *, projection: Projection = "value", direction: Direction | None = None
     ) -> TypeUseId:
-        use = self.use_id(
-            owner,
-            role,
-            declaration,
-            use_site,
-            schema_use,
-            projection=projection,
-            location=location,
-            name=name,
-            status=status,
-            media=media,
-            direction=direction,
+        """Return the id of a schema's use of itself, the neutral value use `schema_uses` binds first by default."""
+        owner = self.documents.location(declaration, "schema")
+        return self.use_id(
+            owner, "schema", declaration, declaration, declaration, projection=projection, direction=direction
         )
-        direction = use.direction
+
+    def use(self, use: TypeUseId, schema: SchemaLocation) -> TypeUseId:
+        """Bind a use whose id `use_id` built to the type the models give the schema it reads in its direction."""
+        role, media, projection, direction = use.role, use.media, use.projection, use.direction
         locate = self.documents.location
         form = media is not None and _media_kind(media) in _FORMS
         nullable = role != "schema" and not form
@@ -2716,10 +2695,7 @@ class _SchemaUses(_Models):
                 continue
             declarations.setdefault((SchemaLocation(document, _pointer_tokens(key) or ()), "value"), False)
         for (declaration, projection), acquired in declarations.items():
-            source = self.documents.location(declaration, "schema")
-            neutral = self.use(
-                source, "schema", declaration, declaration, declaration, declaration, projection=projection
-            )
+            neutral = self.use(self.own_use(declaration, projection=projection), declaration)
             if (
                 acquired
                 and isinstance(value := self.uses[neutral].type, GeneratedSymbolType)
@@ -2727,7 +2703,7 @@ class _SchemaUses(_Models):
             ):
                 self.relocate(declaration, value.symbol)
             directional = [
-                self.directional(source, declaration, projection, direction, neutral)
+                self.directional(declaration, projection, direction, neutral)
                 for direction in (_RW_DIRECTIONS if self.variants else ())
             ]
             if not acquired and not any(directional) and self.uses[neutral].type is None:
@@ -2747,24 +2723,10 @@ class _SchemaUses(_Models):
                         self.nested(schema, field.data_type)
 
     def directional(
-        self,
-        source: SourceLocation,
-        declaration: SchemaLocation,
-        projection: Projection,
-        direction: Direction,
-        neutral: TypeUseId,
+        self, declaration: SchemaLocation, projection: Projection, direction: Direction, neutral: TypeUseId
     ) -> bool:
         """Bind a schema in one direction, keeping the use only when a variant model gives it another type."""
-        use = self.use(
-            source,
-            "schema",
-            declaration,
-            declaration,
-            declaration,
-            declaration,
-            projection=projection,
-            direction=direction,
-        )
+        use = self.use(self.own_use(declaration, projection=projection, direction=direction), declaration)
         if (kept := self.uses[use].type) is None or kept == self.uses[neutral].type:
             del self.uses[use]
             return False
@@ -2890,19 +2852,9 @@ class _UseFacts(_SchemaUses):
     def named_models(self, value: TypeView | None) -> list[SymbolId]:
         """Return the models a type names, then those the aliases and root models among them stand for, in order.
 
-        A union with None alone names what its other member names.
+        A union with None alone names what its other member names (``_target_types.wrapper_chain``).
         """
-        found: list[SymbolId] = []
-        while True:
-            if (member := sole_present(value)) is not None:
-                value = member
-            elif isinstance(value, GeneratedSymbolType) and value.symbol not in found:
-                found.append(symbol := value.symbol)
-                if self.symbol_table[symbol].kind not in WRAPPER_KINDS:
-                    return found
-                value = wrapped_type(self.members, symbol)
-            else:
-                return found
+        return wrapper_chain(value, self.symbol_table, self.members)[1]
 
     def holder(self, value: TypeView | None, source: SourceLocation) -> SourceLocation:
         """Return where the schema of a type's values is: the last named model's (``named_models``), else ``source``."""
@@ -2926,6 +2878,15 @@ class _UseFacts(_SchemaUses):
             order = linearize([found[-1]], lambda item: item, lambda item: self.symbol_table[item].bases, rule="python")
             found.extend(base for base in (order or [])[1:] if base not in found)
         return found
+
+    def use_others(self, use: TypeUseBinding) -> _Others | None:
+        """Return what the model a use's value holds says of its other properties (``others``), or None.
+
+        None is for a value laid out as no object (``layout``).
+        """
+        if self.layout(value := use.type) != "object":
+            return None
+        return self.others(value, use.members, self.holder(value, use.schema or use.id.schema_site), use.id.direction)
 
     def others(
         self, value: TypeView | None, members: tuple[FieldUseBinding, ...], holder: SourceLocation, direction: Direction
@@ -2954,18 +2915,9 @@ class _UseFacts(_SchemaUses):
         if said != "schema":
             return _Others(said, patterns)
         if (location := None if owner is None else self.locations.get(owner)) is None:
-            return _Others(said, patterns, _child(holder, "additionalProperties"), mapping)
+            return _Others(said, patterns, holder.child("additionalProperties"), mapping)
         declaration = location.child("additionalProperties")
-        kept = next(
-            (
-                (member, found)
-                for member in members
-                if member.member_kind == "additional_properties"
-                and (facts := member.model_facts) is not None
-                and (found := contained(facts.type, "values", self.symbol_table, self.members)) is not None
-            ),
-            None,
-        )
+        kept = next(kept_values(members, self.symbol_table, self.members), None)
         free = declaration if kept is None and declaration in self.parser.free_schemas else None
         values = (
             kept[1] if kept is not None else None if free is None else self.lightweight(free, direction).value
@@ -2985,7 +2937,7 @@ class _UseFacts(_SchemaUses):
 
     def repeated(self, value: TypeView | None, source: SourceLocation) -> SourceLocation:
         """Return where the schema of the items of a form member's values is, its own where it does not repeat."""
-        return source if self.items(value) is None else _child(self.holder(value, source), "items")
+        return source if self.items(value) is None else self.holder(value, source).child("items")
 
     def shape(
         self,
@@ -3006,7 +2958,7 @@ class _UseFacts(_SchemaUses):
         holder = self.holder(value, source)
         layout = self.layout(value)
         if layout == "array" and not form:
-            return TextShape("array", KindAt(_child(holder, "items"), self.kind(self.items(value))))
+            return TextShape("array", KindAt(holder.child("items"), self.kind(self.items(value))))
         if layout != "object":
             return (
                 TextShape("object", problem=(holder, _NOT_OBJECT))
@@ -3076,8 +3028,7 @@ class _UseFacts(_SchemaUses):
         source = use.schema or use.id.schema_site
         extras: tuple[SourceLocation, TypeView] | None = None
         declared = False
-        if members and self.layout(value) == "object":
-            others = self.others(value, use.members, self.holder(value, source), direction)
+        if members and (others := self.use_others(use)) is not None:
             declared = others.said in {"allowed", "schema"}
             if others.source is not None and others.values is not None:
                 extras = self.repeated(others.values, others.source), others.values
@@ -3297,11 +3248,7 @@ class _Octets(_UseFacts):
         leaves out is never sent.
         """
         direction = use.id.direction
-        members = [
-            (member.wire_name, member, self.part(member))
-            for member in use.members
-            if member.member_kind == "property" and member.wire_name is not None and member.schema is not None
-        ]
+        members = [(name, member, self.part(member)) for name, _, member in property_members(use.members)]
         refused = next(
             (
                 found
@@ -3318,9 +3265,7 @@ class _Octets(_UseFacts):
             None,
         )
         extra: PartSchema | Literal["closed"] | None = None
-        value = use.type
-        if self.layout(value) == "object":
-            others = self.others(value, use.members, self.holder(value, use.schema or use.id.schema_site), direction)
+        if (others := self.use_others(use)) is not None:
             if others.said == "closed":
                 extra = "closed"
             elif others.source is not None:
@@ -3330,7 +3275,7 @@ class _Octets(_UseFacts):
                     if refused is None and not extra.file and values is not None:
                         refused = self.first(values, direction, others.free or schema)
         named = tuple((name, part) for name, _, part in members)
-        return PartFacts(self.takes_object(value), named, extra), refused
+        return PartFacts(self.takes_object(use.type), named, extra), refused
 
     @staticmethod
     def origin(field: DataModelFieldBase, fallback: SchemaLocation) -> SchemaLocation:
@@ -3460,11 +3405,6 @@ class _Octets(_UseFacts):
         return (declared := self.symbol_table[symbol]).kind == "enum" and set(declared.value_types) == {"string"}
 
 
-def _child(location: SourceLocation, token: str) -> SourceLocation:
-    """Return the location of a keyword's schema below a schema's location."""
-    return replace(location, pointer=f"{location.pointer}/{token}")
-
-
 def _same_kind(first: MemberShape, other: MemberShape) -> bool:
     """Return whether two members of objects are written alike: in one lexical kind, both repeated or both not."""
     return first.repeated == other.repeated and (first.kind and first.kind.kind) == (other.kind and other.kind.kind)
@@ -3479,14 +3419,9 @@ def _agreed(first: MemberShape, other: MemberShape) -> MemberShape:
 
 def _typed(members: tuple[FieldUseBinding, ...]) -> Iterator[tuple[str, SourceLocation, ModelFieldFacts]]:
     """Yield each property of a model with a field, its allOf branches' included, with its wire name and schema."""
-    for member in members:
-        if (
-            member.member_kind == "property"
-            and member.wire_name is not None
-            and member.schema is not None
-            and (facts := member.model_facts) is not None
-        ):
-            yield member.wire_name, member.schema, facts
+    for name, schema, member in property_members(members):
+        if (facts := member.model_facts) is not None:
+            yield name, schema, facts
 
 
 class _Contracts(_Octets):
@@ -3573,18 +3508,19 @@ class _Contracts(_Octets):
         )
 
     def media_facts(
-        self, uses: tuple[TypeUseId, ...], schema: SchemaLocation, role: TypeUseRole, media: str
+        self, uses: tuple[TypeUseId, ...], schema: SchemaLocation, role: TypeUseRole, media: str | None
     ) -> tuple[TypeUseId, ...]:
-        """Record what the models say of the media's own schema keyword on its uses, and a parameter's defaults.
+        """Record what the models say of a media's own schema keyword, or a parameter's or header's, on its uses.
 
-        A multipart media's uses get its parts (``parts``) and a parameter's content its default and keywords; the
-        uses of a parameter's, a header's or a form's media get the text encoding of their values (``encodings``). A
-        body's models decide how it travels (``whole``), and a use that carries its values as text is refused where
-        the first raw binary string sits in them (``first``), as a multipart body is in a part holding no files.
+        A multipart media's uses get its parts (``parts``) and a parameter's schema or content its default and
+        keywords; the uses of a parameter's, a header's or a form's media get the text encoding of their values
+        (``encodings``). A body's models decide how it travels (``whole``), and a use that carries its values as text
+        is refused where the first raw binary string sits in them (``first``), as a multipart body is in a part
+        holding no files. A schema with no media (`media` None) is a parameter's or a header's own.
         """
-        multipart = _multipart(media)
+        multipart = media is not None and _multipart(media)
         record = self.record(schema)
-        kind = _media_kind(media)
+        kind = None if media is None else _media_kind(media)
         text = role == "parameter" or role in _HEADER_ROLES
         item = schema.tokens[-1] == "itemSchema"
         for use in uses:
@@ -3635,17 +3571,19 @@ class _Contracts(_Octets):
                     self.media_facts(
                         tuple(
                             self.use(
-                                owner,
-                                role,
-                                declaration,
-                                use_site,
+                                self.use_id(
+                                    owner,
+                                    role,
+                                    declaration,
+                                    use_site,
+                                    media_use.child(schema.tokens[-1]),
+                                    projection=projection,
+                                    name=parameter_name,
+                                    location=parameter_location,
+                                    status=status,
+                                    media=name,
+                                ),
                                 schema,
-                                media_use.child(schema.tokens[-1]),
-                                projection=projection,
-                                name=parameter_name,
-                                location=parameter_location,
-                                status=status,
-                                media=name,
                             )
                             for projection in projections
                         ),
@@ -3714,29 +3652,18 @@ class _Contracts(_Octets):
         location = None if header or "in" not in value else str(value["in"])
         schemas: tuple[TypeUseId, ...] = ()
         if (schema := next(iter(walked.schemas), None)) is not None:
-            use = self.use(
+            use = self.use_id(
                 owner,
                 role,
                 declared,
                 use_site,
-                schema,
                 use_site.child("schema"),
                 location=location,
                 name=wire_name,
                 status=status,
                 media=media,
             )
-            record = self.record(schema)
-            with self.bound(schema, "value", use.direction) as node:
-                binary = self.first(node, use.direction, schema)
-            self.uses[use] = replace(
-                self.uses[use],
-                default=None if header else record.default,
-                keywords=record.keywords,
-                binary=binary,
-            )
-            self.texts[use] = False
-            schemas = (use,)
+            schemas = self.media_facts((self.use(use, schema),), schema, role, None)
         children = self.media(
             walked, use_site, owner, role, status=status, parameter_name=wire_name, parameter_location=location
         )

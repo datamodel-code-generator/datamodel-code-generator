@@ -11,7 +11,7 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef
 from datamodel_code_generator._client.model_facts import ItemStep
@@ -33,7 +33,7 @@ from datamodel_code_generator._target_types import admits_none, container_slot, 
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Container, Iterator
+    from collections.abc import Callable, Container, Iterable, Iterator
 
     from typing_extensions import TypeIs
 
@@ -47,6 +47,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_contract import (
         Direction,
         FieldUseBinding,
+        ModelFieldFacts,
         TypeUseBinding,
         TypeUseId,
         TypeView,
@@ -61,6 +62,7 @@ _RELATION: Final = re.compile(r"[A-Za-z][A-Za-z0-9.-]*|[A-Za-z][A-Za-z0-9+.-]*:[
 _WRITES: Final = MappingProxyType({"cursor": "cursor", "offset": "offset", "page": "page number"})
 _EVIDENCE: Final = MappingProxyType({"has_more": "boolean", "total": "integer"})
 _Types: TypeAlias = frozenset[str] | None
+_HitT = TypeVar("_HitT")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -102,6 +104,11 @@ class _Reached:
     steps: tuple[ItemStep, ...]
     member: FieldUseBinding | None
     value: TypeView
+
+
+def _field_facts(reached: _Reached) -> ModelFieldFacts | None:
+    """Return the model facts of the property a pointer ends at, or None when it ends at no property with them."""
+    return None if reached.member is None else reached.member.model_facts
 
 
 def _label(spec: OperationSpec) -> str:
@@ -157,6 +164,25 @@ def _overlaps(first: tuple[str, ...], second: tuple[str, ...]) -> bool:
 def _relation(first: tuple[str, ...], second: tuple[str, ...]) -> str:
     """Return how a refusal says a target relates to another one it overlaps: the same target, or overlapping it."""
     return "the same target as" if first == second else "a target overlapping that of"
+
+
+def _either(kinds: Iterable[str]) -> str:
+    return english_list(kinds, "or", "serial")
+
+
+def _value_types_problem(  # noqa: PLR0913, PLR0917
+    helper: Helper,
+    spec: OperationSpec,
+    what: str,
+    others: Iterable[str],
+    fit: str,
+    at: str,
+    *,
+    joined: Callable[[Iterable[str]], str] = _either,
+) -> Diagnostic:
+    """Refuse a helper's `what` that reads values of the JSON types `others`, where only `fit`."""
+    message = f"The {what} of {stable_repr(helper.name)} reads {joined(others)} values, where only {fit}"
+    return _problem("E_CONFIG_VALUE", "config", at, message, spec)
 
 
 def _problem(code: str, stage: DiagnosticStage, at: str, message: str, spec: OperationSpec) -> Diagnostic:
@@ -220,7 +246,7 @@ class _Pages(HelperPlanner):
         self.facts = facts
         self.codecs = codecs
 
-    def walk(self, value: TypeView, pointer: str) -> _Reached | Literal["absent", "unsupported"]:
+    def _walk(self, value: TypeView, pointer: str) -> _Reached | Literal["absent", "unsupported"]:
         """Follow a pointer through the fields of a page's models, or say why it names no field.
 
         A root model and a nullable single model are stepped through; a union of several members or a map is not.
@@ -256,14 +282,40 @@ class _Pages(HelperPlanner):
 
         An empty pointer names the value itself; a pointer through no field of a model is absent.
         """
-        if value is None or isinstance(reached := self.walk(value, pointer), str):
+        if value is None or isinstance(reached := self._walk(value, pointer), str):
             return "absent" if pointer else None
-        member = reached.member
         return (
-            self.facts.json_types(value)
-            if member is None or member.model_facts is None
-            else self.facts.field_types(member.model_facts)
+            self.facts.json_types(value) if (facts := _field_facts(reached)) is None else self.facts.field_types(facts)
         )
+
+    def reached(  # noqa: PLR0913, PLR0917
+        self,
+        helper: Helper,
+        spec: OperationSpec,
+        body: TypeView,
+        pointer: str,
+        at: str,
+        what: str,
+        hit: Callable[[_Reached], _HitT | None],
+    ) -> _HitT | Diagnostic:
+        """Return what `hit` reads where a helper's body pointer ends in the page's models, or why it is refused.
+
+        A pointer through a union or a map is not supported yet; one through no property, or to an end `hit` reads
+        nothing from, names no property of the response.
+        """
+        if (reached := self._walk(body, pointer)) == "unsupported":
+            message = (
+                f"The {what} pointer {stable_repr(pointer)} of {stable_repr(helper.name)} reads through a union or "
+                "map, which is not supported yet"
+            )
+            return _problem("E_CLIENT_UNSUPPORTED", "target", at, message, spec)
+        if isinstance(reached, str) or (found := hit(reached)) is None:
+            message = (
+                f"The {what} pointer {stable_repr(pointer)} of {stable_repr(helper.name)} names no property of the "
+                f"{_label(spec)} response"
+            )
+            return _problem("E_CONFIG_VALUE", "config", at, message, spec)
+        return found
 
     def read_as(self, expected: TypeView) -> tuple[TypeView, ...]:
         """Return the types an item schema's type is read as, without None and through aliases.
@@ -373,27 +425,16 @@ class _Pages(HelperPlanner):
         problems: list[Diagnostic],
     ) -> tuple[tuple[ItemStep, ...], TypeView] | None:
         """Check that the items pointer selects an array of the page whose items the item schema describes."""
-        at, name, label = helper.at, helper.name, _label(spec)
+        at, name = helper.at, helper.name
         pointer = helper.tree["items"]["pointer"]
-        reached = self.walk(body, pointer)
-        if reached == "unsupported":
-            message = (
-                f"The items pointer {stable_repr(pointer)} of {stable_repr(name)} reads through a union or map, which "
-                "is not supported yet"
-            )
-            problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", f"{at}.items", message, spec))
-            return None
-        if reached == "absent":
-            message = (
-                f"The items pointer {stable_repr(pointer)} of {stable_repr(name)} names no property of the {label} "
-                "response"
-            )
-            problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.items", message, spec))
+        reached = self.reached(helper, spec, body, pointer, f"{at}.items", "items", lambda found: found)
+        if isinstance(reached, Diagnostic):
+            problems.append(reached)
             return None
         if not _sequence(reached.value):
             message = (
-                f"The items pointer {stable_repr(pointer)} of {stable_repr(name)} selects no JSON array of the {label} "
-                "response"
+                f"The items pointer {stable_repr(pointer)} of {stable_repr(name)} selects no JSON array of the "
+                f"{_label(spec)} response"
             )
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.items", message, spec))
             return None
@@ -424,20 +465,10 @@ class _Pages(HelperPlanner):
         types: _Types = frozenset({"integer"})
         match read["from"]:
             case "body":
-                reached = self.walk(body, pointer := read["pointer"])
-                if reached == "unsupported":
-                    message = (
-                        f"The {what} pointer {stable_repr(pointer)} of {stable_repr(name)} reads through a union or "
-                        "map, which is not supported yet"
-                    )
-                    return _problem("E_CLIENT_UNSUPPORTED", "target", at, message, spec)
-                if isinstance(reached, str) or (member := reached.member) is None or member.model_facts is None:
-                    message = (
-                        f"The {what} pointer {stable_repr(pointer)} of {stable_repr(name)} names no property of the "
-                        f"{label} response"
-                    )
-                    return _problem("E_CONFIG_VALUE", "config", at, message, spec)
-                types = self.facts.field_types(member.model_facts)
+                facts = self.reached(helper, spec, body, read["pointer"], at, what, _field_facts)
+                if isinstance(facts, Diagnostic):
+                    return facts
+                types = self.facts.field_types(facts)
             case "header":
                 uses = {header.name.lower(): header.use for header in headers}
                 if (key := read["name"].lower()) not in uses:
@@ -550,11 +581,7 @@ class _Pages(HelperPlanner):
             yield types
             return
         if types is not None and (others := sorted(types - _URL_TYPES)):
-            message = (
-                f"The next URL of {stable_repr(name)} reads {english_list(others, 'or', 'serial')} values, where only "
-                "string values fit"
-            )
-            yield _problem("E_CONFIG_VALUE", "config", f"{at}.read", message, spec)
+            yield _value_types_problem(helper, spec, "next URL", others, "string values fit", f"{at}.read")
         yield from self.ends(helper, spec, types, "next URL")
 
     @staticmethod
@@ -607,11 +634,7 @@ class _Pages(HelperPlanner):
         if isinstance(types, Diagnostic):
             yield types
         elif types is not None and (others := sorted(types - {expected})):
-            message = (
-                f"The {chosen} of {stable_repr(name)} reads {english_list(others, 'or', 'serial')} values, where only "
-                f"{expected} values fit"
-            )
-            yield _problem("E_CONFIG_VALUE", "config", where, message, spec)
+            yield _value_types_problem(helper, spec, chosen, others, f"{expected} values fit", where)
 
     def fits(  # noqa: PLR0913, PLR0917
         self,

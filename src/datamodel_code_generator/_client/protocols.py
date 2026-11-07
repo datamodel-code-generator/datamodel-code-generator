@@ -16,10 +16,10 @@ from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias
 
 from datamodel_code_generator._api_types import Diagnostic, OperationRef, SchemaRef
 from datamodel_code_generator._client.naming import helper_name_problem, token
-from datamodel_code_generator._constraint_applicability import is_non_finite, json_number
 from datamodel_code_generator._json_schema import json_nodes
 from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._module_paths import is_within_name
+from datamodel_code_generator._runtime.client.timing import usable_seconds
 from datamodel_code_generator._runtime.model_codecs.media import STATUSES, normalized
 from datamodel_code_generator._runtime.protocols.caches import CACHED_STATUSES
 from datamodel_code_generator._target_config import _diagnostic  # pyright: ignore[reportPrivateUsage]
@@ -293,7 +293,7 @@ class _Validator:  # noqa: PLR0904
         return value if value is True else self.value(at, f"{at} must be true")
 
     def seconds(self, value: object, at: str) -> object:
-        if json_number(value) and not is_non_finite(value) and value > 0:
+        if usable_seconds(value, allow_zero=False):
             return float(value)
         return self.value(at, f"{at} must be positive finite seconds")
 

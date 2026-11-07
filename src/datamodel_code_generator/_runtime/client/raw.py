@@ -170,6 +170,44 @@ class _Download:
             await in_thread(_discarded, self.created)
 
 
+class Closing:
+    """A mixin for a handle that leaving its `with` block closes, by the `close()` of the class that takes it."""
+
+    __slots__ = ()
+
+    def close(self) -> None:
+        """Release the handle, as the class that takes the mixin defines."""
+
+    def __enter__(self) -> Self:
+        """Return this handle, which leaving the block closes."""
+        return self
+
+    def __exit__(
+        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
+    ) -> None:
+        """Close this handle."""
+        self.close()
+
+
+class AsyncClosing:
+    """An asyncio `Closing`: leaving its `async with` block closes, by the `aclose()` of the class that takes it."""
+
+    __slots__ = ()
+
+    async def aclose(self) -> None:
+        """Release the handle, as the class that takes the mixin defines."""
+
+    async def __aenter__(self) -> Self:
+        """Return this handle, which leaving the block closes."""
+        return self
+
+    async def __aexit__(
+        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
+    ) -> None:
+        """Close this handle."""
+        await self.aclose()
+
+
 class _Raw(Generic[SourceT, HandleT]):
     """What buffered and streaming, sync and async raw responses share: metadata, saved bytes, state, and reads.
 
@@ -474,7 +512,7 @@ async def afinished(response: AsyncRawResponse, error: BaseException | None = No
     await response._end("consumed" if error is None else "failed", error)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
 
 
-class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
+class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"], Closing):
     """A raw response of a synchronous client: buffered, or a streaming handle whose body is read at most once."""
 
     __slots__ = ()
@@ -532,16 +570,6 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
         """Release a streaming handle's connection; saved bytes stay readable, and closing twice does nothing."""
         run_sync(self._release())
 
-    def __enter__(self) -> Self:
-        """Return this response, which leaving the block closes."""
-        return self
-
-    def __exit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close this response."""
-        self.close()
-
     def discard(self, error: BaseException) -> None:
         """Close the handle while an error propagates, keeping a close failure beside that error."""
         run_sync(self._release(error))
@@ -582,7 +610,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             run_sync(self._end("consumed"))
 
 
-class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawResponse"]):
+class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawResponse"], AsyncClosing):
     """A raw response of an asyncio client: buffered, or a streaming handle whose body is read at most once."""
 
     __slots__ = ()
@@ -658,16 +686,6 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
     async def aclose(self) -> None:
         """Release a streaming handle's connection; saved bytes stay readable, and closing twice does nothing."""
         await self._release()
-
-    async def __aenter__(self) -> Self:
-        """Return this response, which leaving the block closes."""
-        return self
-
-    async def __aexit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close this response."""
-        await self.aclose()
 
     async def discard(self, error: BaseException) -> None:
         """Close the handle while an error propagates, keeping a close failure beside that error."""

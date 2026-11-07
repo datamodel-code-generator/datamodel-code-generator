@@ -20,10 +20,10 @@ from datamodel_code_generator._openapi_wire_plan import (
     content_types,
     form_extras,
     form_styled,
-    member_encodings,
+    media_encodings,
     parameter_plans,
     part_json,
-    property_members,
+    single_media,
 )
 from datamodel_code_generator._runtime.client.options import HTTP_SCHEMES
 from datamodel_code_generator._runtime.client.parts import PartPlan
@@ -58,6 +58,7 @@ from datamodel_code_generator._target_contract import (
     label,
     operation_literal,
     parameter_place,
+    property_members,
     request_media,
     type_uses,
     uses_by_id,
@@ -758,7 +759,7 @@ class Planner:
         members = dict(_parts(use).members)
         media_of: dict[str, tuple[str, ...]] = {}
         headers_of: dict[str, tuple[HeaderSpec, ...]] = {}
-        for encoding in member_encodings(use, children_of(declaration, "encoding")):
+        for encoding in media_encodings(use, declaration):
             name = encoding.name or ""
             subject = f"The {name} encoding of the {media_type} media of {label(operation)}"
             if headers := self._headers(encoding):
@@ -776,7 +777,7 @@ class Planner:
                     )
                 case ():
                     pass
-                case (single,) if not media_range(single) and (
+                case _ if (single := single_media(encoding)) is not None and (
                     media_kind(single) == "json" or (media_kind(single) == "text" and not members[name].structured)
                 ):
                     media_of[name] = (single,)
@@ -829,9 +830,7 @@ class Planner:
                 use=_part_use(use, extras.source, None, TypeUseBinding(use.id, "bound", extras.type, None)),
             )
         declared = dict(parts.members)
-        encodings = {
-            encoding.name or "": encoding for encoding in member_encodings(use, children_of(declaration, "encoding"))
-        }
+        encodings = {encoding.name or "": encoding for encoding in media_encodings(use, declaration)}
         specs: list[PartSpec] = []
         for name, member, facts in _members(use):
             part = declared[name]
@@ -946,13 +945,8 @@ class Planner:
         parts = _parts(use)
         declared = dict(parts.members)
         plans = tuple(
-            self._part_plan(
-                member.wire_name,
-                None if (facts := member.model_facts) is None else facts.type,
-                declared[member.wire_name],
-            )
-            for member in use.members
-            if member.member_kind == "property" and member.wire_name is not None and member.schema is not None
+            self._part_plan(name, None if (facts := member.model_facts) is None else facts.type, declared[name])
+            for name, _, member in property_members(use.members)
         )
         if (declared_extra := parts.extra) == "closed":
             return plans, None
@@ -1220,7 +1214,7 @@ def _members(use: TypeUseBinding) -> list[tuple[str, SourceLocation, ModelFieldF
     """Return the members of a form-data use as its model declares them, allOf branches included."""
     return [
         (name, schema, facts)
-        for name, schema, member in property_members(use)
+        for name, schema, member in property_members(use.members)
         if member.exclusion is None and (facts := member.model_facts) is not None
     ]
 

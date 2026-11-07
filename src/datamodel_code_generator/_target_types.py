@@ -29,9 +29,10 @@ from datamodel_code_generator._target_contract import (
     wrapped_type,
 )
 from datamodel_code_generator.model._decisions.nullability import imported_name_null, written_annotation_null
+from datamodel_code_generator.model._decisions.tag_value import PYDANTIC_SCALAR_KINDS
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping, Sequence
+    from collections.abc import Iterable, Iterator, Mapping, Sequence
 
     from datamodel_code_generator._container_kinds import ContainerKind, ContainerSlot
     from datamodel_code_generator._runtime.model_codecs.media import LexicalKind
@@ -50,6 +51,7 @@ __all__ = [
     "contained",
     "container_slot",
     "is_none",
+    "kept_values",
     "lexical_kind",
     "member_kind",
     "present",
@@ -59,20 +61,11 @@ __all__ = [
     "untyped",
     "unwrapped",
     "without_none",
+    "wrapper_chain",
 ]
 
 CONSTRAINED_SCALARS: Final[Mapping[tuple[str, str], LexicalKind]] = MappingProxyType({
-    ("pydantic", "StrictBool"): "boolean",
-    ("pydantic", "NegativeFloat"): "number",
-    ("pydantic", "NonNegativeFloat"): "number",
-    ("pydantic", "NonPositiveFloat"): "number",
-    ("pydantic", "PositiveFloat"): "number",
-    ("pydantic", "StrictFloat"): "number",
-    ("pydantic", "NegativeInt"): "integer",
-    ("pydantic", "NonNegativeInt"): "integer",
-    ("pydantic", "NonPositiveInt"): "integer",
-    ("pydantic", "PositiveInt"): "integer",
-    ("pydantic", "StrictInt"): "integer",
+    ("pydantic", name): kind for name, kind in PYDANTIC_SCALAR_KINDS.items()
 })
 """The kind of each strict or constrained Pydantic scalar type, by its module and name: a bool's, a float's or an
 int's, as its text and its JSON value both read."""
@@ -180,25 +173,36 @@ def container_slot(value: TypeView) -> ContainerSlot | None:
     return value.slot if isinstance(value, GenericType) else None
 
 
+def wrapper_chain(
+    value: TypeView | None,
+    symbols: Mapping[SymbolId, FinalModelSymbol],
+    members: Mapping[SymbolId, Sequence[FieldUseBinding]],
+) -> tuple[TypeView | None, list[SymbolId]]:
+    """Return the type a type stands for, through aliases, root models and a union with None alone, and the symbols.
+
+    The symbols are the aliases and root models it steps through, in order, then the symbol it stands for; an alias or
+    root model it reaches again ends the walk where it is reached, and one the batch binds no type to ends it at None.
+    """
+    named: list[SymbolId] = []
+    while True:
+        if (member := sole_present(value)) is not None:
+            value = member
+        elif isinstance(value, GeneratedSymbolType) and value.symbol not in named:
+            named.append(value.symbol)
+            if symbols[value.symbol].kind not in WRAPPER_KINDS:
+                return value, named
+            value = wrapped_type(members, value.symbol)
+        else:
+            return value, named
+
+
 def unwrapped(
     value: TypeView | None,
     symbols: Mapping[SymbolId, FinalModelSymbol],
     members: Mapping[SymbolId, Sequence[FieldUseBinding]],
 ) -> TypeView | None:
     """Return the type a type stands for, through aliases, root models and a union with None alone."""
-    seen: set[SymbolId] = set()
-    while True:
-        if (member := sole_present(value)) is not None:
-            value = member
-        elif (
-            isinstance(value, GeneratedSymbolType)
-            and value.symbol not in seen
-            and symbols[value.symbol].kind in WRAPPER_KINDS
-        ):
-            seen.add(value.symbol)
-            value = wrapped_type(members, value.symbol)
-        else:
-            return value
+    return wrapper_chain(value, symbols, members)[0]
 
 
 def contained(
@@ -218,6 +222,24 @@ def contained(
         if isinstance(value, GenericType) and len(value.arguments) == count and container_slot(value) in kind.slots
         else None
     )
+
+
+def kept_values(
+    members: Iterable[FieldUseBinding],
+    symbols: Mapping[SymbolId, FinalModelSymbol],
+    by_consumer: Mapping[SymbolId, Sequence[FieldUseBinding]],
+) -> Iterator[tuple[FieldUseBinding, TypeView]]:
+    """Yield each member that keeps a model's other properties, with the type of their values, in order.
+
+    It is a field of the model's other properties whose type stands for a mapping (``contained``).
+    """
+    for member in members:
+        if (
+            member.member_kind == "additional_properties"
+            and (facts := member.model_facts) is not None
+            and (found := contained(facts.type, "values", symbols, by_consumer)) is not None
+        ):
+            yield member, found
 
 
 def untyped(

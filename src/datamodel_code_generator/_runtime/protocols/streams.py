@@ -33,7 +33,7 @@ from ..client.errors import (
 from ..client.native import _AsyncHeld, _Held, native_phases  # pyright: ignore[reportPrivateUsage]
 from ..client.operations import codec_condition
 from ..client.options import RequestOptions
-from ..client.raw import afinished, aheld, checked, finished, held, native_request
+from ..client.raw import AsyncClosing, Closing, afinished, aheld, checked, finished, held, native_request
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.media import NO_CONTENT, json_value
 from ..model_codecs.unset import UNSET
@@ -54,7 +54,6 @@ from .values import MISSING, Patch, absence, read_expiry, resolve, unfit, writte
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, AsyncIterator, Callable, Generator, Iterator, Mapping
     from datetime import datetime
-    from types import TracebackType
 
     from ..client.logical import LogicalCallContext, OperationSession
     from ..client.operations import InboundModelCodec, OperationPlan
@@ -855,7 +854,7 @@ class _Events(Generic[T]):
 
 
 @final
-class EventStream(_Events[T]):
+class EventStream(_Events[T], Closing):
     """A synchronous SSE or NDJSON stream: iterate over its events, or over their data with `data()`.
 
     The stream owns its response until it ends, fails, or closes. It is read by one consumer at a time; after a failure
@@ -985,19 +984,9 @@ class EventStream(_Events[T]):
             self._chunks.close()
             self._response.close()
 
-    def __enter__(self) -> Self:
-        """Return this stream, which leaving the block closes."""
-        return self
-
-    def __exit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close the stream."""
-        self.close()
-
 
 @final
-class AsyncEventStream(_Events[T]):
+class AsyncEventStream(_Events[T], AsyncClosing):
     """An asyncio SSE or NDJSON stream: iterate over its events with `async for`, or over their data with `data()`.
 
     The stream owns its response until it ends, fails, or closes. It is read by one task at a time; after a failure or
@@ -1135,16 +1124,6 @@ class AsyncEventStream(_Events[T]):
             await self._frames.aclose()
             await self._chunks.aclose()
             await self._response.aclose()
-
-    async def __aenter__(self) -> Self:
-        """Return this stream, which leaving the block closes."""
-        return self
-
-    async def __aexit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close the stream."""
-        await self.aclose()
 
 
 def _sent(  # noqa: PLR0913, PLR0917
