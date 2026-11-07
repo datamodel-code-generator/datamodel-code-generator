@@ -336,6 +336,8 @@ class _HelperDigests:
         match value:
             case GenericType():
                 arguments = [self.spelled(item) for item in value.arguments]
+                if arguments and value.tuple_form == "variadic":
+                    arguments.append("...")
                 base = self.spelled(value.base)
                 return subscript_text(base, arguments) if arguments or value.tuple_form == "fixed" else base
             case UnionType():

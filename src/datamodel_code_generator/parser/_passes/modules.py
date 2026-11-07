@@ -27,6 +27,7 @@ from datamodel_code_generator._container_kinds import (
     BUILTIN_CONTAINERS,
     CONTAINER_FLAGS,
     CONTAINERS,
+    GIVEN_CONTAINERS,
     MAPPINGS,
     SETS,
     UNHASHABLE_CONTAINERS,
@@ -724,7 +725,9 @@ def _is_builtin_type_collision(current_name: str, data_type: DataType) -> bool:
         return True
 
     if (slot := BUILTIN_CONTAINERS.get(current_name)) is not None:
-        return bool(getattr(data_type, CONTAINER_FLAGS[slot]))
+        return bool(getattr(data_type, CONTAINER_FLAGS[slot])) or (
+            (given := data_type.given_container) is not None and GIVEN_CONTAINERS[given].written.name == current_name
+        )
 
     return False
 

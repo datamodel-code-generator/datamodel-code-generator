@@ -227,14 +227,17 @@ class GenericType:
     """Preserve ordered container arguments and fixed versus variadic tuple shape.
 
     `slot` is the container slot whose class `base` writes, decided from the container's kind before any import
-    override moves where `base` is imported from; None for a fixed tuple or any other generic type.
+    override moves where `base` is imported from; None for a fixed tuple or any other generic type. `given` is the
+    container class an `x-python-type` gives the container (`DataType.given_container`), which `base` is, written
+    around the slot's arguments: a `variadic` tuple writes `...` after its one item type.
     """
 
     base: TypeView
     arguments: tuple[TypeView, ...]
-    tuple_form: Literal["not_tuple", "fixed"] = "not_tuple"
+    tuple_form: Literal["not_tuple", "fixed", "variadic"] = "not_tuple"
     hint: ModelHint | None = dataclasses.field(default=None, compare=False, repr=False)
     slot: ContainerSlot | None = dataclasses.field(default=None, repr=False)
+    given: str | None = dataclasses.field(default=None, repr=False)
 
 
 @dataclass(frozen=True, slots=True)

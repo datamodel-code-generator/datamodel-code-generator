@@ -1226,9 +1226,11 @@ _toggle(
 _toggle(
     typing_options,
     "--use-x-python-type-as-written",
-    help="Type a field by its x-python-type when that is a union spelled Optional[...] or Union[...], such as "
-    "Optional[Literal['a', 'b']], as one spelled X | Y already is; without it such a union is ignored where the "
-    "schema declares one type, and the field takes the schema's type, as in 0.89.0",
+    help="Write a field's x-python-type as given: a union spelled Optional[...] or Union[...], such as "
+    "Optional[Literal['a', 'b']], types the field as one spelled X | Y already does, and a container class compatible "
+    "with the schema, such as tuple, MutableSequence or MutableMapping, is written around the schema's item, key and "
+    "value types; without it such a union is ignored where the schema declares one type, and the field takes the "
+    "schema's type, and such a container is written as list, Sequence, set, frozenset or Mapping, as in 0.90.0",
 )
 _toggle(
     typing_options,

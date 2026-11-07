@@ -1056,11 +1056,13 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
         ),
     ),
     PresetOptionGroup(
-        title="x-python-type unions",
+        title="x-python-type as written",
         config=PresetConfig(use_x_python_type_as_written=True),
         description=(
-            "Type a field by its x-python-type when that is a union spelled Optional[...] or Union[...], as one "
-            "spelled X | Y already is, instead of the schema's type."
+            "Write a field's x-python-type as given: a union spelled Optional[...] or Union[...] types the field as "
+            "one spelled X | Y already does, instead of the schema's type, and a container class compatible with the "
+            "schema, such as tuple or MutableSequence, is written around the schema's item types instead of list, "
+            "Sequence, set, frozenset or Mapping."
         ),
     ),
     PresetOptionGroup(
@@ -1455,14 +1457,16 @@ def render_presets_markdown() -> str:
             "strategy, the types reached through dataclass fields are reused too, and no unused copy of a type a "
             "field's Python type imports is written, and `--use-x-python-type-as-written`: an `x-python-type` union "
             "spelled `Optional[...]` or `Union[...]`, such as `Optional[Literal['a', 'b']]`, types its field as one "
-            "spelled `X | Y` already does, instead of the schema's type, and `--use-typed-nullable-map-values`: the "
-            "values of a map whose type array lists object alone or with null, such as `[object, null]`, are typed as "
-            "its `additionalProperties` say (`dict[str, int] | None`) instead of `dict[str, Any] | None`, which also "
-            "makes `--use-typed-map-values-beside-other-types`, set by the 20261027 presets but acting only together "
-            "with it, type the map values of a type array that lists object beside other types (`dict[str, int] | "
-            "str`), and `--use-msgspec-forbid-unknown-fields`: a msgspec Struct whose schema admits no property but "
-            "its own (`additionalProperties: false` without `patternProperties`) is written with "
-            "`forbid_unknown_fields=True`, so it rejects the unknown fields the schema rejects, and "
+            "spelled `X | Y` already does, instead of the schema's type, and a container class it names that is "
+            "compatible with the schema, such as `tuple[str, ...]` or `MutableSequence[str]`, is written around the "
+            "schema's item types (`tuple[constr(max_length=3), ...]`) instead of `list` or `Sequence`, and "
+            "`--use-typed-nullable-map-values`: the values of a map whose type array lists object alone or with null, "
+            "such as `[object, null]`, are typed as its `additionalProperties` say (`dict[str, int] | None`) instead "
+            "of `dict[str, Any] | None`, which also makes `--use-typed-map-values-beside-other-types`, set by the "
+            "20261027 presets but acting only together with it, type the map values of a type array that lists object "
+            "beside other types (`dict[str, int] | str`), and `--use-msgspec-forbid-unknown-fields`: a msgspec Struct "
+            "whose schema admits no property but its own (`additionalProperties: false` without `patternProperties`) "
+            "is written with `forbid_unknown_fields=True`, so it rejects the unknown fields the schema rejects, and "
             "`--keep-reference-null-on-collapsed-root-models`: under `--collapse-root-models` a field, item or map "
             "value that takes the type of a root model admitting null keeps that null (`list[str] | None`), and "
             "`--read-allof-parents-in-mro-order`: a property that several bases of an allOf declare takes the "

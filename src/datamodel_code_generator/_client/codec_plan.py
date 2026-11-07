@@ -292,7 +292,9 @@ class _Planner:
                     self.report(f"The {self.label(key)} key type has no {self.backend} conversion", schema)
                 nested = self.shape(item, schema)
                 return None if nested is None else Values(nested)
-            if (kind := _ITEM_KINDS.get(slot)) is not None and len(value.arguments) == 1:
+            if (kind := "tuple" if value.tuple_form == "variadic" else _ITEM_KINDS.get(slot)) is not None and len(
+                value.arguments
+            ) == 1:
                 item = self.shape(value.arguments[0], schema)
                 return None if item is None and kind == "list" else Items(item, kind)
             return None

@@ -93,7 +93,7 @@ datamodel-codegen [OPTIONS]
 | [`--use-union-operator`](typing-customization.md#use-union-operator) | Use | operator for Union types (PEP 604). |
 | [`--use-unique-items-as-set`](typing-customization.md#use-unique-items-as-set) | Generate set types for arrays with uniqueItems constraint. |
 | [`--use-unique-items-as-set-by-value`](typing-customization.md#use-unique-items-as-set-by-value) | Write a uniqueItems set only where its final items hash by value. |
-| [`--use-x-python-type-as-written`](typing-customization.md#use-x-python-type-as-written) | Type a field by an `x-python-type` union spelled `Optional[...]` or `Union[...]`... |
+| [`--use-x-python-type-as-written`](typing-customization.md#use-x-python-type-as-written) | Write a field's `x-python-type` as given: unions of every spelling and container... |
 
 ### 🏷️ Field Customization
 
@@ -631,7 +631,7 @@ All options sorted alphabetically:
 - [`--use-union-operator`](typing-customization.md#use-union-operator) - Use | operator for Union types (PEP 604).
 - [`--use-unique-items-as-set`](typing-customization.md#use-unique-items-as-set) - Generate set types for arrays with uniqueItems constraint.
 - [`--use-unique-items-as-set-by-value`](typing-customization.md#use-unique-items-as-set-by-value) - Write a uniqueItems set only where its final items hash by v...
-- [`--use-x-python-type-as-written`](typing-customization.md#use-x-python-type-as-written) - Type a field by an `x-python-type` union spelled `Optional[....
+- [`--use-x-python-type-as-written`](typing-customization.md#use-x-python-type-as-written) - Write a field's `x-python-type` as given: unions of every sp...
 - [`--validation`](openapi-only-options.md#validation) - Enable validation constraints (deprecated, use --field-const...
 - [`--validators`](template-customization.md#validators) - Add custom field validators to generated Pydantic v2 models.
 - [`--version`](utility-options.md#version) - Show program version and exit

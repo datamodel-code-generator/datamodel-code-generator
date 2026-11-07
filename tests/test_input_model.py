@@ -1106,6 +1106,48 @@ def test_input_model_dataclass_fields_of_one_alias(
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="released"),
+        pytest.param(["--use-x-python-type-as-written"], id="option"),
+        pytest.param(["--preset", "standard-py310-20261106"], id="preset"),
+    ],
+)
+def test_input_model_abstract_containers_as_written(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, extra_args: list[str]
+) -> None:
+    """Write the container classes of a Pydantic model's fields as the model types them under the option (#6138).
+
+    Without it ``MutableSequence`` is written as ``Sequence``, ``MutableSet`` as ``set``, ``AbstractSet`` as
+    ``frozenset`` and ``MutableMapping`` as ``Mapping``, as in 0.90.0. With it each keeps its class around the schema's
+    items: ``Pet`` stays the generated model, with no import of the input module, and the nicknames keep their length.
+    The input module is written for the test, as tests/data/python holds no new modules.
+    """
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delitem(sys.modules, "abstract_containers", raising=False)
+    (tmp_path / "abstract_containers.py").write_text(
+        "from collections.abc import MutableMapping, MutableSequence, MutableSet, Sequence\n"
+        "from typing import AbstractSet, Annotated\n\n"
+        "from pydantic import BaseModel, Field\n\n\n"
+        "class Pet(BaseModel):\n"
+        "    name: str\n\n\n"
+        "class Owner(BaseModel):\n"
+        "    pets: MutableSequence[Pet]\n"
+        "    nicknames: MutableSequence[Annotated[str, Field(max_length=3)]]\n"
+        "    ids: MutableSet[int]\n"
+        "    frozen_ids: AbstractSet[int]\n"
+        "    by_name: MutableMapping[str, Pet]\n"
+        "    scores: Sequence[int]\n",
+        encoding="utf-8",
+    )
+    run_input_model_and_assert(
+        input_model="abstract_containers:Owner",
+        output_path=tmp_path / "output.py",
+        extra_args=["--disable-timestamp", "--formatters", "builtin", *extra_args],
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--reuse-every-reached-input-model-type"],
     option_description="""Reach the types to reuse through every model kind and write no copy of an imported type.

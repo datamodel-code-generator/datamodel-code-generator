@@ -295,8 +295,8 @@ class Module(TargetModule):
             return subscript_text(self.hint(value.base), arguments)
         flag = CONTAINER_FLAGS[slot]
         if flag in MAPPINGS.flags:
-            return self.container(flag, arguments[-1], key=arguments[0])
-        return self.container(flag, arguments[0])
+            return self.container(flag, arguments[-1], key=arguments[0], given=value.given)
+        return self.container(flag, arguments[0], given=value.given)
 
     def constraints(self, value: ConstructorType, base: BuiltinType | ImportedType) -> tuple[str, ...]:
         """Return the metadata of a constrained scalar's keywords, split as the model generator splits them."""

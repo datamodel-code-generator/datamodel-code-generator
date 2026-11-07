@@ -30,7 +30,7 @@ from datamodel_code_generator._container_kinds import (
     MAPPINGS,
     SLOT_CLASSES,
     WRITTEN_CONTAINERS,
-    abstract_class_module,
+    given_container_of,
     written_slot,
 )
 from datamodel_code_generator._document_reader import MISSING, as_mapping, descend, document_statuses, string_key
@@ -1680,24 +1680,31 @@ class _Projector:
         )
 
     def _container(self, data_type: DataType, value: TypeView | None) -> TypeView:
-        generic = data_type.use_generic_container
-        module = abstract_class_module(standard=data_type.use_standard_collections)
+        standard = data_type.use_standard_collections
         for modifier in WRITTEN_CONTAINERS:
             if not getattr(data_type, flag := CONTAINER_FLAGS[modifier]):
                 continue
-            written = SLOT_CLASSES[slot := written_slot(modifier, generic=generic)]
+            name: str | None = None
+            form: Literal["not_tuple", "variadic"] = "not_tuple"
+            if (found := given_container_of(data_type.given_container, modifier)) is not None:
+                written, slot, name = found.written, modifier, data_type.given_container
+                form = "variadic" if found.variadic else form
+            else:
+                written = SLOT_CLASSES[slot := written_slot(modifier, generic=data_type.use_generic_container)]
             base = (
-                ImportedType(Import(import_=written.name, from_=module))
+                ImportedType(Import(import_=written.name, from_=written.module_of(standard=standard)))
                 if written.abstract
                 else _BUILTINS[written.name]
             )
             if modifier in MAPPINGS.slots and (data_type.dict_key is not None or value is not None):
                 key = self._project(data_type.dict_key) if data_type.dict_key is not None else None
                 value = value if value is not None else ImportedType(IMPORT_ANY)
-                hint = self.hints.composed(data_type, base=value, key=key, container=flag)
-                return GenericType(base, (BuiltinType("str") if key is None else key, value), hint=hint, slot=slot)
-            hint = self.hints.composed(data_type, base=value, container=flag)
-            return GenericType(base, (value,) if value is not None else (), hint=hint, slot=slot)
+                hint = self.hints.composed(data_type, base=value, key=key, container=flag, given_container=name)
+                return GenericType(
+                    base, (BuiltinType("str") if key is None else key, value), hint=hint, slot=slot, given=name
+                )
+            hint = self.hints.composed(data_type, base=value, container=flag, given_container=name)
+            return GenericType(base, (value,) if value is not None else (), form, hint, slot, name)
         if value is None:
             raise _UnsupportedError
         return value

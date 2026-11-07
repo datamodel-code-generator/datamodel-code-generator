@@ -367,6 +367,9 @@ type-spellings	main/generation_platform/client/packages/type-spellings/pydantic_
 type-spellings	main/generation_platform/client/type-spellings.txt
 type-spellings-bound	main/generation_platform/client/packages/type-spellings-bound/pydantic_v2_BaseModel//*.py
 type-spellings-bound	main/generation_platform/client/type-spellings-bound.txt
+type-spellings-containers	main/generation_platform/client/packages/type-spellings-containers/dataclasses_dataclass//*.py
+type-spellings-containers	main/generation_platform/client/packages/type-spellings-containers/pydantic_v2_BaseModel//*.py
+type-spellings-containers	main/generation_platform/client/type-spellings-containers.txt
 type-spellings-cycle	main/generation_platform/client/packages/type-spellings-cycle/pydantic_v2_BaseModel//*.py
 type-spellings-cycle	main/generation_platform/client/type-spellings-cycle.txt
 type-spellings-exact	main/generation_platform/client/packages/type-spellings-exact/pydantic_v2_BaseModel//*.py

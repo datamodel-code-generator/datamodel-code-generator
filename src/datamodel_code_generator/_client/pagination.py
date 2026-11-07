@@ -17,6 +17,7 @@ from datamodel_code_generator._api_types import Diagnostic, OperationRef
 from datamodel_code_generator._client.model_facts import ItemStep
 from datamodel_code_generator._client.protocol_plan import HelperPlanner, missing_schema
 from datamodel_code_generator._client.protocol_plan import _problem as _error
+from datamodel_code_generator._container_kinds import SETS
 from datamodel_code_generator._json_pointer import pointer_tokens
 from datamodel_code_generator._json_schema import admitted_types
 from datamodel_code_generator._message_text import english_list
@@ -27,8 +28,8 @@ from datamodel_code_generator._runtime.model_codecs.errors import ParameterEncod
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key, path_text
 from datamodel_code_generator._runtime.protocols.records import canonical_json
-from datamodel_code_generator._target_contract import BuiltinType, GeneratedSymbolType, GenericType, UnionType, label
-from datamodel_code_generator._target_types import admits_none, sole_present
+from datamodel_code_generator._target_contract import GeneratedSymbolType, GenericType, UnionType, label
+from datamodel_code_generator._target_types import admits_none, container_slot, sole_present
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
@@ -53,7 +54,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_documents import JSONObject
 
 _INTEGER: Final = re.compile(r"-?[0-9]+")
-_SETS: Final = frozenset({"set", "frozenset"})
 _POINTED: Final = frozenset({"body", "querystring"})
 _FOLLOWED: Final = frozenset({"next_url", "link"})
 _URL_TYPES: Final = frozenset({"string", "null"})
@@ -196,7 +196,7 @@ def _sequence(value: TypeView) -> TypeIs[GenericType]:
         isinstance(value, GenericType)
         and value.tuple_form != "fixed"
         and len(value.arguments) == 1
-        and not (isinstance(value.base, BuiltinType) and value.base.name in _SETS)
+        and container_slot(value) not in SETS.slots
     )
 
 

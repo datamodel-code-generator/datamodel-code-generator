@@ -70,6 +70,7 @@ pagination-querystring	main/generation_platform/client/typing/pydantic_v2-BaseMo
 pagination-targets	main/generation_platform/client/typing/pydantic_v2-BaseModel-pagination-targets.txt	= main/generation_platform/client/typing/no-success.txt
 streams-mixed	main/generation_platform/client/typing/pydantic_v2-BaseModel-streams-mixed.txt	= main/generation_platform/client/typing/no-success.txt
 type-checking-imports-on	main/generation_platform/client/typing/pydantic_v2-BaseModel-type-checking-imports-on.txt	= main/generation_platform/client/typing/no-success.txt
+type-spellings-containers	main/generation_platform/client/typing/pydantic_v2-BaseModel-type-spellings-containers.txt	= main/generation_platform/client/typing/no-success.txt
 type-spellings-cycle	main/generation_platform/client/typing/pydantic_v2-BaseModel-type-spellings-cycle.txt	= main/generation_platform/client/typing/no-success.txt
 type-spellings-exact	main/generation_platform/client/typing/pydantic_v2-BaseModel-type-spellings-exact.txt	= main/generation_platform/client/typing/no-success.txt
 type-spellings-legacy	main/generation_platform/client/typing/pydantic_v2-BaseModel-type-spellings-legacy.txt	= main/generation_platform/client/typing/no-success.txt

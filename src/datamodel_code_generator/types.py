@@ -58,9 +58,12 @@ from datamodel_code_generator._container_kinds import (
     ARRAYS,
     CONTAINER_FLAGS,
     CONTAINERS,
+    GIVEN_CONTAINERS,
     MAPPINGS,
     SLOT_CLASSES,
     WRITTEN_CONTAINERS,
+    GivenContainerName,
+    given_container_of,
     written_slot,
 )
 from datamodel_code_generator._format_types import (
@@ -680,6 +683,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
     is_sequence: bool = False
     is_tuple: bool = False
     tuple_item_count: int | None = Field(default=None, ge=0)
+    given_container: Optional[GivenContainerName] = None  # noqa: UP045
     is_custom_type: bool = False
     literals: list[Union[StrictBool, StrictInt, StrictStr]] = Field(default_factory=list)  # noqa: UP007
     enum_member_literals: list[tuple[str, str]] = Field(default_factory=list)  # [(EnumClassName, member_name), ...]
@@ -1338,7 +1342,8 @@ class TypeApply:
     """What one data type writes: its ``form`` over ``args``, inside its container, quoted, with its None or its call.
 
     The container is the first of the data type's container order that it is in, written as ``container``; a mapping
-    writes ``key`` (``str`` when None) before its value type. A ``base`` expression is that of ``base_type_hint``: it
+    writes ``key`` (``str`` when None) before its value type, and a ``variadic`` one, a tuple an ``x-python-type``
+    gives, ``...`` after its item type. A ``base`` expression is that of ``base_type_hint``: it
     writes no discriminator, no forward-reference quotes and no call. The data type's text of its own, its names, its
     None and its quotes are read when the expression is rendered, so an expression built before the last rename and
     the last quote writes the final ones.
@@ -1351,6 +1356,7 @@ class TypeApply:
     mapping: bool = False
     key: TypeExpr | None = None
     base: bool = False
+    variadic: bool = False
 
 
 TypeExpr: TypeAlias = TypeLeaf | RefLeaf | TypeApply
@@ -1362,19 +1368,40 @@ _NoneAliasRead: TypeAlias = "tuple[DataType, tuple[Reference, ...]]"
 
 
 def _container_name(data_type: DataType, container: str) -> str | None:
-    """Return the name the data type's container ``container`` is written as, or None when it is not in one."""
+    """Return the name the data type's container ``container`` is written as, or None when it is not in one.
+
+    It is the class an ``x-python-type`` gives the data type (``given_container``), else the class of its slot.
+    """
     if container not in WRITTEN_CONTAINERS or not getattr(data_type, CONTAINER_FLAGS[container]):
         return None
+    if (given := given_container_of(data_type.given_container, container)) is not None:
+        return given.written.written(standard=data_type.use_standard_collections)
     written = SLOT_CLASSES[written_slot(container, generic=data_type.use_generic_container)]
     return written.written(standard=data_type.use_standard_collections)
 
 
+def _given_container_imports(*, standard: bool) -> dict[str, Import]:
+    """Return the import of each class an ``x-python-type`` gives a container, by the name a type hint writes."""
+    return {
+        name: Import(from_=module, import_=name)
+        for given in GIVEN_CONTAINERS.values()
+        if (module := given.written.module_of(standard=standard)) is not None
+        and (name := given.written.written(standard=standard))
+    }
+
+
 _CONTAINER_IMPORT_ORDER: Final = ("frozen_set", "mapping", "sequence", "list", "set", "dict")
 _TYPING_CONTAINER_IMPORTS: Final = {
-    import_.import_: import_
-    for import_ in (IMPORT_FROZEN_SET, IMPORT_MAPPING, IMPORT_SEQUENCE, IMPORT_LIST, IMPORT_SET, IMPORT_DICT)
+    **_given_container_imports(standard=False),
+    **{
+        import_.import_: import_
+        for import_ in (IMPORT_FROZEN_SET, IMPORT_MAPPING, IMPORT_SEQUENCE, IMPORT_LIST, IMPORT_SET, IMPORT_DICT)
+    },
 }
-_STANDARD_CONTAINER_IMPORTS: Final = {import_.import_: import_ for import_ in (IMPORT_ABC_MAPPING, IMPORT_ABC_SEQUENCE)}
+_STANDARD_CONTAINER_IMPORTS: Final = {
+    **_given_container_imports(standard=True),
+    **{import_.import_: import_ for import_ in (IMPORT_ABC_MAPPING, IMPORT_ABC_SEQUENCE)},
+}
 
 
 def type_expr_of(data_type: DataType, *, base: bool = False) -> TypeExpr:
@@ -1424,7 +1451,8 @@ def _build_type_expr(data_type: DataType, *, base: bool) -> TypeExpr:
         if (name := _container_name(data_type, container)) is not None:
             mapping = container in MAPPINGS.slots
             key = type_expr_of(data_type.dict_key, base=base) if mapping and data_type.dict_key else None
-            return TypeApply(data_type, form, args, name, mapping, key, base)
+            given = given_container_of(data_type.given_container, container)
+            return TypeApply(data_type, form, args, name, mapping, key, base, given is not None and given.variadic)
     return TypeApply(data_type, form, args, base=base)
 
 
@@ -1457,8 +1485,10 @@ def _render_apply(expr: TypeApply) -> str:
         if expr.mapping:
             key = STR if expr.key is None else render_type_expr(expr.key)
             text = subscript_text(container, (key, text or ANY)) if expr.key is not None or text else container
+        elif text:
+            text = subscript_text(container, (text, "...") if expr.variadic else (text,))
         else:
-            text = subscript_text(container, (text,)) if text else container
+            text = container
     if not expr.base and node._is_forward_reference:  # noqa: SLF001
         text = stable_repr(text) if '"' in text or "\\" in text else f'"{text}"'
     if (node.is_optional or member_null or (expr.form != "base" and node.adds_reference_null)) and text != ANY:

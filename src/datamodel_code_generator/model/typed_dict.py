@@ -103,6 +103,7 @@ def _written(data_type: DataType) -> Iterator[tuple[object, ...]]:
         frozenset(member for _, member in data_type.enum_member_literals),
         tuple(getattr(data_type, container) for container in _CONTAINERS),
         data_type.tuple_item_count,
+        data_type.given_container,
         None if (key := data_type.dict_key) is None else _written_union((key,)),
         tuple(_written_union((member,)) for member in members) if data_type.is_tuple else _written_union(members),
     )

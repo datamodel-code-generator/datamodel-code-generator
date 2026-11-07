@@ -87,6 +87,10 @@ class DataTypeView(Protocol):  # noqa: PLR0904
         """Whether the type is a tuple."""
 
     @property
+    def given_container(self) -> str | None:
+        """The container class an ``x-python-type`` gives the type, which it is written as."""
+
+    @property
     def tuple_item_count(self) -> int | None:
         """The item count of a fixed-length tuple."""
 
