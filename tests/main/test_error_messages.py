@@ -24,6 +24,7 @@ from datamodel_code_generator import (
     InvalidFileFormatError,
     SchemaResourceRefWarning,
     YamlValue,
+    enable_debug_message,
     generate,
     snooper_to_methods,
 )
@@ -47,7 +48,8 @@ from tests.main.conftest import (
 from tests.test_http import _SchemaHandler, local_http_server  # ruff: ignore[unused-import] - Register the existing fixture.
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterator
+    from types import ModuleType
     from typing import Literal
 
 
@@ -2093,10 +2095,29 @@ def test_dangling_component_ref_warning_names_the_parse_caller(output_file: Path
     )
 
 
-def test_dangling_ref_warning_names_the_caller_of_a_traced_parse(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Under the tracing wrappers that ``--debug`` installs, the diagnostics warnings name the caller of ``parse()``."""
+@pytest.fixture
+def debug_tracing(monkeypatch: pytest.MonkeyPatch) -> Iterator[ModuleType]:
+    """Turn on the tracing of ``--debug`` and leave the process as it was found when the test ends.
+
+    The tracing state, and the namespaces of the package and of the parser's modules, whose functions the decoration
+    of ``snooper_to_methods`` wraps, come back afterwards, so no wrapper changes a frame a later test's warnings name.
+    """
     pysnooper = pytest.importorskip("pysnooper")
-    monkeypatch.setattr(pysnooper.tracer, "DISABLED", False)
+    monkeypatch.setattr(pysnooper.tracer, "DISABLED", pysnooper.tracer.DISABLED)
+    namespaces = [
+        (vars(module), dict(vars(module)))
+        for module_name, module in [*sys.modules.items()]
+        if module_name == "datamodel_code_generator" or module_name.startswith("datamodel_code_generator.parser._")
+    ]
+    enable_debug_message()
+    yield pysnooper
+    for namespace, found in namespaces:
+        namespace.update(found)
+
+
+@pytest.mark.usefixtures("debug_tracing")
+def test_dangling_ref_warning_names_the_caller_of_a_traced_parse() -> None:
+    """Under the tracing wrappers that ``--debug`` installs, the diagnostics warnings name the caller of ``parse()``."""
 
     @snooper_to_methods()
     class TracedParser(JsonSchemaParser):
@@ -2128,21 +2149,23 @@ def test_dangling_ref_warning_names_the_caller_of_a_traced_parse(monkeypatch: py
     ids=["finish-pass", "module-pass"],
 )
 def test_pass_warnings_name_the_package_once_traced(
-    monkeypatch: pytest.MonkeyPatch, source: Path, input_file_type: InputFileType, options: dict[str, object]
+    monkeypatch: pytest.MonkeyPatch,
+    debug_tracing: ModuleType,
+    source: Path,
+    input_file_type: InputFileType,
+    options: dict[str, object],
 ) -> None:
     """Once the tracing that ``--debug`` installs has wrapped the pass functions, their warnings still name the caller.
 
     The frame they name is the package's frame that called the pass, and a filter on module ``parser.base`` matches
     them, as without the wrappers.
     """
-    pysnooper = pytest.importorskip("pysnooper")
-    monkeypatch.setattr(pysnooper.tracer, "DISABLED", False)
 
     @snooper_to_methods()
     class TracedParser(JsonSchemaParser):
         """A parser whose decoration wraps the functions of the pass modules, which stay wrapped."""
 
-    monkeypatch.setattr(pysnooper.tracer, "DISABLED", True)
+    monkeypatch.setattr(debug_tracing.tracer, "DISABLED", True)
 
     def warned(*filters: str) -> list[warnings.WarningMessage]:
         with warnings.catch_warnings(record=True) as records:

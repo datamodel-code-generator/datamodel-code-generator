@@ -324,12 +324,12 @@ def get_version() -> str:
 
 def enable_debug_message() -> None:  # pragma: no cover
     """Enable debug tracing with pysnooper."""
-    global _pysnooper_default_state_set  # noqa: PLW0603
+    global _debug_snoop  # noqa: PLW0603
     try:
         import pysnooper  # noqa: PLC0415
 
         pysnooper.tracer.DISABLED = False
-        _pysnooper_default_state_set = True
+        _debug_snoop = pysnooper.snoop
     except ImportError as err:
         from datamodel_code_generator._message_text import install_command  # noqa: PLC0415
 
@@ -340,7 +340,7 @@ def enable_debug_message() -> None:  # pragma: no cover
 DEFAULT_MAX_VARIABLE_LENGTH: int = 100
 
 
-_pysnooper_default_state_set: bool = False
+_debug_snoop: Callable[..., Any] | None = None
 _LAYER_MODULE_PREFIX = "datamodel_code_generator.parser._passes."
 _CONCERN_MODULE_PREFIX = "datamodel_code_generator.parser._"
 _CONCERN_HOST_PARAMETER = "parser"
@@ -370,26 +370,18 @@ def snooper_to_methods() -> Callable[..., Any]:
     It also traces, once each, the module functions ``_traces_module_function`` selects: those of the pass layer
     modules, which the pipeline of ``Parser`` calls through their modules, and the methods a concern module of the
     parser took over, which the parser and the module itself call through the module. A module is covered when it is
-    imported before the class is decorated.
+    imported before the class is decorated. It wraps nothing for a class decorated before ``enable_debug_message()``
+    (``--debug``) imported pysnooper and turned the tracing on.
     """
 
     def inner(cls: type[T]) -> type[T]:
-        global _pysnooper_default_state_set  # noqa: PLW0603
-        try:
-            import pysnooper  # noqa: PLC0415
-        except ImportError:
+        if (snoop := _debug_snoop) is None:
             return cls
-
-        # Ensure tracing is disabled by default (only enabled via --debug flag)
-        if not _pysnooper_default_state_set:
-            pysnooper.tracer.DISABLED = True
-            _pysnooper_default_state_set = True
-
         import inspect  # noqa: PLC0415
 
         methods = inspect.getmembers(cls, predicate=inspect.isfunction)
         for name, method in methods:
-            snooper_method = pysnooper.snoop(max_variable_length=DEFAULT_MAX_VARIABLE_LENGTH)(method)
+            snooper_method = snoop(max_variable_length=DEFAULT_MAX_VARIABLE_LENGTH)(method)
             setattr(cls, name, snooper_method)
         for module_name, module in [*sys.modules.items()]:
             if not module_name.startswith(_CONCERN_MODULE_PREFIX):
@@ -400,7 +392,7 @@ def snooper_to_methods() -> Callable[..., Any]:
                     and not hasattr(function, "__wrapped__")
                     and _traces_module_function(module_name, function)
                 ):
-                    setattr(module, name, pysnooper.snoop(max_variable_length=DEFAULT_MAX_VARIABLE_LENGTH)(function))
+                    setattr(module, name, snoop(max_variable_length=DEFAULT_MAX_VARIABLE_LENGTH)(function))
         return cls
 
     return inner
