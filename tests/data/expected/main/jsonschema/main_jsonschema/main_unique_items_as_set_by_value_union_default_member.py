@@ -15,3 +15,4 @@ Words = TypeAliasType("Words", list[str])
 class Model(BaseModel):
     words: Row | Words | None = ['a', 'a']
     row: Words | Row | None = {1}
+    maybe: set[int | None] | None = {None, 1}

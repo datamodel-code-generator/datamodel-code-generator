@@ -1851,6 +1851,7 @@ DECISION_DECLS: Final[dict[str, PassDecl]] = {
             Fact.BASES,
             Fact.FIELD_SET,
             Fact.METADATA,
+            Fact.NULLABLE,
         }),
         writes=frozenset({Fact.CONTAINERS, Fact.FIELD_TYPES, Fact.DEFAULTS}),
         summary=(

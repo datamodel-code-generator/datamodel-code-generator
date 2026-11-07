@@ -7,5 +7,10 @@
   "row": [
     "set",
     "int"
+  ],
+  "maybe": [
+    "set",
+    "NoneType",
+    "int"
   ]
 }

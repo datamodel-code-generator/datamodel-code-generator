@@ -274,8 +274,10 @@ class _ByValue:
         A type alias takes what its value takes (``followed`` holds the aliases read since the last value) and another
         model any value; a union, what one of its members takes; an array, an array whose items its item types take,
         a tuple by position; a mapping, an object whose values its value types take; a Literal, its values; str, int,
-        float, bool and None, values of their JSON kind; any other type any value.
+        float, bool and None, values of their JSON kind. An optional type takes None too, and any other type any value.
         """
+        if value is None and node.admits_none:
+            return True
         if (reference := node.reference) is not None:
             if self.class_hash.get(key := model_key_of(reference)) != "alias" or not (fields := self.live[key].fields):
                 return True
