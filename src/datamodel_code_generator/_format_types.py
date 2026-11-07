@@ -139,6 +139,8 @@ EXTERNAL_FORMATTERS = frozenset({
     Formatter.RUFF_CHECK,
     Formatter.RUFF_FORMAT,
 })
+RUFF_FORMATTERS = frozenset({Formatter.RUFF_CHECK, Formatter.RUFF_FORMAT})
+"""The formatters that run Ruff, which formats a written directory once."""
 DEFAULT_LINE_LENGTH = 88
 DEFAULT_KNOWN_FIRST_PARTY = frozenset({"datamodel_code_generator", "tests"})
 MAX_TOP_LEVEL_BLANK_LINES = 2

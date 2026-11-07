@@ -240,6 +240,13 @@ def _toggle(group: _ArgumentGroup, *names: str, help: str) -> None:  # noqa: A00
     group.add_argument(*names, action=BooleanOptionalAction, default=None, help=help)
 
 
+def _clear(group: _ArgumentGroup, name: str, *, help: str) -> None:  # noqa: A002
+    """Add the --no- form of a list option, which sets it to no items, clearing what a configuration gives it."""
+    group.add_argument(
+        name, dest=name.removeprefix("--no-").replace("-", "_"), action="store_const", const=(), default=None, help=help
+    )
+
+
 def _package_options(kind: str) -> None:
     """Add the output directory and package options of the generated server or client package."""
     for name, help_text in (
@@ -1503,14 +1510,7 @@ template_options.add_argument(
     nargs="+",
     default=None,
 )
-template_options.add_argument(
-    "--no-deserialize-default-values",
-    dest="deserialize_default_values",
-    help="Disable schema default value deserialization.",
-    action="store_const",
-    const=(),
-    default=None,
-)
+_clear(template_options, "--no-deserialize-default-values", help="Disable schema default value deserialization.")
 template_options.add_argument(
     "--custom-file-header",
     help="Custom file header",
@@ -1630,13 +1630,10 @@ base_options.add_argument(
     nargs="+",
     default=None,
 )
-base_options.add_argument(
+_clear(
+    base_options,
     "--no-formatters",
-    dest="formatters",
     help="Select no formatter, not even the default or a preset's formatters; --custom-formatters still run.",
-    action="store_const",
-    const=(),
-    default=None,
 )
 base_options.add_argument(
     "--custom-formatters",

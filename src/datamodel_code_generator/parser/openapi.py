@@ -29,7 +29,9 @@ from datamodel_code_generator import (
     SchemaParseError,
     snooper_to_methods,
 )
+from datamodel_code_generator._document_reader import as_mapping as _as_mapping
 from datamodel_code_generator._document_reader import discriminator_mapping_ref, string_key, string_keys
+from datamodel_code_generator._openapi_objects import OBJECT_MEMBERS as _OBJECT_MEMBERS
 from datamodel_code_generator._openapi_paths import (
     OPERATION_METHODS,
     PATHS_PARAMETERS,
@@ -48,6 +50,7 @@ from datamodel_code_generator._user_keys import ClassScope, class_key
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import OpenAPIAsDefinitions, OpenAPIVersion, VersionMode
 from datamodel_code_generator.parser import _schema_documents, _schema_refs, _union_tags
+from datamodel_code_generator.parser._api_reference import pointer_fragment as _pointer_fragment
 from datamodel_code_generator.parser._naming import composed_name
 from datamodel_code_generator.parser._origins import with_subtype_ref, with_type_origin
 from datamodel_code_generator.parser._rw_split import update_field_refs_for_variant
@@ -289,41 +292,78 @@ class ComponentsObject(BaseModel):
     headers: dict[str, OrReference[HeaderObject]] = Field(default_factory=dict)
 
 
-_HELD_OBJECTS: dict[type[BaseModel], tuple[tuple[str, type[BaseModel], bool], ...]] = {
-    Operation: (
-        ("parameters", ParameterObject, True),
-        ("requestBody", RequestBodyObject, False),
-        ("responses", ResponseObject, True),
-    ),
-    ParameterObject: (("schema", JsonSchemaObject, False), ("content", MediaObject, True)),
-    RequestBodyObject: (("content", MediaObject, True),),
-    ResponseObject: (("headers", ParameterObject, True), ("content", MediaObject, True)),
-    MediaObject: (("schema", JsonSchemaObject, False), ("itemSchema", JsonSchemaObject, False)),
+_MODEL_ROLES: dict[type[BaseModel], str] = {
+    Operation: "operation",
+    ParameterObject: "parameter",
+    RequestBodyObject: "requestBody",
+    ResponseObject: "response",
+    MediaObject: "mediaType",
 }
-"""The fields of OpenAPI object models that hold schemas or such objects: name, model, and whether it holds many."""
+"""The role (``OBJECT_MEMBERS``) of the objects each OpenAPI object model validates whose members hold schemas."""
+_ROLE_MODELS: dict[str, type[BaseModel]] = {
+    **{role: model for model, role in _MODEL_ROLES.items()},
+    "header": ParameterObject,
+}
+"""The model that validates an object of each such role; a response's headers validate as parameter objects."""
+
+
+def _held_members(role: str, model: type[BaseModel]) -> tuple[tuple[str, str, str], ...]:
+    """Return the members of an object of ``role`` that ``model`` validates and that hold schemas or such objects.
+
+    Each is its name, how it holds them (``OBJECT_MEMBERS``) and their role, in the order of the model's fields.
+    """
+    members = _OBJECT_MEMBERS[role]
+    names = (field.alias or field_name for field_name, field in model.model_fields.items())
+    return tuple(
+        (name, *members[name]) for name in names if name in members and members[name][1] in {"schema", *_ROLE_MODELS}
+    )
+
+
+_HELD_MEMBERS: dict[str, tuple[tuple[str, str, str], ...]] = {
+    role: _held_members(role, model) for role, model in _ROLE_MODELS.items()
+}
+"""The held members (``_held_members``) of an object of each role."""
 
 
 def _held_schemas(
-    raw: object, kind: type[BaseModel], tokens: tuple[str, ...] = ()
+    raw: object, role: str, tokens: tuple[str, ...] = ()
 ) -> Iterator[tuple[dict[str, YamlValue], str, tuple[str, ...]]]:
-    """Yield the holder, key and tokens below ``raw`` of each schema that ``raw``, an OpenAPI ``kind``, holds.
+    """Yield the holder, key and tokens below ``raw`` of each schema that ``raw``, an OpenAPI object of ``role``, holds.
 
     A reference object holds none, and a field set to null holds nothing, as the models read it.
     """
     if not isinstance(raw, dict) or "$ref" in raw:
         return
-    for field, member, many in _HELD_OBJECTS.get(kind, ()):
+    for field, form, member in _HELD_MEMBERS.get(role, ()):
         if (value := raw.get(field)) is None:
             continue
         at = (*tokens, field)
-        if member is JsonSchemaObject:
+        if member == "schema":
             yield raw, field, at
-        elif not many:
+        elif form == "one":
             yield from _held_schemas(value, member, at)
         else:
             entries = value.items() if isinstance(value, dict) else enumerate(value) if isinstance(value, list) else ()
             for key, entry in entries:
                 yield from _held_schemas(entry, member, (*at, str(key)))
+
+
+@record
+class _DiscriminatorScan:
+    """How a parser reads a document and its component schemas for their discriminators.
+
+    ``canonical_keys`` (the api scope) keys the document by its canonical path (``ModelResolver.join_path``), requires
+    each component name to be a string, names a component schema by its escaped pointer and locates an invalid one
+    under the document key; otherwise the key is the current document with an empty fragment, a schema is named
+    ``#/components/schemas/<name>`` as written and an invalid one is located under the current root path components.
+    ``string_refs`` (the api scope) takes each string ``$ref`` of an ``allOf`` for a parent, the empty one too, instead
+    of each truthy one. ``components_only`` (AsyncAPI) reads the component schemas as ``_iter_asyncapi_schemas`` does,
+    where a value that is no object holds no schema, and reads no discriminator at the root and no subtypes.
+    """
+
+    canonical_keys: bool = False
+    string_refs: bool = False
+    components_only: bool = False
 
 
 def is_inline_object_body(obj: JsonSchemaObject) -> bool:
@@ -460,6 +500,7 @@ class OpenAPIParser(JsonSchemaParser):
     _supports_api_scope: ClassVar[bool] = False
     _api_scope_error: ClassVar[str] = "OpenAPIScope.Api requires ApiOpenAPIParser"
     _named_entry_maps: ClassVar[frozenset[str]] = JsonSchemaParser._named_entry_maps | {"headers"}  # ruff: ignore[private-member-access]
+    _discriminator_scan: ClassVar[_DiscriminatorScan] = _DiscriminatorScan()
 
     def __init__(
         self,
@@ -537,7 +578,7 @@ class OpenAPIParser(JsonSchemaParser):
             and isinstance(openapi_self := raw.get("$self"), str)
             and self._features_at(None).openapi_self
         ):
-            scope = "/".join(self.model_resolver.current_root)
+            scope = self.model_resolver.current_document
             self.model_resolver.ids[scope].setdefault(openapi_self, f"{scope}#")
         return nullcontext()
 
@@ -742,7 +783,7 @@ class OpenAPIParser(JsonSchemaParser):
         the discriminator mapping to create the union type. This handles cases
         where schemas don't use allOf inheritance but have explicit discriminator mappings.
         """
-        current_document = "/".join(self.model_resolver.current_root)
+        current_document = self.model_resolver.current_document
         subtypes = self._discriminator_subtypes.get(ref, [])
         if not subtypes:
             discriminator = self._discriminator_schemas[ref]
@@ -849,7 +890,7 @@ class OpenAPIParser(JsonSchemaParser):
         try:
             return object_type.model_validate(raw, context=self._schema_validation_context)
         except ValidationError as error:
-            for holder, key, tokens in _held_schemas(raw, object_type):
+            for holder, key, tokens in _held_schemas(raw, _MODEL_ROLES.get(object_type, "")):
                 self._validate_member(holder[key], [*path, *tokens], self._member_location(holder, key))
             message = f"{type(error).__name__}: {error}"
             raise SchemaParseError(message, _named_path(location, path), error) from error
@@ -1486,36 +1527,59 @@ class OpenAPIParser(JsonSchemaParser):
         self._collect_discriminator_document(self.raw_obj)
 
     def _collect_discriminator_document(self, raw: dict[str, Any]) -> None:
-        """Collect discriminator definitions once per document, preserving subtype order."""
-        document = f"{'/'.join(self.model_resolver.current_root)}#"
+        """Collect discriminator definitions once per document, preserving subtype order.
+
+        The class's ``_discriminator_scan`` says how the document and its component schemas are read.
+        """
+        scan, resolver = self._discriminator_scan, self.model_resolver
+        document = (
+            resolver.join_path(tuple(resolver.current_root)) if scan.canonical_keys else f"{resolver.current_document}#"
+        )
         if document in self._discriminator_documents:
             return
         self._discriminator_documents.add(document)
-        self._register_discriminator_schema("#", raw)
-        components = _mapping(raw.get("components", {}), [document, "components"])
-        schemas = _mapping(components.get("schemas", {}), [document, "components", "schemas"])
+        self._note_scanned_document(document, raw)
+        if scan.components_only:
+            schemas = cast("dict[str, Any]", _as_mapping(_as_mapping(raw.get("components")).get("schemas")))
+        else:
+            self._register_discriminator_schema("#", raw)
+            components = _mapping(raw.get("components", {}), [document, "components"])
+            schemas = _mapping(components.get("schemas", {}), [document, "components", "schemas"])
+        if scan.canonical_keys:
+            self._named_components(schemas, [document, "components", "schemas"])
+        kept: Callable[[object], bool] = (lambda ref: isinstance(ref, str)) if scan.string_refs else bool
         potential_subtypes: list[tuple[str, dict[str, Any], list[str]]] = []
-
         for schema_name, schema in schemas.items():
             match schema:
                 case bool():
                     continue
                 case dict():
                     pass
+                case _ if scan.components_only:
+                    continue
                 case _:
                     self._validate_member(
                         schema,
-                        [*self.model_resolver.current_root, "#/components", "schemas", schema_name],
+                        [document, "components", "schemas", schema_name]
+                        if scan.canonical_keys
+                        else [*resolver.current_root, "#/components", "schemas", schema_name],
                         self._member_location(schemas, schema_name),
                     )
                     continue  # pragma: no cover - validation always raises for non-schema values
-            self._register_discriminator_schema(local_ref := f"#/components/schemas/{schema_name}", schema)
-
-            if isinstance(all_of := schema.get("allOf"), list):
-                refs = [ref for item in all_of if isinstance(item, dict) and (ref := item.get("$ref"))]
+            local_ref = (
+                "#" + _pointer_fragment(("components", "schemas", schema_name))
+                if scan.canonical_keys
+                else f"#/components/schemas/{schema_name}"
+            )
+            self._register_discriminator_schema(local_ref, schema)
+            if not scan.components_only and isinstance(all_of := schema.get("allOf"), list):
+                refs = [ref for item in all_of if isinstance(item, dict) and kept(ref := item.get("$ref"))]
                 if refs:
                     potential_subtypes.append((local_ref, schema, refs))
         self._link_discriminator_subtypes(document, potential_subtypes)
+
+    def _note_scanned_document(self, document: str, raw: dict[str, Any]) -> None:
+        """Note ``raw``, the document keyed ``document``, before its discriminators are collected; nothing here."""
 
     def _link_discriminator_subtypes(
         self, document: str, children: list[tuple[str, dict[str, Any], list[str]]]

@@ -1642,6 +1642,26 @@ def _load_model_schema_with_python_type_expressions(  # ruff: ignore[too-many-ar
     return expression_collector.loaded_schema(schema)
 
 
+def _load_config_input_model(config: Any) -> LoadedInputModelSchema:
+    """Load the ``--input-model`` schema of a command-line configuration, with the settings that change how it loads.
+
+    An error loading it is a ``datamodel_code_generator.Error``.
+    """
+    from datamodel_code_generator import Error as GenerationError  # noqa: PLC0415
+
+    try:
+        return _load_model_schema_with_python_type_expressions(
+            config.input_model,
+            config.input_file_type,
+            config.input_model_ref_strategy,
+            config.output_model_type,
+            read_dataclass_fields_by_alias=config.read_input_model_dataclass_fields_by_alias,
+            reuse_every_reached_type=config.reuse_every_reached_input_model_type,
+        )
+    except Error as e:
+        raise GenerationError(str(e)) from e
+
+
 def _load_model_schema(  # noqa: PLR0914
     input_models: list[str],
     input_file_type: InputFileType,

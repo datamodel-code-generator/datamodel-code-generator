@@ -21,7 +21,10 @@ from datamodel_code_generator import Error, ProtobufVersion, SchemaParseError, V
 from datamodel_code_generator._json_schema import definition_ref
 from datamodel_code_generator._message_text import install_command
 from datamodel_code_generator._paths import files_under
-from datamodel_code_generator._python_syntax import normalize_newlines
+from datamodel_code_generator._python_syntax import (
+    normalize_newlines,  # noqa: F401  # Preserve the established parser.protobuf export.
+)
+from datamodel_code_generator._source import input_text as _input_text
 from datamodel_code_generator.parser import _schema_documents
 from datamodel_code_generator.parser._null_facts import null_schema, with_null
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
@@ -424,7 +427,7 @@ class _ProtoInputPreparer:
         target.parent.mkdir(parents=True, exist_ok=True)
         encoding = self.parser.encoding
         data = self.parser._prefetched_data(source_path)  # noqa: SLF001
-        text = source_path.read_text(encoding=encoding) if data is None else normalize_newlines(data.decode(encoding))
+        text = _input_text(source_path, encoding, data)
         target.write_text(_sanitize_proto_source(text), encoding=encoding)
         return target
 

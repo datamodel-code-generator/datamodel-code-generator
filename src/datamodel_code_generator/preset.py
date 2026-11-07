@@ -6,6 +6,7 @@ from argparse import Namespace
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
+from itertools import pairwise as _pairwise
 from typing import TYPE_CHECKING, Literal, TypeAlias, cast
 
 from pydantic import ConfigDict, PrivateAttr
@@ -17,6 +18,7 @@ from datamodel_code_generator._format_types import (
     Formatter,
     PythonVersion,
 )
+from datamodel_code_generator._option_names import option_arguments as _option_arguments
 from datamodel_code_generator._option_names import option_flags, toml_value
 from datamodel_code_generator._option_rules import implied_options
 from datamodel_code_generator._registry_render import _render_registry_json
@@ -424,17 +426,13 @@ def _config_item_to_cli_option(item: PresetConfigItem) -> str:
     if option is None:  # pragma: no cover
         msg = f"Preset field {stable_repr(item.field_name)} does not map to a documented CLI option"
         raise PresetError(msg)
-    if item.value is True:
-        return option
-    if isinstance(item.value, Enum):
-        return f"{option} {item.value.value}"
-    if item.value:
-        return f"{option} {' '.join(str(value.value) for value in item.value)}"
-
-    if (negative_option := _documented_option(item.field_name, negative=True)) is None:  # pragma: no cover
+    arguments = _option_arguments(
+        item.field_name, item.value, negative=lambda field: _documented_option(field, negative=True), flag=option
+    )
+    if arguments is None:  # pragma: no cover
         msg = f"Preset field {stable_repr(item.field_name)} does not map to a documented negative CLI option"
         raise PresetError(msg)
-    return negative_option
+    return " ".join([arguments[0], *(str(value.value) for value in arguments[1:])])
 
 
 _STANDARD_20260619_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
@@ -1375,8 +1373,47 @@ def render_presets_json() -> str:
     return _render_registry_json(preset_info_as_dict(info) for info in _PRESET_INFOS)
 
 
+def _date_additions_markdown(since: str) -> list[str]:
+    """Return the lines that say, date by date after ``since``, what the presets of a date add to the date before.
+
+    A date adds its new Python targets and the option groups its standard or practical presets list that the date before
+    does not, each written as the reference tables write it: its title, its options and its description.
+    """
+    dates = list(_STANDARD_OPTION_GROUPS_BY_DATE)
+    dates = dates[dates.index(since) :]
+    lines: list[str] = []
+    for previous, date in _pairwise(dates):
+        targets = [
+            target.value
+            for target in _PRESET_NAMES_BY_TARGET["standard", date]
+            if target not in _PRESET_NAMES_BY_TARGET["standard", previous]
+        ]
+        added = [
+            *(f"- Python {target} targets" for target in targets),
+            *(
+                _group_item(group, family)
+                for family, groups_by_date in (
+                    ("", _STANDARD_OPTION_GROUPS_BY_DATE),
+                    (" (practical presets)", _PRACTICAL_EXTRA_OPTION_GROUPS_BY_DATE),
+                )
+                for group in groups_by_date.get(date, _PRACTICAL_20260619_EXTRA_OPTION_GROUPS)
+                if group not in groups_by_date.get(previous, _PRACTICAL_20260619_EXTRA_OPTION_GROUPS)
+            ),
+        ]
+        lines.extend((f"The {date} presets keep the {previous} options and add:", "", *added, ""))
+    return lines
+
+
+def _group_item(group: PresetOptionGroup, family: str) -> str:
+    """Return the list item of an option group a preset date adds: its title, options and description."""
+    options = ", ".join(f"`{option}`" for option in group.options)
+    return f"- {group.title}{family} ({options}): {group.description}"
+
+
 def render_presets_markdown() -> str:
     """Render the preset reference page."""
+    standard, practical = (latest_preset_name(family, PythonVersion.PY_312) for family in ("standard", "practical"))
+    builtin_date = "20260909"
     lines = [
         "# Presets",
         "",
@@ -1416,13 +1453,13 @@ def render_presets_markdown() -> str:
         "  --input schema.json \\",
         "  --input-file-type jsonschema \\",
         "  --output-model-type pydantic_v2.BaseModel \\",
-        "  --preset standard-py312-20261106 \\",
+        f"  --preset {standard} \\",
         "  --output model.py",
         "```",
         "",
         (
-            "Use `standard-py312-20261106` for the project-recommended modern Python 3.12 baseline. "
-            "Use `practical-py312-20261106` when you also want schema-authored names, model reuse, and schema "
+            f"Use `{standard}` for the project-recommended modern Python 3.12 baseline. "
+            f"Use `{practical}` when you also want schema-authored names, model reuse, and schema "
             "descriptions embedded in the generated code."
         ),
         "",
@@ -1432,163 +1469,13 @@ def render_presets_markdown() -> str:
         ),
         "",
         (
-            "Presets dated 20260909 or later select builtin to avoid running external formatters. "
+            f"Presets dated {builtin_date} or later select builtin to avoid running external formatters. "
             "For project-wide Ruff consistency, use the preset with `--formatters ruff-check ruff-format`. "
             "Keep `--formatters black isort` to preserve existing Black/isort output. "
             "Earlier dated presets are unchanged. Black and isort remain required installation dependencies."
         ),
         "",
-        "The 20261015 presets keep the 20260909 options and add Python 3.15 targets.",
-        "",
-        (
-            "The 20261017 presets keep the 20261015 options and add `--enum-field-as-literal all` for stdlib "
-            "dataclass and TypedDict output. These models keep raw JSON values without conversion, so enums render "
-            "as Literal values instead of enum classes. Options of an output model scope take precedence over the "
-            "options for all output model types."
-        ),
-        "",
-        (
-            "The 20261027 presets keep the 20261017 options and add `--use-single-value-enum-as-const`: an enum of "
-            "one value, and an enum that admits the const beside it, render as that const's Literal value instead "
-            "of an enum class, and one-value enum branches of a oneOf or anyOf merge into one enum. They also add "
-            "`--openapi-as-definitions paths-bodies ref-components`: request and response bodies of the OpenAPI paths "
-            "and webhooks scopes, and components written as a $ref to a recursive schema with sibling keywords, get "
-            "the model a definitions entry of the same schema gets, `--omit-redundant-constraints`: a "
-            "constraint that a zero-bound class or a const or enum Literal already enforces is not written again, and "
-            "`--use-site-models-for-constrained-refs`: an allOf whose other parts add constraints, an enum or a type "
-            "to a referenced schema gets its own model of the values all parts admit instead of the referenced type."
-        ),
-        "",
-        (
-            "The 20261104 presets keep the 20261027 options and add `--merge-shared-variant-tags`: a variant that "
-            "discriminated unions tag differently, such as one by a mapping key and one by the schema name, takes "
-            "every tag they give it, so each union decodes the documents it selects the variant by, "
-            "`--use-encoded-str-for-constrained-base64`: a format: byte string with a pattern or lengths is written "
-            "as `Annotated[str, Field(...), EncodedStr(encoder=Base64Encoder)]`, so Pydantic 2.10 or later checks "
-            "them on the base64 text instead of the decoded text, and `--read-length-keywords-by-type`: `minLength` "
-            "and `maxLength` beside an array, and `minItems` and `maxItems` beside a string, are left out instead of "
-            "bounding the length of the other kind, as JSON Schema reads them, and "
-            "`--read-msgspec-union-bounds-exactly`: the int member of a msgspec union with a number member keeps its "
-            "bounds only when they admit every integer the number member's bounds, read as the schema writes them, "
-            "admit, and `--read-schema-version-per-document`: each document is read by the schema version it "
-            "declares, or that of the document that references it, so the keywords beside a `$ref` and the version's "
-            "features apply as that version says in every document of a run, and "
-            "`--ignore-ref-siblings-by-schema-version`: a `$ref` in a version that ignores the keywords beside it, "
-            "such as draft 7 or OpenAPI 3.0, is read as its target alone, and `--intersect-combined-schema-keywords`: "
-            "the keywords beside an anyOf or oneOf are combined with each branch, an inherited override merges its "
-            "nested properties name by name and by the type it narrows, an allOf member reads its $ref siblings, "
-            "$ref aliases and null branches, an allOf that adds required names to the one model it names is a model "
-            "that requires them, and no enum value that the merged type rejects is kept, as JSON Schema validates "
-            "them, and `--distribute-allof-over-unions`: an allOf of several anyOf and oneOf is one union "
-            "variant per combination of their branches, also through a $ref member and for value branches at a field "
-            "and beside object branches, a $ref branch of an anyOf or oneOf "
-            "takes the allOf members and the value keywords beside it, and an OpenAPI body with an allOf beside an "
-            "anyOf or oneOf is that union, and `--keep-reference-null-on-merged-models`: a reference whose schema "
-            "admits null keeps "
-            "its `| None` when its model is merged into an equal model that rejects null. They also add "
-            "`--use-msgspec-meta-for-map-keys`: the keys of a msgspec map whose keys propertyNames or "
-            "patternProperties constrain are written as `Annotated[str, Meta(...)]`, so msgspec checks them, and "
-            "`--rename-submodules-hidden-by-classes`: a submodule named like a class of its package is renamed "
-            "(`pkg/Warn_.py`), so importing it leaves the class in place, and "
-            "`--use-serialize-as-any-for-every-subclass`: under `--use-serialize-as-any` a field is wrapped in "
-            "`SerializeAsAny` when any subclass of its model in the output adds fields, and "
-            "`--read-dynamic-anchors-in-document-order`: a plain-name `$dynamicRef` its dynamic scope does not bind, "
-            "and a reference to a plain name several schemas declare, resolve to the first declaration in document "
-            "order, and "
-            "`--use-unique-items-as-set-by-value`: under `--use-unique-items-as-set` a set is decided on the final "
-            "item types and written only where every value of its items hashes by value, and models whose arrays "
-            "differ in `uniqueItems` are not merged, and `--keep-constrained-root-models-in-every-container`: under "
-            "`--collapse-root-models` with `--field-constraints` a constrained root model stays named inside a set, "
-            "`Sequence` or `Mapping` of its holder, so their items keep its constraints, and "
-            "`--keep-enum-literal-aliases`: under `--collapse-root-models` a named enum written as a `Literal` type "
-            "alias stays named at its uses, and "
-            "`--read-input-model-dataclass-fields-by-alias`: with `--input-model`, a field of a Pydantic dataclass "
-            "that has an alias keeps its Python type (`deque[int]`) like one without, and "
-            "`--use-plain-alias-for-recursive-models`: in Pydantic output a type "
-            "alias whose whole value is a model that names itself is written as `Alias: TypeAlias = Node`, which "
-            "Pydantic builds for every model that uses it, and "
-            "`--type-overrides-replace-whole-type`: a class path of `--type-overrides` replaces an object map itself "
-            "(`dict`, not `dict[str, dict]`), and the item or property counts of the array or map an override "
-            "replaces stay only where the new type counts the same."
-        ),
-        "",
-        (
-            "The 20261104 presets also name models from the schema: `--naming-strategy definitions-first` gives "
-            "every definition its own name before an inline model that asks for it first (the practical presets "
-            "take it instead of `primary-first`), `--name-allof-union-members-after-branches` names the union members "
-            "of an allOf after their branches (`EventCreated`, `EventBase`), "
-            "`--use-duplicate-name-suffix-for-every-collision` "
-            "gives the `--duplicate-name-suffix` suffix to every model renamed because its name is taken, "
-            "`--capitalise-numbered-enum-members` capitalizes the number a capitalized enum member takes (`A_1`), "
-            "`--keep-first-character-of-path-keys` strips only a leading slash from a paths key (`pets` names "
-            "`PetsGetResponse`), `--name-converted-payloads-by-message` drops the placeholder title `Model` of an "
-            "AsyncAPI Avro or XML Schema payload that names no type, so it is named after its message, and "
-            "`--singularize-last-word-of-item-names` singularizes only the last word of an item model's name "
-            "(`actions_caches` names `ActionsCache`), `--read-escaped-ref-pointers` reads the escapes of a `$ref` "
-            "pointer as the characters they encode, so `#/$defs/a~1b` names the model `AB` of `a/b` instead of a copy "
-            "`A1b`, and `--use-one-model-per-ref-site` gives an object `$ref` with sibling keywords one model per "
-            "place it is written instead of one per path that reaches it."
-        ),
-        "",
-        (
-            "The 20261106 presets keep the 20261104 options and add `--keep-false-dataclass-arguments`: a dataclass "
-            "decorator argument set to false, such as `eq=False` from `--dataclass-arguments`, is written instead of "
-            "left out, which gave it its default, and `--keep-content-parameter-refs`: an OpenAPI parameter whose "
-            "content media schema is a `$ref` is typed by the model the `$ref` names (`PageRequest` under "
-            "`--read-only-write-only-model-type request-response`) instead of a copy of the referenced schema, and "
-            "`--skip-path-extension-keys`: the paths scope skips an `x-` key of `paths`, a specification extension, as "
-            "the api scope does, and `--reuse-every-reached-input-model-type`: with `--input-model` and a reuse "
-            "strategy, the types reached through dataclass fields are reused too, and no unused copy of a type a "
-            "field's Python type imports is written, and `--use-x-python-type-as-written`: an `x-python-type` union "
-            "spelled `Optional[...]` or `Union[...]`, such as `Optional[Literal['a', 'b']]`, types its field as one "
-            "spelled `X | Y` already does, instead of the schema's type, and a container class it names that is "
-            "compatible with the schema, such as `tuple[str, ...]` or `MutableSequence[str]`, is written around the "
-            "schema's item types (`tuple[constr(max_length=3), ...]`) instead of `list` or `Sequence`, and "
-            "`--use-typed-nullable-map-values`: the values of a map whose type array lists object alone or with null, "
-            "such as `[object, null]`, are typed as its `additionalProperties` say (`dict[str, int] | None`) instead "
-            "of `dict[str, Any] | None`, which also makes `--use-typed-map-values-beside-other-types`, set by the "
-            "20261027 presets but acting only together with it, type the map values of a type array that lists object "
-            "beside other types (`dict[str, int] | str`), and `--use-msgspec-forbid-unknown-fields`: a msgspec Struct "
-            "whose schema admits no property but its own (`additionalProperties: false` without `patternProperties`) "
-            "is written with `forbid_unknown_fields=True`, so it rejects the unknown fields the schema rejects, and "
-            "`--keep-reference-null-on-collapsed-root-models`: under `--collapse-root-models` a field, item or map "
-            "value that takes the type of a root model admitting null keeps that null (`list[str] | None`), and "
-            "`--read-allof-parents-in-mro-order`: a property that several bases of an allOf declare takes the "
-            "nearer base's constraints, as the class bases do, also where an allOf lists a base before its own "
-            "descendant (`max_length=3` of `B` instead of `max_length=5` of `A`), and "
-            "`--apply-field-options-to-every-field`: a GraphQL field, a property whose schema is `true` or `false`, a "
-            "required name without a property and an appended discriminator tag take the field options the other "
-            "fields take (`p_q: Annotated[Any, Field(alias='p-q')]` under `--use-annotated`), and "
-            "`--use-strict-str-for-base64`: under `--strict-types str` a `format: byte` string is the `StrictStr` "
-            "that `EncodedStr` decodes (`Annotated[StrictStr, EncodedStr(encoder=Base64Encoder)]`), which refuses "
-            "bytes as any other strict string does, instead of `Base64Str`, and "
-            "`--use-bytes-for-content-media-type`: a string of an OpenAPI document that has a `contentMediaType` and "
-            "no `contentEncoding`, raw binary content, is typed `bytes`, as a `format: binary` string is, instead of "
-            "`str`, and "
-            "`--collapse-constrained-root-models-as-annotated`: a constrained string inside a union or a container "
-            "is written in place (`Annotated[str, StringConstraints(max_length=20)]`) instead of as a root model "
-            "of its own, and `--remove-unused-models-beside-type-overrides`: the models nothing uses, such as an "
-            "inlined root model, also leave a module that a model-level `--type-overrides` key takes a model out "
-            "of, and `--keep-self-referencing-array-items`: an array whose items name the array itself keeps its "
-            "items (`RootModel[list[Node | Leaf]]` instead of `RootModel[list]`), and "
-            "`--keep-shared-members-on-collapsed-root-models`: under `--collapse-root-models` a recursive union "
-            'keeps its plain member at every site that inlines it (`dict[str, Union["Entry", str]]` instead of '
-            '`dict[str, "Entry"]`), and '
-            "`--use-enum-field-as-literal-in-operations`: the enum of an OpenAPI request body or response is a root "
-            "model of a `Literal` where `--enum-field-as-literal`, its map or `x-enum-field-as-literal` makes a "
-            "definition's enum one, instead of an `Enum` class, and `--dedupe-numbered-request-response-variants`: "
-            "under `--read-only-write-only-model-type` a Request or Response variant of a numbered model "
-            "(`Page1Request` of an inline copy `Page1` of `Page`) merges into `PageRequest` where it renders the same, "
-            "as the numbered model merges into `Page`, and "
-            "`--keep-defaults-of-inherited-required-fields`: with `--use-default` a property that only a schema it "
-            "inherits from lists as required keeps the default its schema gives it (`a: str = 'x'`), as one the schema "
-            "lists as required itself does, and `--omit-incomplete-model-defaults`: a property whose object default "
-            "lacks required fields of its model (`default: {}`) is written without that default (`spec: PodSpec | "
-            "None = None`), so input that leaves it out is valid instead of failing on the default, and "
-            "`--merge-message-trait-headers`: an AsyncAPI message takes the headers of all its traits, merged in order "
-            "as JSON Merge Patches, and then its own, instead of only its own or those of its one inline trait."
-        ),
-        "",
+        *_date_additions_markdown(builtin_date),
         "## Override Preset Options",
         "",
         "Preset options are defaults, not locks. Explicit options override preset-supplied values.",
@@ -1596,7 +1483,7 @@ def render_presets_markdown() -> str:
         "```bash",
         "datamodel-codegen \\",
         "  --input schema.json \\",
-        "  --preset standard-py312-20261106 \\",
+        f"  --preset {standard} \\",
         "  --no-snake-case-field \\",
         "  --no-use-annotated \\",
         "  --enum-field-as-literal none",
@@ -1622,7 +1509,7 @@ def render_presets_markdown() -> str:
         "```bash",
         "datamodel-codegen \\",
         "  --input schema.json \\",
-        "  --preset standard-py312-20261106 \\",
+        f"  --preset {standard} \\",
         "  --extra-fields forbid \\",
         "  --use-title-as-name \\",
         "  --output model.py",
@@ -1638,12 +1525,12 @@ def render_presets_markdown() -> str:
         '```toml title="pyproject.toml"',
         "[tool.datamodel-codegen]",
         'output-model-type = "pydantic_v2.BaseModel"',
-        'preset = "standard-py312-20261106"',
+        f'preset = "{standard}"',
         "",
         "[tool.datamodel-codegen.profiles.api]",
         'input = "schemas/api.json"',
         'output = "src/models/api.py"',
-        'preset = "practical-py312-20261106"',
+        f'preset = "{practical}"',
         'extra-fields = "forbid"',
         "",
         "[tool.datamodel-codegen.profiles.events]",
@@ -1672,7 +1559,7 @@ def render_presets_markdown() -> str:
         "  --input schema.json \\",
         "  --output model.py \\",
         "  --output-model-type pydantic_v2.BaseModel \\",
-        "  --preset practical-py312-20261106 \\",
+        f"  --preset {practical} \\",
         "  --extra-fields forbid \\",
         "  --generate-pyproject-config",
         "```",

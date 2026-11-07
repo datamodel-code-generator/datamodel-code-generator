@@ -17,13 +17,7 @@ from typing import TYPE_CHECKING, Any, TypeAlias, cast
 from datamodel_code_generator import Error
 from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._option_names import CONFIG_TABLE, SENSITIVE_FIELDS, configured_value, option_flag
-from datamodel_code_generator._recommend._rules import (
-    Decision,
-    decide,
-    load_rules,
-    option_arguments,
-    values_arguments,
-)
+from datamodel_code_generator._recommend._rules import Decision, decide, load_rules
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -274,7 +268,9 @@ def _analyse(request: RecommendRequest) -> _Input:
 
 
 def _option(decision: Decision, values: Mapping[str, OptionValue]) -> Option:
-    return Option(decision, dict(values), values_arguments(values))
+    from datamodel_code_generator.cli_options import _values_arguments  # noqa: PLC0415
+
+    return Option(decision, dict(values), _values_arguments(values.items()))
 
 
 def _avoided(decision: Decision) -> Option:
@@ -308,6 +304,8 @@ def _plan(
 
     An optional rule lists the values the user did not set and the preset does not give, for the user to decide.
     """
+    from datamodel_code_generator.cli_options import _option_arguments  # noqa: PLC0415
+
     config = request.config
     preset_values = {} if configured else _preset_values(preset, request)
     baseline = {
@@ -327,7 +325,7 @@ def _plan(
                 plan.optional.append(_option(decision, changes))
             continue
         if blocked := [
-            (decision, name, value) for name, value in changes.items() if option_arguments(name, value) is None
+            (decision, name, value) for name, value in changes.items() if _option_arguments(name, value) is None
         ]:
             plan.blocked.extend(blocked)
         elif changes:
@@ -429,22 +427,9 @@ def _trial_input(request: RecommendRequest, analysed: _Input) -> TrialInput:
     """Return the input a generation of this configuration reads."""
     config = request.config
     if analysed.source == "input-model":
-        from datamodel_code_generator.input_model import Error as InputModelError  # noqa: PLC0415
-        from datamodel_code_generator.input_model import (  # noqa: PLC0415
-            _load_model_schema_with_python_type_expressions,
-        )
+        from datamodel_code_generator.input_model import _load_config_input_model  # noqa: PLC0415
 
-        try:
-            return _load_model_schema_with_python_type_expressions(
-                config.input_model,
-                config.input_file_type,
-                config.input_model_ref_strategy,
-                config.output_model_type,
-                read_dataclass_fields_by_alias=config.read_input_model_dataclass_fields_by_alias,
-                reuse_every_reached_type=config.reuse_every_reached_input_model_type,
-            )
-        except InputModelError as e:
-            raise Error(str(e)) from e
+        return _load_config_input_model(config)
     if analysed.source == "stdin":
         return cast("str", analysed.text)
     return config.url if analysed.source == "url" else config.input

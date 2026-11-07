@@ -113,7 +113,42 @@ def canonical_path(path: tuple[str, ...], *, form: KeyForm = "api") -> str:
     return "/".join(path) + "#"
 
 
-class _WrittenPathKeysResolver(ModelResolver):
+class _CanonicalKeysResolver(ModelResolver):
+    """A model resolver that keys each pointer by its canonical reference in the class's key form (``canonical_ref``).
+
+    ``_key_form`` is that form. A model that a parse path adds is named after the reference that reached the path, or
+    after the path's canonical key where ``_names_from_key`` says so.
+    """
+
+    _key_form: ClassVar[KeyForm]
+    _names_from_key: ClassVar[bool] = False
+
+    @override
+    def resolve_ref(self, path: Sequence[str] | str) -> str:
+        """Canonicalize pointers before and after the file, base and identifier resolution."""
+        original = path if isinstance(path, str) else self.join_path(tuple(path))
+        resolved = canonical_ref(super().resolve_ref(canonical_ref(original, form=self._key_form)), form=self._key_form)
+        self._note_resolved(original, resolved)
+        return resolved
+
+    def _note_resolved(self, original: str, resolved: str) -> None:
+        """Note that the reference spelled ``original`` resolved to ``resolved``; nothing here."""
+
+    @override
+    def add_ref(self, ref: str, resolved: bool = False) -> Reference:
+        """Add the reference at the canonical key of ``ref``, reserving its names once per declaration."""
+        return super().add_ref(
+            canonical_ref(ref, form=self._key_form) if resolved else self.resolve_ref(ref), resolved=True
+        )
+
+    @override
+    def _add_ref_at(self, path: str, ref: str) -> Reference:
+        """Return the Reference at the canonical ``path``, named after ``ref`` or, by ``_names_from_key``, the key."""
+        canonical = canonical_ref(path, form=self._key_form)
+        return super()._add_ref_at(canonical, canonical if self._names_from_key else ref)
+
+
+class _WrittenPathKeysResolver(_CanonicalKeysResolver):
     """A model resolver of --read-escaped-ref-pointers, whose ``--model-name-map`` path keys match in any spelling.
 
     A key that names a path names it by its canonical reference in the resolver's key form, read leniently, so every
@@ -121,7 +156,6 @@ class _WrittenPathKeysResolver(ModelResolver):
     map, renames it, as the first of the keys that name one model by its path and by its name does.
     """
 
-    _written_key_form: ClassVar[KeyForm] = "fragment"
     _written_keys_of: Mapping[str, str] | None = None
     _written_keys: Mapping[str, tuple[str, ...]] = MappingProxyType({})
 
@@ -132,7 +166,7 @@ class _WrittenPathKeysResolver(ModelResolver):
             self._written_keys_of = self.model_name_map
             written: dict[str, tuple[str, ...]] = {}
             for name in self.model_name_map:
-                canonical = canonical_ref(name, form=self._written_key_form, strict=False)
+                canonical = canonical_ref(name, form=self._key_form, strict=False)
                 written[canonical] = (*written.get(canonical, ()), name)
             self._written_keys = written
         return self._written_keys.get(key, (key,))
@@ -147,23 +181,7 @@ class EscapedPointerModelResolver(_WrittenPathKeysResolver):
     decoded last token of its pointer, as the declaration that the pointer names is.
     """
 
-    @override
-    def resolve_ref(self, path: Sequence[str] | str) -> str:
-        """Canonicalize pointers before and after the file, base and identifier resolution."""
-        original = path if isinstance(path, str) else self.join_path(tuple(path))
-        return canonical_ref(super().resolve_ref(canonical_ref(original, form="fragment")), form="fragment")
-
-    @override
-    def add_ref(self, ref: str, resolved: bool = False) -> Reference:
-        """Add the reference at the canonical key of ``ref``."""
-        return super().add_ref(
-            canonical_ref(ref, form="fragment") if resolved else self.resolve_ref(ref), resolved=True
-        )
-
-    @override
-    def _add_ref_at(self, path: str, ref: str) -> Reference:
-        """Return the Reference at the canonical ``path``, named after the decoded last token of ``ref``."""
-        return super()._add_ref_at(canonical_ref(path, form="fragment"), ref)
+    _key_form: ClassVar[KeyForm] = "fragment"
 
     @override
     def ref_original_name(self, ref: str, path: str) -> str:
@@ -179,8 +197,11 @@ class EscapedPointerModelResolver(_WrittenPathKeysResolver):
         return canonical_path(path, form="fragment")
 
 
-class ApiModelResolver(ModelResolver):
-    """Use one canonical reference key for raw declarations and all pointer spellings."""
+class ApiModelResolver(_CanonicalKeysResolver):
+    """Use one canonical reference key for raw declarations and all pointer spellings, named after the key."""
+
+    _key_form: ClassVar[KeyForm] = "api"
+    _names_from_key: ClassVar[bool] = True
 
     @cached_property
     def original_refs(self) -> dict[str, list[str]]:
@@ -193,10 +214,8 @@ class ApiModelResolver(ModelResolver):
         return {}
 
     @override
-    def resolve_ref(self, path: Sequence[str] | str) -> str:
-        """Canonicalize pointers before the existing file/base/ID resolution."""
-        original = path if isinstance(path, str) else self.join_path(tuple(path))
-        resolved = canonical_ref(super().resolve_ref(canonical_ref(original)))
+    def _note_resolved(self, original: str, resolved: str) -> None:
+        """Keep the spelling of a resolved reference, and check its pointer against the document it names if loaded."""
         spellings = self.original_refs.setdefault(resolved, [])
         if original not in spellings:
             spellings.append(original)
@@ -205,19 +224,6 @@ class ApiModelResolver(ModelResolver):
             and (raw := self.loaded_documents.get(resolved.partition("#")[0])) is not None
         ):
             check_pointer_interpretation(raw, original, resolved)
-        return resolved
-
-    @override
-    def add_ref(self, ref: str, resolved: bool = False) -> Reference:
-        """Reserve names from canonical spelling exactly once per declaration."""
-        canonical = canonical_ref(ref) if resolved else self.resolve_ref(ref)
-        return super().add_ref(canonical, resolved=True)
-
-    @override
-    def _add_ref_at(self, path: str, ref: str) -> Reference:
-        """Reserve names from canonical spelling exactly once per declaration, whatever the reference spells."""
-        canonical = canonical_ref(path)
-        return super()._add_ref_at(canonical, canonical)
 
     @staticmethod
     @override
@@ -229,8 +235,6 @@ class ApiModelResolver(ModelResolver):
 
 class EscapedPointerApiModelResolver(_WrittenPathKeysResolver, ApiModelResolver):
     """The model resolver of the api scope under --read-escaped-ref-pointers, which keys pointers as the scope does."""
-
-    _written_key_form: ClassVar[KeyForm] = "api"
 
 
 ESCAPED_POINTER_RESOLVERS: Mapping[type[ModelResolver], type[ModelResolver]] = MappingProxyType({
