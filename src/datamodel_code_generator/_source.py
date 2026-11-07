@@ -225,6 +225,19 @@ def _is_json_text(text: str) -> bool:
     return _first_significant_text_char(text) in {"{", "["}
 
 
+def _is_json_document(text: str) -> bool:
+    """Return whether text is a JSON document, not only YAML that starts like one."""
+    if not _is_json_text(text):
+        return False
+    import json  # noqa: PLC0415
+
+    try:
+        json.loads(text)
+    except json.JSONDecodeError:
+        return False
+    return True
+
+
 def _is_xml_text(text: str) -> bool:
     """Return whether text starts like XML after whitespace and BOM."""
     return _first_significant_text_char(text) == "<"

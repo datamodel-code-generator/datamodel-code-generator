@@ -13,5 +13,8 @@ pyyaml	main/main_yaml/integer_beyond_int64[pyyaml].py
 ryaml	main/main_yaml/integer_beyond_int64[ryaml].py	= main/main_yaml/integer_beyond_int64[pyyaml].py
 [test_main_yaml_root_list]
 	main/yaml/root_list.py
+[test_main_yaml_sample_data_auto_detection]
+block	main/main_yaml/sample_data_auto_detection[block].py
+flow	main/main_yaml/sample_data_auto_detection[flow].py	= main/main_yaml/sample_data_auto_detection[block].py
 [test_main_yaml_scientific_notation]
 	main/yaml/scientific_notation.py

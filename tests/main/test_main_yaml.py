@@ -82,6 +82,27 @@ def test_main_yaml(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "document",
+    [
+        pytest.param("a: 1\nb:\n  - x\n", id="block"),
+        pytest.param("{a: 1, b: [x]}\n", id="flow"),
+    ],
+)
+def test_main_yaml_sample_data_auto_detection(
+    output_file: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], document: str
+) -> None:
+    """Infer YAML sample data that is no JSON document as yaml, as `--input-file-type yaml` reads it (#6310)."""
+    input_path = tmp_path / "data.yaml"
+    input_path.write_text(document)
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        capsys=capsys,
+        expected_stderr_contains="The input file type was determined to be: yaml",
+    )
+
+
 def test_main_yaml_root_list(output_file: Path) -> None:
     """Test YAML file with list as root element generates a list root model."""
     run_main_and_assert(
