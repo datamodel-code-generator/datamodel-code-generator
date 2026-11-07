@@ -85,8 +85,8 @@ class DecisionOptions:
     """--use-tuple-for-closed-arrays writes a closed array as a tuple, which keeps its positions."""
     user_imports: bool = False
     """--additional-imports may shadow the builtin annotations that hashability reads."""
-    decodes_value_unions: bool = True
-    """The output decodes a union of any value types; msgspec decodes one member of each kind only."""
+    meta_field_keys: frozenset[str] = frozenset()
+    """The keys of a field the output writes as metadata beside its type (msgspec's ``Meta()`` arguments)."""
 
 
 @final
@@ -211,15 +211,32 @@ class _DecisionWriter:
         )
         self._changed[id(model)] = cast("DataModel", model)
 
+    def write_members_as_lists(
+        self, model: ModelView, field: FieldView, members: Sequence[tuple[DataTypeView, DataTypeView]]
+    ) -> None:
+        """Write each node of ``members`` in the type of ``field`` as its set's list (``SetAliasMembersWriter``).
+
+        The field takes a copy of its type tree whose copies of the nodes are list copies of their sets
+        (``rewrite_copied_type``); the nodes and the sets stay as the other fields see them.
+        """
+        rewrites = {id(node): self._list_copy(alias_set) for node, alias_set in members}
+        original: Any = field.data_type
+        self._store.replace_field_type(field, rewrite_copied_type(self._store, self._copy, original, rewrites))
+        self._changed[id(model)] = cast("DataModel", model)
+
+    def _list_copy(self, alias_set: DataTypeView) -> Callable[[Any], Any]:
+        """Return the rewrite of a node into a list copy of ``alias_set``, which holds copies of its items."""
+        return lambda _: _set_of(self._copy(alias_set), is_set=False)
+
     def outcome(self, live_models: Iterable[DataModel]) -> DecisionOutcome:
         """Return the models of ``live_models`` that the writes changed, in their order."""
         changed = self._changed
         return DecisionOutcome(tuple(model for model in live_models if id(model) in changed))
 
 
-def _set_of(data_type: Any) -> Any:
-    """Return the set copy of a list type, which holds its items."""
-    set_type = data_type.model_copy(update={"is_list": False, "is_set": True})
+def _set_of(data_type: Any, *, is_set: bool = True) -> Any:
+    """Return the set copy of a list type, or without ``is_set`` the list copy of a set type; it holds the items."""
+    set_type = data_type.model_copy(update={"is_list": not is_set, "is_set": is_set})
     for item in set_type.data_types:
         item.parent = set_type
     return set_type

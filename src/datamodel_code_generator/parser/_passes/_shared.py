@@ -1587,42 +1587,6 @@ def _beside_its_kind(
     )
 
 
-def names_alias_beside_arrays(sites: Iterable[tuple[DataType, DataType]]) -> bool:
-    """Return whether every site of a type alias names it in a union beside an array-like member that keeps its lists.
-
-    ``sites`` are, for each place that names the alias, the type of its field and the node of that type that names
-    it. The member of the union is the node, or the node that holds it as its only member; the other member is
-    array-like (``_union_kind``) and holds no set nor a node whose schema declares ``uniqueItems``. A msgspec union
-    holds one array-like member, so such a union decodes only where the alias's value is a list written like the
-    other member, which a set of the alias would split. An alias without sites keeps its sets.
-    """
-    found = False
-    for root, node in sites:
-        nodes = dict(_nodes_with_paths(root, ()))
-        path = next((at for at, nested in nodes.items() if nested is node), ())
-        while path and len(nodes[path[:-1]].data_types) == 1:
-            path = path[:-1]
-        if (
-            not path
-            or (holder := nodes[path[:-1]]).is_tuple
-            or not any(
-                other is not nodes[path]
-                and _union_kind(other) == "array"
-                and not any(nested in SETS or unique_items_of(nested) for _, nested in _nodes_with_paths(other, ()))
-                for other in holder.data_types
-            )
-        ):
-            return False
-        found = True
-    return found
-
-
-def without_own_unique_sets(field: DataModelFieldBase, plan: UniqueItemsPlan) -> UniqueItemsPlan:
-    """Return ``plan`` without the sets of the field's own level, whose list default stays the list."""
-    own = {*map(id, _unique_items_arrays(field.data_type))}
-    return UniqueItemsPlan(tuple(array for array in plan.sets if id(array) not in own), None, plan.tuples)
-
-
 def _union_kind(data_type: DataType) -> Literal["array", "map"] | None:
     """Return whether a union member is array-like or a map, read through the nodes that hold one member only."""
     while not (data_type in ARRAYS or data_type in MAPPINGS) and len(data_type.data_types) == 1:

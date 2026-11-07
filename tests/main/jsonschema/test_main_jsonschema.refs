@@ -9405,6 +9405,8 @@ typed-dict	main/jsonschema/unique_items_as_set_model_items.py	= main/jsonschema/
 [test_main_unique_items_as_set_msgspec_alias_beside_arrays]
 by-value	main/jsonschema/main_jsonschema/main_unique_items_as_set_msgspec_alias_beside_arrays[by-value].py
 by-value	main/jsonschema/main_jsonschema/main_unique_items_as_set_msgspec_alias_beside_arrays[by-value].txt
+type-statement	main/jsonschema/main_jsonschema/main_unique_items_as_set_msgspec_alias_beside_arrays[type-statement].py
+type-statement	main/jsonschema/main_jsonschema/main_unique_items_as_set_msgspec_alias_beside_arrays[type-statement].txt	= main/jsonschema/main_jsonschema/main_unique_items_as_set_msgspec_alias_beside_arrays[by-value].txt
 without-option	main/jsonschema/main_jsonschema/main_unique_items_as_set_msgspec_alias_beside_arrays[without-option].py	= main/jsonschema/main_jsonschema/main_unique_items_as_set_msgspec_alias_beside_arrays[by-value].py
 without-option	main/jsonschema/main_jsonschema/main_unique_items_as_set_msgspec_alias_beside_arrays[without-option].txt	= main/jsonschema/main_jsonschema/main_unique_items_as_set_msgspec_alias_beside_arrays[by-value].txt
 [test_main_unique_items_as_set_nested_arrays]
