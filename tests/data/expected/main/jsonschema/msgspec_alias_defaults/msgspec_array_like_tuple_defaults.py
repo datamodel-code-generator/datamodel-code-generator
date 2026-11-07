@@ -29,6 +29,9 @@ class Batch(Struct):
     entry: EntryWithTotals | UnsetType = UNSET
 
 
+Labels: TypeAlias = dict[str, str]
+
+
 class Model(Struct):
     entries: list[EntryWithTotals] | UnsetType = field(
         default_factory=lambda: convert(
@@ -45,3 +48,4 @@ class Model(Struct):
             {'entry': [{'key': 'b'}, {'row': {'c': 4}}]}, type=Batch
         )
     )
+    rowOrLabels: Row | Labels | UnsetType = field(default_factory=lambda: {'a': 'q'})

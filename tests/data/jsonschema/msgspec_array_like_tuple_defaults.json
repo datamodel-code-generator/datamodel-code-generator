@@ -47,6 +47,19 @@
           }
         ]
       }
+    },
+    "rowOrLabels": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Row"
+        },
+        {
+          "$ref": "#/$defs/Labels"
+        }
+      ],
+      "default": {
+        "a": "q"
+      }
     }
   },
   "$defs": {
@@ -102,6 +115,12 @@
         "entry": {
           "$ref": "#/$defs/EntryWithTotals"
         }
+      }
+    },
+    "Labels": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
       }
     }
   }

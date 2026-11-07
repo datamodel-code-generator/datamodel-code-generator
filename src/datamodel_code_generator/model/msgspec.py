@@ -529,18 +529,24 @@ def _struct_attribute_default(struct: Struct, value: dict[str, object]) -> objec
     return PythonCode(f"SimpleNamespace(**{represent_python_value(read)})") if _reads_arrays(struct) else read
 
 
-def _first_attribute_default(members: Sequence[DataType], value: object, seen: frozenset[int] = frozenset()) -> object:
-    """Return ``value`` as the member of ``members`` that takes it reads it (``_attribute_default``), else as it is.
+def _default_takers(members: Sequence[DataType], value: object, seen: frozenset[int] = frozenset()) -> list[DataType]:
+    """Return the members that take ``value`` as msgspec reads JSON, else, where none does, from attributes.
 
-    The member is the first that takes it as msgspec reads JSON, else, where none does, the first that takes it from
-    attributes (``_takes_default``): msgspec reads an object as a member that reads objects.
+    msgspec reads an object as a member that reads objects, so only where no member takes the value as JSON is it read
+    as the attributes of a Struct msgspec reads from an array (``_takes_default``).
     """
     for attributes in (False, True):
-        if (
-            member := next((m for m in members if _takes_default(m, value, seen, attributes=attributes)), None)
-        ) is not None:
-            return _attribute_default(member, value, seen)
-    return value
+        if takers := [member for member in members if _takes_default(member, value, seen, attributes=attributes)]:
+            return takers
+    return []
+
+
+def _first_attribute_default(members: Sequence[DataType], value: object, seen: frozenset[int] = frozenset()) -> object:
+    """Return ``value`` as the first member of ``members`` that takes it (``_default_takers``) reads it, else as it is.
+
+    The member reads it as ``_attribute_default`` does.
+    """
+    return _attribute_default(takers[0], value, seen) if (takers := _default_takers(members, value, seen)) else value
 
 
 def _reads_arrays(struct: Struct) -> bool:
@@ -2251,20 +2257,13 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         """Convert the default of a field of several types to the first written member it fits that names Structs.
 
         ``members`` are the members the field's type writes (``_non_none_members``), a container of several types being
-        one. A member takes the default as ``_takes_default`` reads it as JSON, else, where none does, from attributes,
-        and converts it as ``_member_conversion`` does. An object default beside a dict member converts only to a
-        dict member.
+        one. A member takes the default as ``_takes_default`` reads it as JSON, else, where none does, from attributes
+        (``_default_takers``), and converts it as ``_member_conversion`` does. An object default beside a dict member
+        converts only to a dict member.
         """
         beside_dict = isinstance(default := self.default, dict) and any(member.is_dict for member in members)
-        for attributes in (False, True):
-            for member in members:
-                if (
-                    (member.is_dict or not beside_dict)
-                    and _takes_default(member, default, attributes=attributes)
-                    and (conversion := self._member_conversion(member)) is not None
-                ):
-                    return conversion
-        return None
+        takers = _default_takers([member for member in members if member.is_dict or not beside_dict], default)
+        return next(filter(None, map(self._member_conversion, takers)), None)
 
     def _list_conversion(self, data_type: DataType, item: DataType) -> _StructConversion:
         """Return the factory that converts a list default to the list ``data_type`` of ``item``.
