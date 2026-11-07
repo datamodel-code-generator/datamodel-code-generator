@@ -1,0 +1,12 @@
+{"nullableString": "abc"} (valid): accepted
+{"nullableString": null} (valid): accepted
+{"nullableString": [1]} (invalid): rejected
+{"string": "abc"} (valid): accepted
+{"reference": "abc"} (valid): accepted
+{"object": {"a": 1}} (valid): accepted
+{"object": [1]} (invalid): rejected
+{"prefixed": true} (valid): accepted
+{"prefixed": [1]} (invalid): rejected
+{"arrayOrString": [1]} (valid): accepted
+{"arrayOrString": "abc"} (valid): accepted
+{"untyped": [1]} (valid): accepted
