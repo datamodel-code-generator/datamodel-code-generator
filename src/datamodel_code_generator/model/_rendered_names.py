@@ -1,7 +1,7 @@
 """The names a model's rendered text loads, and their rewriting through the bindings of its module.
 
-``DataModel.render`` writes a field annotation or default that names an import its module binds under another name
-through that name (``_bind_field_expressions``), and ``DataModel._render`` and the module rendering write every bare
+``DataModel._render_with_template_data`` rewrites field annotations and defaults to use the names their module
+binds (``_bind_field_expressions``). ``DataModel._render`` and the module rendering write every bare
 load of a builtin the module imports under an alias through the alias (``_bind_builtin_names``); the pass that aliases
 those builtins asks which of them a text loads bare (``_bare_loads_of``), and so does the pass that aliases the module
 imports named like a builtin, by its own row. Each parses the rendered text as the target writes it
@@ -41,13 +41,9 @@ def _class_bodies(tree: ast.Module, restore_name: Callable[[str], str], class_na
     )
 
 
-def _names_of(tree: ast.AST, *, loads_only: bool = False) -> Iterator[ast.Name]:
-    """Yield the name nodes of ``tree`` in ``ast.walk`` order: every one, or only those it loads."""
-    return (
-        node
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Name) and (not loads_only or isinstance(node.ctx, ast.Load))
-    )
+def _names_of(tree: ast.AST) -> Iterator[ast.Name]:
+    """Yield the name nodes of ``tree`` in ``ast.walk`` order."""
+    return (node for node in ast.walk(tree) if isinstance(node, ast.Name))
 
 
 def _expression_names(expression: ast.AST, restore_name: Callable[[str], str]) -> set[str]:
@@ -72,8 +68,62 @@ def _rewrite_names(rendered: str, replacements: Iterable[tuple[ast.Name, str]]) 
     return source.decode()
 
 
+def _parameter_names(arguments: ast.arguments) -> set[str]:
+    """Return the names bound by a function or lambda's parameters."""
+    parameters = (*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs, arguments.vararg, arguments.kwarg)
+    return {parameter.arg for parameter in parameters if parameter is not None}
+
+
+def _target_names(target: ast.expr) -> Iterator[str]:
+    """Yield names assigned by a comprehension target, including unpacked targets."""
+    match target:
+        case ast.Name(id=name):
+            yield name
+        case ast.Tuple(elts=elements) | ast.List(elts=elements):
+            for element in elements:
+                yield from _target_names(element)
+        case ast.Starred(value=value):
+            yield from _target_names(value)
+
+
+def _assignment_expression_names(tree: ast.AST) -> Iterator[str]:
+    """Yield names assigned by assignment expressions in the current lambda's scope."""
+    if isinstance(tree, ast.Lambda):
+        # A nested lambda's defaults run in the enclosing scope.
+        tree = tree.args
+    if isinstance(tree, ast.NamedExpr):
+        yield tree.target.id
+    for child in ast.iter_child_nodes(tree):
+        yield from _assignment_expression_names(child)
+
+
+def _field_loads(tree: ast.AST, bound: frozenset[str] = frozenset()) -> Iterator[ast.Name]:
+    """Yield field-expression loads that can refer to module imports."""
+    match tree:
+        case ast.Name(ctx=ast.Load(), id=name) if name not in bound:
+            yield tree
+        case ast.Lambda(args=args, body=body):
+            yield from _field_loads(args, bound)
+            local = _parameter_names(args)
+            local.update(_assignment_expression_names(body))
+            yield from _field_loads(body, bound | local)
+        case ast.ListComp() | ast.SetComp() | ast.DictComp() | ast.GeneratorExp():
+            first = tree.generators[0]
+            # The leftmost iterable runs before entering the comprehension's scope.
+            yield from _field_loads(first.iter, bound)
+            bound = bound.union(name for generator in tree.generators for name in _target_names(generator.target))
+            for child in (first.target, *first.ifs):
+                yield from _field_loads(child, bound)
+            for child in ast.iter_child_nodes(tree):
+                if child is not first:
+                    yield from _field_loads(child, bound)
+        case _:
+            for child in ast.iter_child_nodes(tree):
+                yield from _field_loads(child, bound)
+
+
 def _bind_field_expressions(rendered: str, class_name: str, bindings: Mapping[str, str]) -> str:
-    """Bind names in field annotations and defaults without changing template objects.
+    """Bind imports used by field annotations and defaults, respecting expression scopes.
 
     The rendered text is parsed at its own offsets (`_parsed`), so the name nodes rewrite in place.
     """
@@ -86,7 +136,7 @@ def _bind_field_expressions(rendered: str, class_name: str, bindings: Mapping[st
             for field in body
             if isinstance(field, ast.AnnAssign)
             for expression in ((field.annotation,) if field.value is None else (field.annotation, field.value))
-            for node in _names_of(expression, loads_only=True)
+            for node in _field_loads(expression)
             if (alias := bindings.get(restore_name(node.id))) is not None
         ],
     )
@@ -106,12 +156,8 @@ _NAME_SCOPES: Final = (
 def _local_names(scope: ast.AST) -> set[str]:
     """Return the names a function, lambda or comprehension binds itself: its parameters and its assigned names."""
     arguments = getattr(scope, "args", None)
-    parameters = (
-        (*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs, arguments.vararg, arguments.kwarg)
-        if isinstance(arguments, ast.arguments)
-        else ()
-    )
-    return {parameter.arg for parameter in parameters if parameter is not None} | {
+    parameters = _parameter_names(arguments) if isinstance(arguments, ast.arguments) else set()
+    return parameters | {
         node.id for node in ast.walk(scope) if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store)
     }
 

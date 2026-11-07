@@ -1462,6 +1462,29 @@ def test_pydantic_v2_missing_sentinel_type_hint_fallbacks() -> None:
     assert field._type_hint_with_missing_sentinel("") == "MISSING"
 
 
+@pytest.mark.parametrize(
+    ("expression", "expected"),
+    [
+        ("(lambda item=item: item)()", "(lambda item=item_aliased: item)()"),
+        (
+            "(lambda: ((lambda: ((item := 0), item))(), item))()",
+            "(lambda: ((lambda: ((item := 0), item))(), item_aliased))()",
+        ),
+        ("[item for _, *item in item if item]", "[item for _, *item in item_aliased if item]"),
+    ],
+)
+def test_bind_field_expressions_respects_expression_scopes(tmp_path: Path, expression: str, expected: str) -> None:
+    """Rewrite free names while preserving locals in lambdas and unpacking comprehensions."""
+    prefix = "class Model:\n    field: object = "
+    template = tmp_path / "pydantic_v2" / "BaseModel.jinja2"
+    template.parent.mkdir()
+    template.write_text(prefix + expression, encoding="utf-8")
+    model = BaseModel(fields=[], reference=Reference(path="Model", name="Model"), custom_template_dir=tmp_path)
+    model.set_field_name_bindings({"item": "item_aliased"})
+
+    assert model.render() == prefix + expected
+
+
 def test_rendered_pydantic_v2_field_uses_structured_values() -> None:
     """Test the built-in proxy exposes both views of the structured render plan."""
     field = PydanticV2DataModelField(

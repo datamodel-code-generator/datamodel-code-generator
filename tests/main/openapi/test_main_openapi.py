@@ -11840,6 +11840,47 @@ def test_main_openapi_field_name_collision_with_alias_constraints(
     )
 
 
+def test_main_openapi_root_model_uses_aliased_field_import(output_file: Path) -> None:
+    """A property named Field can alias the Field call used by another model's root."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "alias_description_property_names.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+
+
+def test_main_openapi_root_model_factory_keeps_comprehension_local(output_file: Path, tmp_path: Path) -> None:
+    """Keep a comprehension target local while binding the same name in its outer iterable."""
+    template_dir = tmp_path / "templates"
+    root_template = template_dir / "pydantic_v2" / "RootModel.jinja2"
+    root_template.parent.mkdir(parents=True)
+    root_template.write_text(
+        "class {{ class_name }}({{ base_class }}[{{ fields[0].type_hint }}]):\n"
+        "    root: {{ fields[0].type_hint }} = Field(default_factory=lambda: [list for list in list(range(3))])\n",
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "root_model_factory_local_names.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--custom-template-dir",
+            str(template_dir),
+            "--additional-imports",
+            "pydantic.Field",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    with _generated_model(output_file, "root_model_factory_local_names", "DefaultItems") as model:
+        assert_output(f"{model().root!r}\n", name="factory_result")
+
+
 def test_main_openapi_shadowed_imports_base_and_fields(output_file: Path) -> None:
     """Test that aliased imports are applied to all fields, not just matching field names."""
     run_main_and_assert(
