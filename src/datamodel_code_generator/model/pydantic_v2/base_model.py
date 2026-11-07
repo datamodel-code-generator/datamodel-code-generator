@@ -775,7 +775,8 @@ class DataModelField(_PydanticBaseDataModelField):
     def dropped_constraints_warning(self) -> str | None:
         """Return the warning of the base field, and one naming base64 constraints the explicit target does not check.
 
-        Pydantic checks the constraints of a value written as base64 text on that text only from 2.10 on.
+        Pydantic checks the constraints of a value written as base64 text on that text, and the strictness of a strict
+        string decoded from it, only from 2.10 on.
         """
         messages = [super().dropped_constraints_warning]
         if not model_target_meets(self.parent, "pydantic.encoded_text_constraints") and (
@@ -783,7 +784,7 @@ class DataModelField(_PydanticBaseDataModelField):
                 name
                 for data_type in self.data_type.all_data_types
                 if isinstance(data_type, EncodedTextDataType)
-                for name in data_type.kwargs or ()
+                for name in (*(data_type.kwargs or ()), *(("strict",) if data_type.strict else ()))
             })
         ):
             minimum = REQUIREMENTS["pydantic.encoded_text_constraints"].minimum
