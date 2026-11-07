@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, fields, is_dataclass
 from functools import wraps
+from itertools import starmap
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, final
 
@@ -189,26 +190,22 @@ def _same(kept: object, fresh: object) -> bool:
     return _equal(kept, fresh)
 
 
-def _equal(kept: object, fresh: object, compared: frozenset[tuple[int, int]] = frozenset()) -> bool:
+def _equal(kept: object, fresh: object) -> bool:
     """Compare two values item by item inside tuples, lists, dataclasses and pydantic models.
 
     Other values of one type are the same when they write the same text, such as ``nan`` or a runtime expression
-    built again, which equal nothing but themselves. A pair of models met again below itself is the same: the models
-    of a cycle, which have no finite text, are equal when every field of the walk is.
+    built again, which equal nothing but themselves. Pydantic models are compared field by field, not by their text,
+    which a model of a cycle has no finite form of (#6490).
     """
     if kept is fresh or kept == fresh:
         return True
     if isinstance(kept, (tuple, list)) and isinstance(fresh, (tuple, list)) and type(kept) is type(fresh):
         pairs = zip(kept, fresh, strict=False)
-        return len(kept) == len(fresh) and all(_equal(left, right, compared) for left, right in pairs)
+        return len(kept) == len(fresh) and all(starmap(_equal, pairs))
     if is_dataclass(kept) and type(kept) is type(fresh):
-        return all(_equal(getattr(kept, f.name), getattr(fresh, f.name), compared) for f in fields(kept))
+        return all(_equal(getattr(kept, f.name), getattr(fresh, f.name)) for f in fields(kept))
     if isinstance(kept, BaseModel) and type(kept) is type(fresh):
-        if (pair := (id(kept), id(fresh))) in compared:
-            return True
-        return all(
-            _equal(getattr(kept, name), getattr(fresh, name), compared | {pair}) for name in type(kept).model_fields
-        )
+        return all(_equal(getattr(kept, name), getattr(fresh, name)) for name in type(kept).model_fields)
     return type(kept) is type(fresh) and repr(kept) == repr(fresh)
 
 
