@@ -16,7 +16,7 @@ from .._runtime.server.responses import Declared, OperationResponses
 OperationDependencies = TypedDict(
     'OperationDependencies',
     {
-        'list_orders': Sequence[params.Depends]
+        'list_orders': Sequence[params.Depends],
     },
     total=False,
 )

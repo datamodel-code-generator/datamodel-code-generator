@@ -11,6 +11,6 @@ from typing_extensions import NotRequired
 Holder = TypedDict(
     'Holder',
     {
-        'a-b': NotRequired[Any]
+        'a-b': NotRequired[Any],
     },
 )
