@@ -12,5 +12,9 @@
     "set",
     "NoneType",
     "int"
+  ],
+  "scopes": [
+    "set",
+    "str"
   ]
 }

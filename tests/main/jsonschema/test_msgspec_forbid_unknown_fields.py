@@ -98,6 +98,31 @@ def test_msgspec_forbid_unknown_fields_flattened_bases(output_file: Path) -> Non
         )
 
 
+def test_msgspec_forbid_unknown_fields_flattened_bases_shared_option(output_file: Path) -> None:
+    """Keep the struct option a flattened Struct sets itself where the bases it takes the fields of set it too.
+
+    Template data for every model gives each Struct ``omit_defaults=True``, so ``Both`` sets it already and takes only
+    ``forbid_unknown_fields`` from ``Closed``; it still rejects an unknown field and encodes no unset field.
+    """
+    (template_data := output_file.parent / "omit_defaults.json").write_text(
+        json.dumps({"#all#": {"base_class_kwargs": {"omit_defaults": True}}}), encoding="utf-8"
+    )
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "msgspec_forbid_unknown_fields_flattened_bases.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--output-model-type", "msgspec.Struct", "--formatters", "builtin", "--disable-timestamp"),
+            *("--use-msgspec-forbid-unknown-fields", "--extra-template-data", str(template_data)),
+        ],
+    )
+    documents = {"valid": {"both": {"a": 1}}, "unknown field": {"both": {"a": 1, "c": 2}}}
+    with _generated_model(output_file, "msgspec_flattened_bases_shared_option_model", "Model") as model:
+        verdicts = "".join(f"{label}: {_verdict(model, document)}\n" for label, document in documents.items())
+        encoded = msgspec.json.encode(msgspec.json.decode(json.dumps(documents["valid"]), type=model)).decode()
+        assert_output(f"{verdicts}encoded: {encoded}\n", name="payloads")
+
+
 def _verdict(model: Any, document: object) -> str:
     """Return whether the generated model decodes a JSON document."""
     try:

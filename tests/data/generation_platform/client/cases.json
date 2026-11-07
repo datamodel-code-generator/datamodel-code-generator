@@ -1611,6 +1611,29 @@
       ]
     }
   },
+  "fields-typeddict-template-bases": {
+    "input": "linked-data-keys.yaml",
+    "references": [
+      "templates/custom/TypedDict.jinja2"
+    ],
+    "backends": [
+      "typing.TypedDict"
+    ],
+    "modules": [
+      [
+        "models.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ]
+    ],
+    "cwd": true,
+    "model": {
+      "custom_template_dir": "templates/custom"
+    }
+  },
   "fields-cycle": {
     "input": "fields-cycle.yaml",
     "modules": false,
