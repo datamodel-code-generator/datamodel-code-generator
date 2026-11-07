@@ -6,7 +6,8 @@ and against the names models have at that pass (keys most specific first):
 * ``--model-name-map``: schema path, ``#fragment``, generated class name, original name; at L1 ``ModelResolver.add``
   under the name a model is created under, and at L2 ``settle_yielding_names`` under the final name of a yielding
   model. A generation run translates the class-name keys first (``translate_class_keys``): they name the models of
-  the run without them, which they rename by schema path, and the names those models had there stay theirs.
+  the run without them, which they rename by schema path, and the names those models had there stay theirs; a model
+  numbered there because a path key's value took its name is also named by that name.
 * ``--base-class-map``: class name (``mapped_base_class``); at L1 model construction (``Parser._resolve_base_class``),
   under row ``predicted`` (the root models and the OpenAPI parameter and GraphQL models) or ``reference-name`` (the
   nullable enum root, the root models of a union's variants and the read-only/write-only models).
@@ -285,6 +286,9 @@ class ModelNameRecord:
 
     allocated: list[tuple[str, str, str]] = field(default_factory=list)
     """The path, generated name and original name of each L1 allocation a class-name key is matched at, in order."""
+    displaced: dict[str, str] = field(default_factory=dict)
+    """The name the allocator first offered a model it numbered because a ``--model-name-map`` value held the name, by
+    path, in the order of ``allocated``: the model's name in the output without the map."""
     at_settle: dict[str, str] = field(default_factory=dict)
     """The name of every reference at the L2 settle."""
     settled: dict[str, str] = field(default_factory=dict)
@@ -316,6 +320,7 @@ _NAME_MATCH: Final = 0
 _ORIGINAL_MATCH: Final = 1
 _SETTLE_MATCH: Final = 2
 _FINAL_MATCH: Final = 3
+_DISPLACED_MATCH: Final = 4
 
 
 def model_name_path_keys(path: str) -> tuple[str, ...]:
@@ -329,14 +334,19 @@ def _class_key_target(key: str, record: ModelNameRecord, eligible: Mapping[str, 
 
     The first allocation whose generated or original name is the key wins, as at allocation today; a typed map value's
     settled name stays a key of the settle; then the name a model had at the settle (a late primary-first rename), then
-    its final name (a rename after L1). Only the models of ``eligible`` are named so: a path key names the others.
+    its final name (a rename after L1), then the name a value of the map took from it (``ModelNameRecord.displaced``).
+    Only the models of ``eligible`` are named so: a path key names the others.
     """
     for path, name, original_name in record.allocated:
         if path in eligible and key in {name, original_name}:
             return path, _NAME_MATCH if key == name else _ORIGINAL_MATCH
     if key in record.settled.values():
         return None
-    for kind, names in ((_SETTLE_MATCH, record.at_settle), (_FINAL_MATCH, record.final)):
+    for kind, names in (
+        (_SETTLE_MATCH, record.at_settle),
+        (_FINAL_MATCH, record.final),
+        (_DISPLACED_MATCH, record.displaced),
+    ):
         if (path := next((path for path, name in names.items() if name == key and path in eligible), None)) is not None:
             return path, kind
     return None

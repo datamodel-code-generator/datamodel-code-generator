@@ -12887,6 +12887,37 @@ def test_main_jsonschema_model_name_map_warns_on_unmatched_keys(output_file: Pat
     )
 
 
+@pytest.mark.parametrize(
+    "model_name_map",
+    [
+        pytest.param({"#/$defs/A": "Tags", "Tags": "Q", "Labels": "L"}, id="displaced-name"),
+        pytest.param({"#/$defs/A": "Tags", "Tags1": "Q", "Labels": "L"}, id="numbered-name"),
+        pytest.param({"#/$defs/A": "Labels", "Tags": "Q", "Labels": "L"}, id="map-value"),
+    ],
+)
+def test_main_jsonschema_model_name_map_key_of_name_a_path_key_value_takes(
+    output_file: Path, model_name_map: dict[str, str]
+) -> None:
+    """Rename by a class-name key a model whose name the value of a path key takes, in a nested or a map value model.
+
+    Without the map ``B``'s nested model and the map value are ``Tags`` and ``Labels``, the names they are numbered
+    off when ``#/$defs/A`` takes them; the key of that name renames them, and the numbered name keeps naming them.
+    """
+    with warnings.catch_warnings(record=True) as warning_records:
+        warnings.simplefilter("always")
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "model_name_map_value_takes_name.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            extra_args=[
+                *("--model-name-map", json.dumps(model_name_map)),
+                *("--formatters", "builtin", "--disable-timestamp"),
+            ],
+        )
+    assert_warnings_do_not_contain(warning_records, "matched no generated model")
+
+
 def test_main_jsonschema_model_name_map_rejects_collision(
     output_file: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

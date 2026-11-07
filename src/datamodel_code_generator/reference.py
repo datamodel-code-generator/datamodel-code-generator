@@ -1338,10 +1338,24 @@ class ModelResolver:  # noqa: PLR0904
         """Record what this run names (``model_name_record``), for the translation of another run's class-name keys."""
         self.model_name_record = ModelNameRecord()
 
-    def _record_allocation(self, path: str, name: str, original_name: str) -> None:
-        """Record an allocation that class-name keys are matched at, when the run records what it names."""
-        if (record := self.model_name_record) is not None:
-            record.allocated.append((path, name, original_name))
+    def _record_allocation(self, path: str, generated: ClassName, original_name: str) -> None:
+        """Record an allocation that class-name keys are matched at, when the run records what it names.
+
+        Where the allocator numbered the name because a ``--model-name-map`` value held it, the name it first offered
+        is recorded too (``ModelNameRecord.displaced``).
+        """
+        if (record := self.model_name_record) is None:
+            return
+        record.allocated.append((path, generated.name, original_name))
+        if generated.duplicate_name is None:
+            return
+        module, dot, _ = generated.name.rpartition(".")
+        offered = f"{module}{dot}{generated.duplicate_name}"
+        if any(
+            (holder := self.references.get(mapped_path)) is not None and holder.name == offered
+            for mapped_path in self._model_name_map_paths
+        ):
+            record.displaced[path] = offered
 
     def reserved_names_in_module(self, prefix: str) -> dict[str, frozenset[str]]:
         """Return the reserved names of the module ``prefix`` names, without the prefix, for the passes after L1."""
@@ -1895,7 +1909,7 @@ class ModelResolver:  # noqa: PLR0904
                 self.get_class_name, original_name, unique=use_unique, skip_affix=self._affix_needs_scope, path=path
             )
             generated = generate()
-            self._record_allocation(path, generated.name, original_name)
+            self._record_allocation(path, generated, original_name)
             name = self._apply_model_name_map(path, original_name, generated, regenerate=generate).name
         if self._yielding_names:
             self._evict_yielding_reference(name)
@@ -2107,7 +2121,7 @@ class ModelResolver:  # noqa: PLR0904
             )
             generated_class_name = generate()
             if not yields:
-                self._record_allocation(joined_path, generated_class_name.name, original_name)
+                self._record_allocation(joined_path, generated_class_name, original_name)
             class_name_result = self._apply_model_name_map(
                 joined_path,
                 original_name,
