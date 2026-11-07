@@ -3383,6 +3383,9 @@ its default: `{"eq": false, "frozen": true}` writes `@dataclass(frozen=True)`, w
 values of its fields (`eq=True` is the default). With it the decorator writes `@dataclass(eq=False, frozen=True)`, so
 the dataclass compares by identity as asked. Every decision that reads the decorator reads what it writes: a set of
 such dataclasses under `--use-unique-items-as-set-by-value` is a list with the option, as they hash by identity.
+The generation stops on arguments the decorator refuses when the module is imported, such as `eq=False` beside
+`order=True`, `weakref_slot` without `slots=True` or for Python 3.10, and `match_args`, `weakref_slot` or `init=True`
+for a Pydantic dataclass.
 
 !!! tip "Usage"
 

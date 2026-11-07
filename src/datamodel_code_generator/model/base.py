@@ -70,7 +70,7 @@ from datamodel_code_generator._python_syntax import (
 )
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
-from datamodel_code_generator._requirements import backport_path, python_target_meets
+from datamodel_code_generator._requirements import REQUIREMENTS, backport_path, python_target_meets
 from datamodel_code_generator._target_unicode import (
     host_identifiers,  # noqa: F401  # Preserve the established model.base export.
     host_parsable,  # noqa: F401  # Preserve the established model.base export.
@@ -386,6 +386,11 @@ def _written_dataclass_arguments(arguments: Mapping[str, Any], *, keep_false: bo
     return {
         name: value for name, value in arguments.items() if value is not None and (keep_false or value is not False)
     }
+
+
+def _order_refusals(arguments: Mapping[str, bool]) -> list[str]:
+    """Return why ``dataclass()`` refuses ``order=True`` beside ``eq=False``: it raises ``ValueError``."""
+    return ["order=True needs eq=True"] if arguments.get("order") and arguments.get("eq") is False else []
 
 
 def _safe_dataclass_arguments(dataclass_arguments: Any) -> dict[str, bool]:
@@ -2473,6 +2478,37 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             keep_false=bool(self.extra_template_data.get(_KEEP_FALSE_DATACLASS_ARGUMENTS_TEMPLATE_DATA_KEY)),
         )
 
+    def _refused_dataclass_arguments(self, arguments: Mapping[str, bool]) -> list[str]:
+        """Return why ``dataclasses.dataclass`` refuses these written arguments at import, one reason each.
+
+        It does on every Python from 3.10: ``order`` needs ``eq``; ``weakref_slot`` needs ``slots`` and Python 3.11,
+        which added it.
+        """
+        refused = _order_refusals(arguments)
+        if arguments.get("weakref_slot") and not arguments.get("slots"):
+            refused.append("weakref_slot=True needs slots=True")
+        if "weakref_slot" in arguments and not python_target_meets(
+            "python.dataclass_weakref_slot", self.target_python_version.version_key
+        ):
+            minimum = REQUIREMENTS["python.dataclass_weakref_slot"].minimum
+            refused.append(f"weakref_slot needs --target-python-version {minimum} or higher")
+        return refused
+
+    def _checked_dataclass_arguments(self, class_name: str) -> dict[str, bool]:
+        """Return the decorator arguments the built-in template reads (``_safe_dataclass_arguments``).
+
+        Under ``--keep-false-dataclass-arguments`` the decorator writes every one of them, and the generation stops on
+        those it refuses (``_refused_dataclass_arguments``) instead of writing a module that fails to import.
+        """
+        arguments = _safe_dataclass_arguments(self.dataclass_arguments)
+        if self.extra_template_data.get(_KEEP_FALSE_DATACLASS_ARGUMENTS_TEMPLATE_DATA_KEY) and (
+            refused := self._refused_dataclass_arguments(arguments)
+        ):
+            written = ", ".join(f"{name}={value}" for name, value in arguments.items())
+            msg = f"model {stable_repr(class_name)} cannot write @dataclass({written}): {'; '.join(refused)}"
+            raise Error(msg)
+        return arguments
+
     @staticmethod
     def requires_extra_items_backport(target_python_version: PythonVersion) -> bool:
         """Preserve the historic extra-item template flag for custom output metadata."""
@@ -3487,7 +3523,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             dataclass_arguments=(
                 self.dataclass_arguments
                 if use_custom_template or not self.USES_DATACLASS_ARGUMENTS
-                else _safe_dataclass_arguments(self.dataclass_arguments)
+                else self._checked_dataclass_arguments(rendered_class_name)
             ),
             path=self.path,
         )
