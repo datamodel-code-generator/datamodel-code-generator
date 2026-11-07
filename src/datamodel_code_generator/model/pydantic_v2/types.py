@@ -91,6 +91,7 @@ from datamodel_code_generator.types import (
     StrictTypes,
     Types,
     UnionIntFloat,
+    _create_context_data_type,
     _float_constraint,
     _non_finite_as_written,
     normalize_integer_constraints,
@@ -282,8 +283,6 @@ class DataTypeManager(_DataTypeManagerBase):
             "pattern": self.PATTERN_KEY,
         }
 
-        from datamodel_code_generator.types import _create_context_data_type  # noqa: PLC0415
-
         self.data_type = _create_context_data_type(
             "PydanticV2ContextDataType",
             PydanticV2DataType,
@@ -465,20 +464,13 @@ class DataTypeManager(_DataTypeManagerBase):
         if kwargs.get("base64_encoded"):
             if not data_type_kwargs:
                 return self.data_type.from_import(IMPORT_BASE64BYTES, strict=strict)
-            from datamodel_code_generator.types import _create_context_data_type  # noqa: PLC0415
-
-            data_type = _create_context_data_type(
+            return self._encoded_text_type(
                 "PydanticV2EncodedBytesDataType",
                 EncodedBytesDataType,
-                self.python_version,
-                self.use_standard_collections,
-                self.use_generic_container_types,
-                self.use_union_operator,
-                self.treat_dot_as_module,
-                self.use_serialize_as_any,
-            ).from_import(IMPORT_ENCODED_BYTES, kwargs=data_type_kwargs)
-            data_type._set_runtime_expression_imports(_ENCODED_BYTES_IMPORTS)  # noqa: SLF001
-            return data_type
+                IMPORT_ENCODED_BYTES,
+                data_type_kwargs,
+                _ENCODED_BYTES_IMPORTS,
+            )
         if data_type_kwargs:
             if strict:
                 data_type_kwargs["strict"] = True
@@ -498,23 +490,30 @@ class DataTypeManager(_DataTypeManagerBase):
             return None
         if self.PATTERN_KEY in data_type_kwargs:
             data_type_kwargs[self.PATTERN_KEY] = _get_regex_literal(data_type_kwargs[self.PATTERN_KEY])
-        from datamodel_code_generator.types import _create_context_data_type  # noqa: PLC0415
-
-        data_type = _create_context_data_type(
+        return self._encoded_text_type(
             "PydanticV2EncodedStrDataType",
             EncodedStrDataType,
-            self.python_version,
-            self.use_standard_collections,
-            self.use_generic_container_types,
-            self.use_union_operator,
-            self.treat_dot_as_module,
-            self.use_serialize_as_any,
-        ).from_import(IMPORT_ENCODED_STR, kwargs=data_type_kwargs or None, strict=strict)
-        data_type._set_runtime_expression_imports(  # noqa: SLF001
+            IMPORT_ENCODED_STR,
+            data_type_kwargs or None,
             (*_STRICT_ENCODED_STR_IMPORTS, *((IMPORT_FIELD,) if data_type_kwargs else ()))
             if strict
-            else _ENCODED_STR_IMPORTS
+            else _ENCODED_STR_IMPORTS,
+            strict=strict,
         )
+
+    def _encoded_text_type(  # noqa: PLR0913
+        self,
+        name: str,
+        base: type[DataType],
+        import_: Import,
+        kwargs: dict[str, Any] | None,
+        imports: tuple[Import, ...],
+        *,
+        strict: bool = False,
+    ) -> DataType:
+        """Return the type ``import_`` that decodes base64 text, on the context class ``name`` over ``base``."""
+        data_type = self._context_class(name, base).from_import(import_, kwargs=kwargs, strict=strict)
+        data_type._set_runtime_expression_imports(imports)  # noqa: SLF001
         return data_type
 
     @override

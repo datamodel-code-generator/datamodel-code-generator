@@ -110,7 +110,6 @@ from datamodel_code_generator.types import (
     NONE,
     DataType,
     _copy_data_type,
-    _create_context_data_type,
     _is_value_literal,
     _qualified_type_path,
     build_union,
@@ -1317,15 +1316,8 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         if data_type._is_container:  # noqa: SLF001
             return None
         data_type_class = type(data_type)
-        if data_type_class is not DataType and data_type_class is not _create_context_data_type(
-            "ContextDataType",
-            DataType,
-            data_type.python_version,
-            data_type.use_standard_collections,
-            data_type.use_generic_container,
-            data_type.use_union_operator,
-            data_type.treat_dot_as_module,
-            data_type.use_serialize_as_any,
+        if data_type_class is not DataType and data_type_class is not data_type._context_class(  # noqa: SLF001
+            "ContextDataType", DataType
         ):
             return None
         if (
@@ -1913,16 +1905,9 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
     @staticmethod
     def _meta_member(base: DataType, meta: tuple[tuple[str, Any], ...]) -> DataType:
         """Return a union member written as the type of ``base`` with the ``Meta`` constraints ``meta``."""
-        return _create_context_data_type(
-            "MsgspecMetaMemberType",
-            _MetaType,
-            base.python_version,
-            base.use_standard_collections,
-            base.use_generic_container,
-            base.use_union_operator,
-            base.treat_dot_as_module,
-            base.use_serialize_as_any,
-        )(type=base.type, import_=base.import_, meta_keywords=dict(meta))
+        return base._context_class("MsgspecMetaMemberType", _MetaType)(  # noqa: SLF001
+            type=base.type, import_=base.import_, meta_keywords=dict(meta)
+        )
 
     @staticmethod
     def _conflicting_leaves(
@@ -2330,16 +2315,7 @@ class DataTypeManager(_DataTypeManager):
             keywords := {meta: kwargs[key] for key, meta in _META_KEY_KEYWORDS.items() if kwargs.get(key) is not None}
         ):
             return super().get_map_key_str_type(**kwargs)
-        return _create_context_data_type(
-            "MsgspecMetaStrKeyType",
-            _MetaType,
-            self.python_version,
-            self.use_standard_collections,
-            self.use_generic_container_types,
-            self.use_union_operator,
-            self.treat_dot_as_module,
-            self.use_serialize_as_any,
-        )(type="str", meta_keywords=keywords)
+        return self._context_class("MsgspecMetaStrKeyType", _MetaType)(type="str", meta_keywords=keywords)
 
 
 _rebuild_model_with_datamodel_namespace(Constraints)
