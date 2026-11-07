@@ -21,6 +21,9 @@ PythonVersion.PY_312-True-api	main/jsonschema/msgspec_alias_defaults_3_12.py
 PythonVersion.PY_312-True-api	main/jsonschema/msgspec_alias_defaults_runtime.txt
 PythonVersion.PY_312-True-cli	main/jsonschema/msgspec_alias_defaults_3_12.py
 PythonVersion.PY_312-True-cli	main/jsonschema/msgspec_alias_defaults_runtime.txt
+[test_msgspec_array_like_struct_object_defaults]
+	main/jsonschema/msgspec_alias_defaults/msgspec_array_like_struct_object_defaults.py
+	main/jsonschema/msgspec_alias_defaults/msgspec_array_like_struct_object_defaults.txt
 [test_msgspec_array_like_struct_union_defaults]
 	main/jsonschema/msgspec_alias_defaults/msgspec_array_like_struct_union_defaults.py
 	main/jsonschema/msgspec_alias_defaults/msgspec_array_like_struct_union_defaults.txt

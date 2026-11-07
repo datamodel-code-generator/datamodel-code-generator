@@ -307,6 +307,41 @@ def test_msgspec_array_like_struct_union_defaults(output_file: Path) -> None:
     assert_output(f"{json.dumps(actual, indent=2)}\n")
 
 
+def test_msgspec_array_like_struct_object_defaults(output_file: Path) -> None:
+    """Convert an object default for a Struct msgspec reads from an array from its attributes, so it decodes.
+
+    ``Row`` takes ``array_like=True`` from the template data, so msgspec reads it from an array, or from the attributes
+    of an object, not from an object: ``Model()`` and decoding ``{}`` hold the same Structs, for a field of the Struct,
+    a union, a list, a type alias and a Struct holding it, by its arrays and maps too. An array default converts as
+    before.
+    """
+    (template_data := output_file.parent / "array_like.json").write_text(
+        json.dumps({"Row": {"base_class_kwargs": {"array_like": True}}}), encoding="utf-8"
+    )
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "msgspec_array_like_object_defaults.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--extra-template-data",
+            str(template_data),
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    with _generated_model(output_file, "msgspec_array_like_object_defaults_model", "Model") as model:
+        default = model()
+        decoded = msgspec.json.decode(b"{}", type=model)
+        actual = {
+            "defaults": {field: repr(getattr(default, field)) for field in default.__struct_fields__},
+            "decoded_equal": decoded == default,
+        }
+    assert_output(f"{json.dumps(actual, indent=2)}\n")
+
+
 def test_msgspec_array_member_union_defaults(output_file: Path) -> None:
     """Convert a default beside two array-like members only to the member whose items it fits, so ``Model()`` builds.
 
