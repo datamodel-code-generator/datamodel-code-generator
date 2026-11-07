@@ -75,6 +75,40 @@ def test_collapse_nullable_roots(output_file: Path, output_model_type: str, opti
         )
 
 
+ANNOTATED_STRING_DOCUMENTS = (
+    {"codes": ["abc", None], "byName": {"k": None, "l": "abcde"}},
+    {"codes": ["abcdef"]},
+    {"byName": {"k": "abcdef"}},
+)
+
+
+def test_collapse_nullable_annotated_string_roots(output_file: Path) -> None:
+    """Keep the null of a constrained nullable string root that collapse inlines as an Annotated item or value (#6505).
+
+    Under --use-annotated with --collapse-constrained-root-models-as-annotated, an array item and a map value that name
+    an OpenAPI 3.0 `nullable: true` string root with `maxLength` take its Annotated string type; with
+    --keep-reference-null-on-collapsed-root-models they admit null beside it instead of failing generation, and they
+    keep rejecting a string longer than `maxLength`.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "collapse_nullable_annotated_string_roots.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--use-annotated", "--collapse-root-models"),
+            *("--keep-reference-null-on-collapsed-root-models", "--collapse-constrained-root-models-as-annotated"),
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+    )
+    with _generated_model(output_file, "collapse_nullable_annotated_string_roots_model", "Holder") as model:
+        assert_output(
+            "".join(
+                f"{json.dumps(document)}: {_verdict(model, document)}\n" for document in ANNOTATED_STRING_DOCUMENTS
+            ),
+            name="payloads",
+        )
+
+
 def _verdict(model: Any, document: object) -> str:
     """Return whether the generated model decodes a document."""
     try:
