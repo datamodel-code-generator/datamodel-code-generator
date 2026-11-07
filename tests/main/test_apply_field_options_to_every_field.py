@@ -53,14 +53,16 @@ def _verdict(model: Any, document: object) -> str:
 
 @pytest.mark.cli_doc(
     options=["--apply-field-options-to-every-field"],
-    option_description="""Give every kind of field the field options the other fields take.
+    option_description="""Give the fields that leave out some field options the ones others take.
 
 A GraphQL field, a property whose schema is `true` or `false`, a required name that no property declares and the tag
 field a discriminator appends to a variant leave out some field options, such as `--use-default-kwarg`,
 `--use-annotated` and `--use-default-factory-for-optional-nested-models`, which the other fields of their model take,
 so one option gives different fields in one model. With this option they take them too:
 `owner_id: Annotated[Any, Field(alias='owner-id')]` beside
-`display_name: Annotated[str, Field(alias='display-name')]`.
+`display_name: Annotated[str, Field(alias='display-name')]`. The root field of a root model is not one of them: under
+`--force-optional` and `--use-default-kwarg` a discriminated union root still writes
+`root: Cat | Dog | None = Field(None, discriminator='kind')`.
 """,
     input_schema="openapi/field_options_every_field.yaml",
     cli_args=["--use-annotated", "--apply-field-options-to-every-field"],
