@@ -837,16 +837,17 @@ def _msgspec_member_slots(leaf: DataType) -> tuple[tuple[str, object], ...]:
 
 
 def _msgspec_number_slot(leaf: DataType) -> tuple[str, object] | None:
-    """Return the number kind of an int ``Literal`` and of ``float``, which msgspec cannot tell apart in a union.
+    """Return the number kind of an int ``Literal``, of ``float`` and of ``int``, which msgspec reads in a union.
 
     msgspec sends every JSON integer to the int ``Literal`` member of a union that also holds ``float``, so an integer
-    that is not one of the values is refused although ``float`` admits it.
+    that is not one of the values is refused although ``float`` admits it; a union that also holds ``int`` sends them
+    to ``int`` instead (``_msgspec_kind_clashes``).
     """
     if leaf.data_types or leaf.enum_member_literals:
         return None
     if leaf.literals:
         return ("number", "int Literal") if any(literal_value_kind(item) == "int" for item in leaf.literals) else None
-    return ("number", "float") if leaf.type == "float" else None
+    return ("number", leaf.type) if leaf.type in {"float", "int"} else None
 
 
 def _msgspec_kind_clashes(
@@ -856,7 +857,8 @@ def _msgspec_kind_clashes(
 
     msgspec decodes a union only if it holds at most one dict-like member (``dict`` or Struct types), one array-like
     member (``list``, ``tuple``, ``set``) and one str-like member (``str``, an Enum of str values, ``bytes``, the dates,
-    times, ``UUID`` and ``Decimal``). A kind for which ``_msgspec_enum_clashes`` reports the union is left to it.
+    times, ``UUID`` and ``Decimal``). A kind for which ``_msgspec_enum_clashes`` reports the union is left to it. An int
+    ``Literal`` beside ``float`` loses the integers it does not list only where no ``int`` member takes them.
     """
     slots: dict[str, dict[object, None]] = {kind: {} for kind in _MSGSPEC_KIND_ASIDES}
     names: dict[str, dict[str, None]] = {kind: {} for kind in _MSGSPEC_KIND_ASIDES}
@@ -867,6 +869,8 @@ def _msgspec_kind_clashes(
                 slots[kind][counted_as] = None
                 names[kind][member.type_hint] = None
     covered = {clash[0] for clash in _msgspec_enum_clashes(members, literal_enum_ids)}
+    if "int" in slots["number"]:
+        covered.add("number")
     return tuple((kind, (*names[kind],)) for kind, counted in slots.items() if len(counted) > 1 and kind not in covered)
 
 

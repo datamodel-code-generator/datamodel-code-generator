@@ -7,6 +7,7 @@
     "const_or_number_min": {"anyOf": [{"const": 0}, {"type": "number", "minimum": 5}]},
     "str_const_or_number": {"anyOf": [{"const": "a"}, {"type": "number"}]},
     "const_or_integer": {"anyOf": [{"const": 1}, {"type": "integer"}]},
+    "const_integer_or_number": {"anyOf": [{"const": 1}, {"type": "integer"}, {"type": "number"}]},
     "number_only": {"type": "number"}
   }
 }

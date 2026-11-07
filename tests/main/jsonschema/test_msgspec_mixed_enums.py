@@ -211,7 +211,7 @@ def test_msgspec_int_literal_beside_float(output_file: Path, recwarn: pytest.War
 
     msgspec sends every JSON integer to the int ``Literal`` member, so ``6`` fails with ``Invalid enum value 6`` where
     ``float`` alone decodes it. The output is the one written without the warning; a str ``Literal``, ``int`` and
-    ``float`` alone are not warned about.
+    ``float`` alone are not warned about, nor is a union that also holds ``int``, which takes every integer.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "msgspec_int_literal_beside_float.json",
