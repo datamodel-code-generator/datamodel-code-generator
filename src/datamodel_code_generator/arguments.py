@@ -1353,6 +1353,13 @@ _flag(
 _flag(field_options, "--use-default", help="Use default value even if a field is required")
 _toggle(
     field_options,
+    "--keep-defaults-of-inherited-required-fields",
+    help="With --use-default, keep the default a schema gives a property that only a schema it inherits from (allOf) "
+    "lists as required, as --use-default keeps that of a property the schema lists itself (`a: str = 'x'`); without "
+    "it the field is written without its default, as in 0.90.0",
+)
+_toggle(
+    field_options,
     "--use-default-kwarg",
     help="Use `default=` instead of a positional argument for Fields that have default values.",
 )

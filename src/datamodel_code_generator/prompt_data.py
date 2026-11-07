@@ -112,6 +112,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--intersect-combined-schema-keywords": "Combine the keywords beside an `anyOf` or `oneOf` with each branch, as...",
     "--keep-constrained-root-models-in-every-container": "Keep constrained root models named in every container of ...",
     "--keep-content-parameter-refs": "Type a parameter whose content media schema is a `$ref` by the model the `$re...",
+    "--keep-defaults-of-inherited-required-fields": "Keep under `--use-default` the default of a property only an i...",
     "--keep-enum-literal-aliases": "Keep a named enum written as a Literal type alias named under collapse.",
     "--keep-enum-member-values": "Give an enum class a value base only when it keeps every member value.",
     "--keep-false-dataclass-arguments": "Write every dataclass decorator argument set to false.",

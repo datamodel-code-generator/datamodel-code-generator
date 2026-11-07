@@ -1075,6 +1075,64 @@ def test_use_default_pydantic_v2_with_json_schema_const(output_file: Path) -> No
 
 
 @pytest.mark.cli_doc(
+    options=["--keep-defaults-of-inherited-required-fields"],
+    option_description="""Keep under `--use-default` the default of a property only an inherited schema makes required.
+
+`--use-default` writes the default of a required field that has one, but a property whose schema gives a default and
+that only a schema it inherits from (`allOf`) lists as required was written without it (`class Child(Base): a: str`),
+while the same property kept it when the schema listed it as required itself (`a: str = 'x'`). With this option it
+keeps the default in both cases, also through a base of its base and an inline `allOf` member; dataclasses, Pydantic
+dataclasses and msgspec make the required fields after it keyword-only, as for a property the schema lists itself.""",
+    input_schema="jsonschema/use_default_inherited_required.json",
+    cli_args=["--use-default", "--keep-defaults-of-inherited-required-fields"],
+    golden_output="main/jsonschema/main_jsonschema/main_use_default_inherited_required[pydantic_v2.BaseModel-keep].py",
+    comparison_output=(
+        "main/jsonschema/main_jsonschema/main_use_default_inherited_required[pydantic_v2.BaseModel-released].py"
+    ),
+)
+@pytest.mark.parametrize("option_set", ["released", "keep"])
+@pytest.mark.parametrize(
+    "output_model",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "msgspec.Struct", "typing.TypedDict"],
+)
+def test_main_use_default_inherited_required(output_model: str, option_set: str, output_file: Path) -> None:
+    """Keep under --use-default the default of a property that only an inherited schema makes required (#5941).
+
+    With --keep-defaults-of-inherited-required-fields a child that declares a default for a property its base requires
+    writes it as a child that lists the property as required itself does, also through a base of its base and an
+    inline allOf member; dataclasses and msgspec keep the required fields after it keyword-only, as for the child that
+    lists it. Without it the field is written without its default, as in 0.90.0. A payload that gives the property
+    parses the same under both; one that leaves it out takes the default only under the option.
+    """
+    name = "use_default_inherited_required"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--output-model-type", output_model, "--use-default", "--formatters", "builtin"),
+            *(["--keep-defaults-of-inherited-required-fields"] if option_set == "keep" else []),
+        ],
+        force_exec_validation=True,
+    )
+    if output_model != "pydantic_v2.BaseModel":
+        return
+    keys = ("child", "own", "grandchild", "inline_member")
+    payloads = ({key: {"a": "v", "b": "q"} for key in keys}, {key: {"b": "q"} for key in keys})
+    with _generated_model(output_file, name, "Model") as model:
+        verdicts = [_validated_or_error_locations(model, payload) for payload in payloads]
+    assert_output("".join(f"{verdict}\n" for verdict in verdicts), name="payloads")
+
+
+def _validated_or_error_locations(model: Any, payload: object) -> str:
+    """Return the model a payload validates to, or the locations of its errors."""
+    try:
+        return repr(model.model_validate(payload))
+    except ValidationError as error:
+        return f"{error.error_count()} errors: {sorted(str(item['loc']) for item in error.errors())}"
+
+
+@pytest.mark.cli_doc(
     options=["--use-missing-sentinel"],
     option_description="""Use Pydantic's MISSING sentinel for unset optional BaseModel or dataclass fields.
 

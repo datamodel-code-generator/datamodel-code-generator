@@ -625,6 +625,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         type': rename type class with suffix to preserve field
                         name.
   --force-optional      Force optional for required fields
+  --keep-defaults-of-inherited-required-fields, --no-keep-defaults-of-inherited-required-fields
+                        With --use-default, keep the default a schema gives a
+                        property that only a schema it inherits from (allOf)
+                        lists as required, as --use-default keeps that of a
+                        property the schema lists itself (`a: str = 'x'`);
+                        without it the field is written without its default,
+                        as in 0.90.0
   --keep-field-defaults-off-branch-roots, --no-keep-field-defaults-off-branch-roots
                         Leave the default of a property off the root models
                         extracted from the branches of its `anyOf` or `oneOf`,

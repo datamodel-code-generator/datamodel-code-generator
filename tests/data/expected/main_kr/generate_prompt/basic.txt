@@ -193,6 +193,7 @@
 - `--force-optional`: Force all fields to be Optional regardless of required status.
 - `--frozen-dataclasses`: Generate frozen dataclasses with optional keyword-only fields.
 - `--keep-constrained-root-models-in-every-container`: Keep constrained root models named in every container of ...
+- `--keep-defaults-of-inherited-required-fields`: Keep under `--use-default` the default of a property only an i...
 - `--keep-enum-literal-aliases`: Keep a named enum written as a Literal type alias named under collapse.
 - `--keep-false-dataclass-arguments`: Write every dataclass decorator argument set to false.
 - `--keep-field-defaults-off-branch-roots`: Leave a property's default off the root models extracted from its `a...
@@ -214,6 +215,7 @@
 - `--no-collapse-root-models`
 - `--no-collapse-shared-parent-wrappers`
 - `--no-keep-constrained-root-models-in-every-container`
+- `--no-keep-defaults-of-inherited-required-fields`
 - `--no-keep-enum-literal-aliases`
 - `--no-keep-false-dataclass-arguments`
 - `--no-keep-field-defaults-off-branch-roots`
@@ -1019,6 +1021,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         type': rename type class with suffix to preserve field
                         name.
   --force-optional      Force optional for required fields
+  --keep-defaults-of-inherited-required-fields, --no-keep-defaults-of-inherited-required-fields
+                        With --use-default, keep the default a schema gives a
+                        property that only a schema it inherits from (allOf)
+                        lists as required, as --use-default keeps that of a
+                        property the schema lists itself (`a: str = 'x'`);
+                        without it the field is written without its default,
+                        as in 0.90.0
   --keep-field-defaults-off-branch-roots, --no-keep-field-defaults-off-branch-roots
                         Leave the default of a property off the root models
                         extracted from the branches of its `anyOf` or `oneOf`,

@@ -11,7 +11,7 @@ This documentation is auto-generated from test cases.
 | 📁 [Base Options](base-options.md) | 19 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 54 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 38 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 69 | Model generation behavior |
+| 🏗️ [Model Customization](model-customization.md) | 70 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
@@ -247,6 +247,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 - [`--keep-constrained-root-models-in-every-container`](model-customization.md#keep-constrained-root-models-in-every-container)
 - [`--keep-content-parameter-refs`](openapi-only-options.md#keep-content-parameter-refs)
+- [`--keep-defaults-of-inherited-required-fields`](model-customization.md#keep-defaults-of-inherited-required-fields)
 - [`--keep-enum-literal-aliases`](model-customization.md#keep-enum-literal-aliases)
 - [`--keep-enum-member-values`](typing-customization.md#keep-enum-member-values)
 - [`--keep-false-dataclass-arguments`](model-customization.md#keep-false-dataclass-arguments)
