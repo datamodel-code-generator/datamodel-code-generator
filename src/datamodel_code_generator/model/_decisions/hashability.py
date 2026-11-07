@@ -10,8 +10,8 @@ model's instances cannot be dict keys. ``value_hashes`` and ``field_value_hashes
 validates for a field hash as builtin values. ``set_items_can_hash`` decides whether some value that the items of an
 array take hashes, so that a set can hold it, and ``class_set_item_hash`` how the instances of a model class hash: by
 the values of their fields, by identity or never. Under --use-unique-items-as-set-by-value, ``every_value_hashes``
-decides whether every value of an item type hashes consistently with equality, and ``hashes_by_value`` whether the
-instances of a model do.
+decides whether every value of an item type hashes consistently with equality, ``python_type_value_hash`` what it
+reads of a bound Python type, and ``hashes_by_value`` whether the instances of a model do.
 
 Every input is an immutable fact; the adapters read them from the live objects and are listed in
 ``docs/architecture.md``.
@@ -22,6 +22,7 @@ from __future__ import annotations
 from types import NoneType
 from typing import TYPE_CHECKING, Literal, TypeAlias, final
 
+from datamodel_code_generator._container_kinds import SLOT_CLASSES, UNHASHABLE_CONTAINERS
 from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
@@ -42,6 +43,7 @@ __all__ = [
     "frozen_by_config",
     "hashes_by_value",
     "keeps_builtin_hash",
+    "python_type_value_hash",
     "set_items_can_hash",
     "set_items_may_keep_builtin_hash",
     "value_hashes",
@@ -180,6 +182,48 @@ class ValueHashItem:
 def every_value_hashes(item: ValueHashItem) -> bool:
     """Return whether every value of an item type hashes consistently with equality."""
     return item.hashes if item.members is None else all(map(every_value_hashes, item.members))
+
+
+_UNHASHABLE_ANNOTATION_CLASSES: frozenset[str] = frozenset({
+    *(
+        name
+        for slot in UNHASHABLE_CONTAINERS.slots
+        for name in (SLOT_CLASSES[slot].name, SLOT_CLASSES[slot].typing_name)
+    ),
+    *("Any", "object", "bytearray", "MutableSequence", "MutableMapping", "AbstractSet", "MutableSet", "Collection"),
+    *("Iterable", "Container", "deque", "Deque", "defaultdict", "DefaultDict", "OrderedDict", "Counter", "ChainMap"),
+})
+"""The classes, by name, of a bound Python type that take values which do not hash: ``Any`` and ``object``, the
+containers but the tuple and the frozen set, and the abstract collections such containers are."""
+
+
+def python_type_value_hash(expression: PythonTypeExpr) -> ValueHashItem:
+    """Return the facts ``every_value_hashes`` reads of the type that a bound ``x-python-type`` annotation writes.
+
+    A union takes the values of its members, ``Annotated`` those of its type and a tuple or a frozen set those of its
+    items, every one of which must hash; a class of ``_UNHASHABLE_ANNOTATION_CLASSES`` takes values that do not, and a
+    ``Literal`` and any other class, a scalar or an imported type, hash.
+    """
+    from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
+        PythonTypeEllipsis,
+        PythonTypeSubscript,
+        is_union_python_type_expr,
+        python_type_expr_arguments,
+        python_type_expr_base_name,
+    )
+
+    if is_union_python_type_expr(expression):
+        return ValueHashItem(members=tuple(map(python_type_value_hash, python_type_expr_arguments(expression))))
+    if (name := python_type_expr_base_name(expression)) in _UNHASHABLE_ANNOTATION_CLASSES:
+        return ValueHashItem(hashes=False)
+    arguments: tuple[PythonTypeExpr, ...] = ()
+    if isinstance(expression, PythonTypeSubscript):
+        match name:
+            case "Annotated":
+                arguments = expression.arguments[:1]
+            case "tuple" | "Tuple" | "frozenset" | "FrozenSet":
+                arguments = tuple(item for item in expression.arguments if not isinstance(item, PythonTypeEllipsis))
+    return ValueHashItem(members=tuple(map(python_type_value_hash, arguments))) if arguments else ValueHashItem()
 
 
 def hashes_by_value(class_hash: SetItemHash, field_values: Iterable[bool]) -> bool:

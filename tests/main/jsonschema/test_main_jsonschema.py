@@ -9019,6 +9019,43 @@ def test_main_unique_items_as_set_by_value_class_hashes(
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="without-option"), pytest.param(["--use-unique-items-as-set-by-value"], id="option")],
+)
+def test_main_unique_items_as_set_by_value_python_types(extra_args: list[str], output_file: Path) -> None:
+    """Read the items an ``x-python-type`` types by the values it writes under --use-unique-items-as-set-by-value.
+
+    A list, a dict, a ``Sequence``, a ``deque`` or ``Any`` among them, also inside ``Annotated``, takes values that do
+    not hash, so the array stays a list that validates them; scalars, tuples and frozen sets of them, a ``Literal`` and
+    an imported class such as ``date`` hash, so it is a set. Without the option every array is a set, as in 0.89.0,
+    which rejects such values.
+    """
+    name = "unique_items_by_value_python_types"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--use-unique-items-as-set", "--formatters", "builtin", "--disable-timestamp"],
+    )
+    values = {
+        "containers": [[1], {"a": 1}],
+        "sequences": [[1], None],
+        "queues": [[1]],
+        "anything": [1, [2]],
+        "measured": [1, [2]],
+        "tagged": [1, "a"],
+        "scalars": [1, "a", 1],
+        "pairs": [[1, 2], 3],
+        "frozen": [["x"], 1],
+        "letters": ["a", 1],
+        "dates": ["2020-01-01", None],
+    }
+    with _generated_model(output_file, name, "Root") as model:
+        validated = {field: _validated_container(model, field, value) for field, value in values.items()}
+    assert_output(f"{json.dumps(validated, indent=2)}\n")
+
+
 def test_main_unique_items_as_set_by_value_long_alias_chain(tmp_path: Path, output_file: Path) -> None:
     """Read a chain of 400 type aliases the items of a uniqueItems array name under --use-unique-items-as-set-by-value.
 

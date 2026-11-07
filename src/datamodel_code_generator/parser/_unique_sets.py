@@ -24,7 +24,12 @@ from datamodel_code_generator._container_kinds import (
     written_slot,
 )
 from datamodel_code_generator._model_keys import model_key_of
-from datamodel_code_generator.model._decisions.hashability import ValueHashItem, every_value_hashes, hashes_by_value
+from datamodel_code_generator.model._decisions.hashability import (
+    ValueHashItem,
+    every_value_hashes,
+    hashes_by_value,
+    python_type_value_hash,
+)
 from datamodel_code_generator.parser._passes._shared import (
     UniqueItemsPlan,
     _declared_unique_arrays,
@@ -140,7 +145,8 @@ class _ByValue:
         """Return the facts of an item type that ``every_value_hashes`` reads.
 
         ``sets`` holds the lists of the type that become sets, by id. A container is read as it is written: a set
-        under --use-generic-container-types is a frozen set. A type alias is read as ``aliases`` says.
+        under --use-generic-container-types is a frozen set. A type alias is read as ``aliases`` says, a type that a
+        bound Python type annotation writes as that annotation (``python_type_value_hash``).
         """
         if (reference := data_type.reference) is not None and (key := model_key_of(reference)) in self.live:
             match self.class_hash[key]:
@@ -149,6 +155,8 @@ class _ByValue:
                 case "value":
                     return ValueHashItem(hashes=key in self.value_keys)
             return ValueHashItem(hashes=False)
+        if (python_type := data_type.python_type) is not None:
+            return python_type_value_hash(python_type.expression)
 
         def read(nested: DataTypeView) -> ValueHashItem:
             return self.item(nested, sets)
