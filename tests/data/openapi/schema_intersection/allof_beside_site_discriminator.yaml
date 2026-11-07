@@ -1,0 +1,55 @@
+openapi: 3.0.3
+info:
+  title: allOf beside a discriminated union of $ref branches
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Base:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+    Cat:
+      type: object
+      required: [petType, meow]
+      properties:
+        petType:
+          type: string
+        meow:
+          type: string
+    Dog:
+      type: object
+      required: [petType, bark]
+      properties:
+        petType:
+          type: string
+        bark:
+          type: string
+    Named:
+      allOf:
+        - $ref: '#/components/schemas/Base'
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: petType
+    Mapped:
+      allOf:
+        - $ref: '#/components/schemas/Base'
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: petType
+        mapping:
+          c: '#/components/schemas/Cat'
+          d: '#/components/schemas/Dog'
+    Holder:
+      type: object
+      properties:
+        named:
+          $ref: '#/components/schemas/Named'
+        mapped:
+          $ref: '#/components/schemas/Mapped'

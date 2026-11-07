@@ -29,7 +29,7 @@ from datamodel_code_generator._container_kinds import (
     written_slot,
 )
 from datamodel_code_generator._graph_links import clear_parents
-from datamodel_code_generator._model_keys import model_key_of
+from datamodel_code_generator._model_keys import model_key_of, ref_branch_schema_of
 from datamodel_code_generator._module_paths import (
     dotted_module as _module_name_from_module_path,  # noqa: F401  # Preserve the established _shared name.
 )
@@ -87,6 +87,7 @@ from datamodel_code_generator.python_literal import _text_constructor_expression
 from datamodel_code_generator.reference import (
     _SPECIAL_PATH_FORMAT,
     ModelType,
+    Reference,
     _source_path,
     _special_path,
     schema_path_of,
@@ -116,7 +117,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser._null_facts import NullRule
     from datamodel_code_generator.parser._passes._state import ModuleContextView, ModulePath
     from datamodel_code_generator.parser.generation import GenerationStore, GraphBuilder
-    from datamodel_code_generator.reference import ModelResolver, Reference
+    from datamodel_code_generator.reference import ModelResolver
     from datamodel_code_generator.types import DataTypeManager, DefaultValueDescriptor
 
 
@@ -1063,18 +1064,30 @@ def _get_schema_path(model: DataModel | Reference) -> str:
     return _source_path(schema_path_of(reused or reference))
 
 
+def _base_schema_paths(model: DataModel) -> list[str]:
+    """Return the schema paths a model stands for through its bases, in base order.
+
+    The class of a ``$ref`` branch with the allOf members beside its union stands for the schema the branch names
+    first (``ref_branch_schema_of``), also where a later pass dropped its bases (a tagged msgspec Struct); a path is
+    listed once.
+    """
+    branch = ref_branch_schema_of(model.reference)
+    return [
+        *dict.fromkeys((
+            *([_get_schema_path(branch)] if isinstance(branch, Reference) else []),
+            *(_get_schema_path(reference) for base_class in model.base_classes if (reference := base_class.reference)),
+        ))
+    ]
+
+
 def _get_mapping_discriminator_values(discriminator_model: DataModel, mapping: dict[str, str]) -> list[str]:
-    """Return the mapping values that select a variant directly or through its base classes (``mapped_tags``)."""
+    """Return the mapping values that select a variant directly or through its bases (``mapped_tags``)."""
     if not mapping:
         return []
     return mapped_tags(
         mapping,
         schema_path=_get_schema_path(discriminator_model),
-        base_schema_paths=(
-            _get_schema_path(reference)
-            for base_class in discriminator_model.base_classes
-            if (reference := base_class.reference)
-        ),
+        base_schema_paths=_base_schema_paths(discriminator_model),
     )
 
 

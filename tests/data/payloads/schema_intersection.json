@@ -8576,5 +8576,59 @@
         ]
       }
     }
+  },
+  "allof_beside_site_discriminator": {
+    "model": "Holder",
+    "dialect": "https://json-schema.org/draft/2020-12/schema",
+    "fields": {
+      "named": {
+        "valid": [
+          {
+            "id": "i",
+            "petType": "Cat",
+            "meow": "m"
+          },
+          {
+            "id": "i",
+            "petType": "Dog",
+            "bark": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "Cat",
+            "meow": "m"
+          },
+          {
+            "id": "i",
+            "petType": "Cat"
+          }
+        ]
+      },
+      "mapped": {
+        "valid": [
+          {
+            "id": "i",
+            "petType": "c",
+            "meow": "m"
+          },
+          {
+            "id": "i",
+            "petType": "d",
+            "bark": "b"
+          }
+        ],
+        "invalid": [
+          {
+            "petType": "c",
+            "meow": "m"
+          },
+          {
+            "id": "i",
+            "petType": "d"
+          }
+        ]
+      }
+    }
   }
 }

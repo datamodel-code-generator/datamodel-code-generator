@@ -27,6 +27,13 @@ type of its holder up to 0.89.0. Under --collapse-root-models a root model that 
 its counts stay on the alias that the holder names.
 """
 
+REF_BRANCH_SCHEMA_KEY: Final = "_ref_branch_schema"
+"""Records on the `Reference` of the class of a `$ref` branch that takes the allOf members beside its union the
+`Reference` of the schema the branch names (--distribute-allof-over-unions).
+
+A tag the variant takes from a schema path is that schema's, as the branch's own class takes it without the option.
+"""
+
 ModelKey = NewType("ModelKey", int)
 """The identity of the model a `Reference` names, unlike `id(reference)` never reused within a process."""
 NodeKey = NewType("NodeKey", int)
@@ -51,6 +58,11 @@ class _ReferenceView(Protocol):
 def model_key_of(reference: object) -> ModelKey:
     """Return the model key that ``reference`` took when it was built (`Reference.model_post_init`)."""
     return reference.__dict__[MODEL_KEY_ATTRIBUTE]
+
+
+def ref_branch_schema_of(reference: object) -> object | None:
+    """Return the `Reference` of the schema the `$ref` branch of a class names (``REF_BRANCH_SCHEMA_KEY``), if any."""
+    return reference.__dict__.get(REF_BRANCH_SCHEMA_KEY)
 
 
 def is_item_counts_site(reference: object) -> bool:

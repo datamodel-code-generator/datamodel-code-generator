@@ -1,0 +1,2 @@
+Cat is a variant of discriminated unions that map 'petType' to different tags: it keeps 'Cat' from Named, so these unions cannot decode it: Mapped ('c').
+Dog is a variant of discriminated unions that map 'petType' to different tags: it keeps 'Dog' from Named, so these unions cannot decode it: Mapped ('d').
