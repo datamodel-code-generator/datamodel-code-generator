@@ -1,0 +1,25 @@
+{
+  "valid": [
+    {"id": "123e4567-e89b-12d3-a456-426614174000"},
+    {
+      "id": "not-a-uuid",
+      "plain_id": "123e4567-e89b-12d3-a456-426614174000",
+      "optional_id": null,
+      "one_of_id": "123e4567-e89b-12d3-a456-426614174000",
+      "ids": ["a", "123e4567-e89b-12d3-a456-426614174000"],
+      "url": "",
+      "mixed": "2020-01-01T00:00:00Z",
+      "token": "none",
+      "nested": 5,
+      "shared": "free text",
+      "lookup": {"a": "b"}
+    },
+    {"id": "x", "url": "https://example.com", "mixed": 3, "nested": "text", "level": 2}
+  ],
+  "invalid": [
+    {"plain_id": "not-a-uuid"},
+    {"ids": [1]},
+    {"nested": 1.5},
+    {"level": 3}
+  ]
+}

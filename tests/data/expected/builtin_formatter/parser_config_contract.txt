@@ -85,6 +85,7 @@ reviewed-safe keep_reference_null_on_collapsed_root_models
 reviewed-safe keep_reference_null_on_merged_models
 reviewed-safe keyword_only
 reviewed-safe known_third_party
+reviewed-safe merge_msgspec_str_like_union_members
 reviewed-safe merge_shared_variant_tags
 reviewed-safe model_extra_keys
 reviewed-safe model_extra_keys_without_x_prefix

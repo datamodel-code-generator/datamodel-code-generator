@@ -826,6 +826,19 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         rejects null, as in 0.89.0
   --keyword-only        Defined models as keyword only (for example
                         dataclass(kw_only=True)).
+  --merge-msgspec-str-like-union-members, --no-merge-msgspec-str-like-union-members
+                        msgspec.Struct output only: write one str in place of
+                        the str-like members of a union (str, UUID, the dates
+                        and times, Decimal, bytes, the str values of a
+                        Literal, and type aliases of them) when it holds more
+                        than one of them, which msgspec refuses to decode; the
+                        union then accepts every string and decodes it as str,
+                        without the formats and constraints of those members,
+                        with a warning. A union whose str-like members include
+                        an Enum, a member typed by x-python-type or an alias
+                        of another union is left as it is. Without it such a
+                        union is written as the schema gives it, with a
+                        warning, as in 0.90.0
   --model-name-map MODEL_NAME_MAP
                         Rename generated model classes by schema ref or
                         current generated class name using a JSON object or

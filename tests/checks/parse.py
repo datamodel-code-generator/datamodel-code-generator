@@ -383,6 +383,25 @@ def write_additional_properties_sets(original: Callable[..., None]) -> Callable[
     return write_additional_properties_sets
 
 
+def merge_str_like_members(original: Callable[..., None]) -> Callable[..., None]:
+    """Wrap ``_DecisionWriter.merge_str_like_members``: it writes the objects that the guarded views it gets name."""
+
+    @wraps(original)
+    def merge_str_like_members(self: Any, model: Any, field: Any, rewrites: Any, merged: Any) -> None:
+        return original(
+            self,
+            viewed(model),
+            viewed(field),
+            [
+                (viewed(union), tuple(None if member is None else viewed(member) for member in members))
+                for union, members in rewrites
+            ],
+            [viewed(member) for member in merged],
+        )
+
+    return merge_str_like_members
+
+
 def mark_serialized_as_any(original: Callable[..., None]) -> Callable[..., None]:
     """Wrap ``_DecisionWriter.mark_serialized_as_any``: it writes the model that the guarded view it gets names."""
 

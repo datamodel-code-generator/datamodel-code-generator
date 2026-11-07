@@ -156,6 +156,7 @@ class ParserConfigDict(TypedDict):
     use_decimal_in_field_forms: NotRequired[bool]
     use_encoded_str_for_constrained_base64: NotRequired[bool]
     use_msgspec_meta_for_map_keys: NotRequired[bool]
+    merge_msgspec_str_like_union_members: NotRequired[bool]
     omit_redundant_constraints: NotRequired[bool]
     read_length_keywords_by_type: NotRequired[bool]
     read_msgspec_union_bounds_exactly: NotRequired[bool]
