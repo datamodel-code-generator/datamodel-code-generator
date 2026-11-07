@@ -214,6 +214,9 @@ def _type_null_sources(obj: JsonSchemaObject) -> NullSources:
     """Return the null sources of a schema object without the answer ``JsonSchemaObject.type_has_null`` recorded."""
     type_ = _read_type(obj)
     is_list = isinstance(type_, list)
+    enum = obj.enum
+    extras = obj.extras
+    const_set = "const" in extras
     return NullSources(
         type_null=type_ == "null",
         type_list=is_list,
@@ -221,17 +224,18 @@ def _type_null_sources(obj: JsonSchemaObject) -> NullSources:
         type_lists_object=is_list and "object" in type_,
         typed=type_ is not None,
         type_string=type_ == "string",
-        member_null=any(
+        member_null=bool(obj.oneOf or obj.anyOf)
+        and any(
             isinstance(item, JsonSchemaObject)
             and (item.type == "null" or (isinstance(item.type, list) and "null" in item.type))
             for item in (*obj.oneOf, *obj.anyOf)
         ),
         nullable=obj.nullable,
         copied_nullable=bool(obj.__dict__.get(_COPIED_NULLABLE_KEY)),
-        enum_null=None in obj.enum,
-        enum_set=bool(obj.enum),
-        const_set="const" in obj.extras,
-        const_null="const" in obj.extras and obj.extras["const"] is None,
+        enum_null=bool(enum) and None in enum,
+        enum_set=bool(enum),
+        const_set=const_set,
+        const_null=const_set and extras["const"] is None,
     )
 
 
