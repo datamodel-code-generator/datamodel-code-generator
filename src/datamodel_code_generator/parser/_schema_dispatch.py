@@ -4,7 +4,8 @@ A position is a place where the parser meets a schema object: a definition (a sc
 field, item or map value, or a body, response or parameter of the legacy OpenAPI scopes. Its table holds, in order, the
 steps that rewrite the site before the rows after them read it (``Step``: a ``$ref`` merged with its sibling keywords)
 and the rows that choose the parse method (``Row``); the first row that applies builds the result, else the table's
-``Default``.
+``Default``. An entry that applies only where the schema sets one of some keywords declares them (``keywords``): the
+table passes it over at a site whose schema sets none of them (``model_fields_set``) without asking its predicate.
 The parser keeps the predicates and builders: rows call its public hooks through the parser, so overriding subclasses
 keep working.
 
@@ -77,6 +78,8 @@ class Step(Generic[ParserT_contra, SchemaT]):
     name: str
     applies: Callable[[ParserT_contra, SchemaSite[SchemaT]], bool]
     rewrite: Callable[[ParserT_contra, SchemaSite[SchemaT]], SchemaSite[SchemaT]]
+    keywords: frozenset[str] | None = None
+    """The keywords one of which a site's schema sets wherever the step applies; ``None``: none is declared."""
 
 
 @final
@@ -89,6 +92,8 @@ class Row(Generic[ParserT_contra, SchemaT, ResultT_co]):
     build: Callable[[ParserT_contra, SchemaSite[SchemaT]], ResultT_co]
     typed: Callable[[ParserT_contra, SchemaSite[SchemaT]], Iterable[TypedChild[SchemaT]]] | None = None
     """What the row types at a site where it types other children than its table declares."""
+    keywords: frozenset[str] | None = None
+    """The keywords one of which a site's schema sets wherever the row applies; ``None``: none is declared."""
 
 
 @final
@@ -129,12 +134,16 @@ class DispatchTable(Generic[ParserT_contra, SchemaT, ResultT_co]):
         ``upto`` reads only the entries before that index; the default answers where none of them applies.
         """
         steps: list[str] = []
+        present = _set_keywords(site.obj)
         for entry in self.entries[:upto]:
+            if (keywords := entry.keywords) is not None and present is not None and present.isdisjoint(keywords):
+                continue
             if not entry.applies(parser, site):
                 continue
             if isinstance(entry, Row):
                 return Choice((*steps, entry.name), entry.build, site, entry.typed or self.typed)
             site = entry.rewrite(parser, site)
+            present = _set_keywords(site.obj)
             steps.append(entry.name)
         return Choice((*steps, self.default.name), self.default.build, site, self.typed)
 
@@ -154,3 +163,8 @@ class DispatchTable(Generic[ParserT_contra, SchemaT, ResultT_co]):
         )
         typed = self.choose(parser, site if as_parsed is None else as_parsed, upto=last + 1).typed
         return () if typed is None else typed(parser, site)
+
+
+def _set_keywords(schema: object) -> set[str] | None:
+    """Return the keywords a schema sets, or ``None`` for a schema that does not tell them."""
+    return getattr(schema, "model_fields_set", None)
