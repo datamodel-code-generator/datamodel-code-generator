@@ -297,8 +297,8 @@ class _StructureState:
     module_models: ModuleModels = dataclasses.field(init=False)
     model_to_module_models: dict[DataModel, tuple[ModulePath, list[DataModel]]] = dataclasses.field(init=False)
     model_path_to_module_name: _ModuleNames = dataclasses.field(init=False)
-    internal_modules: set[ModulePath] = dataclasses.field(init=False)
-    forwarder_map: ForwarderMap = dataclasses.field(init=False)
+    internal_modules: set[ModulePath] = dataclasses.field(default_factory=set)
+    forwarder_map: ForwarderMap = dataclasses.field(default_factory=dict)
 
 
 @final

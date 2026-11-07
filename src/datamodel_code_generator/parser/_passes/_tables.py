@@ -17,7 +17,8 @@ from typing import TYPE_CHECKING, Any, cast
 from typing_extensions import Protocol
 
 from datamodel_code_generator._naming_hint import collecting_class_names
-from datamodel_code_generator.model.base import _refresh_custom_template_paths
+from datamodel_code_generator.model.base import DataModel, _refresh_custom_template_paths
+from datamodel_code_generator.model.type_alias import TypeAliasBase
 from datamodel_code_generator.parser._facts import Phase
 from datamodel_code_generator.parser._passes import (
     cross_module,
@@ -51,7 +52,6 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from datamodel_code_generator.imports import Import, Imports
-    from datamodel_code_generator.model.base import DataModel
     from datamodel_code_generator.parser._passes._state import (
         FinishRun,
         ModulePath,
@@ -203,6 +203,20 @@ def _same_state(state: _FinalizeState[Any]) -> _FinalizeState[Any]:
     return state
 
 
+def _several_modules(_: object, state: _FinalizeState[Any]) -> bool:
+    """Return whether the output writes more than one module: the trigger of the passes between modules."""
+    return len(state.contexts) > 1
+
+
+def _orders_constructors(models: Iterable[DataModel]) -> bool:
+    """Return whether constructor ordering can change a model: one orders keyword-only fields or restores a field."""
+    restore = DataModel.restore_required_inherited_field_state.__func__
+    return any(
+        model.SUPPORTS_KW_ONLY or type(model).restore_required_inherited_field_state.__func__ is not restore
+        for model in models
+    )
+
+
 def _refresh_field_config(models: Iterable[DataModel]) -> None:
     for model in models:
         model.refresh_field_config()
@@ -227,7 +241,11 @@ STRUCTURE_BODY: tuple[StepLike[PipelineHost, _StructureState], ...] = (
         when=lambda self, _: self.config.rename_submodules_hidden_by_classes,
     ),
     PassSpec("reuse_model_tree_scope", late(structure.apply_reuse_model_tree_scope)),
-    PassSpec("resolve_circular_imports", late(structure.resolve_module_circular_imports)),
+    PassSpec(
+        "resolve_circular_imports",
+        late(structure.resolve_module_circular_imports),
+        trigger=lambda _, s: len(s.module_models) > 1,
+    ),
 )
 """The passes of ``_build_module_structure``."""
 
@@ -295,6 +313,7 @@ MODULE_BODY: tuple[StepLike[PipelineHost, _ModuleState[Any]], ...] = (
             self, s.model_list_before_override_removal, early=True
         ),
         when=lambda self, _: not self.order_constructor_fields_by_final_names,
+        trigger=lambda _, s: _orders_constructors(s.model_list_before_override_removal),
     ),
     PassSpec("snapshot_module_unused_models", lambda _, s: modules.snapshot_module_unused_models(s)),
     PassSpec(
@@ -407,7 +426,11 @@ FINALIZE_SEGMENTS: tuple[StepLike[PipelineHost, _FinalizeState[Any]], ...] = (
             ),
             PassSpec("remove_unused_imports", late(imports.remove_unused_imports)),
             PassSpec("resolve_module_import_conflicts", late(imports.resolve_module_import_conflicts)),
-            PassSpec("alias_builtin_shadowing_module_imports", late(imports.alias_builtin_shadowing_module_imports)),
+            PassSpec(
+                "alias_builtin_shadowing_module_imports",
+                late(imports.alias_builtin_shadowing_module_imports),
+                trigger=_several_modules,
+            ),
             PassSpec(
                 "alias_builtins_hidden_by_submodules",
                 late(imports.alias_builtins_hidden_by_submodules),
@@ -419,6 +442,7 @@ FINALIZE_SEGMENTS: tuple[StepLike[PipelineHost, _FinalizeState[Any]], ...] = (
                 "import_models_of_hidden_submodules",
                 late(imports.import_models_of_hidden_submodules),
                 when=lambda _, state: state.with_import,
+                trigger=_several_modules,
             ),
             PassSpec(
                 "name_final_classes_of_additional_properties",
@@ -637,7 +661,11 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
             ),
             PassSpec("import_removed_reuse_canonicals", late(cross_module.import_removed_reuse_canonicals)),
             PassSpec("import_renamed_types", late(cross_module.import_renamed_types)),
-            PassSpec("import_enum_member_literal_classes", late(cross_module.import_enum_member_literal_classes)),
+            PassSpec(
+                "import_enum_member_literal_classes",
+                late(cross_module.import_enum_member_literal_classes),
+                trigger=lambda self, _: self.use_enum_values_in_discriminator or bool(self._const_narrowed_values),
+            ),
         ),
     ),
     Segment(
@@ -670,6 +698,7 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
                     _models_before_override_removal(self, run),
                     render_prep.InheritedFieldCopies(run.contexts, run.internal_modules, run.model_path_to_module_name),
                 ),
+                trigger=lambda self, run: _orders_constructors(_models_before_override_removal(self, run)),
             ),
             PassSpec(
                 "settle_module_unused_models",
@@ -731,6 +760,10 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
                     self, run.contexts, evaluates_annotations=not run.config.use_deferred_annotations
                 ),
                 when=lambda self, _: imports.alias_loop_failure(self.data_model_type) is not None,
+                trigger=lambda self, run: (
+                    bool(self._self_named_root_models)
+                    or any(isinstance(model, TypeAliasBase) for model in _context_models(run.contexts))
+                ),
             ),
             PassSpec(
                 "reject_lone_surrogates_pydantic_reads",

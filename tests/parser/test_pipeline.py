@@ -97,6 +97,7 @@ COVERAGE_RUNS = (
         "--input tests/data/openapi/ref_sibling_cycle_maps.yaml --input-file-type openapi "
         "--output-model-type typing.TypedDict"
     ),
+    "--input tests/data/openapi/discriminator_enum.yaml --input-file-type openapi --use-enum-values-in-discriminator",
 )
 """Runs that reach the passes no golden run reaches, each under the condition it names."""
 

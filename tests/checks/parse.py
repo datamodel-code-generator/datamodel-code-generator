@@ -17,6 +17,7 @@ from functools import wraps
 from typing import TYPE_CHECKING, Any, Final
 
 from scripts.pass_decls import BOUNDARY_BEFORE, DECISION_DECLS, HOOK_BODIES, PASS_DECLS, SCOPE_NAMES, Boundary
+from tests.checks import areas
 from tests.checks.areas import MODES, Area, read_modes
 from tests.checks.finality import (
     NO_SCOPE,
@@ -246,11 +247,23 @@ def _checks(parser: object) -> AbstractContextManager[None]:
     return parse_checks(parser, Error)
 
 
+def _runs_idle(spec: Any, parser: object, state: object) -> bool:
+    """Return whether the trigger check runs the pass of ``spec`` idle: ``when`` holds and ``trigger`` is false."""
+    return (
+        spec.trigger is not None
+        and areas.mode(Area.PASS_TRIGGERS) is not None
+        and (spec.when is None or spec.when(parser, state))
+        and not spec.trigger(parser, state)
+    )
+
+
 def run_pass(original: Callable[..., None]) -> Callable[..., None]:
     """Wrap ``Runner.run_pass``: a pass that runs is traced and runs inside the finality scope of its declaration.
 
-    ``when`` is evaluated once, by the original: the pass it runs is the instrumented one, which the checks of a parse
-    make once for each pass spec (``ParseChecks.passes``).
+    ``when`` and ``trigger`` are evaluated by the original: the pass it runs is the instrumented one, which the checks
+    of a parse make once for each pass spec (``ParseChecks.passes``). With ``PASS_TRIGGERS`` on, a pass whose ``when``
+    holds and whose ``trigger`` is false runs untraced inside ``ParseChecks.idle_pass`` instead, so that the traces are
+    those of a run with the area off.
     """
 
     @wraps(original)
@@ -258,6 +271,10 @@ def run_pass(original: Callable[..., None]) -> Callable[..., None]:
         trace, checks = TRACE.get(), PARSE_CHECKS.get()
         if trace is None and checks is None:
             return original(self, spec, parser, state)
+        if checks is not None and _runs_idle(spec, parser, state):
+            with checks.idle_pass(_DECLS[spec.name], parser, state):
+                spec.run(parser, state)
+            return None
         passes = {} if checks is None else checks.passes
         if (known := passes.get(id(spec))) is not None and known[0] is spec:
             return original(self, known[1], parser, state)

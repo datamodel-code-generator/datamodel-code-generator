@@ -4,9 +4,9 @@ The tables of ``parser/_passes/_tables.py`` hold the pipeline, which ``Parser`` 
 named as its declaration in ``scripts/pass_decls.py``; a ``ForEachModule`` runs passes once per output module; a
 ``HookCall`` calls an overridable parser method whose default runs a table of its own; a ``Segment`` runs the steps of
 one phase, entering the phase first. The ``Runner`` is the only caller of a pass: it skips a pass whose ``when`` is
-false and runs every other one. A ``DecisionPhase`` runs the decision passes of the parser's registry
-(``parser/_phases.py``) in registry order. ``scripts/check_pass_pipeline.py`` checks the tables and the registries
-against the declarations and the order rule. ``PARSE_CALLER``, set to ``parse_caller()``, and
+false or whose ``trigger`` is false and runs every other one. A ``DecisionPhase`` runs the decision passes of the
+parser's registry (``parser/_phases.py``) in registry order. ``scripts/check_pass_pipeline.py`` checks the tables and
+the registries against the declarations and the order rule. ``PARSE_CALLER``, set to ``parse_caller()``, and
 ``stacklevel_at_parse_caller`` let a warning name the code that called ``Parser.parse()`` however deep in the pipeline
 it is emitted.
 """
@@ -74,11 +74,16 @@ def late(function: Callable[Q, R]) -> Callable[Q, R]:
 @final
 @record
 class PassSpec(Generic[P, S]):
-    """One pass, named as its declaration: ``run`` runs it on the state of its segment when ``when`` (if any) holds."""
+    """One pass, named as its declaration: ``run`` runs it on the state of its segment when ``when`` (if any) holds.
+
+    ``when`` is an option the pass needs: running it anyway is not a no-op. ``trigger`` is whether the fact the pass
+    rewrites is present: where it is false, running the pass would write nothing, so the runner skips it.
+    """
 
     name: str
     run: Callable[[P, S], None]
     when: Callable[[P, S], bool] | None = None
+    trigger: Callable[[P, S], bool] | None = None
 
     def execute(self, runner: Runner, parser: P, state: S) -> None:
         """Run the pass through the runner."""
@@ -163,8 +168,10 @@ class Runner:
     enter_phase: Callable[[Phase], None]
 
     def run_pass(self, spec: PassSpec[P, S], parser: P, state: S) -> None:  # noqa: PLR6301
-        """Run one pass, unless its ``when`` is false."""
-        if spec.when is not None and not spec.when(parser, state):
+        """Run one pass, unless its ``when`` or its ``trigger`` is false."""
+        if (spec.when is not None and not spec.when(parser, state)) or (
+            spec.trigger is not None and not spec.trigger(parser, state)
+        ):
             return
         spec.run(parser, state)
 

@@ -343,13 +343,15 @@ and fails the test for a write of the package that the allowlist does not list.
 | `RENDER_MEMOS` | every value a per-parse memo returns equals the value computed anew where it is read (`tests/checks/memos.py`, [Generation Store](architecture.md#generation-store)) |
 | `FACT_FINALITY` | each pass changes only the facts its declaration in `scripts/pass_decls.py` lists, on the models its scope allows, before they are final ([Fact Finality](architecture.md#fact-finality)) |
 | `FACT_FINALITY_SWEEP` | with `FACT_FINALITY` on, a global pass that transforms or repairs compares every model, not only those it touched; it reports nothing itself, so `1` and `report:<path>` both turn it on |
+| `PASS_TRIGGERS` | a pass whose trigger is false, which its `PassSpec` skips, runs anyway and changes no fact, memo revision, import, parser attribute, run-state field and warns nothing (`tests/checks/finality.py:ParseChecks.idle_pass`, [Pass Declarations](architecture.md#pass-declarations)) |
 
 A new area adds a member to `Area` in `tests/checks/areas.py` and its seams to `tests/checks/seams.py`, its variable
 to `CHECK_AREA_ENVS` in `tests/conftest.py` and a row to this table, and keeps tests that run it on and off.
 `test_check_seams` fails when a seam is not wrapped or a module of the package holds a wrapped function the table does
 not list. That every `ConfigDict` key the generator can write has a row in `_requirements.py` depends only on the
-installed Pydantic, so it is a test (`tests/main/test_pydantic_floor.py`), not an area. `FACT_FINALITY_SWEEP` is the exception: `tests/conftest.py`
-sets it to `1` only on `SWEEP_PYTHON` (the newest Python of CI), so one lane runs the slower full comparison.
+installed Pydantic, so it is a test (`tests/main/test_pydantic_floor.py`), not an area. `FACT_FINALITY_SWEEP` and `PASS_TRIGGERS` are the exceptions: `tests/conftest.py`
+sets them to `1` only on `SWEEP_PYTHON` (the newest Python of CI), so one lane runs the slower full comparison and the
+passes whose trigger is false, while the others skip those passes as users do.
 
 `DATAMODEL_CODE_GENERATOR_CHECK_BUILTIN_FORMATTER_PARITY=1` shares the prefix but is not an area: the test helpers in
 `tests/main/_builtin_parity.py` read it on every call and then generate each output of the default formatters a

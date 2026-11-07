@@ -9,6 +9,8 @@ through ``parser/_pipeline.py``) against ``scripts/pass_decls.py``, which declar
 * the labels name segments and hooks of the tables, every hook has its body, and the segments enter the boundaries in
   the order ``BOUNDARIES`` gives;
 * the passes of each segment satisfy the order rule (``check_order``);
+* a ``PassSpec`` has a ``trigger`` exactly where its declaration has one, and the trigger reads only facts the pass
+  reads, so that the order rule covers what it reads;
 * the repair passes are those ``REPAIRS`` lists, a set that only shrinks;
 * the decision registry of ``Parser`` and of every parser class that sets one (``_DECISION_PASSES``) holds global
   transforms of ``DECIDE`` with unique names, declared in ``DECISION_DECLS``, that read and write facts only, name
@@ -255,10 +257,26 @@ def table_problems(pipeline: tuple[StepLike[Any, Any], ...] = PIPELINE) -> list[
     )
     if entered != BOUNDARIES:
         problems.append(f"the segments enter {[b.name for b in entered]}, not {[b.name for b in BOUNDARIES]}")
+    problems.extend(trigger_problems(pipeline))
     repairs = {decl.name for decl in PASS_DECLS if decl.kind is PassKind.REPAIR}
     problems.extend(f"repair pass {name} is new: the repair set only shrinks" for name in sorted(repairs - REPAIRS))
     problems.extend(f"REPAIRS lists {name}, which is no repair pass: remove it" for name in sorted(REPAIRS - repairs))
     return problems
+
+
+def trigger_problems(pipeline: tuple[StepLike[Any, Any], ...] = PIPELINE) -> list[str]:
+    """Return the passes whose table entry and declaration disagree on a trigger, and the triggers that read more."""
+    triggered = {step.name for step in _walk(pipeline) if isinstance(step, PassSpec) and step.trigger is not None}
+    declared = {decl.name for decl in PASS_DECLS if decl.trigger is not None}
+    return [
+        *(f"{name} has a trigger in the tables that its declaration does not" for name in sorted(triggered - declared)),
+        *(f"{name} declares a trigger that its table entry does not have" for name in sorted(declared - triggered)),
+        *(
+            f"the trigger of {decl.name} reads {_facts_text(extra)}, which the pass does not declare as reads"
+            for decl in PASS_DECLS
+            if decl.trigger is not None and (extra := decl.trigger.reads - decl.reads)
+        ),
+    ]
 
 
 def provisional_reads(pipeline: tuple[StepLike[Any, Any], ...] = PIPELINE) -> list[str]:
