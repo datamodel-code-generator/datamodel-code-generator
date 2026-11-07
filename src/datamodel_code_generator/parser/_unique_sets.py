@@ -59,9 +59,13 @@ class UniqueSetsWriter(DecisionWriter, Protocol):
 
 
 class _ByValue:
-    """The reading of the decision: the class hash of each live model and the models taken to hash by value."""
+    """The reading of the decision: the class hash of each live model and the models taken to hash by value.
 
-    __slots__ = ("_keeps_tuples", "class_hash", "live", "value_keys")
+    ``aliases`` tells, by key, whether every value of a type alias hashes, read again with each reading of
+    ``value_keys`` (``read_aliases``).
+    """
+
+    __slots__ = ("_alias_order", "_keeps_tuples", "aliases", "class_hash", "live", "value_keys")
 
     def __init__(self, facts: FinalFacts) -> None:
         self.live: dict[ModelKey, ModelView] = {model_key_of(model.reference): model for model in facts.live_models}
@@ -70,9 +74,57 @@ class _ByValue:
         }
         self.value_keys = {key for key, class_hash in self.class_hash.items() if class_hash == "value"}
         self._keeps_tuples = facts.options.keeps_tuples
+        self._alias_order = self._aliases_first()
+        self.aliases: dict[ModelKey, bool] = {}
 
-    def plan(self, field: FieldView, aliases: frozenset[ModelKey] = frozenset()) -> UniqueItemsPlan:
-        """Return the arrays of ``field`` that become sets, read inside the type aliases ``aliases``."""
+    def _named_aliases(self, key: ModelKey) -> Iterator[ModelKey]:
+        """Yield the type aliases with a value that the value of the alias ``key`` names, by key."""
+        pending = [self.live[key].fields[0].data_type]
+        while pending:
+            if (reference := (data_type := pending.pop()).reference) is not None:
+                if self.class_hash.get(named := model_key_of(reference)) == "alias" and self.live[named].fields:
+                    yield named
+            else:
+                pending.extend(data_type.data_types)
+
+    def _aliases_first(self) -> list[ModelKey]:
+        """Return the type aliases with a value, by key, each after the aliases its value names.
+
+        They are walked with a stack of their own, so a chain of aliases of any length is ordered; of a cycle of
+        aliases, the alias the walk enters it at comes last.
+        """
+        ordered: dict[ModelKey, None] = {}
+        visiting: set[ModelKey] = set()
+        for alias in (key for key, class_hash in self.class_hash.items() if class_hash == "alias"):
+            if alias in visiting or not self.live[alias].fields:
+                continue
+            visiting.add(alias)
+            stack = [(alias, self._named_aliases(alias))]
+            while stack:
+                current, pending = stack[-1]
+                if (target := next((key for key in pending if key not in visiting), None)) is None:
+                    stack.pop()
+                    ordered[current] = None
+                else:
+                    visiting.add(target)
+                    stack.append((target, self._named_aliases(target)))
+        return list(ordered)
+
+    def read_aliases(self) -> None:
+        """Read whether every value of each type alias hashes, as ``value_keys`` reads the models, in alias order.
+
+        An alias is read as its value, whose lists become sets as its own plan says, after the aliases its value
+        names; one read after it, the alias a cycle of aliases is entered at, takes values that may not hash, as a
+        value that holds itself does.
+        """
+        self.aliases = {}
+        for key in self._alias_order:
+            value = self.live[key].fields[0]
+            sets = {*map(id, self.plan(value).sets)}
+            self.aliases[key] = every_value_hashes(self.item(value.data_type, sets))
+
+    def plan(self, field: FieldView) -> UniqueItemsPlan:
+        """Return the arrays of ``field`` that become sets."""
         live = cast("Any", field)
         return plan_unique_sets(
             live,
@@ -80,32 +132,26 @@ class _ByValue:
             default=list(default) if isinstance(default := field.default, (list, tuple)) else None,
             keeps_tuples=self._keeps_tuples,
             can_hold=lambda node, sets: all(
-                every_value_hashes(self.item(item, sets, aliases)) for item in cast("Any", node).data_types
+                every_value_hashes(self.item(item, sets)) for item in cast("Any", node).data_types
             ),
         )
 
-    def item(self, data_type: DataTypeView, sets: Collection[int], aliases: frozenset[ModelKey]) -> ValueHashItem:  # noqa: PLR0911
+    def item(self, data_type: DataTypeView, sets: Collection[int]) -> ValueHashItem:  # noqa: PLR0911
         """Return the facts of an item type that ``every_value_hashes`` reads.
 
         ``sets`` holds the lists of the type that become sets, by id. A container is read as it is written: a set
-        under --use-generic-container-types is a frozen set. A type alias is read as its value, whose lists become sets
-        as its own plan says; one that holds itself takes values that may not hash.
+        under --use-generic-container-types is a frozen set. A type alias is read as ``aliases`` says.
         """
-        if (reference := data_type.reference) is not None and (
-            model := self.live.get(key := model_key_of(reference))
-        ) is not None:
+        if (reference := data_type.reference) is not None and (key := model_key_of(reference)) in self.live:
             match self.class_hash[key]:
-                case "alias" if key not in aliases and model.fields:
-                    value = model.fields[0]
-                    inside = aliases | {key}
-                    sets = {*map(id, self.plan(value, inside).sets)}
-                    return self.item(value.data_type, sets, inside)
+                case "alias":
+                    return ValueHashItem(hashes=self.aliases.get(key, False))
                 case "value":
                     return ValueHashItem(hashes=key in self.value_keys)
             return ValueHashItem(hashes=False)
 
         def read(nested: DataTypeView) -> ValueHashItem:
-            return self.item(nested, sets, aliases)
+            return self.item(nested, sets)
 
         if data_type.is_tuple:
             count = data_type.tuple_item_count
@@ -169,7 +215,7 @@ class _ByValue:
             hash(default)
         except TypeError:
             return False
-        return every_value_hashes(self.item(field.data_type, {*map(id, plan.sets)}, frozenset()))
+        return every_value_hashes(self.item(field.data_type, {*map(id, plan.sets)}))
 
 
 def _write_unique_items_as_sets(facts: FinalFacts, writer: UniqueSetsWriter) -> None:
@@ -180,6 +226,7 @@ def _write_unique_items_as_sets(facts: FinalFacts, writer: UniqueSetsWriter) -> 
     """
     reading = _ByValue(facts)
     while True:
+        reading.read_aliases()
         plans = {id(field): reading.plan(field) for model in facts.live_models for field in model.fields}
         kept = {
             key

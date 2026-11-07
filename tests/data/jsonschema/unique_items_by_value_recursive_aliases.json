@@ -1,0 +1,16 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "cycle": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/Left"}},
+    "pets": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/PetOrCount"}},
+    "counts": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/Count"}}
+  },
+  "$defs": {
+    "Left": {"anyOf": [{"$ref": "#/$defs/Right"}, {"type": "integer"}]},
+    "Right": {"anyOf": [{"$ref": "#/$defs/Left"}, {"type": "string"}]},
+    "Pet": {"type": "object", "properties": {"id": {"type": "integer"}}},
+    "PetOrCount": {"anyOf": [{"$ref": "#/$defs/Pet"}, {"$ref": "#/$defs/Count"}]},
+    "Count": {"anyOf": [{"type": "integer"}, {"type": "string"}]}
+  }
+}
