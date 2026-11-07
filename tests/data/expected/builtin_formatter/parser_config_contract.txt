@@ -204,6 +204,7 @@ reviewed-safe schema_version_mode
 [AsyncAPIParserConfig]
 reviewed-safe asyncapi_version
 reviewed-safe include_path_parameters
+reviewed-safe keep_content_parameter_refs
 reviewed-safe keep_first_character_of_path_keys
 reviewed-safe name_converted_payloads_by_message
 reviewed-safe openapi_as_definitions

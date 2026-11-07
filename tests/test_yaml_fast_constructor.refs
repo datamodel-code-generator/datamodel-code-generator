@@ -202,6 +202,7 @@ openapi/component_embedded_ids/remote.yaml	yaml_fast_constructor/parity.txt
 openapi/const.yaml	yaml_fast_constructor/parity.txt
 openapi/const_optional_values_31.yaml	yaml_fast_constructor/parity.txt
 openapi/content_in_parameters.yaml	yaml_fast_constructor/parity.txt
+openapi/content_parameter_refs.yaml	yaml_fast_constructor/parity.txt
 openapi/custom_id.yaml	yaml_fast_constructor/parity.txt
 openapi/dataclass_inheritance_field_ordering.yaml	yaml_fast_constructor/parity.txt
 openapi/dataclass_optional_metadata_defaults.yaml	yaml_fast_constructor/parity.txt

@@ -1603,6 +1603,14 @@ _toggle(
     "the key pets gives PetsGetResponse; without it the first character is dropped whatever it is (EtsGetResponse), "
     "as in 0.88.0",
 )
+_toggle(
+    openapi_options,
+    "--keep-content-parameter-refs",
+    help="Type a parameter whose content media schema is a $ref by the model the $ref names, its Request variant "
+    "under --read-only-write-only-model-type request-response, as a schema parameter is; without it the parameter "
+    "takes a copy of the referenced schema (a model of its own name, or the inline type of a scalar, with its "
+    "default and description), as in 0.89.0",
+)
 # ======================================================================================
 # Schema version options (for both JSON Schema and OpenAPI)
 # ======================================================================================

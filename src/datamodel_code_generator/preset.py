@@ -1029,6 +1029,14 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "instead of leaving it out, which gives it its default."
         ),
     ),
+    PresetOptionGroup(
+        title="Content parameters typed by their reference",
+        config=PresetConfig(keep_content_parameter_refs=True),
+        description=(
+            "Type an OpenAPI parameter whose content media schema is a $ref by the model the $ref names, as a schema "
+            "parameter is, instead of a copy of the referenced schema."
+        ),
+    ),
 )
 """The 20261104 groups and the opt-in options of the release after 0.90.0."""
 
@@ -1361,7 +1369,9 @@ def render_presets_markdown() -> str:
         (
             "The 20261106 presets keep the 20261104 options and add `--keep-false-dataclass-arguments`: a dataclass "
             "decorator argument set to false, such as `eq=False` from `--dataclass-arguments`, is written instead of "
-            "left out, which gave it its default."
+            "left out, which gave it its default, and `--keep-content-parameter-refs`: an OpenAPI parameter whose "
+            "content media schema is a `$ref` is typed by the model the `$ref` names (`PageRequest` under "
+            "`--read-only-write-only-model-type request-response`) instead of a copy of the referenced schema."
         ),
         "",
         "## Override Preset Options",

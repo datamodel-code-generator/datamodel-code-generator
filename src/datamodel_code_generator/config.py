@@ -412,6 +412,7 @@ class OpenAPIParserConfig(JSONSchemaParserConfig):
     include_path_parameters: bool = False
     use_status_code_in_response_name: bool = False
     keep_first_character_of_path_keys: bool = False
+    keep_content_parameter_refs: bool = False
     openapi_include_paths: list[str] | None = None
     openapi_include_info_version: bool = False
     openapi_as_definitions: Sequence[OpenAPIAsDefinitions] = ()
@@ -425,6 +426,7 @@ class AsyncAPIParserConfig(JSONSchemaParserConfig):
     include_path_parameters: bool = False
     use_status_code_in_response_name: bool = False
     keep_first_character_of_path_keys: bool = False
+    keep_content_parameter_refs: bool = False
     openapi_include_paths: list[str] | None = None
     openapi_include_info_version: bool = False
     openapi_as_definitions: Sequence[OpenAPIAsDefinitions] = ()

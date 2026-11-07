@@ -2076,6 +2076,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "use_type_checking_imports",
         "dedupe_request_response_variants",
         "keep_first_character_of_path_keys",
+        "keep_content_parameter_refs",
         "read_schema_version_per_document",
         "read_escaped_ref_pointers",
         "read_dynamic_anchors_in_document_order",

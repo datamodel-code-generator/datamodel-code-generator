@@ -12981,6 +12981,63 @@ def test_main_openapi_read_only_write_only_ref(output_file: Path) -> None:
     )
 
 
+@pytest.mark.cli_doc(
+    options=["--keep-content-parameter-refs"],
+    option_description="""Type a parameter whose content media schema is a `$ref` by the model the `$ref` names.
+
+Without this option a parameter with `content` reads its media schema `{"$ref": "#/components/schemas/Page"}` as a
+copy of the referenced schema: an object gets a model of the parameter's own (merged back into `Page` only where the
+two render alike), and a scalar its inline type with the default and description of the target. Under
+`--read-only-write-only-model-type request-response` the copy splits into `Page1Request` and `Page1Response` beside
+`PageRequest` and `PageResponse`, and the parameter names `Page1Request`. With the option the parameter names the
+referenced model, its Request variant there, as a parameter's `schema: {"$ref": ...}` does.""",
+    input_schema="openapi/content_parameter_refs.yaml",
+    cli_args=[
+        "--openapi-scopes",
+        "schemas",
+        "paths",
+        "parameters",
+        "--read-only-write-only-model-type",
+        "request-response",
+        "--keep-content-parameter-refs",
+    ],
+    golden_output="main/openapi/main_openapi/keep_content_parameter_refs[request-response-kept].py",
+    comparison_output="main/openapi/main_openapi/keep_content_parameter_refs[request-response].py",
+)
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="released"),
+        pytest.param(["--keep-content-parameter-refs"], id="kept"),
+        pytest.param(["--read-only-write-only-model-type", "request-response"], id="request-response"),
+        pytest.param(
+            ["--read-only-write-only-model-type", "request-response", "--keep-content-parameter-refs"],
+            id="request-response-kept",
+        ),
+        pytest.param(["--read-only-write-only-model-type", "all", "--keep-content-parameter-refs"], id="all-kept"),
+    ],
+)
+def test_main_openapi_keep_content_parameter_refs(output_file: Path, extra_args: list[str]) -> None:
+    """Type a content parameter whose media schema is a `$ref` by the model it names under the option (#6322).
+
+    Without it `page` takes a copy of `Page` with its description, merged into `Page`, and `count` the inline
+    `conint(ge=1)` with the default and description of `Count`; under request-response the copy writes `Page1Request`
+    and `Page1Response` too. With it `page` names `Page` (`PageRequest` under request-response) and `count` names
+    `Count`, as `other`, whose own schema is the `$ref`, does, and no copy is written.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "content_parameter_refs.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--openapi-scopes", "schemas", "paths", "parameters"),
+            *extra_args,
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+        force_exec_validation=True,
+    )
+
+
 @pytest.mark.parametrize(
     "extra_args",
     [

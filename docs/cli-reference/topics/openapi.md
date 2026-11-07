@@ -9,7 +9,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 | Group | Options | Description |
 |-------|---------|-------------|
 | [OpenAPI Naming](#openapi-naming) | 2 | Operation and response model naming. |
-| [OpenAPI Paths](#openapi-paths) | 3 | Path selection and path parameter output. |
+| [OpenAPI Paths](#openapi-paths) | 4 | Path selection and path parameter output. |
 | [OpenAPI Scopes](#openapi-scopes) | 2 | OpenAPI generation scopes. |
 | [Read Only Write Only](#read-only-write-only) | 3 | readOnly/writeOnly model behavior. |
 
@@ -29,6 +29,7 @@ Path selection and path parameter output.
 | Option | Description |
 |--------|-------------|
 | [`--include-path-parameters`](../openapi-only-options.md#include-path-parameters) | Include OpenAPI path parameters in generated parameter models. |
+| [`--keep-content-parameter-refs`](../openapi-only-options.md#keep-content-parameter-refs) | Type a parameter whose content media schema is a `$ref` by the model the `$ref` ... |
 | [`--keep-first-character-of-path-keys`](../openapi-only-options.md#keep-first-character-of-path-keys) | Strip only a leading slash from a paths key when naming its operation models. |
 | [`--openapi-include-paths`](../openapi-only-options.md#openapi-include-paths) | Filter OpenAPI paths to include in model generation. |
 

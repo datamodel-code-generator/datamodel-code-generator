@@ -320,6 +320,8 @@ OpenAPI-specific generation behavior.
 - `--use-status-code-in-response-name`: Include HTTP status code in response model names (e.g., ResourceGetResponse200, ResourceGetResponseDefault)
 - `--keep-first-character-of-path-keys`: Strip only a leading slash from a paths key when naming its operation models, as webhook names are, so the key pets gives PetsGetResponse; without it the first character is dropped whatever it is (EtsGetResponse), as in 0.88.0
 - `--no-keep-first-character-of-path-keys`: Strip only a leading slash from a paths key when naming its operation models, as webhook names are, so the key pets gives PetsGetResponse; without it the first character is dropped whatever it is (EtsGetResponse), as in 0.88.0
+- `--keep-content-parameter-refs`: Type a parameter whose content media schema is a $ref by the model the $ref names, its Request variant under --read-only-write-only-model-type request-response, as a schema parameter is; without it the parameter takes a copy of the referenced schema (a model of its own name, or the inline type of a scalar, with its default and description), as in 0.89.0
+- `--no-keep-content-parameter-refs`: Type a parameter whose content media schema is a $ref by the model the $ref names, its Request variant under --read-only-write-only-model-type request-response, as a schema parameter is; without it the parameter takes a copy of the referenced schema (a model of its own name, or the inline type of a scalar, with its default and description), as in 0.89.0
 
 ## GraphQL-only Options
 
