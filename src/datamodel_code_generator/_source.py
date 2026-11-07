@@ -225,17 +225,16 @@ def _is_json_text(text: str) -> bool:
     return _first_significant_text_char(text) in {"{", "["}
 
 
-def _is_json_document(text: str) -> bool:
-    """Return whether text is a JSON document, not only YAML that starts like one."""
+def _load_json_document(text: str) -> YamlValue | None:
+    """Return the value of text when it is a JSON document, or None when it is not (it may still be YAML)."""
     if not _is_json_text(text):
-        return False
+        return None
     import json  # noqa: PLC0415
 
     try:
-        json.loads(text)
+        return json.loads(text)
     except json.JSONDecodeError:
-        return False
-    return True
+        return None
 
 
 def _is_xml_text(text: str) -> bool:
@@ -273,13 +272,8 @@ def load_text_data(text: str, *, mapping: bool) -> YamlValue:
     With ``mapping`` (an input document), JSON that is no mapping is read again as YAML, and YAML that is no mapping
     raises TypeError; without it (an MCP tool list), any JSON or YAML value is returned.
     """
-    import json  # noqa: PLC0415
-
-    if _is_json_text(text):
-        with contextlib.suppress(json.JSONDecodeError):
-            result = json.loads(text)
-            if not mapping or isinstance(result, dict):
-                return result
+    if (result := _load_json_document(text)) is not None and (not mapping or isinstance(result, dict)):
+        return result
     return load_yaml_dict(text) if mapping else load_yaml(text)
 
 

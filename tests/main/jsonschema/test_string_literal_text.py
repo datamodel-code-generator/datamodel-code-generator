@@ -629,6 +629,16 @@ def test_lone_surrogate_enum_unused_by_pydantic(output_file: Path) -> None:
             id="jsonschema",
         ),
         pytest.param(
+            None,
+            {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {"a": {"$ref": "#/definitions/D\ud800"}},
+                "definitions": {"D\ud800": {"type": "string"}},
+            },
+            id="jsonschema-inferred",
+        ),
+        pytest.param(
             "jsonschema",
             {
                 "type": "object",
@@ -666,11 +676,14 @@ def test_lone_surrogate_enum_unused_by_pydantic(output_file: Path) -> None:
         ),
     ],
 )
-def test_lone_surrogate_reference(output_file: Path, input_file_type: str, schema: dict[str, object]) -> None:
+def test_lone_surrogate_reference(
+    output_file: Path, capsys: pytest.CaptureFixture[str], input_file_type: str | None, schema: dict[str, object]
+) -> None:
     """Resolve a `$ref` that holds a lone surrogate, which failed as a schema validation error (#6306).
 
     A missing target gets the fallback model of any unresolved reference. The schema is written here, as a YAML
-    parser rejects the escape of a lone surrogate in a fixture file.
+    parser rejects the escape of a lone surrogate in a fixture file; without `--input-file-type` the input type is
+    inferred from the JSON document, which that parser rejected too (#6372).
     """
     (input_path := output_file.parent / "surrogate_ref.json").write_text(json.dumps(schema), encoding="utf-8")
     run_main_and_assert(
@@ -680,7 +693,9 @@ def test_lone_surrogate_reference(output_file: Path, input_file_type: str, schem
         extra_args=[
             "--formatters",
             "builtin",
-            *(["--openapi-scopes", "schemas", "paths", "parameters"] if input_file_type == "openapi" else []),
+            *(["--openapi-scopes", "schemas", "paths", "parameters"] if "openapi" in schema else []),
         ],
+        capsys=capsys,
+        expected_stderr_contains=None if input_file_type else "The input file type was determined to be: jsonschema",
         force_exec_validation=True,
     )
