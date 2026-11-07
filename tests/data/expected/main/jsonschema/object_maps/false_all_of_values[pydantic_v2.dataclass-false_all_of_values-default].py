@@ -8,6 +8,16 @@ from pydantic import ConfigDict, Field, constr
 from pydantic.dataclasses import dataclass
 from typing_extensions import TypeAliasType
 
+VAdditionalProperty = TypeAliasType(
+    "VAdditionalProperty", Annotated[dict[str, Any], Field(max_length=0)]
+)
+
+
+RItem = TypeAliasType("RItem", Annotated[dict[str, Any], Field(max_length=0)])
+
+
+IItem = TypeAliasType("IItem", Annotated[dict[str, Any], Field(max_length=0)])
+
 
 @dataclass(config=ConfigDict(extra='forbid'))
 class Empty:
@@ -21,7 +31,7 @@ Nothing = TypeAliasType("Nothing", Annotated[list[Any], Field(..., max_length=0)
 class Model:
     m: dict[str, Any] | None = Field(None, max_length=0)
     n: dict[constr(pattern=r'^a'), Any] | None = Field(None, max_length=0)
-    v: dict[str, dict[str, Any]] | None = None
+    v: dict[str, VAdditionalProperty] | None = None
     u: dict[str, Any] | None = None
     p: dict[constr(pattern=r'^x'), str] | None = None
     w: dict[str, Any] | None = None
@@ -29,5 +39,5 @@ class Model:
     t: list[str] | None = Field(None, max_length=1)
     e: Empty | None = None
     s: Nothing | None = None
-    r: list[dict[str, Any]] | None = None
-    i: list[dict[str, Any]] | None = None
+    r: list[RItem] | None = None
+    i: list[IItem] | None = None

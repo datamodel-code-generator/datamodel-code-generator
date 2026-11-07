@@ -239,6 +239,11 @@ class PItems(_JsonSchemaRuntimeValidationBase):
     )
 
 
+PObjCountPatternProperty = TypeAliasType(
+    "PObjCountPatternProperty", Annotated[dict[str, int], Field(min_length=1)]
+)
+
+
 class PObjCount(_JsonSchemaRuntimeValidationBase):
     model_config = ConfigDict(
         extra='allow',
@@ -248,7 +253,7 @@ class PObjCount(_JsonSchemaRuntimeValidationBase):
         {
             'declared_properties': (),
             'rejected_patterns': (),
-            'pattern_properties': (('^o', dict[str, int]),),
+            'pattern_properties': (('^o', PObjCountPatternProperty),),
             'additional_property_type': None,
             'allow_unmatched': True,
         },
