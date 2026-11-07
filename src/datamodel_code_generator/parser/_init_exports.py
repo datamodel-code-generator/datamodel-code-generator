@@ -5,16 +5,16 @@ the names of a module's models it exports (``exported_names``) of each module be
 (``exports_reach``), which ``collect_exports_for_init`` collects, ``resolve_export_collisions`` resolves the names that
 collide by ``--all-exports-collision-strategy`` (``raise_collision_error`` reports them), and ``build_all_exports_code``
 builds the imports; the import cycles that merge modules read the same exports (``parser/_passes/structure.py``). The
-functions take the parser through ``InitExportsHost``, which ``Parser`` satisfies structurally. ``Parser`` keeps each
-method as the hook that calls its function here, and keeps ``_make_prefixed_name``, the staticmethod that builds a
-prefixed name.
+functions take the parser through ``InitExportsHost``, which ``Parser`` satisfies structurally. ``Parser`` keeps
+``_init_export_imports`` as the hook that calls ``init_export_imports``, and ``_make_prefixed_name``, the staticmethod
+that builds a prefixed name.
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypeAlias
 
-from typing_extensions import Protocol, TypeVar
+from typing_extensions import Protocol
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._free_names import first_free
@@ -33,7 +33,6 @@ if TYPE_CHECKING:
     _ModuleContextRow: TypeAlias = tuple[ModulePath, ModulePath, list[DataModel], bool, Imports, ModelResolver]
     _Export: TypeAlias = tuple[str, tuple[str, ...], str]
 
-_ContextT_contra = TypeVar("_ContextT_contra", contravariant=True)
 
 __all__ = [
     "InitExportsConfig",
@@ -56,39 +55,12 @@ class InitExportsConfig(Protocol):
         """How names that collide in the exports are resolved (``--all-exports-collision-strategy``)."""
 
 
-class InitExportsHost(Protocol[_ContextT_contra]):
+class InitExportsHost(Protocol):
     """The options and hooks of the parser that the exports of an ``__init__.py`` read."""
 
     @property
     def target_python_version(self) -> PythonVersion:
         """The Python version of the output (``--target-python-version``)."""
-
-    @classmethod
-    def _collect_exports_for_init(
-        cls,
-        module: tuple[str, ...],
-        processed_models: Sequence[_ContextT_contra],
-        scope: AllExportsScope,
-    ) -> list[_Export]:
-        """Collect exports for __init__.py based on scope."""
-
-    @classmethod
-    def _resolve_export_collisions(
-        cls,
-        exports: list[_Export],
-        strategy: AllExportsCollisionStrategy | None,
-        reserved: set[str] | None = None,
-        target_python_version: PythonVersion | None = None,
-    ) -> dict[str, list[_Export]]:
-        """Resolve name collisions in exports based on strategy, titling module names as the target does."""
-
-    @classmethod
-    def _raise_collision_error(
-        cls,
-        by_name: dict[str, list[_Export]],
-        colliding: set[str],
-    ) -> None:
-        """Raise an error with collision details."""
 
     @staticmethod
     def _make_prefixed_name(
@@ -100,13 +72,6 @@ class InitExportsHost(Protocol[_ContextT_contra]):
         target_python_version: PythonVersion | None = None,
     ) -> str:
         """Generate a prefixed name, using minimal or full prefix."""
-
-    @classmethod
-    def _build_all_exports_code(
-        cls,
-        resolved: dict[str, list[_Export]],
-    ) -> Imports:
-        """Build import statements from resolved exports."""
 
 
 def exported_names(models: Iterable[DataModel]) -> Iterator[str]:
@@ -124,13 +89,12 @@ def exports_reach(depth: int, scope: AllExportsScope) -> bool:
 
 
 def collect_exports_for_init(
-    cls: type[InitExportsHost],  # noqa: ARG001
     module: tuple[str, ...],
     processed_models: Sequence[_ModuleContextRow],
     scope: AllExportsScope,
-) -> list[tuple[str, tuple[str, ...], str]]:
+) -> list[_Export]:
     """Collect exports for __init__.py based on scope."""
-    exports: list[tuple[str, tuple[str, ...], str]] = []
+    exports: list[_Export] = []
     normalized_module = written_names(module)
     base = normalized_module[:-1] if is_package_init(normalized_module[-1]) else normalized_module
     base_len = len(base)
@@ -149,11 +113,11 @@ def collect_exports_for_init(
 
 def resolve_export_collisions(
     cls: type[InitExportsHost],
-    exports: list[tuple[str, tuple[str, ...], str]],
+    exports: list[_Export],
     strategy: AllExportsCollisionStrategy | None,
     reserved: set[str] | None = None,
     target_python_version: PythonVersion | None = None,
-) -> dict[str, list[tuple[str, tuple[str, ...], str]]]:
+) -> dict[str, list[_Export]]:
     """Resolve name collisions in exports based on strategy, titling module names as the target does.
 
     A prefixed name is written over the export that holds the name, as before. The export it displaces takes the next
@@ -161,18 +125,18 @@ def resolve_export_collisions(
     export it refers to.
     """
     reserved = reserved or set()
-    by_name: dict[str, list[tuple[str, tuple[str, ...], str]]] = {}
+    by_name: dict[str, list[_Export]] = {}
     for item in exports:
         by_name.setdefault(item[0], []).append(item)
 
     if not (colliding := {n for n, items in by_name.items() if len(items) > 1 or n in reserved}):
         return dict(by_name)
     if (effective := strategy or AllExportsCollisionStrategy.Error) == AllExportsCollisionStrategy.Error:
-        cls._raise_collision_error(by_name, colliding)
+        raise_collision_error(by_name, colliding)
 
     used: set[str] = {n for n in by_name if n not in colliding} | reserved
     result = {n: items for n, items in by_name.items() if n not in colliding}
-    displaced: list[tuple[str, tuple[str, tuple[str, ...], str]]] = []
+    displaced: list[tuple[str, _Export]] = []
 
     for name in sorted(colliding):
         for item in sorted(by_name[name], key=lambda x: len(x[1])):
@@ -201,8 +165,7 @@ def resolve_export_collisions(
 
 
 def raise_collision_error(
-    cls: type[InitExportsHost],  # noqa: ARG001
-    by_name: dict[str, list[tuple[str, tuple[str, ...], str]]],
+    by_name: dict[str, list[_Export]],
     colliding: set[str],
 ) -> None:
     """Raise an error with collision details."""
@@ -221,8 +184,7 @@ def raise_collision_error(
 
 
 def build_all_exports_code(
-    cls: type[InitExportsHost],  # noqa: ARG001
-    resolved: dict[str, list[tuple[str, tuple[str, ...], str]]],
+    resolved: dict[str, list[_Export]],
 ) -> Imports:
     """Build import statements from resolved exports."""
     export_imports = Imports()
@@ -235,9 +197,9 @@ def build_all_exports_code(
 
 
 def init_export_imports(  # noqa: PLR0913, PLR0917
-    parser: InitExportsHost[_ContextT_contra],
+    parser: InitExportsHost,
     module: ModulePath,
-    contexts: Sequence[_ContextT_contra],
+    contexts: Sequence[_ModuleContextRow],
     scope: AllExportsScope,
     config: InitExportsConfig,
     reserved: set[str],
@@ -246,10 +208,10 @@ def init_export_imports(  # noqa: PLR0913, PLR0917
 
     Names that collide with each other or with ``reserved`` are resolved by ``--all-exports-collision-strategy``.
     """
-    if not (exports := parser._collect_exports_for_init(module, contexts, scope)):  # noqa: SLF001
+    if not (exports := collect_exports_for_init(module, contexts, scope)):
         return None
-    return parser._build_all_exports_code(  # noqa: SLF001
-        parser._resolve_export_collisions(  # noqa: SLF001
-            exports, config.all_exports_collision_strategy, reserved, parser.target_python_version
+    return build_all_exports_code(
+        resolve_export_collisions(
+            type(parser), exports, config.all_exports_collision_strategy, reserved, parser.target_python_version
         )
     )

@@ -9,7 +9,7 @@ The parse resolver (``Parser.model_resolver``) names models at L1. A pass that r
   ``--use-duplicate-name-suffix-for-every-collision`` the suffix of the map or ``Model`` (row ``map-or-model``, as
   ``flattened-module``), a name is kept as written only under a custom class name generator, and a name the parse
   resolver reserves is taken for the other models (``translate_class_keys``).
-* ``flattened-module`` (L3 repair ``Parser._flatten_invalid_modules``): a name taken gets the suffix of the
+* ``flattened-module`` (L3 repair ``_stdout_repair.flatten_invalid_modules``): a name taken gets the suffix of the
   ``--duplicate-name-suffix`` map or ``Model``, and a name is always kept as written.
 * ``field-type`` (L5 ``modules.py:change_field_name``, ``rename_named_type``, ``rename_fields_hiding_types``): a name
   taken is numbered after the name without its number suffix; field names follow ``--snake-case-field``.

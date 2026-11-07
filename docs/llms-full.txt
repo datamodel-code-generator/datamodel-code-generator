@@ -83036,10 +83036,10 @@ behind the `_copy_model_field` and `_copy_inherited_field` hooks; `parser/_inher
 behind the `_check_model_inheritance` hook, through `InheritanceCheckHost`; `parser/_type_overrides.py`: the
 `--type-overrides` and `x-python-type` binding behind `Parser._bind_python_type`, `_apply_override_to_field` and the
 other methods it is named after, through `TypeOverridesHost`; `parser/_init_exports.py`: the `--all-exports-scope`
-exports of an `__init__.py` behind the `_init_export_imports` hook and the collision hooks, through
-`InitExportsHost`; `parser/_stdout_repair.py`: the repair of stdout output whose inferred dotted modules one stream
-cannot hold, behind `Parser._inspect_invalid_dotted_stdout`, `_apply_forced_invalid_dotted_stdout_repair` and the
-other methods it is named after, through `StdoutRepairHost`; `parser/base.py` re-exports what other modules import
+exports of an `__init__.py` behind the `_init_export_imports` hook, through `InitExportsHost`;
+`parser/_stdout_repair.py`: the repair of stdout output whose inferred dotted modules one stream cannot hold, behind
+`Parser._inspect_invalid_dotted_stdout` and `_apply_forced_invalid_dotted_stdout_repair`, which the passes call,
+through `StdoutRepairHost`; `parser/base.py` re-exports what other modules import
 from it). This keeps
 backend-specific lifecycle and cache ownership with the backend or composition root, without blocking neutral module
 registry access such as `sys.modules[model_type.__module__]`. Private parser lifecycle access and reference-owned
