@@ -10,6 +10,15 @@ pydantic_v2.BaseModel default items [] accepted
 pydantic_v2.BaseModel default items [{}] accepted
 pydantic_v2.BaseModel default kept {"id": 1} accepted
 pydantic_v2.BaseModel default kept {} rejected
+pydantic_v2.BaseModel default nullable_member null accepted
+pydantic_v2.BaseModel default nullable_member {"id": 1} accepted
+pydantic_v2.BaseModel default nullable_member {} accepted
+pydantic_v2.BaseModel default nullable_sibling null accepted
+pydantic_v2.BaseModel default nullable_sibling {"id": 1} accepted
+pydantic_v2.BaseModel default nullable_sibling {} accepted
+pydantic_v2.BaseModel default object_site {"id": 1} accepted
+pydantic_v2.BaseModel default object_site null accepted
+pydantic_v2.BaseModel default object_site {} accepted
 pydantic_v2.dataclass default member {"id": 1} accepted
 pydantic_v2.dataclass default member {"id": 1, "name": "a"} accepted
 pydantic_v2.dataclass default member {} accepted
@@ -22,6 +31,15 @@ pydantic_v2.dataclass default items [] accepted
 pydantic_v2.dataclass default items [{}] accepted
 pydantic_v2.dataclass default kept {"id": 1} accepted
 pydantic_v2.dataclass default kept {} rejected
+pydantic_v2.dataclass default nullable_member null accepted
+pydantic_v2.dataclass default nullable_member {"id": 1} accepted
+pydantic_v2.dataclass default nullable_member {} accepted
+pydantic_v2.dataclass default nullable_sibling null accepted
+pydantic_v2.dataclass default nullable_sibling {"id": 1} accepted
+pydantic_v2.dataclass default nullable_sibling {} accepted
+pydantic_v2.dataclass default object_site {"id": 1} accepted
+pydantic_v2.dataclass default object_site null accepted
+pydantic_v2.dataclass default object_site {} accepted
 msgspec.Struct default member {"id": 1} accepted
 msgspec.Struct default member {"id": 1, "name": "a"} accepted
 msgspec.Struct default member {} accepted
@@ -34,6 +52,15 @@ msgspec.Struct default items [] accepted
 msgspec.Struct default items [{}] accepted
 msgspec.Struct default kept {"id": 1} accepted
 msgspec.Struct default kept {} rejected
+msgspec.Struct default nullable_member null accepted
+msgspec.Struct default nullable_member {"id": 1} accepted
+msgspec.Struct default nullable_member {} accepted
+msgspec.Struct default nullable_sibling null accepted
+msgspec.Struct default nullable_sibling {"id": 1} accepted
+msgspec.Struct default nullable_sibling {} accepted
+msgspec.Struct default object_site {"id": 1} accepted
+msgspec.Struct default object_site null accepted
+msgspec.Struct default object_site {} accepted
 pydantic_v2.BaseModel --field-constraints member {"id": 1} accepted
 pydantic_v2.BaseModel --field-constraints member {"id": 1, "name": "a"} accepted
 pydantic_v2.BaseModel --field-constraints member {} accepted
@@ -46,6 +73,15 @@ pydantic_v2.BaseModel --field-constraints items [] accepted
 pydantic_v2.BaseModel --field-constraints items [{}] accepted
 pydantic_v2.BaseModel --field-constraints kept {"id": 1} accepted
 pydantic_v2.BaseModel --field-constraints kept {} rejected
+pydantic_v2.BaseModel --field-constraints nullable_member null accepted
+pydantic_v2.BaseModel --field-constraints nullable_member {"id": 1} accepted
+pydantic_v2.BaseModel --field-constraints nullable_member {} accepted
+pydantic_v2.BaseModel --field-constraints nullable_sibling null accepted
+pydantic_v2.BaseModel --field-constraints nullable_sibling {"id": 1} accepted
+pydantic_v2.BaseModel --field-constraints nullable_sibling {} accepted
+pydantic_v2.BaseModel --field-constraints object_site {"id": 1} accepted
+pydantic_v2.BaseModel --field-constraints object_site null accepted
+pydantic_v2.BaseModel --field-constraints object_site {} accepted
 pydantic_v2.BaseModel --use-annotated member {"id": 1} accepted
 pydantic_v2.BaseModel --use-annotated member {"id": 1, "name": "a"} accepted
 pydantic_v2.BaseModel --use-annotated member {} accepted
@@ -58,6 +94,15 @@ pydantic_v2.BaseModel --use-annotated items [] accepted
 pydantic_v2.BaseModel --use-annotated items [{}] accepted
 pydantic_v2.BaseModel --use-annotated kept {"id": 1} accepted
 pydantic_v2.BaseModel --use-annotated kept {} rejected
+pydantic_v2.BaseModel --use-annotated nullable_member null accepted
+pydantic_v2.BaseModel --use-annotated nullable_member {"id": 1} accepted
+pydantic_v2.BaseModel --use-annotated nullable_member {} accepted
+pydantic_v2.BaseModel --use-annotated nullable_sibling null accepted
+pydantic_v2.BaseModel --use-annotated nullable_sibling {"id": 1} accepted
+pydantic_v2.BaseModel --use-annotated nullable_sibling {} accepted
+pydantic_v2.BaseModel --use-annotated object_site {"id": 1} accepted
+pydantic_v2.BaseModel --use-annotated object_site null accepted
+pydantic_v2.BaseModel --use-annotated object_site {} accepted
 pydantic_v2.BaseModel --collapse-root-models member {"id": 1} accepted
 pydantic_v2.BaseModel --collapse-root-models member {"id": 1, "name": "a"} accepted
 pydantic_v2.BaseModel --collapse-root-models member {} accepted
@@ -70,6 +115,15 @@ pydantic_v2.BaseModel --collapse-root-models items [] accepted
 pydantic_v2.BaseModel --collapse-root-models items [{}] accepted
 pydantic_v2.BaseModel --collapse-root-models kept {"id": 1} accepted
 pydantic_v2.BaseModel --collapse-root-models kept {} rejected
+pydantic_v2.BaseModel --collapse-root-models nullable_member null accepted
+pydantic_v2.BaseModel --collapse-root-models nullable_member {"id": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models nullable_member {} accepted
+pydantic_v2.BaseModel --collapse-root-models nullable_sibling null accepted
+pydantic_v2.BaseModel --collapse-root-models nullable_sibling {"id": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models nullable_sibling {} accepted
+pydantic_v2.BaseModel --collapse-root-models object_site {"id": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models object_site null accepted
+pydantic_v2.BaseModel --collapse-root-models object_site {} accepted
 msgspec.Struct --collapse-root-models member {"id": 1} accepted
 msgspec.Struct --collapse-root-models member {"id": 1, "name": "a"} accepted
 msgspec.Struct --collapse-root-models member {} accepted
@@ -82,6 +136,15 @@ msgspec.Struct --collapse-root-models items [] accepted
 msgspec.Struct --collapse-root-models items [{}] accepted
 msgspec.Struct --collapse-root-models kept {"id": 1} accepted
 msgspec.Struct --collapse-root-models kept {} rejected
+msgspec.Struct --collapse-root-models nullable_member null accepted
+msgspec.Struct --collapse-root-models nullable_member {"id": 1} accepted
+msgspec.Struct --collapse-root-models nullable_member {} accepted
+msgspec.Struct --collapse-root-models nullable_sibling null accepted
+msgspec.Struct --collapse-root-models nullable_sibling {"id": 1} accepted
+msgspec.Struct --collapse-root-models nullable_sibling {} accepted
+msgspec.Struct --collapse-root-models object_site {"id": 1} accepted
+msgspec.Struct --collapse-root-models object_site null accepted
+msgspec.Struct --collapse-root-models object_site {} accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs member {"id": 1} accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs member {"id": 1, "name": "a"} accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs member {} accepted
@@ -94,6 +157,15 @@ pydantic_v2.BaseModel --use-site-models-for-constrained-refs items [] accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs items [{}] accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs kept {"id": 1} accepted
 pydantic_v2.BaseModel --use-site-models-for-constrained-refs kept {} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable_member null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable_member {"id": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable_member {} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable_sibling null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable_sibling {"id": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nullable_sibling {} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs object_site {"id": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs object_site null accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs object_site {} accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs member {"id": 1} accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs member {"id": 1, "name": "a"} accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs member {} accepted
@@ -106,6 +178,15 @@ pydantic_v2.dataclass --use-site-models-for-constrained-refs items [] accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs items [{}] accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs kept {"id": 1} accepted
 pydantic_v2.dataclass --use-site-models-for-constrained-refs kept {} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable_member null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable_member {"id": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable_member {} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable_sibling null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable_sibling {"id": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nullable_sibling {} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs object_site {"id": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs object_site null accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs object_site {} accepted
 msgspec.Struct --use-site-models-for-constrained-refs member {"id": 1} accepted
 msgspec.Struct --use-site-models-for-constrained-refs member {"id": 1, "name": "a"} accepted
 msgspec.Struct --use-site-models-for-constrained-refs member {} accepted
@@ -118,6 +199,15 @@ msgspec.Struct --use-site-models-for-constrained-refs items [] accepted
 msgspec.Struct --use-site-models-for-constrained-refs items [{}] accepted
 msgspec.Struct --use-site-models-for-constrained-refs kept {"id": 1} accepted
 msgspec.Struct --use-site-models-for-constrained-refs kept {} rejected
+msgspec.Struct --use-site-models-for-constrained-refs nullable_member null accepted
+msgspec.Struct --use-site-models-for-constrained-refs nullable_member {"id": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs nullable_member {} accepted
+msgspec.Struct --use-site-models-for-constrained-refs nullable_sibling null accepted
+msgspec.Struct --use-site-models-for-constrained-refs nullable_sibling {"id": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs nullable_sibling {} accepted
+msgspec.Struct --use-site-models-for-constrained-refs object_site {"id": 1} accepted
+msgspec.Struct --use-site-models-for-constrained-refs object_site null accepted
+msgspec.Struct --use-site-models-for-constrained-refs object_site {} accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs member {"id": 1} accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs member {"id": 1, "name": "a"} accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs member {} accepted
@@ -130,6 +220,15 @@ pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs items [{}] accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs kept {"id": 1} accepted
 pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs kept {} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable_member null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable_member {"id": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable_member {} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable_sibling null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable_sibling {"id": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nullable_sibling {} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs object_site {"id": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs object_site null accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs object_site {} accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs member {"id": 1} accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs member {"id": 1, "name": "a"} accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs member {} accepted
@@ -142,3 +241,12 @@ pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-r
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs items [{}] accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs kept {"id": 1} accepted
 pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs kept {} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable_member null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable_member {"id": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable_member {} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable_sibling null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable_sibling {"id": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nullable_sibling {} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs object_site {"id": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs object_site null accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs object_site {} accepted

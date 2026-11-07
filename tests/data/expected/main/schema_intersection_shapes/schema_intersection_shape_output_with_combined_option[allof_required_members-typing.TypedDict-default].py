@@ -33,6 +33,10 @@ class Branch2(B):
 Branch: TypeAlias = Branch1 | Branch2
 
 
+class Nullable(TypedDict):
+    id: NotRequired[int]
+
+
 class Member(TypedDict):
     id: int
     name: NotRequired[str]
@@ -48,8 +52,23 @@ class Item(TypedDict):
     name: NotRequired[str]
 
 
+class NullableMember(TypedDict):
+    id: int
+
+
+class NullableSibling(TypedDict):
+    id: int
+
+
+class ObjectSite(TypedDict):
+    id: int
+
+
 class Model(TypedDict):
     member: NotRequired[Member]
     sibling: NotRequired[Sibling]
     items: NotRequired[list[Item]]
     kept: NotRequired[Required]
+    nullable_member: NullableMember | None
+    nullable_sibling: NullableSibling | None
+    object_site: ObjectSite

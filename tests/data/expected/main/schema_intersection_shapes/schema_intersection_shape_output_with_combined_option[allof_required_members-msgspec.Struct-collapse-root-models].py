@@ -32,6 +32,10 @@ class Branch2(B):
 Branch: TypeAlias = Branch1 | Branch2
 
 
+class Nullable(Struct):
+    id: int | UnsetType = UNSET
+
+
 class Member(A):
     id: int
 
@@ -44,7 +48,22 @@ class Item(A):
     id: int
 
 
+class NullableMember(Nullable):
+    id: int
+
+
+class NullableSibling(Nullable):
+    id: int
+
+
+class ObjectSite(Nullable):
+    id: int
+
+
 class Model(Struct):
+    nullable_member: NullableMember | None
+    nullable_sibling: NullableSibling | None
+    object_site: ObjectSite
     member: Member | UnsetType = UNSET
     sibling: Sibling | UnsetType = UNSET
     items: list[Item] | UnsetType = UNSET

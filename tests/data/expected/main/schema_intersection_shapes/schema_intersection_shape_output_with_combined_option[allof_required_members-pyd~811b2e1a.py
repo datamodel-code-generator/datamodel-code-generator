@@ -33,6 +33,10 @@ class Branch(RootModel[Branch1 | Branch2]):
     root: Branch1 | Branch2
 
 
+class Nullable(BaseModel):
+    id: int | None = None
+
+
 class Member(A):
     id: int
 
@@ -45,8 +49,23 @@ class Item(A):
     id: int
 
 
+class NullableMember(Nullable):
+    id: int
+
+
+class NullableSibling(Nullable):
+    id: int
+
+
+class ObjectSite(Nullable):
+    id: int
+
+
 class Model(BaseModel):
     member: Member | None = None
     sibling: Sibling | None = None
     items: list[Item] | None = None
     kept: Required | None = None
+    nullable_member: NullableMember | None
+    nullable_sibling: NullableSibling | None
+    object_site: ObjectSite
