@@ -25,7 +25,7 @@ from typing_extensions import override
 
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, non_null_types, schema_positions
 from datamodel_code_generator.parser._null_facts import NullSources, resolve_null_facts
-from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH, canonical_ref_spelling, keep_resolved_ref
+from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH, canonical_ref_spelling, validate_resolved_ref
 from datamodel_code_generator.parser.base import SPECIAL_PATH_FORMAT
 from datamodel_code_generator.reference import SCHEMA_LOCATION_KEY, is_url
 from datamodel_code_generator.types import FloatConstraint, UnionIntFloat  # noqa: TC001 - pydantic field types
@@ -501,7 +501,7 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
     @classmethod
     def _keep_resolved_ref(cls, value: Any, handler: ValidatorFunctionWrapHandler) -> Any:
         """Keep the edge of a reference keyword of a loaded document, also when validation normalizes its value."""
-        return keep_resolved_ref(value, handler(value))
+        return validate_resolved_ref(value, handler)
 
     @field_validator("required", mode="before")
     @classmethod

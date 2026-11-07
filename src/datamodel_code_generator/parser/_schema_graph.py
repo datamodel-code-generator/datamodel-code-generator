@@ -54,6 +54,7 @@ __all__ = [
     "canonical_ref_spelling",
     "keep_resolved_ref",
     "pointer_ref_spelling",
+    "validate_resolved_ref",
     "walk_schema_resources",
 ]
 
@@ -210,6 +211,17 @@ def keep_resolved_ref(value: object, result: str) -> str:
     if not isinstance(value, ResolvedRef):
         return result
     return value if result == value else ResolvedRef(result, value.edge)
+
+
+def validate_resolved_ref(value: object, handler: Callable[[object], Any]) -> Any:
+    r"""Validate the reference keyword ``value`` with ``handler``, keeping the edge of a ``ResolvedRef``.
+
+    The handler reads the plain string the value holds: pydantic-core reads a ``str`` subclass as UTF-8, which a
+    reference with a lone surrogate (the JSON escape ``\ud800``) is not.
+    """
+    if not isinstance(value, ResolvedRef):
+        return handler(value)
+    return keep_resolved_ref(value, handler(str.__str__(value)))  # noqa: PLC2801 - the plain string it holds
 
 
 class ResourceChildren(Protocol):
