@@ -22,6 +22,8 @@ OPTION_SETS = {
     "released": (),
     "forbid": ("--use-msgspec-forbid-unknown-fields",),
     "forbid_extra_fields_ignore": ("--use-msgspec-forbid-unknown-fields", "--extra-fields", "ignore"),
+    "extra_fields_forbid": ("--extra-fields", "forbid"),
+    "forbid_extra_fields_forbid": ("--use-msgspec-forbid-unknown-fields", "--extra-fields", "forbid"),
 }
 
 
@@ -33,8 +35,9 @@ A schema with `additionalProperties: false` rejects every property its `properti
 writes `extra='forbid'` for it, but a msgspec.Struct ignores unknown fields, so it decodes payloads the schema
 rejects. With this option such a Struct is written with `forbid_unknown_fields=True`, also where an inline `allOf`
 member closes it; a subclass inherits it. A schema with `patternProperties` beside `additionalProperties: false`
-admits the keys its patterns match, which msgspec cannot check, so its Struct stays open. `--extra-fields allow` or
-`ignore` and `--allow-extra-fields` keep every Struct open.""",
+admits the keys its patterns match, which msgspec cannot check, so its Struct stays open. `--extra-fields forbid`
+writes it on every Struct, as `--use-generic-base-class` does on the base class already, and `--extra-fields allow`
+or `ignore` and `--allow-extra-fields` keep every Struct open.""",
     input_schema="jsonschema/msgspec_forbid_unknown_fields.json",
     cli_args=["--output-model-type", "msgspec.Struct", "--use-msgspec-forbid-unknown-fields"],
     golden_output="main/jsonschema/msgspec_forbid_unknown_fields/msgspec_forbid_unknown_fields[forbid].py",
@@ -47,7 +50,9 @@ def test_msgspec_forbid_unknown_fields(output_file: Path, option_set: str) -> No
     Without it every Struct ignores unknown fields, as in 0.89.0. With it the closed model, the model an inline allOf
     member closes, the subclass of a closed model and the closed root reject an unknown field, as the schema does; the
     model with patternProperties beside additionalProperties: false accepts the keys its pattern admits, so it stays
-    open, and --extra-fields ignore keeps every Struct open. Every valid payload decodes under every option set.
+    open, and --extra-fields ignore keeps every Struct open. --extra-fields forbid closes every Struct with the option,
+    as with extra='forbid' of Pydantic output, so the valid payload is rejected for its extra keys (#6389), and none
+    without it, as in 0.90.0. Every valid payload decodes under every other option set.
     """
     run_main_and_assert(
         input_path=INPUT,

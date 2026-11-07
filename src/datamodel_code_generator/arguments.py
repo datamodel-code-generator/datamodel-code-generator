@@ -620,8 +620,8 @@ _toggle(
     help="msgspec.Struct output only: write forbid_unknown_fields=True on a Struct whose schema admits no property "
     "but its own (additionalProperties: false without patternProperties beside it, also in an inline allOf member), "
     "so msgspec rejects the unknown fields the schema rejects, as Pydantic output does with extra='forbid'; "
-    "--extra-fields allow or ignore and --allow-extra-fields keep it open. Without it such a Struct ignores unknown "
-    "fields, as in 0.89.0",
+    "--extra-fields forbid writes it on every Struct, also without --use-generic-base-class, and --extra-fields allow "
+    "or ignore and --allow-extra-fields keep it open. Without it such a Struct ignores unknown fields, as in 0.89.0",
 )
 _flag(
     model_options,

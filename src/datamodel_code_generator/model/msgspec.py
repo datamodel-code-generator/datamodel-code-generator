@@ -779,8 +779,9 @@ class Struct(DataModel):
     def _forbids_unknown_fields(self) -> bool:
         """Return whether the struct rejects unknown fields: its schema admits no property but its own.
 
-        The parser marks such a model under --use-msgspec-forbid-unknown-fields; --extra-fields allow or ignore,
-        --allow-extra-fields and a forbid_unknown_fields of the struct's own options keep their choice.
+        The parser marks such a model under --use-msgspec-forbid-unknown-fields, and every model with --extra-fields
+        forbid beside it; --extra-fields allow or ignore, --allow-extra-fields and a forbid_unknown_fields of the
+        struct's own options keep their choice.
         """
         data = self.extra_template_data
         return bool(

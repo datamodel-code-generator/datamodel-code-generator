@@ -1272,6 +1272,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             no_alias=config.no_alias,
             allow_extra_fields=config.allow_extra_fields,
             extra_fields=config.extra_fields,
+            use_msgspec_forbid_unknown_fields=config.use_msgspec_forbid_unknown_fields,
             enable_faux_immutability=config.enable_faux_immutability,
             use_attribute_docstrings=config.use_attribute_docstrings,
             use_single_line_docstring=config.use_single_line_docstring,
