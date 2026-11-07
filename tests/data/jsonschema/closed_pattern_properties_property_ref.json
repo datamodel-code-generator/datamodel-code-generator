@@ -1,0 +1,1 @@
+{"title": "Model", "type": "object", "properties": {"home": {"type": "object", "properties": {"street": {"type": "string"}}, "patternProperties": {"^x-": {"type": "string"}}, "additionalProperties": false}, "work": {"$ref": "#/properties/home"}}}

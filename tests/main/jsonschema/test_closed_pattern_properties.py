@@ -53,3 +53,17 @@ def test_closed_false_pattern_properties_no_warning(output_file: Path, recwarn: 
         "".join(f"{warning.message}\n" for warning in recwarn if issubclass(warning.category, UserWarning)),
         name="warnings",
     )
+
+
+def test_closed_pattern_properties_warning_once_per_location(output_file: Path, recwarn: WarningsRecorder) -> None:
+    """Warn once for a closed schema parsed twice, as a property and through a ``$ref`` to that property."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "closed_pattern_properties_property_ref.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--formatters", "builtin", "--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recwarn if issubclass(warning.category, UserWarning)),
+        name="warnings",
+    )
