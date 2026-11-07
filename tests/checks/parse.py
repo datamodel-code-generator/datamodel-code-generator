@@ -393,7 +393,10 @@ def merge_str_like_members(original: Callable[..., None]) -> Callable[..., None]
             viewed(model),
             viewed(field),
             [
-                (viewed(union), tuple(None if member is None else viewed(member) for member in members))
+                (
+                    viewed(union),
+                    tuple(member if isinstance(member, (str, tuple)) else viewed(member) for member in members),
+                )
                 for union, members in rewrites
             ],
             [viewed(member) for member in merged],

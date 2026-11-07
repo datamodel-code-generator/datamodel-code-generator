@@ -8,11 +8,14 @@ every value; without the option the generator warns about it (``parser/_passes/i
 
 With the option the decision writes one plain ``str`` in place of the first str-like member and leaves the others out,
 so the union decodes every string that one of them accepts, as ``str``. A member that is a type alias or root model of
-one str-like type counts as that type and goes too, with the constraints of its alias; the warning of
-``model/_decisions/msgspec_str_like.py:merged_str_like_union_message`` names the members each union loses. A union is
-left as it is, still warned about, when the str-like members are not all of the kinds the decision can merge: an Enum
-of str values (whose class the union would lose), a member a ``x-python-type`` annotation types, or an alias of a union
-that mixes str-like and other members.
+one str-like type, or of a union of only str-like members, counts as ``str`` and goes too, with the constraints of its
+alias; the warning of ``model/_decisions/msgspec_str_like.py:merged_str_like_union_message`` names the members each
+union loses. A merged member that admits null leaves ``None`` in the union, and a merged ``Literal`` keeps its values
+that are no str in a ``Literal`` of their own. An Enum of no str value, and an alias of a container, count as no
+str-like member. A union is left as it is, still warned about, when the str-like members are not all of the kinds the
+decision can merge: an Enum of str values (whose class the union would lose), a member a ``x-python-type`` annotation
+types, an alias of a union that mixes str-like and other members, or an alias of a ``Literal`` of str and other
+values.
 """
 
 from __future__ import annotations
@@ -21,7 +24,9 @@ from typing import TYPE_CHECKING, Final, Protocol, TypeAlias
 
 from datamodel_code_generator._container_kinds import CONTAINERS, ITEM_CONTAINERS, MAPPINGS
 from datamodel_code_generator._model_keys import model_key_of
+from datamodel_code_generator.model._decisions.enum_kind import enum_member_kinds, literal_value_kind
 from datamodel_code_generator.model._decisions.msgspec_str_like import STR, msgspec_str_like_leaf
+from datamodel_code_generator.model.enum import get_raw_enum_member_value
 from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter
 
 if TYPE_CHECKING:
@@ -40,8 +45,14 @@ class _Blocked(Exception):  # noqa: N818
     """The union holds a str-like member that the decision cannot merge."""
 
 
-_Rewrite: TypeAlias = "tuple[DataTypeView, tuple[DataTypeView | None, ...]]"
-"""A union of a field's type tree and the members it is written with; None stands for the one ``str``."""
+_NONE: Final = "None"
+
+_Member: TypeAlias = "DataTypeView | str | tuple[bool | int | str, ...]"
+"""A member a union is written with: a member it holds, a new plain type by name (``str`` or ``None``), or a new
+``Literal`` of the values a merged ``Literal`` holds besides its str values."""
+
+_Rewrite: TypeAlias = "tuple[DataTypeView, tuple[_Member, ...]]"
+"""A union of a field's type tree and the members it is written with."""
 
 
 class StrLikeUnionWriter(DecisionWriter, Protocol):
@@ -56,8 +67,9 @@ class StrLikeUnionWriter(DecisionWriter, Protocol):
     ) -> None:
         """Write the unions of ``rewrites``, types of ``field`` of ``model``, with the members each names.
 
-        ``None`` among them is a new plain ``str``; ``merged`` are the members the field loses, whose references are
-        dropped. The field gets a copy of its type tree; the nodes other fields share stay as they are.
+        A name among them is a new plain type (``str``, ``None``) and a tuple a new ``Literal`` of its values;
+        ``merged`` are the members the field loses, whose references are dropped. The field gets a copy of its type
+        tree; the nodes other fields share stay as they are.
         """
 
 
@@ -126,23 +138,27 @@ class _Classifier:
         """Return the str-like member ``member`` counts as, or None; raise ``_Blocked`` for one that cannot merge.
 
         A type alias or root model of one type counts as that type, and one of a union whose members are all
-        str-like members it merges as ``str``; an ``IntEnum`` counts as none. One of any other union that holds a
-        str-like member, any other Enum and a type an ``x-python-type`` annotation writes cannot merge.
+        str-like members it merges as ``str``; one of a container counts as none, as its items are no members. An
+        Enum counts by the values of its members: one of no str value as none. A type alias of a ``Literal`` of str
+        and other values, which the merge would lose, an Enum of str values and a type an ``x-python-type``
+        annotation writes cannot merge.
         """
         member = _unwrap(member)
         if (reference := member.reference) is None:
-            if member.python_type is not None:
+            if member.python_type is not None or (seen and _other_literals(member)):
                 raise _Blocked
             return None if member in CONTAINERS else msgspec_str_like_leaf(member)
         if id(reference) in seen or (model := self._models.get(model_key_of(reference))) is None:
             return None
         match model.form:
-            case "enum" if model.value_base == "int":
-                return None
             case "enum":
-                raise _Blocked
+                values = (get_raw_enum_member_value(field.default) for field in model.fields)
+                if "str" in enum_member_kinds(values, value_base=model.value_base):
+                    raise _Blocked
             case "alias" | "root" if len(model.fields) == 1:
                 value = _unwrap(model.fields[0].data_type)
+                if value in CONTAINERS:
+                    return None
                 if not _union_members(value):
                     return self.slot(value, seen | {id(reference)})
                 slots = self._slots(value, seen | {id(reference)})
@@ -171,24 +187,38 @@ class _Classifier:
         return [member for member, counted in slots if counted is not None]
 
 
+def _other_literals(leaf: DataTypeView) -> tuple[bool | int | str, ...]:
+    """Return the values of a ``Literal`` holding a str value besides its str values, which ``str`` does not take."""
+    if not any(literal_value_kind(value) == STR for value in leaf.literals):
+        return ()
+    return tuple(value for value in leaf.literals if literal_value_kind(value) not in {STR, "none"})
+
+
 def _rewrites(union: DataTypeView, merged: Sequence[DataTypeView]) -> list[_Rewrite]:
     """Return the member lists that write ``union`` with one ``str`` in place of ``merged``, inner unions first.
 
-    The ``str`` takes the place of the first merged member as the union is written; a union of its own among the
-    members that loses every member leaves the enclosing union.
+    The ``str`` takes the place of the first merged member as the union is written, followed by ``None`` when a
+    merged member admits null and the union writes no ``None`` of its own; a merged ``Literal`` keeps its values
+    besides its str values, which ``str`` does not take. A union of its own among the members that loses every member
+    leaves the enclosing union.
     """
     lost = {id(member) for member in merged}
+    keeps_null = any(member.admits_none for member in merged) and not any(
+        member.type == _NONE for member in _spread(_union_members(union)) if id(member) not in lost
+    )
     rewrites: list[_Rewrite] = []
     placed = False
 
-    def rewrite(owner: DataTypeView) -> tuple[DataTypeView | None, ...]:
+    def rewrite(owner: DataTypeView) -> tuple[_Member, ...]:
         nonlocal placed
-        members: list[DataTypeView | None] = []
+        members: list[_Member] = []
         for member in owner.data_types:
             if id(member) in lost:
                 if not placed:
                     placed = True
-                    members.append(None)
+                    members.extend((STR, _NONE) if keeps_null else (STR,))
+                if member.reference is None and (others := _other_literals(_unwrap(member))):
+                    members.append(others)
             elif _is_spread(member) and any(id(leaf) in lost for leaf in _spread(member.data_types)):
                 if inner := rewrite(member):
                     rewrites.append((member, inner))

@@ -226,13 +226,14 @@ class _DecisionWriter:
         self,
         model: ModelView,
         field: FieldView,
-        rewrites: Sequence[tuple[DataTypeView, Sequence[DataTypeView | None]]],
+        rewrites: Sequence[tuple[DataTypeView, Sequence[DataTypeView | str | tuple[Any, ...]]]],
         merged: Sequence[DataTypeView],
     ) -> None:
         """Write each union of ``rewrites``, a type of ``field`` of ``model``, with its members (StrLikeUnionWriter).
 
         Fields share type nodes, so the field gets a copy of its type tree, whose copies of the unions take the copies
-        of their new members and a new ``str`` for None; the copies of ``merged`` leave the users of their references.
+        of their members, a new type for a name (``str``, ``None``) and a new ``Literal`` for a tuple of values; the
+        copies of ``merged`` leave the users of their references.
         """
         original: Any = field.data_type
         copied = self._copy(original)
@@ -245,9 +246,7 @@ class _DecisionWriter:
                 self._store.detach_data_type_ref(target)
         for union, members in rewrites:
             target = copies[id(union)]
-            self._store.set_nested_data_types(
-                target, [type(target)(type="str") if member is None else copies[id(member)] for member in members]
-            )
+            self._store.set_nested_data_types(target, [_rewritten_member(target, member, copies) for member in members])
         self._merged_str_like_unions.append((
             cast("DataModel", model),
             cast("DataModelFieldBase", field),
@@ -261,6 +260,15 @@ class _DecisionWriter:
         return DecisionOutcome(
             tuple(model for model in live_models if id(model) in changed), tuple(self._merged_str_like_unions)
         )
+
+
+def _rewritten_member(owner: Any, member: Any, copies: Mapping[int, Any]) -> Any:
+    """Return the member a union of a copied type tree is written with (``merge_str_like_members``)."""
+    if isinstance(member, str):
+        return type(owner)(type=member)
+    if isinstance(member, tuple):
+        return type(owner)(literals=list(member))
+    return copies[id(member)]
 
 
 def _set_of(data_type: Any) -> Any:

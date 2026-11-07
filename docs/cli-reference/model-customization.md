@@ -4548,10 +4548,12 @@ msgspec decodes a union only if it holds at most one str-like member: `str` (wit
 Enum of str values, `bytes`, the dates and times, `UUID` and `Decimal`. A schema whose `anyOf` or `oneOf` holds two
 of them, such as a `format: uuid` string beside a plain string, writes `UUID | str`, which msgspec refuses with
 `TypeError` for every document, and the generator warns about it. With this option such a union is written with one
-`str` in place of those members, also through the type aliases of one str-like type, so it decodes every string they
-accept, as `str`, without their formats and constraints; a warning names the members each union loses. A union whose
-str-like members include an Enum, a member typed by `x-python-type` or an alias of another union is left as it is,
-with its warning.
+`str` in place of those members, also through the type aliases of one str-like type or of a union of only str-like
+members, so it decodes every string they accept, as `str`, without their formats and constraints; a warning names the
+members each union loses. A merged member that admits null leaves `None` in the union, and a merged `Literal` keeps
+its values that are no str. A union whose str-like members include an Enum of str values, a member typed by
+`x-python-type`, an alias of a union that mixes str-like and other members or an alias of a `Literal` of str and other
+values is left as it is, with its warning.
 
 !!! tip "Usage"
 
@@ -4570,35 +4572,275 @@ with its warning.
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "title": "Model",
       "type": "object",
-      "required": ["id"],
+      "required": [
+        "id"
+      ],
       "properties": {
-        "id": {"anyOf": [{"type": "string", "format": "uuid"}, {"type": "string"}]},
-        "plain_id": {"type": "string", "format": "uuid"},
-        "optional_id": {"anyOf": [{"type": "string", "format": "uuid"}, {"type": "null"}]},
-        "one_of_id": {"oneOf": [{"type": "string", "format": "uuid"}, {"type": "string", "minLength": 40}]},
-        "ids": {"type": "array", "items": {"anyOf": [{"type": "string", "format": "uuid"}, {"type": "string"}]}},
-        "url": {
+        "id": {
           "anyOf": [
-            {"type": "string", "format": "uri", "minLength": 1},
-            {"type": "string", "maxLength": 0},
-            {"type": "null"}
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "string"
+            }
           ]
         },
-        "mixed": {"anyOf": [{"type": "string", "format": "uuid"}, {"type": "string", "format": "date-time"}, {"type": "integer"}]},
-        "token": {"anyOf": [{"type": "string", "format": "uuid"}, {"const": "none"}]},
-        "nested": {"anyOf": [{"anyOf": [{"type": "string", "format": "uuid"}, {"type": "integer"}]}, {"type": "string"}]},
-        "shared": {"$ref": "#/$defs/IdOrText"},
-        "lookup": {"type": "object", "additionalProperties": {"anyOf": [{"type": "string", "format": "uuid"}, {"type": "string"}]}},
-        "level": {"anyOf": [{"type": "string", "format": "uuid"}, {"type": "string"}, {"$ref": "#/$defs/Level"}]}
+        "plain_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "optional_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "one_of_id": {
+          "oneOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "string",
+              "minLength": 40
+            }
+          ]
+        },
+        "ids": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uri",
+              "minLength": 1
+            },
+            {
+              "type": "string",
+              "maxLength": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "mixed": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "token": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "const": "none"
+            }
+          ]
+        },
+        "nested": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "shared": {
+          "$ref": "#/$defs/IdOrText"
+        },
+        "lookup": {
+          "type": "object",
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "level": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Level"
+            }
+          ]
+        },
+        "nullable_ids": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "plain_level": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/PlainLevel"
+            }
+          ]
+        },
+        "id_list": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "$ref": "#/$defs/IdList"
+            }
+          ]
+        }
       },
       "$defs": {
-        "IdOrText": {"anyOf": [{"type": "string", "format": "uuid"}, {"type": "string"}]},
-        "Color": {"type": "string", "enum": ["red", "blue"]},
-        "Level": {"type": "integer", "enum": [1, 2]},
+        "IdOrText": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "Color": {
+          "type": "string",
+          "enum": [
+            "red",
+            "blue"
+          ]
+        },
+        "Level": {
+          "type": "integer",
+          "enum": [
+            1,
+            2
+          ]
+        },
         "Paint": {
           "type": "object",
           "properties": {
-            "color": {"anyOf": [{"type": "string", "format": "uuid"}, {"$ref": "#/$defs/Color"}]}
+            "color": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "$ref": "#/$defs/Color"
+                }
+              ]
+            }
+          }
+        },
+        "PlainLevel": {
+          "enum": [
+            1,
+            2
+          ]
+        },
+        "IdList": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Code": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "enum": [
+                    "none",
+                    1
+                  ]
+                }
+              ]
+            }
           }
         }
       }
@@ -4617,7 +4859,7 @@ with its warning.
 
         from __future__ import annotations
 
-        from enum import IntEnum, StrEnum
+        from enum import Enum, IntEnum, StrEnum
         from typing import Annotated
         from uuid import UUID
 
@@ -4649,6 +4891,23 @@ with its warning.
             color: UUID | Color | UnsetType = UNSET
 
 
+        class PlainLevel(Enum):
+            int_1 = 1
+            int_2 = 2
+
+
+        type IdList = list[str]
+
+
+        class Code1(Enum):
+            none = 'none'
+            int_1 = 1
+
+
+        class Code(Struct):
+            code: UUID | Code1 | UnsetType = UNSET
+
+
         class Model(Struct):
             id: str
             plain_id: UUID | UnsetType = UNSET
@@ -4662,6 +4921,9 @@ with its warning.
             shared: IdOrText | UnsetType = UNSET
             lookup: dict[str, str] | UnsetType = UNSET
             level: str | Level | UnsetType = UNSET
+            nullable_ids: list[str | None] | UnsetType = UNSET
+            plain_level: str | PlainLevel | UnsetType = UNSET
+            id_list: UUID | IdList | UnsetType = UNSET
         ```
 
         <!-- fmt: on -->
@@ -4676,7 +4938,7 @@ with its warning.
 
         from __future__ import annotations
 
-        from enum import IntEnum, StrEnum
+        from enum import Enum, IntEnum, StrEnum
         from typing import Annotated, Literal
         from uuid import UUID
 
@@ -4708,6 +4970,23 @@ with its warning.
             color: UUID | Color | UnsetType = UNSET
 
 
+        class PlainLevel(Enum):
+            int_1 = 1
+            int_2 = 2
+
+
+        type IdList = list[UUID | str]
+
+
+        class Code1(Enum):
+            none = 'none'
+            int_1 = 1
+
+
+        class Code(Struct):
+            code: UUID | Code1 | UnsetType = UNSET
+
+
         class Model(Struct):
             id: UUID | str
             plain_id: UUID | UnsetType = UNSET
@@ -4721,6 +5000,9 @@ with its warning.
             shared: IdOrText | UnsetType = UNSET
             lookup: dict[str, UUID | str] | UnsetType = UNSET
             level: UUID | str | Level | UnsetType = UNSET
+            nullable_ids: list[UUID | str | None] | UnsetType = UNSET
+            plain_level: UUID | str | PlainLevel | UnsetType = UNSET
+            id_list: UUID | IdList | UnsetType = UNSET
         ```
 
         <!-- fmt: on -->

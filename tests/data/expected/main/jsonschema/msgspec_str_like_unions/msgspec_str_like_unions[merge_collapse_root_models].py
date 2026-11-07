@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from enum import IntEnum, StrEnum
+from enum import Enum, IntEnum, StrEnum
 from typing import Annotated
 from uuid import UUID
 
@@ -32,6 +32,20 @@ class Paint(Struct):
     color: UUID | Color | UnsetType = UNSET
 
 
+class PlainLevel(Enum):
+    int_1 = 1
+    int_2 = 2
+
+
+class Code1(Enum):
+    none = 'none'
+    int_1 = 1
+
+
+class Code(Struct):
+    code: UUID | Code1 | UnsetType = UNSET
+
+
 class Model(Struct):
     id: str
     plain_id: UUID | UnsetType = UNSET
@@ -45,3 +59,6 @@ class Model(Struct):
     shared: str | UnsetType = UNSET
     lookup: dict[str, str] | UnsetType = UNSET
     level: str | Level | UnsetType = UNSET
+    nullable_ids: list[str | None] | UnsetType = UNSET
+    plain_level: str | PlainLevel | UnsetType = UNSET
+    id_list: UUID | list[str] | UnsetType = UNSET

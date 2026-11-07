@@ -922,9 +922,11 @@ written `SerializeAsAny[...]` under `--use-serialize-as-any`. `merge_msgspec_str
 (`parser/_str_like_unions.py`, `--merge-msgspec-str-like-union-members`, msgspec only): a union that holds more than one
 of the str-like members msgspec allows one of (`model/_decisions/msgspec_str_like.py:msgspec_str_like_leaf`, which the msgspec decoding warnings read too:
 `str` with the str values of a `Literal`, `bytes`, the dates and times, `UUID`, `Decimal`, and a type alias or root
-model of one of them) is written with one `str` in place of them, decided for every union before the first write; a
-union whose str-like members include an Enum, a type an `x-python-type` annotation writes or an alias of another union
-is left as it is. The decision records each field it merged in `DecisionOutcome.merged_str_like_unions`, which
+model of one of them or of a union of only them) is written with one `str` in place of them, decided for every union
+before the first write; a merged member that admits null leaves `None` in the union, and a merged `Literal` keeps its
+values that are no str. A union whose str-like members include an Enum of str values, a type an `x-python-type`
+annotation writes, an alias of a union that mixes str-like and other members or an alias of a `Literal` of str and
+other values is left as it is. The decision records each field it merged in `DecisionOutcome.merged_str_like_unions`, which
 `warn_about_msgspec_decoding` names with the members it lost. A decision is a
 `DecisionPass`: a `DecisionSpec` (the name of its `PassDecl` in
 `DECISION_DECLS` of `scripts/pass_decls.py`, a global transform of `DECIDE` that reads and writes `Fact` members only,

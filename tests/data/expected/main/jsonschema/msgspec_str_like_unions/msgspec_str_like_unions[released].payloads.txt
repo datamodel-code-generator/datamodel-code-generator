@@ -1,10 +1,15 @@
 valid: type refused by msgspec
 valid: type refused by msgspec
 valid: type refused by msgspec
+valid: type refused by msgspec
+valid: type refused by msgspec
 invalid {"plain_id": "not-a-uuid"}: type refused by msgspec
 invalid {"ids": [1]}: type refused by msgspec
 invalid {"nested": 1.5}: type refused by msgspec
 invalid {"level": 3}: type refused by msgspec
+invalid {"plain_level": 3}: type refused by msgspec
+invalid {"id_list": [1]}: type refused by msgspec
+warning: msgspec cannot decode the union IdList: it holds the str-like members UUID, str, while a msgspec union holds only one str-like member (str and Literal str values count as one).
 warning: msgspec cannot decode the union IdOrText: it holds the str-like members UUID, str, while a msgspec union holds only one str-like member (str and Literal str values count as one).
 warning: msgspec cannot decode the union Model.id: it holds the str-like members UUID, str, while a msgspec union holds only one str-like member (str and Literal str values count as one).
 warning: msgspec cannot decode the union Model.ids: it holds the str-like members UUID, str, while a msgspec union holds only one str-like member (str and Literal str values count as one).
@@ -12,7 +17,9 @@ warning: msgspec cannot decode the union Model.level: it holds the str-like memb
 warning: msgspec cannot decode the union Model.lookup: it holds the str-like members UUID, str, while a msgspec union holds only one str-like member (str and Literal str values count as one).
 warning: msgspec cannot decode the union Model.mixed: it holds the str-like members UUID, str, while a msgspec union holds only one str-like member (str and Literal str values count as one).
 warning: msgspec cannot decode the union Model.nested: it holds the str-like members UUID, str, while a msgspec union holds only one str-like member (str and Literal str values count as one).
+warning: msgspec cannot decode the union Model.nullable_ids: it holds the str-like members UUID, str | None, while a msgspec union holds only one str-like member (str and Literal str values count as one).
 warning: msgspec cannot decode the union Model.one_of_id: it holds the str-like members UUID, OneOfId, while a msgspec union holds only one str-like member (str and Literal str values count as one).
+warning: msgspec cannot decode the union Model.plain_level: it holds the str-like members UUID, str, while a msgspec union holds only one str-like member (str and Literal str values count as one).
 warning: msgspec cannot decode the union Model.token: it holds the str-like members UUID, Literal['none'], while a msgspec union holds only one str-like member (str and Literal str values count as one).
 warning: msgspec cannot decode the union Paint.color: it holds the str-like members UUID, Color, while a msgspec union holds only one str-like member (str and Literal str values count as one).
 warning: msgspec checks all str members of a union against the constraints of each of them, so max_length, min_length of one member would reject values another member accepts; Model.url is generated without these constraints.

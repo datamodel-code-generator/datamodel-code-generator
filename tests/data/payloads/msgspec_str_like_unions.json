@@ -1,25 +1,73 @@
 {
   "valid": [
-    {"id": "123e4567-e89b-12d3-a456-426614174000"},
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000"
+    },
     {
       "id": "not-a-uuid",
       "plain_id": "123e4567-e89b-12d3-a456-426614174000",
       "optional_id": null,
       "one_of_id": "123e4567-e89b-12d3-a456-426614174000",
-      "ids": ["a", "123e4567-e89b-12d3-a456-426614174000"],
+      "ids": [
+        "a",
+        "123e4567-e89b-12d3-a456-426614174000"
+      ],
       "url": "",
       "mixed": "2020-01-01T00:00:00Z",
       "token": "none",
       "nested": 5,
       "shared": "free text",
-      "lookup": {"a": "b"}
+      "lookup": {
+        "a": "b"
+      }
     },
-    {"id": "x", "url": "https://example.com", "mixed": 3, "nested": "text", "level": 2}
+    {
+      "id": "x",
+      "url": "https://example.com",
+      "mixed": 3,
+      "nested": "text",
+      "level": 2
+    },
+    {
+      "id": "x",
+      "nullable_ids": [
+        null,
+        "a",
+        "123e4567-e89b-12d3-a456-426614174000"
+      ],
+      "plain_level": 1,
+      "id_list": [
+        "a"
+      ]
+    },
+    {
+      "id": "x",
+      "plain_level": "text",
+      "id_list": "123e4567-e89b-12d3-a456-426614174000"
+    }
   ],
   "invalid": [
-    {"plain_id": "not-a-uuid"},
-    {"ids": [1]},
-    {"nested": 1.5},
-    {"level": 3}
+    {
+      "plain_id": "not-a-uuid"
+    },
+    {
+      "ids": [
+        1
+      ]
+    },
+    {
+      "nested": 1.5
+    },
+    {
+      "level": 3
+    },
+    {
+      "plain_level": 3
+    },
+    {
+      "id_list": [
+        1
+      ]
+    }
   ]
 }
