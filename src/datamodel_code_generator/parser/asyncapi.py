@@ -32,6 +32,7 @@ from datamodel_code_generator._name_words import pascal_words
 from datamodel_code_generator._records import record
 from datamodel_code_generator._url_redaction import redact_path
 from datamodel_code_generator.deprecations import warn_deprecated
+from datamodel_code_generator.parser import _schema_documents, _schema_refs
 from datamodel_code_generator.parser.jsonschema import (
     JsonSchemaParser,
     _named_path,
@@ -419,8 +420,8 @@ class AsyncAPIParser(OpenAPIParser):
         converted_schema = _move_json_schema_definitions_to_components(converted_schema, ref_prefix=ref_prefix)
         if self._placeholder_titles:
             converted_schema.setdefault("title", name)
-        converted_schema = self._mount_converted_schema(
-            converted_schema, location, f"/{INTERNAL_SCHEMA_CONTAINER}/{converted_schema_key}"
+        converted_schema = _schema_documents.mount_converted_schema(
+            self, converted_schema, location, f"/{INTERNAL_SCHEMA_CONTAINER}/{converted_schema_key}"
         )
         self._graph.mount_in(context.raw_obj, INTERNAL_SCHEMA_CONTAINER, converted_schema_key, converted_schema)
         root_path = [*context.root_parts, f"#/{INTERNAL_SCHEMA_CONTAINER}", converted_schema_key]
@@ -478,7 +479,7 @@ class AsyncAPIParser(OpenAPIParser):
                 if self._placeholder_titles:
                     converted_schema.setdefault("title", name)
                 home = self.model_resolver.join_path(tuple(self._converted_schema_root_parts(path))).partition("#")[0]
-                converted_schema = self._mount_converted_schema(converted_schema, location, home=home)
+                converted_schema = _schema_documents.mount_converted_schema(self, converted_schema, location, home=home)
                 context = replace(
                     self._current_asyncapi_context(),
                     raw_obj=converted_schema,
@@ -527,7 +528,9 @@ class AsyncAPIParser(OpenAPIParser):
     ) -> AsyncAPIResolvedRef | None:
         if not isinstance(value, dict) or not isinstance(ref := value.get("$ref"), str):
             return None
-        resolved = self._resolve_asyncapi_ref(self._derived_ref(ref, self._raw_location(value), "$ref", ref))
+        resolved = self._resolve_asyncapi_ref(
+            _schema_refs.derived_ref(self, ref, self._raw_location(value), "$ref", ref)
+        )
         return None if tuple(resolved.path) in seen_paths else resolved
 
     def _recurse_into_ref(
@@ -662,7 +665,7 @@ class AsyncAPIParser(OpenAPIParser):
         """Return the schemas of the merged headers of a message, located where the message's own headers are."""
         location = self._member_location(message, "headers")
         if isinstance(merged, dict):
-            merged = self._mount_converted_schema(merged, location)
+            merged = _schema_documents.mount_converted_schema(self, merged, location)
         return self._iter_schema_format_schemas(name, merged, [*path, "headers"], location=location)
 
     def _dereferenced(
@@ -891,7 +894,9 @@ class AsyncAPIParser(OpenAPIParser):
                 if not self.reserved_refs.get(root_key):
                     continue
                 with self._asyncapi_context(context):
-                    for target in self._reserved_targets(list(root_key), context.raw_obj, self._reserved_ref_loaded):
+                    for target in _schema_documents.reserved_targets(
+                        self, list(root_key), context.raw_obj, self._reserved_ref_loaded
+                    ):
                         self.parse_json_pointer(context.raw_obj, target["key"], list(root_key))
             if model_count == len(self.results):
                 return
@@ -901,13 +906,15 @@ class AsyncAPIParser(OpenAPIParser):
         parsed_paths: set[tuple[str, ...]] = set()
         context_sources: dict[tuple[str, ...], AsyncAPIContext] = {}
         with self._parsing_session(lambda: self._resolve_asyncapi_unparsed_json_pointer(context_sources)):
-            for source, path_parts in self._get_context_source_path_parts():
+            for source, path_parts in _schema_documents.get_context_source_path_parts(self):
                 if self.validation:
                     warn_deprecated("cli.validation", stacklevel=2)
 
                 specification = self._index_document(self._load_source_dict(source), path_parts)
                 self.raw_obj = specification
-                self._record_document_dialect(specification, path_parts)
+                _schema_documents.record_document_dialect(
+                    self, specification, self._schema_resource_document(path_parts)
+                )
                 context_sources[tuple(path_parts)] = self._current_asyncapi_context()
                 self._collect_discriminator_schemas()
                 for schema in self._iter_asyncapi_schemas(specification, path_parts):

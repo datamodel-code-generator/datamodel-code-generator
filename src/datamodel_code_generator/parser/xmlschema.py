@@ -28,7 +28,7 @@ from datamodel_code_generator._name_words import first_upper
 from datamodel_code_generator._xmlschema_detection import XML_SCHEMA_NAMESPACE, XML_SCHEMA_TAG
 from datamodel_code_generator._xmlschema_detection import is_xml_schema_text as _is_xml_schema_text
 from datamodel_code_generator.enums import VersionMode, XMLSchemaVersion
-from datamodel_code_generator.parser import _xmlschema_literals
+from datamodel_code_generator.parser import _schema_documents, _xmlschema_literals
 from datamodel_code_generator.parser._convert_common import _copy_schema, _name_definitions
 from datamodel_code_generator.parser._null_facts import with_null
 from datamodel_code_generator.parser._xmlschema_literals import (
@@ -1500,7 +1500,9 @@ class XMLSchemaParser(JsonSchemaParser):
     def parse_raw(self) -> None:
         """Parse all XML Schema input sources into data models."""
         options = self._converter_options()
-        self._parse_converted_sources(lambda: _XMLSchemaConverter(self.base_path, self.encoding, **options))
+        _schema_documents.parse_converted_sources(
+            self, lambda: _XMLSchemaConverter(self.base_path, self.encoding, **options)
+        )
         self._register_runtime_expression_imports()
 
     def _register_runtime_expression_imports(self) -> None:

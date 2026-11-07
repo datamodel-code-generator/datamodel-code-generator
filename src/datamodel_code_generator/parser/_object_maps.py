@@ -239,9 +239,6 @@ class ObjectMapsHost(Protocol):
     def _schema_requires_model_type(self, item: JsonSchemaObject) -> bool:
         """Return whether a schema needs a model type."""
 
-    def _typed_extra_field_schema(self, obj: JsonSchemaObject) -> JsonSchemaObject | None:
-        """Return the additionalProperties schema the typed extra field of the model built from ``obj`` types."""
-
     def _without_allof_keywords(self, schema: JsonSchemaObject) -> JsonSchemaObject:
         """Return a schema without its allOf."""
 
@@ -335,7 +332,7 @@ def get_typed_additional_properties_field(
     of the values is named after ``class_name``, the model's name, which L1 records as its claim (``Composed``) while
     it records naming frames.
     """
-    if (additional_props := parser._typed_extra_field_schema(obj)) is None:  # noqa: SLF001
+    if (additional_props := typed_extra_field_schema(parser, obj)) is None:
         return None
     additional_props = parser._add_nullable_combined_schema_branches(additional_props)  # noqa: SLF001
     additional_property_name = composed_name(class_name, "additional-property")

@@ -9,6 +9,7 @@ JSON pointer walk (``get_model_by_path``, ``split_json_pointer``, ``unescape_jso
 from __future__ import annotations
 
 from dataclasses import replace
+from functools import partial
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple
 
 from typing_extensions import Sentinel
@@ -97,11 +98,6 @@ def _dump_parts_admit_null(parts: Sequence[Mapping[str, Any]], *, own_last: bool
     )
 
 
-def _dump_parts_without_own_admit_null(parts: Sequence[Mapping[str, Any]]) -> bool:
-    """Return ``_dump_parts_admit_null`` of parts none of which is the site's own."""
-    return _dump_parts_admit_null(parts, own_last=False)
-
-
 def _dump_enum_entries_skip_null(dump: Mapping[str, Any]) -> bool:
     """Return whether the ``x-enum-*`` entries of a dumped schema leave out the null of its enum (site ``enum``)."""
     return (
@@ -135,7 +131,7 @@ def _intersect_dumps(  # noqa: PLR0913
         parts,
         row,
         extras_key=JsonSchemaObject.__extra_key__,
-        parts_admit_null=_dump_parts_admit_null if own_last else _dump_parts_without_own_admit_null,
+        parts_admit_null=_dump_parts_admit_null if own_last else partial(_dump_parts_admit_null, own_last=False),
         enum_entries_skip_null=_dump_enum_entries_skip_null,
         ref_siblings_are_parts=ref_siblings_are_parts,
         legacy_rows=legacy_rows,
