@@ -168,16 +168,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 238 | Shared generation options. |
-| `GenerateConfig` | 253 | Public `generate()` configuration. |
-| `ParserConfig` | 197 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 199 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 209 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 211 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 200 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 200 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 199 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 200 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 239 | Shared generation options. |
+| `GenerateConfig` | 254 | Public `generate()` configuration. |
+| `ParserConfig` | 198 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 200 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 210 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 212 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 201 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 201 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 200 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 201 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -1569,6 +1569,7 @@ is a new named row, never an anonymous `if`.
 | `legacy-undeclared-keywords-off-literal` | the `Literal` of a const or enum takes no keyword of an undeclared kind | G03b |
 | `legacy-override-keeps-string-keywords` | `--type-overrides` keeps the string keywords the replaced type took | G03b |
 | `legacy-class-override-keeps-container` | without `--type-overrides-replace-whole-type`, a class path of `--type-overrides` keeps the container of the field's own type node, so an object map is written as a dict of the class (`dict[str, dict]` for `builtins.dict`), and every override keeps the item or property counts of the array or map it replaces whatever its type counts | #5987 |
+| `legacy-content-media-type-string-is-text` | without `--use-bytes-for-content-media-type`, a string of an OpenAPI document that has a `contentMediaType` and no `contentEncoding`, raw binary content the generated clients and servers send as a file, is typed `str` (`JsonSchemaParser._get_schema_type`), where a `format: binary` string is `bytes` | keep |
 | `legacy-spelled-union-takes-schema-type` | without `--use-x-python-type-unions`, an `x-python-type` union spelled `Optional[...]` or `Union[...]` counts as compatible with every type the schema declares (`JsonSchemaParser._is_compatible_python_type`), so the field takes the schema's type, where the same union spelled `X \| Y` types it | keep |
 | `legacy-anyurl-keeps-string-keywords` | `AnyUrl` takes every string keyword and Pydantic then drops them all at render | G03b |
 | `legacy-length-keywords-across-kinds` | without `--read-length-keywords-by-type`, a declared array holds `minLength`/`maxLength` and a declared string `minItems`/`maxItems`, written as length bounds, also where the field forms write the array branch of a union with a string beside `maxLength` as an item count | #5821 |

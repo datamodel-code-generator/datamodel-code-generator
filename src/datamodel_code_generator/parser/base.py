@@ -1401,6 +1401,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.type_overrides: dict[str, str] = config.type_overrides or {}
         self.type_overrides_replace_whole_type: bool = config.type_overrides_replace_whole_type
         self.use_x_python_type_unions: bool = config.use_x_python_type_unions
+        self.use_bytes_for_content_media_type: bool = config.use_bytes_for_content_media_type
         self._unavailable_imports: dict[tuple[str | None, str], str] = {}
         self._type_override_imports: dict[str, Import] = {
             key: Import.from_full_path(self._get_emitted_python_type_path(value.strip() or value))

@@ -1106,6 +1106,14 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "--use-default-kwarg, --use-annotated and --use-default-factory-for-optional-nested-models."
         ),
     ),
+    PresetOptionGroup(
+        title="Content media type strings as bytes",
+        config=PresetConfig(use_bytes_for_content_media_type=True),
+        description=(
+            "Type a string of an OpenAPI document that has a contentMediaType and no contentEncoding, raw binary "
+            "content, as bytes, as a format: binary string is, instead of str."
+        ),
+    ),
 )
 """The 20261104 groups and the opt-in options of the release after 0.90.0."""
 
@@ -1462,7 +1470,10 @@ def render_presets_markdown() -> str:
             "descendant (`max_length=3` of `B` instead of `max_length=5` of `A`), and "
             "`--apply-field-options-to-every-field`: a GraphQL field, a property whose schema is `true` or `false`, a "
             "required name without a property and an appended discriminator tag take the field options the other "
-            "fields take (`p_q: Annotated[Any, Field(alias='p-q')]` under `--use-annotated`)."
+            "fields take (`p_q: Annotated[Any, Field(alias='p-q')]` under `--use-annotated`), and "
+            "`--use-bytes-for-content-media-type`: a string of an OpenAPI document that has a `contentMediaType` and "
+            "no `contentEncoding`, raw binary content, is typed `bytes`, as a `format: binary` string is, instead of "
+            "`str`."
         ),
         "",
         "## Override Preset Options",

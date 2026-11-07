@@ -1343,6 +1343,10 @@
       "not_recommended": "style",
       "reason": "Attribute docstrings in pydantic configuration; a documentation choice."
     },
+    "use_bytes_for_content_media_type": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261106 presets; the recommendation starts from a preset."
+    },
     "use_closed_typed_dict": {
       "not_recommended": "runtime-behaviour",
       "reason": "Closed TypedDicts reject extra keys in type checking; the project decides."

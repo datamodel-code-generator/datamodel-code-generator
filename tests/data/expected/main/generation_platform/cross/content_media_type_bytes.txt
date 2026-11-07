@@ -1,0 +1,12 @@
+models shared True
+# content_media_type_bytes in-process sync, in-process async
+upload binary image
+  > POST /uploads [multipart/form-data; boundary=<boundary>]
+  upload(body=UploadsPostRequest(image=b'\x89PNG\xff\x00', encoded='aGk='))
+  < 204 -
+  = None
+upload UTF-8 image
+  > POST /uploads [multipart/form-data; boundary=<boundary>]
+  upload(body=UploadsPostRequest(image=b'PNG', encoded='aGk='))
+  < 204 -
+  = None

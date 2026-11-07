@@ -60,6 +60,7 @@
 - `--no-read-unevaluated-properties`
 - `--no-type-overrides-replace-whole-type`
 - `--no-use-annotated`
+- `--no-use-bytes-for-content-media-type`
 - `--no-use-closed-typed-dict`: Disable PEP 728 TypedDict closed/extra_items generation.
 - `--no-use-decimal-in-field-forms`
 - `--no-use-encoded-str-for-constrained-base64`
@@ -88,6 +89,7 @@
 - `--type-overrides`: Replace schema model types with custom Python types via JSON mapping.
 - `--type-overrides-replace-whole-type`: Make every `--type-overrides` value of a field replace the field's whol...
 - `--use-annotated`: Use typing.Annotated for Field() with constraints.
+- `--use-bytes-for-content-media-type`: Type an OpenAPI string with a `contentMediaType` and no `contentEncoding...
 - `--use-closed-typed-dict`: Generate TypedDict with PEP 728 closed/extra_items (default: enabled).
 - `--use-decimal-for-multiple-of`: Generate Decimal types for fields with multipleOf constraint.
 - `--use-decimal-in-field-forms`: Write `Decimal` for a number with `multipleOf` in the field forms too.
@@ -796,6 +798,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Use typing.Annotated for Field(). Also, `--field-
                         constraints` option will be enabled. Will become
                         default for Pydantic v2 in a future version.
+  --use-bytes-for-content-media-type, --no-use-bytes-for-content-media-type
+                        Type a string of an OpenAPI document that has a
+                        contentMediaType and no contentEncoding as bytes, as a
+                        format: binary string is: OpenAPI 3.1 writes raw
+                        binary content so, and the generated clients and
+                        servers already send and receive it as a file; without
+                        it the string is str, as in 0.90.0
   --use-closed-typed-dict, --no-use-closed-typed-dict
                         Generate TypedDict with PEP 728
                         closed=True/extra_items for additionalProperties
