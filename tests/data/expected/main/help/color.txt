@@ -852,6 +852,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         `nullable: true` root: `list[str] | None`), as the
                         root model admits it; without it the inlined type
                         rejects null, as in 0.89.0
+  --keep-self-referencing-array-items, --no-keep-self-referencing-array-items
+                        Keep the items of an array whose items name the array
+                        itself (`Node = array of Node | Leaf`:
+                        `RootModel[list[Node | Leaf]]`), and serialize the
+                        root of a type list that lists such an array as any
+                        subclass under --use-serialize-as-any; msgspec output,
+                        which cannot decode such a type alias, keeps the bare
+                        `list`; without it the array is written as a bare
+                        `list`, as in 0.90.0
   --keyword-only        Defined models as keyword only (for example
                         dataclass(kw_only=True)).
   --model-name-map MODEL_NAME_MAP

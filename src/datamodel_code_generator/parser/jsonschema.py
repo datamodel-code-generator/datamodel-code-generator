@@ -7305,7 +7305,17 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         path: list[str],
         original_name: str | None = None,
     ) -> DataType:
-        """Parse array schema into a root model with array type."""
+        """Parse array schema into a root model with array type.
+
+        A type list that lists the array beside other types and whose items name the array itself is written as the
+        union of a list of those other types and the types (``Union[List[X], X]``). Row
+        ``legacy-self-reference-array-untyped`` also rewrites a plain array whose items name it, which has no other
+        types, so its items are lost (``RootModel[list]``), and builds the rewritten root field without
+        --use-serialize-as-any, as 0.90.0 did; --keep-self-referencing-array-items leaves the row out, except in msgspec
+        output (``requires_tagged_union_discriminator``, as ``warn_about_msgspec_decoding`` reads it), whose type alias
+        of such an array would name itself through no Struct, which msgspec refuses to decode, so the bare ``list``
+        stays there.
+        """
         with self._model_frame() as frame:
             name = self._apply_title_as_name(name, obj)
             reference = self.model_resolver.add(path, name, loaded=True, class_name=True)
@@ -7314,6 +7324,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
             non_array_types = self._get_array_union_non_array_types(obj)
             direct_data_types = field.data_type.data_types
+            keeps_items = (
+                self.keep_self_referencing_array_items
+                and not self._output_model_context.requires_tagged_union_discriminator
+            )
+            rewrites_plain_array = not (non_array_types or keeps_items)
             if (
                 not self._should_localize_array_union_constraints(obj, non_array_types)
                 and direct_data_types
@@ -7322,13 +7337,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     for data_type in direct_data_types[0].all_data_types
                     if data_type.reference
                 )
-                and (len(direct_data_types) > 1 or not non_array_types)
+                and (len(direct_data_types) > 1 or rewrites_plain_array)
             ):
-                # self-reference
                 recursive_tuple_item_count = direct_data_types[0].tuple_item_count
                 declares_type_list_unique = declares_type_list_unique_items(field)
                 field = self._build_field(
-                    "root",
+                    "array-root" if keeps_items else "root",
                     build_union(
                         self.data_type,
                         [

@@ -214,6 +214,7 @@ class BaseGenerateConfig(TypedDict):
     keep_reference_null_on_collapsed_root_models: NotRequired[bool]
     collapse_constrained_root_models_as_annotated: NotRequired[bool]
     remove_unused_models_beside_type_overrides: NotRequired[bool]
+    keep_self_referencing_array_items: NotRequired[bool]
     collapse_reuse_models: NotRequired[bool]
     skip_root_model: NotRequired[bool]
     use_root_model_sequence_interface: NotRequired[bool]

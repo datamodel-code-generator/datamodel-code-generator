@@ -168,16 +168,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 241 | Shared generation options. |
-| `GenerateConfig` | 256 | Public `generate()` configuration. |
-| `ParserConfig` | 200 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 202 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 212 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 214 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 203 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 203 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 202 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 203 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 242 | Shared generation options. |
+| `GenerateConfig` | 257 | Public `generate()` configuration. |
+| `ParserConfig` | 201 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 203 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 213 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 215 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 204 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 204 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 203 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 204 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -1665,6 +1665,7 @@ is a new named row, never an anonymous `if`.
 | `legacy-unique-items-decided-before-collapse` | without `--use-unique-items-as-set-by-value`, `--use-unique-items-as-set` writes its sets in L5, before root models collapse, type overrides apply and the other modules are processed, and a set item model hashes by identity; only the class of the models the items name is read after collapse (`replace_unhashable_unique_set_to_list`) | keep |
 | `legacy-collapse-enum-literal-aliases` | without `--keep-enum-literal-aliases`, collapse inlines the `Literal` type alias of an enum definition at its uses | keep |
 | `legacy-collapse-beside-lists-and-dicts` | under `--field-constraints` without `--keep-constrained-root-models-in-every-container`, collapse keeps a constrained root model beside a list, a dict or a union only, and inlines it into a `Sequence`, `Mapping` or set | keep |
+| `legacy-self-reference-array-untyped` | without `--keep-self-referencing-array-items` (and always in msgspec output, which cannot decode a type alias that names itself through no Struct), a plain array whose items name the array itself is rewritten like a type list that lists the array beside other types, so its items are lost (`RootModel[list]`) and the rewritten root field is built without `--use-serialize-as-any` | keep |
 
 **Scope on schema objects, not parse paths.** When an option applies to part of a document, the walk that defines the
 part marks the schema objects in scope where the document is rewritten (L0), and L1 checks the mark on the object it

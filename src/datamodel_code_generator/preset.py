@@ -1133,6 +1133,14 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "--type-overrides key takes a model out of."
         ),
     ),
+    PresetOptionGroup(
+        title="Items of self-referencing arrays kept",
+        config=PresetConfig(keep_self_referencing_array_items=True),
+        description=(
+            "Keep the items of an array whose items name the array itself (list[Node | Leaf] instead of list), "
+            "except in msgspec output, which cannot decode such a type alias."
+        ),
+    ),
 )
 """The 20261104 groups and the opt-in options of the release after 0.90.0."""
 
@@ -1498,7 +1506,9 @@ def render_presets_markdown() -> str:
             "`--collapse-constrained-root-models-as-annotated`: a constrained string inside a union or a container "
             "is written in place (`Annotated[str, StringConstraints(max_length=20)]`) instead of as a root model "
             "of its own, and `--remove-unused-models-beside-type-overrides`: the models nothing uses, such as an "
-            "inlined root model, also leave a module that a model-level `--type-overrides` key takes a model out of."
+            "inlined root model, also leave a module that a model-level `--type-overrides` key takes a model out "
+            "of, and `--keep-self-referencing-array-items`: an array whose items name the array itself keeps its "
+            "items (`RootModel[list[Node | Leaf]]` instead of `RootModel[list]`)."
         ),
         "",
         "## Override Preset Options",

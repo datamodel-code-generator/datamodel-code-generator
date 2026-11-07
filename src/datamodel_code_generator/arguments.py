@@ -531,6 +531,14 @@ _toggle(
 )
 _toggle(
     model_options,
+    "--keep-self-referencing-array-items",
+    help="Keep the items of an array whose items name the array itself (`Node = array of Node | Leaf`: "
+    "`RootModel[list[Node | Leaf]]`), and serialize the root of a type list that lists such an array as any "
+    "subclass under --use-serialize-as-any; msgspec output, which cannot decode such a type alias, keeps the bare "
+    "`list`; without it the array is written as a bare `list`, as in 0.90.0",
+)
+_toggle(
+    model_options,
     "--collapse-reuse-models",
     help="When used with --reuse-model, collapse duplicate models by replacing references instead of creating "
     "empty inheritance subclasses. This eliminates 'class Foo(Bar): pass' patterns",
