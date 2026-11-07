@@ -1,0 +1,20 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "structBesideCounts": {
+      "anyOf": [{"$ref": "#/$defs/PodSpec"}, {"type": "object", "additionalProperties": {"type": "integer"}}],
+      "default": {"a": 1}
+    },
+    "itemsBesideCounts": {
+      "type": "array",
+      "items": {"anyOf": [{"$ref": "#/$defs/PodSpec"}, {"type": "object", "additionalProperties": {"type": "integer"}}]},
+      "default": [{"name": "x"}]
+    },
+    "aliasBesideCounts": {"$ref": "#/$defs/PodOrCounts", "default": {"name": "y"}}
+  },
+  "$defs": {
+    "PodSpec": {"type": "object", "properties": {"name": {"type": "string"}}},
+    "PodOrCounts": {"anyOf": [{"$ref": "#/$defs/PodSpec"}, {"type": "object", "additionalProperties": {"type": "integer"}}]}
+  }
+}

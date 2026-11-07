@@ -15,13 +15,13 @@ class Box(Struct):
         default_factory=lambda: convert([{'n': 3}, {'n': 1}], type=list[Item])
     )
     nullable_items: list[Item | None] | None | UnsetType = field(
-        default_factory=lambda: [{'n': 2}, {'n': 1}]
+        default_factory=lambda: convert([{'n': 2}, {'n': 1}], type=list[Item | None])
     )
     nullable_container: list[Item] | None | UnsetType = field(
         default_factory=lambda: convert([{'n': 5}], type=list[Item])
     )
     nonnull_nullable_items: list[Item | None] | UnsetType = field(
-        default_factory=lambda: [{'n': 6}]
+        default_factory=lambda: convert([{'n': 6}], type=list[Item | None])
     )
     empty: list[Item] | UnsetType = field(default_factory=list)
     direct_item: Item | UnsetType = field(
@@ -30,10 +30,14 @@ class Box(Struct):
     count: int | UnsetType = 9
     numbers: list[int] | UnsetType = field(default_factory=lambda: [3, 1, 2])
     matrix: list[list[Item]] | UnsetType = field(
-        default_factory=lambda: [[{'n': 4}], [{'n': 2}, {'n': 1}]]
+        default_factory=lambda: convert(
+            [[{'n': 4}], [{'n': 2}, {'n': 1}]], type=list[list[Item]]
+        )
     )
     cube: list[list[list[Item]]] | UnsetType = field(
-        default_factory=lambda: [[[{'n': 7}]], [[{'n': 6}, {'n': 5}]]]
+        default_factory=lambda: convert(
+            [[[{'n': 7}]], [[{'n': 6}, {'n': 5}]]], type=list[list[list[Item]]]
+        )
     )
     scalar_cube: list[list[list[int]]] | UnsetType = field(
         default_factory=lambda: [[[3, 1], [2]]]

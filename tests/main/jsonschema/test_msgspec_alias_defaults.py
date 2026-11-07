@@ -369,6 +369,75 @@ def test_msgspec_array_member_union_defaults(output_file: Path) -> None:
     assert_output(f"{json.dumps(actual, indent=2)}\n")
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [pytest.param([], id="future-imports"), pytest.param(["--disable-future-imports"], id="no-future-imports")],
+)
+def test_msgspec_container_struct_defaults(extra_args: list[str], output_file: Path) -> None:
+    """Convert a default of a map, a tuple, nested lists or a list of a union of Structs to the type it is written as.
+
+    ``Model()`` holds the Structs the type names, keys and positions included, as decoding its encoded defaults does;
+    a type alias of a map converts like the map, an empty one keeps the builtin factory, and defaults of types that
+    name no Struct stay values. A Struct the field's hint quotes, as the field ``PodSpec`` hides the class without
+    future imports, is named directly. Valid documents decode and invalid ones are rejected.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "msgspec_container_struct_defaults.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "msgspec.Struct",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+            *extra_args,
+        ],
+    )
+    documents = {
+        "valid": {"structMap": {"k": {"name": "o"}}, "pair": [{"name": "n"}, 2], "structMapOrString": "m"},
+        "invalid": {"structMap": {"k": {"name": 1}}},
+    }
+    with _generated_model(output_file, "msgspec_container_struct_defaults_model", "Model") as model:
+        default = model()
+        actual: dict[str, object] = {
+            "defaults": msgspec.to_builtins(default),
+            "default_types": {field: _type_names(getattr(default, field)) for field in default.__struct_fields__},
+            "decoded_defaults_equal": msgspec.json.decode(msgspec.json.encode(default), type=model) == default,
+        }
+        actual.update((label, _converted(model, document)) for label, document in documents.items())
+    assert_output(f"{json.dumps(actual, indent=2)}\n")
+
+
+def test_msgspec_struct_beside_map_defaults(output_file: Path) -> None:
+    """Keep the default of a union of a Struct beside a map a value, also inside a list or a type alias.
+
+    msgspec takes no such union, which generation warns about, so a conversion would raise in ``Model()``; the defaults
+    stay the values they are written as.
+    """
+    with pytest.warns(UserWarning, match=r"msgspec cannot decode the (union|type alias)"):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "msgspec_struct_beside_map_defaults.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--output-model-type", "msgspec.Struct", "--formatters", "builtin", "--disable-timestamp"],
+        )
+    with _generated_model(output_file, "msgspec_struct_beside_map_defaults_model", "Model") as model:
+        default = model()
+        actual = {field: _type_names(getattr(default, field)) for field in default.__struct_fields__}
+    assert_output(f"{json.dumps(actual, indent=2)}\n")
+
+
+def _type_names(value: object) -> object:
+    """Return the class names of a value and of the items, values and positions it holds."""
+    match value:
+        case dict():
+            return {key: _type_names(item) for key, item in value.items()}
+        case list() | tuple():
+            return [type(value).__name__, *map(_type_names, value)]
+    return type(value).__name__
+
+
 def _converted(model: object, document: object) -> object:
     """Return the builtins of a document converted to a generated Struct, or why msgspec rejects it."""
     try:
