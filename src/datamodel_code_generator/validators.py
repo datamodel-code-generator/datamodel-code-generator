@@ -45,7 +45,7 @@ instance again for it; without it, the names are names of the newest target.
 def _context_target(info: ValidationInfo) -> PythonVersion:
     """Return the target Python a validation context names, or the newest when it names none."""
     context = info.context
-    return context.get(_TARGET_CONTEXT_KEY, NEWEST_TARGET) if isinstance(context, dict) else NEWEST_TARGET
+    return (context.get(_TARGET_CONTEXT_KEY) if isinstance(context, dict) else None) or NEWEST_TARGET
 
 
 def _validate_python_identifier(value: str, target: PythonVersion) -> str:
@@ -83,9 +83,6 @@ def _validate_schema_python_import_path(value: Any, field_name: str, target: Pyt
     """Return the dotted import path a schema keyword names, refusing one whose names are no names of the target."""
     from datamodel_code_generator import Error  # noqa: PLC0415
 
-    if not isinstance(value, str):
-        msg = f"{field_name} must be a dotted Python identifier path: {message_repr(value)}"
-        raise Error(msg)
     try:
         return _validate_dotted_python_identifier_path(value, target)
     except ValueError as exc:
@@ -174,9 +171,7 @@ def format_validation_error(error: ValidationError) -> str:
 
 def normalize_validators(validators: Any, *, target: PythonVersion | None = None) -> list[dict[str, Any]]:
     """Validate and normalize raw validators extra template data, its names as names of the target, else the newest."""
-    model_validators = ModelValidators.model_validate(
-        {"validators": validators}, context={_TARGET_CONTEXT_KEY: NEWEST_TARGET if target is None else target}
-    )
+    model_validators = ModelValidators.model_validate({"validators": validators}, context={_TARGET_CONTEXT_KEY: target})
     return [validator.model_dump(mode="json", exclude_none=True) for validator in model_validators.validators]
 
 
