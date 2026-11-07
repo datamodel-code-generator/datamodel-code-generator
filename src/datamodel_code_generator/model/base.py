@@ -1171,20 +1171,19 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         alias of its own, and an alias without a field, stand for themselves; a type whose shape decides its keywords
         itself (``_stops_constraint_walk``) stands for itself.
         """
-        from datamodel_code_generator.model.type_alias import TypeAliasBase  # noqa: PLC0415
-
         if self._stops_constraint_walk(data_type):
             return data_type
         if (
             (reference := data_type.reference) is not None
             and (source := reference.source) is not None
             and id(source) not in seen
-            and (source.fields or not isinstance(source, TypeAliasBase))
         ):
-            alias_field = source.fields[0] if isinstance(source, TypeAliasBase) else None
-            if alias_field is None or self._alias_value_admits_null(alias_field):
-                return None
-            return self.constrained_value_type(alias_field.data_type, seen | {id(source)})
+            is_alias = isinstance(source, DataModel) and source.form == "alias"
+            if source.fields or not is_alias:
+                alias_field = source.fields[0] if is_alias else None
+                if alias_field is None or self._alias_value_admits_null(alias_field):
+                    return None
+                return self.constrained_value_type(alias_field.data_type, seen | {id(source)})
         if len(data_type.data_types) == 1 and not (
             data_type.type or data_type.reference or data_type.python_type or data_type._is_container  # noqa: SLF001
         ):
