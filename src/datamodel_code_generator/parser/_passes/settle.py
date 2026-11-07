@@ -35,6 +35,8 @@ from datamodel_code_generator.parser._passes._state import (
     ParseConfigView,
     RecursionFacts,
     mark_settle_diagnostics_reported,
+    parse_warnings_reported,
+    parse_warnings_shown_once,
 )
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.parser.generation import set_model_base_classes
@@ -478,7 +480,10 @@ def record_source_reference_paths(run: SettleRun[Any]) -> None:
 
 
 def parse_raw(parser: ParseHost, run: SettleRun[Any]) -> None:
-    """Run L0 and L1, without repeating warnings on a retry, with the naming frames open while L1 records them.
+    """Run L0 and L1, with the naming frames open while L1 records them, showing no warning a parse before showed.
+
+    A retry after a parse that finished L1 shows none of the warnings of L0 and L1; one after a parse that failed in L1
+    shows those that parse did not reach (``parse_warnings_shown_once``).
 
     The HTTP session closes either way. A parse that exceeds the recursion limit on deeply nested schemas stops with
     an error, not a partial result.
@@ -486,10 +491,11 @@ def parse_raw(parser: ParseHost, run: SettleRun[Any]) -> None:
     parser._start_naming_frames()  # noqa: SLF001
     try:
         with nesting_limit():
-            if run.suppress_parse_warnings:
+            if run.suppress_parse_warnings and parse_warnings_reported():
                 parser._run_with_suppressed_warnings(parser.parse_raw)  # noqa: SLF001
             else:
-                parser.parse_raw()
+                with parse_warnings_shown_once():
+                    parser.parse_raw()
     finally:
         parser._close_http_fetch_session()  # noqa: SLF001
 
