@@ -524,6 +524,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --use-standard-collections, --no-use-standard-collections
                         Use standard collections for type hinting (list,
                         dict). Default: enabled
+  --use-strict-str-for-base64, --no-use-strict-str-for-base64
+                        Under --strict-types str, write a format: byte string
+                        as the StrictStr that EncodedStr decodes
+                        (Annotated[StrictStr,
+                        EncodedStr(encoder=Base64Encoder)]), so Pydantic 2.10
+                        or later refuses bytes for it as for any other strict
+                        string; without it the string is Base64Str, or the str
+                        of --use-encoded-str-for-constrained-base64, which
+                        accept bytes, as in 0.90.0 (Pydantic v2 only)
   --use-subclass-enum, --no-use-subclass-enum
                         Define generic Enum class as subclass with field type
                         when enum has type (int, float, bytes, str)

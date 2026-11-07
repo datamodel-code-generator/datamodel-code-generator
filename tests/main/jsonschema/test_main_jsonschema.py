@@ -10766,7 +10766,7 @@ def test_main_decimal_multiple_of_in_field_forms(output_file: Path, extra_args: 
     assert_output("\n".join(rejected) + "\n", name="rejected")
 
 
-@pytest.mark.cli_doc(
+_ENCODED_STR_FOR_CONSTRAINED_BASE64_DOC = pytest.mark.cli_doc(
     options=["--use-encoded-str-for-constrained-base64"],
     option_description="""Check the constraints of a `format: byte` string on its base64 text in the field forms.
 
@@ -10782,6 +10782,28 @@ forms on the text, and a target Pydantic older than 2.10 warns so.""",
     golden_output="main/jsonschema/encoded_str_for_constrained_base64~main_encoded_str_for_constrained_base64[target_pydantic_2].py",
     comparison_output="main/jsonschema/encoded_str_for_constrained_base64~main_encoded_str_for_constrained_base64[use_annotated_released].py",
 )
+"""The documentation of ``--use-encoded-str-for-constrained-base64``, on the item of its example."""
+
+_STRICT_STR_FOR_BASE64_DOC = pytest.mark.cli_doc(
+    options=["--use-strict-str-for-base64"],
+    option_description="""Make a `format: byte` string strict under `--strict-types str`.
+
+`--strict-types str` writes a string as `StrictStr`, which refuses bytes, but leaves a `format: byte` string
+`Base64Str`, or the `str` that `--use-encoded-str-for-constrained-base64` writes, which accept bytes:
+`Model(b=b"aGk=")` gives `'hi'`. With this option the string is the `StrictStr` that `EncodedStr` decodes,
+`Annotated[StrictStr, EncodedStr(encoder=Base64Encoder)]`, with the constraints the field form writes in front of the
+decoding, at a property, an item, a map value, a root, a union member and a collapsed root, so Pydantic 2.10 or later
+refuses bytes for it as for any other strict string, while JSON input validates as before. Pydantic before 2.10
+accepts bytes for it, and a target Pydantic older than 2.10 warns so. Without `--strict-types str` the option
+changes nothing.""",
+    input_schema="jsonschema/encoded_str_for_constrained_base64.json",
+    cli_args=["--strict-types", "str", "--use-strict-str-for-base64"],
+    golden_output="main/jsonschema/encoded_str_for_constrained_base64~main_encoded_str_for_constrained_base64[strict_str].py",
+    comparison_output="main/jsonschema/encoded_str_for_constrained_base64~main_encoded_str_for_constrained_base64[strict_released].py",
+)
+"""The documentation of ``--use-strict-str-for-base64``, on the item of its example."""
+
+
 @pytest.mark.parametrize(
     "extra_args",
     [
@@ -10797,29 +10819,59 @@ forms on the text, and a target Pydantic older than 2.10 warns so.""",
                 (["--use-annotated"], "use_annotated"),
                 (["--field-constraints"], "field_constraints"),
                 (["--field-constraints", "--strict-types", "str"], "field_constraints_strict"),
-                (
-                    ["--use-annotated", "--strict-types", "str", "--target-pydantic-version", "2"],
-                    "strict_target_pydantic_2",
-                ),
                 (["--use-annotated", "--collapse-root-models"], "collapse_root_models"),
                 (["--output-model-type", "pydantic_v2.dataclass", "--use-annotated"], "dataclass_annotated"),
-                (["--use-annotated", "--target-pydantic-version", "2"], "target_pydantic_2"),
+            )
+        ),
+        pytest.param(
+            ["--use-annotated", "--target-pydantic-version", "2", "--use-encoded-str-for-constrained-base64"],
+            id="target_pydantic_2",
+            marks=_ENCODED_STR_FOR_CONSTRAINED_BASE64_DOC,
+        ),
+        pytest.param(
+            ["--strict-types", "str", "--use-strict-str-for-base64"],
+            id="strict_str",
+            marks=_STRICT_STR_FOR_BASE64_DOC,
+        ),
+        *(
+            pytest.param([*args, "--use-strict-str-for-base64"], id=id_)
+            for args, id_ in (
+                ([], "strict_str_without_strict_types"),
+                (["--use-annotated", "--strict-types", "str"], "use_annotated_strict_str"),
+                (["--field-constraints", "--strict-types", "str"], "field_constraints_strict_str"),
+                (
+                    ["--field-constraints", "--strict-types", "str", "--use-encoded-str-for-constrained-base64"],
+                    "encoded_field_constraints_strict_str",
+                ),
+                (
+                    [
+                        *("--use-annotated", "--strict-types", "str", "--target-pydantic-version", "2"),
+                        "--use-encoded-str-for-constrained-base64",
+                    ],
+                    "encoded_strict_str_target_pydantic_2",
+                ),
+                (
+                    ["--use-annotated", "--collapse-root-models", "--strict-types", "str"],
+                    "collapse_root_models_strict_str",
+                ),
             )
         ),
     ],
 )
 def test_main_encoded_str_for_constrained_base64(output_file: Path, extra_args: list[str]) -> None:
-    """Test ``--use-encoded-str-for-constrained-base64`` checks byte-string constraints on the base64 text.
+    """Test ``--use-encoded-str-for-constrained-base64`` and ``--use-strict-str-for-base64`` on base64 strings.
 
-    Without it ``--use-annotated`` writes ``Annotated[Base64Str, Field(...)]``, and ``--field-constraints`` an optional
-    ``Base64Str | None = Field(...)``, which check the constraints on the decoded text, as does the annotated alias of a
-    string branch beside an array in every form. With it these are
+    Without the first ``--use-annotated`` writes ``Annotated[Base64Str, Field(...)]``, and ``--field-constraints`` an
+    optional ``Base64Str | None = Field(...)``, which check the constraints on the decoded text, as does the annotated
+    alias of a string branch beside an array in every form. With it these are
     ``Annotated[str, Field(...), EncodedStr(encoder=Base64Encoder)]`` at a property, a nullable property, an item, a map
     value, a root, a union member and a collapsed root, so the payloads valid by their text are accepted and those
     invalid by their text rejected; an unconstrained string stays ``Base64Str``. A target Pydantic older than 2.10 warns
-    that it does not check them. Under ``--strict-types str`` the decoded string is ``StrictStr`` in every form, so a
-    valid text given as bytes is rejected, as a strict string refuses bytes; Pydantic before 2.10 accepts it, and a
-    target that old warns so.
+    that it does not check them. Under ``--strict-types str`` the decoded string stays ``Base64Str`` or ``str``, which
+    accept a valid text given as bytes, as in 0.90.0; with ``--use-strict-str-for-base64`` it is ``StrictStr`` in every
+    form, with or without constraints in front of the decoding, so the bytes are rejected, as a strict string refuses
+    bytes, while the JSON payloads validate as before; Pydantic before 2.10 accepts them, and a target that old warns
+    so. ``--use-strict-str-for-base64`` alone changes nothing.
     """
     name = "encoded_str_for_constrained_base64"
     with warnings.catch_warnings(record=True) as records:

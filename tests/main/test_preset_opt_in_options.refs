@@ -135,6 +135,8 @@ use-serialize-as-any-for-every-subclass-practical	main/preset_opt_in_options/pre
 use-serialize-as-any-for-every-subclass-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-serialize-as-any-for-every-subclass-standard].py
 use-single-dict-for-object-maps-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-single-dict-for-object-maps-practical].py
 use-single-dict-for-object-maps-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-single-dict-for-object-maps-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-single-dict-for-object-maps-practical].py
+use-strict-str-for-base64-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-strict-str-for-base64-practical].py
+use-strict-str-for-base64-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-strict-str-for-base64-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-strict-str-for-base64-practical].py
 use-tuple-for-closed-arrays-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-tuple-for-closed-arrays-practical].py
 use-tuple-for-closed-arrays-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-tuple-for-closed-arrays-standard].py
 use-typed-map-values-beside-other-types-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-typed-map-values-beside-other-types-practical].py

@@ -1880,6 +1880,7 @@ class DataTypeManager(ABC):
     use_decimal_in_field_forms: bool = False
     use_encoded_str_for_constrained_base64: bool = False
     use_msgspec_meta_for_map_keys: bool = False
+    use_strict_str_for_base64: bool = False
     WRITES_ENCODED_STR: ClassVar[bool] = False
     """Whether the output writes a string decoded from base64 text with its constraints in front of the decoding."""
     CONSTRAINED_TYPE_CONSUMED_KEYS: ClassVar[dict[str, tuple[str, ...]]] = dict(
@@ -2036,6 +2037,7 @@ class DataTypeManager(ABC):
             omit_redundant_constraints=self.omit_redundant_constraints,
             use_decimal_in_field_forms=self.use_decimal_in_field_forms,
             use_encoded_str_for_constrained_base64=self.use_encoded_str_for_constrained_base64,
+            use_strict_str_for_base64=self.use_strict_str_for_base64,
             read_length_keywords_by_type=self.read_length_keywords_by_type,
             read_msgspec_union_bounds_exactly=self.read_msgspec_union_bounds_exactly,
         )

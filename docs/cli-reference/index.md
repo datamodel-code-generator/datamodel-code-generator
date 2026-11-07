@@ -9,7 +9,7 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 19 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 54 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 55 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 38 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 72 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
@@ -27,7 +27,7 @@ Use these pages when you know the workflow area but not the exact option name.
 |-------|---------|--------|
 | [Model Customization](topics/model-customization.md) | 35 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 23 | Custom Templates, Generated Output, Imports, Output Formatting |
-| [Typing Customization](topics/typing-customization.md) | 35 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
+| [Typing Customization](topics/typing-customization.md) | 36 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
 | [OpenAPI](topics/openapi.md) | 14 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
 
 ## 🔗 Option Relationships
@@ -435,6 +435,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-standard-collections`](typing-customization.md#use-standard-collections)
 - [`--use-standard-primitive-types`](typing-customization.md#use-standard-primitive-types)
 - [`--use-status-code-in-response-name`](openapi-only-options.md#use-status-code-in-response-name)
+- [`--use-strict-str-for-base64`](typing-customization.md#use-strict-str-for-base64)
 - [`--use-subclass-enum`](model-customization.md#use-subclass-enum)
 - [`--use-tag-as-union-variant-name`](field-customization.md#use-tag-as-union-variant-name)
 - [`--use-title-as-name`](field-customization.md#use-title-as-name)

@@ -32,6 +32,9 @@ Legacy rows, each named by the function that decides it:
 * ``legacy-length-keywords-across-kinds`` (``declared_keywords``): without ``--read-length-keywords-by-type`` a
   declared string also holds ``minItems`` and ``maxItems`` and a declared array ``minLength`` and ``maxLength``, which
   are written as their length bounds.
+* ``legacy-lenient-base64-str`` (``strict_encoded_str``): without ``--use-strict-str-for-base64``,
+  ``--strict-types str`` leaves a ``format: byte`` string ``Base64Str``, or the ``str`` that ``EncodedStr`` decodes,
+  which accept bytes.
 
 This module is a leaf (the standard library, ``typing_extensions``, ``enums`` and ``_requirements``): ``types.py``
 builds the public tables of ``DataTypeManager`` from it while it is imported, and the model package imports
@@ -585,7 +588,9 @@ class ConstraintOptions:
     of a field form with ``multipleOf`` as a ``Decimal`` too, strict in every form (``decimal_field_form``,
     ``strict_decimal_multiple``). ``use_encoded_str_for_constrained_base64``
     (``--use-encoded-str-for-constrained-base64``) writes the constraints of a string decoded from base64 text in
-    front of its decoding in the field forms (``encoded_str_field_form``). ``read_length_keywords_by_type``
+    front of its decoding in the field forms (``encoded_str_field_form``). ``use_strict_str_for_base64``
+    (``--use-strict-str-for-base64``) decodes the base64 text of a string under ``--strict-types str`` to a
+    ``StrictStr`` (``strict_encoded_str``). ``read_length_keywords_by_type``
     (``--read-length-keywords-by-type``) reads the string and the array keywords for their own kind only
     (``length_keywords_by_type``). ``read_msgspec_union_bounds_exactly`` (``--read-msgspec-union-bounds-exactly``)
     reads the bounds the check of a msgspec union compares as the schema writes them (``union_bound_arithmetic``).
@@ -594,6 +599,7 @@ class ConstraintOptions:
     omit_redundant_constraints: bool = False
     use_decimal_in_field_forms: bool = False
     use_encoded_str_for_constrained_base64: bool = False
+    use_strict_str_for_base64: bool = False
     read_length_keywords_by_type: bool = False
     read_msgspec_union_bounds_exactly: bool = False
 
@@ -707,6 +713,16 @@ def encoded_str_field_form(options: ConstraintOptions) -> bool:
     text, as in 0.88.0.
     """
     return options.use_encoded_str_for_constrained_base64
+
+
+def strict_encoded_str(options: ConstraintOptions, *, strict: bool) -> bool:
+    """Return whether a string decoded from base64 text is the ``StrictStr`` that ``EncodedStr`` decodes.
+
+    It is under ``--strict-types str`` (``strict``) with ``use_strict_str_for_base64``, so Pydantic 2.10 or later
+    refuses bytes for it; otherwise row ``legacy-lenient-base64-str`` writes ``Base64Str``, or the ``str`` of
+    ``encoded_str_field_form``, which accept bytes, as in 0.90.0.
+    """
+    return strict and options.use_strict_str_for_base64
 
 
 def length_keywords_by_type(options: ConstraintOptions) -> bool:
