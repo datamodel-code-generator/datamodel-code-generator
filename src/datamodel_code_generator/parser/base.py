@@ -236,7 +236,6 @@ from datamodel_code_generator.parser._passes.imports import (
 from datamodel_code_generator.parser._pipeline import PARSE_CALLER, Runner, parse_caller
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
 from datamodel_code_generator.parser._serialize_as_any import SERIALIZE_AS_ANY_FOR_EVERY_SUBCLASS
-from datamodel_code_generator.parser._set_alias_members import LIST_SET_ALIAS_MEMBERS
 from datamodel_code_generator.parser._stdout_repair import _TOP_LEVEL_FUTURE_IMPORT_PATTERN
 from datamodel_code_generator.parser._tag_plan import TagCapabilities, TagPlan, tag_capabilities
 from datamodel_code_generator.parser._union_constraints import OMIT_UNTAKEN_UNION_CONSTRAINTS
@@ -697,7 +696,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         SERIALIZE_AS_ANY_FOR_EVERY_SUBCLASS,
         OMIT_UNTAKEN_UNION_CONSTRAINTS,
         WRITE_UNIQUE_ITEMS_AS_SETS,
-        LIST_SET_ALIAS_MEMBERS,
     )
     """The decisions of the decision phase, in registration order; ``parser/_phases.py`` says how they run."""
     _http_fetch_session: _HTTPFetchSession | None = None

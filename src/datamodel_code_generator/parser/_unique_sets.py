@@ -44,7 +44,6 @@ from datamodel_code_generator.parser._passes._shared import (
     plan_unique_sets,
 )
 from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter
-from datamodel_code_generator.parser._set_alias_members import listed_members
 from datamodel_code_generator.types import JSON_SCALAR_VALUE_TYPES
 
 if TYPE_CHECKING:
@@ -93,7 +92,6 @@ class _ByValue:
         "_keeps_tuples",
         "aliases",
         "class_hash",
-        "left",
         "live",
         "value_keys",
     )
@@ -108,8 +106,6 @@ class _ByValue:
         self._alias_order = self._aliases_first()
         self.aliases: dict[ModelKey, bool] = {}
         self._alias_sets: dict[ModelKey, set[int]] = {}
-        self.left: set[int] = set()
-        """The union members, by id, that the union writes as another array of it (``listed_members``)."""
 
     def _named_aliases(self, key: ModelKey) -> Iterator[ModelKey]:
         """Yield the type aliases with a value that the value of the alias ``key`` names, by key."""
@@ -252,8 +248,7 @@ class _ByValue:
         """Return the array or mapping of ``members`` that takes an array or object value, with the sets of its tree.
 
         The members of a union are read in order, a type alias as its value, with the lists its plan makes sets, and
-        the first that takes the value (``_takes``) is it; a member that ``left`` holds is read as the array the union
-        writes it as, which a later member is.
+        the first that takes the value (``_takes``) is it.
         """
         kind = MAPPINGS if isinstance(value, Mapping) else ARRAYS if isinstance(value, (list, tuple)) else None
         if kind is None:
@@ -262,8 +257,6 @@ class _ByValue:
         followed: set[ModelKey] = set()
         while pending:
             node, node_sets = pending.pop()
-            if id(node) in self.left:
-                continue
             if (reference := node.reference) is not None:
                 if (key := model_key_of(reference)) in self._alias_sets and key not in followed:
                     followed.add(key)
@@ -376,15 +369,6 @@ def _write_unique_items_as_sets(facts: FinalFacts, writer: UniqueSetsWriter) -> 
         if kept == reading.value_keys:
             break
         reading.value_keys = kept
-    if not facts.options.decodes_value_unions:
-        planned = {id(node) for plan in plans.values() for node in plan.sets}
-        reading.left = {
-            id(node)
-            for _, _, listed in listed_members(
-                facts.live_models, lambda node: id(node) in planned, facts.options.meta_field_keys
-            )
-            for node, _ in listed
-        }
     fields = [(model, field) for model in facts.live_models for field in model.fields]
     defaults = {id(field): reading.written_default(field, plans[id(field)]) for _, field in fields}
     additional = [
