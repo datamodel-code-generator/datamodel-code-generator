@@ -112,6 +112,7 @@ __all__ = [
     "struct_tag_field",
     "struct_tag_options",
     "struct_tag_refused",
+    "struct_union_refusal",
     "tag_field_kept",
     "tag_field_matches",
     "tag_key",
@@ -690,6 +691,21 @@ def struct_tag_clash(
     if shared := [same[0] for same in by_key.values() if len(same) > 1]:
         return "shared-tags", shared
     return None
+
+
+def struct_union_refusal(
+    tags: Sequence[tuple[Any, Any] | None], /
+) -> tuple[StructTagClash | Literal["untagged"], list[Any]] | None:
+    """Return why msgspec refuses a union of distinct Structs with these tags (``None``: untagged), or None.
+
+    msgspec decodes a union of several Struct types only if all are tagged (else ``untagged``) and their tags do not
+    clash (``struct_tag_clash``); a union of one Struct needs no tag.
+    """
+    if len(tags) < 2:  # noqa: PLR2004
+        return None
+    if len(tagged := [tag for tag in tags if tag is not None]) < len(tags):
+        return "untagged", []
+    return struct_tag_clash(tagged, "legacy-python-equality")
 
 
 def struct_tag_options(*, own_tag: Any, own_tag_field: Any, bases: Sequence[tuple[Any, Any]]) -> tuple[Any, Any]:

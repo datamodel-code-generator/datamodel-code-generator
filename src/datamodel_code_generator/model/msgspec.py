@@ -40,6 +40,7 @@ from datamodel_code_generator.model._decisions.tag_value import (
     struct_discriminator_tag,
     struct_tag_options,
     struct_tag_refused,
+    struct_union_refusal,
 )
 from datamodel_code_generator.model._decisions.union_assembly import join_union
 from datamodel_code_generator.model._render_plan import (
@@ -567,10 +568,10 @@ def _reads_arrays(struct: Struct) -> bool:
 def _names_structs(data_type: DataType, aliases: frozenset[int], *, containers: bool = True) -> bool:
     """Return whether a default converts to a type: whether it names a Struct, also through the type aliases it names.
 
-    A type that holds a union of a mapping beside other members converts to none: msgspec takes no Struct beside a
-    mapping, and the default stays the value, as beside a dict member of the field's union. ``aliases`` holds the
-    aliases, by id, whose values are read already. Without ``containers`` the items and values of arrays and mappings
-    are left out, as an empty default holds none.
+    A type that holds a union of a mapping beside other members, or of Structs msgspec refuses (``_refused_structs``),
+    converts to none: msgspec takes neither, and the default stays the value, as beside a dict member of the field's
+    union. ``aliases`` holds the aliases, by id, whose values are read already. Without ``containers`` the items and
+    values of arrays and mappings are left out, as an empty default holds none.
     """
     pending, followed, found = [data_type], set(aliases), False
     while pending:
@@ -581,10 +582,24 @@ def _names_structs(data_type: DataType, aliases: frozenset[int], *, containers: 
                 followed.add(id(source))
                 pending.append(source.fields[0].data_type)
         elif containers or not (current in ARRAYS or current in MAPPINGS):
-            if len(members := current.data_types) > 1 and any(member in MAPPINGS for member in members):
+            if len(members := current.data_types) > 1 and (
+                any(member in MAPPINGS for member in members) or _refused_structs(members)
+            ):
                 return False
             pending.extend(members)
     return found
+
+
+def _refused_structs(members: Sequence[DataType]) -> bool:
+    """Return whether msgspec refuses the Structs that union members name as a type (``struct_union_refusal``)."""
+    structs = {
+        id(source): source
+        for member in members
+        if member.reference is not None
+        and isinstance(source := member.reference.source, DataModel)
+        and source.REQUIRES_TAGGED_UNION_DISCRIMINATOR
+    }
+    return struct_union_refusal([struct.discriminator_tag for struct in structs.values()]) is not None
 
 
 def _is_instance_field(field: DataModelFieldBase) -> bool:

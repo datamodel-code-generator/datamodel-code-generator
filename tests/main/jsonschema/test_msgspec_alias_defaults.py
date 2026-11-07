@@ -438,6 +438,25 @@ def test_msgspec_struct_beside_map_defaults(output_file: Path) -> None:
     assert_output(f"{json.dumps(actual, indent=2)}\n")
 
 
+def test_msgspec_untagged_structs_list_defaults(output_file: Path) -> None:
+    """Keep the default of a list of a union of untagged Structs a value, also through a type alias.
+
+    msgspec takes no union of Structs that are not all tagged, which generation warns about, so a conversion to
+    ``list[Circle | Square]`` would raise in ``Model()``; the defaults stay the values they are written as.
+    """
+    with pytest.warns(UserWarning, match=r"msgspec cannot decode the union"):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "msgspec_untagged_structs_list_defaults.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=["--output-model-type", "msgspec.Struct", "--formatters", "builtin", "--disable-timestamp"],
+        )
+    with _generated_model(output_file, "msgspec_untagged_structs_list_defaults_model", "Model") as model:
+        default = model()
+        actual = {field: _type_names(getattr(default, field)) for field in default.__struct_fields__}
+    assert_output(f"{json.dumps(actual, indent=2)}\n")
+
+
 @pytest.mark.parametrize(
     "target",
     [

@@ -1,0 +1,63 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "shapes": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Circle"
+          },
+          {
+            "$ref": "#/$defs/Square"
+          }
+        ]
+      },
+      "default": [
+        {
+          "radius": 1
+        }
+      ]
+    },
+    "aliasShapes": {
+      "$ref": "#/$defs/Shapes",
+      "default": [
+        {
+          "side": 2
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "Circle": {
+      "type": "object",
+      "properties": {
+        "radius": {
+          "type": "integer"
+        }
+      }
+    },
+    "Square": {
+      "type": "object",
+      "properties": {
+        "side": {
+          "type": "integer"
+        }
+      }
+    },
+    "Shapes": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Circle"
+          },
+          {
+            "$ref": "#/$defs/Square"
+          }
+        ]
+      }
+    }
+  }
+}
