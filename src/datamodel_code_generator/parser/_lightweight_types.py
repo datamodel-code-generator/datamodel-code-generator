@@ -1,10 +1,10 @@
 """The lightweight types of the JSON Schema parser (L1): types read from a schema without building a model.
 
 The primitive members of an allOf merge into one schema (the intersection of their constraints), an array becomes a
-list or tuple of the types of its items, and a false schema contributes no type. Each function takes the parser
-through ``LightweightTypesHost``, which ``JsonSchemaParser`` satisfies structurally; the methods other parts of the
-parser and tests call stay on the parser as delegators to these functions (``parser/jsonschema.py``), and these
-functions call them through the parser.
+list or tuple of the types of its items, beside the other members of its type list, and a false schema contributes no
+type. Each function takes the parser through ``LightweightTypesHost``, which ``JsonSchemaParser`` satisfies
+structurally; the methods other parts of the parser and tests call stay on the parser as delegators to these functions
+(``parser/jsonschema.py``), and these functions call them through the parser.
 """
 
 from __future__ import annotations
@@ -26,12 +26,13 @@ from datamodel_code_generator.parser._intersection import (
 from datamodel_code_generator.parser._origins import with_unique_items
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
 from datamodel_code_generator.parser._schema_reading import _numeric_type_domain
-from datamodel_code_generator.types import ANY, DataType, UnionIntFloat
+from datamodel_code_generator.types import ANY, DataType, UnionIntFloat, build_union
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
     from datamodel_code_generator.enums import AllOfMergeMode
+    from datamodel_code_generator.parser._null_facts import NullFacts, NullSite
     from datamodel_code_generator.parser._schema_graph import _TargetNode
 
 __all__ = [
@@ -113,6 +114,15 @@ class LightweightTypesHost(Protocol):
 
     def _load_ref_schema_object(self, ref: str) -> JsonSchemaObject:
         """Load the schema object a reference names."""
+
+    def _get_array_union_non_array_types(self, obj: JsonSchemaObject) -> tuple[str, ...]:
+        """Return the members of a type list beside ``array`` other than null."""
+
+    def _get_format_data_type(self, obj: JsonSchemaObject, type_: str) -> DataType:
+        """Map a type and the format of ``obj`` without constraints."""
+
+    def _null_facts(self, obj: JsonSchemaObject, site: NullSite) -> NullFacts:
+        """Return what ``site`` reads from where the null of ``obj`` comes from."""
 
 
 def merge_primitive_schemas(parser: LightweightTypesHost, items: list[JsonSchemaObject]) -> JsonSchemaObject:
@@ -211,7 +221,11 @@ def build_lightweight_array_type(  # noqa: PLR0913, PLR0917
     max_depth: int,
     max_union_elements: int,
 ) -> DataType:
-    """Build a lightweight list type from array item schemas."""
+    """Build a lightweight list type from array item schemas, in a union with the other members of a type list.
+
+    The members beside ``array`` and null are their types and formats without constraints, ordered as the field of
+    the schema orders them (``legacy-non-array-first``), and the union admits null where the field does.
+    """
     item_schemas, _, _, tuple_item_count = parser._get_array_item_schemas(  # noqa: SLF001
         schema,
         include_true_tail_schema=True,
@@ -234,7 +248,7 @@ def build_lightweight_array_type(  # noqa: PLR0913, PLR0917
     )
     if not item_types and not (is_homogeneous_tuple and tuple_item_count == 0):
         item_types = [DataType(type=ANY, import_=IMPORT_ANY)]
-    return with_unique_items(
+    array_type = with_unique_items(
         parser.data_type(
             data_types=item_types,
             is_list=not is_homogeneous_tuple,
@@ -242,6 +256,17 @@ def build_lightweight_array_type(  # noqa: PLR0913, PLR0917
             tuple_item_count=tuple_item_count if is_homogeneous_tuple else None,
         ),
         schema.uniqueItems,
+    )
+    other_types = [
+        parser._get_format_data_type(schema, type_)  # noqa: SLF001
+        for type_ in parser._get_array_union_non_array_types(schema)  # noqa: SLF001
+    ]
+    return build_union(
+        parser.data_type,
+        [array_type, *other_types],
+        "legacy-non-array-first",
+        nullable=bool(parser._null_facts(schema, "type-union").admits_null),  # noqa: SLF001
+        roles=("member", *("non-array",) * len(other_types)),
     )
 
 

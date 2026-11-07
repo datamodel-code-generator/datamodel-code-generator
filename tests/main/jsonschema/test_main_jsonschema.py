@@ -9584,6 +9584,50 @@ def test_main_unique_items_as_set_extra_items(extra_args: list[str], expected_re
     )
 
 
+def test_main_typed_dict_extra_items_array_type_list(tmp_path: Path, output_file: Path) -> None:
+    """Write the members beside ``array`` of a type list in additionalProperties in a TypedDict's ``extra_items``.
+
+    ``extra_items`` is the type of a property with the same schema: ``Mixed`` takes ``str | list[int]`` and ``Nullable``
+    ``int | list[int] | None``. Up to 0.89.0 ``extra_items`` was the list alone, which rejects the strings, integers and
+    nulls the schema accepts (#6375).
+    """
+    type_lists = {"Mixed": ["array", "string"], "Nullable": ["array", "integer", "null"]}
+    input_file = tmp_path / "extra_items_array_type_list.json"
+    input_file.write_text(
+        json.dumps({
+            "title": "Model",
+            "type": "object",
+            "properties": {name.lower(): {"$ref": f"#/$defs/{name}"} for name in type_lists},
+            "$defs": {
+                name: {
+                    "type": "object",
+                    "properties": {"p": {"type": type_list, "items": {"type": "integer"}}},
+                    "additionalProperties": {"type": type_list, "items": {"type": "integer"}},
+                }
+                for name, type_list in type_lists.items()
+            },
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=["--output-model-type", "typing.TypedDict", "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="extra_items_array_type_list",
+        model_name="Model",
+        valid_json='{"mixed": {"p": "a", "x": "abc", "y": [1]}, "nullable": {"x": null, "y": 2, "z": [3]}}',
+        invalid_json='{"mixed": {"x": 1}}',
+        expected_error_type="string_type",
+        expected_repr="{'mixed': {'p': 'a', 'x': 'abc', 'y': [1]}, 'nullable': {'x': None, 'y': 2, 'z': [3]}}",
+    )
+
+
 @pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass"])
 def test_main_nested_array_item_counts(output_model: str, tmp_path: Path, output_file: Path) -> None:
     """Write the item counts of a nested array on a type alias of its own, as the member of a type list takes them.
