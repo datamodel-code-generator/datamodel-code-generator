@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Tally",
+  "type": "object",
+  "x-python-import": {"module": "collections", "name": "Counter"},
+  "additionalProperties": {"type": "integer"}
+}

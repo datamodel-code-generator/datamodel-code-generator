@@ -5,6 +5,7 @@
   "properties": {
     "empty": {"$ref": "other.json#/components/Empty"},
     "options": {"$ref": "other.json#/components/Options"},
-    "count": {"$ref": "other.json#/components/Count"}
+    "count": {"$ref": "other.json#/components/Count"},
+    "tally": {"$ref": "tally.json"}
   }
 }

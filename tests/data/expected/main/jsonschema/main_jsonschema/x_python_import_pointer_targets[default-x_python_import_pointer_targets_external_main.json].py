@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from collections import OrderedDict
+from collections import Counter, OrderedDict
 
 from pydantic import BaseModel, RootModel, conint
 
@@ -20,3 +20,4 @@ class Root(BaseModel):
     empty: Empty | None = None
     options: OrderedDict | None = None
     count: Count | None = None
+    tally: Counter | None = None

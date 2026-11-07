@@ -8539,12 +8539,24 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
 
     def _note_python_import_target(self, target: YamlValue, path: list[str]) -> None:
-        """Note the model a JSON pointer target parses into at ``path`` when its ``x-python-import`` types its uses.
+        """Note the model a ``$ref`` target parses into at ``path`` when its ``x-python-import`` types its uses.
 
-        Only a base that names the schema needs that model; unnamed, it is left out with the unused models (#5533).
+        The target is that of a JSON pointer or the root of a document a ``$ref`` names (``_parse_document_root``). Only
+        a base that names the schema needs that model; unnamed, it is left out with the unused models (#5533).
         """
         if self._reads_as_python_import(target, path):
             self._python_import_target_paths.add(self.model_resolver.join_path(tuple(path)))
+
+    def _parse_document_root(
+        self, name: str, obj: JsonSchemaObject, raw: dict[str, Any], path: list[str], *, referenced: bool
+    ) -> None:
+        """Parse the root of a document into its model, noted as a target where a ``$ref`` names the document.
+
+        The root of an input document is no target: it keeps its model (``_note_python_import_target``).
+        """
+        if referenced:
+            self._note_python_import_target(raw, path)
+        self.parse_obj(name, obj, path)
 
     def _check_version_specific_features(
         self,
@@ -9341,7 +9353,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         self._note_python_import_target(models, path)
                         self.parse_obj(model_name, self._validate_pointer_target(raw, object_paths, models, path), path)
                     elif not self.skip_root_model:
-                        self.parse_obj(obj_name, root_obj, path_parts or ["#"])
+                        self._parse_document_root(
+                            obj_name, root_obj, raw, path_parts or ["#"], referenced=ref is not None
+                        )
                     for key, model, path in definition_entries:
                         reference = self.model_resolver.references.get(self.model_resolver.join_path(tuple(path)))
                         if reference is None:
