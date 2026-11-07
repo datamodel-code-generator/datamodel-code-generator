@@ -6,15 +6,20 @@ the user sees reports them; a parse again after one that failed shows only the w
 warning names the frame its ``stacklevel`` counts without the wrapper frames that ``--debug`` puts around the functions
 it traces (``is_tracer_frame``). ``shown_once`` and ``first_report`` record a warning as it is shown, past the filters
 (``_showing``), so a block whose warnings the filters ignore, as inside ``quiet``, leaves its keys to a later report.
-The module imports only the standard library, so every layer can import it.
+A block checks only the warnings its own thread shows, through one ``warnings.showwarning`` hook that the open blocks of
+every thread share, and the last of them to close puts back the hook it replaced, so generations that overlap in
+threads leave no hook of a closed block in place. The module imports only the standard library, so every layer can
+import it.
 """
 
 from __future__ import annotations
 
 import warnings
 from contextlib import contextmanager
+from contextvars import ContextVar
 from functools import partial
-from typing import TYPE_CHECKING, Final, TextIO, TypeVar
+from threading import Lock
+from typing import TYPE_CHECKING, Final, TextIO, TypeVar, final
 from warnings import catch_warnings, simplefilter
 
 if TYPE_CHECKING:
@@ -67,30 +72,61 @@ def first_report(seen: set[_KeyT], key: _KeyT) -> Generator[bool, None, None]:
         yield True
 
 
+@final
+class _SharedHook:
+    """The ``warnings.showwarning`` hook that the open blocks of every thread share.
+
+    It counts the open blocks (``users``) and keeps the hook it replaced, which shows the warnings the checks keep.
+    """
+
+    def __init__(self) -> None:
+        self.lock = Lock()
+        self.users = 0
+        self.replaced: Callable[..., None] = warnings.showwarning
+
+
+_HOOK: Final = _SharedHook()
+_CHECKS: Final[ContextVar[tuple[Callable[[ShownWarning], bool], ...]]] = ContextVar("shown_warning_checks", default=())
+"""The checks of the blocks open in this thread, the outermost first."""
+
+
 @contextmanager
 def _showing(show: Callable[[ShownWarning], bool]) -> Generator[None, None, None]:
     """Show a warning the block emits only where ``show`` returns True for its text, category and location.
 
-    The filters apply first, as to any warning: ``show`` sees only the warnings they leave, the ones shown.
+    The filters apply first, as to any warning: ``show`` sees only the warnings they leave, the ones shown, and of
+    those only the ones its own thread shows (``_show_kept``).
     """
-    show_warning = warnings.showwarning
-
-    def show_kept(  # noqa: PLR0913, PLR0917
-        message: Warning | str,
-        category: type[Warning],
-        filename: str,
-        lineno: int,
-        file: TextIO | None = None,
-        line: str | None = None,
-    ) -> None:
-        if show((str(message), category, filename, lineno)):
-            show_warning(message, category, filename, lineno, file, line)
-
-    warnings.showwarning = show_kept  # ty: ignore[invalid-assignment]
+    token = _CHECKS.set((*_CHECKS.get(), show))
+    with _HOOK.lock:
+        if warnings.showwarning is not _show_kept:
+            _HOOK.replaced = warnings.showwarning
+            warnings.showwarning = _show_kept  # ty: ignore[invalid-assignment]
+        _HOOK.users += 1
     try:
         yield
     finally:
-        warnings.showwarning = show_warning
+        with _HOOK.lock:
+            _HOOK.users -= 1
+            if not _HOOK.users and warnings.showwarning is _show_kept:
+                warnings.showwarning = _HOOK.replaced
+        _CHECKS.reset(token)
+
+
+def _show_kept(  # noqa: PLR0913, PLR0917
+    message: Warning | str,
+    category: type[Warning],
+    filename: str,
+    lineno: int,
+    file: TextIO | None = None,
+    line: str | None = None,
+) -> None:
+    """Show a warning that every block open in this thread keeps, the innermost asked first, through the hook replaced.
+
+    A thread with no block open shows each warning as the hook replaced does.
+    """
+    if all(show((str(message), category, filename, lineno)) for show in reversed(_CHECKS.get())):
+        _HOOK.replaced(message, category, filename, lineno, file, line)
 
 
 def _first_record(seen: set[_KeyT], key: _KeyT) -> bool:

@@ -6516,6 +6516,45 @@ def test_generate_serializes_cwd_dependent_extensions(tmp_path: Path) -> None:
     assert_file_content(second_output, "generate_with_empty_formatters.py")
 
 
+def test_generate_in_overlapping_threads_keeps_the_warning_hook(recwarn: pytest.WarningsRecorder) -> None:
+    """Show the warning of a later generation after two generations overlap in threads, each inside its parse.
+
+    The parse that ends first leaves the hook its warnings are shown through to the other, and the one that ends last
+    puts back the hook it replaced, so no hook of an ended parse stays to drop the warning a later generation shows.
+    """
+    warnings.simplefilter("always")
+    hook = warnings.showwarning
+    options = {
+        "input_": JSON_SCHEMA_DATA_PATH / "closed_pattern_properties.json",
+        "input_file_type": InputFileType.JsonSchema,
+        "formatters": [],
+    }
+
+    def generate_held(entered: Event, release: Event) -> str | GeneratedModules | None:
+        def hold(name: str) -> str:
+            entered.set()
+            release.wait(timeout=5)
+            return name
+
+        return generate(**options, custom_class_name_generator=hold)
+
+    first_entered, first_release, second_entered, second_release = Event(), Event(), Event(), Event()
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        first = executor.submit(generate_held, first_entered, first_release)
+        observations = [f"first_inside={first_entered.wait(timeout=5)}"]
+        second = executor.submit(generate_held, second_entered, second_release)
+        observations.append(f"second_inside={second_entered.wait(timeout=5)}")
+        first_release.set()
+        first.result(timeout=5)
+        second_release.set()
+        second.result(timeout=5)
+    observations.append(f"hook_kept={warnings.showwarning is hook}")
+    shown_before = len(recwarn)
+    generate(**options)
+    observations.extend(str(warning.message) for warning in list(recwarn)[shown_before:])
+    assert_output("\n".join((*observations, "")))
+
+
 @pytest.mark.allow_direct_assert
 def test_generate_does_not_capture_legacy_output_cwd(tmp_path: Path) -> None:
     """Resolve a normal request after a cwd-dependent request restores the caller context."""

@@ -671,6 +671,8 @@ replace	main/main_general/generate_custom_file_header_line_breaks_end_as_file_li
 	main/generate_with_empty_formatters.py
 [test_generate_import_overrides]
 	main/import_overrides.py
+[test_generate_in_overlapping_threads_keeps_the_warning_hook]
+	main/main_general/generate_in_overlapping_threads_keeps_the_warning_hook.txt
 [test_generate_keeps_existing_path_string_input]
 	main/generate_keeps_existing_path_string_input.py
 [test_generate_keeps_non_path_string_input]
