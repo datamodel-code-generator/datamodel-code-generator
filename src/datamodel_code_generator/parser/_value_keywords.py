@@ -671,17 +671,13 @@ def is_constraints_field(parser: ValueKeywordsHost, obj: JsonSchemaObject, data_
     ``Literal`` (``data_type``), and a oneOf or anyOf whose consts are, leave them to its field as a const does, unless
     the literal check removed the values they reject.
     """
-    holds_literal = _field_holds_literal(parser, data_type)
-    return obj.is_array or (
-        parser.field_constraints
-        and not (
-            obj.ref
-            or (is_union_schema(obj) and not holds_literal)
-            or obj.allOf
-            or obj.is_object
-            or (obj.enum and not parser.ignore_enum_constraints and not holds_literal)
-        )
-    )
+    if obj.is_array:
+        return True
+    if not parser.field_constraints or obj.ref or obj.allOf or obj.is_object:
+        return False
+    if is_union_schema(obj) or (obj.enum and not parser.ignore_enum_constraints):
+        return _field_holds_literal(parser, data_type)
+    return True
 
 
 def is_union_schema(obj: JsonSchemaObject) -> bool:
