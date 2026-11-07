@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+import gc
+import importlib
+import importlib.util
 import json
 import os
+import pickle
+import re
 import subprocess
 import sys
 import threading
 import types
+import weakref
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
@@ -49,6 +55,7 @@ from tests.main.conftest import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from typing import Any
 
     from datamodel_code_generator.dynamic import DynamicModule
@@ -987,7 +994,7 @@ def test_dynamic_cache_key_does_not_depend_on_hash_seed() -> None:
 
 
 def test_cache_hit_inside_lock() -> None:
-    """Test cache hit after acquiring lock (double-checked locking)."""
+    """Test a cache hit when the lock is taken again after the lookups made outside it (double-checked locking)."""
     from datamodel_code_generator import dynamic as dcg
     from datamodel_code_generator.dynamic import _make_cache_key
 
@@ -997,11 +1004,14 @@ def test_cache_hit_inside_lock() -> None:
     cache_populated, lock_acquired = threading.Event(), threading.Event()
     result_holder: list[dict[str, type]] = []
     cache_key: str | None = None
+    entries: list[None] = []
 
     class InstrumentedLock:
         def __enter__(self) -> None:
-            lock_acquired.set()
-            cache_populated.wait(timeout=5)
+            entries.append(None)
+            if len(entries) == 2:
+                lock_acquired.set()
+                cache_populated.wait(timeout=5)
             original_lock.__enter__()
 
         def __exit__(self, *args: object) -> None:
@@ -1584,3 +1594,290 @@ def test_dynamic_module_caches_entries_of_its_own() -> None:
     generate_dynamic_models(other_schema, cache_size=1)
     assert generate_dynamic_module(schema, cache_size=1) is not module
     assert clear_dynamic_models_cache() == 1
+
+
+REGISTERED_SCHEMA: dict[str, Any] = {
+    "title": "Doc",
+    "type": "object",
+    "properties": {
+        "child": {"$ref": "#/$defs/Child"},
+        "mode": {"enum": ["a", "b"]},
+        "names": {"$ref": "#/$defs/Names"},
+    },
+    "$defs": {
+        "Child": {"type": "object", "properties": {"x": {"type": "integer"}}},
+        "Names": {"type": "array", "items": {"type": "string"}},
+    },
+}
+REGISTERED_PICKLE_SCRIPT = """\
+import pickle
+import sys
+
+from datamodel_code_generator import GenerateConfig, generate_dynamic_module
+
+mode, path = sys.argv[1:]
+if mode == "load":
+    try:
+        pickle.loads(open(path, "rb").read())
+    except ModuleNotFoundError as error:
+        print(type(error).__name__, str(error).replace(error.name, "<module>"))
+module = generate_dynamic_module(
+    {schema!r}, config=GenerateConfig(field_extra_keys={extra_keys!r}), register_module=True
+)
+models = module.models
+if mode == "dump":
+    doc = module.root_class(child={{"x": 1}}, mode="a", names=["q"])
+    open(path, "wb").write(pickle.dumps([doc, models["Mode"].a, models["Names"](["z"]), models["Doc"]]))
+else:
+    doc, member, names, doc_class = pickle.loads(open(path, "rb").read())
+    print(type(doc) is models["Doc"], type(doc.child) is models["Child"], member is models["Mode"].a)
+    print(type(names) is models["Names"], doc_class is models["Doc"], doc.model_dump(mode="json"))
+print(module.module_name)
+"""
+
+
+@pytest.fixture
+def forget_registered_modules() -> Iterator[None]:
+    """Remove the modules a test registers from sys.modules, as programs remove a registered module."""
+    before = set(sys.modules)
+    yield
+    for name in {name for name in sys.modules if name.startswith(("_dcg_dynamic_", "runtime_registered"))} - before:
+        del sys.modules[name]
+
+
+def test_registered_module_pickles_load_in_another_process(tmp_path: Path) -> None:
+    """Test a process that runs the same generation loads the pickles of registered classes and instances."""
+    pickle_path = tmp_path / "models.pickle"
+    script = REGISTERED_PICKLE_SCRIPT.format(schema=REGISTERED_SCHEMA, extra_keys={f"x-key-{n}" for n in range(9)})
+
+    def run(mode: str, seed: str) -> list[str]:
+        return subprocess.run(
+            [sys.executable, "-c", script, mode, str(pickle_path)],
+            capture_output=True,
+            check=True,
+            env={**os.environ, "PYTHONHASHSEED": seed},
+            text=True,
+        ).stdout.splitlines()
+
+    dumped = run("dump", "1")
+    loaded = run("load", "2")
+
+    assert loaded == [
+        "ModuleNotFoundError No module named '<module>'",
+        "True True True",
+        "True True {'child': {'x': 1}, 'mode': 'a', 'names': ['q']}",
+        *dumped,
+    ]
+    assert dumped[0].startswith("_dcg_dynamic_")
+
+
+@pytest.mark.usefixtures("forget_registered_modules")
+def test_registered_module_stays_in_sys_modules() -> None:
+    """Test a registered module stays importable and gives its classes to later calls, also without the cache."""
+    module = generate_dynamic_module(REGISTERED_SCHEMA, module_name="runtime_registered", register_module=True)
+    doc = cast("type[pydantic.BaseModel]", module.root_class)
+    instance = doc.model_validate({"child": {"x": 1}, "mode": "b", "names": ["q"]})
+
+    assert module.module_name == "runtime_registered"
+    assert doc.__module__ == "runtime_registered"
+    assert sys.modules["runtime_registered"].Doc is doc
+    assert importlib.util.find_spec("runtime_registered") is not None
+    assert pickle.loads(pickle.dumps(instance)) == instance
+    assert pickle.loads(pickle.dumps(module.models["Mode"].b)) is module.models["Mode"].b
+    assert generate_dynamic_module(REGISTERED_SCHEMA, module_name="runtime_registered", register_module=True) is module
+    assert generate_dynamic_module(REGISTERED_SCHEMA, module_name="runtime_registered", cache_size=0) is module
+    assert clear_dynamic_models_cache() == 0
+    assert generate_dynamic_module(REGISTERED_SCHEMA, module_name="runtime_registered") is module
+
+
+@pytest.mark.usefixtures("forget_registered_modules")
+def test_registered_module_name_is_derived_from_the_schema_and_settings() -> None:
+    """Test the derived name differs for another property order and stays outside the cache and its eviction."""
+    module = generate_dynamic_module(REGISTERED_SCHEMA, register_module=True)
+    reordered = {**REGISTERED_SCHEMA, "properties": dict(reversed(REGISTERED_SCHEMA["properties"].items()))}
+    other = generate_dynamic_module(reordered, register_module=True, cache_size=1)
+    generate_dynamic_models(make_object_schema({"x": {"type": "string"}}), cache_size=1)
+
+    assert cast("str", module.module_name).startswith("_dcg_dynamic_")
+    assert other.module_name != module.module_name
+    assert list(other.models["Doc"].model_fields) == ["names", "mode", "child"]
+    assert generate_dynamic_module(REGISTERED_SCHEMA, register_module=True, cache_size=1) is module
+    assert clear_dynamic_models_cache() == 1
+
+
+@pytest.mark.usefixtures("forget_registered_modules")
+def test_registered_split_output_stays_in_sys_modules() -> None:
+    """Test split output keeps its package and modules registered, so the classes of every module pickle."""
+    schema = json.loads((JSON_SCHEMA_DATA_PATH / "nested_person.json").read_text(encoding="utf-8"))
+    module = generate_dynamic_module(schema, module_name="runtime_registered_package", register_module=True)
+    nested = module.models_by_source_ref["#/definitions/empty_parent.nested.deep.Json"]
+
+    assert nested.__module__ == "runtime_registered_package.empty_parent.nested.deep"
+    assert pickle.loads(pickle.dumps(nested)) is nested
+    assert pickle.loads(pickle.dumps(module.root_class)) is module.root_class
+    assert sorted(name for name in sys.modules if name.startswith("runtime_registered_package")) == [
+        "runtime_registered_package",
+        "runtime_registered_package.empty_parent",
+        "runtime_registered_package.empty_parent.nested",
+        "runtime_registered_package.empty_parent.nested.deep",
+        "runtime_registered_package.nested",
+        "runtime_registered_package.nested.deep",
+    ]
+
+
+@pytest.mark.usefixtures("forget_registered_modules")
+def test_registered_module_lives_until_removed_from_sys_modules() -> None:
+    """Test removing a registered module frees it, and a later call registers new classes under the name."""
+    module = generate_dynamic_module(REGISTERED_SCHEMA, module_name="runtime_registered", register_module=True)
+    registered = weakref.ref(sys.modules["runtime_registered"])
+    del sys.modules["runtime_registered"]
+    gc.collect()
+
+    assert registered() is None
+    assert generate_dynamic_module(REGISTERED_SCHEMA, module_name="runtime_registered", register_module=True) is not (
+        module
+    )
+
+
+@pytest.mark.parametrize(
+    ("schema", "module_name", "message"),
+    [
+        (
+            make_object_schema({"x": {"type": "string"}}),
+            "runtime_registered",
+            "module_name 'runtime_registered' is registered for another schema or other settings",
+        ),
+        (
+            REGISTERED_SCHEMA,
+            "json",
+            "module_name 'json' names a module that generate_dynamic_module() did not register",
+        ),
+        (
+            REGISTERED_SCHEMA,
+            "runtime_registered_parent.models",
+            (
+                "register_module needs the parent package 'runtime_registered_parent' of module_name "
+                "'runtime_registered_parent.models' to be importable"
+            ),
+        ),
+        (
+            {**REGISTERED_SCHEMA, "x-callback": object()},
+            None,
+            "register_module needs module_name when the schema or the config cannot be serialized as JSON",
+        ),
+    ],
+)
+@pytest.mark.usefixtures("forget_registered_modules")
+def test_register_module_refuses_names_it_cannot_own(
+    schema: dict[str, Any], module_name: str | None, message: str
+) -> None:
+    """Test registration never replaces a module, and needs a name that pickle can import."""
+    generate_dynamic_module(REGISTERED_SCHEMA, module_name="runtime_registered", register_module=True)
+
+    with pytest.raises(Error, match=re.escape(message)):
+        generate_dynamic_module(schema, module_name=module_name, register_module=True)
+
+
+@pytest.mark.usefixtures("forget_registered_modules")
+def test_register_module_refuses_the_name_of_an_importable_module(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test registration refuses a name that a module file has, and leaves that module to import."""
+    (tmp_path / "runtime_registered_importable.py").write_text("VALUE = 1\n", encoding="utf-8")
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    with pytest.raises(Error, match="module_name 'runtime_registered_importable' names an importable module"):
+        generate_dynamic_module(REGISTERED_SCHEMA, module_name="runtime_registered_importable", register_module=True)
+    assert "runtime_registered_importable" not in sys.modules
+    assert importlib.import_module("runtime_registered_importable").VALUE == 1
+
+
+@pytest.mark.usefixtures("forget_registered_modules")
+def test_register_module_below_a_package(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test a dotted name registers below a package that is imported first, so that pickle finds the classes."""
+    (tmp_path / "runtime_registered_app").mkdir()
+    (tmp_path / "runtime_registered_app" / "__init__.py").write_text("", encoding="utf-8")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    module = generate_dynamic_module(
+        REGISTERED_SCHEMA, module_name="runtime_registered_app.generated", register_module=True
+    )
+
+    assert "runtime_registered_app" in sys.modules
+    assert pickle.loads(pickle.dumps(module.root_class)) is module.root_class
+
+
+REENTRANT_PACKAGE_SCRIPT = """\
+import sys
+from pathlib import Path
+
+from datamodel_code_generator import generate_dynamic_models, generate_dynamic_module
+
+for package in ("app_module", "app_models"):
+    Path(sys.argv[1], package).mkdir()
+    Path(sys.argv[1], package, "__init__.py").write_text(
+        "from datamodel_code_generator import generate_dynamic_models\\n"
+        "MODELS = generate_dynamic_models({'type': 'object', 'properties': {'x': {'type': 'integer'}}})\\n"
+    )
+sys.path.insert(0, sys.argv[1])
+schema = {'type': 'object', 'properties': {'name': {'type': 'string'}}}
+print(generate_dynamic_module(schema, module_name="app_module.generated", register_module=True).root_class.__module__)
+print(generate_dynamic_models(schema, module_name="app_models.generated")["Model"].__module__)
+"""
+
+
+def test_dynamic_calls_import_packages_that_generate_dynamic_models(tmp_path: Path) -> None:
+    """Test a package whose import generates dynamic models can hold the module of a dynamic call."""
+    result = subprocess.run(
+        [sys.executable, "-c", REENTRANT_PACKAGE_SCRIPT, str(tmp_path)],
+        capture_output=True,
+        check=True,
+        text=True,
+        timeout=120,
+    )
+
+    assert result.stdout.splitlines() == ["app_module.generated", "app_models.generated"]
+
+
+@pytest.mark.usefixtures("forget_registered_modules")
+def test_register_module_with_a_name_for_settings_that_cannot_be_serialized() -> None:
+    """Test a config with a callable registers under a given name, which no later call can be matched to."""
+    config = GenerateConfig(custom_class_name_generator=str.title)
+    module = generate_dynamic_module(
+        REGISTERED_SCHEMA, config=config, module_name="runtime_registered", register_module=True
+    )
+    unregistered = generate_dynamic_module(REGISTERED_SCHEMA, config=config, module_name="runtime_registered")
+
+    assert module.root_class is sys.modules["runtime_registered"].Doc
+    assert unregistered.root_class is not module.root_class
+    with pytest.raises(pickle.PicklingError, match=re.escape("not the same object as runtime_registered.Doc")):
+        pickle.dumps(unregistered.root_class)
+    with pytest.raises(Error, match="module_name 'runtime_registered' is registered, and the schema or the config"):
+        generate_dynamic_module(
+            REGISTERED_SCHEMA, config=config, module_name="runtime_registered", register_module=True
+        )
+
+
+@pytest.mark.usefixtures("forget_registered_modules")
+def test_register_module_from_threads() -> None:
+    """Test threads that register one schema get one module and the same classes."""
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        modules = list(
+            executor.map(lambda _: generate_dynamic_module(REGISTERED_SCHEMA, register_module=True), range(10))
+        )
+
+    assert all(module is modules[0] for module in modules)
+
+
+@pytest.mark.parametrize("module_split_mode", [None, ModuleSplitMode.Single])
+@pytest.mark.usefixtures("forget_registered_modules")
+def test_register_module_leaves_nothing_registered_when_the_code_fails(
+    module_split_mode: ModuleSplitMode | None,
+) -> None:
+    """Test generated code that raises leaves no module of the name behind, in single and split output."""
+    config = GenerateConfig(base_class="runtime_registered_missing.Base", module_split_mode=module_split_mode)
+
+    with pytest.raises(ModuleNotFoundError, match="runtime_registered_missing"):
+        generate_dynamic_module(
+            REGISTERED_SCHEMA, config=config, module_name="runtime_registered", register_module=True
+        )
+    assert [name for name in sys.modules if name.startswith("runtime_registered")] == []

@@ -14,9 +14,12 @@ import json
 import sys
 import threading
 import types
+import weakref
 from dataclasses import dataclass
 from enum import Enum
+from functools import partial
 from importlib import import_module
+from importlib.machinery import ModuleSpec
 from importlib.util import find_spec
 from pathlib import Path, PurePath
 from typing import TYPE_CHECKING, Any, TypeVar, cast
@@ -62,11 +65,20 @@ class DynamicModule:
     """The module (the package for split output) the classes were executed in; None for an unnamed single module."""
 
 
+@dataclass(frozen=True, slots=True)
+class _Registration:
+    """The classes that generate_dynamic_module() registered a module for, and the cache key of their schema."""
+
+    key: str | None
+    result: DynamicModule
+
+
 _CachedT = TypeVar("_CachedT", dict[str, type], DynamicModule)
 
 _dynamic_models_cache: dict[str, dict[str, type] | DynamicModule] = {}
 _dynamic_models_lock = threading.Lock()
 _dynamic_module_counter = itertools.count(1)
+_dynamic_module_registrations: weakref.WeakKeyDictionary[types.ModuleType, _Registration] = weakref.WeakKeyDictionary()
 
 
 def _evict_dynamic_models_cache_entries(count: int) -> None:
@@ -74,19 +86,28 @@ def _evict_dynamic_models_cache_entries(count: int) -> None:
         del _dynamic_models_cache[next(iter(_dynamic_models_cache))]
 
 
+def _cached_entry(cache_key: str | None, cache_size: int) -> dict[str, type] | DynamicModule | None:
+    """Return the entry cached under ``cache_key``, keeping at most ``cache_size`` entries, or None.
+
+    The oldest entries go first. The caller holds ``_dynamic_models_lock``.
+    """
+    if cache_size <= 0 or cache_key is None or (cached := _dynamic_models_cache.get(cache_key)) is None:
+        return None
+    _evict_dynamic_models_cache_entries(len(_dynamic_models_cache) - cache_size)
+    return cached
+
+
 def _cached(cache_key: str | None, cache_size: int, build: Callable[[], _CachedT]) -> _CachedT:
     """Return the entry cached under ``cache_key``, or build one and cache it, keeping at most ``cache_size`` entries.
 
     The oldest entries go first. The caller holds ``_dynamic_models_lock``.
     """
-    if cache_size <= 0 or cache_key is None:
-        return build()
-    if (cached := _dynamic_models_cache.get(cache_key)) is not None:
-        _evict_dynamic_models_cache_entries(len(_dynamic_models_cache) - cache_size)
+    if (cached := _cached_entry(cache_key, cache_size)) is not None:
         return cast("_CachedT", cached)
     result = build()
-    _evict_dynamic_models_cache_entries(len(_dynamic_models_cache) - cache_size + 1)
-    _dynamic_models_cache[cache_key] = result
+    if cache_size > 0 and cache_key is not None:
+        _evict_dynamic_models_cache_entries(len(_dynamic_models_cache) - cache_size + 1)
+        _dynamic_models_cache[cache_key] = result
     return result
 
 
@@ -95,37 +116,68 @@ def _execute_single_module(
     *,
     include_private_models: bool = False,
     module_name: str | None = None,
+    module_spec: ModuleSpec | None = None,
+    register: bool = False,
 ) -> dict[str, type]:
     """Execute single module code and extract models.
 
     A named module is registered while its code runs, unless a module of that name exists, because Pydantic looks
-    up the module that parameterizes a generic model. A module of that name that can be imported is imported first,
-    so that the code imports from it, not from a registered empty module.
+    up the module that parameterizes a generic model. A module of that name that can be imported (``module_spec``) is
+    imported first, so that the code imports from it, not from a registered empty module. With ``register``, the
+    caller has checked that the name is free, and the module, with a spec, stays registered once its code ran.
     """
     namespace: dict[str, Any] = {"__builtins__": builtins.__dict__}
     if module_name is None:
         return _run_module_code(code, namespace, include_private_models=include_private_models)
     namespace |= {"__name__": module_name, "__package__": module_name.rpartition(".")[0]}
-    if module_name in sys.modules or _import_module_if_found(module_name):
+    if not register and module_name not in sys.modules and module_spec is not None:
+        import_module(module_name)
+    if not register and module_name in sys.modules:
         return _run_module_code(code, namespace, include_private_models=include_private_models)
     module = sys.modules[module_name] = types.ModuleType(module_name)
     module.__dict__.update(namespace)
+    if register:
+        module.__spec__ = ModuleSpec(module_name, None)
+    kept = False
     try:
-        return _run_module_code(code, module.__dict__, include_private_models=include_private_models)
+        models = _run_module_code(code, module.__dict__, include_private_models=include_private_models)
+        kept = register
+        return models
     finally:
-        sys.modules.pop(module_name, None)
+        if not kept:
+            sys.modules.pop(module_name, None)
 
 
-def _import_module_if_found(module_name: str) -> bool:
-    """Import a module that is not imported yet, and return whether it could be found."""
+def _find_module_spec(module_name: str) -> ModuleSpec | None:
+    """Return the spec of a module that can be imported, or None, also when a parent of it cannot be."""
     try:
-        spec = find_spec(module_name)
+        return find_spec(module_name)
     except ModuleNotFoundError:
-        return False
-    if spec is None:
-        return False
-    import_module(module_name)
-    return True
+        return None
+
+
+def _importable_module_spec(module_name: str | None) -> ModuleSpec | None:
+    """Return the spec of a module of ``module_name`` that can be imported and is not imported yet, or None.
+
+    Callers find it before they take ``_dynamic_models_lock``: finding a module imports its parent packages, whose
+    code may generate dynamic models itself.
+    """
+    return None if module_name is None or module_name in sys.modules else _find_module_spec(module_name)
+
+
+def _parent_import_error(module_name: str) -> ImportError | None:
+    """Import the parent package of a dotted ``module_name`` that is not imported yet, and return what it raised.
+
+    Callers import it before they take ``_dynamic_models_lock``, since the code of the package may generate dynamic
+    models itself.
+    """
+    if module_name in sys.modules or not (parent := module_name.rpartition(".")[0]):
+        return None
+    try:
+        import_module(parent)
+    except ImportError as error:
+        return error
+    return None
 
 
 def _run_module_code(code: str, namespace: dict[str, Any], *, include_private_models: bool) -> dict[str, type]:
@@ -201,10 +253,13 @@ def _execute_multi_module(
     include_private_models: bool = False,
     module_name: str | None = None,
     models_by_module: dict[str, dict[str, type]] | None = None,
+    register: bool = False,
 ) -> dict[str, type]:
     """Execute multiple modules and extract models.
 
-    ``models_by_module`` receives the models of each module, by its dotted name below the package.
+    ``models_by_module`` receives the models of each module, by its dotted name below the package. With ``register``,
+    the caller has checked that the package name is free, and the package and its modules, with specs, stay registered
+    once their code ran.
     """
     package_name = _dynamic_package_name(module_name)
 
@@ -212,11 +267,14 @@ def _execute_multi_module(
     previous_modules: dict[str, types.ModuleType | object] = {}
     all_namespaces: dict[str, dict[str, Any]] = {}
 
-    def register_module(name: str, module: types.ModuleType) -> None:
+    def register_module(name: str, module: types.ModuleType, *, is_package: bool) -> None:
+        if register:
+            module.__spec__ = ModuleSpec(name, None, is_package=is_package)
         previous_modules[name] = sys.modules.get(name, ABSENT)
         sys.modules[name] = module
         created_modules.append(name)
 
+    kept = False
     try:
         nodes = list(modules.keys())
         nodes.sort(key=lambda p: (is_package_init(p[-1]), p))
@@ -231,14 +289,14 @@ def _execute_multi_module(
             module.__package__ = (
                 generated_module_name if is_package_init(path_tuple[-1]) else generated_module_name.rpartition(".")[0]
             )
-            register_module(generated_module_name, module)
+            register_module(generated_module_name, module, is_package=is_package_init(path_tuple[-1]))
             all_namespaces[generated_module_name] = module.__dict__
 
         if package_name not in sys.modules:
             pkg = types.ModuleType(package_name)
             pkg.__path__ = []
             pkg.__package__ = package_name
-            register_module(package_name, pkg)
+            register_module(package_name, pkg, is_package=True)
 
         for path_tuple in sorted_paths:
             generated_module_name = dotted_module(path_tuple, package_name)
@@ -257,10 +315,12 @@ def _execute_multi_module(
             if issubclass(obj, BaseModel):
                 obj.model_rebuild(_types_namespace=combined_namespace)
 
+        kept = register
         return models
     finally:
-        for created_module_name in reversed(created_modules):
-            restore_entry(sys.modules, created_module_name, previous_modules[created_module_name])
+        if not kept:
+            for created_module_name in reversed(created_modules):
+                restore_entry(sys.modules, created_module_name, previous_modules[created_module_name])
 
 
 def _extract_models(namespace: dict[str, Any], *, code: str = "", include_private: bool = False) -> dict[str, type]:
@@ -316,20 +376,69 @@ def _make_cache_key(schema: Mapping[str, Any], config: GenerateConfig, module_na
             },
             separators=(",", ":"),
         )
-        module_name_json = (
-            json.dumps({"module_name": module_name}, sort_keys=True, separators=(",", ":"))
-            if module_name is not None
-            else None
-        )
     except (TypeError, ValueError):
         return None
     schema_digest = hashlib.sha256(schema_json.encode()).hexdigest()
     config_digest = hashlib.sha256(config_json.encode()).hexdigest()
     cache_key = f"{schema_digest}:{len(schema_json)}:{config_digest}:{len(config_json)}"
-    if module_name_json is None:
-        return cache_key
-    module_name_digest = hashlib.sha256(module_name_json.encode()).hexdigest()
-    return f"{cache_key}:{module_name_digest}:{len(module_name_json)}"
+    return cache_key if module_name is None else _module_name_cache_key(cache_key, module_name)
+
+
+def _module_name_cache_key(cache_key: str, module_name: str) -> str:
+    """Return the cache key of a schema and config (``cache_key``) for classes executed in ``module_name``."""
+    module_name_json = json.dumps({"module_name": module_name}, sort_keys=True, separators=(",", ":"))
+    return f"{cache_key}:{hashlib.sha256(module_name_json.encode()).hexdigest()}:{len(module_name_json)}"
+
+
+def _registered_module_name(cache_key: str | None) -> str:
+    """Return the module name that generate_dynamic_module() registers a schema and config under by default."""
+    if cache_key is None:
+        msg = (
+            "register_module needs module_name when the schema or the config cannot be serialized as JSON "
+            "(for example a config with custom_class_name_generator)."
+        )
+        raise Error(msg)
+    return f"_dcg_dynamic_{hashlib.sha256(cache_key.encode()).hexdigest()[:32]}"
+
+
+def _refuse_unregistrable_name(
+    name: str, cache_key: str | None, *, parent_error: ImportError | None, importable: bool
+) -> None:
+    """Refuse to register a name another registration or module holds, or that would hide or lack a module.
+
+    A registration holds the name for the classes of another schema or other settings than ``cache_key``, or of ones
+    that cannot be told apart (no key). ``parent_error`` is what importing the parent package of the name raised, and
+    ``importable`` whether a module of the name can be imported. The caller holds ``_dynamic_models_lock``.
+    """
+    module, registration = _registration_of(name)
+    if registration is not None and (registration.key is None or cache_key is None):
+        msg = (
+            f"module_name {name!r} is registered, and the schema or the config of this call or of the registering call "
+            "cannot be serialized as JSON, so they cannot be compared; keep the DynamicModule the registering call "
+            f"returned, or remove {name!r} from sys.modules first."
+        )
+        raise Error(msg)
+    if registration is not None:
+        msg = (
+            f"module_name {name!r} is registered for another schema or other settings; pass another module_name, "
+            f"or remove {name!r} from sys.modules first."
+        )
+        raise Error(msg)
+    if module is not None:
+        msg = (
+            f"module_name {name!r} names a module that generate_dynamic_module() did not register; "
+            "pass another module_name."
+        )
+        raise Error(msg)
+    if parent_error is not None:
+        msg = (
+            f"register_module needs the parent package {name.rpartition('.')[0]!r} of module_name {name!r} to be "
+            "importable, because pickle imports it."
+        )
+        raise Error(msg) from parent_error
+    if importable:
+        msg = f"module_name {name!r} names an importable module; register_module needs a name that no module uses."
+        raise Error(msg)
 
 
 def _generate_code(
@@ -369,12 +478,20 @@ def _models_by_source_ref(entries: Iterable[tuple[str, str, type | None]]) -> di
     return models
 
 
-def _build_dynamic_module(
-    input_: Mapping[str, Any], config: GenerateConfig, *, module_name: str | None, collect_model_metadata: bool
+def _build_dynamic_module(  # noqa: PLR0913
+    input_: Mapping[str, Any],
+    config: GenerateConfig,
+    *,
+    module_name: str | None,
+    collect_model_metadata: bool,
+    module_spec: ModuleSpec | None = None,
+    register: bool = False,
 ) -> DynamicModule:
     """Generate the code of ``config``, execute it, and return its classes; with ``collect_model_metadata`` by location.
 
-    Without ``collect_model_metadata``, ``models_by_source_ref`` is empty and ``root_class`` None.
+    Without ``collect_model_metadata``, ``models_by_source_ref`` is empty and ``root_class`` None. ``module_spec`` is
+    the spec of an importable module of ``module_name``, found before the lock. With ``register``, the module stays
+    registered.
     """
     result, metadata, identities = _generate_code(input_, config, collect_model_metadata=collect_model_metadata)
     if result is None:  # pragma: no cover
@@ -382,7 +499,13 @@ def _build_dynamic_module(
         raise Error(msg)
     include_private_models = config.allow_leading_underscore_class_name
     if isinstance(result, str):
-        models = _execute_single_module(result, include_private_models=include_private_models, module_name=module_name)
+        models = _execute_single_module(
+            result,
+            include_private_models=include_private_models,
+            module_name=module_name,
+            module_spec=module_spec,
+            register=register,
+        )
         models_by_module = {"": models}
     else:
         module_name = _dynamic_package_name(module_name)
@@ -392,6 +515,7 @@ def _build_dynamic_module(
             include_private_models=include_private_models,
             module_name=module_name,
             models_by_module=models_by_module,
+            register=register,
         )
     models_by_source_ref = (
         {}
@@ -504,7 +628,7 @@ def generate_dynamic_models(
     Note:
         - Thread-safe (uses internal lock and cache)
         - Pydantic v2 only (v1 is not supported)
-        - Not pickle-able (use model_dump() to serialize instances)
+        - Not pickle-able (use model_dump() to serialize instances, or generate_dynamic_module() with register_module)
         - Cached by schema + config + module_name hash with FIFO eviction when cache_size is exceeded
         - Supports both single-module and multi-module output
         - generate_dynamic_module() also gives the root class and the class of each schema location
@@ -526,11 +650,19 @@ def generate_dynamic_models(
     cache_key = _make_cache_key(input_, config, module_name)
 
     with _dynamic_models_lock:
-        models = _cached(
-            cache_key,
-            cache_size,
-            lambda: _build_dynamic_module(input_, config, module_name=module_name, collect_model_metadata=False).models,
-        )
+        if (cached_models := _cached_entry(cache_key, cache_size)) is not None:
+            return _filter_target_models(cast("dict[str, type]", cached_models), normalized_target_model_names)
+    module_spec = _importable_module_spec(module_name)
+    build = partial(
+        _build_dynamic_module,
+        input_,
+        config,
+        module_name=module_name,
+        collect_model_metadata=False,
+        module_spec=module_spec,
+    )
+    with _dynamic_models_lock:
+        models = _cached(cache_key, cache_size, lambda: build().models)
         return _filter_target_models(models, normalized_target_model_names)
 
 
@@ -540,6 +672,7 @@ def generate_dynamic_module(
     config: GenerateConfig | None = None,
     cache_size: int = 128,
     module_name: str | None = None,
+    register_module: bool = False,
 ) -> DynamicModule:
     """Generate model classes from a schema at runtime, with the root class and the class of each schema location.
 
@@ -551,9 +684,16 @@ def generate_dynamic_module(
         config: A GenerateConfig object with generation options. If None, uses defaults.
         cache_size: Maximum number of schemas to cache. Set to 0 to disable caching.
         module_name: Optional module/package name to assign to generated classes.
+        register_module: Keep the module the classes live in registered in ``sys.modules``, so that pickle finds
+            them. Without ``module_name``, the name is derived from the schema and the config.
 
     Returns:
         A DynamicModule with the classes by name, the root class, the classes by schema location and the module name.
+
+    Raises:
+        Error: With ``register_module``, when another module or a registration for another schema or other settings
+            holds the name, when the name can be imported, when the parent package of a dotted name cannot be, or
+            when no name is given and the schema or the config cannot be serialized as JSON.
 
     Note:
         - Cached like generate_dynamic_models(), in entries of its own: ``models`` is not the dictionary that
@@ -561,6 +701,9 @@ def generate_dynamic_module(
         - A location is the ``source_ref`` that ``--emit-model-metadata`` writes, such as ``#``, ``#/$defs/User`` or
           ``sub/other.json#/$defs/X``; a location that dcg merged into another class or that several helper classes
           share has no key
+        - A registered module is no cache entry: it stays until it is removed from ``sys.modules``, and a call with
+          its name for the same schema and settings returns its classes. Pickles of its classes and instances load in
+          a process that ran the same generation first
 
     Example:
         >>> schema = {"title": "Root", "type": "object", "properties": {"child": {"$ref": "#/$defs/Root"}}}
@@ -570,14 +713,87 @@ def generate_dynamic_module(
         ('RootModel', 'Root')
     """
     config = _dynamic_generate_config(input_, config)
-    cache_key = _make_cache_key(input_, config, module_name)
-
-    with _dynamic_models_lock:
-        return _cached(
-            None if cache_key is None else f"module:{cache_key}",
-            cache_size,
-            lambda: _build_dynamic_module(input_, config, module_name=module_name, collect_model_metadata=True),
+    cache_key = _make_cache_key(input_, config)
+    if register_module:
+        return _register_dynamic_module(
+            input_,
+            config,
+            module_name if module_name is not None else _registered_module_name(cache_key),
+            cache_key,
+            explicit=module_name is not None,
         )
+    module_cache_key = (
+        None
+        if cache_key is None
+        else f"module:{cache_key if module_name is None else _module_name_cache_key(cache_key, module_name)}"
+    )
+    with _dynamic_models_lock:
+        if (
+            found := _registered_result(module_name, cache_key) or _cached_entry(module_cache_key, cache_size)
+        ) is not None:
+            return cast("DynamicModule", found)
+    module_spec = _importable_module_spec(module_name)
+    build = partial(
+        _build_dynamic_module,
+        input_,
+        config,
+        module_name=module_name,
+        collect_model_metadata=True,
+        module_spec=module_spec,
+    )
+    with _dynamic_models_lock:
+        return _registered_result(module_name, cache_key) or _cached(module_cache_key, cache_size, build)
+
+
+def _registration_of(module_name: str | None) -> tuple[types.ModuleType | None, _Registration | None]:
+    """Return the module of ``module_name`` in ``sys.modules`` and the registration generate_dynamic_module() made."""
+    module = None if module_name is None else sys.modules.get(module_name)
+    return module, None if module is None else _dynamic_module_registrations.get(module)
+
+
+def _registered_result(module_name: str | None, cache_key: str | None) -> DynamicModule | None:
+    """Return the classes registered under ``module_name`` for the schema and settings of ``cache_key``, or None."""
+    _, registration = _registration_of(module_name)
+    if registration is None or cache_key is None or registration.key != cache_key:
+        return None
+    return registration.result
+
+
+def _register_dynamic_module(
+    input_: Mapping[str, Any], config: GenerateConfig, name: str, cache_key: str | None, *, explicit: bool
+) -> DynamicModule:
+    """Generate the classes of a schema and config in a module of ``name`` that stays registered, or return them.
+
+    The parent package of the name is imported, and a given name looked up, before the lock is taken.
+    """
+    with _dynamic_models_lock:
+        if (registered := _registered_result(name, cache_key)) is not None:
+            return registered
+    parent_error = _parent_import_error(name)
+    importable = explicit and parent_error is None and _importable_module_spec(name) is not None
+    with _dynamic_models_lock:
+        return _registered_result(name, cache_key) or _register_new_module(
+            input_, config, name, cache_key, parent_error=parent_error, importable=importable
+        )
+
+
+def _register_new_module(  # noqa: PLR0913
+    input_: Mapping[str, Any],
+    config: GenerateConfig,
+    name: str,
+    cache_key: str | None,
+    *,
+    parent_error: ImportError | None,
+    importable: bool,
+) -> DynamicModule:
+    """Generate the classes of a schema and config in a module of ``name`` and register it, unless the name is refused.
+
+    The caller holds ``_dynamic_models_lock``.
+    """
+    _refuse_unregistrable_name(name, cache_key, parent_error=parent_error, importable=importable)
+    result = _build_dynamic_module(input_, config, module_name=name, collect_model_metadata=True, register=True)
+    _dynamic_module_registrations[sys.modules[name]] = _Registration(cache_key, result)
+    return result
 
 
 def clear_dynamic_models_cache() -> int:
