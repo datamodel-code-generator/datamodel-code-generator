@@ -1214,40 +1214,44 @@ def _iter_discriminator_data_types(
     discriminator_owner: int | None = None,
     wrappers: list[DataModel] | None = None,
 ) -> Iterator[tuple[DataType, bool, int]]:
-    for data_type in data_types:
-        if members := union_members(data_type):
-            yield from _iter_discriminator_data_types(
-                members,
-                active_union_models,
-                can_update_discriminator=False,
-                discriminator_owner=discriminator_owner,
-                wrappers=wrappers,
-            )
-        else:
+    """Yield the types of ``data_types`` that a discriminator reads, spreading unions and the wrappers they name.
+
+    Each comes with whether the discriminator may update it and the model that owns it. The unions and wrappers are
+    walked with a stack of their own, so a chain of wrappers of any length is read; a wrapper being read
+    (``active_union_models``) is yielded itself.
+    """
+    active = set() if active_union_models is None else active_union_models
+    pending: list[tuple[Iterator[DataType], bool, int | None, int | None]] = [
+        (iter(data_types), can_update_discriminator, discriminator_owner, None)
+    ]
+    try:
+        while pending:
+            members, can_update, level_owner, _ = pending[-1]
+            if (data_type := next(members, None)) is None:
+                if (read := pending.pop()[3]) is not None:
+                    active.remove(read)
+                continue
+            if inner := union_members(data_type):
+                pending.append((iter(inner), False, level_owner, None))
+                continue
             source = data_type.reference.source if data_type.reference else None
-            owner = discriminator_owner or (id(source) if source is not None else id(data_type))
-            if not isinstance(source, DataModel) or not _is_discriminator_wrapper(source):
-                yield data_type, can_update_discriminator, owner
-            else:
-                source_id = id(source)
-                if active_union_models is None:
-                    active_union_models = set()
-                if source_id in active_union_models or not source.fields:
-                    yield data_type, can_update_discriminator, owner
-                else:
-                    active_union_models.add(source_id)
-                    if wrappers is not None:
-                        wrappers.append(source)
-                    try:
-                        yield from _iter_discriminator_data_types(
-                            (source.fields[0].data_type,),
-                            active_union_models,
-                            can_update_discriminator=False,
-                            discriminator_owner=owner,
-                            wrappers=wrappers,
-                        )
-                    finally:
-                        active_union_models.remove(source_id)
+            owner = level_owner or (id(source) if source is not None else id(data_type))
+            if (
+                not isinstance(source, DataModel)
+                or not _is_discriminator_wrapper(source)
+                or id(source) in active
+                or not source.fields
+            ):
+                yield data_type, can_update, owner
+                continue
+            active.add(id(source))
+            if wrappers is not None:
+                wrappers.append(source)
+            pending.append((iter((source.fields[0].data_type,)), False, owner, id(source)))
+    finally:
+        for *_, read in pending:
+            if read is not None:
+                active.discard(read)
 
 
 def _get_model_module_name(model: DataModel, model_path_to_module_name: Mapping[str, str]) -> str:

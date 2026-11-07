@@ -1069,7 +1069,35 @@ class DataType(_BaseModel):  # noqa: PLR0904
         return self._names_none_alias(())
 
     def _names_none_alias(self, chain: tuple[Reference, ...]) -> bool:
-        """Return ``names_none_alias``, following the aliases of ``chain`` once, so aliases that name each other end."""
+        """Return ``names_none_alias``, following the aliases of ``chain`` once, so aliases that name each other end.
+
+        The types it reads are walked with a stack of their own, so a chain of aliases of any length is read: a union
+        names one where a member does and every other member does or is None, an alias where the value of its field,
+        which writes the value and nothing else (no annotation, no call), does or is None.
+        """
+        pending: list[tuple[DataType, tuple[Reference, ...], tuple[_NoneAliasRead, ...] | None]] = [(self, chain, None)]
+        names: list[bool] = []
+        while pending:
+            data_type, data_type_chain, parts = pending.pop()
+            if parts is None:
+                if isinstance(read := data_type._none_alias_parts(data_type_chain), bool):  # noqa: SLF001
+                    names.append(read)
+                    continue
+                pending.append((data_type, data_type_chain, read))
+                pending.extend((part, part_chain, None) for part, part_chain in reversed(read))
+                continue
+            read_names = names[len(names) - len(parts) :]
+            del names[len(names) - len(parts) :]
+            bare = [part._is_bare_none for part, _ in parts]  # noqa: SLF001
+            names.append(
+                any(read_names) and all(name or is_bare for name, is_bare in zip(read_names, bare, strict=True))
+                if data_type.reference is None
+                else read_names[0] or bare[0]
+            )
+        return names[0]
+
+    def _none_alias_parts(self, chain: tuple[Reference, ...]) -> bool | tuple[_NoneAliasRead, ...]:
+        """Return ``_names_none_alias`` where it reads no other type, else the types it reads, each with its chain."""
         if self._own_text:
             return False
         reference = self.reference
@@ -1082,13 +1110,11 @@ class DataType(_BaseModel):  # noqa: PLR0904
         if self._is_container:
             return False
         if reference is None:
-            members = self.data_types
-            return any(member._names_none_alias(chain) for member in members) and all(  # noqa: SLF001
-                member._names_none_alias(chain) or member._is_bare_none  # noqa: SLF001
-                for member in members
-            )
+            return tuple((member, chain) for member in self.data_types)
         fields = getattr(reference.source, "fields", ())[:1]
-        return any(_writes_none_alone(field, (*chain, reference)) for field in fields)
+        if not fields or fields[0].annotated or fields[0].field:
+            return False
+        return ((fields[0].data_type, (*chain, reference)),)
 
     @property
     def _is_container(self) -> bool:
@@ -1320,10 +1346,8 @@ TypeExpr: TypeAlias = TypeLeaf | RefLeaf | TypeApply
 """A type expression: the structure of a data type tree, with the nodes whose hooks and names write it."""
 
 
-def _writes_none_alone(field: Any, chain: tuple[Reference, ...]) -> bool:
-    """Return whether the field of a type alias writes the value None and nothing else: no annotation, no call."""
-    value = field.data_type
-    return (value._names_none_alias(chain) or value._is_bare_none) and not (field.annotated or field.field)  # noqa: SLF001
+_NoneAliasRead: TypeAlias = "tuple[DataType, tuple[Reference, ...]]"
+"""A type ``DataType._names_none_alias`` reads, with the aliases followed to reach it."""
 
 
 def _container_name(data_type: DataType, container: str) -> str | None:

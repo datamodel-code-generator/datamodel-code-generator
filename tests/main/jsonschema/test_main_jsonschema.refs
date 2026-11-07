@@ -9210,6 +9210,9 @@ typed-dict-extra-items-3.12	main/jsonschema/template_data_names_follow_target.py
 	main/jsonschema/type_alias_cycle_keep_model_order.py
 [test_main_type_alias_forward_ref_keep_model_order]
 	main/jsonschema/type_alias_forward_ref_keep_model_order.py
+[test_main_type_alias_long_chain]
+dataclasses.dataclass	main/jsonschema/main_jsonschema/main_type_alias_long_chain[dataclasses.dataclass].py
+msgspec.Struct	main/jsonschema/main_jsonschema/main_type_alias_long_chain[msgspec.Struct].py
 [test_main_type_alias_named_with_letters_beyond_ascii]
 	main/jsonschema/identifier_type_alias_target_312.py
 [test_main_type_array_only_null]
