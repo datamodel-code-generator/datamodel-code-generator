@@ -16,9 +16,9 @@ class Near(TypedDict):
     n: NotRequired[int]
 
 
-class Foo(TypedDict, extra_items='b.Bar'):
+class Foo(TypedDict, extra_items=b.Bar):
     name: NotRequired[str]
 
 
-class Deep(TypedDict, extra_items='b.Bar | c.Baz | Near'):
+class Deep(TypedDict, extra_items=b.Bar | c.Baz | Near):
     name: NotRequired[str]

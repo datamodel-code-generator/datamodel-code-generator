@@ -7066,6 +7066,8 @@ typing.TypedDict	main/jsonschema/main_jsonschema/import_cycle_map_key_alias[typi
 [test_main_jsonschema_import_cycle_map_key_alias_collapsed]
 collapse-annotated	main/jsonschema/main_jsonschema/import_cycle_map_key_alias_collapsed[collapse-annotated]/
 preset	main/jsonschema/main_jsonschema/import_cycle_map_key_alias_collapsed[preset]/
+[test_main_jsonschema_import_cycle_map_key_alias_extra_items]
+	main/jsonschema/main_jsonschema/import_cycle_map_key_alias_extra_items/
 [test_main_jsonschema_import_named_like_submodule]
 class-dataclasses.dataclass	main/jsonschema/main_jsonschema/import_named_like_submodule[class-dataclasses.dataclass].payloads.txt
 class-dataclasses.dataclass	main/jsonschema/main_jsonschema/import_named_like_submodule[class-dataclasses.dataclass]/
@@ -9317,6 +9319,8 @@ extra-items	main/jsonschema/typed_dict_extra_items_py315.py
 	main/jsonschema/typed_dict_extra_items_array_type_list.py
 [test_main_typed_dict_extra_items_imports]
 	main/jsonschema/typed_dict_extra_items_datetime.py
+[test_main_typed_dict_extra_items_names_model_declared_before]
+	main/jsonschema/typed_dict_extra_items_names_model_declared_before.py
 [test_main_typed_dict_false_allof_extra_items]
 	main/jsonschema/typed_dict_false_allof_extra_items.py
 [test_main_typed_dict_functional_descriptions]

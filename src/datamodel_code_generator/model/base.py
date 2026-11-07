@@ -3299,11 +3299,18 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def finalize_sequence_interface(self) -> None:
         """Finalize sequence helper metadata after parser type transformations."""
 
-    def _name_final_classes(self) -> None:
-        """Render the backend settings that name the classes of additional properties once class names are final."""
+    def _name_final_classes(self, *, binds_named_classes: bool = False) -> None:
+        """Render the backend settings that name the classes of additional properties once class names are final.
+
+        ``binds_named_classes`` tells that every class they name is bound when the class statement runs.
+        """
 
     def _setting_data_types(self) -> Iterator[DataType]:  # ruff: ignore[no-self-use]
         """Yield the data types that the backend settings of the class write; the neutral model has none."""
+        yield from ()
+
+    def _setting_data_types_read_at_definition(self) -> Iterator[DataType]:  # ruff: ignore[no-self-use]
+        """Yield the data types of the backend settings the class statement evaluates; the neutral model has none."""
         yield from ()
 
     @property

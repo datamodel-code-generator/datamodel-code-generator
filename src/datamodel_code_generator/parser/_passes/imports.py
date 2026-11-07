@@ -2234,9 +2234,32 @@ def _held_count(ledger: ModuleImportLedger, imports: Imports, import_: Import) -
 
 
 def name_final_classes_of_additional_properties(state: _FinalizeState[Any]) -> None:
-    """Name the final classes that ``extra_items`` and additional properties reference."""
+    """Name the final classes that ``extra_items`` and additional properties reference.
+
+    A setting names them unquoted where each is bound when the class statement runs (``_binds_named_classes``).
+    """
+    positions = {id(model): (ctx.module, index) for ctx in state.contexts for index, model in enumerate(ctx.models)}
     for model in state.additional_properties_models:
-        model._name_final_classes()  # noqa: SLF001
+        model._name_final_classes(binds_named_classes=_binds_named_classes(model, positions))  # noqa: SLF001
+
+
+def _binds_named_classes(model: DataModel, positions: Mapping[int, tuple[ModulePath, int]]) -> bool:
+    """Return whether every class the additional properties type of ``model`` names is bound as the model is defined.
+
+    ``positions`` gives the module of each written model and its place there. A class of another module is bound by
+    the import at the top of the module, which ``check_import_reads`` reads as the module runs; one of the same module
+    only where the module declares it before the model, and one that no module writes nowhere.
+    """
+    if (own := positions.get(id(model))) is None or (data_type := model.additional_properties_type) is None:
+        return False
+    for nested in data_type.all_data_types:
+        if (reference := nested.reference) is None:
+            continue
+        if (position := positions.get(id(reference.source))) is None or (
+            position[0] == own[0] and position[1] >= own[1]
+        ):
+            return False
+    return True
 
 
 def refresh_sequence_interface_after_renames(state: _FinalizeState[Any]) -> None:
@@ -2670,7 +2693,8 @@ def _definition_reads(
     A definition reads a name through a module its module imports (``submodules``, by the name it binds each to) in
     the types of the fields it evaluates (``definition_reads``, where the class annotations count when
     ``evaluates_annotations`` tells that something evaluates them as the class is defined), its bases, the types of
-    its schema validator rules, and the enum members its defaults name.
+    its schema validator rules and of the backend settings its class statement evaluates (TypedDict ``extra_items``),
+    and the enum members its defaults name.
     """
     texts: list[str | None] = []
     for model in models:
@@ -2681,6 +2705,7 @@ def _definition_reads(
             (data_type for field in fields for data_type in field.data_type.all_data_types),
             model.base_classes,
             _parsed_rule_data_types(model),
+            model._setting_data_types_read_at_definition(),  # noqa: SLF001
         ):
             texts.append(data_type.alias)
             texts.extend(enum_class for enum_class, _ in data_type.enum_member_literals)

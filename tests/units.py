@@ -1438,6 +1438,7 @@ INPUT_TREES = (
     "jsonschema/field_type_collision_inherited_modules",
     "jsonschema/field_type_collision_inherited_modules_child_first",
     "jsonschema/field_type_collision_inherited_modules_package",
+    "jsonschema/import_cycle_map_key_alias_extra_items",
     "jsonschema/nested_resources/embedded",
     "jsonschema/nested_resources/external_control",
     "jsonschema/nested_resources/physical_collision",

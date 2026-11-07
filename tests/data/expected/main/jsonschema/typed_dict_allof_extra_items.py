@@ -11,5 +11,5 @@ class BaseExtra(TypedDict):
     id: NotRequired[int]
 
 
-class AllOfExtraItems(TypedDict, extra_items='BaseExtra'):
+class AllOfExtraItems(TypedDict, extra_items=BaseExtra):
     name: NotRequired[str]

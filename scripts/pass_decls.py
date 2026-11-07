@@ -1513,7 +1513,9 @@ NAME_FINAL_CLASSES_OF_ADDITIONAL_PROPERTIES = PassDecl(
     Phase.IMPORTS,
     Scope.GLOBAL,
     PassKind.TRANSFORM,
-    reads=_facts(RenderFact.CLASS_NAMES, RenderFact.IMPORT_ALIASES),
+    reads=_facts(
+        RenderFact.CLASS_NAMES, RenderFact.IMPORT_ALIASES, RenderFact.MODULE_MEMBERSHIP, RenderFact.MODEL_ORDER
+    ),
     writes=_facts(RenderFact.BACKEND_CONFIG),
     after=(
         After(
@@ -1524,7 +1526,8 @@ NAME_FINAL_CLASSES_OF_ADDITIONAL_PROPERTIES = PassDecl(
     ),
     condition="additional properties reference classes",
     summary="Renders backend settings that name the classes of additional properties (TypedDict extra_items) "
-    "from their final names, a class of another module through its import (model hook).",
+    "from their final names, a class of another module through its import (model hook), as a string only where a "
+    "class it names is not bound when the class statement runs: the class itself or one its module declares later.",
 )
 REFRESH_SEQUENCE_INTERFACE_AFTER_RENAMES = PassDecl(
     "refresh_sequence_interface_after_renames",

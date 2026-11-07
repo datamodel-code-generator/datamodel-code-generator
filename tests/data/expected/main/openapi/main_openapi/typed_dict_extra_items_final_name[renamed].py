@@ -15,5 +15,5 @@ class Bar(TypedDict):
     local: NotRequired[str]
 
 
-class Foo(TypedDict, extra_items='Bar1'):
+class Foo(TypedDict, extra_items=Bar1):
     name: NotRequired[str]

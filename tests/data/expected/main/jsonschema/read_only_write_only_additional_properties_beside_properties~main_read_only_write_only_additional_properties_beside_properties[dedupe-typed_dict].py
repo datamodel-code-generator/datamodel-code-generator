@@ -19,19 +19,19 @@ class Base(TypedDict):
     b: NotRequired[str]
 
 
-class HolderRequest(TypedDict, extra_items='FlaggedRequest'):
+class HolderRequest(TypedDict, extra_items=FlaggedRequest):
     a: NotRequired[str]
 
 
-class HolderResponse(TypedDict, extra_items='FlaggedResponse'):
+class HolderResponse(TypedDict, extra_items=FlaggedResponse):
     a: NotRequired[str]
 
 
-class MergedRequest(TypedDict, extra_items='FlaggedRequest'):
+class MergedRequest(TypedDict, extra_items=FlaggedRequest):
     b: NotRequired[str]
 
 
-class MergedResponse(TypedDict, extra_items='FlaggedResponse'):
+class MergedResponse(TypedDict, extra_items=FlaggedResponse):
     b: NotRequired[str]
 
 

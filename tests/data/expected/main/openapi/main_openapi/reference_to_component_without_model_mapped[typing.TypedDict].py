@@ -25,5 +25,5 @@ class Extra(TypedDict, extra_items=Twig):
     name: NotRequired[str]
 
 
-class Mixed(TypedDict, extra_items='Twig | Holder'):
+class Mixed(TypedDict, extra_items=Twig | Holder):
     name: NotRequired[str]

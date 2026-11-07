@@ -34,11 +34,11 @@ class Extras(TypedDict, extra_items=dict[str, Any]):
     name: NotRequired[str]
 
 
-class MixedRequest(TypedDict, extra_items='Literal[1] | bool | ItemRequest'):
+class MixedRequest(TypedDict, extra_items=Literal[1] | bool | ItemRequest):
     name: NotRequired[str]
 
 
-class MixedResponse(TypedDict, extra_items='Literal[1] | bool | ItemResponse'):
+class MixedResponse(TypedDict, extra_items=Literal[1] | bool | ItemResponse):
     name: NotRequired[str]
 
 
