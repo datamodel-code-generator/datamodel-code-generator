@@ -74,5 +74,5 @@ class RootModelTypeAlias(RootModel):
 
     @override
     def _class_hash(self, generic_base_config: Mapping[str, Any] | None) -> SetItemHash:
-        """Return ``never``: the alias ``Foo = RootModel[type]`` has no class body for the hash of a set item."""
+        """Return ``never``: the alias has no class body, yet class code or templates may hash it by identity."""
         return self._compared_class_hash()

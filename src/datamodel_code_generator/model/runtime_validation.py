@@ -9,8 +9,9 @@ from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeAlias, cast
 
 from typing_extensions import Sentinel
 
+from datamodel_code_generator._python_syntax import holds_lone_surrogate
 from datamodel_code_generator._records import record
-from datamodel_code_generator._regex_syntax import has_lone_surrogate, pattern_engine, selects_python_engine
+from datamodel_code_generator._regex_syntax import pattern_engine, selects_python_engine
 from datamodel_code_generator._requirements import pydantic_target_meets
 from datamodel_code_generator.python_literal import stable_repr
 
@@ -95,9 +96,9 @@ def alias_keeps_string_pattern(pattern: str, target: TargetPydanticVersion | Non
     """Return whether a type alias keeps ``pattern`` a string, so that the models that use the alias select its engine.
 
     A target that predates compiled patterns keeps every pattern a string, and no target compiles one that holds a
-    lone surrogate (``has_lone_surrogate``); a later target compiles every other pattern that needs Python's engine.
+    lone surrogate (``holds_lone_surrogate``); a later target compiles every other pattern that needs Python's engine.
     """
-    return not pydantic_target_meets("pydantic.compiled_pattern", target) or has_lone_surrogate(pattern)
+    return not pydantic_target_meets("pydantic.compiled_pattern", target) or holds_lone_surrogate(pattern)
 
 
 def _counts_every_pattern(_pattern: str) -> bool:
@@ -105,14 +106,18 @@ def _counts_every_pattern(_pattern: str) -> bool:
     return True
 
 
-def _counted_engine(pattern: str, counts: Callable[[str], bool]) -> PatternEngine | None:
-    """Return what a string pattern asks of an adapter (row ``adapter`` of ``pattern_engine``).
+def _counted_engine(engine: PatternEngine | None, pattern: str, counts: Callable[[str], bool]) -> PatternEngine | None:
+    """Return ``engine``, what a string pattern asks of the config or adapter that builds it, where it counts.
 
-    A pattern ``counts`` leaves out asks for no engine, but still runs on the adapter's: one that the default engine
-    runs as written counts.
+    A pattern ``counts`` leaves out asks for no engine, but still runs on the engine of that config or adapter: one
+    that the default engine runs as written counts.
     """
-    engine = pattern_engine(pattern, row="adapter")
-    return engine if counts(pattern) or engine == "default" else None
+    return engine if engine is not None and (counts(pattern) or engine == "default") else None
+
+
+def alias_pattern_counter(alias: _AliasModel) -> Callable[[str], bool]:
+    """Return the test that counts the string patterns a type alias keeps strings (``alias_keeps_string_pattern``)."""
+    return partial(alias_keeps_string_pattern, target=alias.extra_template_data.get("target_pydantic_version"))
 
 
 def _adapter_pattern_engines(
@@ -125,7 +130,7 @@ def _adapter_pattern_engines(
     """
     for nested in data_type.all_data_types:
         if isinstance(pattern := (nested.kwargs or {}).get("pattern"), str):
-            yield _counted_engine(pattern, counts)
+            yield _counted_engine(pattern_engine(pattern, row="adapter"), pattern, counts)
         if (
             (reference := nested.reference) is None
             or not getattr(source := reference.source, "IS_ALIAS", False)
@@ -134,10 +139,10 @@ def _adapter_pattern_engines(
             continue
         visited.add(id(source))
         alias = cast("_AliasModel", source)
-        kept = partial(alias_keeps_string_pattern, target=alias.extra_template_data.get("target_pydantic_version"))
+        kept = alias_pattern_counter(alias)
         for alias_field in alias.fields:
             if isinstance(pattern := getattr(alias_field.constraints, "pattern", None), str):
-                yield _counted_engine(pattern, kept)
+                yield _counted_engine(pattern_engine(pattern, row="adapter"), pattern, kept)
             yield from _adapter_pattern_engines(alias_field.data_type, visited, kept)
 
 

@@ -11,7 +11,6 @@ import re
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import replace
-from functools import partial
 from itertools import chain
 from pathlib import Path
 from types import MappingProxyType
@@ -31,10 +30,9 @@ from datamodel_code_generator._graph import reach, reaching
 from datamodel_code_generator._graph_links import clear_parents, drop_tree
 from datamodel_code_generator._message_text import for_count
 from datamodel_code_generator._model_keys import FIELDLESS_SITE_KEY, model_key_of
-from datamodel_code_generator._python_syntax import call_text
+from datamodel_code_generator._python_syntax import call_text, holds_lone_surrogate
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._regex_syntax import (
-    has_lone_surrogate,
     pattern_engine,
     selects_python_engine,
 )
@@ -137,9 +135,11 @@ from datamodel_code_generator.model.runtime_validation import (
     IndependentDeclaredPatternPropertiesRule,
     IndependentModelPatternPropertiesRule,
     SchemaRuntimeValidation,
+    _counted_engine,
     _counts_every_pattern,
     _is_internal_schema_runtime_validation,
     alias_keeps_string_pattern,
+    alias_pattern_counter,
     conditional_value_uses_json_equality,
     unique_items_path_uses_regex,
 )
@@ -156,7 +156,7 @@ from datamodel_code_generator.reference import FieldNameResolver, ModelType, kee
 from datamodel_code_generator.types import _is_value_literal, chain_as_tuple
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 
     from jinja2 import Template
     from typing_extensions import TypedDict, Unpack
@@ -570,7 +570,7 @@ def _compiled_python_pattern(
     """
     if (
         not isinstance(pattern, str)
-        or has_lone_surrogate(pattern)
+        or holds_lone_surrogate(pattern)
         or not (_needs_python_regex_engine(pattern, data_type, field) if prefix is None else pattern.startswith(prefix))
     ):
         return None
@@ -1386,9 +1386,7 @@ def _pattern_engines(
         if compiled:
             if include_compiled and counts(pattern) and _needs_python_regex_engine(pattern, data_type, field):
                 yield pattern, "python"
-        elif (engine := _model_pattern_engine(pattern, data_type, field)) is not None and (
-            counts(pattern) or engine == "default"
-        ):
+        elif (engine := _counted_engine(_model_pattern_engine(pattern, data_type, field), pattern, counts)) is not None:
             yield pattern, engine
 
 
@@ -1424,10 +1422,8 @@ def has_lookaround_pattern(
         (
             engine
             for scope in scopes
-            for _, engine in (
-                _pattern_engines(scope, include_compiled=include_compiled)
-                if follow_references
-                else _pattern_engines(scope, include_compiled=include_compiled, counts=counts)
+            for _, engine in _pattern_engines(
+                scope, include_compiled=include_compiled, counts=_counts_every_pattern if follow_references else counts
             )
         ),
         surrogates=surrogates,
@@ -1535,10 +1531,7 @@ def _alias_pattern_engines(alias: DataModel) -> Iterator[tuple[str, PatternEngin
 
     A type alias has no config, and keeps the patterns ``alias_keeps_string_pattern`` names strings.
     """
-    target = alias.extra_template_data.get("target_pydantic_version")
-    return _pattern_engines(
-        alias.fields, include_compiled=False, counts=partial(alias_keeps_string_pattern, target=target)
-    )
+    return _pattern_engines(alias.fields, include_compiled=False, counts=alias_pattern_counter(alias))
 
 
 def _reaching_aliases(models: list[DataModel], aliases: Iterable[DataModel]) -> set[int]:
@@ -1572,9 +1565,9 @@ def models_reaching_string_pattern_aliases(models: Iterable[DataModel]) -> set[i
 
 
 def _holds_lone_surrogate(models: Iterable[DataModel]) -> bool:
-    """Return whether a string pattern of the models holds a lone surrogate (``has_lone_surrogate``)."""
+    """Return whether a string pattern of the models holds a lone surrogate (``holds_lone_surrogate``)."""
     return any(
-        not compiled and has_lone_surrogate(pattern)
+        not compiled and holds_lone_surrogate(pattern)
         for model in models
         for pattern, _, _, compiled in _field_patterns(model.fields)
     )
@@ -1605,6 +1598,21 @@ def _config_pattern_engines(model: DataModel) -> Iterator[tuple[str, PatternEngi
             yield from _alias_pattern_engines(alias)
 
 
+def _uses_reached_alias(model: _PydanticV2Model, reached: Collection[int]) -> bool:
+    """Return whether a model names a model of ``reached`` in its fields or ``_bases_without_inherited_config``."""
+    return any(
+        id(reference.source) in reached
+        for reference in _model_references(model, model._bases_without_inherited_config())  # noqa: SLF001
+    )
+
+
+def _select_python_engine(model: _PydanticV2Model, *, through_alias: bool) -> None:
+    """Select Python's regex engine in a model; for a type alias it reaches, its bases name no such alias too."""
+    if through_alias:
+        model._keep_string_pattern_aliases_out_of_bases()  # noqa: SLF001
+    model._select_python_regex_engine()  # noqa: SLF001
+
+
 def _select_surrogate_regex_engines(models: list[DataModel], alias_users: type[DataModel]) -> None:
     """Select ``python-re`` for a lone surrogate where no pattern the config builds runs on the default engine (#6320).
 
@@ -1633,10 +1641,7 @@ def _select_surrogate_regex_engines(models: list[DataModel], alias_users: type[D
             if model._takes_config_of(base):  # noqa: SLF001
                 takers[id(base)].append(model)
     for model in holders:
-        through_alias = isinstance(model, alias_users) and any(
-            id(reference.source) in reached
-            for reference in _model_references(model, model._bases_without_inherited_config())  # noqa: SLF001
-        )
+        through_alias = isinstance(model, alias_users) and _uses_reached_alias(model, reached)
         own = [
             pattern
             for scope in model._surrogate_pattern_scopes()  # noqa: SLF001
@@ -1659,9 +1664,7 @@ def _select_surrogate_regex_engines(models: list[DataModel], alias_users: type[D
             None,
         )
         if blocker is None:
-            if through_alias:
-                model._keep_string_pattern_aliases_out_of_bases()  # noqa: SLF001
-            model._select_python_regex_engine()  # noqa: SLF001
+            _select_python_engine(model, through_alias=through_alias)
             continue
         surrogate = next(chain(own, (pattern for pattern, engine in engines if engine == "surrogate")))
         warn(
@@ -1757,12 +1760,8 @@ class _PydanticV2Model(DataModel):
         """
         if reached := models_reaching_string_pattern_aliases(models):
             for model in models:
-                if isinstance(model, cls) and any(
-                    id(reference.source) in reached
-                    for reference in _model_references(model, model._bases_without_inherited_config())  # noqa: SLF001
-                ):
-                    model._keep_string_pattern_aliases_out_of_bases()  # noqa: SLF001
-                    model._select_python_regex_engine()  # noqa: SLF001
+                if isinstance(model, cls) and _uses_reached_alias(model, reached):
+                    _select_python_engine(model, through_alias=True)
         _select_surrogate_regex_engines(models, cls)
 
     def _surrogate_pattern_scopes(self) -> Iterator[list[DataModelFieldBase]]:

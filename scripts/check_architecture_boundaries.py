@@ -236,10 +236,16 @@ _LEAF_LAYER_IMPORTS: Final[dict[str, tuple[frozenset[str], str]]] = {
         ),
     ),
     "regex": (
-        frozenset({*sys.stdlib_module_names, "typing_extensions", "datamodel_code_generator._records"}),
+        frozenset({
+            *sys.stdlib_module_names,
+            "typing_extensions",
+            "datamodel_code_generator._python_syntax",
+            "datamodel_code_generator._records",
+        }),
         (
             "the static regex scan is a leaf that the keyword table, the literal check and the backends read: import "
-            "only the standard library, typing_extensions and datamodel_code_generator._records"
+            "only the standard library, typing_extensions, datamodel_code_generator._python_syntax and "
+            "datamodel_code_generator._records"
         ),
     ),
     "json-schema": (

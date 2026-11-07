@@ -2573,8 +2573,13 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         """Return the dataclass arguments the decorator writes (``_written_dataclass_arguments``)."""
         return _written_dataclass_arguments(
             self.dataclass_arguments,
-            keep_false=bool(self.extra_template_data.get(_KEEP_FALSE_DATACLASS_ARGUMENTS_TEMPLATE_DATA_KEY)),
+            keep_false=self._keeps_false_dataclass_arguments,
         )
+
+    @property
+    def _keeps_false_dataclass_arguments(self) -> bool:
+        """Return whether the decorator writes the dataclass arguments set False (--keep-false-dataclass-arguments)."""
+        return bool(self.extra_template_data.get(_KEEP_FALSE_DATACLASS_ARGUMENTS_TEMPLATE_DATA_KEY))
 
     def _refused_dataclass_arguments(self, arguments: Mapping[str, bool]) -> list[str]:
         """Return why ``dataclasses.dataclass`` refuses these written arguments at import, one reason each.
@@ -2599,9 +2604,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         (``_refused_dataclass_arguments``), instead of writing a module that fails to import.
         """
         arguments = _safe_dataclass_arguments(self.dataclass_arguments)
-        written = _written_dataclass_arguments(
-            arguments, keep_false=bool(self.extra_template_data.get(_KEEP_FALSE_DATACLASS_ARGUMENTS_TEMPLATE_DATA_KEY))
-        )
+        written = _written_dataclass_arguments(arguments, keep_false=self._keeps_false_dataclass_arguments)
         if refused := self._refused_dataclass_arguments(written):
             decorator = ", ".join(f"{name}={value}" for name, value in written.items())
             msg = f"model {stable_repr(class_name)} cannot write @dataclass({decorator}): {'; '.join(refused)}"
