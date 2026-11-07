@@ -24,6 +24,7 @@ reviewed-safe class_name
 reviewed-safe class_name_affix_scope
 reviewed-safe class_name_prefix
 reviewed-safe class_name_suffix
+reviewed-safe collapse_constrained_root_models_as_annotated
 reviewed-safe collapse_reuse_models
 reviewed-safe collapse_root_models
 reviewed-safe collapse_root_models_name_strategy

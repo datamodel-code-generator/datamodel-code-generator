@@ -1116,6 +1116,15 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "content, as bytes, as a format: binary string is, instead of str."
         ),
     ),
+    PresetOptionGroup(
+        title="Constrained string root models collapsed as Annotated",
+        config=PresetConfig(collapse_constrained_root_models_as_annotated=True),
+        description=(
+            "Under --collapse-root-models with --use-annotated, inline a root model of a string with constraints "
+            "into a union, list, dict or other container of its holder as Annotated[str, ...], which keeps the "
+            "constraints on that member."
+        ),
+    ),
 )
 """The 20261104 groups and the opt-in options of the release after 0.90.0."""
 
@@ -1477,7 +1486,10 @@ def render_presets_markdown() -> str:
             "fields take (`p_q: Annotated[Any, Field(alias='p-q')]` under `--use-annotated`), and "
             "`--use-bytes-for-content-media-type`: a string of an OpenAPI document that has a `contentMediaType` and "
             "no `contentEncoding`, raw binary content, is typed `bytes`, as a `format: binary` string is, instead of "
-            "`str`."
+            "`str`, and "
+            "`--collapse-constrained-root-models-as-annotated`: a constrained string inside a union or a container "
+            "is written in place (`Annotated[str, StringConstraints(max_length=20)]`) instead of as a root model "
+            "of its own."
         ),
         "",
         "## Override Preset Options",

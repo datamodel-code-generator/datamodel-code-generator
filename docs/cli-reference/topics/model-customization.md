@@ -11,7 +11,7 @@ Options are grouped from shared CLI metadata and link back to their generated re
 | [Model Naming](#model-naming) | 12 | Class names, suffixes, prefixes, and duplicate-name behavior. |
 | [Model Reuse](#model-reuse) | 4 | Schema deduplication and shared generated modules. |
 | [Model Shape](#model-shape) | 6 | Output model family and compatibility targets. |
-| [Root Model](#root-model) | 8 | Root model creation, collapse, and alias behavior. |
+| [Root Model](#root-model) | 9 | Root model creation, collapse, and alias behavior. |
 
 ## Model Naming {#model-naming}
 
@@ -62,6 +62,7 @@ Root model creation, collapse, and alias behavior.
 
 | Option | Description |
 |--------|-------------|
+| [`--collapse-constrained-root-models-as-annotated`](../model-customization.md#collapse-constrained-root-models-as-annotated) | Inline a constrained string root model into a union or a container as `Annotated... |
 | [`--collapse-root-models`](../model-customization.md#collapse-root-models) | Inline root model definitions instead of creating separate wrapper classes. |
 | [`--collapse-root-models-name-strategy`](../model-customization.md#collapse-root-models-name-strategy) | Select which name to keep when collapsing root models with object references. |
 | [`--collapse-shared-parent-wrappers`](../model-customization.md#collapse-shared-parent-wrappers) | Collapse a parent-strategy wrapper in every model that references it. |

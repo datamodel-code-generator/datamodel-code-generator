@@ -19,6 +19,8 @@ capitalise-numbered-enum-members-practical	main/preset_opt_in_options/preset_set
 capitalise-numbered-enum-members-standard	main/preset_opt_in_options/preset_sets_opt_in_option[capitalise-numbered-enum-members-standard].py
 check-pattern-maps-strictly-practical	main/preset_opt_in_options/preset_sets_opt_in_option[check-pattern-maps-strictly-practical].py
 check-pattern-maps-strictly-standard	main/preset_opt_in_options/preset_sets_opt_in_option[check-pattern-maps-strictly-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[check-pattern-maps-strictly-practical].py
+collapse-constrained-root-models-as-annotated-practical	main/preset_opt_in_options/preset_sets_opt_in_option[collapse-constrained-root-models-as-annotated-practical].py
+collapse-constrained-root-models-as-annotated-standard	main/preset_opt_in_options/preset_sets_opt_in_option[collapse-constrained-root-models-as-annotated-standard].py
 collapse-shared-parent-wrappers-practical	main/preset_opt_in_options/preset_sets_opt_in_option[collapse-shared-parent-wrappers-practical].py
 collapse-shared-parent-wrappers-standard	main/preset_opt_in_options/preset_sets_opt_in_option[collapse-shared-parent-wrappers-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[collapse-shared-parent-wrappers-practical].py
 dedupe-request-response-variants-practical	main/preset_opt_in_options/preset_sets_opt_in_option[dedupe-request-response-variants-practical].py

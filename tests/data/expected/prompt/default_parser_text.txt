@@ -182,6 +182,7 @@
 - `--class-name-affix-scope`: Control which classes receive the prefix/suffix.
 - `--class-name-prefix`: Add a prefix to all generated class names.
 - `--class-name-suffix`: Add a suffix to all generated class names.
+- `--collapse-constrained-root-models-as-annotated`: Inline a constrained string root model into a union or a co...
 - `--collapse-reuse-models`: Collapse duplicate models by replacing references instead of inheritance.
 - `--collapse-root-models`: Inline root model definitions instead of creating separate wrapper classes.
 - `--collapse-root-models-name-strategy`: Select which name to keep when collapsing root models with object refe...
@@ -206,6 +207,7 @@
 - `--naming-strategy`: Choose how models are named and how duplicate model names are told apart.
 - `--no-allow-population-by-field-name`
 - `--no-apply-field-options-to-every-field`
+- `--no-collapse-constrained-root-models-as-annotated`
 - `--no-collapse-reuse-models`
 - `--no-collapse-root-models`
 - `--no-collapse-shared-parent-wrappers`

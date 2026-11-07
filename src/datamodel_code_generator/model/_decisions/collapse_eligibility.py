@@ -63,7 +63,8 @@ KeepRule: TypeAlias = Literal[
 * ``constraints-beside-container``: under ``--field-constraints``, the root field has constraints (as ``Field()``
   arguments or inside its type) and the holder's field type holds a dict, a union or a list, or under
   ``--keep-constrained-root-models-in-every-container`` any container (row ``legacy-collapse-beside-lists-and-dicts``
-  leaves out sets, frozen sets, sequences, mappings and tuples).
+  leaves out sets, frozen sets, sequences, mappings and tuples), unless the site is a member, an item or a value whose
+  type writes those constraints itself (``member_carries_constraints``).
 * ``no-name-strategy``: the root type names another model, other than the type alias of an item-count site, and no
   ``--collapse-root-models-name-strategy`` says which name the site takes.
 * ``list-item``: the root type names no model, the site is the item of a list, and the parser does not collapse the
@@ -77,7 +78,8 @@ class CollapseSiteFacts:
     """The facts ``keeps_root_model_named`` reads about one site and the root model it names.
 
     ``constrains_through_root_types`` is read only without ``field_constraints``, and ``holder_has_container`` only
-    under it where the root field has constraints; the adapter leaves them False where no rule reads them.
+    under it where the root field has constraints and the site's type does not carry them
+    (``member_carries_constraints``); the adapter leaves them False where no rule reads them.
     """
 
     has_root_field: bool = False
@@ -106,6 +108,9 @@ class CollapseSiteFacts:
     """The root type is one reference to a model other than the alias of an item-count site."""
     names_inner_models: bool = False
     """A ``--collapse-root-models-name-strategy`` is set."""
+    member_carries_constraints: bool = False
+    """Under ``--collapse-constrained-root-models-as-annotated``, the site is a member, an item or a value of a type and
+    the type it takes writes the constraints of the root field in ``Annotated``."""
     holder_has_container: bool = False
     """The holder's field type holds a dict, a union or a list, or any container where the option asks so."""
     list_item: bool = False
@@ -134,7 +139,12 @@ def keeps_root_model_named(facts: CollapseSiteFacts, /) -> KeepRule | None:  # n
         return "constraints-in-type"
     if facts.constrained_root_field and facts.root_type_is_map:
         return "constrained-map"
-    if facts.field_constraints and facts.constrained_root and facts.holder_has_container:
+    if (
+        facts.field_constraints
+        and facts.constrained_root
+        and facts.holder_has_container
+        and not facts.member_carries_constraints
+    ):
         return "constraints-beside-container"
     if facts.root_type_names_model:
         return None if facts.names_inner_models else "no-name-strategy"
