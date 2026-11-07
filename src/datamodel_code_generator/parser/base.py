@@ -2693,7 +2693,12 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
         if ctx.models:
             texts = render_module_models(
-                ctx.models, ctx.imports, self.imports, self._import_ledger, self.target_python_version.version_key
+                ctx.models,
+                ctx.imports,
+                self.imports,
+                self._import_ledger,
+                self.target_python_version.version_key,
+                self._import_overrides,
             )
             if config.with_import:
                 module_imports = self._import_ledger.rendered(ctx.imports)

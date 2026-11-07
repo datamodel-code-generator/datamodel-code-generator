@@ -468,20 +468,24 @@ def _bind_module_field_names(  # noqa: PLR0913
     return True
 
 
-def render_module_models(
+def render_module_models(  # noqa: PLR0913, PLR0917
     models: list[DataModel],
     imports: Imports,
     shared_imports: Imports,
     ledger: ModuleImportLedger,
     target: tuple[int, int],
+    overrides: Mapping[str, str] | None,
 ) -> list[str]:
     """Render the models of a module, alias the names a property hides in the texts and render the aliased again.
 
-    Where ``bind_module_field_names`` bound the names before, the texts already write the aliases.
+    Where ``bind_module_field_names`` bound the names before, the texts already write the aliases. The imports the
+    aliases add go through ``--import-overrides`` (``overrides``), as ``remap_import_overrides`` routes the others.
     """
     texts = [model.render() for model in models]
     if not _bind_module_field_names(models, imports, shared_imports, ledger, target, texts=texts):
         return texts
+    if overrides is not None:
+        _remap_imports(ledger, imports, overrides)
     return [
         text if isinstance(model, TypeAliasBase) else model.render() for model, text in zip(models, texts, strict=True)
     ]
