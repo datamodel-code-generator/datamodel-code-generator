@@ -1,7 +1,7 @@
 """The names a model's rendered text loads, and their rewriting through the bindings of its module.
 
-``DataModel.render`` writes a field annotation or default that names an import its module binds under another name
-through that name (``_bind_field_expressions``), and ``DataModel._render`` and the module rendering write every bare
+``DataModel._render_with_template_data`` rewrites field annotations and defaults to use the names their module
+binds (``_bind_field_expressions``). ``DataModel._render`` and the module rendering write every bare
 load of a builtin the module imports under an alias through the alias (``_bind_builtin_names``); the pass that aliases
 those builtins asks which of them a text loads bare (``_bare_loads_of``), and so does the pass that aliases the module
 imports named like a builtin, by its own row. Each parses the rendered text as the target writes it

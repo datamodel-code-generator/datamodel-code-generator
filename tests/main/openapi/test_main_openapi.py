@@ -11840,6 +11840,17 @@ def test_main_openapi_field_name_collision_with_alias_constraints(
     )
 
 
+def test_main_openapi_root_model_uses_aliased_field_import(output_file: Path) -> None:
+    """A property named Field can alias the Field call used by another model's root."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "alias_description_property_names.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+
+
 def test_main_openapi_shadowed_imports_base_and_fields(output_file: Path) -> None:
     """Test that aliased imports are applied to all fields, not just matching field names."""
     run_main_and_assert(

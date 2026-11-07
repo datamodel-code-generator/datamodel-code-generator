@@ -3434,19 +3434,21 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
         if refused := sorted(template_data.keys() & render_arguments.keys() - _TEMPLATE_DATA_OVERRIDABLE_KEYS):
             msg = f"extra template data cannot set {', '.join(refused)}, which the generator decides for the model"
             raise Error(msg + (_TEMPLATE_DATA_RENAME_HINT if "class_name" in refused else ""))
-        return self._render(**{
+        rendered = self._render(**{
             **render_arguments,
             **{key: value for key, value in template_data.items() if key not in _TEMPLATE_DATA_MODEL_VALUE_ERRORS},
         })
+        if self._field_name_bindings is None:
+            return rendered
+        return _bind_field_expressions(rendered, render_arguments["class_name"], self._field_name_bindings)
 
     @override
     def render(self, *, class_name: str | None = None) -> str:
         """Render the model to a string using the template."""
         use_custom_template = self._uses_custom_root_template
-        rendered_class_name = class_name or self.class_name
-        rendered = self._render_with_template_data(
+        return self._render_with_template_data(
             use_custom_template=use_custom_template,
-            class_name=rendered_class_name,
+            class_name=class_name or self.class_name,
             fields=self._template_fields(use_custom_template=use_custom_template),
             decorators=self.decorators,
             base_class=self.base_class,
@@ -3459,9 +3461,6 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
             ),
             path=self.path,
         )
-        if self._field_name_bindings is None:
-            return rendered
-        return _bind_field_expressions(rendered, rendered_class_name, self._field_name_bindings)
 
     def set_field_name_bindings(self, bindings: Mapping[str, str]) -> None:
         """Set module import names used by rendered field expressions."""
