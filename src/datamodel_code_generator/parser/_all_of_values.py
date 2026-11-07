@@ -63,7 +63,7 @@ from datamodel_code_generator.parser._schema_reading import (
 from datamodel_code_generator.reference import Reference, _is_special_path
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Collection, Iterable, Iterator, Sequence
+    from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
     from contextlib import AbstractContextManager
 
     from datamodel_code_generator._format_types import PythonVersion
@@ -130,6 +130,9 @@ __all__ = [
 ]
 
 _DERIVED_FROM_REF_KEY = "_derived_from_ref"
+_SITE_CONSTRAINTS_SCHEMA_KEY = "_site_constraints"
+"""The constraints an allOf site adds to its one ``$ref`` target (``reference_site_constraints``), kept on the bare
+reference ``merge_all_of_root_schema`` rewrites the site to, which the root type that names the target records."""
 _ALL_OF_VALUE_PART_EXCLUDED_EXTRAS = frozenset({
     *schema_positions("applicator", without=(*_MODELED_POSITIONS, "dependencies", "extends")),
     "dependentRequired",
@@ -837,11 +840,7 @@ def reference_site_value(
     if len(refs) == 1 and enforced == target_enforced:
         return parts, {"$ref": refs[0]}
     value = intersection.model_dump(exclude_unset=True, by_alias=True)
-    added = {
-        keyword: value[keyword]
-        for keyword in intersection.__constraint_field_order__
-        if keyword in value and value[keyword] != target_dump.get(keyword)
-    }
+    added = _added_constraints(intersection, target_dump)
     if (
         parser.field_constraints
         and len(refs) == 1
@@ -850,6 +849,73 @@ def reference_site_value(
     ):
         return parts, {"allOf": [{"$ref": refs[0]}], **added}
     return parts, value
+
+
+def _added_constraints(intersection: JsonSchemaObject, target: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the constraint keywords of ``intersection`` whose value differs from that of the dump ``target``."""
+    value = intersection.model_dump(exclude_unset=True, by_alias=True)
+    return {
+        keyword: value[keyword]
+        for keyword in intersection.__constraint_field_order__
+        if keyword in value and value[keyword] != target.get(keyword)
+    }
+
+
+def reference_site_constraints(parser: AllOfValuesHost, obj: JsonSchemaObject) -> dict[str, Any]:
+    """Return the constraint keywords an allOf site adds to the schema its first ``$ref`` member names, by keyword.
+
+    They are those of the intersection of its parts (that schema, the siblings of its ``$ref``, the inline members
+    and the site's own keywords) whose value differs from that schema's own; beside a map (an object of additional
+    properties alone), the property counts, keyed as a map field writes them (``minItems``, ``maxItems``). Empty where
+    the parts are no value schemas or are not intersected here (``intersects_value_parts``), where no value meets them
+    all, where the intersection is a set of literals, whose constraints count in no output, and where the site adds
+    nothing.
+    """
+    members = [item for item in obj.allOf if isinstance(item, JsonSchemaObject)]
+    if not (refs := [member for member in members if member.ref]):
+        return {}
+    if parser._is_all_of_mapping_item(target := parser._load_ref_schema_object(cast("str", refs[0].ref))):  # noqa: SLF001
+        return _added_map_counts(parser, obj, members, target)
+    if (
+        (parts := all_of_value_parts(parser, obj)) is None
+        or not intersects_value_parts(parser, parts)
+        or (target_parts := reference_value_parts(parser, cast("str", refs[0].ref))) is None
+        or parser._satisfiable_all_of_value_parts(obj) is None  # noqa: SLF001
+    ):
+        return {}
+    intersection = intersect_typed_value_parts(parser, parts, None)
+    if intersection.enum or "const" in intersection.extras:
+        return {}
+    target_value = intersect_typed_value_parts(parser, target_parts, None)
+    return _added_constraints(intersection, target_value.model_dump(exclude_unset=True, by_alias=True))
+
+
+def _reference_root(parser: AllOfValuesHost, obj: JsonSchemaObject, ref: str) -> JsonSchemaObject:
+    """Return the allOf site ``obj`` of one ``$ref`` member as a bare ``ref`` beside the site's own keywords.
+
+    It keeps the constraints the site adds to that target (``_SITE_CONSTRAINTS_SCHEMA_KEY``).
+    """
+    root = obj.model_copy(update={"ref": ref, "allOf": []})
+    if constraints := reference_site_constraints(parser, obj):
+        root.__dict__[_SITE_CONSTRAINTS_SCHEMA_KEY] = constraints
+    return root
+
+
+def _added_map_counts(
+    parser: AllOfValuesHost, obj: JsonSchemaObject, members: Sequence[JsonSchemaObject], target: JsonSchemaObject
+) -> dict[str, Any]:
+    """Return the property counts an allOf site adds to the map its first ``$ref`` names, as ``minItems``/``maxItems``.
+
+    The counts of the site's own keywords and of its members, each ``$ref`` merged with its siblings, are intersected
+    with the map's own: the largest ``minProperties`` and the smallest ``maxProperties``.
+    """
+    sources = [obj, *(parser._merge_ref_with_schema(member) for member in members)]  # noqa: SLF001
+    added: dict[str, Any] = {}
+    for keyword, written, pick in (("minProperties", "minItems", max), ("maxProperties", "maxItems", min)):
+        values = [value for source in sources if (value := getattr(source, keyword)) is not None]
+        if values and (count := pick(values)) != getattr(target, keyword):
+            added[written] = count
+    return added
 
 
 def all_of_reference_value_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> JsonSchemaObject | None:
@@ -1321,7 +1387,7 @@ def merge_all_of_root_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> 
             if not merged_root and ref:
                 merged_root = reference_site_schema(parser, obj, layered=parser.field_constraints)
             return merged_root or (
-                obj.model_copy(update={"ref": ref, "allOf": []})
+                _reference_root(parser, obj, ref)
                 if ref
                 else parser._schema_object({  # noqa: SLF001
                     **schema.model_dump(exclude_unset=True, by_alias=True),

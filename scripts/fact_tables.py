@@ -397,6 +397,16 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FreezePoint.B1,
         access=Access.DICT_KEY,
     ),
+    AttributeFact(
+        "DataType",
+        "_SITE_CONSTRAINTS_KEY",
+        FactKind.FACT,
+        (Fact.CONSTRAINTS,),
+        Phase.MODULES,
+        FreezePoint.B1,
+        store_ops=("record_site_constraints",),
+        access=Access.DICT_KEY,
+    ),
     AttributeFact("DataType", "TYPE_ORIGIN_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY),
     AttributeFact(
         "DataType", "BINARY_CONTENT_KEY", FactKind.BOOKKEEPING, (), Phase.PARSE, None, access=Access.DICT_KEY
@@ -619,6 +629,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (RenderFact.ASSIGNMENT_FORM,),
         Phase.MODULES,
         FreezePoint.B2,
+        store_ops=("write_field_call_in_annotated",),
     ),
     AttributeFact("DataModelFieldBase", "use_serialize_as_any", FactKind.PRESENTATION, (), Phase.PARSE, FreezePoint.B1),
     AttributeFact("DataModelFieldBase", "has_default", FactKind.FACT, (Fact.DEFAULTS,), Phase.MODULES, FreezePoint.B1),

@@ -33,6 +33,7 @@ from datamodel_code_generator._user_keys import model_type_override
 from datamodel_code_generator.enums import _pydantic_version_key
 from datamodel_code_generator.imports import Import, _import_key, _import_path
 from datamodel_code_generator.model.base import BaseClassDataType, ConstraintsBase
+from datamodel_code_generator.parser._passes._keys import site_constraints
 from datamodel_code_generator.parser._passes._shared import (
     _TYPE_DEPENDENT_CONSTRAINTS_KEY,
     TypeOverrideHost,
@@ -499,6 +500,7 @@ def apply_override_to_field(parser: TypeOverridesHost, field: DataModelFieldBase
     )
 
     data_type = _override_node(field.data_type, whole_type=parser.type_overrides_replace_whole_type)
+    _drop_site_constraints(parser, data_type)
     data_type.import_ = override_import
     data_type.alias = override_import.import_
     path = _import_path(override_import)
@@ -524,6 +526,12 @@ _WITHOUT_CONTAINER: Final[Mapping[str, Any]] = MappingProxyType({
     "tuple_item_count": None,
 })
 """The values of a type node that holds no container: no container slot, member, dict key or tuple length."""
+
+
+def _drop_site_constraints(parser: TypeOverridesHost, data_type: DataType) -> None:
+    """Drop the constraints the allOf site of ``data_type`` adds to the target it named, which leave with it."""
+    if site_constraints(data_type):
+        parser._graph_builder.record_site_constraints(data_type, {})  # noqa: SLF001
 
 
 def _override_node(data_type: DataType, *, whole_type: bool) -> DataType:
@@ -735,6 +743,7 @@ def apply_override_to_data_type(parser: TypeOverridesHost, data_type: DataType) 
             parser._graph_builder.set_type_expressions(  # noqa: SLF001
                 data_type, type_=annotation.type, python_type=annotation.python_type
             )
+        _drop_site_constraints(parser, data_type)
         overridden = True
     # Handle nested types (List[CustomType], Optional[CustomType], etc.)
     for nested in data_type.data_types:

@@ -266,6 +266,7 @@ from datamodel_code_generator.parser._all_of_values import (
     _ALL_OF_PARTS,
     _ALL_OF_VALUE_ITEM_KEYWORDS,
     _DERIVED_FROM_REF_KEY,
+    _SITE_CONSTRAINTS_SCHEMA_KEY,
 )
 from datamodel_code_generator.parser._field_rows import uses_default_with_required
 from datamodel_code_generator.parser._imports_plan import ImportProducer
@@ -5497,18 +5498,19 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     self._parse_all_of_merged_root(name, value_root.with_schema_location(obj.schema_location), path)
                 )
             if not union_models:
-                return frame.built(
-                    self._parse_object_common_part(
-                        name,
-                        obj,
-                        path,
-                        ignore_duplicate_model=ignore_duplicate_model,
-                        fields=fields,
-                        base_classes=base_classes,
-                        required=required,
-                        nullable=nullable,
-                    )
+                data_type = self._parse_object_common_part(
+                    name,
+                    obj,
+                    path,
+                    ignore_duplicate_model=ignore_duplicate_model,
+                    fields=fields,
+                    base_classes=base_classes,
+                    required=required,
+                    nullable=nullable,
                 )
+                if not fields and len(base_classes) == 1 and data_type.reference is base_classes[0]:
+                    self._record_site_constraints(obj, data_type)
+                return frame.built(data_type)
             reference = self.model_resolver.add(path, name, class_name=True, loaded=True)
             self._record_schema_object(reference, obj)
             values = _all_of_values.all_of_value_variants(self, obj) if reads_values else []
@@ -6676,6 +6678,21 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             singular_name=site.singular_name,
         )
 
+    def _record_site_constraints(self, obj: JsonSchemaObject, data_type: DataType) -> DataType:
+        """Keep on ``data_type`` the constraints the allOf site ``obj`` adds to the target of its first ``$ref``.
+
+        ``data_type`` is the type of the site where it names that target alone (``reference_site_constraints``); a
+        type that names another model keeps none. Return ``data_type``.
+        """
+        if (
+            (reference := data_type.reference) is not None
+            and (first := next((item for item in obj.allOf if isinstance(item, JsonSchemaObject) and item.ref), None))
+            and reference.path == self._ref_path(cast("str", first.ref))
+            and (constraints := _all_of_values.reference_site_constraints(self, obj))
+        ):
+            self._graph_builder.record_site_constraints(data_type, constraints)
+        return data_type
+
     def _parse_all_of_field_item(self, site: _Site) -> DataType:
         item, name, path, singular_name = site.obj, site.name, site.path, site.singular_name
         if self._contains_false_schema(item.allOf):
@@ -6715,7 +6732,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 if not self._adds_required_names(
                     self._get_inline_required_names(item), partial(self._ref_required_names, single_item.ref)
                 ):
-                    return self.get_ref_data_type(single_item.ref)
+                    return self._record_site_constraints(item, self.get_ref_data_type(single_item.ref))
         all_of_path = [self.model_resolver.resolve_ref(get_special_path("allOf", path))]
         with (
             self.model_resolver.yielding_new_references()
@@ -7421,6 +7438,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 data_type: DataType = cast("DataType", root_type)
             case "ref":
                 data_type = self.get_ref_data_type(cast("str", obj.ref))
+                if constraints := obj.__dict__.get(_SITE_CONSTRAINTS_SCHEMA_KEY):
+                    self._graph_builder.record_site_constraints(data_type, constraints)
             case "custom-type":
                 data_type = self.data_type_manager.get_data_type_from_full_path(
                     self._get_emitted_python_type_path(
@@ -7489,6 +7508,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 )
                 if data_type is None:  # pragma: no cover
                     data_type = self.data_type_manager.get_data_type(Types.any)
+                elif value_obj is obj and data_type.reference is not None:
+                    self._record_site_constraints(obj, data_type)
             case "object-map":
                 data_type = self._parse_object_map(name, obj, path, path)
             case "enum":

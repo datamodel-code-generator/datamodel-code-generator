@@ -72,6 +72,7 @@ from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, reference_graph
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, MemberFacts, UnionPolicy, assemble_union
 from datamodel_code_generator.parser._facts import Phase
+from datamodel_code_generator.parser._passes._keys import _SITE_CONSTRAINTS_KEY
 from datamodel_code_generator.parser._phases import FinalFacts, ModuleFacts
 from datamodel_code_generator.parser._sites import (
     PARSED,
@@ -189,6 +190,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "name_enum_member_literal_class",
     "name_reference",
     "record_dropped_multiple_of",
+    "record_site_constraints",
     "record_values_as_written",
     "record_widened_values",
     "rename_field",
@@ -208,6 +210,7 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "update_model_reference",
     "use_assignment_for_forward_references",
     "use_typing_generics",
+    "write_field_call_in_annotated",
     "write_rendered_null",
 })
 """The store mutations that make no reference site: they only remove sites, or change what sites do not record, such
@@ -1533,6 +1536,27 @@ class GenerationStore:  # noqa: PLR0904
         bump_node(data_type)
 
     @staticmethod
+    @deprecated("Use GenerationStore.builder().record_site_constraints() instead.", category=None)
+    def record_site_constraints(data_type: DataType, constraints: Mapping[str, Any]) -> None:
+        """Keep on the type of an allOf site the constraint keywords the site adds to the target the type names.
+
+        ``constrain_fields_by_their_reference_sites`` writes them on the field whose whole type it is.
+        """
+        data_type.__dict__[_SITE_CONSTRAINTS_KEY] = dict(constraints)
+        bump_node(data_type)
+
+    @staticmethod
+    @deprecated("Use GenerationStore.builder().write_field_call_in_annotated() instead.", category=None)
+    def write_field_call_in_annotated(field_: DataModelFieldBase) -> None:
+        """Make a field write its ``Field()`` call in ``Annotated`` metadata, as ``--use-annotated`` writes it.
+
+        ``constrain_fields_by_their_reference_sites`` writes the constraints of a site there on a field that writes no
+        call, where a call would give the field a constructor default.
+        """
+        field_.use_annotated = True
+        bump_field(field_)
+
+    @staticmethod
     @deprecated("Use GenerationStore.builder().record_widened_values() instead.", category=None)
     def record_widened_values(data_type: DataType, values: Sequence[object]) -> None:
         """Keep on a new type of an enum or a const the values it is written in place of, which no Literal holds.
@@ -2713,6 +2737,14 @@ class GraphBuilder:
     def record_values_as_written(self, owner: DataModel | DataType, values: Sequence[Any]) -> None:
         """Keep on a new enum model or Literal type the values as written of the enum or const it holds some of."""
         self._store.record_values_as_written(owner, values)  # ty: ignore[deprecated]
+
+    def record_site_constraints(self, data_type: DataType, constraints: Mapping[str, Any]) -> None:
+        """Keep on the type of an allOf site the constraint keywords the site adds to the target the type names."""
+        self._store.record_site_constraints(data_type, constraints)  # ty: ignore[deprecated]
+
+    def write_field_call_in_annotated(self, field_: DataModelFieldBase) -> None:
+        """Make a field write its ``Field()`` call in ``Annotated`` metadata through the store."""
+        self._store.write_field_call_in_annotated(field_)  # ty: ignore[deprecated]
 
     def record_widened_values(self, data_type: DataType, values: Sequence[object]) -> None:
         """Keep on a new type of an enum or a const the values it is written in place of, which no Literal holds."""

@@ -1191,7 +1191,11 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         return False
 
     def _has_numeric_data_type(self, type_name: str, strict_import_part: str | None = None) -> bool:
-        """Return whether a field data type is ``type_name``, or a strict import naming ``strict_import_part``."""
+        """Return whether a field data type is ``type_name``, or a strict import naming ``strict_import_part``.
+
+        A type that names a type alias is the type the alias stands for (``constrained_value_type``).
+        """
+        value_type = self.constrained_value_type(self.data_type) or self.data_type
         return any(
             data_type.type == type_name
             or (
@@ -1200,7 +1204,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
                 and data_type.import_
                 and strict_import_part in data_type.import_.import_
             )
-            for data_type in self.data_type.all_data_types
+            for data_type in chain(self.data_type.all_data_types, value_type.all_data_types)
         )
 
     def _takes_nested_model_factory(self) -> bool:

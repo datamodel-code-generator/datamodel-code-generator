@@ -17,7 +17,7 @@ from collections import defaultdict
 from dataclasses import replace
 from functools import partial
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast, get_args
 
 from typing_extensions import Protocol, Unpack
 
@@ -94,7 +94,7 @@ from datamodel_code_generator.parser._passes._import_binding import (
     reimport_references,
     set_reference_expressions,
 )
-from datamodel_code_generator.parser._passes._keys import _DERIVED_FROM_KEY, with_unique_items_set
+from datamodel_code_generator.parser._passes._keys import _DERIVED_FROM_KEY, site_constraints, with_unique_items_set
 from datamodel_code_generator.parser._passes._name_allocation import scheme_resolver
 from datamodel_code_generator.parser._passes._reference_users import (
     ReferenceUsersHost,
@@ -215,6 +215,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.config import ParserConfig
     from datamodel_code_generator.enums import DataclassArguments, TargetPydanticVersion
     from datamodel_code_generator.imports import Imports
+    from datamodel_code_generator.model.output import OutputModelContext
     from datamodel_code_generator.parser._field_rows import FieldFacts, FieldRow
     from datamodel_code_generator.parser._imports_plan import ModuleImportLedger
     from datamodel_code_generator.parser._passes._shared import UniqueItemsPlan
@@ -326,6 +327,18 @@ class ModulesHost(
     @property
     def _python_import_target_paths(self) -> set[str]:
         """The paths of the models parsed for schemas whose ``x-python-import`` types their uses."""
+
+    @property
+    def _output_model_context(self) -> OutputModelContext:
+        """The capabilities of the output model types."""
+
+    def _mark_untaken_constraints(
+        self,
+        field: DataModelFieldBase,
+        untaken: dict[str, Any],
+        keywords_for: Callable[[str], frozenset[str]],
+    ) -> None:
+        """Remember the declared constraints a field leaves out, and the target version that would take each."""
 
     @property
     def _const_narrowed_values(self) -> dict[int, tuple[DataType, _ConstNarrowing]]:
@@ -1742,6 +1755,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                 else:
                     copied_data_type = graph_builder.inline_shared(root_type_field.data_type, data_type)
                 carry_const_narrowings(parser, root_type_field.data_type, copied_data_type)
+                carry_site_constraints(parser, data_type, copied_data_type)
                 has_remaining_root_references = has_other_root_references(parser, root_type_model.reference, data_type)
 
                 replacement_context = None
@@ -1941,6 +1955,17 @@ def carry_const_narrowings(parser: CollapseHost, source: DataType, copied: DataT
         pending.extend(zip(source_node.data_types, copied_node.data_types, strict=True))
         if (key := source_node.dict_key) is not None:
             pending.append((key, cast("DataType", copied_node.dict_key)))
+
+
+def carry_site_constraints(parser: CollapseHost, replaced: DataType, copied: DataType) -> None:
+    """Give ``copied``, which collapse inlines in place of ``replaced``, the constraints its allOf site adds.
+
+    They are those of ``replaced`` (``site_constraints``) over those ``copied`` takes from the root type it copies,
+    which the site of the root model's own type adds: the site's are the intersection of its parts, the root model's
+    schema among them.
+    """
+    if site := site_constraints(replaced):
+        parser._graph_builder.record_site_constraints(copied, {**site_constraints(copied), **site})  # noqa: SLF001
 
 
 def take_recursion_facts(parser: CollapseHost, model: DataModel, path_owner: DataModel) -> None:
@@ -2982,6 +3007,97 @@ def settle_discriminated_unions(parser: ModulesHost, run: ModulesRun) -> None:
                 if parser.collapse_root_models:
                     for nested in iter_root_default_unions(field):
                         builder.set_type_discriminator(nested, None)
+
+
+def constrain_fields_by_their_reference_sites(parser: ModulesHost, run: ModulesRun) -> None:
+    """Write on each field the constraints that the allOf site of its whole type adds, where that type is no class.
+
+    The parse types such a site by its first ``$ref`` alone and records on that type what the other parts of the site
+    add to it (``site_constraints``), which root-model collapse carries to the type it inlines; once every module is
+    processed the field types are final. A field whose type is one collapse inlined, or names a type alias, writes
+    those that the type it stands for takes (``constrained_value_type``: an alias stands for its root type, a reuse
+    alias for that of the alias it reuses): the
+    keywords that type takes in this output (``DataTypeManager.constraint_keywords``, as a type override decides
+    them) and the property counts where it is a map, which the render then normalizes for that type, as for its own
+    (the integers the bounds of an int admit), and in msgspec, which rejects a constraint twice, none the alias sets
+    itself. It is generated without the others, with the warning of a field that leaves out what its type does not
+    take. A field whose type names a class keeps its output, as does
+    a type that ``--type-overrides`` replaced, whose constraints left with it.
+
+    Where a ``Field()`` call is a constructor default (``REQUIRED_ASSIGNMENT_COUNTS_AS_CONSTRUCTOR_DEFAULT``, a Pydantic
+    dataclass), a field that writes no call takes them in ``Annotated`` metadata, as ``--use-annotated`` writes them,
+    and a field that writes one takes them in it: the field keeps the place, the default and the positional use it has
+    in the constructor without them.
+    """
+    builder = parser._graph_builder  # noqa: SLF001
+    layers = parser._output_model_context.layers_repeated_constraints  # noqa: SLF001
+    version = parser.target_python_version.version_key
+    for ctx in run.contexts:
+        for model in ctx.models:
+            for field in model.fields:
+                if not (site := site_constraints(field.data_type)):
+                    continue
+                alias = (
+                    None
+                    if (reference := (data_type := _reused_value(field.data_type)).reference) is None
+                    else reference.source
+                )
+                if (reference is not None and not isinstance(alias, TypeAliasBase)) or (
+                    value_type := field.constrained_value_type(data_type)
+                ) is None:
+                    continue
+                takes = partial(parser.data_type_manager.constraint_keywords, value_type, version)
+                counts = _MAP_COUNTS if value_type in MAPPINGS else frozenset()
+                taken = {key: value for key, value in site.items() if key in counts or key in takes()}
+                constraints_class = _field_constraints_class(type(field))
+                if isinstance(alias, TypeAliasBase) and not layers and (root := alias.fields[0].constraints):
+                    written = root.model_dump(by_alias=True, exclude_none=True)
+                    taken = {key: value for key, value in taken.items() if key not in written}
+                in_annotated = (
+                    bool(taken)
+                    and model.REQUIRED_ASSIGNMENT_COUNTS_AS_CONSTRUCTOR_DEFAULT
+                    and not (field.use_annotated or field.field)
+                )
+                builder.set_field_constraints(
+                    field,
+                    ConstraintsBase.merge_constraints(field.constraints, constraints_class.model_validate(taken))
+                    if taken
+                    else field.constraints,
+                )
+                if in_annotated:
+                    builder.write_field_call_in_annotated(field)
+                if untaken := {key: value for key, value in site.items() if key not in counts and key not in takes()}:
+                    parser._mark_untaken_constraints(  # noqa: SLF001
+                        field,
+                        {**field.untaken_constraints[0], **untaken},
+                        lambda minimum, takes=takes: takes(number_values=True, target_model_version=minimum),
+                    )
+
+
+def _reused_value(data_type: DataType) -> DataType:
+    """Return the type that holds the value ``data_type`` names: the base of the alias it names where that is a reuse.
+
+    A type alias that ``--reuse-model`` makes of a duplicate has no field and names the alias it reuses as its base,
+    whose field holds its value.
+    """
+    if (
+        (reference := data_type.reference) is not None
+        and isinstance(source := reference.source, TypeAliasBase)
+        and not source.fields
+        and source.base_classes
+    ):
+        return source.base_classes[0]
+    return data_type
+
+
+_MAP_COUNTS: Final = frozenset({"minItems", "maxItems"})
+"""The keys of the property counts of a map site, as a map field writes its length."""
+
+
+def _field_constraints_class(field_type: type[DataModelFieldBase]) -> type[ConstraintsBase]:
+    """Return the constraints class of the fields of ``field_type``, which their parse validates constraints into."""
+    annotation = field_type.model_fields["constraints"].annotation
+    return next(arg for arg in get_args(annotation) if isinstance(arg, type) and issubclass(arg, ConstraintsBase))
 
 
 def type_users_of_looping_ref_chains_by_any(parser: DroppedRootModelUsersHost, run: ModulesRun) -> None:

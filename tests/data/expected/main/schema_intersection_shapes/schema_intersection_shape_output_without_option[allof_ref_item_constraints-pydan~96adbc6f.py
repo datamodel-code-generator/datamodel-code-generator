@@ -59,11 +59,11 @@ class LooserMap(RootModel[int]):
 
 
 class MemberItem(RootModel[int]):
-    root: int = Field(..., ge=2)
+    root: int = Field(..., ge=2, le=9)
 
 
 class MemberMap(RootModel[int]):
-    root: int = Field(..., ge=2)
+    root: int = Field(..., ge=2, le=9)
 
 
 class TwoItem(RootModel[int]):

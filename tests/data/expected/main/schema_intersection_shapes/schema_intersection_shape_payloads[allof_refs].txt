@@ -164,10 +164,10 @@ pydantic_v2.dataclass default level2_map {"k": 1} accepted
 pydantic_v2.dataclass default level2_map {"k": 4} rejected
 pydantic_v2.dataclass default number5 5 accepted
 pydantic_v2.dataclass default number5 6 accepted
-pydantic_v2.dataclass default number5 4 accepted
+pydantic_v2.dataclass default number5 4 rejected
 pydantic_v2.dataclass default number5_prop 5 accepted
 pydantic_v2.dataclass default number5_prop 6 accepted
-pydantic_v2.dataclass default number5_prop 4 accepted
+pydantic_v2.dataclass default number5_prop 4 rejected
 pydantic_v2.dataclass default number5_items [5] accepted
 pydantic_v2.dataclass default number5_items [6] accepted
 pydantic_v2.dataclass default number5_items [4] accepted
@@ -180,8 +180,8 @@ pydantic_v2.dataclass default non_negative -1 rejected
 pydantic_v2.dataclass default non_negative -0.5 rejected
 pydantic_v2.dataclass default non_negative_prop 0 accepted
 pydantic_v2.dataclass default non_negative_prop 1.5 accepted
-pydantic_v2.dataclass default non_negative_prop -1 accepted
-pydantic_v2.dataclass default non_negative_prop -0.5 accepted
+pydantic_v2.dataclass default non_negative_prop -1 rejected
+pydantic_v2.dataclass default non_negative_prop -0.5 rejected
 pydantic_v2.dataclass default non_negative_items [0] accepted
 pydantic_v2.dataclass default non_negative_items [1.5] accepted
 pydantic_v2.dataclass default non_negative_items [-1] accepted
@@ -219,11 +219,11 @@ pydantic_v2.dataclass default quantity 0 rejected
 pydantic_v2.dataclass default q_allof 1 accepted
 pydantic_v2.dataclass default q_allof 10 accepted
 pydantic_v2.dataclass default q_allof 0 rejected
-pydantic_v2.dataclass default q_allof 11 accepted
+pydantic_v2.dataclass default q_allof 11 rejected
 pydantic_v2.dataclass default q_allof_prop 1 accepted
 pydantic_v2.dataclass default q_allof_prop 10 accepted
 pydantic_v2.dataclass default q_allof_prop 0 rejected
-pydantic_v2.dataclass default q_allof_prop 11 accepted
+pydantic_v2.dataclass default q_allof_prop 11 rejected
 pydantic_v2.dataclass default q_allof_items [1] accepted
 pydantic_v2.dataclass default q_allof_items [10] accepted
 pydantic_v2.dataclass default q_allof_items [0] rejected
@@ -239,7 +239,7 @@ pydantic_v2.dataclass default q_allof2 11 rejected
 pydantic_v2.dataclass default q_allof2_prop 1 accepted
 pydantic_v2.dataclass default q_allof2_prop 10 accepted
 pydantic_v2.dataclass default q_allof2_prop 0 rejected
-pydantic_v2.dataclass default q_allof2_prop 11 accepted
+pydantic_v2.dataclass default q_allof2_prop 11 rejected
 pydantic_v2.dataclass default q_allof2_items [1] accepted
 pydantic_v2.dataclass default q_allof2_items [10] accepted
 pydantic_v2.dataclass default q_allof2_items [0] rejected
@@ -303,7 +303,7 @@ msgspec.Struct default number5 6 accepted
 msgspec.Struct default number5 4 rejected
 msgspec.Struct default number5_prop 5 accepted
 msgspec.Struct default number5_prop 6 accepted
-msgspec.Struct default number5_prop 4 accepted
+msgspec.Struct default number5_prop 4 rejected
 msgspec.Struct default number5_items [5] accepted
 msgspec.Struct default number5_items [6] accepted
 msgspec.Struct default number5_items [4] rejected
@@ -316,8 +316,8 @@ msgspec.Struct default non_negative -1 rejected
 msgspec.Struct default non_negative -0.5 rejected
 msgspec.Struct default non_negative_prop 0 accepted
 msgspec.Struct default non_negative_prop 1.5 accepted
-msgspec.Struct default non_negative_prop -1 accepted
-msgspec.Struct default non_negative_prop -0.5 accepted
+msgspec.Struct default non_negative_prop -1 rejected
+msgspec.Struct default non_negative_prop -0.5 rejected
 msgspec.Struct default non_negative_items [0] accepted
 msgspec.Struct default non_negative_items [1.5] accepted
 msgspec.Struct default non_negative_items [-1] accepted
@@ -345,7 +345,7 @@ msgspec.Struct default two_refs_map {"k": 6} rejected
 msgspec.Struct default stamp_len "2020-01-01T00:00:00Z" accepted
 msgspec.Struct default stamp_len "2020-01-01T00:00:00.1234567890123456789012+00:00" rejected
 msgspec.Struct default stamp_len_prop "2020-01-01T00:00:00Z" accepted
-msgspec.Struct default stamp_len_prop "2020-01-01T00:00:00.1234567890123456789012+00:00" accepted
+msgspec.Struct default stamp_len_prop "2020-01-01T00:00:00.1234567890123456789012+00:00" rejected
 msgspec.Struct default stamp_len_items ["2020-01-01T00:00:00Z"] accepted
 msgspec.Struct default stamp_len_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] rejected
 msgspec.Struct default stamp_len_map {"k": "2020-01-01T00:00:00Z"} accepted
@@ -359,7 +359,7 @@ msgspec.Struct default q_allof 11 rejected
 msgspec.Struct default q_allof_prop 1 accepted
 msgspec.Struct default q_allof_prop 10 accepted
 msgspec.Struct default q_allof_prop 0 rejected
-msgspec.Struct default q_allof_prop 11 accepted
+msgspec.Struct default q_allof_prop 11 rejected
 msgspec.Struct default q_allof_items [1] accepted
 msgspec.Struct default q_allof_items [10] accepted
 msgspec.Struct default q_allof_items [0] rejected
@@ -375,7 +375,7 @@ msgspec.Struct default q_allof2 11 rejected
 msgspec.Struct default q_allof2_prop 1 accepted
 msgspec.Struct default q_allof2_prop 10 accepted
 msgspec.Struct default q_allof2_prop 0 rejected
-msgspec.Struct default q_allof2_prop 11 accepted
+msgspec.Struct default q_allof2_prop 11 rejected
 msgspec.Struct default q_allof2_items [1] accepted
 msgspec.Struct default q_allof2_items [10] accepted
 msgspec.Struct default q_allof2_items [0] rejected
@@ -708,10 +708,10 @@ pydantic_v2.BaseModel --collapse-root-models level2_map {"k": 1} accepted
 pydantic_v2.BaseModel --collapse-root-models level2_map {"k": 4} rejected
 pydantic_v2.BaseModel --collapse-root-models number5 5 accepted
 pydantic_v2.BaseModel --collapse-root-models number5 6 accepted
-pydantic_v2.BaseModel --collapse-root-models number5 4 accepted
+pydantic_v2.BaseModel --collapse-root-models number5 4 rejected
 pydantic_v2.BaseModel --collapse-root-models number5_prop 5 accepted
 pydantic_v2.BaseModel --collapse-root-models number5_prop 6 accepted
-pydantic_v2.BaseModel --collapse-root-models number5_prop 4 accepted
+pydantic_v2.BaseModel --collapse-root-models number5_prop 4 rejected
 pydantic_v2.BaseModel --collapse-root-models number5_items [5] accepted
 pydantic_v2.BaseModel --collapse-root-models number5_items [6] accepted
 pydantic_v2.BaseModel --collapse-root-models number5_items [4] accepted
@@ -724,8 +724,8 @@ pydantic_v2.BaseModel --collapse-root-models non_negative -1 rejected
 pydantic_v2.BaseModel --collapse-root-models non_negative -0.5 rejected
 pydantic_v2.BaseModel --collapse-root-models non_negative_prop 0 accepted
 pydantic_v2.BaseModel --collapse-root-models non_negative_prop 1.5 accepted
-pydantic_v2.BaseModel --collapse-root-models non_negative_prop -1 accepted
-pydantic_v2.BaseModel --collapse-root-models non_negative_prop -0.5 accepted
+pydantic_v2.BaseModel --collapse-root-models non_negative_prop -1 rejected
+pydantic_v2.BaseModel --collapse-root-models non_negative_prop -0.5 rejected
 pydantic_v2.BaseModel --collapse-root-models non_negative_items [0] accepted
 pydantic_v2.BaseModel --collapse-root-models non_negative_items [1.5] accepted
 pydantic_v2.BaseModel --collapse-root-models non_negative_items [-1] accepted
@@ -763,11 +763,11 @@ pydantic_v2.BaseModel --collapse-root-models quantity 0 rejected
 pydantic_v2.BaseModel --collapse-root-models q_allof 1 accepted
 pydantic_v2.BaseModel --collapse-root-models q_allof 10 accepted
 pydantic_v2.BaseModel --collapse-root-models q_allof 0 rejected
-pydantic_v2.BaseModel --collapse-root-models q_allof 11 accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof 11 rejected
 pydantic_v2.BaseModel --collapse-root-models q_allof_prop 1 accepted
 pydantic_v2.BaseModel --collapse-root-models q_allof_prop 10 accepted
 pydantic_v2.BaseModel --collapse-root-models q_allof_prop 0 rejected
-pydantic_v2.BaseModel --collapse-root-models q_allof_prop 11 accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof_prop 11 rejected
 pydantic_v2.BaseModel --collapse-root-models q_allof_items [1] accepted
 pydantic_v2.BaseModel --collapse-root-models q_allof_items [10] accepted
 pydantic_v2.BaseModel --collapse-root-models q_allof_items [0] rejected
@@ -783,7 +783,7 @@ pydantic_v2.BaseModel --collapse-root-models q_allof2 11 rejected
 pydantic_v2.BaseModel --collapse-root-models q_allof2_prop 1 accepted
 pydantic_v2.BaseModel --collapse-root-models q_allof2_prop 10 accepted
 pydantic_v2.BaseModel --collapse-root-models q_allof2_prop 0 rejected
-pydantic_v2.BaseModel --collapse-root-models q_allof2_prop 11 accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof2_prop 11 rejected
 pydantic_v2.BaseModel --collapse-root-models q_allof2_items [1] accepted
 pydantic_v2.BaseModel --collapse-root-models q_allof2_items [10] accepted
 pydantic_v2.BaseModel --collapse-root-models q_allof2_items [0] rejected
@@ -847,7 +847,7 @@ msgspec.Struct --collapse-root-models number5 6 accepted
 msgspec.Struct --collapse-root-models number5 4 rejected
 msgspec.Struct --collapse-root-models number5_prop 5 accepted
 msgspec.Struct --collapse-root-models number5_prop 6 accepted
-msgspec.Struct --collapse-root-models number5_prop 4 accepted
+msgspec.Struct --collapse-root-models number5_prop 4 rejected
 msgspec.Struct --collapse-root-models number5_items [5] accepted
 msgspec.Struct --collapse-root-models number5_items [6] accepted
 msgspec.Struct --collapse-root-models number5_items [4] rejected
@@ -860,8 +860,8 @@ msgspec.Struct --collapse-root-models non_negative -1 rejected
 msgspec.Struct --collapse-root-models non_negative -0.5 rejected
 msgspec.Struct --collapse-root-models non_negative_prop 0 accepted
 msgspec.Struct --collapse-root-models non_negative_prop 1.5 accepted
-msgspec.Struct --collapse-root-models non_negative_prop -1 accepted
-msgspec.Struct --collapse-root-models non_negative_prop -0.5 accepted
+msgspec.Struct --collapse-root-models non_negative_prop -1 rejected
+msgspec.Struct --collapse-root-models non_negative_prop -0.5 rejected
 msgspec.Struct --collapse-root-models non_negative_items [0] accepted
 msgspec.Struct --collapse-root-models non_negative_items [1.5] accepted
 msgspec.Struct --collapse-root-models non_negative_items [-1] accepted
@@ -889,7 +889,7 @@ msgspec.Struct --collapse-root-models two_refs_map {"k": 6} rejected
 msgspec.Struct --collapse-root-models stamp_len "2020-01-01T00:00:00Z" accepted
 msgspec.Struct --collapse-root-models stamp_len "2020-01-01T00:00:00.1234567890123456789012+00:00" rejected
 msgspec.Struct --collapse-root-models stamp_len_prop "2020-01-01T00:00:00Z" accepted
-msgspec.Struct --collapse-root-models stamp_len_prop "2020-01-01T00:00:00.1234567890123456789012+00:00" accepted
+msgspec.Struct --collapse-root-models stamp_len_prop "2020-01-01T00:00:00.1234567890123456789012+00:00" rejected
 msgspec.Struct --collapse-root-models stamp_len_items ["2020-01-01T00:00:00Z"] accepted
 msgspec.Struct --collapse-root-models stamp_len_items ["2020-01-01T00:00:00.1234567890123456789012+00:00"] rejected
 msgspec.Struct --collapse-root-models stamp_len_map {"k": "2020-01-01T00:00:00Z"} accepted
@@ -903,7 +903,7 @@ msgspec.Struct --collapse-root-models q_allof 11 rejected
 msgspec.Struct --collapse-root-models q_allof_prop 1 accepted
 msgspec.Struct --collapse-root-models q_allof_prop 10 accepted
 msgspec.Struct --collapse-root-models q_allof_prop 0 rejected
-msgspec.Struct --collapse-root-models q_allof_prop 11 accepted
+msgspec.Struct --collapse-root-models q_allof_prop 11 rejected
 msgspec.Struct --collapse-root-models q_allof_items [1] accepted
 msgspec.Struct --collapse-root-models q_allof_items [10] accepted
 msgspec.Struct --collapse-root-models q_allof_items [0] rejected
@@ -919,7 +919,7 @@ msgspec.Struct --collapse-root-models q_allof2 11 rejected
 msgspec.Struct --collapse-root-models q_allof2_prop 1 accepted
 msgspec.Struct --collapse-root-models q_allof2_prop 10 accepted
 msgspec.Struct --collapse-root-models q_allof2_prop 0 rejected
-msgspec.Struct --collapse-root-models q_allof2_prop 11 accepted
+msgspec.Struct --collapse-root-models q_allof2_prop 11 rejected
 msgspec.Struct --collapse-root-models q_allof2_items [1] accepted
 msgspec.Struct --collapse-root-models q_allof2_items [10] accepted
 msgspec.Struct --collapse-root-models q_allof2_items [0] rejected

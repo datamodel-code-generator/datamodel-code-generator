@@ -50,16 +50,16 @@ pydantic_v2.BaseModel default q_map {"k": 11} accepted
 pydantic_v2.BaseModel default short_status "open" accepted
 pydantic_v2.BaseModel default short_status "closed" accepted
 pydantic_v2.dataclass default count 5 accepted
-pydantic_v2.dataclass default count 4 accepted
+pydantic_v2.dataclass default count 4 rejected
 pydantic_v2.dataclass default code "A" accepted
-pydantic_v2.dataclass default code "ABCD" accepted
+pydantic_v2.dataclass default code "ABCD" rejected
 pydantic_v2.dataclass default code "a" rejected
 pydantic_v2.dataclass default tags ["a"] accepted
-pydantic_v2.dataclass default tags [] accepted
+pydantic_v2.dataclass default tags [] rejected
 pydantic_v2.dataclass default tags ["a", "b", "c", "d"] rejected
 pydantic_v2.dataclass default tags ["a", "b", "c", "d", "e", "f"] rejected
 pydantic_v2.dataclass default score 100 accepted
-pydantic_v2.dataclass default score 101 accepted
+pydantic_v2.dataclass default score 101 rejected
 pydantic_v2.dataclass default counts [5] accepted
 pydantic_v2.dataclass default counts [4] accepted
 pydantic_v2.dataclass default limits {"k": 10} accepted
@@ -89,7 +89,7 @@ pydantic_v2.dataclass default ap {"k": 0} accepted
 pydantic_v2.dataclass default q_allof 1 accepted
 pydantic_v2.dataclass default q_allof 10 accepted
 pydantic_v2.dataclass default q_allof 0 rejected
-pydantic_v2.dataclass default q_allof 11 accepted
+pydantic_v2.dataclass default q_allof 11 rejected
 pydantic_v2.dataclass default q_items [1] accepted
 pydantic_v2.dataclass default q_items [10] accepted
 pydantic_v2.dataclass default q_items [0] rejected
@@ -101,12 +101,12 @@ pydantic_v2.dataclass default q_map {"k": 11} accepted
 pydantic_v2.dataclass default short_status "open" accepted
 pydantic_v2.dataclass default short_status "closed" accepted
 msgspec.Struct default count 5 accepted
-msgspec.Struct default count 4 accepted
+msgspec.Struct default count 4 rejected
 msgspec.Struct default code "A" accepted
-msgspec.Struct default code "ABCD" accepted
+msgspec.Struct default code "ABCD" rejected
 msgspec.Struct default code "a" rejected
 msgspec.Struct default tags ["a"] accepted
-msgspec.Struct default tags [] accepted
+msgspec.Struct default tags [] rejected
 msgspec.Struct default tags ["a", "b", "c", "d"] rejected
 msgspec.Struct default tags ["a", "b", "c", "d", "e", "f"] rejected
 msgspec.Struct default score 100 accepted
@@ -140,7 +140,7 @@ msgspec.Struct default ap {"k": 0} rejected
 msgspec.Struct default q_allof 1 accepted
 msgspec.Struct default q_allof 10 accepted
 msgspec.Struct default q_allof 0 rejected
-msgspec.Struct default q_allof 11 accepted
+msgspec.Struct default q_allof 11 rejected
 msgspec.Struct default q_items [1] accepted
 msgspec.Struct default q_items [10] accepted
 msgspec.Struct default q_items [0] rejected
@@ -254,16 +254,16 @@ pydantic_v2.BaseModel --use-annotated q_map {"k": 11} rejected
 pydantic_v2.BaseModel --use-annotated short_status "open" accepted
 pydantic_v2.BaseModel --use-annotated short_status "closed" accepted
 pydantic_v2.BaseModel --collapse-root-models count 5 accepted
-pydantic_v2.BaseModel --collapse-root-models count 4 accepted
+pydantic_v2.BaseModel --collapse-root-models count 4 rejected
 pydantic_v2.BaseModel --collapse-root-models code "A" accepted
-pydantic_v2.BaseModel --collapse-root-models code "ABCD" accepted
+pydantic_v2.BaseModel --collapse-root-models code "ABCD" rejected
 pydantic_v2.BaseModel --collapse-root-models code "a" rejected
 pydantic_v2.BaseModel --collapse-root-models tags ["a"] accepted
 pydantic_v2.BaseModel --collapse-root-models tags [] accepted
 pydantic_v2.BaseModel --collapse-root-models tags ["a", "b", "c", "d"] rejected
 pydantic_v2.BaseModel --collapse-root-models tags ["a", "b", "c", "d", "e", "f"] rejected
 pydantic_v2.BaseModel --collapse-root-models score 100 accepted
-pydantic_v2.BaseModel --collapse-root-models score 101 accepted
+pydantic_v2.BaseModel --collapse-root-models score 101 rejected
 pydantic_v2.BaseModel --collapse-root-models counts [5] accepted
 pydantic_v2.BaseModel --collapse-root-models counts [4] accepted
 pydantic_v2.BaseModel --collapse-root-models limits {"k": 10} accepted
@@ -293,7 +293,7 @@ pydantic_v2.BaseModel --collapse-root-models ap {"k": 0} accepted
 pydantic_v2.BaseModel --collapse-root-models q_allof 1 accepted
 pydantic_v2.BaseModel --collapse-root-models q_allof 10 accepted
 pydantic_v2.BaseModel --collapse-root-models q_allof 0 rejected
-pydantic_v2.BaseModel --collapse-root-models q_allof 11 accepted
+pydantic_v2.BaseModel --collapse-root-models q_allof 11 rejected
 pydantic_v2.BaseModel --collapse-root-models q_items [1] accepted
 pydantic_v2.BaseModel --collapse-root-models q_items [10] accepted
 pydantic_v2.BaseModel --collapse-root-models q_items [0] rejected
@@ -305,12 +305,12 @@ pydantic_v2.BaseModel --collapse-root-models q_map {"k": 11} accepted
 pydantic_v2.BaseModel --collapse-root-models short_status "open" accepted
 pydantic_v2.BaseModel --collapse-root-models short_status "closed" accepted
 msgspec.Struct --collapse-root-models count 5 accepted
-msgspec.Struct --collapse-root-models count 4 accepted
+msgspec.Struct --collapse-root-models count 4 rejected
 msgspec.Struct --collapse-root-models code "A" accepted
-msgspec.Struct --collapse-root-models code "ABCD" accepted
+msgspec.Struct --collapse-root-models code "ABCD" rejected
 msgspec.Struct --collapse-root-models code "a" rejected
 msgspec.Struct --collapse-root-models tags ["a"] accepted
-msgspec.Struct --collapse-root-models tags [] accepted
+msgspec.Struct --collapse-root-models tags [] rejected
 msgspec.Struct --collapse-root-models tags ["a", "b", "c", "d"] rejected
 msgspec.Struct --collapse-root-models tags ["a", "b", "c", "d", "e", "f"] rejected
 msgspec.Struct --collapse-root-models score 100 accepted
@@ -344,7 +344,7 @@ msgspec.Struct --collapse-root-models ap {"k": 0} rejected
 msgspec.Struct --collapse-root-models q_allof 1 accepted
 msgspec.Struct --collapse-root-models q_allof 10 accepted
 msgspec.Struct --collapse-root-models q_allof 0 rejected
-msgspec.Struct --collapse-root-models q_allof 11 accepted
+msgspec.Struct --collapse-root-models q_allof 11 rejected
 msgspec.Struct --collapse-root-models q_items [1] accepted
 msgspec.Struct --collapse-root-models q_items [10] accepted
 msgspec.Struct --collapse-root-models q_items [0] rejected

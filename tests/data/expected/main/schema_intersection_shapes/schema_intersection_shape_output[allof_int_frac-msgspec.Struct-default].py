@@ -13,14 +13,14 @@ FracMap: TypeAlias = Annotated[int, Meta(ge=1, le=9)]
 Number: TypeAlias = int
 
 
-Frac: TypeAlias = Annotated[Number, Meta(ge=0.5, le=9.5)]
+Frac: TypeAlias = Annotated[Number, Meta(ge=1, le=9)]
 
 
-FracItem: TypeAlias = Annotated[Number, Meta(ge=0.5, le=9.5)]
+FracItem: TypeAlias = Annotated[Number, Meta(ge=1, le=9)]
 
 
 class Model(Struct):
     frac: Frac | UnsetType = UNSET
-    frac_prop: Number | UnsetType = UNSET
+    frac_prop: Annotated[Number, Meta(ge=1, le=9)] | UnsetType = UNSET
     frac_items: list[FracItem] | UnsetType = UNSET
     frac_map: dict[str, FracMap] | UnsetType = UNSET

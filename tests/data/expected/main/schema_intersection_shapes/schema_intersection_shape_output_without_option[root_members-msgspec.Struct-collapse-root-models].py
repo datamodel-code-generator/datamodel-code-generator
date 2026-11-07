@@ -54,7 +54,7 @@ class M(Struct):
     wc_items: list[AB] | UnsetType = UNSET
     wc_map: dict[str, AB] | UnsetType = UNSET
     wd: Annotated[int, Meta(ge=1, le=10)] | UnsetType = UNSET
-    wd_prop: Annotated[int, Meta(ge=1)] | UnsetType = UNSET
+    wd_prop: Annotated[int, Meta(ge=1, le=10)] | UnsetType = UNSET
     wd_items: list[Q] | UnsetType = UNSET
     wd_map: dict[str, WdMap] | UnsetType = UNSET
     we: Annotated[int, Meta(ge=1)] | UnsetType = UNSET
