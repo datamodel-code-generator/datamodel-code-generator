@@ -1097,6 +1097,7 @@ openapi/allof_enum_ref.yaml::components.schemas.MassUnit	payloads/native_numeric
 openapi/allof_inherited_constraint_composition_isolation.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_inherited_constraint_composition_isolation.yaml::components.schemas.Standalone	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_materialize_defaults.yaml::components.schemas.Parent	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/allof_member_declarations_rw.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_member_parts_request_response.yaml::components.schemas.A	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_member_parts_request_response.yaml::components.schemas.Real	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_merge_mode_none.yaml::components.schemas.Parent	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3118,6 +3119,7 @@ openapi/allof_enum_ref.yaml::components.schemas.MassUnit	payloads/native_numeric
 openapi/allof_inherited_constraint_composition_isolation.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_inherited_constraint_composition_isolation.yaml::components.schemas.Standalone	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_materialize_defaults.yaml::components.schemas.Parent	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/allof_member_declarations_rw.yaml::components.schemas.Base	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_member_parts_request_response.yaml::components.schemas.A	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_member_parts_request_response.yaml::components.schemas.Real	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/allof_merge_mode_none.yaml::components.schemas.Parent	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

@@ -1,0 +1,264 @@
+pydantic_v2.BaseModel default mid "abc" accepted
+pydantic_v2.BaseModel default mid "abcd" rejected
+pydantic_v2.BaseModel default nested {"n": 3} accepted
+pydantic_v2.BaseModel default nested {"n": 12} rejected
+pydantic_v2.BaseModel default nested {"n": 4} rejected
+pydantic_v2.BaseModel default nested {"n": -3} rejected
+pydantic_v2.BaseModel default inherited {"code": "Ab"} accepted
+pydantic_v2.BaseModel default inherited {"code": ""} rejected
+pydantic_v2.BaseModel default inherited {"code": "ab"} rejected
+pydantic_v2.BaseModel default kept_default {"tag": "ab"} accepted
+pydantic_v2.BaseModel default kept_default {} accepted
+pydantic_v2.BaseModel default kept_default {"tag": "abc"} rejected
+pydantic_v2.BaseModel default child {"mid": "ab"} accepted
+pydantic_v2.BaseModel default child {"mid": ""} rejected
+pydantic_v2.BaseModel default child {"mid": "abcd"} rejected
+pydantic_v2.BaseModel default field_site {"ratio": 0.5} accepted
+pydantic_v2.BaseModel default field_site {"ratio": 1} rejected
+pydantic_v2.BaseModel default reference {"ref": "ab"} accepted
+pydantic_v2.BaseModel default reference {"ref": "a"} rejected
+pydantic_v2.BaseModel default reference {"ref": "abcde"} accepted
+pydantic_v2.BaseModel default positional {"pair": ["a"]} accepted
+pydantic_v2.BaseModel default positional {"pair": ["a", "b"]} accepted
+pydantic_v2.dataclass default mid "abc" accepted
+pydantic_v2.dataclass default mid "abcd" rejected
+pydantic_v2.dataclass default nested {"n": 3} accepted
+pydantic_v2.dataclass default nested {"n": 12} rejected
+pydantic_v2.dataclass default nested {"n": 4} rejected
+pydantic_v2.dataclass default nested {"n": -3} rejected
+pydantic_v2.dataclass default inherited {"code": "Ab"} accepted
+pydantic_v2.dataclass default inherited {"code": ""} rejected
+pydantic_v2.dataclass default inherited {"code": "ab"} rejected
+pydantic_v2.dataclass default kept_default {"tag": "ab"} accepted
+pydantic_v2.dataclass default kept_default {} accepted
+pydantic_v2.dataclass default kept_default {"tag": "abc"} rejected
+pydantic_v2.dataclass default child {"mid": "ab"} accepted
+pydantic_v2.dataclass default child {"mid": ""} rejected
+pydantic_v2.dataclass default child {"mid": "abcd"} rejected
+pydantic_v2.dataclass default field_site {"ratio": 0.5} accepted
+pydantic_v2.dataclass default field_site {"ratio": 1} rejected
+pydantic_v2.dataclass default reference {"ref": "ab"} accepted
+pydantic_v2.dataclass default reference {"ref": "a"} rejected
+pydantic_v2.dataclass default reference {"ref": "abcde"} accepted
+pydantic_v2.dataclass default positional {"pair": ["a"]} accepted
+pydantic_v2.dataclass default positional {"pair": ["a", "b"]} accepted
+msgspec.Struct default mid "abc" accepted
+msgspec.Struct default mid "abcd" rejected
+msgspec.Struct default nested {"n": 3} accepted
+msgspec.Struct default nested {"n": 12} rejected
+msgspec.Struct default nested {"n": 4} rejected
+msgspec.Struct default nested {"n": -3} rejected
+msgspec.Struct default inherited {"code": "Ab"} accepted
+msgspec.Struct default inherited {"code": ""} rejected
+msgspec.Struct default inherited {"code": "ab"} rejected
+msgspec.Struct default kept_default {"tag": "ab"} accepted
+msgspec.Struct default kept_default {} accepted
+msgspec.Struct default kept_default {"tag": "abc"} rejected
+msgspec.Struct default child {"mid": "ab"} accepted
+msgspec.Struct default child {"mid": ""} rejected
+msgspec.Struct default child {"mid": "abcd"} rejected
+msgspec.Struct default field_site {"ratio": 0.5} accepted
+msgspec.Struct default field_site {"ratio": 1} rejected
+msgspec.Struct default reference {"ref": "ab"} accepted
+msgspec.Struct default reference {"ref": "a"} rejected
+msgspec.Struct default reference {"ref": "abcde"} accepted
+msgspec.Struct default positional {"pair": ["a"]} accepted
+msgspec.Struct default positional {"pair": ["a", "b"]} accepted
+pydantic_v2.BaseModel --field-constraints mid "abc" accepted
+pydantic_v2.BaseModel --field-constraints mid "abcd" rejected
+pydantic_v2.BaseModel --field-constraints nested {"n": 3} accepted
+pydantic_v2.BaseModel --field-constraints nested {"n": 12} rejected
+pydantic_v2.BaseModel --field-constraints nested {"n": 4} rejected
+pydantic_v2.BaseModel --field-constraints nested {"n": -3} rejected
+pydantic_v2.BaseModel --field-constraints inherited {"code": "Ab"} accepted
+pydantic_v2.BaseModel --field-constraints inherited {"code": ""} rejected
+pydantic_v2.BaseModel --field-constraints inherited {"code": "ab"} rejected
+pydantic_v2.BaseModel --field-constraints kept_default {"tag": "ab"} accepted
+pydantic_v2.BaseModel --field-constraints kept_default {} accepted
+pydantic_v2.BaseModel --field-constraints kept_default {"tag": "abc"} rejected
+pydantic_v2.BaseModel --field-constraints child {"mid": "ab"} accepted
+pydantic_v2.BaseModel --field-constraints child {"mid": ""} rejected
+pydantic_v2.BaseModel --field-constraints child {"mid": "abcd"} rejected
+pydantic_v2.BaseModel --field-constraints field_site {"ratio": 0.5} accepted
+pydantic_v2.BaseModel --field-constraints field_site {"ratio": 1} rejected
+pydantic_v2.BaseModel --field-constraints reference {"ref": "ab"} accepted
+pydantic_v2.BaseModel --field-constraints reference {"ref": "a"} rejected
+pydantic_v2.BaseModel --field-constraints reference {"ref": "abcde"} accepted
+pydantic_v2.BaseModel --field-constraints positional {"pair": ["a"]} accepted
+pydantic_v2.BaseModel --field-constraints positional {"pair": ["a", "b"]} accepted
+pydantic_v2.BaseModel --use-annotated mid "abc" accepted
+pydantic_v2.BaseModel --use-annotated mid "abcd" rejected
+pydantic_v2.BaseModel --use-annotated nested {"n": 3} accepted
+pydantic_v2.BaseModel --use-annotated nested {"n": 12} rejected
+pydantic_v2.BaseModel --use-annotated nested {"n": 4} rejected
+pydantic_v2.BaseModel --use-annotated nested {"n": -3} rejected
+pydantic_v2.BaseModel --use-annotated inherited {"code": "Ab"} accepted
+pydantic_v2.BaseModel --use-annotated inherited {"code": ""} rejected
+pydantic_v2.BaseModel --use-annotated inherited {"code": "ab"} rejected
+pydantic_v2.BaseModel --use-annotated kept_default {"tag": "ab"} accepted
+pydantic_v2.BaseModel --use-annotated kept_default {} accepted
+pydantic_v2.BaseModel --use-annotated kept_default {"tag": "abc"} rejected
+pydantic_v2.BaseModel --use-annotated child {"mid": "ab"} accepted
+pydantic_v2.BaseModel --use-annotated child {"mid": ""} rejected
+pydantic_v2.BaseModel --use-annotated child {"mid": "abcd"} rejected
+pydantic_v2.BaseModel --use-annotated field_site {"ratio": 0.5} accepted
+pydantic_v2.BaseModel --use-annotated field_site {"ratio": 1} rejected
+pydantic_v2.BaseModel --use-annotated reference {"ref": "ab"} accepted
+pydantic_v2.BaseModel --use-annotated reference {"ref": "a"} rejected
+pydantic_v2.BaseModel --use-annotated reference {"ref": "abcde"} accepted
+pydantic_v2.BaseModel --use-annotated positional {"pair": ["a"]} accepted
+pydantic_v2.BaseModel --use-annotated positional {"pair": ["a", "b"]} accepted
+pydantic_v2.BaseModel --collapse-root-models mid "abc" accepted
+pydantic_v2.BaseModel --collapse-root-models mid "abcd" rejected
+pydantic_v2.BaseModel --collapse-root-models nested {"n": 3} accepted
+pydantic_v2.BaseModel --collapse-root-models nested {"n": 12} rejected
+pydantic_v2.BaseModel --collapse-root-models nested {"n": 4} rejected
+pydantic_v2.BaseModel --collapse-root-models nested {"n": -3} rejected
+pydantic_v2.BaseModel --collapse-root-models inherited {"code": "Ab"} accepted
+pydantic_v2.BaseModel --collapse-root-models inherited {"code": ""} rejected
+pydantic_v2.BaseModel --collapse-root-models inherited {"code": "ab"} rejected
+pydantic_v2.BaseModel --collapse-root-models kept_default {"tag": "ab"} accepted
+pydantic_v2.BaseModel --collapse-root-models kept_default {} accepted
+pydantic_v2.BaseModel --collapse-root-models kept_default {"tag": "abc"} rejected
+pydantic_v2.BaseModel --collapse-root-models child {"mid": "ab"} accepted
+pydantic_v2.BaseModel --collapse-root-models child {"mid": ""} rejected
+pydantic_v2.BaseModel --collapse-root-models child {"mid": "abcd"} rejected
+pydantic_v2.BaseModel --collapse-root-models field_site {"ratio": 0.5} accepted
+pydantic_v2.BaseModel --collapse-root-models field_site {"ratio": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models reference {"ref": "ab"} accepted
+pydantic_v2.BaseModel --collapse-root-models reference {"ref": "a"} rejected
+pydantic_v2.BaseModel --collapse-root-models reference {"ref": "abcde"} accepted
+pydantic_v2.BaseModel --collapse-root-models positional {"pair": ["a"]} accepted
+pydantic_v2.BaseModel --collapse-root-models positional {"pair": ["a", "b"]} accepted
+msgspec.Struct --collapse-root-models mid "abc" accepted
+msgspec.Struct --collapse-root-models mid "abcd" rejected
+msgspec.Struct --collapse-root-models nested {"n": 3} accepted
+msgspec.Struct --collapse-root-models nested {"n": 12} rejected
+msgspec.Struct --collapse-root-models nested {"n": 4} rejected
+msgspec.Struct --collapse-root-models nested {"n": -3} rejected
+msgspec.Struct --collapse-root-models inherited {"code": "Ab"} accepted
+msgspec.Struct --collapse-root-models inherited {"code": ""} rejected
+msgspec.Struct --collapse-root-models inherited {"code": "ab"} rejected
+msgspec.Struct --collapse-root-models kept_default {"tag": "ab"} accepted
+msgspec.Struct --collapse-root-models kept_default {} accepted
+msgspec.Struct --collapse-root-models kept_default {"tag": "abc"} rejected
+msgspec.Struct --collapse-root-models child {"mid": "ab"} accepted
+msgspec.Struct --collapse-root-models child {"mid": ""} rejected
+msgspec.Struct --collapse-root-models child {"mid": "abcd"} rejected
+msgspec.Struct --collapse-root-models field_site {"ratio": 0.5} accepted
+msgspec.Struct --collapse-root-models field_site {"ratio": 1} rejected
+msgspec.Struct --collapse-root-models reference {"ref": "ab"} accepted
+msgspec.Struct --collapse-root-models reference {"ref": "a"} rejected
+msgspec.Struct --collapse-root-models reference {"ref": "abcde"} accepted
+msgspec.Struct --collapse-root-models positional {"pair": ["a"]} accepted
+msgspec.Struct --collapse-root-models positional {"pair": ["a", "b"]} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs mid "abc" accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs mid "abcd" rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nested {"n": 3} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nested {"n": 12} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nested {"n": 4} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs nested {"n": -3} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inherited {"code": "Ab"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inherited {"code": ""} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inherited {"code": "ab"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs kept_default {"tag": "ab"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs kept_default {} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs kept_default {"tag": "abc"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs child {"mid": "ab"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs child {"mid": ""} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs child {"mid": "abcd"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs field_site {"ratio": 0.5} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs field_site {"ratio": 1} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs reference {"ref": "ab"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs reference {"ref": "a"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs reference {"ref": "abcde"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs positional {"pair": ["a"]} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs positional {"pair": ["a", "b"]} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs mid "abc" accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs mid "abcd" rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nested {"n": 3} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nested {"n": 12} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nested {"n": 4} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs nested {"n": -3} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inherited {"code": "Ab"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inherited {"code": ""} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inherited {"code": "ab"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs kept_default {"tag": "ab"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs kept_default {} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs kept_default {"tag": "abc"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs child {"mid": "ab"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs child {"mid": ""} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs child {"mid": "abcd"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs field_site {"ratio": 0.5} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs field_site {"ratio": 1} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs reference {"ref": "ab"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs reference {"ref": "a"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs reference {"ref": "abcde"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs positional {"pair": ["a"]} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs positional {"pair": ["a", "b"]} accepted
+msgspec.Struct --use-site-models-for-constrained-refs mid "abc" accepted
+msgspec.Struct --use-site-models-for-constrained-refs mid "abcd" rejected
+msgspec.Struct --use-site-models-for-constrained-refs nested {"n": 3} accepted
+msgspec.Struct --use-site-models-for-constrained-refs nested {"n": 12} rejected
+msgspec.Struct --use-site-models-for-constrained-refs nested {"n": 4} rejected
+msgspec.Struct --use-site-models-for-constrained-refs nested {"n": -3} rejected
+msgspec.Struct --use-site-models-for-constrained-refs inherited {"code": "Ab"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs inherited {"code": ""} rejected
+msgspec.Struct --use-site-models-for-constrained-refs inherited {"code": "ab"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs kept_default {"tag": "ab"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs kept_default {} accepted
+msgspec.Struct --use-site-models-for-constrained-refs kept_default {"tag": "abc"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs child {"mid": "ab"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs child {"mid": ""} rejected
+msgspec.Struct --use-site-models-for-constrained-refs child {"mid": "abcd"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs field_site {"ratio": 0.5} accepted
+msgspec.Struct --use-site-models-for-constrained-refs field_site {"ratio": 1} rejected
+msgspec.Struct --use-site-models-for-constrained-refs reference {"ref": "ab"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs reference {"ref": "a"} rejected
+msgspec.Struct --use-site-models-for-constrained-refs reference {"ref": "abcde"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs positional {"pair": ["a"]} accepted
+msgspec.Struct --use-site-models-for-constrained-refs positional {"pair": ["a", "b"]} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs mid "abc" accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs mid "abcd" rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nested {"n": 3} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nested {"n": 12} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nested {"n": 4} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs nested {"n": -3} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inherited {"code": "Ab"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inherited {"code": ""} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inherited {"code": "ab"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs kept_default {"tag": "ab"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs kept_default {} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs kept_default {"tag": "abc"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs child {"mid": "ab"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs child {"mid": ""} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs child {"mid": "abcd"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs field_site {"ratio": 0.5} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs field_site {"ratio": 1} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs reference {"ref": "ab"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs reference {"ref": "a"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs reference {"ref": "abcde"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs positional {"pair": ["a"]} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs positional {"pair": ["a", "b"]} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs mid "abc" accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs mid "abcd" rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nested {"n": 3} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nested {"n": 12} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nested {"n": 4} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs nested {"n": -3} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inherited {"code": "Ab"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inherited {"code": ""} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inherited {"code": "ab"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs kept_default {"tag": "ab"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs kept_default {} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs kept_default {"tag": "abc"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs child {"mid": "ab"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs child {"mid": ""} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs child {"mid": "abcd"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs field_site {"ratio": 0.5} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs field_site {"ratio": 1} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs reference {"ref": "ab"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs reference {"ref": "a"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs reference {"ref": "abcde"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs positional {"pair": ["a"]} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs positional {"pair": ["a", "b"]} accepted

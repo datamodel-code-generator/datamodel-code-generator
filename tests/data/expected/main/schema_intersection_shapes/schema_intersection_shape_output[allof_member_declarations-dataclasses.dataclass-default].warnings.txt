@@ -1,0 +1,8 @@
+Field name `ratio` is duplicated on FieldSite
+Field name `mid` is duplicated on Model
+Field name `n` is duplicated on Nested
+Field name `code` is duplicated on Inherited
+Field name `tag` is duplicated on KeptDefault
+Field name `mid` is duplicated on Members
+Field name `ref` is duplicated on Reference
+Field name `pair` is duplicated on Positional
