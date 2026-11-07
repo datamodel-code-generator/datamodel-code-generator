@@ -11,4 +11,6 @@ pydantic_dataclass-kept	main/jsonschema/keep_false_dataclass_arguments/keep_fals
 pydantic_dataclass-kept	main/jsonschema/keep_false_dataclass_arguments/keep_false_dataclass_arguments[pydantic_dataclass-kept].py
 [test_keep_false_dataclass_arguments_refused]
 order_without_eq-left-out	main/jsonschema/keep_false_dataclass_arguments/refused[order_without_eq-left-out].py
+pydantic_order-left-out	main/jsonschema/keep_false_dataclass_arguments/refused[pydantic_order-left-out].py
 weakref_slot_on_python_3_10-left-out	main/jsonschema/keep_false_dataclass_arguments/refused[weakref_slot_on_python_3_10-left-out].py
+weakref_slot_with_slots-left-out	main/jsonschema/keep_false_dataclass_arguments/refused[weakref_slot_with_slots-left-out].py

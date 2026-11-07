@@ -72,58 +72,89 @@ def test_keep_false_dataclass_arguments(output_file: Path, output_model_type: st
         assert_output(f"Item(x=1) == Item(x=1): {item(x=1) == item(x=1)}\n", name="equality")
 
 
-REFUSED = {
-    "order_without_eq": (
-        "dataclasses.dataclass",
-        {"eq": False, "order": True},
-        "3.11",
-        "@dataclass(eq=False, order=True): order=True needs eq=True",
-    ),
-    "weakref_slot_without_slots": (
-        "dataclasses.dataclass",
-        {"slots": False, "weakref_slot": True},
-        "3.11",
-        "@dataclass(slots=False, weakref_slot=True): weakref_slot=True needs slots=True",
-    ),
-    "weakref_slot_on_python_3_10": (
-        "dataclasses.dataclass",
-        {"weakref_slot": False},
-        "3.10",
-        "@dataclass(weakref_slot=False): weakref_slot needs --target-python-version 3.11 or higher",
-    ),
+ARGUMENT_SETS = {
+    "order_without_eq": ("dataclasses.dataclass", {"eq": False, "order": True}, "3.11"),
+    "weakref_slot_without_slots": ("dataclasses.dataclass", {"slots": False, "weakref_slot": True}, "3.11"),
+    "weakref_slot_on_python_3_10": ("dataclasses.dataclass", {"weakref_slot": False}, "3.10"),
+    "weakref_slot_with_slots": ("dataclasses.dataclass", {"slots": True, "weakref_slot": True}, "3.11"),
     "pydantic_dataclass": (
         "pydantic_v2.dataclass",
         {"init": True, "eq": False, "order": True, "match_args": False, "weakref_slot": False},
         "3.11",
-        (
-            "@dataclass(init=True, eq=False, order=True, match_args=False, weakref_slot=False): "
-            "Pydantic dataclasses take no match_args; Pydantic dataclasses take no weakref_slot; "
-            "Pydantic dataclasses take only init=False; order=True needs eq=True"
-        ),
     ),
+    "pydantic_match_args": ("pydantic_v2.dataclass", {"match_args": True, "weakref_slot": True}, "3.11"),
+    "pydantic_order": ("pydantic_v2.dataclass", {"init": False, "order": True, "frozen": True}, "3.11"),
 }
-"""Decorator arguments that ``dataclass()`` refuses when the module is imported, and why the generation stops."""
+"""Decorator arguments, the output model type and the target Python version they are written for."""
+
+PYDANTIC_REFUSALS = "Pydantic dataclasses take no match_args; Pydantic dataclasses take no weakref_slot"
 
 
 @pytest.mark.parametrize(
-    ("case", "keep_false"),
+    ("case", "keep_false", "message"),
     [
-        *(pytest.param(case, True, id=case) for case in REFUSED),
-        pytest.param("order_without_eq", False, id="order_without_eq-left-out"),
-        pytest.param("weakref_slot_on_python_3_10", False, id="weakref_slot_on_python_3_10-left-out"),
+        pytest.param(
+            "order_without_eq",
+            True,
+            "@dataclass(eq=False, order=True): order=True needs eq=True",
+            id="order_without_eq",
+        ),
+        pytest.param("order_without_eq", False, None, id="order_without_eq-left-out"),
+        pytest.param(
+            "weakref_slot_without_slots",
+            True,
+            "@dataclass(slots=False, weakref_slot=True): weakref_slot=True needs slots=True",
+            id="weakref_slot_without_slots",
+        ),
+        pytest.param(
+            "weakref_slot_without_slots",
+            False,
+            "@dataclass(weakref_slot=True): weakref_slot=True needs slots=True",
+            id="weakref_slot_without_slots-left-out",
+        ),
+        pytest.param(
+            "weakref_slot_on_python_3_10",
+            True,
+            "@dataclass(weakref_slot=False): weakref_slot needs --target-python-version 3.11 or higher",
+            id="weakref_slot_on_python_3_10",
+        ),
+        pytest.param("weakref_slot_on_python_3_10", False, None, id="weakref_slot_on_python_3_10-left-out"),
+        pytest.param("weakref_slot_with_slots", False, None, id="weakref_slot_with_slots-left-out"),
+        pytest.param(
+            "pydantic_dataclass",
+            True,
+            f"@dataclass(init=True, eq=False, order=True, match_args=False, weakref_slot=False): {PYDANTIC_REFUSALS}; "
+            "Pydantic dataclasses take only init=False; order=True needs eq=True",
+            id="pydantic_dataclass",
+        ),
+        pytest.param(
+            "pydantic_dataclass",
+            False,
+            "@dataclass(init=True, order=True): Pydantic dataclasses take only init=False",
+            id="pydantic_dataclass-left-out",
+        ),
+        pytest.param(
+            "pydantic_match_args",
+            False,
+            f"@dataclass(match_args=True, weakref_slot=True): {PYDANTIC_REFUSALS}",
+            id="pydantic_match_args-left-out",
+        ),
+        pytest.param("pydantic_order", False, None, id="pydantic_order-left-out"),
     ],
 )
 def test_keep_false_dataclass_arguments_refused(
-    output_file: Path, capsys: pytest.CaptureFixture[str], case: str, *, keep_false: bool
+    output_file: Path, capsys: pytest.CaptureFixture[str], case: str, message: str | None, *, keep_false: bool
 ) -> None:
     """Stop for decorator arguments that the dataclass refuses at import, instead of writing the module.
 
     With the option the decorator writes every argument, so ``eq=False`` beside ``order=True`` raised ``ValueError``
     and ``weakref_slot=False`` for Python 3.10, or for a Pydantic dataclass, ``TypeError`` when the module was
-    imported. The error names the model, the decorator and why. Without the option an argument set to false is left
-    out, so the same arguments write a decorator that imports, as in 0.89.0.
+    imported. Without it an argument set to false is left out, so those arguments write a decorator that imports, as
+    in 0.89.0; the arguments set to true that it writes stop the same way where they fail to import, as
+    ``weakref_slot=True`` without ``slots=True`` and ``match_args``, ``weakref_slot`` or ``init=True`` for a Pydantic
+    dataclass did in 0.89.0 (#6376). The error names the model, the decorator and why.
     """
-    output_model_type, arguments, target, message = REFUSED[case]
+    output_model_type, arguments, target = ARGUMENT_SETS[case]
     run_main_and_assert(
         input_path=INPUT_PATH,
         output_path=output_file,
@@ -133,9 +164,9 @@ def test_keep_false_dataclass_arguments_refused(
             *("--target-python-version", target, "--formatters", "builtin"),
             *(["--keep-false-dataclass-arguments"] if keep_false else []),
         ],
-        expected_exit=Exit.ERROR if keep_false else Exit.OK,
+        expected_exit=Exit.OK if message is None else Exit.ERROR,
         capsys=capsys,
-        expected_stderr_contains=f"model 'Item' cannot write {message}" if keep_false else None,
-        output_should_not_exist=keep_false,
-        force_exec_validation=not keep_false,
+        expected_stderr_contains=None if message is None else f"model 'Item' cannot write {message}",
+        output_should_not_exist=message is not None,
+        force_exec_validation=message is None,
     )
