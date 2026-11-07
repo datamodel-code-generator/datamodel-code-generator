@@ -193,6 +193,7 @@ jobs:
         with:
           python-version: "3.14"
       - name: Wait until pip finds the release on PyPI
+        timeout-minutes: 25
         env:
           VERSION: ${{ github.ref_name }}
         run: |
@@ -201,6 +202,7 @@ jobs:
           deadline=$((SECONDS + 1200))
           found_since=""
           while [ "$SECONDS" -lt "$deadline" ]; do
+            rm -rf "$RUNNER_TEMP/pypi-release"
             if python -m pip --disable-pip-version-check download --quiet --no-cache-dir --no-deps \
                 --dest "$RUNNER_TEMP/pypi-release" "datamodel-code-generator==${VERSION}"; then
               found_since=${found_since:-$SECONDS}
