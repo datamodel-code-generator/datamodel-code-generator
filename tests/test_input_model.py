@@ -1148,6 +1148,40 @@ def test_input_model_abstract_containers_as_written(
     )
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="released"),
+        pytest.param(["--use-x-python-type-as-written"], id="option"),
+    ],
+)
+def test_input_model_variadic_tuple_as_written(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, extra_args: list[str]
+) -> None:
+    """Write a variadic tuple field of a Pydantic model as a tuple under the option (#6458).
+
+    Without it the field is a list, as in 0.90.0; a fixed-length tuple is a tuple either way, as its schema keeps the
+    item types by position.
+    """
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delitem(sys.modules, "variadic_tuples", raising=False)
+    (tmp_path / "variadic_tuples.py").write_text(
+        "from typing import Annotated\n\n"
+        "from pydantic import BaseModel, Field\n\n\n"
+        "class Owner(BaseModel):\n"
+        "    point: tuple[int, ...]\n"
+        "    named: Annotated[tuple[int, ...], Field(min_length=1)]\n"
+        "    pair: tuple[int, str]\n"
+        "    maybe: tuple[str, ...] | None = None\n",
+        encoding="utf-8",
+    )
+    run_input_model_and_assert(
+        input_model="variadic_tuples:Owner",
+        output_path=tmp_path / "output.py",
+        extra_args=["--disable-timestamp", "--formatters", "builtin", *extra_args],
+    )
+
+
 @pytest.mark.cli_doc(
     options=["--reuse-every-reached-input-model-type"],
     option_description="""Reach the types to reuse through every model kind and write no copy of an imported type.
