@@ -26,7 +26,8 @@ from copy import deepcopy
 from dataclasses import replace
 from functools import partial
 from itertools import chain
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, NamedTuple, TypeVar, cast
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, NamedTuple, TypeVar, cast
 from urllib.parse import unquote, urljoin
 
 from typing_extensions import Protocol, final
@@ -79,6 +80,8 @@ if TYPE_CHECKING:
     from datamodel_code_generator.types import DataType
 
 __all__ = [
+    "UNREAD_MAPPED_SCHEMA",
+    "RefDocumentNotFoundError",
     "SchemaRefsHost",
     "analysis_ref_target",
     "anchor_ref_path",
@@ -124,6 +127,7 @@ __all__ = [
     "prepared_ref_document",
     "push_ref_cycle_frame",
     "read_as_schema",
+    "reads_as_unread_mapped_document",
     "ref_file_document",
     "ref_key",
     "ref_path",
@@ -251,6 +255,9 @@ class SchemaRefsHost(Protocol):
     SCHEMA_OBJECT_TYPE: ClassVar[type[JsonSchemaObject]]
     _named_entry_maps: ClassVar[frozenset[str]]
     raw_obj: dict[str, YamlValue]
+    strict_refs: bool
+    _external_ref_mapping: dict[str, str]
+    _unread_mapped_documents: set[str]
     _circular_ref_cache: dict[str, bool]
     _draining_dynamic_specializations: bool
     _dynamic_anchor_index: dict[tuple[str, ...], dict[str, str]]
@@ -574,9 +581,21 @@ def ref_file_document(parser: SchemaRefsHost, file_part: str, role: str | None =
 
 
 def read_ref_value(parser: SchemaRefsHost, resolved_ref: str) -> dict[str, YamlValue] | YamlValue:
-    """Return the value of a loaded document at a reference key, with the references it holds as a schema."""
+    """Return the value of a loaded document at a reference key, with the references it holds as a schema.
+
+    A document that ``--external-ref-mapping`` maps describes the classes the mapping imports, which need no document:
+    when it does not exist, every value in it reads as an object without properties (``UNREAD_MAPPED_SCHEMA``), so a
+    model that inherits such a class is written from its own keywords, and the run warns once per document (an error
+    under --strict-refs, as before).
+    """
     file_part, _, fragment = resolved_ref.partition("#")
-    value = _fragment_value(ref_file_document(parser, file_part), fragment, names=parser._pointer_slash_names)  # noqa: SLF001
+    try:
+        document = ref_file_document(parser, file_part)
+    except RefDocumentNotFoundError as exc:
+        if not reads_as_unread_mapped_document(parser, exc):
+            raise
+        return dict(UNREAD_MAPPED_SCHEMA)
+    value = _fragment_value(document, fragment, names=parser._pointer_slash_names)  # noqa: SLF001
     return parser._read_as_schema(value)  # noqa: SLF001
 
 
@@ -603,6 +622,30 @@ def ref_schema_exists(parser: SchemaRefsHost, resolved_ref: str) -> bool:
     document = ref_file_document(parser, file_part)
     names = parser._pointer_slash_names  # noqa: SLF001
     return _fragment_value(document, fragment, or_missing=True, names=names) is not _MISSING_JSON_POINTER
+
+
+UNREAD_MAPPED_SCHEMA: Final = MappingProxyType({"type": "object"})
+"""The schema of a class ``--external-ref-mapping`` maps whose document does not exist: an object, no property known."""
+
+
+class RefDocumentNotFoundError(Error):
+    """The local document a reference names does not exist."""
+
+    def __init__(self, path: Path) -> None:
+        """Name the missing ``path`` as the error of a missing ``$ref`` file always has."""
+        super().__init__(f"$ref file not found: {path}")
+        self.path = path
+
+
+def reads_as_unread_mapped_document(parser: SchemaRefsHost, error: RefDocumentNotFoundError) -> bool:
+    """Return whether a missing document is one ``--external-ref-mapping`` maps, read as classes, and note it.
+
+    Under --strict-refs it is an error, as before.
+    """
+    if parser.strict_refs or (document := str(error.path)) not in parser._external_ref_mapping:  # noqa: SLF001
+        return False
+    parser._unread_mapped_documents.add(document)  # noqa: SLF001
+    return True
 
 
 def load_ref_schema_object(parser: SchemaRefsHost, ref: str) -> JsonSchemaObject:
