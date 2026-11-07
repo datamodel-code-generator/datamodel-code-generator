@@ -175,6 +175,14 @@ PYDANTIC_V2_DATACLASS_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
     "openapi/enum_models.yaml::components.schemas.nestedNullableEnum": (
         "pydantic dataclass schema construction warns for defaults attached to nullable enum aliases"
     ),
+    **dict.fromkeys(
+        (
+            "jsonschema/enum_const_positions.json",
+            "jsonschema/integer_enum_null.json",
+        ),
+        "Pydantic 2.12+ warns that the Field default of an alias for a null-only enum or a null const beside a "
+        "string type is unsupported (UnsupportedFieldAttributeWarning)",
+    ),
 }
 DATACLASS_FIELD_ORDER_EXCLUDED_CASES: Final[dict[str, str]] = {
     "jsonschema/discriminator_no_literal.json": (
@@ -182,6 +190,22 @@ DATACLASS_FIELD_ORDER_EXCLUDED_CASES: Final[dict[str, str]] = {
     ),
 }
 MSGSPEC_VALIDATION_EXCLUDED_CASES: Final[dict[str, str]] = {
+    "jsonschema/typed_dict_key_text.json": (
+        "msgspec refuses a NUL character in a property name, which this fixture uses to test key escaping"
+    ),
+    "jsonschema/typed_dict_narrowed_keys_python_names.json": (
+        "msgspec cannot decode a child struct that redefines a base field under another spelling of its wire name"
+    ),
+    "jsonschema/collapse_root_models_item_count_aliases.json": (
+        "msgspec cannot decode a union of two array aliases with the same items"
+    ),
+    "jsonschema/read_only_write_only_constrained_root_map.json": (
+        "msgspec collapses an object that carries the string keyword minLength, which its type cannot take, to a "
+        "dict that rejects the declared property"
+    ),
+    "jsonschema/type_union_constraints/modeled_root.json": (
+        "#6490: the render memo check finds a field render plan that differs from the one computed anew"
+    ),
     **dict.fromkeys(
         (
             "jsonschema/allof_outer_constraints/integer_date_time_bounds.json",

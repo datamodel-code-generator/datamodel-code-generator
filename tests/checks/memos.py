@@ -12,6 +12,8 @@ from functools import wraps
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, final
 
+from pydantic import BaseModel
+
 from datamodel_code_generator._parse_memo import MemoTable
 from tests.checks.areas import Area, Mode, mode
 
@@ -187,18 +189,26 @@ def _same(kept: object, fresh: object) -> bool:
     return _equal(kept, fresh)
 
 
-def _equal(kept: object, fresh: object) -> bool:
-    """Compare two values item by item inside tuples, lists and dataclasses.
+def _equal(kept: object, fresh: object, compared: frozenset[tuple[int, int]] = frozenset()) -> bool:
+    """Compare two values item by item inside tuples, lists, dataclasses and pydantic models.
 
     Other values of one type are the same when they write the same text, such as ``nan`` or a runtime expression
-    built again, which equal nothing but themselves.
+    built again, which equal nothing but themselves. A pair of models met again below itself is the same: the models
+    of a cycle, which have no finite text, are equal when every field of the walk is.
     """
     if kept is fresh or kept == fresh:
         return True
     if isinstance(kept, (tuple, list)) and isinstance(fresh, (tuple, list)) and type(kept) is type(fresh):
-        return len(kept) == len(fresh) and all(map(_equal, kept, fresh))
+        pairs = zip(kept, fresh, strict=False)
+        return len(kept) == len(fresh) and all(_equal(left, right, compared) for left, right in pairs)
     if is_dataclass(kept) and type(kept) is type(fresh):
-        return all(_equal(getattr(kept, field.name), getattr(fresh, field.name)) for field in fields(kept))
+        return all(_equal(getattr(kept, f.name), getattr(fresh, f.name), compared) for f in fields(kept))
+    if isinstance(kept, BaseModel) and type(kept) is type(fresh):
+        if (pair := (id(kept), id(fresh))) in compared:
+            return True
+        return all(
+            _equal(getattr(kept, name), getattr(fresh, name), compared | {pair}) for name in type(kept).model_fields
+        )
     return type(kept) is type(fresh) and repr(kept) == repr(fresh)
 
 

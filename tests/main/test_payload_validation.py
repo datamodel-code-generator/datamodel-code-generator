@@ -75,6 +75,10 @@ from .payload_validation.constants import (
     PAYLOAD_TARGET_PYTHON_VERSION,
     PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_EXCLUDED_CASES,
     PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN_VERSION,
+    PYDANTIC_V2_DECIMAL_PRECISION_RUNTIME_EXCLUDED_CASES,
+    PYDANTIC_V2_DECIMAL_PRECISION_RUNTIME_MIN_VERSION,
+    PYDANTIC_V2_FIRST_RELEASE_RUNTIME_EXCLUDED_CASES,
+    PYDANTIC_V2_FIRST_RELEASE_RUNTIME_ROUND_TRIP_EXCLUDED_CASES,
     PYDANTIC_V2_FLOAT_MULTIPLE_OF_CASE_IDS,
     PYDANTIC_V2_FLOAT_MULTIPLE_OF_EXCLUSION_REASON,
     PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN_VERSION,
@@ -145,6 +149,7 @@ PYDANTIC_V2_0_RUNTIME_MAX = Version(PYDANTIC_V2_0_RUNTIME_MAX_VERSION)
 PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN = Version(PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN_VERSION)
 PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN = Version(PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN_VERSION)
 PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN = Version(PYDANTIC_V2_FLOAT_MULTIPLE_OF_RUNTIME_MIN_VERSION)
+PYDANTIC_V2_DECIMAL_PRECISION_RUNTIME_MIN = Version(PYDANTIC_V2_DECIMAL_PRECISION_RUNTIME_MIN_VERSION)
 NUMERIC_SAMPLING_FLOAT_MULTIPLE_OF_NAMES = frozenset({"unbounded_number_integer_multiple"})
 PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_MIN = Version(PYDANTIC_V2_INEXACT_FLOAT_MULTIPLE_OF_RUNTIME_MIN_VERSION)
 PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN = Version(PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN_VERSION)
@@ -157,6 +162,8 @@ PYDANTIC_V2_LEGACY_RUNTIME_EXCLUSION_GROUPS: PydanticV2LegacyRuntimeExclusionGro
     (PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_MIN, PYDANTIC_V2_COMPILED_PATTERN_RUNTIME_EXCLUDED_CASES),
     (PYDANTIC_V2_TYPE_ALIAS_RUNTIME_MIN, PYDANTIC_V2_TYPE_ALIAS_RUNTIME_EXCLUDED_CASES),
     (PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN, PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_EXCLUDED_CASES),
+    (PYDANTIC_V2_DECIMAL_PRECISION_RUNTIME_MIN, PYDANTIC_V2_DECIMAL_PRECISION_RUNTIME_EXCLUDED_CASES),
+    *((Version(release), cases) for release, cases in PYDANTIC_V2_FIRST_RELEASE_RUNTIME_EXCLUDED_CASES),
 )
 PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUSION_GROUPS: PydanticV2LegacyRuntimeExclusionGroups = (
     (PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN, PYDANTIC_V2_LEGACY_RUNTIME_EXCLUDED_CASES),
@@ -166,6 +173,8 @@ PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUSION_GROUPS: PydanticV2LegacyRuntimeE
     (PYDANTIC_V2_0_RUNTIME_MAX, PYDANTIC_V2_0_RUNTIME_ROUND_TRIP_EXCLUDED_CASES),
     (PYDANTIC_V2_FULL_PAYLOAD_RUNTIME_MIN, PYDANTIC_V2_LEGACY_RUNTIME_ROUND_TRIP_EXCLUDED_CASES),
     (PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_MIN, PYDANTIC_V2_MISSING_SENTINEL_RUNTIME_EXCLUDED_CASES),
+    *((Version(release), cases) for release, cases in PYDANTIC_V2_FIRST_RELEASE_RUNTIME_EXCLUDED_CASES),
+    *((Version(release), cases) for release, cases in PYDANTIC_V2_FIRST_RELEASE_RUNTIME_ROUND_TRIP_EXCLUDED_CASES),
 )
 REJECTION_ORACLE_CASES = [case for case in SCHEMA_CASES if has_rejection_oracle_constraints(case)]
 SCHEMA_CASE_BY_ID = {case.id: case for case in SCHEMA_CASES}
@@ -391,7 +400,11 @@ def test_numeric_payload_sampling_validates_generated_models(
         )
         validated, errors = pydantic_payload_result(adapter, payload)
         assert_output(
-            json.dumps([] if errors == expected_errors else {"expected": expected_errors, "actual": errors}, indent=2),
+            json.dumps(
+                [] if errors == expected_errors else {"expected": expected_errors, "actual": errors},
+                indent=2,
+                default=str,
+            ),
             NATIVE_NUMERIC_EMPTY_ERRORS,
         )
         if errors:
@@ -977,7 +990,7 @@ def test_generated_pydantic_v2_model_accepts_schema_derived_payloads(
         validated, errors = pydantic_payload_result(adapter, payload)
         expected = expected_errors or []
         assert_output(
-            json.dumps([] if errors == expected else {"expected": expected, "actual": errors}, indent=2),
+            json.dumps([] if errors == expected else {"expected": expected, "actual": errors}, indent=2, default=str),
             NATIVE_NUMERIC_EMPTY_ERRORS,
         )
         if expected_errors is not None and not errors:
@@ -1015,7 +1028,11 @@ def test_generated_pydantic_v2_model_dumps_schema_valid_payloads(
         expected_errors = native_float_multiple_errors(case, payload) or []
         validated_payload, errors = pydantic_payload_result(adapter, payload)
         assert_output(
-            json.dumps([] if errors == expected_errors else {"expected": expected_errors, "actual": errors}, indent=2),
+            json.dumps(
+                [] if errors == expected_errors else {"expected": expected_errors, "actual": errors},
+                indent=2,
+                default=str,
+            ),
             NATIVE_NUMERIC_EMPTY_ERRORS,
         )
         if errors:

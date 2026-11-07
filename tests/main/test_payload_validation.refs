@@ -2,6 +2,15 @@
 # Each line records the expected output a test compares; to accept changed output add --inline-snapshot=fix (see AGENTS.md).
 [test_allof_payload_strategy_classification]
 	main/allof_payload_strategy_classification.txt
+[test_generated_payload_backend_accepts_representative_schema_payloads]
+msgspec:jsonschema/numeric_allof_types/format_decimal.json	main/jsonschema/numeric_allof_types/format_decimal_warnings.txt	?
+msgspec:jsonschema/numeric_allof_types/format_double.json	main/jsonschema/numeric_allof_types/format_double_warnings.txt	?
+msgspec:jsonschema/numeric_allof_types/format_float.json	main/jsonschema/numeric_allof_types/format_float_warnings.txt	?
+pydantic_v2_dataclass:jsonschema/enum_const_non_literal.json	main/jsonschema/enum_const_non_literal_payload_warnings.txt	?
+pydantic_v2_dataclass:jsonschema/enum_names_beside_null.json	main/jsonschema/enum_names_beside_null_payload_warnings.txt	?
+pydantic_v2_dataclass:jsonschema/numeric_allof_types/format_decimal.json	main/jsonschema/numeric_allof_types/format_decimal_warnings.txt	?
+pydantic_v2_dataclass:jsonschema/numeric_allof_types/format_double.json	main/jsonschema/numeric_allof_types/format_double_warnings.txt	?
+pydantic_v2_dataclass:jsonschema/numeric_allof_types/format_float.json	main/jsonschema/numeric_allof_types/format_float_warnings.txt	?
 [test_generated_pydantic_v2_model_accepts_schema_derived_payloads]
 jsonschema/additional_import_named_like_unused_model.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/additional_items_schema_tuple.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -2532,7 +2541,6 @@ jsonschema/keep_model_order_field_references.json	payloads/native_numeric_empty_
 jsonschema/keep_reference_null_on_merged_models.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/keyword_directory_reference/class/k.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/keyword_file_name_reference/class.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
-jsonschema/literal_constraints.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/local_reference_file_cache/shared.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/long_description.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/lookaround_anyof_nullable.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3117,7 +3125,6 @@ jsonschema/unique_items_const_draft6.json	payloads/native_numeric_empty_errors.t
 jsonschema/unique_items_draft7_additional_items.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/unique_items_generic_container_mapping.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/unique_items_mapping_collision.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
-jsonschema/unique_items_model_items.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/unique_items_prefix_items_2020.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/unique_items_property_alias.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 jsonschema/unique_items_type_list_merged.json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
