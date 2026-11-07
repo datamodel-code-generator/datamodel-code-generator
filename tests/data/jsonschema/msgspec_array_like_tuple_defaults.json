@@ -1,0 +1,108 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/EntryWithTotals"
+      },
+      "default": [
+        [
+          {
+            "key": "k"
+          },
+          {
+            "row": {
+              "c": 2
+            }
+          }
+        ]
+      ]
+    },
+    "entry": {
+      "$ref": "#/$defs/EntryWithTotals",
+      "default": [
+        {
+          "key": "e"
+        },
+        {
+          "row": {
+            "c": 3
+          }
+        }
+      ]
+    },
+    "batch": {
+      "$ref": "#/$defs/Batch",
+      "default": {
+        "entry": [
+          {
+            "key": "b"
+          },
+          {
+            "row": {
+              "c": 4
+            }
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "Row": {
+      "type": "object",
+      "properties": {
+        "a": {
+          "type": "string"
+        },
+        "b": {
+          "type": "integer"
+        }
+      }
+    },
+    "Entry": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "row": {
+          "$ref": "#/$defs/Row"
+        }
+      }
+    },
+    "Totals": {
+      "type": "object",
+      "properties": {
+        "row": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "EntryWithTotals": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/Entry"
+        },
+        {
+          "$ref": "#/$defs/Totals"
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "Batch": {
+      "type": "object",
+      "properties": {
+        "entry": {
+          "$ref": "#/$defs/EntryWithTotals"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "defaults": {
+    "entries": "[(Entry(key='k', row=UNSET), Totals(row={'c': 2}))]",
+    "entry": "(Entry(key='e', row=UNSET), Totals(row={'c': 3}))",
+    "batch": "Batch(entry=(Entry(key='b', row=UNSET), Totals(row={'c': 4})))"
+  },
+  "written_equal": true
+}
