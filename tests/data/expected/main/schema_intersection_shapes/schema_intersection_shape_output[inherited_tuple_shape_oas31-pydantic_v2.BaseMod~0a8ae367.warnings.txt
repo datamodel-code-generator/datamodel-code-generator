@@ -1,0 +1,2 @@
+inherited_tuple_shape_oas31.yaml#/components/schemas/Parent/properties/open: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.
+inherited_tuple_shape_oas31.yaml#/components/schemas/Child/allOf/1/properties/open: the positions of prefixItems are not checked, since the array is written as a list, which accepts an item of any position's type at every position.

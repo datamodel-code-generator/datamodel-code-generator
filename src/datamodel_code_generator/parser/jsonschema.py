@@ -7224,6 +7224,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         required, nullable = _value_keywords.resolve_array_field_required_nullable(self, obj)
         items, is_tuple, suppress_item_constraints, tuple_item_count = self._get_array_item_schemas(obj)
 
+        if obj.prefixItems is not None and not is_tuple:
+            _value_keywords.warn_unchecked_prefix_positions(self, obj)
+
         if items:
             item_data_types = self.parse_list_item(
                 name,
