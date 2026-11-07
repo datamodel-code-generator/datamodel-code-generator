@@ -316,6 +316,56 @@ def test_main_openapi_discriminator_enum_use_enum_values(output_file: Path) -> N
     )
 
 
+def _plain_enum_verdict(validate: Any, document: object) -> str:
+    """Return the value a generated model parses a JSON document to, else that it rejects it."""
+    try:
+        return repr(validate(json.dumps(document)))
+    except pydantic.ValidationError:
+        return "rejected"
+
+
+@pytest.mark.parametrize(
+    ("input_name", "output_model_type", "extra_args"),
+    [
+        ("discriminator_plain_enum_tags", "pydantic_v2.BaseModel", []),
+        ("discriminator_plain_enum_tags", "pydantic_v2.dataclass", []),
+        ("discriminator_plain_enum_tags_string", "pydantic_v2.BaseModel", []),
+        ("discriminator_plain_enum_tags_string", "pydantic_v2.BaseModel", ["--use-subclass-enum"]),
+    ],
+    ids=["untyped", "untyped-pydantic-dataclass", "string", "string-subclass-enum"],
+)
+def test_main_openapi_discriminator_plain_enum_use_enum_values(
+    input_name: str, output_model_type: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Write the value beside a plain Enum member that tags a variant under ``--use-enum-values-in-discriminator``.
+
+    A member of a plain ``Enum`` equals no value a payload carries, so up to 0.90.0 the tags ``Literal[PetType.cat]``
+    made the union reject every payload with ``union_tag_invalid``, whether or not the enum's schema had
+    ``type: string`` (#6390). The tags are now ``Literal[PetType.cat, 'cat']``: the union parses the payload's value
+    and keeps the member a Python caller passes. A ``(str, Enum)`` member equals its value and stays
+    ``Literal[PetType.cat]``.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / f"{input_name}.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", output_model_type, "--use-enum-values-in-discriminator", *extra_args),
+            *("--formatters", "builtin", "--disable-timestamp"),
+        ],
+    )
+    with _generated_model(
+        output_file, f"{input_name}_{output_model_type.replace('.', '_')}_{len(extra_args)}", "Holder"
+    ) as holder:
+        namespace = vars(sys.modules[holder.__module__])
+        validate = _model_json_validator(holder)
+        documents = ({"pet": {"petType": "cat"}}, {"pet": {"petType": "lion", "b": "x"}}, {"pet": {"petType": "dog"}})
+        verdicts = [f"{json.dumps(document)}: {_plain_enum_verdict(validate, document)}\n" for document in documents]
+        built = holder(pet=namespace["Cat"](petType=namespace["PetType"].cat))
+        verdicts.append(f"Holder(pet=Cat(petType=PetType.cat)) from Python: {built!r}\n")
+    assert_output("".join(verdicts), name="payloads")
+
+
 @pytest.mark.parametrize(
     "extra_args",
     [["--output-model-type", "pydantic_v2.BaseModel"], ["--output-model-type", "msgspec.Struct"]],

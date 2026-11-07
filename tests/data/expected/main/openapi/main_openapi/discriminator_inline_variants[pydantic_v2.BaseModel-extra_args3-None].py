@@ -33,12 +33,12 @@ class Ping(BaseModel):
 
 class ServerEvent1(AudioDelta):
     stream_id: str | None = None
-    type: Literal[Type.audio_delta]
+    type: Literal[Type.audio_delta, 'audio.delta']
 
 
 class ServerEvent2(AudioDone):
     stream_id: str | None = None
-    type: Literal[Type1.audio_done]
+    type: Literal[Type1.audio_done, 'audio.done']
 
 
 class ServerEvent(RootModel[ServerEvent1 | ServerEvent2]):
@@ -47,7 +47,7 @@ class ServerEvent(RootModel[ServerEvent1 | ServerEvent2]):
 
 class MixedEvent1(AudioDelta):
     channel: int | None = None
-    type: Literal[Type.audio_delta]
+    type: Literal[Type.audio_delta, 'audio.delta']
 
 
 class MixedEvent(RootModel[MixedEvent1 | Ping]):
@@ -93,7 +93,7 @@ class ClashingEvent(RootModel[ClashingEvent1 | AudioDone]):
 
 class SharedAEvent1(AudioDone):
     shared: bool | None = None
-    type: Literal[Type1.audio_done]
+    type: Literal[Type1.audio_done, 'audio.done']
 
 
 class SharedAEvent(RootModel[SharedAEvent1 | Ping]):

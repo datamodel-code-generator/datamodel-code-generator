@@ -683,6 +683,9 @@ class DataType(_BaseModel):  # noqa: PLR0904
     is_custom_type: bool = False
     literals: list[Union[StrictBool, StrictInt, StrictStr]] = Field(default_factory=list)  # noqa: UP007
     enum_member_literals: list[tuple[str, str]] = Field(default_factory=list)  # [(EnumClassName, member_name), ...]
+    enum_member_tag_values: tuple[Union[StrictBool, StrictInt, StrictStr], ...] = ()  # noqa: UP007
+    """The values written after ``enum_member_literals``, ``Literal[Kind.a, 'a']``: the tags a payload carries for
+    members of a plain Enum, which equal no value (``parser/_tag_plan.py:writes_member_values``)."""
     use_standard_collections: bool = False
     use_generic_container: bool = False
     use_union_operator: bool = False
@@ -1484,7 +1487,10 @@ def _render_form(expr: TypeApply) -> tuple[str, bool]:
             text = render_type_expr(expr.args[0])
         case "literal":
             parts = (
-                [f"{enum_class}.{member}" for enum_class, member in node.enum_member_literals]
+                [
+                    *(f"{enum_class}.{member}" for enum_class, member in node.enum_member_literals),
+                    *map(stable_repr, node.enum_member_tag_values),
+                ]
                 if node.enum_member_literals
                 else [stable_repr(literal) for literal in node.literals]
             )

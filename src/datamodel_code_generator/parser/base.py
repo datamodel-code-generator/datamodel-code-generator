@@ -237,7 +237,7 @@ from datamodel_code_generator.parser._pipeline import PARSE_CALLER, Runner, pars
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
 from datamodel_code_generator.parser._serialize_as_any import SERIALIZE_AS_ANY_FOR_EVERY_SUBCLASS
 from datamodel_code_generator.parser._stdout_repair import _TOP_LEVEL_FUTURE_IMPORT_PATTERN
-from datamodel_code_generator.parser._tag_plan import TagCapabilities, TagPlan, tag_capabilities
+from datamodel_code_generator.parser._tag_plan import TagCapabilities, TagPlan, tag_capabilities, writes_member_values
 from datamodel_code_generator.parser._union_constraints import OMIT_UNTAKEN_UNION_CONSTRAINTS
 from datamodel_code_generator.parser._unique_sets import WRITE_UNIQUE_ITEMS_AS_SETS
 from datamodel_code_generator.parser.generation import GenerationStore
@@ -1781,19 +1781,23 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self,
         enum_source: Enum | None,
         discriminator_values: list[DiscriminatorValue],
-        discriminator_model: DataModel,  # noqa: ARG002
+        discriminator_model: DataModel,
         imports: Imports,  # noqa: ARG002
     ) -> DataType:
         """Create a data type for discriminator field, using enum literals if available."""
         if enum_source:
             if self.use_enum_values_in_discriminator:
                 enum_class_name = enum_source.reference.short_name
+                members = [
+                    member
+                    for member in enum_discriminator_members(enum_source, discriminator_values).members
+                    if member.field.name
+                ]
                 data_type = self.data_type(
-                    enum_member_literals=[
-                        (enum_class_name, member.field.name)
-                        for member in enum_discriminator_members(enum_source, discriminator_values).members
-                        if member.field.name
-                    ]
+                    enum_member_literals=[(enum_class_name, cast("str", member.field.name)) for member in members],
+                    enum_member_tag_values=tuple(member.value for member in members)
+                    if writes_member_values(discriminator_model, enum_source)
+                    else (),
                 )
                 data_type._set_enum_member_literal_reference(enum_source.reference)  # noqa: SLF001
             else:

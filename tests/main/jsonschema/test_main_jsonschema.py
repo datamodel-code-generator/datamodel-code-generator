@@ -42353,10 +42353,11 @@ def test_main_jsonschema_discriminator_inherited_schema_tag(output_file: Path, e
     name, ``Literal['FunctionCall']``, so the union rejected every payload the schema accepts (#5338). ``Dog`` and
     ``Cat`` keep their names: the ``Literal['Pet']`` of their base is a tag the union ``Pets`` wrote, which ``Pet``'s
     schema does not fix. Under ``--use-enum-values-in-discriminator`` both ``FunctionCall`` and ``NamedCall`` spell the
-    tag ``Literal[FunctionType.function]``, as the option spells the tag of a variant whose own field the Enum types:
-    the Enum that types the tag field a variant inherits is read from the nearest ancestor that declares it, where
-    ``NamedCall`` read only its direct base and wrote ``Literal['function']``. A plain Enum member is no JSON string,
-    so these unions take the member from Python, not ``"function"`` from JSON, as they do for an own Enum field.
+    tag ``Literal[FunctionType.function, 'function']``, as the option spells the tag of a variant whose own field the
+    Enum types: the Enum that types the tag field a variant inherits is read from the nearest ancestor that declares it,
+    where ``NamedCall`` read only its direct base and wrote ``Literal['function']``. A plain Enum member is no JSON
+    string, so the tag holds its value beside it, and these unions take ``"function"`` from JSON as well as the member
+    from Python; up to 0.90.0 they took only the member and rejected every JSON payload (#6390).
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "discriminator_inherited_schema_tag.json",

@@ -16,7 +16,7 @@ class ToolType(Enum):
 
 class FunctionToolCall(BaseModel):
     id: str
-    type: Literal[ToolType.function]
+    type: Literal[ToolType.function, 'function']
 
 
 class CustomToolCall(BaseModel):

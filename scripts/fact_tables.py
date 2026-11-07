@@ -295,6 +295,14 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
     ),
     AttributeFact(
         "DataType",
+        "enum_member_tag_values",
+        FactKind.FACT,
+        (Fact.FIELD_TYPES,),
+        Phase.MODULES,
+        FreezePoint.B1,
+    ),
+    AttributeFact(
+        "DataType",
         "use_standard_collections",
         FactKind.PRESENTATION,
         (RenderFact.QUOTING,),

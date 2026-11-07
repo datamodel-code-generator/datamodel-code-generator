@@ -1062,7 +1062,7 @@ pydantic_v2.BaseModel-extra_args1-None	main/openapi/main_openapi/discriminator_i
 pydantic_v2.BaseModel-extra_args1-None	main/openapi/main_openapi/discriminator_inline_variants[pydantic_v2.BaseModel-extra_args1-None].py
 pydantic_v2.BaseModel-extra_args2-None	main/openapi/main_openapi/discriminator_inline_variants[pydantic_v2.BaseModel-extra_args2-None].payloads.txt	= main/openapi/main_openapi/discriminator_inline_variants[pydantic_v2.BaseModel-extra_args0-None].payloads.txt
 pydantic_v2.BaseModel-extra_args2-None	main/openapi/main_openapi/discriminator_inline_variants[pydantic_v2.BaseModel-extra_args2-None].py	= main/openapi/main_openapi/discriminator_inline_variants[pydantic_v2.BaseModel-extra_args0-None].py
-pydantic_v2.BaseModel-extra_args3-None	main/openapi/main_openapi/discriminator_inline_variants[pydantic_v2.BaseModel-extra_args3-None].payloads.txt
+pydantic_v2.BaseModel-extra_args3-None	main/openapi/main_openapi/discriminator_inline_variants[pydantic_v2.BaseModel-extra_args3-None].payloads.txt	= main/openapi/main_openapi/discriminator_inline_variants[pydantic_v2.BaseModel-extra_args0-None].payloads.txt
 pydantic_v2.BaseModel-extra_args3-None	main/openapi/main_openapi/discriminator_inline_variants[pydantic_v2.BaseModel-extra_args3-None].py
 pydantic_v2.dataclass-extra_args4-None	main/openapi/main_openapi/discriminator_inline_variants[pydantic_v2.dataclass-extra_args4-None].payloads.txt	= main/openapi/main_openapi/discriminator_inline_variants[pydantic_v2.BaseModel-extra_args0-None].payloads.txt
 pydantic_v2.dataclass-extra_args4-None	main/openapi/main_openapi/discriminator_inline_variants[pydantic_v2.dataclass-extra_args4-None].py
@@ -1079,7 +1079,7 @@ pydantic_v2.BaseModel-extra_args0	main/openapi/main_openapi/discriminator_lone_v
 pydantic_v2.BaseModel-extra_args0	main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args0].py
 pydantic_v2.BaseModel-extra_args1	main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args1].payloads.txt	= main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args0].payloads.txt
 pydantic_v2.BaseModel-extra_args1	main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args1].py
-pydantic_v2.BaseModel-extra_args3	main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args3].payloads.txt
+pydantic_v2.BaseModel-extra_args3	main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args3].payloads.txt	= main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args0].payloads.txt
 pydantic_v2.BaseModel-extra_args3	main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args3].py
 pydantic_v2.BaseModel-extra_args4	main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args4].payloads.txt
 pydantic_v2.BaseModel-extra_args4	main/openapi/main_openapi/discriminator_lone_variant_tags[pydantic_v2.BaseModel-extra_args4].py
@@ -1191,6 +1191,15 @@ pydantic_v2.dataclass	main/openapi/main_openapi/discriminator_pattern_mismatch_f
 [test_main_openapi_discriminator_pattern_nested_choices]
 	main/openapi/discriminator/pattern_nested_choices.py
 	main/openapi/discriminator/pattern_nested_choices_decoded.txt
+[test_main_openapi_discriminator_plain_enum_use_enum_values]
+string	main/openapi/main_openapi/discriminator_plain_enum_use_enum_values[string].payloads.txt
+string	main/openapi/main_openapi/discriminator_plain_enum_use_enum_values[string].py
+string-subclass-enum	main/openapi/main_openapi/discriminator_plain_enum_use_enum_values[string-subclass-enum].payloads.txt
+string-subclass-enum	main/openapi/main_openapi/discriminator_plain_enum_use_enum_values[string-subclass-enum].py
+untyped	main/openapi/main_openapi/discriminator_plain_enum_use_enum_values[untyped].payloads.txt	= main/openapi/main_openapi/discriminator_plain_enum_use_enum_values[string].payloads.txt
+untyped	main/openapi/main_openapi/discriminator_plain_enum_use_enum_values[untyped].py
+untyped-pydantic-dataclass	main/openapi/main_openapi/discriminator_plain_enum_use_enum_values[untyped-pydantic-dataclass].payloads.txt	= main/openapi/main_openapi/discriminator_plain_enum_use_enum_values[string].payloads.txt
+untyped-pydantic-dataclass	main/openapi/main_openapi/discriminator_plain_enum_use_enum_values[untyped-pydantic-dataclass].py
 [test_main_openapi_discriminator_reuse_tree_mappings]
 discriminator_reuse_tree_mappings	main/openapi/discriminator_reuse_tree_mappings//*.py
 discriminator_reuse_tree_mappings	main/openapi/discriminator_reuse_tree_mappings_decoded.txt

@@ -1,0 +1,14 @@
+openapi: 3.0.3
+info: {title: t, version: "1"}
+paths: {}
+components:
+  schemas:
+    Holder:
+      type: object
+      properties:
+        pet:
+          oneOf: [{$ref: '#/components/schemas/Cat'}, {$ref: '#/components/schemas/Dog'}]
+          discriminator: {propertyName: petType, mapping: {cat: '#/components/schemas/Cat', lion: '#/components/schemas/Dog'}}
+    PetType: {type: string, enum: [cat, lion]}
+    Cat: {type: object, required: [petType], properties: {petType: {$ref: '#/components/schemas/PetType'}, a: {type: string}}}
+    Dog: {type: object, required: [petType], properties: {petType: {$ref: '#/components/schemas/PetType'}, b: {type: string}}}
