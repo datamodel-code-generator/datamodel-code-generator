@@ -1,0 +1,12 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "const_or_number": {"anyOf": [{"const": 1}, {"type": "number"}]},
+    "enum_or_number": {"anyOf": [{"enum": [1, 2]}, {"type": "number"}]},
+    "const_or_number_min": {"anyOf": [{"const": 0}, {"type": "number", "minimum": 5}]},
+    "str_const_or_number": {"anyOf": [{"const": "a"}, {"type": "number"}]},
+    "const_or_integer": {"anyOf": [{"const": 1}, {"type": "integer"}]},
+    "number_only": {"type": "number"}
+  }
+}
