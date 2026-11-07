@@ -5801,3 +5801,31 @@ def test_parse_enum_as_literal_with_literal_and_complex_values() -> None:
     parser = JsonSchemaParser("")
     data_type = parser.parse_enum_as_literal(JsonSchemaObject.model_validate({"enum": ["x", {"a": 1}, None]}))
     assert data_type.type_hint == "Optional[Union[Literal['x'], Dict[str, int]]]"
+
+
+def test_additional_properties_false_beside_pattern_properties() -> None:
+    """An object with patternProperties and additionalProperties false does not close extra keys."""
+    schema = """{
+      "title": "Model",
+      "type": "object",
+      "properties": {"a": {"type": "string"}},
+      "patternProperties": {"^x-": {"type": "string"}},
+      "additionalProperties": false
+    }"""
+    output = generate(schema, input_file_type=InputFileType.JsonSchema)
+    assert isinstance(output, str)
+    assert "extra='forbid'" not in output
+
+    namespace: dict[str, Any] = {}
+    exec(output, namespace)
+    model_cls = namespace["Model"]
+    instance = model_cls.model_validate({"a": "x", "x-k": "v"})
+    assert instance.a == "x"
+
+    typed_dict_output = generate(
+        schema,
+        input_file_type=InputFileType.JsonSchema,
+        output_model_type=DataModelType.TypingTypedDict,
+    )
+    assert isinstance(typed_dict_output, str)
+    assert "closed=True" not in typed_dict_output
