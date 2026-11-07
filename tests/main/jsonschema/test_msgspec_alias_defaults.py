@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
+from contextlib import nullcontext
 from typing import TYPE_CHECKING
 
 import msgspec
@@ -28,6 +29,9 @@ from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_fil
 if TYPE_CHECKING:
     from pathlib import Path
 
+_BACKPORT_ALIAS_WARNING = r"msgspec may not decode the type alias(es)? .* typing_extensions\.TypeAliasType"
+"""The warning about the type aliases msgspec output writes as the TypeAliasType of typing_extensions."""
+
 
 @pytest.mark.parametrize("entrypoint", ["cli", "api"])
 @pytest.mark.parametrize("use_alias_type", [False, True])
@@ -49,38 +53,43 @@ def test_msgspec_alias_structured_defaults(
     # Black 22 cannot format PEP 695 type statements; keep their native runtime coverage.
     suffix = "_type" if use_alias_type and target == PythonVersion.PY_310 else ""
     expected = f"msgspec_alias_defaults_{target.value.replace('.', '_')}{suffix}.py"
-    if entrypoint == "cli":
-        run_main_and_assert(
-            input_path=input_path,
-            output_path=output_file,
-            input_file_type="jsonschema",
-            assert_func=assert_file_content,
-            expected_file=expected,
-            extra_args=[
-                "--output-model-type",
-                "msgspec.Struct",
-                "--use-type-alias",
-                "--target-python-version",
-                target.value,
-                "--disable-timestamp",
-                *(["--formatters", "builtin"] if target == PythonVersion.PY_312 else []),
-                *(["--use-type-alias-type"] if use_alias_type else []),
-            ],
-        )
-    else:
-        run_generate_file_and_assert(
-            input_path=input_path,
-            output_path=output_file,
-            input_file_type=InputFileType.JsonSchema,
-            assert_func=assert_file_content,
-            expected_file=expected,
-            output_model_type=DataModelType.MsgspecStruct,
-            use_type_alias=True,
-            use_type_alias_type=use_alias_type,
-            target_python_version=target,
-            disable_timestamp=True,
-            **({"formatters": [Formatter.BUILTIN]} if target == PythonVersion.PY_312 else {}),
-        )
+    with (
+        pytest.warns(UserWarning, match=_BACKPORT_ALIAS_WARNING)
+        if use_alias_type and target == PythonVersion.PY_310
+        else nullcontext()
+    ):
+        if entrypoint == "cli":
+            run_main_and_assert(
+                input_path=input_path,
+                output_path=output_file,
+                input_file_type="jsonschema",
+                assert_func=assert_file_content,
+                expected_file=expected,
+                extra_args=[
+                    "--output-model-type",
+                    "msgspec.Struct",
+                    "--use-type-alias",
+                    "--target-python-version",
+                    target.value,
+                    "--disable-timestamp",
+                    *(["--formatters", "builtin"] if target == PythonVersion.PY_312 else []),
+                    *(["--use-type-alias-type"] if use_alias_type else []),
+                ],
+            )
+        else:
+            run_generate_file_and_assert(
+                input_path=input_path,
+                output_path=output_file,
+                input_file_type=InputFileType.JsonSchema,
+                assert_func=assert_file_content,
+                expected_file=expected,
+                output_model_type=DataModelType.MsgspecStruct,
+                use_type_alias=True,
+                use_type_alias_type=use_alias_type,
+                target_python_version=target,
+                disable_timestamp=True,
+                **({"formatters": [Formatter.BUILTIN]} if target == PythonVersion.PY_312 else {}),
+            )
 
     payloads = json.loads((DATA_PATH / "payloads" / "msgspec_alias_defaults_runtime.json").read_text())
     with _generated_model(output_file, "msgspec_alias_defaults_runtime", "AliasDefaults") as model:
@@ -156,34 +165,35 @@ def test_msgspec_graphql_scalar_alias_defaults(entrypoint: str, use_alias_type: 
     """Scalar aliases with no model fields retain their original default factories."""
     expected = EXPECTED_GRAPHQL_PATH / f"msgspec_scalar_alias_defaults_{use_alias_type}.py"
     input_path = GRAPHQL_DATA_PATH / "msgspec_scalar_alias_defaults.graphql"
-    if entrypoint == "cli":
-        run_main_and_assert(
-            input_path=input_path,
-            output_path=output_file,
-            input_file_type="graphql",
-            assert_func=assert_file_content,
-            expected_file=expected,
-            extra_args=[
-                "--output-model-type",
-                "msgspec.Struct",
-                "--target-python-version",
-                "3.10",
-                "--disable-timestamp",
-                *(["--use-type-alias-type"] if use_alias_type else []),
-            ],
-        )
-    else:
-        run_generate_file_and_assert(
-            input_path=input_path,
-            output_path=output_file,
-            input_file_type=InputFileType.GraphQL,
-            assert_func=assert_file_content,
-            expected_file=expected,
-            output_model_type=DataModelType.MsgspecStruct,
-            target_python_version=PythonVersion.PY_310,
-            use_type_alias_type=use_alias_type,
-            disable_timestamp=True,
-        )
+    with pytest.warns(UserWarning, match=_BACKPORT_ALIAS_WARNING) if use_alias_type else nullcontext():
+        if entrypoint == "cli":
+            run_main_and_assert(
+                input_path=input_path,
+                output_path=output_file,
+                input_file_type="graphql",
+                assert_func=assert_file_content,
+                expected_file=expected,
+                extra_args=[
+                    "--output-model-type",
+                    "msgspec.Struct",
+                    "--target-python-version",
+                    "3.10",
+                    "--disable-timestamp",
+                    *(["--use-type-alias-type"] if use_alias_type else []),
+                ],
+            )
+        else:
+            run_generate_file_and_assert(
+                input_path=input_path,
+                output_path=output_file,
+                input_file_type=InputFileType.GraphQL,
+                assert_func=assert_file_content,
+                expected_file=expected,
+                output_model_type=DataModelType.MsgspecStruct,
+                target_python_version=PythonVersion.PY_310,
+                use_type_alias_type=use_alias_type,
+                disable_timestamp=True,
+            )
     payloads = json.loads((DATA_PATH / "payloads" / "msgspec_scalar_alias_defaults.json").read_text())
     with _generated_model(output_file, "msgspec_scalar_alias_defaults_runtime", "ScalarDefaults") as model:
         if use_alias_type and TypeAliasType.__module__ == "typing_extensions":
@@ -426,6 +436,49 @@ def test_msgspec_struct_beside_map_defaults(output_file: Path) -> None:
         default = model()
         actual = {field: _type_names(getattr(default, field)) for field in default.__struct_fields__}
     assert_output(f"{json.dumps(actual, indent=2)}\n")
+
+
+@pytest.mark.parametrize(
+    "target",
+    [
+        PythonVersion.PY_310,
+        pytest.param(
+            PythonVersion.PY_312,
+            marks=pytest.mark.skipif(sys.version_info < (3, 12), reason="Runtime requires Python type statements"),
+        ),
+    ],
+)
+def test_msgspec_typing_extensions_alias_warning(target: PythonVersion, output_file: Path) -> None:
+    """Warn that msgspec may not decode a type alias written as the TypeAliasType of typing_extensions.
+
+    Before Python 3.12, --use-type-alias-type writes it from typing_extensions, which msgspec decodes only where that
+    class is the one of typing, so whether it decodes depends on the installed typing_extensions; Python 3.12 writes
+    a ``type`` statement, which msgspec decodes, without the warning.
+    """
+    with (
+        pytest.warns(UserWarning, match=r"msgspec may not decode the type alias Counts, or a type that uses it: it is")
+        if target == PythonVersion.PY_310
+        else nullcontext()
+    ):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "msgspec_backport_alias.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--output-model-type",
+                "msgspec.Struct",
+                "--use-type-alias-type",
+                "--target-python-version",
+                target.value,
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+            ],
+        )
+    if target == PythonVersion.PY_312:
+        with _generated_model(output_file, "msgspec_backport_alias_py312", "Model") as model:
+            decoded = _converted(model, {"counts": [1]})
+        assert_output(f"{json.dumps(decoded, indent=2)}\n")
 
 
 def _type_names(value: object) -> object:
