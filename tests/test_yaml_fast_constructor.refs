@@ -412,6 +412,7 @@ openapi/json_pointer_integer_keys.yaml	yaml_fast_constructor/parity.txt
 openapi/json_pointer_through_scalar.yaml	yaml_fast_constructor/parity.txt
 openapi/keep_model_order_same_short_name.yaml	yaml_fast_constructor/parity.txt
 openapi/lazy_resolved_models.yaml	yaml_fast_constructor/parity.txt
+openapi/literal_fields_beside_dotted_literal_model.yaml	yaml_fast_constructor/parity.txt
 openapi/map_keyword_bodies.yaml	yaml_fast_constructor/parity.txt
 openapi/max_items_enum.yaml	yaml_fast_constructor/parity.txt
 openapi/max_min_number.yaml	yaml_fast_constructor/parity.txt

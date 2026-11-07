@@ -468,6 +468,13 @@ True	main/openapi/custom_file_header_with_docstring_and_import.py
 [test_main_invalid_dotted_unsafe_retry_preserves_legacy]
 build_failure	main/openapi/invalid_dotted_schema_name_legacy_stdout.py
 source_mismatch	main/openapi/invalid_dotted_schema_name_legacy_stdout.py
+[test_main_literal_fields_keep_model_named_literal]
+extra_args0	main/openapi/main_openapi/main_literal_fields_keep_model_named_literal[extra_args0]/
+extra_args1	main/openapi/main_openapi/main_literal_fields_keep_model_named_literal[extra_args1]/
+extra_args2	main/openapi/main_openapi/main_literal_fields_keep_model_named_literal[extra_args2]/
+extra_args3	main/openapi/main_openapi/main_literal_fields_keep_model_named_literal[extra_args3]/
+extra_args4	main/openapi/main_openapi/main_literal_fields_keep_model_named_literal[extra_args4]/	= main/openapi/main_openapi/main_literal_fields_keep_model_named_literal[extra_args0]/
+extra_args5	main/openapi/main_openapi/main_literal_fields_keep_model_named_literal[extra_args5]/	= main/openapi/main_openapi/main_literal_fields_keep_model_named_literal[extra_args0]/
 [test_main_modular]
 	main/openapi/modular//*.py
 [test_main_modular_allof_inheritance_import_override]

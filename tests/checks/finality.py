@@ -368,10 +368,6 @@ class KnownWrite:
 _IMPORTS_CORRECT_WITNESS: Final = (
     "--input tests/data/jsonschema/imports_correct --output-model-type pydantic_v2.BaseModel --formatters builtin"
 )
-_EMPTY_UNION_WITNESS: Final = (
-    "--input tests/data/jsonschema/collapse_root_models_empty_union.json --input-file-type jsonschema "
-    "--collapse-root-models --formatters builtin"
-)
 
 KNOWN_WRITES: tuple[KnownWrite, ...] = (
     KnownWrite(
@@ -453,7 +449,6 @@ KNOWN_WRITES: tuple[KnownWrite, ...] = (
         "schemas api --collapse-root-models --formatters builtin",
         "RP15",
     ),
-    KnownWrite("render_modules", Rule.FROZEN, "DataType.import_", _EMPTY_UNION_WITNESS, "RP15"),
 )
 """The violations of today's pipeline; ``scripts/check_fact_finality.py --witnesses`` runs their witnesses.
 
@@ -463,7 +458,7 @@ and bases module by module (DC11b makes it one step). Constructor ordering, afte
 required field back the place in the constructor it left out while its base excluded it (RP14c's dataclass field
 plan holds it), and it reads the nullability of base fields before render preparation writes rendered nullability
 once (RP14's ordering reads the plans written after it). Rendering writes the import of the ``Any`` an empty union
-renders as after B1, at render preparation and at L7 (RP15), and alias preparation records compiled patterns in
+renders as after B1, at render preparation (RP15), and alias preparation records compiled patterns in
 field extras after B1 (RP14a's field render plan holds them).
 """
 

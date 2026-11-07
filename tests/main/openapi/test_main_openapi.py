@@ -2807,6 +2807,44 @@ def test_main_usable_discriminator_invalid_dotted_models_reuse(
 
 
 @pytest.mark.isolate_builtin_formatter_config
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        [],
+        ["--output-model-type", "dataclasses.dataclass"],
+        pytest.param(
+            ["--output-model-type", "msgspec.Struct"],
+            marks=pytest.mark.filterwarnings("ignore:msgspec cannot decode the discriminated union PetOwner.pet"),
+        ),
+        ["--use-annotated"],
+        ["--use-type-alias"],
+        ["--collapse-root-models"],
+    ],
+)
+def test_main_literal_fields_keep_model_named_literal(output_dir: Path, extra_args: list[str]) -> None:
+    """Keep a model named Literal where fields named Literal hide typing.Literal from the tags beside them.
+
+    The fields bind typing.Literal under an alias before the models that imports shadow are renamed, so no import
+    binds the name Literal any more and the model keeps it, as up to 0.90.0.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "literal_fields_beside_dotted_literal_model.yaml",
+        output_path=output_dir,
+        input_file_type="openapi",
+        extra_args=[
+            "--reuse-model",
+            *extra_args,
+            "--target-python-version",
+            "3.14",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.isolate_builtin_formatter_config
 def test_main_usable_identical_invalid_dotted_models_stdout(capsys: pytest.CaptureFixture[str]) -> None:
     """Preserve identical redefinitions when concatenated text remains usable."""
     expected_path = EXPECTED_OPENAPI_PATH / "usable_identical_invalid_dotted_models_stdout.py"

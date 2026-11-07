@@ -159,6 +159,7 @@ __all__ = [
     "check_import_reads",
     "decide_config_items",
     "import_models_of_hidden_submodules",
+    "import_names_class",
     "modules_hidden_by_imports",
     "name_final_classes_of_additional_properties",
     "record_generated_class_names",
@@ -172,6 +173,7 @@ __all__ = [
     "remove_unused_imports",
     "remove_unused_models",
     "render",
+    "render_module_models",
     "replan_schema_validators_after_renames",
     "resolve_module_import_conflicts",
     "snapshot_model_imports",
@@ -408,18 +410,21 @@ def _alias_reserved_names(
     }
 
 
-def _bind_module_field_names(
+def _bind_module_field_names(  # noqa: PLR0913
     models: list[DataModel],
     imports: Imports,
     shared_imports: Imports,
     ledger: ModuleImportLedger,
     target: tuple[int, int],
-) -> None:
-    """Allocate aliases only where a property hides an emitted expression name.
+    *,
+    texts: Sequence[str] | None = None,
+) -> bool:
+    """Alias the names a property hides from the text of its class; return whether it aliased any.
 
     The names are those the module's imports bind and the builtin classes of the ``target`` that no import binds,
     which a builtin import binds under the alias. An alias avoids every name the module's and the shared imports
-    bind. Type aliases sit at module scope, so an import they name keeps its name beside the alias.
+    bind. Type aliases sit at module scope, so an import they name keeps its name beside the alias. ``texts`` are the
+    rendered models; without them a model renders where it holds a field of such a name.
     """
     field_names = {field.name for model in models for field in model.fields if field.name is not None}
     shadowable_imports = {binding: key for key, binding in _import_bindings(imports) if binding in field_names}
@@ -429,12 +434,14 @@ def _bind_module_field_names(
         if is_builtin_type_name(name, target)
     )
     if not shadowable_imports:
-        return
+        return False
     collisions: set[str] = set()
-    for model in models:
-        collisions.update(_model_field_name_collisions(model, shadowable_imports))
+    for index, model in enumerate(models):
+        collisions.update(
+            _model_field_name_collisions(model, None if texts is None else texts[index], shadowable_imports)
+        )
     if not collisions:
-        return
+        return False
     reserved_names = _alias_reserved_names(models, imports, shared_imports)
     type_alias_imports = {
         _import_key(import_) for model in models if isinstance(model, TypeAliasBase) for import_ in model.imports
@@ -454,6 +461,26 @@ def _bind_module_field_names(
     for model in models:
         if not isinstance(model, TypeAliasBase):
             model.set_field_name_bindings(bindings)
+    return True
+
+
+def render_module_models(
+    models: list[DataModel],
+    imports: Imports,
+    shared_imports: Imports,
+    ledger: ModuleImportLedger,
+    target: tuple[int, int],
+) -> list[str]:
+    """Render the models of a module, alias the names a property hides in the texts and render the aliased again.
+
+    Where ``bind_module_field_names`` bound the names before, the texts already write the aliases.
+    """
+    texts = [model.render() for model in models]
+    if not _bind_module_field_names(models, imports, shared_imports, ledger, target, texts=texts):
+        return texts
+    return [
+        text if isinstance(model, TypeAliasBase) else model.render() for model, text in zip(models, texts, strict=True)
+    ]
 
 
 def _forward_defined_models(contexts: Iterable[ModuleContextView], forwarder_map: ForwarderMap) -> ForwarderMap:
@@ -1513,6 +1540,42 @@ def _names_written_as_text(models: Iterable[DataModel]) -> set[str]:
     return names
 
 
+def _imported_names(models: Sequence[DataModel], imports: Imports, shared_names: set[str]) -> set[str]:
+    """Return the names the imports of a module bind that a class of the module may not take.
+
+    The imports every module writes (``shared_names``) count only where a type of the module writes the name as text.
+    """
+    imported_names = {
+        imports.alias[from_][i] if i in imports.alias[from_] and i != imports.alias[from_][i] else i
+        for from_, import_ in imports.items()
+        for i in import_
+    }
+    if shared_names and (shadowed := shared_names.intersection(model.class_name for model in models)):
+        imported_names.update(shadowed.intersection(_names_written_as_text(models)))
+    return imported_names
+
+
+def import_names_class(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> bool:
+    """Tell whether a class of a module takes a name the module imports, which ``change_imported_model_name`` reads."""
+    shared_names = shared_import_bindings(parser.imports)
+    return any(
+        not _imported_names(ctx.models, ctx.imports, shared_names).isdisjoint(model.class_name for model in ctx.models)
+        for ctx in state.contexts
+    )
+
+
+def bind_module_field_names(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> None:
+    """Bind the field names of each module that its imports shadow, before the renames read the module imports."""
+    for ctx in state.contexts:
+        _bind_module_field_names(
+            ctx.models,
+            ctx.imports,
+            parser.imports,
+            parser._import_ledger,  # noqa: SLF001
+            parser.target_python_version.version_key,
+        )
+
+
 def change_imported_model_name(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> None:
     """Rename the local models that an import of their module shadows; remember whether any was renamed.
 
@@ -1522,13 +1585,7 @@ def change_imported_model_name(parser: ImportsHost[Any], state: _FinalizeState[A
     shared_names = shared_import_bindings(parser.imports)
     for ctx in state.contexts:
         models, imports = ctx.models, ctx.imports
-        imported_names = {
-            imports.alias[from_][i] if i in imports.alias[from_] and i != imports.alias[from_][i] else i
-            for from_, import_ in imports.items()
-            for i in import_
-        }
-        if shared_names and (shadowed := shared_names.intersection(model.class_name for model in models)):
-            imported_names.update(shadowed.intersection(_names_written_as_text(models)))
+        imported_names = _imported_names(models, imports, shared_names)
         for model in models:
             if model.class_name not in imported_names:  # pragma: no cover
                 continue
@@ -1929,18 +1986,6 @@ def builtin_name_bindings(ledger: ModuleImportLedger, imports: Imports) -> dict[
             else ()
         )
     }
-
-
-def bind_module_field_names(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> None:
-    """Bind the field names of each module that its imports shadow."""
-    for ctx in state.contexts:
-        _bind_module_field_names(
-            ctx.models,
-            ctx.imports,
-            parser.imports,
-            parser._import_ledger,  # noqa: SLF001
-            parser.target_python_version.version_key,
-        )
 
 
 def submodules_hidden_by_packages(
