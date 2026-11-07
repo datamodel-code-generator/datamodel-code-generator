@@ -6101,6 +6101,8 @@ pydantic_v2.dataclass-dataclass-unexpected_keyword_argument	main/jsonschema/allo
 	main/jsonschema/jsonschema_allof_enum_no_external_ref.py
 [test_main_jsonschema_allof_enum_ref]
 	main/jsonschema/jsonschema_allof_enum_ref.py
+[test_main_jsonschema_allof_inherited_property_nearer_base]
+	main/jsonschema/main_jsonschema/allof_inherited_property_nearer_base.py
 [test_main_jsonschema_allof_inherited_ref_other_directory]
 	main/jsonschema/main_jsonschema/allof_inherited_ref_other_directory/
 [test_main_jsonschema_allof_mapping_every_part_null]

@@ -31383,6 +31383,31 @@ def test_main_jsonschema_diamond_inherited_field_override(output_model_type: str
     )
 
 
+def test_main_jsonschema_allof_inherited_property_nearer_base(output_file: Path) -> None:
+    """Take a redeclared property from the nearer base, as the class MRO does, whichever order an allOf lists them."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "allof_inherited_property_nearer_base.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--formatters", "builtin"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="allof_inherited_property_nearer_base",
+        model_name="Model",
+        valid_json='{"base_first": {"p": "abc", "q": 1}, "descendant_first": {"p": "abc", "q": 1}}',
+        invalid_json='{"base_first": {"p": "abcd", "q": 1}}',
+        expected_error_type="string_too_long",
+    )
+    assert_generated_model_json_invalid(
+        output_file,
+        module_name="allof_inherited_property_nearer_base",
+        model_name="Model",
+        invalid_json='{"descendant_first": {"p": "abcd", "q": 1}}',
+        expected_error_type="string_too_long",
+    )
+
+
 @pytest.mark.benchmark
 def test_main_allof_mro(output_file: Path) -> None:
     """Test allOf with diamond inheritance pattern produces valid Python MRO."""
