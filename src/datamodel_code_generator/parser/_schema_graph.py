@@ -484,6 +484,7 @@ class SchemaGraphBuilder:
     """
 
     __slots__ = (
+        "_converted",
         "_directories",
         "_documents",
         "_edge_keys",
@@ -501,6 +502,7 @@ class SchemaGraphBuilder:
         """Start an empty graph."""
         self.locations: dict[int, SchemaLocation] = {}
         self.registry = ResourceRegistry()
+        self._converted: dict[str, set[tuple[str, ...]]] = {}
         self._documents: list[object] = []
         self._false_all_of_documents: set[str] = set()
         self._mounted: set[int] = set()
@@ -518,6 +520,14 @@ class SchemaGraphBuilder:
         Only such a document gives a schema object an ``allOf`` member that is ``false``; the parser writes none.
         """
         return bool(self._false_all_of_documents)
+
+    def note_converted(self, root: SchemaLocation) -> None:
+        """Record that the schema at ``root``, and every schema below it, was converted from another format."""
+        self._converted.setdefault(root.document, set()).add(root.tokens)
+
+    def is_converted(self, location: SchemaLocation) -> bool:
+        """Return whether the schema at a location is part of a schema converted from another format."""
+        return any(location.tokens[: len(root)] == root for root in self._converted.get(location.document, ()))
 
     def edge_key(self, edge: RefEdge, compute: Callable[[RefEdge], RefKey]) -> RefKey:
         """Return the key of an edge, which ``compute`` resolves in the edge's document once, at its first call.

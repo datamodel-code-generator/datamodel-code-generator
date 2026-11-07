@@ -315,6 +315,10 @@ named	main/avro/avro_fixed_type_overrides_keep_physical_defaults.py
 	main/avro/py312/constructs.py	?	= main/avro/py311/constructs.py
 	main/avro/py313/constructs.py	?	= main/avro/py311/constructs.py
 	main/avro/py314/constructs.py	?
+[test_main_avro_named_type_field_defaults]
+default	main/avro/main_avro/named_type_field_defaults[default].py
+ignore-ref-siblings	main/avro/main_avro/named_type_field_defaults[ignore-ref-siblings].py	= main/avro/main_avro/named_type_field_defaults[default].py
+per-document	main/avro/main_avro/named_type_field_defaults[per-document].py	= main/avro/main_avro/named_type_field_defaults[default].py
 [test_main_avro_namespace_collisions]
 	main/avro/py310/namespace_collisions.py	?
 	main/avro/py311/namespace_collisions.py	?	= main/avro/py310/namespace_collisions.py

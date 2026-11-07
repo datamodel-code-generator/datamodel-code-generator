@@ -385,7 +385,9 @@ those keywords overlay the referenced schema: a sibling `format: binary` types t
 `--ignore-ref-siblings-by-schema-version` the field is typed by the referenced schema alone, and annotations beside
 the `$ref`, such as `description` or `default`, are left out too. Versions that apply the keywords beside a `$ref`
 (2019-09 and later, OpenAPI 3.1 and later, AsyncAPI 3) read them as before. The version is the one
-`--read-schema-version-per-document` reads, else that of the document being parsed.
+`--read-schema-version-per-document` reads, else that of the document being parsed. A schema converted from Avro,
+XML Schema or Protocol Buffers, also as an AsyncAPI payload, keeps the keywords its converter writes beside a `$ref`,
+such as the default of a field typed by a named type.
 
 !!! tip "Usage"
 

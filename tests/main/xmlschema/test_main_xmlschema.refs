@@ -47,6 +47,10 @@
 	main/xmlschema/model_groups_and_wildcards.py
 [test_main_xmlschema_multiple_substitution_groups]
 	main/xmlschema/multiple_substitution_groups.py
+[test_main_xmlschema_named_type_element_defaults]
+default	main/xmlschema/main_xmlschema/named_type_element_defaults[default].py
+ignore-ref-siblings	main/xmlschema/main_xmlschema/named_type_element_defaults[ignore-ref-siblings].py	= main/xmlschema/main_xmlschema/named_type_element_defaults[default].py
+per-document	main/xmlschema/main_xmlschema/named_type_element_defaults[per-document].py	= main/xmlschema/main_xmlschema/named_type_element_defaults[default].py
 [test_main_xmlschema_namespace_fallback]
 	main/xmlschema/namespace_fallback.py
 [test_main_xmlschema_nillable_boolean]

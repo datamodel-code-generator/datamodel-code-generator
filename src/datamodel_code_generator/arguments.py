@@ -1781,7 +1781,9 @@ _toggle(
     "takes the referenced type instead of bytes, a sibling uniqueItems makes no set, and a sibling description or "
     "default is left out too. Versions that apply the keywords beside a $ref (2019-09 and later, OpenAPI 3.1 and "
     "later, AsyncAPI 3) read them as before. Without it the keywords beside such a $ref overlay its target, as in "
-    "0.88.0. The version is the one --read-schema-version-per-document reads, else that of the document parsed.",
+    "0.88.0. The version is the one --read-schema-version-per-document reads, else that of the document parsed. A "
+    "schema converted from Avro, XML Schema or Protocol Buffers keeps the keywords its converter writes beside a "
+    "$ref, such as the default of a field typed by a named type.",
 )
 
 # ======================================================================================

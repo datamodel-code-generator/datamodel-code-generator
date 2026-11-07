@@ -840,6 +840,7 @@ class ProtobufParser(JsonSchemaParser):
             source = next(self.iter_source)
             source.raw_data = raw_obj
             self.raw_obj = raw_obj
+            self._note_converted_document([])
             self._parse_file(raw_obj, "Model", [])
 
 

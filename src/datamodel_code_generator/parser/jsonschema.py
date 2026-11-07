@@ -8546,6 +8546,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """
         return _schema_documents.mount_converted_schema(self, converted, location, container, home)
 
+    def _note_converted_document(self, path_parts: list[str]) -> None:
+        """Record that the document read at ``path_parts`` is a schema converted from another format (L0)."""
+        return _schema_documents.note_converted_document(self, path_parts)
+
     def _add_id_callback(self, obj: JsonSchemaObject, path: list[str]) -> None:
         """Add $id and $anchor to model resolver."""
         return _schema_documents.add_id_callback(self, obj, path)
@@ -8591,9 +8595,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Return whether the schema version of a location ignores the keywords beside a ``$ref``.
 
         It is the version of its document under --read-schema-version-per-document, else that of the input document
-        being parsed (row ``legacy-first-read-dialect``).
+        being parsed (row ``legacy-first-read-dialect``). A schema converted from another format, such as Avro, XML
+        Schema or Protocol Buffers, keeps them in every version: its converter writes a field's default and
+        annotations beside the ``$ref`` to the field's named type.
         """
-        return not self._ref_siblings_apply_to(location, legacy="parsed-document")
+        return not (
+            self._ref_siblings_apply_to(location, legacy="parsed-document")
+            or (location is not None and (graph := self._schema_graph) is not None and graph.is_converted(location))
+        )
 
     def _schema_object(self, raw: object) -> JsonSchemaObject:
         """Validate a raw or dumped schema as ``SCHEMA_OBJECT_TYPE`` in the parser's validation context."""

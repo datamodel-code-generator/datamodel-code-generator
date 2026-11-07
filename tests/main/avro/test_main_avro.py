@@ -1309,3 +1309,38 @@ def test_main_avro_auto_detection_leaves_json_schema_shapes_as_json_schema(
         capsys=capsys,
         expected_stderr_contains="The input file type was determined to be:",
     )
+
+
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param([], id="default"),
+        pytest.param(["--ignore-ref-siblings-by-schema-version"], id="ignore-ref-siblings"),
+        pytest.param(
+            ["--ignore-ref-siblings-by-schema-version", "--read-schema-version-per-document"], id="per-document"
+        ),
+    ],
+)
+def test_main_avro_named_type_field_defaults(output_file: Path, extra_args: list[str]) -> None:
+    """Keep the default and doc of a field typed by a named type under --ignore-ref-siblings-by-schema-version (#6394).
+
+    The converter writes them beside the ``$ref`` to the named type, as parts of the Avro field, so the option, which
+    ignores the keywords beside a draft 7 ``$ref``, keeps them.
+    """
+    run_main_and_assert(
+        input_path=AVRO_DATA_PATH / "named_type_field_defaults.avsc",
+        output_path=output_file,
+        input_file_type="avro",
+        extra_args=[*extra_args, "--target-python-version", "3.10", "--disable-timestamp", "--formatters", "builtin"],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="avro_named_type_field_defaults",
+        model_name="Hand",
+        valid_json="{}",
+        invalid_json='{"suit": "SPADES"}',
+        expected_error_type="enum",
+        expected_attribute_path=("trump",),
+        expected_attribute_value="CLUBS",
+    )

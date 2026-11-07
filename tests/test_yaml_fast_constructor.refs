@@ -5,6 +5,7 @@
 [test_fast_constructor_matches_schema_fixtures]
 asyncapi/avro-named-types.yaml	yaml_fast_constructor/parity.txt
 asyncapi/converted_payload_names.yaml	yaml_fast_constructor/parity.txt
+asyncapi/converted_payload_ref_siblings_v2.yaml	yaml_fast_constructor/parity.txt
 asyncapi/discriminator_state_isolation/a.yaml	yaml_fast_constructor/parity.txt
 asyncapi/discriminator_state_isolation/b.yaml	yaml_fast_constructor/parity.txt
 asyncapi/dynamic_ref/events.yaml	yaml_fast_constructor/parity.txt

@@ -64,6 +64,10 @@ without-option	main/asyncapi/main_asyncapi/single_value_enum_as_const_keeps_xml_
 	main/asyncapi/main_asyncapi/trait_headers_inline_and_ref_in_either_order.py
 [test_main_asyncapi_unknown_version_falls_back_to_v3]
 	main/asyncapi/unknown_version.py
+[test_main_asyncapi_v2_converted_payload_ref_siblings]
+default	main/asyncapi/main_asyncapi/v2_converted_payload_ref_siblings[default].py
+ignore-ref-siblings	main/asyncapi/main_asyncapi/v2_converted_payload_ref_siblings[ignore-ref-siblings].py
+per-document	main/asyncapi/main_asyncapi/v2_converted_payload_ref_siblings[per-document].py	= main/asyncapi/main_asyncapi/v2_converted_payload_ref_siblings[ignore-ref-siblings].py
 [test_main_asyncapi_v2_message_schema_format]
 	main/asyncapi/schema_format_v2.py
 [test_main_asyncapi_validation_flag]

@@ -23,6 +23,9 @@
 	main/protobuf/directory_black_lt_24//*.py	?
 [test_main_protobuf_edition_2023_schema_version]
 	main/protobuf/edition_2023.py
+[test_main_protobuf_enum_field_defaults_beside_ref]
+ignore-ref-siblings	main/protobuf/main_protobuf/enum_field_defaults_beside_ref[ignore-ref-siblings].py	= main/protobuf/proto2.py
+per-document	main/protobuf/main_protobuf/enum_field_defaults_beside_ref[per-document].py	= main/protobuf/proto2.py
 [test_main_protobuf_infer_input_file_type]
 	main/protobuf/proto3_optional.py
 [test_main_protobuf_output_model_types]
