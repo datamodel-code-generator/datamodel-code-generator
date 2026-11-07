@@ -303,6 +303,9 @@ def test_sort_data_models() -> None:
     _, _, seeded_require_update_action_models = sort_data_models(reference, require_update_action_models=[keys["B"]])
     assert seeded_require_update_action_models == [keys["B"], keys["A"]]
 
+    _, seeded_resolved, _ = sort_data_models([reference[0]], OrderedDict(list(expected.items())[:2]))
+    assert seeded_resolved == expected
+
 
 def test_sort_data_models_unresolved() -> None:
     """Test sorting data models with unresolved references."""
