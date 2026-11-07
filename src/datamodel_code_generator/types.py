@@ -1211,6 +1211,7 @@ class DataType(_BaseModel):  # noqa: PLR0904
 
         A union takes the None of a member whose rendered hint strips it under the union's operator (row M,
         ``legacy-member-null-from-hint-text``), so the members are rendered only when neither of the others decides.
+        A rendering of the hint answers whether it is None as well (``_type_hint_and_null``).
         """
         return _nullability_core().rendered_nullability(
             own=self.is_optional, reference=self.adds_reference_null, member_nulls=self._iter_hint_member_nulls()
@@ -1279,6 +1280,15 @@ class DataType(_BaseModel):  # noqa: PLR0904
     def type_hint(self) -> str:
         """Generate the Python type hint string for this DataType."""
         return render_type_expr(_build_type_expr(self, base=False))
+
+    def _type_hint_and_null(self) -> tuple[str, bool]:
+        """Return ``type_hint`` and whether it writes None (``_hint_null_source``), from one rendering.
+
+        A class that writes its own hint renders it, then the None.
+        """
+        if type(self).type_hint is not DataType.type_hint:
+            return self.type_hint, self._hint_null_source() is not None
+        return _render_apply(cast("TypeApply", _build_type_expr(self, base=False)))
 
     @property
     def is_union(self) -> bool:
@@ -1459,7 +1469,7 @@ def _build_type_expr(data_type: DataType, *, base: bool) -> TypeExpr:
 def render_type_expr(expr: TypeExpr, /) -> str:
     """Write a type expression, through the rendering hooks of the data types that it holds."""
     if isinstance(expr, TypeApply):
-        return _render_apply(expr)
+        return _render_apply(expr)[0]
     if isinstance(expr, RefLeaf):
         node = expr.node
         return node._get_wrapped_reference_type_hint(cast("Reference", node.reference).short_name)  # noqa: SLF001
@@ -1468,15 +1478,19 @@ def render_type_expr(expr: TypeExpr, /) -> str:
     return node.base_type_hint if expr.base else node.type_hint
 
 
-def _render_apply(expr: TypeApply) -> str:
-    """Write what one data type writes: its own text or its form, its container, its quotes, its None or its call."""
+def _render_apply(expr: TypeApply) -> tuple[str, bool]:
+    """Write what one data type writes: its own text or its form, its container, its quotes, its None or its call.
+
+    Return the text and whether the hint holds the None ``DataType._hint_null_source`` reads: the type's own, its
+    nullable model's, or the one the members of its union hold.
+    """
     node = expr.node
     text = node._own_text  # noqa: SLF001
-    member_null = False
+    member_null = merged_null = False
     if expr.form == "base":
         text = render_type_expr(expr.args[0])
     elif not text:
-        text, member_null = _render_form(expr)
+        text, member_null, merged_null = _render_form(expr)
     elif node.reference is not None and text == node.alias:
         text = node._get_wrapped_alias_type_hint(text)  # noqa: SLF001
     if (container := expr.container) is not None:
@@ -1491,18 +1505,26 @@ def _render_apply(expr: TypeApply) -> str:
             text = container
     if not expr.base and node._is_forward_reference:  # noqa: SLF001
         text = stable_repr(text) if '"' in text or "\\" in text else f'"{text}"'
-    if (node.is_optional or member_null or (expr.form != "base" and node.adds_reference_null)) and text != ANY:
-        return node._optional_hint(text, node.use_union_operator)  # noqa: SLF001
+    if (
+        hint_null := node.is_optional or member_null or (expr.form != "base" and node.adds_reference_null)
+    ) and text != ANY:
+        return node._optional_hint(text, node.use_union_operator), True  # noqa: SLF001
+    hint_null = hint_null or (merged_null and node._takes_member_null(_nullability_core()))  # noqa: SLF001
     if not expr.base and node.is_func and node.kwargs:
-        return call_text(text, (keyword_argument(k, represent_python_value(v)) for k, v in node.kwargs.items()))
-    return text
+        return call_text(
+            text, (keyword_argument(k, represent_python_value(v)) for k, v in node.kwargs.items())
+        ), hint_null
+    return text, hint_null
 
 
-def _render_form(expr: TypeApply) -> tuple[str, bool]:
-    """Write the form of a data type without text of its own, and whether a union takes the None of its members."""
+def _render_form(expr: TypeApply) -> tuple[str, bool, bool]:
+    """Write the form of a data type without text of its own, and whether a union takes the None of its members.
+
+    The last item tells whether the members the union merges hold a None, before an alias of None takes it.
+    """
     node = expr.node
     text = ""
-    member_null = False
+    member_null = merged_null = False
     match expr.form:
         case "tuple":
             tuple_type = SLOT_CLASSES["tuple"].written(standard=node.use_standard_collections)
@@ -1512,7 +1534,7 @@ def _render_form(expr: TypeApply) -> tuple[str, bool]:
                 items = (render_type_expr(item) or ANY for item in expr.args)
             text = subscript_text(tuple_type, items)
         case "union":
-            text, member_null = _render_union(node, expr.args, discriminated=not expr.base)
+            text, member_null, merged_null = _render_union(node, expr.args, discriminated=not expr.base)
         case "single":
             text = render_type_expr(expr.args[0])
         case "literal":
@@ -1525,13 +1547,14 @@ def _render_form(expr: TypeApply) -> tuple[str, bool]:
                 else [stable_repr(literal) for literal in node.literals]
             )
             text = subscript_text(node._literal_name, parts)  # noqa: SLF001
-    return text, member_null
+    return text, member_null, merged_null
 
 
-def _render_union(node: DataType, members: tuple[TypeExpr, ...], *, discriminated: bool) -> tuple[str, bool]:
+def _render_union(node: DataType, members: tuple[TypeExpr, ...], *, discriminated: bool) -> tuple[str, bool, bool]:
     """Write a union of member hints, each once, and whether it takes the None of its members, which it writes no more.
 
-    A union that keeps its member order compares the hints as written and takes no None from them.
+    A union that keeps its member order compares the hints as written and takes no None from them. The last item tells
+    whether the merged members hold a None, before an alias of None takes it (``_drop_none_after_none_alias``).
     """
     if node.preserve_union_member_order:
         union = _union_core()
@@ -1539,6 +1562,7 @@ def _render_union(node: DataType, members: tuple[TypeExpr, ...], *, discriminate
     else:
         merged = _merge_union_members(node, members)
     kept, takes_null = merged.kept, merged.takes_null
+    merged_null = takes_null
     if node.use_union_operator:
         kept, takes_null = _drop_none_after_none_alias(members, kept, takes_null=takes_null)
     if not kept:
@@ -1552,7 +1576,7 @@ def _render_union(node: DataType, members: tuple[TypeExpr, ...], *, discriminate
             memo.keep_union_members(NodeKey(id(node)), node, text, kept)
     if discriminated and (discriminator := node.discriminator):
         text = node._wrap_discriminator_type_hint(text, discriminator)  # noqa: SLF001
-    return text, takes_null
+    return text, takes_null, merged_null
 
 
 def _drop_none_after_none_alias(
