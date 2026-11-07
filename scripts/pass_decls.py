@@ -944,8 +944,8 @@ FLATTEN_NARROWED_INHERITED_FIELDS = PassDecl(
     ),
     summary=(
         "Makes a TypedDict whose key narrows a key of a generated base, as a type checker holds to the base's type, "
-        "requiredness and ReadOnly, declare every key of its bases without them, bases first, importing the models "
-        "of other modules that the copied keys name."
+        "requiredness and ReadOnly, or a functional TypedDict, which writes no base, declare every key of its bases "
+        "without them, bases first, importing the models of other modules that the copied keys name."
     ),
     condition="an output whose subclasses keep inherited field types (TypedDict)",
 )

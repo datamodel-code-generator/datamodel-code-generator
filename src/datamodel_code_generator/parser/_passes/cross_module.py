@@ -204,7 +204,8 @@ def flatten_narrowed_inherited_fields(parser: FlattenAcrossModulesHost, run: Cro
 
     The output holds an inherited field to the annotation of its bases (``DataModel._KEEPS_INHERITED_FIELD_TYPES``),
     so such a model declares the fields of its generated bases itself (``_flattener``), bases first: a model that
-    inherits from one that narrows a field compares its fields with what that base declares then.
+    inherits from one that narrows a field compares its fields with what that base declares then. A model whose form
+    writes no base, a functional TypedDict, declares them too (``DataModel._declares_inherited_fields``).
     """
     flatten = _flattener(parser, run, "flatten-narrowed-inherited-fields")
     written = {id(model) for ctx in run.contexts for model in ctx.models}
@@ -213,7 +214,7 @@ def flatten_narrowed_inherited_fields(parser: FlattenAcrossModulesHost, run: Cro
     while visits:
         model, complete = visits.pop()
         if complete:
-            if model._narrows_inherited_field():  # noqa: SLF001
+            if model._declares_inherited_fields():  # noqa: SLF001
                 flatten(model)
         elif id(model) in written and id(model) not in visited:
             visited.add(id(model))

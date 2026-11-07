@@ -1,0 +1,5 @@
+{"q": {"x": "s"}, "a-b": "t"}: schema accepts, model accepts
+{}: schema accepts, model accepts
+{"q": {"x": 1}}: schema rejects, model rejects
+{"q": "s"}: schema rejects, model rejects
+{"a-b": 1}: schema rejects, model rejects
