@@ -765,7 +765,7 @@ def _field_union_row(
         parse_members = parser.parse_any_of if keyword == "anyOf" else parser.parse_one_of
         return build_union(parser.data_type, parse_members(site.name, site.obj, get_special_path(keyword, site.path)))
 
-    return Row(name, applies, build)
+    return Row(name, applies, build, keywords=frozenset({keyword}))
 
 
 def _parse_no_object_kind(parser: JsonSchemaParser, site: _Site) -> None:
@@ -6914,18 +6914,28 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     _FIELD_TABLE: ClassVar[DispatchTable[JsonSchemaParser, JsonSchemaObject, DataType]] = DispatchTable(
         (
             Row("python-type", _field_python_type_applies, _build_field_python_type, typed=_types_nothing),
-            Step("title-name", _field_title_name_applies, _rewrite_field_title_name),
-            Row("title-alias", _field_title_alias_applies, _parse_root_type_site),
-            Step("ref-siblings", _field_ref_siblings_applies, _merge_field_ref),
+            Step("title-name", _field_title_name_applies, _rewrite_field_title_name, keywords=frozenset({"title"})),
+            Row("title-alias", _field_title_alias_applies, _parse_root_type_site, keywords=frozenset({"title"})),
+            Step("ref-siblings", _field_ref_siblings_applies, _merge_field_ref, keywords=frozenset({"ref"})),
             Row(
                 "constrained-item",
                 _types_item_by_root_model,
                 _parse_constrained_item,
                 typed=_types_constrained_item,
             ),
-            Row("dynamic-ref", _field_dynamic_ref_applies, _build_field_dynamic_ref),
-            Row("ref-nullable-only", _field_ref_nullable_only_applies, _parse_ref_nullable_only_item),
-            Row("ref", _ref_applies, _get_ref_data_type_site),
+            Row(
+                "dynamic-ref",
+                _field_dynamic_ref_applies,
+                _build_field_dynamic_ref,
+                keywords=frozenset({"recursiveRef", "dynamicRef"}),
+            ),
+            Row(
+                "ref-nullable-only",
+                _field_ref_nullable_only_applies,
+                _parse_ref_nullable_only_item,
+                keywords=frozenset({"ref"}),
+            ),
+            Row("ref", _ref_applies, _get_ref_data_type_site, keywords=frozenset({"ref"})),
             Row("custom-type", _field_custom_type_applies, _parse_custom_type_item, typed=_types_nothing),
             Row(
                 "constrained-type-union",
@@ -6943,8 +6953,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 "discriminated-union-item",
                 _field_discriminated_union_item_applies,
                 _parse_root_type_site,
+                keywords=frozenset({"discriminator"}),
             ),
-            Row("validated-ref-site", _field_validated_ref_site_applies, _build_field_ref_site),
+            Row(
+                "validated-ref-site",
+                _field_validated_ref_site_applies,
+                _build_field_ref_site,
+                keywords=frozenset({"properties"}),
+            ),
             Row(
                 "schema-validator-object",
                 _schema_validator_object_applies,
@@ -6952,10 +6968,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             ),
             _field_union_row("any-of", "anyOf"),
             _field_union_row("one-of", "oneOf"),
-            Row("all-of", _all_of_applies, _parse_all_of_field_item),
-            Row("ref-site", _field_ref_site_applies, _build_field_ref_site),
+            Row("all-of", _all_of_applies, _parse_all_of_field_item, keywords=frozenset({"allOf"})),
+            Row("ref-site", _field_ref_site_applies, _build_field_ref_site, keywords=frozenset({"properties"})),
             Row("object", _field_object_applies, _parse_object_item),
-            Row("enum", _field_enum_applies, _parse_enum_item),
+            Row("enum", _field_enum_applies, _parse_enum_item, keywords=frozenset({"enum"})),
             Row(
                 "shared-numeric-constraints",
                 _field_shared_numeric_constraints_applies,
