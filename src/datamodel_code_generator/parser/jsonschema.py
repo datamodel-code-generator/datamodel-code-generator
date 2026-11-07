@@ -3457,10 +3457,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             written,
         )
 
-    def _allof_lightweight_items(self, schema: JsonSchemaObject) -> Sequence[JsonSchemaObject | bool]:
-        """Return the members ``_build_allof_type`` builds a type from: own keywords first, then allOf."""
-        return _all_of_values.allof_lightweight_items(self, schema)
-
     def _build_lightweight_type(  # noqa: PLR0911, PLR0912
         self,
         schema: JsonSchemaObject,
@@ -3496,7 +3492,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         if schema.allOf:
             return self._build_allof_type(
-                self._allof_lightweight_items(schema), depth, visited, max_depth, max_union_elements
+                _all_of_values.allof_lightweight_items(self, schema), depth, visited, max_depth, max_union_elements
             )
 
         if isinstance(schema.type, list) or (schema.type and schema.type != "object"):
