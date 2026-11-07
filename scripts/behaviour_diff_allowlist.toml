@@ -689,3 +689,17 @@ match = "^\\[(?:constraints|type|default)\\] (?:allof_union_member_declarations:
 reason = "the class of a union member of an allOf whose branch and other parts declare one property took it from its first base (Python, Pydantic) or its last (msgspec), so the bounds of the others were lost and the model accepted values the schema rejects; the class declares the property itself with the check keywords of every declaration, required where a base requires it, where the declarations differ in nothing else; Pydantic dataclasses write the required field with Field(...), which the signature reads as a default, and a TypedDict whose own key differs from a base's is written without its bases, as for any other key (schema-mismatch fix)"
 decision = "#6284"
 release_note = "a union member of an allOf, such as the class of an anyOf branch with the other members, checks the bounds, multipleOf and pattern that its branch and the other members declare for one property, instead of those of its first base only"
+
+[[accepted]]
+input = [
+  "tests/data/jsonschema/msgspec_union_member_constraints*",
+  "tests/data/jsonschema/msgspec_union_shared_bounds*",
+  "payload:jsonschema/msgspec_union_member_constraints.json",
+  "payload:jsonschema/msgspec_union_shared_bounds.json",
+]
+backends = [ "msgspec.Struct" ]
+aspects = [ "constraints", "type" ]
+match = "^\\[(?:constraints|type)\\] (?:msgspec_union_(?:member_constraints|shared_bounds):)?(?:(?:Upload|Payload):apart: str -> Annotated\\[str, Meta\\(max_length=3\\)\\]|(?:(?:Bounds|Payload):[a-z_]+|Parted): .* -> .*Annotated\\[(?:str|int|float), Meta\\([^)]*\\)\\].*)$"
+reason = "a msgspec union of members of one type that each write other constraints, none of them just the ones they share, was written without any constraint, as msgspec checks every member of a type against the constraints of all of them, so it accepted values every member rejects (\"abcd\" for str 2..3 | str <=3 with pattern ^a, 0 for int 1..5 | int >=7); the union keeps the constraints every member implies (max_length=3, ge=1), and a float member also those that an integer or Decimal member admits, so no value a member accepts is rejected (schema-mismatch fix: class names, field names and the parsed values of valid payloads stay)"
+decision = "#4756, #6267"
+release_note = "a msgspec union of differently constrained members of one type, such as anyOf [{type: string, minLength: 2, maxLength: 3}, {type: string, maxLength: 3, pattern: ^a}] or anyOf [{type: integer, minimum: 1, maximum: 5}, {type: integer, minimum: 7}], keeps the bound every member implies (Annotated[str, Meta(max_length=3)], Annotated[int, Meta(ge=1)]) instead of none, so it rejects values every member rejects; the warning names the bound it keeps"

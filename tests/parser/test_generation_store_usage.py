@@ -442,7 +442,7 @@ def test_fact_vocabulary_and_table_shape() -> None:
         "TemplateBase",
         "TypedDict",
         "_MetaAnnotatedType",
-        "_MetaStrKeyType",
+        "_MetaType",
         "_RenderedDataModelField",
     ])
 

@@ -431,7 +431,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         FreezePoint.B1,
     ),
     AttributeFact(
-        "_MetaStrKeyType",
+        "_MetaType",
         "meta_keywords",
         FactKind.FACT,
         (Fact.CONSTRAINTS,),

@@ -18,4 +18,5 @@ initials
 pair
 same
 shared
+apart
 mixed

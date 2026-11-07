@@ -173,6 +173,58 @@ def _admits_integers_of(
     )
 
 
+_LOOSEST_LENGTHS: Mapping[str, Callable[[Iterable[Any]], Any]] = MappingProxyType({
+    "min_length": min,
+    "max_length": max,
+})
+"""The length keywords of ``Meta`` with the function that picks the loosest of several values."""
+_ROUTED_KINDS: Mapping[str, tuple[str, ...]] = MappingProxyType({"float": ("int", "Decimal")})
+"""The other kinds whose values msgspec decodes as a kind: a JSON float such as ``-1.0``, valid for an integer member,
+goes to the float member, and so does every number a Decimal member, which takes no ``Meta`` bound, admits."""
+
+
+def _meta_keywords_text(constraints: Iterable[tuple[str, Any]]) -> str:
+    """Return the ``Meta`` keyword arguments of ``constraints`` as written, sorted by their text."""
+    return ", ".join(sorted(keyword_argument(name, represent_python_value(value)) for name, value in constraints))
+
+
+def _bound_tightness(constraint: tuple[str, Any]) -> tuple[Any, bool]:
+    """Return how tight a ``Meta`` bound is, greater when tighter: its value toward the inside, then exclusive first."""
+    name, value = constraint
+    return (value if _BOUND_SIDES[name] == "ge" else -value, name in {"gt", "lt"})
+
+
+def _loosest_shared(constraint_sets: Sequence[tuple[tuple[str, Any], ...]]) -> tuple[tuple[str, Any], ...]:
+    """Return the ``Meta`` constraints that every one of ``constraint_sets`` implies, as loose as the loosest set.
+
+    A side that every set bounds keeps the loosest of their bounds (``ge`` over ``gt`` at one value), ``min_length``
+    the least and ``max_length`` the greatest where every set writes one, and any other keyword the value every set
+    writes alike. A set without a keyword leaves it out.
+    """
+    kept: list[tuple[str, Any]] = []
+    for side in ("ge", "le"):
+        bounds = [
+            max((c for c in constraints if _BOUND_SIDES.get(c[0]) == side), key=_bound_tightness, default=None)
+            for constraints in constraint_sets
+        ]
+        if None not in bounds:
+            kept.append(min(cast("list[tuple[str, Any]]", bounds), key=_bound_tightness))
+    for name, loosest in _LOOSEST_LENGTHS.items():
+        if len(
+            values := [value for constraints in constraint_sets for key, value in constraints if key == name]
+        ) == len(constraint_sets):
+            kept.append((name, loosest(values)))
+    first, *others = constraint_sets
+    kept.extend(
+        constraint
+        for constraint in first
+        if constraint[0] not in _BOUND_SIDES
+        and constraint[0] not in _LOOSEST_LENGTHS
+        and all(constraint in constraints for constraints in others)
+    )
+    return tuple(kept)
+
+
 _CLASS_VAR = Why(RuleId("D7.tag.class-var"), keyword="discriminator")
 """A tag field of a tagged Struct: msgspec writes the tag itself, and the built-in template skips the field."""
 _FIELD_CALL = Why(RuleId("D11.msgspec.field-call"))
@@ -282,17 +334,21 @@ class _MetaAnnotatedType(DataType):
         return (self.type_hint,)
 
 
-class _MetaStrKeyType(DataType):
-    """A string dict key that msgspec checks by the keywords of its ``Meta()`` call: ``Annotated[str, Meta(...)]``."""
+class _MetaType(DataType):
+    """A type that msgspec checks by the keywords of its ``Meta()`` call: ``Annotated[str, Meta(...)]``.
+
+    A string dict key under --use-msgspec-meta-for-map-keys, and the member of a union that writes the constraints
+    every member of its type implies.
+    """
 
     meta_keywords: Any = None
 
     @property
     @override
     def type_hint(self) -> str:
-        """Write ``Annotated`` over ``str`` and the ``Meta()`` call, its arguments sorted by their text."""
+        """Write ``Annotated`` over the type and the ``Meta()`` call, its arguments sorted by their text."""
         keywords = sorted(keyword_argument(k, represent_python_value(v)) for k, v in self.meta_keywords.items())
-        return subscript_text("Annotated", ("str", call_text("Meta", keywords)))
+        return subscript_text("Annotated", (super().type_hint, call_text("Meta", keywords)))
 
     @property
     @override
@@ -319,7 +375,8 @@ class _UnionLeaf(NamedTuple):
     """A union member msgspec decodes as one type: the alias members spread to reach it, its type and constraints.
 
     ``schema_constraints`` are its ``Meta`` constraints with each bound read as the schema bounds it comes from
-    (``DataModelField._union_meta_constraints``).
+    (``DataModelField._union_meta_constraints``). A member written without its constraints may be written with
+    ``meta`` instead, the ones every member of its type implies, or left out (``covered``) beside the member that is.
     """
 
     spread: tuple[tuple[DataType, DataModelField], ...]
@@ -328,6 +385,8 @@ class _UnionLeaf(NamedTuple):
     base: DataType
     constraints: tuple[tuple[str, Any], ...]
     schema_constraints: tuple[tuple[str, Any], ...]
+    meta: tuple[tuple[str, Any], ...] = ()
+    covered: bool = False
 
     def read(self, arithmetic: Literal["exact", "float"]) -> tuple[tuple[str, Any], ...]:
         """Return the constraints the integer check reads: the schema's bounds when it reads them ``exact``."""
@@ -1733,7 +1792,11 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
                 written, exact = alias_field._union_meta_constraints()  # noqa: SLF001
                 constraints += written
                 schema_constraints += exact
-            if alias_field._field_has_top_level_none() or self._data_type_is_plain_union(alias_field.data_type):  # noqa: SLF001
+            if (
+                alias_field._field_has_top_level_none()  # noqa: SLF001
+                or self._data_type_is_plain_union(alias_field.data_type)
+                or (alias_field.data_type.data_types and alias_field.data_type._writes_nothing_of_its_own)  # noqa: SLF001
+            ):
                 members = self._non_none_members(alias_field.data_type)
                 single = len(members) == 1
                 return [
@@ -1751,6 +1814,9 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             data_type.data_types or data_type.is_optional or data_type.enum_member_literals or data_type._is_container  # noqa: SLF001
         ):
             return [], ()
+        if isinstance(data_type, _MetaType):
+            constraints += (written := tuple(data_type.meta_keywords.items()))
+            schema_constraints += written
         kinds = {type(literal).__name__ for literal in data_type.literals} or {data_type.type}
         return [], tuple(
             _UnionLeaf(spread, member, kind, data_type, constraints, schema_constraints)
@@ -1780,10 +1846,14 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
     ) -> list[DataType]:
         """Return a union member written with the dropped members as their types without Meta.
 
-        An alias spread to reach a dropped member is written as its members, so the alias itself keeps its Meta.
+        An alias spread to reach a dropped member is written as its members, so the alias itself keeps its Meta. A
+        dropped member that carries the constraints every member of its type implies (``meta``) is written as its type
+        with them.
         """
         if (leaf := dropped.get(id(member))) is not None:
-            return [self._copy_data_type(leaf.base)]
+            if leaf.covered:
+                return []
+            return [self._meta_member(leaf.base, leaf.meta) if leaf.meta else self._bare_member(leaf.base)]
         if (alias_field := spread.get(id(member))) is None:
             copied = self._copy_data_type(member)
             for nested in copied.all_data_types:
@@ -1799,35 +1869,81 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             members.append(self.data_type.__class__(type=NONE))
         return members
 
+    def _bare_member(self, base: DataType) -> DataType:
+        """Return a union member written as the type of ``base`` without ``Meta``."""
+        if isinstance(base, _MetaType):
+            return self.data_type.__class__(type=base.type, import_=base.import_)
+        return self._copy_data_type(base)
+
+    @staticmethod
+    def _meta_member(base: DataType, meta: tuple[tuple[str, Any], ...]) -> DataType:
+        """Return a union member written as the type of ``base`` with the ``Meta`` constraints ``meta``."""
+        return _create_context_data_type(
+            "MsgspecMetaMemberType",
+            _MetaType,
+            base.python_version,
+            base.use_standard_collections,
+            base.use_generic_container,
+            base.use_union_operator,
+            base.treat_dot_as_module,
+            base.use_serialize_as_any,
+        )(type=base.type, import_=base.import_, meta_keywords=dict(meta))
+
     @staticmethod
     def _conflicting_leaves(
         leaves: Mapping[str, list[_UnionLeaf]], arithmetic: Literal["exact", "float"]
-    ) -> tuple[dict[int, _UnionLeaf], set[int]]:
+    ) -> tuple[dict[int, _UnionLeaf], set[int], frozenset[tuple[str, Any]]]:
         """Return the constrained members of a union that would reject values another member accepts, by identity.
 
-        Each such member comes with the constraints it loses. A member of one type whose constraints are the ones
-        every member of that type shares keeps them, since msgspec checks them on every member; the other members
-        lose all of theirs. Also return the int members that would reject an integer a float member accepts, since
-        msgspec decodes every integer as the int member; constraints that admit every such integer stay. The bounds of
-        that check are read with ``arithmetic`` (``_applicability.union_bound_arithmetic``).
+        Each such member comes with the constraints it loses. msgspec checks the constraints of a member of one type on
+        every member of that type, so a member whose constraints are the ones every member of that type shares keeps
+        them, and the other members lose all of theirs. Otherwise the constraints every member implies
+        (``_loosest_shared``), also every member of the kinds msgspec decodes as that type (``_ROUTED_KINDS``), stay,
+        written once on the first member (``meta``), and the other members of the type are left out (``covered``), so
+        no alias of a member is named where it was not. Also return the int members that
+        would reject an integer a float member accepts, since msgspec decodes every integer as the int member;
+        constraints that admit every such integer stay, and the constraints an int member carries for every member
+        stay only where they admit every integer the float and Decimal members admit. The bounds of that check are read
+        with ``arithmetic`` (``_applicability.union_bound_arithmetic``). Last return the constraints that stay this way.
         """
         dropped: dict[int, _UnionLeaf] = {}
-        for same_kind in leaves.values():
+        implied: dict[str, frozenset[tuple[str, Any]]] = {}
+        for kind, same_kind in leaves.items():
             if len(same_kind) < 2:  # noqa: PLR2004
                 continue
             constraint_sets = [frozenset(leaf.constraints) for leaf in same_kind]
-            shared = frozenset.intersection(*constraint_sets)
-            kept = shared if shared in constraint_sets else frozenset()
+            if (kept := frozenset.intersection(*constraint_sets)) in constraint_sets:
+                dropped.update(
+                    (id(leaf.member), leaf._replace(constraints=tuple(c for c in leaf.constraints if c not in kept)))
+                    for leaf, constraints in zip(same_kind, constraint_sets, strict=True)
+                    if constraints != kept
+                )
+                continue
+            routed = [*same_kind, *(leaf for other in _ROUTED_KINDS.get(kind, ()) for leaf in leaves.get(other, ()))]
+            implied[kind] = kept = frozenset(_loosest_shared([leaf.constraints for leaf in routed]))
+            keeper = id(same_kind[0].member) if kept else None
             dropped.update(
-                (id(leaf.member), leaf._replace(constraints=tuple(c for c in leaf.constraints if c not in kept)))
-                for leaf, constraints in zip(same_kind, constraint_sets, strict=True)
-                if constraints != kept
+                (
+                    id(leaf.member),
+                    leaf._replace(
+                        constraints=tuple(c for c in leaf.constraints if c not in kept),
+                        meta=tuple(kept) if id(leaf.member) == keeper else (),
+                        covered=keeper is not None and id(leaf.member) != keeper,
+                    ),
+                )
+                for leaf in same_kind
             )
         floats = [
             () if id(leaf.member) in dropped else leaf.read(arithmetic)
             for leaf in leaves.get("float", ())
             if not leaf.base.literals
         ]
+        if "int" in implied and not all(
+            _admits_integers_of(_loosest_shared([leaf.read(arithmetic) for leaf in leaves["int"]]), other, arithmetic)
+            for other in (*floats, *(leaf.read(arithmetic) for leaf in leaves.get("Decimal", ())))
+        ):
+            del implied["int"]
+            dropped.update((id(leaf.member), leaf) for leaf in leaves["int"])
         integers = [
             leaf
             for leaf in leaves.get("int", ())
@@ -1836,7 +1952,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             and not all(_admits_integers_of(leaf.read(arithmetic), other, arithmetic) for other in floats)
         ]
         dropped.update((id(leaf.member), leaf) for leaf in integers)
-        return dropped, {id(leaf.member) for leaf in integers}
+        return dropped, {id(leaf.member) for leaf in integers}, frozenset().union(*implied.values())
 
     @override
     def unconstrain_union_members(self, options: ConstraintOptions | None = None) -> bool:
@@ -1852,6 +1968,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         kinds: set[str] = set()
         keywords: set[str] = set()
         integer_keywords: set[str] = set()
+        implied: set[tuple[str, Any]] = set()
         for data_type in tuple(self.data_type.all_data_types):
             if data_type.is_tuple or len(data_type.data_types) < 2:  # noqa: PLR2004
                 continue
@@ -1860,7 +1977,8 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             for _, _, member in slots:
                 for leaf in self._union_leaves(member):
                     leaves.setdefault(leaf.kind, []).append(leaf)
-            dropped, integers = self._conflicting_leaves(leaves, arithmetic)
+            dropped, integers, kept = self._conflicting_leaves(leaves, arithmetic)
+            implied |= kept
             for member_id, leaf in dropped.items():
                 if member_id in integers:
                     integer_keywords.update(leaf.keywords)
@@ -1875,7 +1993,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
                     owner.data_types[index : index + 1] = members = self._unconstrained_members(member, dropped, spread)
                     for unconstrained in members:
                         unconstrained.parent = owner
-        self._record_unconstrained_union_members(kinds, keywords, integer_keywords)
+        self._record_unconstrained_union_members(kinds, keywords, integer_keywords, implied)
         return changed or bool(kinds or integer_keywords)
 
     @override
@@ -1888,18 +2006,26 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             self._record_unconstrained_union_members(*recorded)
 
     def _record_unconstrained_union_members(
-        self, kinds: Collection[str], keywords: Collection[str], integer_keywords: Collection[str]
+        self,
+        kinds: Collection[str],
+        keywords: Collection[str],
+        integer_keywords: Collection[str],
+        implied: Collection[tuple[str, Any]] = (),
     ) -> None:
-        """Record the kinds and the Meta keywords of the union members this field is written without."""
+        """Record the kinds and the Meta keywords of the union members this field is written without.
+
+        ``implied`` are the constraints that the union keeps for every member of a kind in their place.
+        """
         if not kinds and not integer_keywords:
             return
-        recorded_kinds, recorded_keywords, recorded_integer_keywords = self.__dict__.get(
-            _UNCONSTRAINED_UNION_MEMBERS_KEY, (frozenset(), frozenset(), frozenset())
+        recorded_kinds, recorded_keywords, recorded_integer_keywords, recorded_implied = self.__dict__.get(
+            _UNCONSTRAINED_UNION_MEMBERS_KEY, (frozenset(), frozenset(), frozenset(), frozenset())
         )
         self.__dict__[_UNCONSTRAINED_UNION_MEMBERS_KEY] = (
             recorded_kinds | frozenset(kinds),
             recorded_keywords | frozenset(keywords),
             recorded_integer_keywords | frozenset(integer_keywords),
+            recorded_implied | frozenset(implied),
         )
         self.invalidate_semantic_caches()
 
@@ -1938,14 +2064,15 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
                 "msgspec checks multiple_of on float by a floating-point remainder, which rejects multiples of "
                 f"{represent_python_value(inexact.value)} that floats only approximate"
             )
-        kinds, union_keywords, integer_keywords = self.__dict__.get(
-            _UNCONSTRAINED_UNION_MEMBERS_KEY, (frozenset(), frozenset(), frozenset())
+        kinds, union_keywords, integer_keywords, implied = self.__dict__.get(
+            _UNCONSTRAINED_UNION_MEMBERS_KEY, (frozenset(), frozenset(), frozenset(), frozenset())
         )
         if kinds:
             reasons.append(
                 f"msgspec checks all {', '.join(sorted(kinds))} members of a union against the constraints of each "
                 f"of them, so {', '.join(sorted(union_keywords))} of one member would reject values another "
                 "member accepts"
+                + (f", and it keeps {_meta_keywords_text(implied)}, which every member implies" if implied else "")
             )
         if integer_keywords:
             reasons.append(
@@ -2174,7 +2301,7 @@ class DataTypeManager(_DataTypeManager):
             return super().get_map_key_str_type(**kwargs)
         return _create_context_data_type(
             "MsgspecMetaStrKeyType",
-            _MetaStrKeyType,
+            _MetaType,
             self.python_version,
             self.use_standard_collections,
             self.use_generic_container_types,

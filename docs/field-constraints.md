@@ -139,7 +139,13 @@ msgspec checks all members of a union that it decodes as one Python type against
 in `anyOf: [{type: string, format: binary}, {type: string, format: binary, maxLength: 3}]` the `maxLength` of one
 branch would reject the bytes the other branch accepts. `msgspec.Struct` writes such members without `Meta(...)`, so
 the field takes the values of every branch (`bytes` here), and names the keywords it leaves out in the same warning;
-members of different types, such as `str` and `int`, keep their constraints. msgspec counts the members of an alias of
+members of different types, such as `str` and `int`, keep their constraints. The constraints that every such branch
+implies stay, written once and named in the warning: in
+`anyOf: [{type: string, minLength: 2, maxLength: 3}, {type: string, maxLength: 3, pattern: '^a'}]` the field is
+`Annotated[str, Meta(max_length=3)]`, which rejects `abcd` as both branches do, and
+`anyOf: [{type: integer, minimum: 1, maximum: 5}, {type: integer, minimum: 7}]` keeps `ge=1`. The bounds a `float`
+member keeps also admit the numbers of an `integer` or `Decimal` branch, which msgspec decodes as that `float` too
+(`-1.0`), so beside a `Decimal` branch the floats stay unbounded. msgspec counts the members of an alias of
 a union, or of a type and `null`, as members of the union that names it, so a branch that references such a schema is
 written as the alias's members there, while the alias keeps its `Meta(...)`. msgspec also decodes every integer as the
 `int` member of a union that has a `float` member, so in
