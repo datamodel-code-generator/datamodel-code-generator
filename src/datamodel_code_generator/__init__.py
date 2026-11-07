@@ -930,7 +930,9 @@ def _format_file_header(
     """Format a per-file header, skipping all work for replace mode."""
     if header_suffix is None:
         return header_prefix
-    safe_filename = redact_url(filename).replace("\n", " ").replace("\r", " ") if filename else ""
+    from datamodel_code_generator._python_syntax import comment_line_text  # noqa: PLC0415
+
+    safe_filename = comment_line_text(redact_url(filename)) if filename else ""
     return f"{header_prefix}{safe_filename}{header_suffix}"
 
 
@@ -958,8 +960,9 @@ def _build_file_header_parts(custom_file_header: str | None, config: GenerateCon
     if config.enable_version_header:
         header_suffix += f"\n#   version:   {get_version()}"
     if config.enable_command_header and config.command_line:
-        safe_command_line = config.command_line.replace("\n", " ").replace("\r", " ")
-        header_suffix += f"\n#   command:   {safe_command_line}"
+        from datamodel_code_generator._python_syntax import comment_line_text  # noqa: PLC0415
+
+        header_suffix += f"\n#   command:   {comment_line_text(config.command_line)}"
     if custom_file_header:
         custom_header = custom_file_header.rstrip("\n")
         header_prefix = f"{custom_header}\n#\n{header_prefix}"

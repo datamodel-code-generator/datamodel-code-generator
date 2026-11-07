@@ -251,6 +251,11 @@ def comment_safe(value: str | None) -> str | None:
     return normalize_newlines(_without_surrogates(_normalize_string(value)))
 
 
+def comment_line_text(value: str, /) -> str:
+    """Return ``value`` as the text of one comment line: each CR and LF as a space, each lone surrogate as U+FFFD."""
+    return _without_surrogates(value.replace("\n", " ").replace("\r", " "))
+
+
 def inline_comment_safe(value: str | None) -> str | None:
     """Make a value safe for a generated inline Python comment."""
     if value is None:
