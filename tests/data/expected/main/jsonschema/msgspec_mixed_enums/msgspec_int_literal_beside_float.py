@@ -24,4 +24,5 @@ class Model(Struct):
     const_or_number_min: Literal[0] | ConstOrNumberMin | UnsetType = UNSET
     str_const_or_number: Literal['a'] | float | UnsetType = UNSET
     const_or_integer: Literal[1] | int | UnsetType = UNSET
+    const_integer_or_number: Literal[1] | int | float | UnsetType = UNSET
     number_only: float | UnsetType = UNSET
