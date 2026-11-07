@@ -285,6 +285,8 @@ def _pass_notes(decl: PassDecl) -> str:
     notes = [decl.summary] if decl.summary else []
     if decl.condition:
         notes.append(f"Runs when: {decl.condition}.")
+    if decl.trigger is not None:
+        notes.append(f"Skipped unless: {decl.trigger.text}.")
     if decl.target is not None:
         notes.append(f"Moves to {decl.target.name}.")
     if decl.removed_by:

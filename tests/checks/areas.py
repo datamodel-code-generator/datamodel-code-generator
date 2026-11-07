@@ -60,6 +60,11 @@ class Area(Enum):
     """Each pass changes only the facts it declares, on the models its scope allows, before they are final; after a
     freeze point, a write to the graph of facts frozen there fails where it is made (``finality.py``)."""
 
+    PASS_TRIGGERS = "DATAMODEL_CODE_GENERATOR_CHECK_PASS_TRIGGERS"
+    """A pass whose trigger is false runs anyway and changes nothing: no fact, memo revision, import, parser attribute,
+    run-state field or warning (``finality.ParseChecks.idle_pass``). It needs ``STORE_WRITES`` or ``FACT_FINALITY``,
+    which open the checks of a parse, and compares the facts only with ``FACT_FINALITY``."""
+
     FACT_FINALITY_SWEEP = "DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY_SWEEP"
     """With ``FACT_FINALITY`` on, every model is compared after each global pass that transforms or repairs.
 

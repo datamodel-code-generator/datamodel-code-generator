@@ -6,19 +6,24 @@ import os
 import subprocess
 import sys
 from itertools import count
-from typing import TYPE_CHECKING
+from pathlib import Path
+from typing import Any
 
 import pytest
 
 from datamodel_code_generator import Error
 from datamodel_code_generator.format import Formatter
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
+from datamodel_code_generator.parser.openapi import OpenAPIParser
 from tests.checks.__main__ import main
 from tests.checks.seams import report
-from tests.conftest import CHECK_FACT_FINALITY_ENV, CHECK_NAMING_ENV, CHECK_RENDER_MEMOS_ENV, assert_output
-
-if TYPE_CHECKING:
-    from pathlib import Path
+from tests.conftest import (
+    CHECK_FACT_FINALITY_ENV,
+    CHECK_NAMING_ENV,
+    CHECK_PASS_TRIGGERS_ENV,
+    CHECK_RENDER_MEMOS_ENV,
+    assert_output,
+)
 
 _EXTENSION_MAKES_A_MEMO_STALE = """
 from datamodel_code_generator import Error
@@ -140,3 +145,45 @@ def test_naming_check_turned_off(monkeypatch: pytest.MonkeyPatch) -> None:
     """With the naming check set to 0, the parse writes the name the extension gave and records no naming call."""
     monkeypatch.setenv(CHECK_NAMING_ENV, "0")
     assert_output(str(_RenamingParser(_RENAMED_DEFINITION, formatters=[Formatter.BUILTIN]).parse()))
+
+
+class _EnumLiteralTags(OpenAPIParser):
+    """A parser extension that tags discriminated variants by enum member literals without the option that does."""
+
+    def _create_discriminator_data_type(
+        self, enum_source: Any, discriminator_values: Any, discriminator_model: Any, imports: Any
+    ) -> Any:
+        self.use_enum_values_in_discriminator = True
+        try:
+            return super()._create_discriminator_data_type(
+                enum_source, discriminator_values, discriminator_model, imports
+            )
+        finally:
+            self.use_enum_values_in_discriminator = False
+
+
+_ENUM_TAGGED_VARIANTS = Path(__file__).parents[1] / "data/openapi/discriminator_enum_modules.yaml"
+"""Variants in the module ``pets`` whose tag field is typed by an enum of the root module."""
+
+
+def test_trigger_check_reports_a_pass_that_writes_where_its_trigger_is_false(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A pass that rewrites what its trigger does not name fails the parse when the trigger check runs it anyway.
+
+    The trigger of ``import_enum_member_literal_classes`` names the option and the consts that make enum member
+    literals; the extension makes them without either, so the pass, run while its trigger is false, imports their
+    enum into the module of the variants.
+    """
+    monkeypatch.setenv(CHECK_PASS_TRIGGERS_ENV, "1")
+    with pytest.raises(Error) as raised:
+        _EnumLiteralTags(_ENUM_TAGGED_VARIANTS, formatters=[Formatter.BUILTIN]).parse()
+    assert_output(f"{raised.value}\n")
+
+
+def test_trigger_check_turned_off(monkeypatch: pytest.MonkeyPatch) -> None:
+    """With the trigger check set to 0, the pass whose trigger is false is skipped, as outside the tests.
+
+    The variants import the enum for the field of their base already, so the output is the one the pass would leave.
+    """
+    monkeypatch.setenv(CHECK_PASS_TRIGGERS_ENV, "0")
+    modules = _EnumLiteralTags(_ENUM_TAGGED_VARIANTS, formatters=[Formatter.BUILTIN]).parse()
+    assert_output("".join(f"# {'/'.join(name)}\n{result.body}\n" for name, result in modules.items()))

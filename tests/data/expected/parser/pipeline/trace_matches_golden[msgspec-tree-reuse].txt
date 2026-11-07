@@ -15,7 +15,6 @@ delete_duplicate_models
 replace_duplicate_name_in_module
 apply_forced_invalid_dotted_stdout_repair
 reuse_model_tree_scope
-resolve_circular_imports
 configure_code_formatter
 detect_standard_generation_templates
 reset_per_run_state
@@ -56,7 +55,6 @@ write_enum_member_tags_as_values
 warn_enums_admitting_other_values
 import_removed_reuse_canonicals
 import_renamed_types
-import_enum_member_literal_classes
 apply_generic_base_class
 omit_untaken_union_constraints
 assign_forward_reference_fields
@@ -79,10 +77,8 @@ append_model_imports
 remove_unused_models
 remove_unused_imports
 resolve_module_import_conflicts
-alias_builtin_shadowing_module_imports
 alias_builtins_hidden_by_submodules
 change_imported_model_name
-import_models_of_hidden_submodules
 decide_config_items
 record_generated_class_names
 check_model_inheritance

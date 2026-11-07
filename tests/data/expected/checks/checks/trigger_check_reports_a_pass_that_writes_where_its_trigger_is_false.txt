@@ -1,0 +1,1 @@
+DATAMODEL_CODE_GENERATOR_CHECK_PASS_TRIGGERS: import_enum_member_literal_classes trigger-absent write: memo revisions, import ledger during CROSS_MODULE

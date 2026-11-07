@@ -71,14 +71,15 @@ from __future__ import annotations
 
 import re
 import sys
+import warnings
 from abc import get_cache_token
 from collections.abc import Mapping
 from contextlib import AbstractContextManager, contextmanager, nullcontext
 from contextvars import ContextVar
-from dataclasses import dataclass, field, fields, is_dataclass
+from dataclasses import dataclass, field, fields, is_dataclass, replace
 from decimal import Decimal
 from enum import Enum, unique
-from functools import wraps
+from functools import cached_property, wraps
 from inspect import getattr_static
 from itertools import chain, repeat, takewhile, zip_longest
 from operator import is_, methodcaller
@@ -93,6 +94,7 @@ from pydantic import BaseModel
 from typing_extensions import Sentinel, TypeIs, final, override
 
 import datamodel_code_generator
+from datamodel_code_generator._parse_memo import PARSE_MEMO
 from datamodel_code_generator._records import record
 from datamodel_code_generator.model.base import (
     DataModel,
@@ -1663,6 +1665,38 @@ class ParseChecks:
         """Run the pass ``decl`` declares inside the finality check; a no-op when that area is off."""
         return NO_SCOPE if (finality := self.finality) is None else finality.pass_scope(decl, models)
 
+    @contextmanager
+    def idle_pass(self, decl: PassDecl, parser: Any, state: Any) -> Generator[None, None, None]:
+        """Run the pass ``decl`` declares where its trigger is false, and report what it changes (``PASS_TRIGGERS``).
+
+        Such a pass may change no memo revision, entry of the import ledger, parser attribute or run-state field
+        (another object, unless equal; the same container, unless its size changed; the value of a ``cached_property``
+        is a read and left out) and warn nothing; then the finality check, when it is on, compares every model under
+        ``decl`` without its writes, named ``<pass> (trigger absent)``, so a changed fact is ``undeclared``. An
+        exception propagates, as the skip would not raise.
+        """
+        idle = replace(decl, name=f"{decl.name} (trigger absent)", writes=frozenset())
+        finality = self.finality
+        models = None if finality is None else tuple(model_print.model for model_print in finality.prints.values())
+        with self.fact_pass(idle, models):
+            before = _idle_snapshot(parser, state)
+            with warnings.catch_warnings(record=True) as warned:
+                warnings.simplefilter("always")
+                yield
+            after = _idle_snapshot(parser, state)
+            changed = [
+                *(key for key in dict.fromkeys([*before, *after]) if not _unchanged(before.get(key), after.get(key))),
+                *(f"warning {item.message}" for item in warned),
+            ]
+            if changed and (mode := areas.mode(Area.PASS_TRIGGERS)) is not None:
+                mode.violation(
+                    self.error,
+                    f"{decl.name} trigger-absent write: {', '.join(changed)} during {decl.phase.name}",
+                    pass_name=decl.name,
+                    changed=changed,
+                    phase=decl.phase.name,
+                )
+
     def module_checkpoint(self, models: list[DataModel]) -> AbstractContextManager[None]:
         """Process the module whose models are ``models`` inside the finality check; a no-op when that area is off."""
         return NO_SCOPE if (finality := self.finality) is None else finality.module_scope(models)
@@ -1799,6 +1833,38 @@ class ParseChecks:
             scope=scope,
             phase=phase.name,
         )
+
+
+def _sized(value: object) -> tuple[object, int | None]:
+    """Return ``value`` with its size where it has one, so that a container changed in place reads as changed."""
+    try:
+        return value, len(value)  # ty: ignore[invalid-argument-type]
+    except TypeError:
+        return value, None
+
+
+def _cached(cls: type, name: str) -> bool:
+    """Return whether ``name`` is a ``cached_property`` of ``cls``, whose value a first read adds as an attribute."""
+    return isinstance(getattr_static(cls, name, None), cached_property)
+
+
+def _idle_snapshot(parser: Any, state: Any) -> dict[str, tuple[object, int | None]]:
+    """Return what a pass whose trigger is false may not change: the parser, the run state, the memos, the ledger."""
+    memo = PARSE_MEMO.get()
+    ledger = parser._import_ledger
+    parser_class = type(parser)
+    return {
+        **{f"parser.{name}": _sized(value) for name, value in vars(parser).items() if not _cached(parser_class, name)},
+        **{f"state.{item.name}": _sized(getattr(state, item.name, _MISSING)) for item in fields(state)},
+        "memo revisions": (None, None if memo is None else memo._clock),
+        "import ledger": (None, sum(len(entries) for _, entries in ledger._accounts.values())),
+    }
+
+
+def _unchanged(before: tuple[object, int | None] | None, after: tuple[object, int | None] | None) -> bool:
+    """Return whether a value of the snapshot stayed: the same object of the same size, or an equal one."""
+    (old, old_size), (new, new_size) = before or (_MISSING, None), after or (_MISSING, None)
+    return old_size == new_size and (old is new or old == new)
 
 
 def _constructing(owner: object, frame: FrameType) -> bool:

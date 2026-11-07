@@ -45,5 +45,9 @@ becomes final and where a decision belongs.
   its reason (`scripts/check_pass_pipeline.py` says which). Every test runs the finality check
   (`DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`): "... undeclared: ..." means the pass writes a fact its declaration
   does not list; the other rules report writes after a fact is final.
+- A pass that rewrites a fact some outputs lack declares a `trigger` (`PassSpec.trigger`, `PassDecl.trigger` with the
+  facts it reads): false only where running the pass would write nothing, read from what the pass reads when it
+  starts. The newest Python's lane runs such passes anyway (`DATAMODEL_CODE_GENERATOR_CHECK_PASS_TRIGGERS`): "...
+  trigger-absent write: ..." means the trigger is false where the pass writes; widen the trigger.
 - For a fix that spans passes, write the design (the facts it reads, where each becomes final, the outputs it changes,
   and since which release) and have it reviewed before implementing.

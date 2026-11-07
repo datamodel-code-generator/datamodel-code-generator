@@ -4,11 +4,12 @@ One ``PassDecl`` per pass: the methods and named steps of ``parser/base.py`` tha
 (``parser/_passes/_tables.py``) run, joined to their ``PassSpec`` by name. ``reads`` and ``writes`` use the facts of
 ``scripts/fact_tables.py``. The test suite runs every pass inside the scope of its declaration
 (``tests/checks/finality.py``), where ``DATAMODEL_CODE_GENERATOR_CHECK_FACT_FINALITY`` checks the writes against it and
-a pass trace records the pass. The writes of ``fact`` rows are checked at run time; reads and the writes of
-presentation rows are declared from the code; ``after`` edges order the passes whose facts conflict
-(``scripts/check_pass_pipeline.py:check_order``). ``PASS_DECLS`` lists every declaration in execution order and is the
-source of the generated pass table in ``docs/architecture.md``; ``DECISION_DECLS`` declares the decisions of the
-decision registries (``parser/_phases.py``) by name.
+a pass trace records the pass. The writes of ``fact`` rows are checked at run time; reads and the writes of presentation
+rows are declared from the code; ``after`` edges order the passes whose facts conflict
+(``scripts/check_pass_pipeline.py:check_order``). A ``trigger`` declares when the fact a pass rewrites is present: its
+``PassSpec`` skips the pass where it is absent, and the trigger reads only facts the pass reads. ``PASS_DECLS`` lists
+every declaration in execution order and is the source of the generated pass table in ``docs/architecture.md``;
+``DECISION_DECLS`` declares the decisions of the decision registries (``parser/_phases.py``) by name.
 
 The tables carry no label that only the checks read: ``BOUNDARY_BEFORE`` names the segments that enter a boundary,
 ``SCOPE_NAMES`` the pass scope of a segment's guarded writes and ``HOOK_BODIES`` the table that the default
@@ -56,6 +57,7 @@ __all__ = [
     "PassDecl",
     "PassKind",
     "Scope",
+    "Trigger",
 ]
 
 
@@ -92,6 +94,13 @@ class After(NamedTuple):
     reason: str
 
 
+class Trigger(NamedTuple):
+    """When the fact a pass rewrites is present (``PassSpec.trigger``): its text and the facts it reads."""
+
+    text: str
+    reads: frozenset[Fact | RenderFact]
+
+
 @final
 @record
 class PassDecl:
@@ -110,10 +119,20 @@ class PassDecl:
     summary: str = ""
     condition: str = ""
     """When the pipeline runs the pass; empty when it always does."""
+    trigger: Trigger | None = None
+    """When the pass has something to rewrite; None when it may have something wherever it runs."""
 
 
 def _facts(*members: Fact | RenderFact) -> frozenset[Fact | RenderFact]:
     return frozenset(members)
+
+
+_SEVERAL_MODULES: Final = Trigger("the output writes more than one module", _facts(RenderFact.MODULE_MEMBERSHIP))
+_ORDERS_CONSTRUCTORS: Final = Trigger(
+    "a model orders keyword-only fields (SUPPORTS_KW_ONLY) or restores the fields it inherits "
+    "(restore_required_inherited_field_state)",
+    _facts(Fact.MODEL_KIND),
+)
 
 
 REFRESH_CUSTOM_TEMPLATE_PATHS = PassDecl(
@@ -342,6 +361,7 @@ RESOLVE_CIRCULAR_IMPORTS = PassDecl(
         "Merges modules that import each other, or whose import an earlier attempt found to fail, into _internal "
         "modules."
     ),
+    trigger=_SEVERAL_MODULES,
 )
 CONFIGURE_CODE_FORMATTER = PassDecl(
     "configure_code_formatter",
@@ -717,6 +737,7 @@ FIX_CONSTRUCTOR_FIELD_ORDERING_EARLY = PassDecl(
         Fact.REQUIRED,
         Fact.NULLABLE,
         Fact.DEFAULTS,
+        Fact.MODEL_KIND,
         RenderFact.FIELD_ORDER,
         RenderFact.KEYWORD_ONLY,
         RenderFact.FORCED_ASSIGNMENT,
@@ -725,6 +746,7 @@ FIX_CONSTRUCTOR_FIELD_ORDERING_EARLY = PassDecl(
     writes=_facts(Fact.REQUIRED, RenderFact.FIELD_ORDER, RenderFact.KEYWORD_ONLY, RenderFact.FORCED_ASSIGNMENT),
     summary="Orders constructor fields while the modules are processed, before every field has its final name.",
     condition="without --order-constructor-fields-by final-names",
+    trigger=_ORDERS_CONSTRUCTORS,
 )
 SNAPSHOT_MODULE_UNUSED_MODELS = PassDecl(
     "snapshot_module_unused_models",
@@ -1075,6 +1097,10 @@ IMPORT_ENUM_MEMBER_LITERAL_CLASSES = PassDecl(
     PassKind.REPAIR,
     reads=_facts(Fact.FIELD_TYPES, Fact.DEFAULTS, RenderFact.MODULE_IMPORTS),
     writes=_facts(Fact.FIELD_TYPES, RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES),
+    trigger=Trigger(
+        "--use-enum-values-in-discriminator, or a const narrows a value to an enum member (_const_narrowed_values)",
+        frozenset(),
+    ),
     after=(
         After("import_renamed_types", "imports literal classes next to the renamed types"),
         After(
@@ -1117,6 +1143,7 @@ FIX_CONSTRUCTOR_FIELD_ORDERING = PassDecl(
         Fact.REQUIRED,
         Fact.NULLABLE,
         Fact.DEFAULTS,
+        Fact.MODEL_KIND,
         RenderFact.FIELD_ORDER,
         RenderFact.KEYWORD_ONLY,
         RenderFact.FORCED_ASSIGNMENT,
@@ -1144,6 +1171,7 @@ FIX_CONSTRUCTOR_FIELD_ORDERING = PassDecl(
         "Orders constructor fields so that fields without a default come first, reading the fields of bases, each "
         "model after its bases; an inherited field that bases put after a default gets a keyword-only copy."
     ),
+    trigger=_ORDERS_CONSTRUCTORS,
 )
 SETTLE_MODULE_UNUSED_MODELS = PassDecl(
     "settle_module_unused_models",
@@ -1465,10 +1493,11 @@ ALIAS_BUILTIN_SHADOWING_MODULE_IMPORTS = PassDecl(
     Phase.IMPORTS,
     Scope.GLOBAL,
     PassKind.TRANSFORM,
-    reads=_facts(Fact.FIELD_TYPES, RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES),
+    reads=_facts(Fact.FIELD_TYPES, RenderFact.MODULE_MEMBERSHIP, RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES),
     writes=_facts(RenderFact.MODULE_IMPORTS, RenderFact.IMPORT_ALIASES, RenderFact.QUOTING),
     after=(After("resolve_module_import_conflicts", "aliases the module imports once their names are final"),),
     summary="Aliases a module import named like a builtin that its module also writes bare, e.g. ``list[str]``.",
+    trigger=_SEVERAL_MODULES,
 )
 ALIAS_BUILTINS_HIDDEN_BY_SUBMODULES = PassDecl(
     "alias_builtins_hidden_by_submodules",
@@ -1552,6 +1581,7 @@ IMPORT_MODELS_OF_HIDDEN_SUBMODULES = PassDecl(
         "enum member literal through that import, e.g. ``Literal[Kind.book]``, and imports under an alias what the "
         "``__init__`` imports by the name of a submodule that the output loads, e.g. ``Any_aliased``."
     ),
+    trigger=_SEVERAL_MODULES,
 )
 NAME_FINAL_CLASSES_OF_ADDITIONAL_PROPERTIES = PassDecl(
     "name_final_classes_of_additional_properties",
@@ -1707,6 +1737,10 @@ REJECT_ALIAS_CYCLES_WITHOUT_SCHEMA = PassDecl(
         RenderFact.MODULE_MEMBERSHIP,
     ),
     condition="output that Pydantic builds or msgspec decodes",
+    trigger=Trigger(
+        "a module holds a type alias, or deduplication left a root model naming itself (_self_named_root_models)",
+        _facts(Fact.MODEL_KIND, Fact.MODELS_EXIST, RenderFact.MODULE_MEMBERSHIP),
+    ),
 )
 REJECT_LONE_SURROGATES_PYDANTIC_READS = PassDecl(
     "reject_lone_surrogates_pydantic_reads",
