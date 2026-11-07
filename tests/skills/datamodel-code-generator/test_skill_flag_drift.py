@@ -98,6 +98,43 @@ def test_skill_cli_options_reference_is_generated(tmp_path: Path) -> None:
     assert_exact_directory_content(tmp_path, SKILL_DIR, pattern="references/cli-options.md")
 
 
+def test_skill_uvx_examples_name_the_installable_package() -> None:
+    """The uvx examples must not mistake the CLI name for the PyPI package."""
+    paths = [
+        SKILL_DIR / "SKILL.md",
+        SKILL_DIR / "references" / "workflows.md",
+        SKILL_DIR / "references" / "troubleshooting.md",
+    ]
+    invalid = [
+        f"{path.relative_to(SKILL_DIR)}:{line_number}"
+        for path in paths
+        for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1)
+        if re.match(r"^\s*uvx\s+(?:--from\s+datamodel-codegen\s+)?datamodel-codegen(?:\s|$)", line)
+    ]
+    if invalid:
+        pytest.fail(f"uvx resolves datamodel-codegen as a package, not a command: {', '.join(invalid)}")
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "    uvx datamodel-codegen --help",
+        "uvx --from datamodel-codegen datamodel-codegen --help",
+    ],
+)
+def test_skill_uvx_guard_rejects_cli_name_as_package(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, command: str
+) -> None:
+    """The guard catches bad package names in both documented uvx forms."""
+    monkeypatch.setattr(sys.modules[__name__], "SKILL_DIR", tmp_path)
+    for relative in ("SKILL.md", "references/workflows.md", "references/troubleshooting.md"):
+        path = tmp_path / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(command + "\n" if relative == "references/workflows.md" else "", encoding="utf-8")
+    with pytest.raises(pytest.fail.Exception, match=r"references/workflows\.md:1"):
+        test_skill_uvx_examples_name_the_installable_package()
+
+
 def test_skill_documented_flags_exist_in_cli_help() -> None:
     """Documented datamodel-codegen flags must exist in current CLI help."""
     result = subprocess.run(
