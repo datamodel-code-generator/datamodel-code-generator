@@ -101,6 +101,9 @@ RankedOrDecimal: TypeAlias = Annotated[int, Meta(ge=1)]
 RankedOrDecimal1: TypeAlias = Annotated[int, Meta(ge=2)]
 
 
+Chained: TypeAlias = Annotated[str, Meta(pattern='^a')]
+
+
 Parted1: TypeAlias = Annotated[str, Meta(max_length=3, min_length=2)]
 
 
@@ -108,6 +111,12 @@ Parted2: TypeAlias = Annotated[str, Meta(max_length=3, pattern='^a')]
 
 
 Parted: TypeAlias = Annotated[str, Meta(max_length=3)]
+
+
+Short: TypeAlias = Annotated[str, Meta(min_length=2)]
+
+
+Longer: TypeAlias = Annotated[Short, Meta(min_length=3)]
 
 
 class Bounds(Struct):
@@ -128,3 +137,4 @@ class Bounds(Struct):
     prefixed: Annotated[str, Meta(pattern='^a')] | UnsetType = UNSET
     ranked: Annotated[int, Meta(ge=1)] | UnsetType = UNSET
     ranked_or_decimal: int | Decimal | UnsetType = UNSET
+    chained: str | UnsetType = UNSET

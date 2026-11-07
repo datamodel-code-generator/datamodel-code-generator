@@ -16,7 +16,8 @@
     "parted_or_any": ["ab", "abcdefgh", ""],
     "prefixed": ["a", "abcdefgh"],
     "ranked": [1, 5],
-    "ranked_or_decimal": [0, -3, 1.5]
+    "ranked_or_decimal": [0, -3, 1.5],
+    "chained": ["a", "ab", "zzz"]
   },
   "invalid": {
     "apart": ["abcd", "b", ""],
@@ -35,6 +36,7 @@
     "parted_or_any": [3],
     "prefixed": ["b", "ba"],
     "ranked": [0, -1],
-    "ranked_or_decimal": [true]
+    "ranked_or_decimal": [true],
+    "chained": ["b", "zz"]
   }
 }

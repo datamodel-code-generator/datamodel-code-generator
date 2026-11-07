@@ -16,6 +16,18 @@
           "pattern": "^a"
         }
       ]
+    },
+    "Short": {
+      "type": "string",
+      "minLength": 2
+    },
+    "Longer": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Short"
+        }
+      ],
+      "minLength": 3
     }
   },
   "properties": {
@@ -262,6 +274,17 @@
         {
           "type": "number",
           "format": "decimal"
+        }
+      ]
+    },
+    "chained": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Longer"
+        },
+        {
+          "type": "string",
+          "pattern": "^a"
         }
       ]
     }
