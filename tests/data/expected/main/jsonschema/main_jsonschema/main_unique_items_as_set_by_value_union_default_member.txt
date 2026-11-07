@@ -1,0 +1,11 @@
+{
+  "words": [
+    "list",
+    "str",
+    "str"
+  ],
+  "row": [
+    "set",
+    "int"
+  ]
+}
