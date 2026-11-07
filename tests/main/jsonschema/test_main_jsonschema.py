@@ -42169,3 +42169,35 @@ def test_main_naming_strategy_enclosing_model(output_file: Path, extra_args: lis
         ],
         force_exec_validation=True,
     )
+
+
+@pytest.mark.parametrize(
+    ("input_dir", "extra_args"),
+    [
+        pytest.param("enclosing_model_modules", ["--naming-strategy", "enclosing-model"], id="enclosing-model"),
+        pytest.param("enclosing_model_modules_taken", ["--naming-strategy", "enclosing-model"], id="taken"),
+        pytest.param("enclosing_model_modules", [], id="default"),
+    ],
+)
+def test_main_naming_strategy_enclosing_model_modules(output_dir: Path, input_dir: str, extra_args: list[str]) -> None:
+    """Prefix a nested model with its owner's name in its own module under ``enclosing-model`` (#6299).
+
+    Each file defines ``Parent`` with an inline ``child`` that holds an inline ``grand``. The plan numbers the second
+    ``Parent`` across the input and its module gives it its name back, so its nested models take ``ParentChild`` and
+    ``ParentChildGrand`` too, not ``Parent1Child``. Where another ``Parent`` of the module keeps the name
+    (``enclosing_model_modules_taken``), the numbered owner and its nested models keep their numbered names.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_dir,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Parent": {
+      "type": "object",
+      "properties": {
+        "child": {
+          "type": "object",
+          "properties": {
+            "grand": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "integer"
+                }
+              }
+            },
+            "y": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "p": {
+      "$ref": "#/$defs/Parent"
+    }
+  }
+}
