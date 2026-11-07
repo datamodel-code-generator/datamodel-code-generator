@@ -869,17 +869,16 @@ def reference_site_constraints(parser: AllOfValuesHost, obj: JsonSchemaObject) -
     properties alone), the property counts, keyed as a map field writes them (``minItems``, ``maxItems``). Empty where
     the parts are no value schemas or are not intersected here (``intersects_value_parts``), where no value meets them
     all, where the intersection is a set of literals, whose constraints count in no output, and where the site adds
-    nothing.
+    nothing. The site has a ``$ref`` member: each caller passes only such a site.
     """
     members = [item for item in obj.allOf if isinstance(item, JsonSchemaObject)]
-    if not (refs := [member for member in members if member.ref]):
-        return {}
-    if parser._is_all_of_mapping_item(target := parser._load_ref_schema_object(cast("str", refs[0].ref))):  # noqa: SLF001
+    ref = cast("str", next(member.ref for member in members if member.ref))
+    if parser._is_all_of_mapping_item(target := parser._load_ref_schema_object(ref)):  # noqa: SLF001
         return _added_map_counts(parser, obj, members, target)
     if (
         (parts := all_of_value_parts(parser, obj)) is None
         or not intersects_value_parts(parser, parts)
-        or (target_parts := reference_value_parts(parser, cast("str", refs[0].ref))) is None
+        or (target_parts := reference_value_parts(parser, ref)) is None
         or parser._satisfiable_all_of_value_parts(obj) is None  # noqa: SLF001
     ):
         return {}

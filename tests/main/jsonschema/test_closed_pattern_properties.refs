@@ -18,3 +18,6 @@ typing.TypedDict	main/jsonschema/closed_pattern_properties/warning[typing.TypedD
 typing.TypedDict	main/jsonschema/closed_pattern_properties/warning[typing.TypedDict].warnings.txt	= main/jsonschema/closed_pattern_properties/warning[pydantic_v2.dataclass].warnings.txt
 validators	main/jsonschema/closed_pattern_properties/warning[validators].py
 validators	main/jsonschema/closed_pattern_properties/warning[validators].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+[test_closed_pattern_properties_warning_once_per_location]
+	main/jsonschema/closed_pattern_properties/warning_once_per_location.py
+	main/jsonschema/closed_pattern_properties/warning_once_per_location.warnings.txt
