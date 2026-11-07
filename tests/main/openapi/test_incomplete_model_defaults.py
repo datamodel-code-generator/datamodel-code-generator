@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import warnings
 from typing import TYPE_CHECKING, Any
 
 import msgspec
@@ -19,6 +20,8 @@ INPUT = OPEN_API_DATA_PATH / "incomplete_model_defaults.yaml"
 PAYLOADS = DATA_PATH / "payloads" / "incomplete_model_defaults.json"
 OPTION_SETS = {"released": (), "omit": ("--omit-incomplete-model-defaults",)}
 DECODED_OUTPUTS = ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct")
+"""The outputs that validate or convert an object default, and the outputs whose payloads the test decodes."""
+WARNING = r"^The defaults? of .* lacks? required fields of"
 
 
 @pytest.mark.cli_doc(
@@ -45,20 +48,23 @@ def test_incomplete_model_defaults(output_file: Path, output_model_type: str, op
     """Leave out under the option an object default that lacks required fields of its model (#4828).
 
     Without it a property whose default lacks a required field of its model, its own or a base's, is written with
-    that default, which Pydantic and msgspec validate, so input that leaves the property out fails, as in 0.90.0.
-    With it such a property is written as one without a default; a complete default, a map default, a default of a
-    root model and one of a union of models stay. Every valid payload decodes under the option and every invalid one
-    is rejected under both option sets.
+    that default, as in 0.90.0, and the outputs that validate it, Pydantic and msgspec, reject input that leaves the
+    property out, which one warning names with each such property. With it such a property is written as one without a
+    default; a complete default, a map default, a default of a root model and one of a union stay. Every valid payload
+    decodes under the option and every invalid one is rejected under both option sets.
     """
-    run_main_and_assert(
-        input_path=INPUT,
-        output_path=output_file,
-        input_file_type="openapi",
-        extra_args=[
-            *("--output-model-type", output_model_type, "--formatters", "builtin", "--disable-timestamp"),
-            *OPTION_SETS[option_set],
-        ],
-    )
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.filterwarnings("always", WARNING, UserWarning)
+        run_main_and_assert(
+            input_path=INPUT,
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=[
+                *("--output-model-type", output_model_type, "--formatters", "builtin", "--disable-timestamp"),
+                *OPTION_SETS[option_set],
+            ],
+        )
+    assert_output("".join(f"{warning.message}\n" for warning in caught), name="warnings")
     if output_model_type not in DECODED_OUTPUTS:
         return
     payloads = json.loads(PAYLOADS.read_text())

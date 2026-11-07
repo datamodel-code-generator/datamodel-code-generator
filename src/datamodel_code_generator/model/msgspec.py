@@ -1146,6 +1146,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
 
     _FIELD_ASSIGNMENT_ROW: ClassVar[AssignmentRow] = "msgspec"
     _FREEZES_RENDER_PLAN: ClassVar[bool] = True
+    VALIDATES_STRUCTURED_DEFAULTS: ClassVar[bool] = True
 
     SUPPORTS_ANNOTATED_CONSTRAINTS: ClassVar[bool] = True
     ANNOTATED_CONSTRAINTS_CONTEXT: ClassVar[object | None] = _ANNOTATED_CONSTRAINTS_CONTEXT

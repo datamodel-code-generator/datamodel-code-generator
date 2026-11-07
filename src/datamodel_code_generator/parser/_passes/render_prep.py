@@ -17,6 +17,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator._container_kinds import GENERIC_CONTAINERS, SETS
 from datamodel_code_generator._graph import reaching
+from datamodel_code_generator._message_text import english_list, for_count
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
@@ -70,7 +71,12 @@ from datamodel_code_generator.parser._passes._shared import (
     takes_positional_place,
 )
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
-from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression, _text_constructor_expression
+from datamodel_code_generator.python_literal import (
+    PythonCode,
+    PythonRuntimeExpression,
+    _text_constructor_expression,
+    represent_python_value,
+)
 from datamodel_code_generator.types import DataType, _copy_data_type
 
 if TYPE_CHECKING:
@@ -436,18 +442,23 @@ def set_validate_default_on_fields(
     """Set validate_default=True on fields with structured defaults needing validation.
 
     Under --omit-incomplete-model-defaults a field whose object default lacks required fields of its model
-    (``_required_fields_a_default_lacks``) takes the default None instead, which it writes as a field without a default.
+    (``_required_fields_a_default_lacks``) takes the default None instead, which it writes as a field without a default;
+    without it, the fields whose output validates such a default are named in one warning.
     """
     deserialized_default = False
+    incomplete: list[str] = []
     for model in models:
         if isinstance(model, Enum):
             continue
         for model_field in model.fields:
             if not _applies_default(model_field):
                 continue
-            if parser.omit_incomplete_model_defaults and _required_fields_a_default_lacks(model_field):
-                parser._graph_builder.set_field_default(model_field, None)  # noqa: SLF001
-                continue
+            if lacks := _required_fields_a_default_lacks(model_field):
+                if parser.omit_incomplete_model_defaults:
+                    parser._graph_builder.set_field_default(model_field, None)  # noqa: SLF001
+                    continue
+                if model_field.VALIDATES_STRUCTURED_DEFAULTS:
+                    incomplete.append(_incomplete_model_default(model, model_field, *lacks))
             deserialized_default = (
                 deserialize_default_value(
                     parser,
@@ -465,6 +476,26 @@ def set_validate_default_on_fields(
             data_type_manager=parser.data_type_manager,
             import_overrides=parser._import_overrides,  # noqa: SLF001
         )
+    if incomplete:
+        warn_as_parser_base(_incomplete_model_defaults_message(incomplete), UserWarning, stacklevel=2)
+
+
+def _incomplete_model_default(model: DataModel, field: DataModelFieldBase, target: DataModel, lacked: list[str]) -> str:
+    """Describe a field whose default lacks required fields of its model: ``Spec.template ({} lacks 'a' of Pod)``."""
+    default, names = represent_python_value(field.default), english_list(map(repr, lacked), "and")
+    return f"{model.class_name}.{field.name} ({default} lacks {names} of {target.class_name})"
+
+
+def _incomplete_model_defaults_message(fields: list[str]) -> str:
+    """Return the warning naming the fields whose object default their model rejects, as it lacks required fields."""
+    count = len(fields)
+    return (
+        f"The {for_count(count, 'default')} of {english_list(fields, 'and')} {for_count(count, 'lacks', 'lack')} "
+        f"required fields of {for_count(count, 'its model', 'their models')}, which the generated "
+        f"{for_count(count, 'model validates', 'models validate')}, so valid input that leaves "
+        f"{for_count(count, 'the property', 'such a property')} out fails (JSON Schema does not validate a default). "
+        "--omit-incomplete-model-defaults writes such a property without its default."
+    )
 
 
 def _required_fields_a_default_lacks(field: DataModelFieldBase) -> tuple[DataModel, list[str]] | None:

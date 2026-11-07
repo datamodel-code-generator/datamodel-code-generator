@@ -590,6 +590,8 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     _FIELD_ASSIGNMENT_ROW: ClassVar[AssignmentRow] = "model"
     _FREEZES_RENDER_PLAN: ClassVar[bool] = False
     """Whether the field renders from a plan that the parse freezes at B2 (``_build_frozen_render_plan``)."""
+    VALIDATES_STRUCTURED_DEFAULTS: ClassVar[bool] = False
+    """Whether the output validates or converts an object default into its model, rejecting an incomplete one."""
 
     if TYPE_CHECKING:
 
