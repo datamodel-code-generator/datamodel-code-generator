@@ -67,9 +67,11 @@ class _Fields:
     def operation(self, spec: OperationSpec) -> OperationSpec:
         """Plan an operation's field branches and why other media have none, refusing names that name no field.
 
-        Explicit names, configured or `--aliases` entries, must be new beside the method's other arguments. A field of
-        several media takes one name: the explicit name one of them gives it, else its model field's name, or for a
-        key that is no identifier the name a field would take, suffixed apart from the other arguments.
+        Explicit names, configured or `--aliases` entries, must be new beside the method's other arguments. A media's
+        field takes the explicit name its own media gives it, the configured one first; a field its media does not name
+        takes the explicit name of the first media that names that property, so media that name it differently keep
+        their own names. A property that no media names takes one name in every media: its first model field's name,
+        or for a key that is no identifier the name a field would take, suffixed apart from the other arguments.
         """
         if spec.body is None or spec.body_arguments != "both":
             return spec
