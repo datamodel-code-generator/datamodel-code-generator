@@ -138,7 +138,9 @@ def test_incomplete_model_defaults_strict_nullable_inherited(output_file: Path) 
     Under ``--allof-merge-mode all`` the child's ``spec``, which only adds a description, inherits the default ``{}``
     that lacks ``containers`` of ``PodSpec`` and is written ``PodSpec | None``, as its base's ``spec`` is under
     ``--strict-nullable``. The child's ``kind`` narrows the type of the base's, which admits null, and is required, so
-    it is written as without the option.
+    it is written as without the option. The child's ``template`` gives ``PodSpec`` such a default with ``type:
+    object``, which drops the base's null, and is written ``PodSpec | None = None``, as without the default; it was
+    ``PodSpec = None``.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "incomplete_model_defaults_inherited.json",

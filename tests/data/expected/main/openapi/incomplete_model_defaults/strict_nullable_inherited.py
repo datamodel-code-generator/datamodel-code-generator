@@ -23,8 +23,10 @@ class Kind(BaseModel):
 class Template(BaseModel):
     spec: PodSpec | None = None
     kind: Kind | None = None
+    template: PodSpec | None = None
 
 
 class Deployment(Template):
     spec: PodSpec | None = Field(None, description='The pod spec.')
     kind: Kind | None
+    template: PodSpec | None = None

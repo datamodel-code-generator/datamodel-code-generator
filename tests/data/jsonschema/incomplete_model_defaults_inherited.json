@@ -10,7 +10,8 @@
       "type": "object",
       "properties": {
         "spec": {"$ref": "#/$defs/PodSpec", "default": {}},
-        "kind": {"type": ["object", "null"], "properties": {"a": {"type": "string"}}, "required": ["a"], "default": {}}
+        "kind": {"type": ["object", "null"], "properties": {"a": {"type": "string"}}, "required": ["a"], "default": {}},
+        "template": {"$ref": "#/$defs/PodSpec"}
       }
     },
     "Deployment": {
@@ -18,7 +19,8 @@
       "allOf": [{"$ref": "#/$defs/Template"}],
       "properties": {
         "spec": {"description": "The pod spec."},
-        "kind": {"type": "object"}
+        "kind": {"type": "object"},
+        "template": {"type": "object", "default": {}}
       },
       "required": ["kind"]
     }

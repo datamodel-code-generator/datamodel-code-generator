@@ -135,8 +135,16 @@ def _inherited_field_nullability(
     nullable, type_has_null = inherited_field.nullable, inherited_field.type_has_null
     match current_type:
         case _InheritedTypeModifiers(excludes_null=True):
-            nullable, type_has_null = (False if required or field.nullable is False else None), False
+            nullable, type_has_null = _nullable_without_inherited_null(field.nullable, required=required), False
     return {"nullable": nullable, "type_has_null": type_has_null}
+
+
+def _nullable_without_inherited_null(override_nullable: bool | None, *, required: bool) -> bool | None:  # noqa: FBT001
+    """Return the ``nullable`` of a copy whose override drops the inherited null.
+
+    It is False where the copy is required or the override is not null, else undecided.
+    """
+    return False if required or override_nullable is False else None
 
 
 def _apply_inherited_field_nullability(
@@ -151,18 +159,22 @@ def _apply_inherited_field_nullability(
 
 def _keep_nullable_without_default(
     copied_field: DataModelFieldBase,
+    field: DataModelFieldBase,
     inherited_field: DataModelFieldBase,
     current_type: DataType | _InheritedTypeModifiers,
 ) -> None:
-    """Give the copy the ``nullable`` without a default of the field whose ``nullable`` it takes, or none.
+    """Give the copy the ``nullable`` it has without a default, read as its ``nullable`` is, or none where they agree.
 
     A copy that keeps the inherited ``nullable`` (``_inherited_field_nullability``) keeps what that field has without
-    its default; one whose override drops the null has a ``nullable`` of its own and records none.
+    its default; one whose override ``field`` drops the null reads the ``nullable`` the override has without its
+    default instead of the override's ``nullable``.
     """
     without_default = inherited_field.nullable_without_default
     match current_type:
         case _InheritedTypeModifiers(excludes_null=True):
-            without_default = copied_field.nullable
+            without_default = _nullable_without_inherited_null(
+                field.nullable_without_default, required=copied_field.required
+            )
     if copied_field.nullable_without_default is not without_default:
         GenerationStore.record_nullable_without_default(copied_field, without_default)  # ty: ignore[deprecated]
 
@@ -229,7 +241,7 @@ def _copy_resolved_inherited_field(  # noqa: PLR0913
                 **facts,
             )
             _apply_inherited_field_nullability(copied_field, current_type)
-            _keep_nullable_without_default(copied_field, inherited_field, current_type)
+            _keep_nullable_without_default(copied_field, field, inherited_field, current_type)
             if takes_default and _RAW_SCHEMA_DEFAULT_KEY in field.__dict__:
                 copied_field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = field.__dict__[_RAW_SCHEMA_DEFAULT_KEY]
         case _, ClassScope():
