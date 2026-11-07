@@ -187,6 +187,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--set-default-enum-member": "Use the legacy flag for deserializing enum defaults.",
     "--shared-module-name": "Customize the name of the shared module for deduplicated models.",
     "--singularize-last-word-of-item-names": "Name the item model of an array by singularizing only the last word o...",
+    "--skip-path-extension-keys": "Skip the `x-` keys of `paths` in the `paths` scope, as the `api` scope does.",
     "--skip-root-model": "Skip generation of root model when schema contains nested definitions.",
     "--snake-case-field": "Convert field names to snake_case format.",
     "--special-field-name-prefix": "Prefix to add to special field names (like reserved keywords).",

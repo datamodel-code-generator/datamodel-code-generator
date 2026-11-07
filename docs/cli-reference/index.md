@@ -13,7 +13,7 @@ This documentation is auto-generated from test cases.
 | 🏷️ [Field Customization](field-customization.md) | 38 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 62 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
-| 📘 [OpenAPI-only Options](openapi-only-options.md) | 12 | OpenAPI-specific features |
+| 📘 [OpenAPI-only Options](openapi-only-options.md) | 13 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
 | ⚙️ [General Options](general-options.md) | 25 | Utilities and meta options |
 | 🚀 [Target Generation Options](target-generation-options.md) | 25 | Server and client generation with the models (experimental) |
@@ -28,7 +28,7 @@ Use these pages when you know the workflow area but not the exact option name.
 | [Model Customization](topics/model-customization.md) | 29 | Model Naming, Model Reuse, Model Shape, Root Model |
 | [Template Customization](topics/template-customization.md) | 23 | Custom Templates, Generated Output, Imports, Output Formatting |
 | [Typing Customization](topics/typing-customization.md) | 33 | Imports, Collection Types, Type Alias, Type Mapping, Type Syntax |
-| [OpenAPI](topics/openapi.md) | 11 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
+| [OpenAPI](topics/openapi.md) | 12 | OpenAPI Naming, OpenAPI Paths, OpenAPI Scopes, Read Only Write Only |
 
 ## 🔗 Option Relationships
 
@@ -351,6 +351,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--shared-module-name`](general-options.md#shared-module-name)
 - [`--singularize-last-word-of-item-names`](model-customization.md#singularize-last-word-of-item-names)
 - [`--skill-scope`](utility-options.md#skill-scope)
+- [`--skip-path-extension-keys`](openapi-only-options.md#skip-path-extension-keys)
 - [`--skip-root-model`](model-customization.md#skip-root-model)
 - [`--snake-case-field`](field-customization.md#snake-case-field)
 - [`--special-field-name-prefix`](field-customization.md#special-field-name-prefix)

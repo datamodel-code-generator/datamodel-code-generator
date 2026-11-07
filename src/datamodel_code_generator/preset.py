@@ -1037,6 +1037,14 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "parameter is, instead of a copy of the referenced schema."
         ),
     ),
+    PresetOptionGroup(
+        title="Extension keys of paths skipped",
+        config=PresetConfig(skip_path_extension_keys=True),
+        description=(
+            "In the paths scope, skip a key of paths that begins with x-, a specification extension and no path "
+            "item, as the api scope does, so its operations get no models."
+        ),
+    ),
 )
 """The 20261104 groups and the opt-in options of the release after 0.90.0."""
 
@@ -1371,7 +1379,9 @@ def render_presets_markdown() -> str:
             "decorator argument set to false, such as `eq=False` from `--dataclass-arguments`, is written instead of "
             "left out, which gave it its default, and `--keep-content-parameter-refs`: an OpenAPI parameter whose "
             "content media schema is a `$ref` is typed by the model the `$ref` names (`PageRequest` under "
-            "`--read-only-write-only-model-type request-response`) instead of a copy of the referenced schema."
+            "`--read-only-write-only-model-type request-response`) instead of a copy of the referenced schema, and "
+            "`--skip-path-extension-keys`: the paths scope skips an `x-` key of `paths`, a specification extension, as "
+            "the api scope does."
         ),
         "",
         "## Override Preset Options",

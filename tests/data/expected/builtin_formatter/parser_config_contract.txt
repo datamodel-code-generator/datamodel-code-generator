@@ -212,6 +212,7 @@ reviewed-safe openapi_include_info_version
 reviewed-safe openapi_include_paths
 reviewed-safe openapi_scopes
 reviewed-safe openapi_version
+reviewed-safe skip_path_extension_keys
 reviewed-safe use_status_code_in_response_name
 
 [AvroParserConfig]

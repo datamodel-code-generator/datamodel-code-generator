@@ -84,6 +84,7 @@ OPT_IN_OPTIONS_20261104: tuple[str, ...] = (
 OPT_IN_OPTIONS_20261106: tuple[str, ...] = (
     "--keep-false-dataclass-arguments",
     "--keep-content-parameter-refs",
+    "--skip-path-extension-keys",
 )
 """The options the 20261106 presets set beyond the 20261104 presets."""
 
@@ -286,6 +287,12 @@ CASES_20261106: tuple[pytest.ParameterSet, ...] = (
             *("--read-only-write-only-model-type", "request-response"),
         ],
         id="keep-content-parameter-refs",
+    ),
+    pytest.param(
+        OPEN_API_DATA_PATH / "paths_extension_keys.yaml",
+        "openapi",
+        ["--output-model-type", "pydantic_v2.BaseModel", "--openapi-scopes", "schemas", "paths", "parameters"],
+        id="skip-path-extension-keys",
     ),
 )
 """The inputs each opt-in option of the 20261106 presets changes."""

@@ -291,11 +291,13 @@
 - `--no-dedupe-request-response-variants`
 - `--no-keep-content-parameter-refs`
 - `--no-keep-first-character-of-path-keys`
+- `--no-skip-path-extension-keys`
 - `--openapi-as-definitions`: Give OpenAPI paths bodies or ref components the models their definitions get.
 - `--openapi-include-info-version`: Emit OpenAPI info.version as a generated constant.
 - `--openapi-include-paths`: Filter OpenAPI paths to include in model generation.
 - `--openapi-scopes`: Specify OpenAPI scopes to generate (schemas, paths, parameters).
 - `--read-only-write-only-model-type`: Generate separate request and response models for readOnly/writeOnly fields.
+- `--skip-path-extension-keys`: Skip the `x-` keys of `paths` in the `paths` scope, as the `api` scope does.
 - `--use-operation-id-as-name`: Use OpenAPI operationId as the generated function/class name.
 - `--use-status-code-in-response-name`: Include HTTP status code in response model names.
 - `--validation`: Enable validation constraints (deprecated, use --field-constraints).
@@ -1522,6 +1524,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Model generation for readOnly/writeOnly fields:
                         'request-response' = Request/Response models only (no
                         base model), 'all' = Base + Request + Response models.
+  --skip-path-extension-keys, --no-skip-path-extension-keys
+                        In the paths scope, skip a key of paths that begins
+                        with x-, a specification extension and no path item,
+                        as the api scope does; without it such a key that
+                        holds an object is read as a path and its operations
+                        get models, as in 0.89.0
   --use-operation-id-as-name
                         use operation id of OpenAPI as class names of models
   --use-status-code-in-response-name

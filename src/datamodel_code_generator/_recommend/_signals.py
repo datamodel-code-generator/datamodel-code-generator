@@ -38,8 +38,10 @@ from datamodel_code_generator._json_schema import (
 )
 from datamodel_code_generator._openapi_paths import (
     OPERATION_METHODS,
+    PathKeyRow,
     holds_path_item,
     path_item_operations,
+    path_key_row,
     path_selected,
 )
 
@@ -354,19 +356,20 @@ def _path_operations(
     sections: Iterable[str],
     include_paths: Sequence[str],
     *,
-    api: bool,
+    row: PathKeyRow,
     openapi_32: bool,
 ) -> Iterator[tuple[str, Any]]:
     """Yield the name and the operation of each operation of the paths and webhooks of the sections.
 
     The paths ``--openapi-include-paths`` keeps are read, and a path item that is a local reference is the item it
     names, as generation resolves it; remote ones are not read. A key that is no string is an error, as it is in
-    generation. The api scope (``api``) reads the keys of ``paths`` and the fields of a path item as its walk does
-    (``holds_path_item``, ``path_item_operations``: ``query`` and ``additionalOperations`` from OpenAPI 3.2). The
-    paths and webhooks scopes skip a key of ``paths`` that holds no path item and read the methods before OpenAPI 3.2
-    (row ``legacy-object-extension-paths`` reads an ``x-`` key that holds an object as a path).
+    generation. The api scope (row ``openapi``) reads the keys of ``paths`` and the fields of a path item as its walk
+    does (``holds_path_item``, ``path_item_operations``: ``query`` and ``additionalOperations`` from OpenAPI 3.2).
+    The paths and webhooks scopes skip a key of ``paths`` that holds no path item and read the methods before
+    OpenAPI 3.2 (row ``legacy-object-extension-paths`` reads an ``x-`` key that holds an object as a path, unless
+    ``--skip-path-extension-keys`` skips it: ``path_key_row``).
     """
-    row = "openapi" if api else "legacy-object-extension-paths"
+    api = row == "openapi"
     for section in sections:
         kind, error_path = ("path" if section == "paths" else "webhook name"), _key_path(f"#/{section}")
         for path, item in as_mapping(document.get(section)).items():
@@ -393,12 +396,18 @@ def _invalid_operations(section: str, path: str) -> Callable[[str, tuple[str, ..
 
 
 def _scoped_schemas(
-    document: Mapping[str, Any], scopes: AbstractSet[str], include_paths: Sequence[str], *, openapi_32: bool
+    document: Mapping[str, Any],
+    scopes: AbstractSet[str],
+    include_paths: Sequence[str],
+    *,
+    openapi_32: bool,
+    skip_extension_keys: bool,
 ) -> Iterator[tuple[str, object]]:
     """Yield the request, response, parameter, and request body schemas the OpenAPI scopes read, in each holder."""
     api = "api" in scopes
     sections = (section for section in ("paths", "webhooks") if api or section in scopes)
-    for name, operation in _path_operations(document, sections, include_paths, api=api, openapi_32=openapi_32):
+    row = "openapi" if api else path_key_row(skip_extension_keys=skip_extension_keys)
+    for name, operation in _path_operations(document, sections, include_paths, row=row, openapi_32=openapi_32):
         yield from _operation_parts(document, name, operation)
     components = as_mapping(document.get("components"))
     bodies = components.get("requestBodies") if api or "requestbodies" in scopes else None
@@ -407,7 +416,12 @@ def _scoped_schemas(
 
 
 def _operation_schemas(
-    document: Mapping[str, Any], scopes: AbstractSet[str], include_paths: Sequence[str], *, openapi_32: bool
+    document: Mapping[str, Any],
+    scopes: AbstractSet[str],
+    include_paths: Sequence[str],
+    *,
+    openapi_32: bool,
+    skip_extension_keys: bool,
 ) -> Iterator[tuple[str, object]]:
     """Yield the request, response, parameter, and request body schemas the OpenAPI scopes generate, each node once.
 
@@ -415,7 +429,9 @@ def _operation_schemas(
     loaded node, and generation writes its inline models once.
     """
     walked: dict[int, object] = {}
-    for key, schema in _scoped_schemas(document, scopes, include_paths, openapi_32=openapi_32):
+    for key, schema in _scoped_schemas(
+        document, scopes, include_paths, openapi_32=openapi_32, skip_extension_keys=skip_extension_keys
+    ):
         if isinstance(schema, dict):
             if id(schema) in walked:
                 continue
@@ -424,11 +440,12 @@ def _operation_schemas(
 
 
 def _legacy_body_operations(
-    document: Mapping[str, Any], scopes: AbstractSet[str], include_paths: Sequence[str]
+    document: Mapping[str, Any], scopes: AbstractSet[str], include_paths: Sequence[str], *, skip_extension_keys: bool
 ) -> Iterator[Mapping[str, Any]]:
     """Yield the operations whose bodies the paths and webhooks scopes parse; api reads them as definitions."""
     sections = (section for section in ("paths", "webhooks") if "api" not in scopes and section in scopes)
-    for _, operation in _path_operations(document, sections, include_paths, api=False, openapi_32=False):
+    row = path_key_row(skip_extension_keys=skip_extension_keys)
+    for _, operation in _path_operations(document, sections, include_paths, row=row, openapi_32=False):
         yield as_mapping(operation)
 
 
@@ -448,11 +465,15 @@ def _is_inline_object_body(schema: object) -> bool:
         return False
 
 
-def _inline_object_bodies(document: Mapping[str, Any], scopes: AbstractSet[str], include_paths: Sequence[str]) -> int:
+def _inline_object_bodies(
+    document: Mapping[str, Any], scopes: AbstractSet[str], include_paths: Sequence[str], *, skip_extension_keys: bool
+) -> int:
     """Count the request and response bodies whose model ``--openapi-as-definitions paths-bodies`` changes."""
     return sum(
         _is_inline_object_body(schema)
-        for operation in _legacy_body_operations(document, scopes, include_paths)
+        for operation in _legacy_body_operations(
+            document, scopes, include_paths, skip_extension_keys=skip_extension_keys
+        )
         for holder in (operation.get("requestBody"), *as_mapping(operation.get("responses")).values())
         for _, schema in _media_schemas(document, "", holder)
     )
@@ -521,7 +542,7 @@ def _count_operations(
     if kind == "openapi":
         if "api" in scopes:
             return sum(
-                1 for _ in _path_operations(document, ("paths",), include_paths, api=True, openapi_32=openapi_32)
+                1 for _ in _path_operations(document, ("paths",), include_paths, row="openapi", openapi_32=openapi_32)
             )
         return sum(
             method in OPERATION_METHODS
@@ -952,6 +973,7 @@ def measure_signals(
     *,
     openapi_scopes: AbstractSet[str] = frozenset({"schemas"}),
     include_paths: Sequence[str] = (),
+    skip_path_extension_keys: bool = False,
 ) -> Signals:
     """Measure the naming-relevant signals of one OpenAPI, AsyncAPI, or JSON Schema document.
 
@@ -965,8 +987,18 @@ def measure_signals(
     counts = walker.counts
     extra: list[tuple[str, object]] = []
     if kind == "openapi":
-        extra = list(_operation_schemas(document, openapi_scopes, include_paths, openapi_32=walker.dialect.openapi_32))
-        counts["inline_object_bodies"] = _inline_object_bodies(document, openapi_scopes, include_paths)
+        extra = list(
+            _operation_schemas(
+                document,
+                openapi_scopes,
+                include_paths,
+                openapi_32=walker.dialect.openapi_32,
+                skip_extension_keys=skip_path_extension_keys,
+            )
+        )
+        counts["inline_object_bodies"] = _inline_object_bodies(
+            document, openapi_scopes, include_paths, skip_extension_keys=skip_path_extension_keys
+        )
     elif kind == "asyncapi":
         extra = list(_message_schemas(document))
     for key, node in extra:

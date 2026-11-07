@@ -17805,6 +17805,61 @@ def test_main_openapi_merge_shared_variant_tags_limits(output_file: Path, name: 
 
 
 @pytest.mark.cli_doc(
+    options=["--skip-path-extension-keys"],
+    option_description="""Skip the `x-` keys of `paths` in the `paths` scope, as the `api` scope does.
+
+OpenAPI reads a key of the Paths Object that begins with `x-` as a specification extension, not as a path. The
+`paths` scope reads such a key that holds an object as a path, so the operations under `x-internal` get models
+(`FieldInternalGetResponse`). With `--skip-path-extension-keys` the `paths` scope skips it, as the `api` scope always
+does. A key that holds no object is skipped either way.""",
+    input_schema="openapi/paths_extension_keys.yaml",
+    cli_args=["--openapi-scopes", "schemas", "paths", "parameters", "--skip-path-extension-keys"],
+    golden_output="main/openapi/main_openapi/skip_path_extension_keys[pydantic_v2-skipped].py",
+    comparison_output="main/openapi/main_openapi/skip_path_extension_keys[pydantic_v2].py",
+    related_options=["--openapi-scopes"],
+)
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic_v2"),
+        pytest.param("pydantic_v2.BaseModel", ["--skip-path-extension-keys"], id="pydantic_v2-skipped"),
+        pytest.param(
+            "pydantic_v2.BaseModel",
+            ["--skip-path-extension-keys", "--no-skip-path-extension-keys"],
+            id="pydantic_v2-no-skip",
+        ),
+        pytest.param("msgspec.Struct", ["--skip-path-extension-keys"], id="msgspec-skipped"),
+    ],
+)
+def test_main_openapi_skip_path_extension_keys(
+    output_file: Path, output_model_type: str, extra_args: list[str]
+) -> None:
+    """Skip the extension key ``x-internal`` of paths under the option, as the api scope does (#5746).
+
+    Without the option its operation gets ``FieldInternalGetParametersQuery`` and ``FieldInternalGetResponse``, as in
+    0.89.0; ``/pets`` gets its models either way, and ``x-owner``, which holds no object, none.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "paths_extension_keys.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--openapi-scopes",
+            "schemas",
+            "paths",
+            "parameters",
+            *extra_args,
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.cli_doc(
     options=["--keep-first-character-of-path-keys"],
     option_description="""Strip only a leading slash from a paths key when naming its operation models.
 

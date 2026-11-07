@@ -37,6 +37,7 @@ from datamodel_code_generator._openapi_paths import (
     effective_parameters,
     holds_path_item,
     operation_responses,
+    path_key_row,
     path_selected,
     rooted_path,
 )
@@ -477,6 +478,7 @@ class OpenAPIParser(JsonSchemaParser):
         self.use_status_code_in_response_name: bool = self.config.use_status_code_in_response_name
         self.keep_first_character_of_path_keys: bool = self.config.keep_first_character_of_path_keys
         self.keep_content_parameter_refs: bool = self.config.keep_content_parameter_refs
+        self.skip_path_extension_keys: bool = self.config.skip_path_extension_keys
         self.openapi_include_paths: list[str] | None = self.config.openapi_include_paths
         self.openapi_include_info_version: bool = self.config.openapi_include_info_version
         self.openapi_info_version: str | None = None
@@ -957,13 +959,17 @@ class OpenAPIParser(JsonSchemaParser):
 
         A webhook name loses only a leading slash; a paths key loses its first character whatever it is (row
         ``legacy-first-character-of-path-key``: ``pets`` names ``Ets...``), or only a leading slash under
-        ``--keep-first-character-of-path-keys``.
+        ``--keep-first-character-of-path-keys``. A key of ``paths`` that holds no path item is skipped; an ``x-`` key
+        that holds an object is read as a path (row ``legacy-object-extension-paths``) unless
+        ``--skip-path-extension-keys`` skips it, as the api scope does.
         """
         scope_path = [*base_path, f"#/{scope_name}"]
         kind = "path" if scope_name == "paths" else "webhook name"
         for item_name, methods_ in items.items():
             self._key_name(items, item_name, scope_path, kind)
-            if scope_name == "paths" and not holds_path_item(item_name, methods_, "legacy-object-extension-paths"):
+            if scope_name == "paths" and not holds_path_item(
+                item_name, methods_, path_key_row(skip_extension_keys=self.skip_path_extension_keys)
+            ):
                 continue
             if apply_path_filter and not self._matches_path_pattern(item_name):
                 continue

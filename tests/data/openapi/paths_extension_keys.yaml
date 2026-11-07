@@ -1,0 +1,24 @@
+openapi: 3.0.3
+info: {title: t, version: '1'}
+paths:
+  x-internal:
+    get:
+      parameters:
+        - {name: secret, in: query, schema: {type: string}}
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: {type: object, properties: {hidden: {type: string}}}
+  x-owner: platform team
+  /pets:
+    get:
+      parameters:
+        - {name: limit, in: query, schema: {type: integer}}
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: {type: object, properties: {name: {type: string}}}

@@ -83,6 +83,8 @@ rename-submodules-hidden-by-classes-practical	main/preset_opt_in_options/preset_
 rename-submodules-hidden-by-classes-standard	main/preset_opt_in_options/preset_sets_opt_in_option[rename-submodules-hidden-by-classes-standard]/	= main/preset_opt_in_options/preset_sets_opt_in_option[rename-submodules-hidden-by-classes-practical]/
 singularize-last-word-of-item-names-practical	main/preset_opt_in_options/preset_sets_opt_in_option[singularize-last-word-of-item-names-practical].py
 singularize-last-word-of-item-names-standard	main/preset_opt_in_options/preset_sets_opt_in_option[singularize-last-word-of-item-names-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[singularize-last-word-of-item-names-practical].py
+skip-path-extension-keys-practical	main/preset_opt_in_options/preset_sets_opt_in_option[skip-path-extension-keys-practical].py	= main/preset_opt_in_options/preset_sets_opt_in_option[skip-path-extension-keys-standard].py
+skip-path-extension-keys-standard	main/preset_opt_in_options/preset_sets_opt_in_option[skip-path-extension-keys-standard].py
 tag-msgspec-by-payload-name-practical	main/preset_opt_in_options/preset_sets_opt_in_option[tag-msgspec-by-payload-name-practical].py	= main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[default].py
 tag-msgspec-by-payload-name-standard	main/preset_opt_in_options/preset_sets_opt_in_option[tag-msgspec-by-payload-name-standard].py	= main/jsonschema/main_jsonschema/main_msgspec_discriminator_wire_name[default].py
 type-overrides-replace-whole-type-practical	main/preset_opt_in_options/preset_sets_opt_in_option[type-overrides-replace-whole-type-practical].py	= main/preset_opt_in_options/preset_sets_opt_in_option[type-overrides-replace-whole-type-standard].py

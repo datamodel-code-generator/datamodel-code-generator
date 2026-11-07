@@ -564,6 +564,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         _C.OPENAPI,
         "--include-path-parameters --openapi-include-paths --keep-first-character-of-path-keys",
         "--no-keep-first-character-of-path-keys --keep-content-parameter-refs --no-keep-content-parameter-refs",
+        "--skip-path-extension-keys --no-skip-path-extension-keys",
         group=_G.OPENAPI_PATHS,
     ),
     **_opts(_C.OPENAPI, "--openapi-include-info-version"),
