@@ -485,11 +485,11 @@ def iter_literal_members(expression: PythonTypeExpr) -> Iterator[PythonTypeExpr]
             yield from iter_literal_members(child)
 
 
-def _flat_literal_values(arguments: tuple[PythonTypeExpr, ...]) -> Iterator[PythonTypeExpr]:
+def literal_values(arguments: tuple[PythonTypeExpr, ...]) -> Iterator[PythonTypeExpr]:
     """Yield the values of a ``Literal``, those of a ``Literal`` it nests included."""
     for argument in arguments:
         if isinstance(argument, PythonTypeSubscript) and is_literal_python_type_expr(argument):
-            yield from _flat_literal_values(argument.arguments)
+            yield from literal_values(argument.arguments)
         else:
             yield argument
 
@@ -510,7 +510,7 @@ def _literal_values_held(expression: PythonTypeExpr) -> Iterator[PythonTypeExpr]
     An ``Annotated`` type holds the values of the type it annotates.
     """
     if isinstance(expression, PythonTypeSubscript) and is_literal_python_type_expr(expression):
-        yield from _flat_literal_values(expression.arguments)
+        yield from literal_values(expression.arguments)
     elif _annotation_metadata(expression):
         yield from _literal_values_held(python_type_expr_arguments(expression)[0])
     elif is_union_python_type_expr(expression):
@@ -555,7 +555,7 @@ def literal_values_as_text(expression: PythonTypeExpr) -> PythonTypeExpr:
                     PythonTypeLiteralValue(member.value.decode("utf-8", "backslashreplace"))
                     if isinstance(member, PythonTypeLiteralValue) and isinstance(member.value, bytes)
                     else member
-                    for member in _flat_literal_values(expression.arguments)
+                    for member in literal_values(expression.arguments)
                 )
             ),
         )
@@ -586,7 +586,7 @@ def write_refused_literal_values(
         if held and bytes in refused and _holds_bytes_and_str(node):
             return node
         if isinstance(node, PythonTypeSubscript) and is_literal_python_type_expr(node):
-            members = tuple(_flat_literal_values(node.arguments))
+            members = tuple(literal_values(node.arguments))
             written = [m for m in members if isinstance(m, PythonTypeLiteralValue) and type(m.value) in refused]
             if not written:
                 return node
@@ -633,6 +633,7 @@ __all__ = [
     "iter_python_type_expr_head_names",
     "iter_python_type_expr_names",
     "iter_python_type_expr_qualified_names",
+    "literal_values",
     "literal_values_as_text",
     "parse_python_type_annotation",
     "python_type_expr_arguments",

@@ -392,7 +392,7 @@ def _value_tag(site: FieldTagSite, value: Any, rule: Literal["const", "one-membe
 
     At a variant's field a value of any other kind is its tag too (``value-of-another-kind``).
     """
-    if is_literal_kind(literal_value_kind(value)):
+    if is_tag_value(value, bool_literals=True):
         return FieldTag(value, rule)
     return None if site == "schema" else FieldTag(value, "value-of-another-kind")
 
@@ -568,7 +568,7 @@ def enum_tag_literal(value: TagValue, member_value: Any, /) -> TagValue:
 
     A mapping key ``"1"`` naming the member ``1`` of an integer Enum so becomes ``Literal[1]``.
     """
-    return member_value if is_literal_kind(literal_value_kind(member_value)) else value
+    return member_value if is_tag_value(member_value, bool_literals=True) else value
 
 
 def enum_tag_as_values(values: Iterable[Any], /, *, bool_literals: bool) -> bool:
@@ -578,7 +578,7 @@ def enum_tag_as_values(values: Iterable[Any], /, *, bool_literals: bool) -> bool
     (``is_literal_kind``); a tag with any other value keeps its members, as an enum of floats stays one that no msgspec
     decodes.
     """
-    return all(is_literal_kind(literal_value_kind(value), bool_literals=bool_literals) for value in values)
+    return all(is_tag_value(value, bool_literals=bool_literals) for value in values)
 
 
 def enum_tag_members(named: Iterable[Any], members: Callable[[], Iterable[Any]], /) -> EnumTagMembers:
