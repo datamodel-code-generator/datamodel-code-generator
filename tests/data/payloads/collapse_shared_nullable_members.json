@@ -1,0 +1,12 @@
+{
+  "valid": [
+    {"notes": {"k": "x"}},
+    {"notes": {"k": null}},
+    {"notes": {"k": {"reply": "y"}}},
+    {"notes": {"k": {"reply": null}}}
+  ],
+  "invalid": [
+    {"notes": {"k": 5}},
+    {"notes": {"k": {"reply": 5}}}
+  ]
+}

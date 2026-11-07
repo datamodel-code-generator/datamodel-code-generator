@@ -517,6 +517,14 @@ _toggle(
 )
 _toggle(
     model_options,
+    "--keep-shared-members-on-collapsed-root-models",
+    help="Under --collapse-root-models, keep each member of a root type that collapse inlined at several sites at "
+    "every site when a root model that member names is collapsed later, as a recursive union reaches its plain "
+    'member (`dict[str, Union["Entry", str]]`); without it those sites write the union without that member, or '
+    "`Any` where no member is left, as in 0.90.0",
+)
+_toggle(
+    model_options,
     "--collapse-constrained-root-models-as-annotated",
     help="Under --collapse-root-models with --use-annotated, inline a root model of a string with constraints into "
     "the union, list, dict or other container of its holder as `Annotated[str, Field(...)]`, which keeps the "

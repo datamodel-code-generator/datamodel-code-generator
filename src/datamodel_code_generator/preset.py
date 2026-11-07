@@ -1141,6 +1141,15 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "except in msgspec output, which cannot decode such a type alias."
         ),
     ),
+    PresetOptionGroup(
+        title="Shared members kept on collapsed root models",
+        config=PresetConfig(keep_shared_members_on_collapsed_root_models=True),
+        description=(
+            "Under --collapse-root-models, keep each member of a root type that collapse inlined at several sites at "
+            "every site when a root model that member names is collapsed later, as a recursive union reaches its "
+            "plain member."
+        ),
+    ),
 )
 """The 20261104 groups and the opt-in options of the release after 0.90.0."""
 
@@ -1508,7 +1517,10 @@ def render_presets_markdown() -> str:
             "of its own, and `--remove-unused-models-beside-type-overrides`: the models nothing uses, such as an "
             "inlined root model, also leave a module that a model-level `--type-overrides` key takes a model out "
             "of, and `--keep-self-referencing-array-items`: an array whose items name the array itself keeps its "
-            "items (`RootModel[list[Node | Leaf]]` instead of `RootModel[list]`)."
+            "items (`RootModel[list[Node | Leaf]]` instead of `RootModel[list]`), and "
+            "`--keep-shared-members-on-collapsed-root-models`: under `--collapse-root-models` a recursive union "
+            'keeps its plain member at every site that inlines it (`dict[str, Union["Entry", str]]` instead of '
+            '`dict[str, "Entry"]`).'
         ),
         "",
         "## Override Preset Options",

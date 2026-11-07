@@ -861,6 +861,14 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         which cannot decode such a type alias, keeps the bare
                         `list`; without it the array is written as a bare
                         `list`, as in 0.90.0
+  --keep-shared-members-on-collapsed-root-models, --no-keep-shared-members-on-collapsed-root-models
+                        Under --collapse-root-models, keep each member of a
+                        root type that collapse inlined at several sites at
+                        every site when a root model that member names is
+                        collapsed later, as a recursive union reaches its
+                        plain member (`dict[str, Union["Entry", str]]`);
+                        without it those sites write the union without that
+                        member, or `Any` where no member is left, as in 0.90.0
   --keyword-only        Defined models as keyword only (for example
                         dataclass(kw_only=True)).
   --model-name-map MODEL_NAME_MAP

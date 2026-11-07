@@ -332,6 +332,7 @@ class BaseGenerateConfig(TypedDict):
     keep_constrained_root_models_in_every_container: NotRequired[bool]
     keep_enum_literal_aliases: NotRequired[bool]
     keep_reference_null_on_collapsed_root_models: NotRequired[bool]
+    keep_shared_members_on_collapsed_root_models: NotRequired[bool]
     collapse_constrained_root_models_as_annotated: NotRequired[bool]
     remove_unused_models_beside_type_overrides: NotRequired[bool]
     keep_self_referencing_array_items: NotRequired[bool]

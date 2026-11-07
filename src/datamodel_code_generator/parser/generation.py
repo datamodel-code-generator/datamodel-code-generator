@@ -2196,21 +2196,30 @@ class GenerationStore:  # noqa: PLR0904
         *,
         owner: Any,
         replacement_kind: Literal["field", "nested"],
+        holders: tuple[tuple[DataType, ...], tuple[DataType, ...]] = ((), ()),
     ) -> Generator[None, None, None]:
         """Replace a data type, then detach its old reference after surrounding work.
 
-        The sites of ``new_data_type`` are collapsed from the root model ``data_type`` names.
+        The sites of ``new_data_type`` are collapsed from the root model ``data_type`` names. ``holders`` are the
+        inlined copies that hold ``data_type`` beside ``owner``: the first take the same ``new_data_type`` before
+        ``owner``, so ``owner`` stays its parent; the others keep ``data_type``, which then keeps its reference and
+        takes the first of them as its parent.
         """
+        shared_holders, kept_holders = holders
         self._state_tree_sites("collapse_root_data_type", (new_data_type,), via=data_type.reference)
         scope = self._active_root_collapse_reference_scope
         if (
             scope is not None
             and scope.enabled
-            and not self._root_collapse_supports_incremental_replacement(
-                data_type,
-                new_data_type,
-                owner=owner,
-                replacement_kind=replacement_kind,
+            and (
+                shared_holders
+                or kept_holders
+                or not self._root_collapse_supports_incremental_replacement(
+                    data_type,
+                    new_data_type,
+                    owner=owner,
+                    replacement_kind=replacement_kind,
+                )
             )
         ):
             scope.invalidate()
@@ -2221,6 +2230,8 @@ class GenerationStore:  # noqa: PLR0904
             facts = self._facts if not self._dirty else self.current_facts()
             has_base_owner_alias = id(data_type) in facts.base_owner_model_ids_by_object
         with self._root_collapse_internal_mutation():
+            for holder in shared_holders:
+                self._builder.replace_nested_data_type(holder, data_type, new_data_type)
             match replacement_kind:
                 case "field":
                     self._builder.replace_field_type(owner, new_data_type)
@@ -2232,6 +2243,9 @@ class GenerationStore:  # noqa: PLR0904
             if scope is not None:
                 scope.invalidate()
             raise
+        if kept_holders:
+            data_type.parent = kept_holders[0]
+            return
         if data_type.parent is not None or has_base_owner_alias:
             if scope is not None:
                 scope.invalidate()

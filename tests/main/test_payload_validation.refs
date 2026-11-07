@@ -1308,6 +1308,7 @@ openapi/collapse_root_models_name_strategy/first_holder_renames_inner.yaml::comp
 openapi/collapse_root_models_name_strategy/later_holder_overridden.yaml::components.schemas.Inner	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/collapse_root_models_name_strategy/later_holder_renames_wrapper.yaml::components.schemas.Inner	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/collapse_root_models_name_strategy/two_holders.yaml::components.schemas.Inner	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/collapse_shared_nullable_members.yaml::components.schemas.Text	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/component_embedded_ids/api.yaml::components.schemas.Shared	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/component_embedded_ids/api.yaml::components.schemas.Tag	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/component_embedded_ids/remote.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3362,6 +3363,7 @@ openapi/collapse_root_models_name_strategy/first_holder_renames_inner.yaml::comp
 openapi/collapse_root_models_name_strategy/later_holder_overridden.yaml::components.schemas.Inner	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/collapse_root_models_name_strategy/later_holder_renames_wrapper.yaml::components.schemas.Inner	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/collapse_root_models_name_strategy/two_holders.yaml::components.schemas.Inner	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/collapse_shared_nullable_members.yaml::components.schemas.Text	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/component_embedded_ids/api.yaml::components.schemas.Shared	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/component_embedded_ids/api.yaml::components.schemas.Tag	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/component_embedded_ids/remote.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

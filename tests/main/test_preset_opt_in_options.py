@@ -96,6 +96,7 @@ OPT_IN_OPTIONS_20261106: tuple[str, ...] = (
     "--collapse-constrained-root-models-as-annotated",
     "--remove-unused-models-beside-type-overrides",
     "--keep-self-referencing-array-items",
+    "--keep-shared-members-on-collapsed-root-models",
 )
 """The options the 20261106 presets set beyond the 20261104 presets."""
 
@@ -364,6 +365,12 @@ CASES_20261106: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         [],
         id="keep-self-referencing-array-items",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "collapse_shared_members.json",
+        "jsonschema",
+        ["--collapse-root-models"],
+        id="keep-shared-members-on-collapsed-root-models",
     ),
 )
 """The inputs each opt-in option of the 20261106 presets changes."""

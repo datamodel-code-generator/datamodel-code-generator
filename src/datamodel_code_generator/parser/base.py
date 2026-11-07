@@ -1361,6 +1361,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.keep_constrained_root_models_in_every_container = config.keep_constrained_root_models_in_every_container
         self.keep_enum_literal_aliases = config.keep_enum_literal_aliases
         self.keep_reference_null_on_collapsed_root_models = config.keep_reference_null_on_collapsed_root_models
+        self.keep_shared_members_on_collapsed_root_models = config.keep_shared_members_on_collapsed_root_models
         self.collapse_constrained_root_models_as_annotated = config.collapse_constrained_root_models_as_annotated
         self.remove_unused_models_beside_type_overrides = config.remove_unused_models_beside_type_overrides
         self.keep_self_referencing_array_items = config.keep_self_referencing_array_items

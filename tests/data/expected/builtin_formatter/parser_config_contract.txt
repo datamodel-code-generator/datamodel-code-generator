@@ -86,6 +86,7 @@ reviewed-safe keep_model_order
 reviewed-safe keep_reference_null_on_collapsed_root_models
 reviewed-safe keep_reference_null_on_merged_models
 reviewed-safe keep_self_referencing_array_items
+reviewed-safe keep_shared_members_on_collapsed_root_models
 reviewed-safe keyword_only
 reviewed-safe known_third_party
 reviewed-safe merge_shared_variant_tags
