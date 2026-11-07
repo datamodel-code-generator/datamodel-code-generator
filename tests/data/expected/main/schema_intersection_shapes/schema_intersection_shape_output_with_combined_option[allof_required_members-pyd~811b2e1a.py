@@ -61,6 +61,14 @@ class ObjectSite(Nullable):
     id: int
 
 
+class RefSibling(A):
+    id: int
+
+
+class ObjectMember(Nullable):
+    id: int
+
+
 class Model(BaseModel):
     member: Member | None = None
     sibling: Sibling | None = None
@@ -69,3 +77,5 @@ class Model(BaseModel):
     nullable_member: NullableMember | None
     nullable_sibling: NullableSibling | None
     object_site: ObjectSite
+    ref_sibling: RefSibling
+    object_member: ObjectMember

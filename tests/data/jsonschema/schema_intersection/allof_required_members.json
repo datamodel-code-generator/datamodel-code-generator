@@ -5,7 +5,9 @@
   "required": [
     "nullable_member",
     "nullable_sibling",
-    "object_site"
+    "object_site",
+    "ref_sibling",
+    "object_member"
   ],
   "properties": {
     "member": {
@@ -88,6 +90,29 @@
       ],
       "required": [
         "id"
+      ]
+    },
+    "ref_sibling": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/A",
+          "required": [
+            "id"
+          ]
+        }
+      ]
+    },
+    "object_member": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Nullable"
+        },
+        {
+          "type": "object",
+          "required": [
+            "id"
+          ]
+        }
       ]
     }
   },

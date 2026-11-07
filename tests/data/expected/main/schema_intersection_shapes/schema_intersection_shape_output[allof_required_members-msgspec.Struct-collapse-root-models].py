@@ -32,6 +32,8 @@ class Model(Struct):
     nullable_member: Nullable | None
     nullable_sibling: Nullable | None
     object_site: Nullable | None
+    ref_sibling: A
+    object_member: Nullable | None
     member: A | UnsetType = UNSET
     sibling: A | UnsetType = UNSET
     items: list[A] | UnsetType = UNSET

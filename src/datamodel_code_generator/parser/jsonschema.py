@@ -4708,7 +4708,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         self.model_resolver.delete(path)
                         return frame.built(self.data_type(reference=base_classes[0]))
                 nullable = nullable or (
-                    not _types_exclude(("null",), obj)
+                    not any(
+                        _types_exclude(("null",), part) for part in _inherited_schemas.inline_all_of_parts(self, obj)
+                    )
                     and self._object_nullable(self._load_inherited_schema_object(base_classes[0].path))
                 )
             if required_names := list(dict.fromkeys([*required, *obj.required])):
@@ -6553,7 +6555,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                         )
                     self._site_model_keys.add(model_key_of(site_type.reference))
                     return site_type
-                if not self._adds_required_names(item.required, partial(self._ref_required_names, single_item.ref)):
+                if not self._adds_required_names(
+                    self._get_inline_required_names(item), partial(self._ref_required_names, single_item.ref)
+                ):
                     return self.get_ref_data_type(single_item.ref)
         all_of_path = [self.model_resolver.resolve_ref(get_special_path("allOf", path))]
         with (
