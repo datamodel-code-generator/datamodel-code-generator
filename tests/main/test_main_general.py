@@ -2090,6 +2090,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "keep_first_character_of_path_keys",
         "keep_content_parameter_refs",
         "skip_path_extension_keys",
+        "use_enum_field_as_literal_in_operations",
         "read_schema_version_per_document",
         "read_escaped_ref_pointers",
         "read_dynamic_anchors_in_document_order",

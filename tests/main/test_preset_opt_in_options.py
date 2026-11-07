@@ -97,6 +97,7 @@ OPT_IN_OPTIONS_20261106: tuple[str, ...] = (
     "--remove-unused-models-beside-type-overrides",
     "--keep-self-referencing-array-items",
     "--keep-shared-members-on-collapsed-root-models",
+    "--use-enum-field-as-literal-in-operations",
 )
 """The options the 20261106 presets set beyond the 20261104 presets."""
 
@@ -371,6 +372,15 @@ CASES_20261106: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--collapse-root-models"],
         id="keep-shared-members-on-collapsed-root-models",
+    ),
+    pytest.param(
+        OPEN_API_DATA_PATH / "operation_enums_as_literal.yaml",
+        "openapi",
+        [
+            *("--output-model-type", "pydantic_v2.BaseModel", "--openapi-scopes", "schemas", "paths"),
+            *("--enum-field-as-literal", "all"),
+        ],
+        id="use-enum-field-as-literal-in-operations",
     ),
 )
 """The inputs each opt-in option of the 20261106 presets changes."""

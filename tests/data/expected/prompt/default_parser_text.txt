@@ -315,12 +315,14 @@
 - `--no-keep-content-parameter-refs`
 - `--no-keep-first-character-of-path-keys`
 - `--no-skip-path-extension-keys`
+- `--no-use-enum-field-as-literal-in-operations`
 - `--openapi-as-definitions`: Give OpenAPI paths bodies or ref components the models their definitions get.
 - `--openapi-include-info-version`: Emit OpenAPI info.version as a generated constant.
 - `--openapi-include-paths`: Filter OpenAPI paths to include in model generation.
 - `--openapi-scopes`: Specify OpenAPI scopes to generate (schemas, paths, parameters).
 - `--read-only-write-only-model-type`: Generate separate request and response models for readOnly/writeOnly fields.
 - `--skip-path-extension-keys`: Skip the `x-` keys of `paths` in the `paths` scope, as the `api` scope does.
+- `--use-enum-field-as-literal-in-operations`: Write an operation body or response enum as a Literal root model ...
 - `--use-operation-id-as-name`: Use OpenAPI operationId as the generated function/class name.
 - `--use-status-code-in-response-name`: Include HTTP status code in response model names.
 - `--validation`: Enable validation constraints (deprecated, use --field-constraints).

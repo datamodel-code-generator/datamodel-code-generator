@@ -1707,6 +1707,13 @@ _toggle(
     "the api scope does; without it such a key that holds an object is read as a path and its operations get models, "
     "as in 0.89.0",
 )
+_toggle(
+    openapi_options,
+    "--use-enum-field-as-literal-in-operations",
+    help="Write the enum of an operation's request body or response as a root model of a Literal where "
+    "x-enum-field-as-literal, --enum-field-as-literal-map or --enum-field-as-literal would write a definition's enum "
+    "so; without it such an enum stays an Enum class, as in 0.90.0",
+)
 # ======================================================================================
 # Schema version options (for both JSON Schema and OpenAPI)
 # ======================================================================================
