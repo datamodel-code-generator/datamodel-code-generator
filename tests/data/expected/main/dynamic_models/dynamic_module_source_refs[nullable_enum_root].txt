@@ -1,0 +1,6 @@
+{
+  "root_class": "Level",
+  "models_by_source_ref": {
+    "#": "Level"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "module_name": "runtime_source_refs",
+  "models_by_source_ref": {
+    "#/definitions/empty_parent.nested.deep.Json": "runtime_source_refs.empty_parent.nested.deep.Json",
+    "#/definitions/nested.deep.Json": "runtime_source_refs.nested.deep.Json",
+    "#/definitions/nested.deep.Another": "runtime_source_refs.nested.deep.Another",
+    "#": "runtime_source_refs.NestedPerson"
+  }
+}

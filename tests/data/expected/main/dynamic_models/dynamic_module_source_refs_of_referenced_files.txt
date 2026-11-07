@@ -1,0 +1,9 @@
+{
+  "root_class": "Top",
+  "models_by_source_ref": {
+    "sub/other.json#/$defs/X/properties/inner": "Inner",
+    "sub/other.json#/$defs/X": "X",
+    "whole.json#": "Whole",
+    "#": "Top"
+  }
+}

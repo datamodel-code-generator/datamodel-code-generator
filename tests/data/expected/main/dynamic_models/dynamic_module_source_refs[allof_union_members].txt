@@ -1,0 +1,6 @@
+{
+  "root_class": "Event",
+  "models_by_source_ref": {
+    "#": "Event"
+  }
+}

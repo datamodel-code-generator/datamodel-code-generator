@@ -2945,12 +2945,29 @@ def _run_generation(
     capture: GenerationCaptureSession[object] | None = None,
 ) -> str | GeneratedModules | None:
     """Generate models after capturing all process-relative state."""
+    return _run_generation_with_metadata(input_, config, caller_cwd, use_output_cwd=use_output_cwd, capture=capture)[0]
+
+
+def _run_generation_with_metadata(  # noqa: PLR0913
+    input_: _GenerationInput,
+    config: GenerateConfig,
+    caller_cwd: Path,
+    *,
+    use_output_cwd: bool,
+    capture: GenerationCaptureSession[object] | None = None,
+    collect_model_metadata: bool = False,
+) -> tuple[str | GeneratedModules | None, ModelMetadata | None, tuple[str, ...]]:
+    """Generate models like ``_run_generation``, and return the model metadata and its identity paths beside them.
+
+    They are collected when ``collect_model_metadata`` is set or the config emits the metadata; otherwise they are
+    None and empty.
+    """
     try:
         with _tuned_gc():
             (
                 results,
                 model_metadata,
-                _,
+                model_identities,
                 data_model_types,
                 defer_formatting,
                 input_,
@@ -2967,10 +2984,10 @@ def _run_generation(
                 caller_cwd,
                 use_output_cwd=use_output_cwd,
                 remote_text_cache=DefaultPutDict(),
-                collect_model_metadata=config.emit_model_metadata is not None,
+                collect_model_metadata=collect_model_metadata or config.emit_model_metadata is not None,
                 capture=capture,
             )
-            return _emit_generation(
+            generated = _emit_generation(
                 results,
                 input_,
                 config,
@@ -2984,6 +3001,7 @@ def _run_generation(
                 allow_empty_api=allow_empty_api,
                 inline_object_bodies=inline_object_bodies,
             )
+            return generated, model_metadata, model_identities
     except BaseException:
         if capture is not None:
             with contextlib.suppress(BaseException):
@@ -3251,6 +3269,8 @@ _LAZY_IMPORTS = {
     "detect_jsonschema_version": "datamodel_code_generator.parser.schema_version",
     "detect_openapi_version": "datamodel_code_generator.parser.schema_version",
     "generate_dynamic_models": "datamodel_code_generator.dynamic",
+    "generate_dynamic_module": "datamodel_code_generator.dynamic",
+    "DynamicModule": "datamodel_code_generator.dynamic",
     "GenerateConfig": "datamodel_code_generator.config",
     "UnionMode": "datamodel_code_generator.enums",
     "CodeFormatter": "datamodel_code_generator.format",
@@ -3301,6 +3321,7 @@ __all__ = [
     "DefaultValueType",
     "DefaultValueTypeWarning",
     "DocumentationAnnotationWarning",
+    "DynamicModule",  # noqa: F822
     "Error",
     "FieldTypeCollisionStrategy",
     "GeneratedModules",
@@ -3341,6 +3362,7 @@ __all__ = [
     "enable_parsed_source_cache",
     "generate",
     "generate_dynamic_models",  # noqa: F822
+    "generate_dynamic_module",  # noqa: F822
 ]
 
 __all__ += ["GenerateConfig"]

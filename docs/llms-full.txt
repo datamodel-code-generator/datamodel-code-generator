@@ -18358,6 +18358,31 @@ def generate_dynamic_models(
 
 **Returns:** `dict[str, type]` - Dictionary mapping class names to model classes.
 
+### `generate_dynamic_module()`
+
+```python
+def generate_dynamic_module(
+    input_: Mapping[str, Any],
+    *,
+    config: GenerateConfig | None = None,
+    cache_size: int = 128,
+    module_name: str | None = None,
+) -> DynamicModule:
+```
+
+Generates the classes like `generate_dynamic_models()` and also tells which class the document itself became and
+which class each schema location became. The parameters are those of `generate_dynamic_models()` without
+`target_model_names`. See [Root Class and Schema Locations](#root-class-and-schema-locations).
+
+**Returns:** `DynamicModule` - a frozen object with these attributes:
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `models` | `dict[str, type]` | Class names mapped to the classes, like the dictionary `generate_dynamic_models()` returns |
+| `root_class` | `type \| None` | The class generated for the document itself (location `#`), or `None` |
+| `models_by_source_ref` | `Mapping[str, type]` | A read-only map from a schema location to its class |
+| `module_name` | `str \| None` | The module (the package for split output) the classes were executed in; `None` for an unnamed single module |
+
 ### `clear_dynamic_models_cache()`
 
 ```python
@@ -18533,6 +18558,55 @@ tree = Node(
 )
 ```
 
+## Root Class and Schema Locations
+
+`generate_dynamic_module()` finds the class of the document itself and the class of each schema location, so you
+need not guess them from titles or class names:
+
+```python
+from datamodel_code_generator import generate_dynamic_module
+
+schema = {
+    "title": "Root",
+    "type": "object",
+    "properties": {
+        "child": {"$ref": "#/$defs/Root"},
+        "address": {"type": "object", "properties": {"street": {"type": "string"}}},
+    },
+    "$defs": {"Root": {"type": "object", "properties": {"name": {"type": "string"}}}},
+}
+
+module = generate_dynamic_module(schema)
+assert module.root_class is module.models["RootModel"]
+assert module.models_by_source_ref["#/$defs/Root"] is module.models["Root"]
+assert module.models_by_source_ref["#/properties/address"] is module.models["Address"]
+```
+
+Here the title asks for the name `Root`, which the definition already holds, so the document became `RootModel`;
+`root_class` follows the document, not the name.
+
+A location is the `source_ref` that [`--emit-model-metadata`](cli-reference/base-options.md#emit-model-metadata)
+writes: a document and a JSON Pointer (escaped as RFC 6901 says, not percent-encoded). The dictionary you pass is the
+empty document, so its locations start with `#`; a file that a `$ref` reads is named by the path dcg resolved, such as
+`sub/other.json#/$defs/X` or `whole.json#`, and a URL without its credentials. `$id` and `$anchor` targets are keyed
+by their pointer (`#/$defs/User`), not by the URI.
+
+When several classes come from one location, the location keys the class parsed under the location itself, which is
+the class a `$ref` to it names. These locations have no key:
+
+- A location whose classes were all made as helpers of another schema, such as the Enum and the `RootModel` of a
+  nullable enum property, or the members of a union inside `allOf`, and the `Request` and `Response` classes of
+  `read_only_write_only_model_type="request-response"`. With `"all"`, the location keys the base class.
+- A location whose class dcg merged into another class: duplicates under `reuse_model` with `collapse_reuse_models`,
+  and the targets of `collapse_root_models`.
+- The subclasses that `reuse_model` makes, which `--emit-model-metadata` does not list either.
+- A location whose model is a type alias (`use_type_alias`), not a class, also when helper classes of it share the
+  location.
+
+`root_class` is `None` for OpenAPI and AsyncAPI documents, under `skip_root_model`, and when the document became a
+type alias (`use_type_alias`). In split output, `models` holds one of two classes that share a name in different
+modules, while `models_by_source_ref` keys both.
+
 ## Caching
 
 Models are cached by schema content, configuration, and `module_name` to avoid regeneration.
@@ -18558,6 +18632,29 @@ assert models1 is not models3  # True
 cleared = clear_dynamic_models_cache()
 print(f"Cleared {cleared} cached schemas")
 ```
+
+`generate_dynamic_module()` uses the same cache, `cache_size` and `clear_dynamic_models_cache()`, in entries of its
+own: its `models` is not the dictionary `generate_dynamic_models()` returns for the same arguments, and holds other
+classes.
+
+## Formatting
+
+Dynamic generation formats the code with the formatters of the config, as `generate()` does: Black and isort unless
+`formatters`, `custom_formatters` or a preset selects others. Formatting takes about half to two thirds of the time of
+a call. Nobody reads the code, so you can pass `formatters=[]`:
+
+```python
+from datamodel_code_generator import GenerateConfig, generate_dynamic_models
+
+models = generate_dynamic_models(schema, config=GenerateConfig(formatters=[]))
+```
+
+Then Black and isort are not imported, and the "Default formatters will change to builtin" `FutureWarning` is not
+shown. The classes are the same but for one thing: formatters strip the spaces and tabs at the ends of the lines of a
+class docstring, and without a formatter they stay. Class docstrings come from schema descriptions under
+`use_schema_description`, so a description whose lines end with spaces or tabs, such as a Markdown hard break (two
+spaces at the end of a line), gives another `__doc__`, and another `description` in `model_json_schema()`, which
+Pydantic takes from the docstring.
 
 ## Thread Safety
 

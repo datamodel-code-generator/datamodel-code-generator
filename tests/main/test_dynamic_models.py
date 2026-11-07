@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import threading
@@ -21,9 +22,12 @@ from datamodel_code_generator import (
     Error,
     InputFileType,
     LiteralType,
+    OpenAPIScope,
+    ReadOnlyWriteOnlyModelType,
     clear_dynamic_models_cache,
     generate,
     generate_dynamic_models,
+    generate_dynamic_module,
     load_yaml_dict_from_path,
 )
 from datamodel_code_generator.config import GenerateConfig
@@ -46,6 +50,8 @@ from tests.main.conftest import (
 
 if TYPE_CHECKING:
     from typing import Any
+
+    from datamodel_code_generator.dynamic import DynamicModule
 
 
 pytestmark = pytest.mark.skipif(pydantic.VERSION < "2.0.0", reason="generate_dynamic_models requires Pydantic v2")
@@ -954,6 +960,32 @@ def test_dynamic_cache_key_does_not_retain_schema_payload() -> None:
     assert len(cache_key) < 180
 
 
+def test_dynamic_cache_key_does_not_depend_on_hash_seed() -> None:
+    """Test the cache key sorts set-valued settings, so processes with other hash seeds compute the same key."""
+    from datamodel_code_generator.dynamic import _make_cache_key
+
+    schema = make_object_schema({"name": {"type": "string"}})
+    extra_keys = {f"x-key-{index}" for index in range(20)}
+    script = (
+        "from datamodel_code_generator.config import GenerateConfig, _rebuild_generate_config\n"
+        "from datamodel_code_generator.dynamic import _make_cache_key\n"
+        "_rebuild_generate_config()\n"
+        f"print(_make_cache_key({schema!r}, GenerateConfig(field_extra_keys={extra_keys!r})))\n"
+    )
+    keys = {
+        subprocess.run(
+            [sys.executable, "-c", script],
+            capture_output=True,
+            check=True,
+            env={**os.environ, "PYTHONHASHSEED": seed},
+            text=True,
+        ).stdout.strip()
+        for seed in ("1", "2", "3")
+    }
+
+    assert keys == {_make_cache_key(schema, GenerateConfig(field_extra_keys=extra_keys))}
+
+
 def test_cache_hit_inside_lock() -> None:
     """Test cache hit after acquiring lock (double-checked locking)."""
     from datamodel_code_generator import dynamic as dcg
@@ -1360,3 +1392,195 @@ def test_execute_multi_module_enum_only() -> None:
     models = _execute_multi_module(modules)
     assert "Status" in models
     assert models["Status"].ACTIVE.value == "active"
+
+
+def describe_source_refs(module: DynamicModule) -> dict[str, object]:
+    """Describe the root class and the class of each schema location of a dynamic module by the classes' names."""
+    return {
+        "root_class": None if module.root_class is None else module.root_class.__name__,
+        "models_by_source_ref": {
+            source_ref: model.__name__ for source_ref, model in module.models_by_source_ref.items()
+        },
+    }
+
+
+def test_dynamic_module_root_class_and_source_refs() -> None:
+    """Test the root class is the class of the document, not the definition whose name the title asks for."""
+    schema = json.loads((DATA_PATH / "source_refs.json").read_text(encoding="utf-8"))
+    module = generate_dynamic_module(schema)
+    assert module.root_class is not None
+    payload = {"root": {"name": "Alice"}, "tags": [{"label": "x"}], "status": "active", "owner": {"id": 1}}
+    actual = {
+        **describe_source_refs(module),
+        "models": list(module.models),
+        "module_name": module.module_name,
+        "payload": cast("type[pydantic.BaseModel]", module.root_class).model_validate(payload).model_dump(mode="json"),
+    }
+    assert_output(f"{json.dumps(actual, indent=2)}\n")
+
+
+DYNAMIC_MODULE_SOURCE_REF_CASES: dict[str, tuple[dict[str, Any] | Path, dict[str, Any]]] = {
+    "nullable_enum_root": ({"title": "Level", "type": "string", "enum": ["low", "high", None]}, {}),
+    "allof_union_members": (
+        {
+            "title": "Event",
+            "allOf": [
+                {
+                    "type": "object",
+                    "required": ["id"],
+                    "properties": {"id": {"type": "string"}, "color": {"type": "string", "enum": ["red", None]}},
+                },
+                {
+                    "oneOf": [
+                        {"type": "object", "required": ["kind"], "properties": {"kind": {"const": "created"}}},
+                        {"type": "object", "required": ["kind"], "properties": {"kind": {"const": "deleted"}}},
+                    ]
+                },
+            ],
+        },
+        {},
+    ),
+    "generated_model_paths": (JSON_SCHEMA_DATA_PATH / "all_of_any_of_base_class_ref.json", {}),
+    "id_and_anchor_targets": (
+        {
+            "title": "Doc",
+            "type": "object",
+            "properties": {"user": {"$ref": "https://example.com/user"}, "address": {"$ref": "#address"}},
+            "$defs": {
+                "User": {"$id": "https://example.com/user", "type": "object", "properties": {"x": {"type": "string"}}},
+                "Address": {"$anchor": "address", "type": "object", "properties": {"y": {"type": "string"}}},
+            },
+        },
+        {},
+    ),
+    "skip_root_model": (DATA_PATH / "source_refs.json", {"skip_root_model": True}),
+    "type_alias_root": ({"title": "Names", "type": "array", "items": {"type": "string"}}, {"use_type_alias": True}),
+    "type_alias_allof_union_root": (
+        {
+            "title": "Event",
+            "allOf": [
+                {"type": "object", "required": ["id"], "properties": {"id": {"type": "string"}}},
+                {
+                    "oneOf": [
+                        {"type": "object", "required": ["kind"], "properties": {"kind": {"const": "created"}}},
+                        {"type": "object", "required": ["kind"], "properties": {"kind": {"const": "deleted"}}},
+                    ]
+                },
+            ],
+        },
+        {"use_type_alias": True},
+    ),
+    "type_alias_allof_union_component": (
+        {
+            "openapi": "3.0.0",
+            "info": {"title": "Events", "version": "1.0.0"},
+            "paths": {},
+            "components": {
+                "schemas": {
+                    "Ev": {
+                        "allOf": [
+                            {"type": "object", "required": ["id"], "properties": {"id": {"type": "string"}}},
+                            {
+                                "oneOf": [
+                                    {"type": "object", "required": ["kind"], "properties": {"kind": {"const": "new"}}},
+                                    {"type": "object", "properties": {"at": {"type": "string"}}},
+                                ]
+                            },
+                        ]
+                    },
+                    "Created": {"type": "object", "properties": {"at": {"type": "string"}}},
+                }
+            },
+        },
+        {"use_type_alias": True},
+    ),
+    "leading_underscore_class_name": (make_object_schema({"name": {"type": "string"}}), {"class_name": "__Parsed"}),
+    "allowed_leading_underscore_class_name": (
+        make_object_schema({"name": {"type": "string"}}),
+        {"class_name": "__Parsed", "allow_leading_underscore_class_name": True},
+    ),
+    "openapi_request_body": (
+        {
+            "openapi": "3.0.0",
+            "info": {"title": "Pets", "version": "1.0.0"},
+            "paths": {
+                "/pets": {
+                    "post": {
+                        "requestBody": {
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {"owner": {"$ref": "#/components/schemas/Owner"}},
+                                    }
+                                }
+                            }
+                        },
+                        "responses": {"200": {"description": "OK"}},
+                    }
+                }
+            },
+            "components": {"schemas": {"Owner": {"type": "object", "properties": {"id": {"type": "integer"}}}}},
+        },
+        {"openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Paths]},
+    ),
+    "read_only_write_only_request_response": (
+        OPEN_API_DATA_PATH / "read_only_write_only_mixed.yaml",
+        {"read_only_write_only_model_type": ReadOnlyWriteOnlyModelType.RequestResponse},
+    ),
+    "read_only_write_only_all": (
+        OPEN_API_DATA_PATH / "read_only_write_only_mixed.yaml",
+        {"read_only_write_only_model_type": ReadOnlyWriteOnlyModelType.All},
+    ),
+}
+
+
+@pytest.mark.parametrize(
+    ("schema", "options"), DYNAMIC_MODULE_SOURCE_REF_CASES.values(), ids=DYNAMIC_MODULE_SOURCE_REF_CASES.keys()
+)
+def test_dynamic_module_source_refs(schema: dict[str, Any] | Path, options: dict[str, Any]) -> None:
+    """Test a location shared by several classes keeps the one parsed there, and keys only locations in documents."""
+    if isinstance(schema, Path):
+        schema = load_yaml_dict_from_path(schema, "utf-8")
+    module = generate_dynamic_module(schema, config=GenerateConfig(**options))
+    assert set(module.models_by_source_ref.values()) <= set(module.models.values())
+    assert_output(f"{json.dumps(describe_source_refs(module), indent=2)}\n")
+
+
+def test_dynamic_module_source_refs_of_referenced_files(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test the classes of files that references read are keyed by the file path and the pointer in the file."""
+    monkeypatch.chdir(DATA_PATH / "source_ref_files")
+    schema = json.loads(Path("schema.json").read_text(encoding="utf-8"))
+    assert_output(f"{json.dumps(describe_source_refs(generate_dynamic_module(schema)), indent=2)}\n")
+
+
+def test_dynamic_module_source_refs_of_split_output() -> None:
+    """Test split output keys the classes that share a name in different modules, which models holds one of."""
+    schema = json.loads((JSON_SCHEMA_DATA_PATH / "nested_person.json").read_text(encoding="utf-8"))
+    module = generate_dynamic_module(schema, module_name="runtime_source_refs")
+    assert list(module.models) == list(generate_dynamic_models(schema, module_name="runtime_source_refs"))
+    actual = {
+        "module_name": module.module_name,
+        "models_by_source_ref": {
+            source_ref: f"{model.__module__}.{model.__name__}"
+            for source_ref, model in module.models_by_source_ref.items()
+        },
+    }
+    assert_output(f"{json.dumps(actual, indent=2)}\n")
+
+
+def test_dynamic_module_caches_entries_of_its_own() -> None:
+    """Test the module function shares the cache, its size and its clearing, but not the entries of model calls."""
+    schema = make_object_schema({"name": {"type": "string"}})
+    other_schema = make_object_schema({"age": {"type": "integer"}})
+    module = generate_dynamic_module(schema)
+
+    assert generate_dynamic_module(schema) is module
+    assert generate_dynamic_module(schema, cache_size=0) is not module
+    assert module.models is not generate_dynamic_models(schema)
+    assert module.models["Model"] is not generate_dynamic_models(schema)["Model"]
+    assert clear_dynamic_models_cache() == 2
+    module = generate_dynamic_module(schema, cache_size=1)
+    generate_dynamic_models(other_schema, cache_size=1)
+    assert generate_dynamic_module(schema, cache_size=1) is not module
+    assert clear_dynamic_models_cache() == 1

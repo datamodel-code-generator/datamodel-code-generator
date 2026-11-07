@@ -1,0 +1,35 @@
+{
+  "root_class": "RootModel",
+  "models_by_source_ref": {
+    "#/properties/address": "Address",
+    "#/properties/tags/items": "Tag",
+    "#/properties/status": "Status",
+    "#/properties/owner/anyOf/0": "Owner",
+    "#/$defs/Root": "Root",
+    "#": "RootModel"
+  },
+  "models": [
+    "Address",
+    "Tag",
+    "Status",
+    "Owner",
+    "Root",
+    "RootModel"
+  ],
+  "module_name": null,
+  "payload": {
+    "root": {
+      "name": "Alice"
+    },
+    "address": null,
+    "tags": [
+      {
+        "label": "x"
+      }
+    ],
+    "status": "active",
+    "owner": {
+      "id": 1
+    }
+  }
+}
