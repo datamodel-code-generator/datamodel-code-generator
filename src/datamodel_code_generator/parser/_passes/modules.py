@@ -315,6 +315,10 @@ class ModulesHost(
     """The options, run state and hooks of the parser that the module passes read and write."""
 
     @property
+    def _python_import_target_paths(self) -> set[str]:
+        """The paths of the models parsed for schemas whose ``x-python-import`` types their uses."""
+
+    @property
     def _const_narrowed_values(self) -> dict[int, tuple[DataType, _ConstNarrowing]]:
         """The values typed by an enum that a const narrows, by data type id, with that const."""
 
@@ -670,6 +674,10 @@ class ModulesRun(ModuleScopeView, Protocol):
     @property
     def unused_models(self) -> list[DataModel]:
         """The models no module writes."""
+
+    @property
+    def model_to_module_models(self) -> dict[DataModel, tuple[ModulePath, list[DataModel]]]:
+        """The module and the model list the module structure recorded for each model."""
 
 
 def _named_enum(source: DataModel) -> Enum | None:
@@ -2580,11 +2588,15 @@ def rename_fields_hiding_types(parser: ModulesHost, models: list[DataModel], *, 
 
 
 def remove_overridden_models(parser: ModulesHost, state: ModuleStateView) -> None:
-    """Keep the models that custom types override (model-level only), and the stand-ins, out of the module.
+    """Keep the models that custom types override (model-level only), and those imports replace, out of the module.
 
     Only model-level overrides (keys without dots) cause model removal.
     Scoped overrides (ClassName.field) only affect specific fields. The module keeps its list before the removal.
+    Imports replace the stand-ins, and the unnamed models of ``x-python-import`` schemas leave first
+    (``_drop_unnamed_python_import_models``).
     """
+    if imported := parser._python_import_target_paths:  # noqa: SLF001
+        _drop_unnamed_python_import_models(parser, state.model_list, imported)
     state.model_list_before_override_removal = models = state.model_list
     overrides, stand_ins = parser._model_type_override_imports, parser._base_stand_in_imports  # noqa: SLF001
     if not (overrides or stand_ins):
@@ -2600,6 +2612,27 @@ def remove_overridden_models(parser: ModulesHost, state: ModuleStateView) -> Non
         else:
             kept.append(model)
     state.model_list = kept
+
+
+def _drop_unnamed_python_import_models(parser: ModulesHost, models: list[DataModel], imported: set[str]) -> None:
+    """Take the models of schemas whose ``x-python-import`` types every field that names them out of ``models`` (#5533).
+
+    Such a model, or the empty subclass reuse makes of it, leaves once reuse and collapse settled the bases, where no
+    model names it as a base: neither one of the module, where reuse builds its subclasses, nor a reference the parse
+    recorded. The list stays the one the module writes, from which unused-model removal takes the models collapse left.
+    """
+    has_references = parser.generation_store.index.has_data_type_references
+    module_bases = {model_key_of(base.reference) for model in models for base in model.base_classes if base.reference}
+    unnamed = [
+        model
+        for model in models
+        if (model.reused_reference or model.reference).path in imported
+        and model_key_of(model.reference) not in module_bases
+        and not has_references(model.reference)
+    ]
+    for model in unnamed:
+        models.remove(model)
+        parser._graph_builder.retire_model(model)  # noqa: SLF001
 
 
 def derived_override_import(parser: ModulesHost, model: DataModel) -> Import | None:
@@ -2827,7 +2860,7 @@ def name_inner_models_in_rules(parser: CollapseHost, run: ModulesRun) -> None:
     collapse does not redirect, then name the inner model, and their module imports it as a collapsed field's
     module does.
     """
-    unused = run_unused_models(run)
+    unused = run_unused_models(parser, run)
     inner_references = {
         model_key_of(root_model.reference): inner_model.reference
         for root_model, inner_model in parser._replaced_root_models.values()  # noqa: SLF001
@@ -2992,7 +3025,7 @@ def write_plain_aliases_for_recursive_models(
     form; without it, each one that two or more classes use is warned about. Every module is processed: the alias
     values that collapse and reuse rewrite, and the aliases written as classes, are final.
     """
-    written = run_unused_models(run).written(_context_models(run.contexts))
+    written = run_unused_models(parser, run).written(_context_models(run.contexts))
     if not (aliases := [(alias, target) for alias in written if (target := _recursive_class_of_alias(alias))]):
         return
     if not parser.use_plain_alias_for_recursive_models:
@@ -3055,7 +3088,7 @@ def write_rule_aliases_as_classes(parser: RuleAliasHost, run: ProcessingRun[Any,
     if not (
         aliases := [
             model
-            for model in run_unused_models(run).written(_context_models(run.contexts))
+            for model in run_unused_models(parser, run).written(_context_models(run.contexts))
             if model._unwritable_runtime_rules  # noqa: SLF001
         ]
     ):

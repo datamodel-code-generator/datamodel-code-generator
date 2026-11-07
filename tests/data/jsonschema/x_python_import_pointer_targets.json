@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "options": {"$ref": "#/components/Options"},
+    "named": {"$ref": "#/components/Named"}
+  },
+  "components": {
+    "Options": {"type": "object", "x-python-import": {"module": "collections", "name": "OrderedDict"}},
+    "Base": {"type": "object", "x-python-import": {"module": "collections", "name": "UserDict"}},
+    "Named": {
+      "allOf": [{"$ref": "#/components/Base"}, {"type": "object", "properties": {"name": {"type": "string"}}}]
+    }
+  }
+}

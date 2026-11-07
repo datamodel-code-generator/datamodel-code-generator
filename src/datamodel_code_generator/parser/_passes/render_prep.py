@@ -65,7 +65,6 @@ from datamodel_code_generator.parser._passes._shared import (
     resolve_default_value_descriptor,
     run_unused_models,
     takes_positional_place,
-    unused_model_lists,
 )
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
 from datamodel_code_generator.python_literal import PythonCode, PythonRuntimeExpression, _text_constructor_expression
@@ -87,7 +86,11 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.parser._field_rows import FieldCopyFacts, FieldIdentity
-    from datamodel_code_generator.parser._passes._shared import _ConstructorFieldAdjustment, _InheritedConstructorInfo
+    from datamodel_code_generator.parser._passes._shared import (
+        UnusedModelsHolder,
+        _ConstructorFieldAdjustment,
+        _InheritedConstructorInfo,
+    )
     from datamodel_code_generator.parser._passes._state import (
         ModuleContextView,
         ModulePath,
@@ -116,6 +119,7 @@ __all__ = [
     "order_constructor_fields_by_decided_nested_factories",
     "prepare_type_alias_fields",
     "set_validate_default_on_fields",
+    "settle_module_unused_models",
     "unbind_hidden_type_fields",
     "update_module_type_aliases",
     "validates_structured_default",
@@ -1090,6 +1094,19 @@ def update_module_type_aliases(parser: RenderPrepHost, state: _PreparedModule[An
     )
 
 
+def settle_module_unused_models(
+    parser: RenderPrepHost, prepared_modules: Iterable[_PreparedModule[Any]], run: UnusedModelsHolder
+) -> None:
+    """Keep, of the unused models each module added, the ones that unused-model removal takes out of a written list.
+
+    One that removal leaves written in a merged module (``run_unused_models``) stays live there (#5905).
+    """
+    leaving = run_unused_models(parser, run)
+    for prepared in prepared_modules:
+        if prepared.current_unused_models:
+            prepared.current_unused_models = [model for model in prepared.current_unused_models if model in leaving]
+
+
 def collect_live_models(state: _PreparedModule[Any]) -> None:
     """Take the models of the module that are not unused."""
     if not (unused_models := state.current_unused_models):
@@ -1108,7 +1125,7 @@ def prepare_type_alias_fields(parser: RenderPrepHost, state: _FinalizeState[Any]
     if (prepare_field := parser.data_model_field_type.PREPARE_TYPE_ALIAS_FIELD) is None:
         return
     prepared_patterns: dict[str, PythonRuntimeExpression] = {}
-    unused = run_unused_models(state)
+    unused = run_unused_models(parser, state)
     replace_field_type = parser._graph_builder.replace_field_type  # noqa: SLF001
     for ctx in state.contexts:
         for model in ctx.models:
@@ -1154,9 +1171,7 @@ def finalize_sequence_interface(state: _FinalizeState[Any]) -> None:
 
 def decide_nested_model_default_factories(parser: RenderPrepHost, state: _FinalizeState[Any]) -> None:
     """Decide the nested models' default factories over the model lists the modules write, unused models gone."""
-    leaving = UnusedModels(
-        model for model, _, models, written in unused_model_lists(parser, state) if written and model in models
-    )
+    leaving = run_unused_models(parser, state)
     cast("RenderReady", RENDER_READY.get()).nested_factories = parser._nested_model_default_factory_decision(  # noqa: SLF001
         [leaving.written(ctx.models) for ctx in state.contexts],
         parser._recursion_facts["require_update"],  # noqa: SLF001

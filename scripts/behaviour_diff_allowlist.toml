@@ -569,3 +569,11 @@ match = "^\\[constraints\\] FromBaseFirst:p: .*max_length=5.* -> .*max_length=3.
 reason = "a property that an allOf redeclares took the constraints of the farther base where an inner allOf listed a base before its own descendant (allOf: [A, B] with B = allOf: [A, ...]), although the generated class inherits from the nearer base first, so the model accepted values the nearer base rejects; the parents of every level are read in the order of the class bases (schema-mismatch fix)"
 decision = "#5599"
 release_note = "a property redeclared through an allOf that lists a base before its own descendant takes the constraints and description of the nearer base, as the class bases do, instead of those of the farther base that accepted more values"
+
+[[accepted]]
+input = "tests/data/jsonschema/x_python_import_pointer_targets*"
+aspects = [ "name-removed" ]
+match = "^\\[name-removed\\] (?:other:)?Options: removed$"
+reason = "a schema with x-python-import outside $defs that only fields name was also written as an empty class that nothing used, beside the import that types those fields; like a schema in $defs it is the class it imports now, and a schema that a base names keeps its model (owner decision: the unusable empty stand-in is deleted by default)"
+decision = "#5533"
+release_note = "a schema with x-python-import that a $ref names outside $defs, such as #/components/Foo, no longer also writes an empty class FooModel that nothing uses; the fields that name it keep the imported class"

@@ -8315,12 +8315,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         A schema with ``x-python-import`` is the class it imports, unless --ignore-ref-siblings-by-schema-version reads
         it as its ``$ref`` alone (``reads_ref_alone``).
         """
-        if (
-            isinstance(raw, dict)
-            and "x-python-import" in raw
-            and not self._is_base_stand_in_path(path)
-            and not reads_ref_alone(raw, self._schema_validation_context)
-        ):
+        if self._reads_as_python_import(raw, path):
             self.model_resolver.add(path, name, class_name=True, loaded=True)
             self._python_import_values[self.model_resolver.join_path(tuple(path))] = raw["x-python-import"]
             return
@@ -8333,6 +8328,29 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         # Build $recursiveAnchor / $dynamicAnchor indexes for this schema
         self._build_anchor_indexes(obj, path)
         self.parse_obj(name, obj, path)
+
+    def _reads_as_python_import(
+        self, raw: dict[str, YamlValue] | YamlValue, path: list[str]
+    ) -> TypeIs[dict[str, YamlValue]]:
+        """Return whether the schema at ``path`` is the class its ``x-python-import`` imports.
+
+        A stand-in is parsed into its model, and --ignore-ref-siblings-by-schema-version may read the schema as its
+        ``$ref`` alone (``reads_ref_alone``).
+        """
+        return (
+            isinstance(raw, dict)
+            and "x-python-import" in raw
+            and not self._is_base_stand_in_path(path)
+            and not reads_ref_alone(raw, self._schema_validation_context)
+        )
+
+    def _note_python_import_target(self, target: YamlValue, path: list[str]) -> None:
+        """Note the model a JSON pointer target parses into at ``path`` when its ``x-python-import`` types its uses.
+
+        Only a base that names the schema needs that model; unnamed, it is left out with the unused models (#5533).
+        """
+        if self._reads_as_python_import(target, path):
+            self._python_import_target_paths.add(self.model_resolver.join_path(tuple(path)))
 
     def _check_version_specific_features(
         self,
@@ -9089,6 +9107,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                             else self._get_model_by_json_pointer(raw, object_paths, ref)
                         )
                         model_name = object_paths[-1]
+                        self._note_python_import_target(models, path)
                         self.parse_obj(model_name, self._validate_pointer_target(raw, object_paths, models, path), path)
                     elif not self.skip_root_model:
                         self.parse_obj(obj_name, root_obj, path_parts or ["#"])
@@ -9126,6 +9145,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 models = self._get_model_by_json_pointer(raw, object_paths, reserved_path)
                 tokens = self._pointer_path_tokens(reserved_path, reference_paths)
                 path = self._pointer_parse_path(path_parts, tokens)
+                self._note_python_import_target(models, path)
                 self.parse_obj(tokens[-1], self._validate_pointer_target(raw, object_paths, models, path), path)
 
     def _pointer_parse_path(self, root: list[str], tokens: list[str]) -> list[str]:

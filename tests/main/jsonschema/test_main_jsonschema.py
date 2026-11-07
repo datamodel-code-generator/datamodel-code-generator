@@ -28143,6 +28143,43 @@ def test_main_jsonschema_ref_to_json_list_file() -> None:
         )
 
 
+@pytest.mark.parametrize(
+    "input_name", ["x_python_import_pointer_targets.json", "x_python_import_pointer_targets_external/main.json"]
+)
+@pytest.mark.parametrize("reuse_model", [False, True], ids=["default", "reuse_model"])
+def test_main_jsonschema_x_python_import_pointer_targets(
+    output_file: Path, input_name: str, *, reuse_model: bool
+) -> None:
+    """Write no model for an x-python-import schema outside $defs that only fields name; a base keeps its model."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / input_name,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--formatters", "builtin", *(["--reuse-model"] if reuse_model else [])],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize("use_type_alias", [False, True], ids=["root_model", "type_alias"])
+def test_main_jsonschema_collapse_root_models_kept_in_internal(output_dir: Path, *, use_type_alias: bool) -> None:
+    """Prepare the root models collapse leaves written in a merged module: alias constraints, validated defaults."""
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "collapse_root_models_kept_in_internal",
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--collapse-root-models",
+            *(["--use-type-alias"] if use_type_alias else []),
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+        runtime_validation_module="a",
+        runtime_validation_model_name="A",
+        runtime_validation_data={"code": "ABC", "items": [{"x": 2}], "b": {"code": "XYZ"}},
+    )
+
+
 def test_main_jsonschema_x_python_import_unused(output_file: Path) -> None:
     """Test x-python-import entries in $defs are handled without model generation."""
     run_main_and_assert(
