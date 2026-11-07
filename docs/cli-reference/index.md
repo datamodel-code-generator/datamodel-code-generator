@@ -11,7 +11,7 @@ This documentation is auto-generated from test cases.
 | 📁 [Base Options](base-options.md) | 19 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 54 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 38 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 70 | Model generation behavior |
+| 🏗️ [Model Customization](model-customization.md) | 71 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
@@ -293,6 +293,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 ### O {#o}
 
+- [`--omit-incomplete-model-defaults`](model-customization.md#omit-incomplete-model-defaults)
 - [`--omit-redundant-constraints`](field-customization.md#omit-redundant-constraints)
 - [`--omit-redundant-reference-null`](model-customization.md#omit-redundant-reference-null)
 - [`--openapi-as-definitions`](openapi-only-options.md#openapi-as-definitions)

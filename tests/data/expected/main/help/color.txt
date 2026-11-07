@@ -656,6 +656,13 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
   --no-alias            Do not add a field alias. E.g., if --snake-case-field
                         is used along with a base class, which has an
                         alias_generator
+  --omit-incomplete-model-defaults, --no-omit-incomplete-model-defaults
+                        Write a property whose object default lacks required
+                        fields of its model (`default: {}`) without that
+                        default (`spec: PodSpec | None = None`), so input that
+                        leaves the property out is valid; without it the
+                        default is written and validated, which rejects such
+                        input, as in 0.90.0
   --omit-redundant-reference-null, --no-omit-redundant-reference-null
                         Do not write None again where a field, item or member
                         references a model that holds null itself (a root

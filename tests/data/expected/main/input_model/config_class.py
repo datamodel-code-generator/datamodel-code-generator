@@ -337,6 +337,7 @@ class BaseGenerateConfig(TypedDict):
     remove_unused_models_beside_type_overrides: NotRequired[bool]
     keep_self_referencing_array_items: NotRequired[bool]
     keep_defaults_of_inherited_required_fields: NotRequired[bool]
+    omit_incomplete_model_defaults: NotRequired[bool]
     collapse_reuse_models: NotRequired[bool]
     skip_root_model: NotRequired[bool]
     use_root_model_sequence_interface: NotRequired[bool]

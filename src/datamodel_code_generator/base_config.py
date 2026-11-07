@@ -470,6 +470,7 @@ class BaseGenerateConfig(BaseModel):
     remove_unused_models_beside_type_overrides: bool = False
     keep_self_referencing_array_items: bool = False
     keep_defaults_of_inherited_required_fields: bool = False
+    omit_incomplete_model_defaults: bool = False
     collapse_reuse_models: bool = False
     skip_root_model: bool = False
     use_root_model_sequence_interface: bool = False

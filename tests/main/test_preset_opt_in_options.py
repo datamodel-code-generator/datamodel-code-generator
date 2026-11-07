@@ -100,6 +100,7 @@ OPT_IN_OPTIONS_20261106: tuple[str, ...] = (
     "--use-enum-field-as-literal-in-operations",
     "--dedupe-numbered-request-response-variants",
     "--keep-defaults-of-inherited-required-fields",
+    "--omit-incomplete-model-defaults",
 )
 """The options the 20261106 presets set beyond the 20261104 presets."""
 
@@ -398,6 +399,12 @@ CASES_20261106: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--output-model-type", "dataclasses.dataclass", "--use-default"],
         id="keep-defaults-of-inherited-required-fields",
+    ),
+    pytest.param(
+        OPEN_API_DATA_PATH / "incomplete_model_defaults.yaml",
+        "openapi",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="omit-incomplete-model-defaults",
     ),
 )
 """The inputs each opt-in option of the 20261106 presets changes."""

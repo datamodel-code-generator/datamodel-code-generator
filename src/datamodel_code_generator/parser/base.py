@@ -1374,6 +1374,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.remove_unused_models_beside_type_overrides = config.remove_unused_models_beside_type_overrides
         self.keep_self_referencing_array_items = config.keep_self_referencing_array_items
         self.keep_defaults_of_inherited_required_fields = config.keep_defaults_of_inherited_required_fields
+        self.omit_incomplete_model_defaults = config.omit_incomplete_model_defaults
         self.collapse_reuse_models = config.collapse_reuse_models
         self.skip_root_model = config.skip_root_model
         self.use_root_model_sequence_interface = config.use_root_model_sequence_interface

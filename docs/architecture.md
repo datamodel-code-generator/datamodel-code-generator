@@ -168,16 +168,16 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 246 | Shared generation options. |
-| `GenerateConfig` | 261 | Public `generate()` configuration. |
-| `ParserConfig` | 204 | Base parser dependency injection and parser options. |
-| `JSONSchemaParserConfig` | 206 | JSON Schema parser options. |
-| `OpenAPIParserConfig` | 217 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 219 | AsyncAPI-specific parser options. |
-| `XMLSchemaParserConfig` | 207 | XML Schema-specific parser options. |
-| `ProtobufParserConfig` | 207 | Protocol Buffers-specific parser options. |
-| `AvroParserConfig` | 206 | Avro-specific parser options. |
-| `GraphQLParserConfig` | 207 | GraphQL-specific parser options. |
+| `BaseGenerateConfig` | 247 | Shared generation options. |
+| `GenerateConfig` | 262 | Public `generate()` configuration. |
+| `ParserConfig` | 205 | Base parser dependency injection and parser options. |
+| `JSONSchemaParserConfig` | 207 | JSON Schema parser options. |
+| `OpenAPIParserConfig` | 218 | OpenAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 220 | AsyncAPI-specific parser options. |
+| `XMLSchemaParserConfig` | 208 | XML Schema-specific parser options. |
+| `ProtobufParserConfig` | 208 | Protocol Buffers-specific parser options. |
+| `AvroParserConfig` | 207 | Avro-specific parser options. |
+| `GraphQLParserConfig` | 208 | GraphQL-specific parser options. |
 
 ### Formatter Names
 
@@ -788,7 +788,7 @@ entry.
 | RENDER_PREPARATION | `unbind_hidden_type_fields` | module | transform | UNBOUND_FIELDS | CLASS_NAMES, FIELD_NAMES | Leaves fields unbound that hide a type their class names (model hook). |
 | RENDER_PREPARATION | `update_type_aliases` | module | transform | FIELD_TYPES, NULLABLE, QUOTING, TYPE_ALIAS_BODY | BASES, CLASS_NAMES, FIELD_NAMES, FIELD_SET, FIELD_TYPES, MODEL_ORDER, UNBOUND_FIELDS | Quotes forward references and defers recursive containers. Removed by RP16b. After `fix_constructor_field_ordering`: ordering reads the field types before aliases quote them. After `assign_forward_reference_fields`: the forward-reference assignment reads the field types unquoted. |
 | RENDER_PREPARATION | `collect_live_models` | module | bookkeeping | - | - |  |
-| RENDER_PREPARATION | `set_validate_default_on_fields` | module | transform | CONSTRAINTS, DEFAULTS, DEFAULT_EXPRESSION, DEFAULT_VALIDATION, IMPORT_ALIASES | DEFAULTS, FIELD_TYPES, MODELS_EXIST | After `assign_forward_reference_fields`: the forward-reference assignment reads which fields have a default, which deserializing it keeps. |
+| RENDER_PREPARATION | `set_validate_default_on_fields` | module | transform | CONSTRAINTS, DEFAULTS, DEFAULT_EXPRESSION, DEFAULT_VALIDATION, IMPORT_ALIASES | BASES, DEFAULTS, FIELD_NAMES, FIELD_SET, FIELD_TYPES, MODELS_EXIST, REQUIRED | After `assign_forward_reference_fields`: the forward-reference assignment reads which fields have a default, which deserializing it keeps. |
 | RENDER_PREPARATION | `warn_required_assignments_after_defaults` | module | check | STDERR | DEFAULTS, FIELD_ORDER, FORCED_ASSIGNMENT, KEYWORD_ONLY, REQUIRED |  |
 | RENDER_PREPARATION | `fix_tag_opt_out_field_ordering` | global | repair | KEYWORD_ONLY | BASES, DEFAULTS, FIELD_SET, KEYWORD_ONLY, REQUIRED | Runs when: msgspec. Removed by G08. After `warn_required_assignments_after_defaults`: the pydantic warning and this msgspec repair never read or write the same models. |
 | RENDER_PREPARATION | `finalize_rendered_nullability` | global | transform | FIELD_TYPES, NULLABLE | FIELD_TYPES, NULLABLE, QUOTING | Writes the None each type hint renders, once, after the module bodies set union operators and quotes; rendering and import collection write none. Rendering the members' hints writes the import of the Any an empty union renders as. |

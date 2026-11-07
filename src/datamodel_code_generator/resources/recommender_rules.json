@@ -1044,6 +1044,10 @@
       "not_recommended": "command",
       "reason": "Disables colored help."
     },
+    "omit_incomplete_model_defaults": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261106 presets; the recommendation starts from a preset."
+    },
     "omit_redundant_constraints": {
       "rules": [
         "constraints.omit-redundant"
