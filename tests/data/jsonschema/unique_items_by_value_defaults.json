@@ -1,0 +1,32 @@
+{
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "rows": {"type": "array", "items": {"$ref": "#/$defs/Row"}, "default": [[1, 2]]},
+    "rowOrName": {
+      "anyOf": [{"type": "array", "items": {"type": "integer"}, "uniqueItems": true}, {"type": "string"}],
+      "default": [1, 2]
+    },
+    "own": {"type": "array", "items": {"type": "integer"}, "uniqueItems": true, "default": [3, 4]},
+    "rowMap": {"type": "object", "additionalProperties": {"$ref": "#/$defs/Row"}, "default": {"a": [5, 6]}},
+    "pair": {
+      "type": "array",
+      "prefixItems": [{"$ref": "#/$defs/Row"}, {"type": "integer"}],
+      "minItems": 2,
+      "maxItems": 2,
+      "default": [[7], 8]
+    },
+    "loose": {"type": "array", "items": {"anyOf": [{"$ref": "#/$defs/Row"}, {}]}, "default": [[9], {"k": [10]}]},
+    "lists": {"type": "array", "items": {"$ref": "#/$defs/Numbers"}, "default": [[11, 11]]},
+    "petOrRow": {
+      "type": "array",
+      "items": {"anyOf": [{"$ref": "#/$defs/Pet"}, {"$ref": "#/$defs/Row"}]},
+      "default": [{"name": "x"}, [13]]
+    }
+  },
+  "$defs": {
+    "Row": {"type": "array", "uniqueItems": true, "items": {"type": "integer"}},
+    "Numbers": {"type": "array", "items": {"type": "integer"}},
+    "Pet": {"type": "object", "properties": {"name": {"type": "string"}}}
+  }
+}

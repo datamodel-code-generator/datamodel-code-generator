@@ -1,0 +1,66 @@
+{
+  "rows": [
+    "list",
+    [
+      "frozenset",
+      "int",
+      "int"
+    ]
+  ],
+  "rowOrName": [
+    "frozenset",
+    "int",
+    "int"
+  ],
+  "own": [
+    "frozenset",
+    "int",
+    "int"
+  ],
+  "rowMap": {
+    "a": [
+      "frozenset",
+      "int",
+      "int"
+    ]
+  },
+  "pair": [
+    "list",
+    [
+      "frozenset",
+      "int"
+    ],
+    "int"
+  ],
+  "loose": [
+    "list",
+    [
+      "frozenset",
+      "int"
+    ],
+    {
+      "k": [
+        "list",
+        "int"
+      ]
+    }
+  ],
+  "lists": [
+    "list",
+    [
+      "list",
+      "int",
+      "int"
+    ]
+  ],
+  "petOrRow": [
+    "list",
+    {
+      "name": "str"
+    },
+    [
+      "frozenset",
+      "int"
+    ]
+  ]
+}

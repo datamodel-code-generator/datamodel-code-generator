@@ -57,7 +57,7 @@ class Settings:
 
 @dataclass(frozen=True)
 class Limits:
-    levels: frozenset[int] | None = field(default_factory=lambda: {1})
+    levels: frozenset[int] | None = frozenset({1})
 
 
 @dataclass(frozen=True)
@@ -75,10 +75,10 @@ class Root:
     colors: frozenset[Color] | None = None
     tags: Sequence[Sequence[str]] | None = None
     anything: Sequence[Any] | None = None
-    numbers: frozenset[int] | None = field(default_factory=lambda: {1, 2})
+    numbers: frozenset[int] | None = frozenset({1, 2})
     first: First | None = None
     second: Second | None = None
     settings: Sequence[Settings] | None = None
     pairs: frozenset[tuple[int, str]] | None = None
-    limits: Sequence[Limits] | None = None
+    limits: frozenset[Limits] | None = None
     points: frozenset[Point] | None = None

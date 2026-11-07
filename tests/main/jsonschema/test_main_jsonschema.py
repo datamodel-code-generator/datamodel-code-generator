@@ -8851,8 +8851,8 @@ stays a list, and models whose arrays differ in `uniqueItems` are kept apart."""
             "colors=frozenset({<Color.red: 'red'>}), "
             "tags=[['x'], ['x']], anything=[1, 1], numbers=frozenset({3}), "
             "first=First(entry=Entry(tags=frozenset({'a'}))), second=Second(entry=Entry1(tags=['a', 'a'])), "
-            "settings=[Settings(options={})], pairs=frozenset({(1, 'a')}), limits=[Limits(levels={1})], "
-            "points=frozenset({Point(x=1, y=1)}))",
+            "settings=[Settings(options={})], pairs=frozenset({(1, 'a')}), "
+            "limits=frozenset({Limits(levels=frozenset({1}))}), points=frozenset({Point(x=1, y=1)}))",
             id="frozen-dataclass",
         ),
     ],
@@ -8864,7 +8864,8 @@ def test_main_unique_items_as_set_by_value(extra_args: list[str], expected_repr:
     stay apart from ``Labels`` and the first ``Entry``, which do, under --collapse-reuse-models and same-name
     deduplication (#4834), so their duplicates are kept; ``Pet``, which hashes only by identity, the inlined list root
     ``Tags`` and items of any type stay lists (#4936), while enums, scalars and a frozen dataclass whose fields hash
-    (a frozen set under --use-generic-container-types) are sets. Without it, the arrays are decided before reuse and
+    (a frozen set under --use-generic-container-types) are sets; a frozen set's default is a frozen set, so the
+    frozen ``Limits`` whose ``levels`` take one hashes too. Without it, the arrays are decided before reuse and
     collapse, as in 0.89.0.
     """
     name = "unique_items_by_value"
@@ -9159,6 +9160,93 @@ def test_main_unique_items_as_set_msgspec_alias_beside_arrays(extra_args: list[s
         )
         results = {field: type(getattr(decoded, field)).__name__ for field in model.__struct_fields__}
     assert_output(f"{json.dumps(results, indent=2)}\n")
+
+
+@pytest.mark.parametrize(
+    ("output_model_type", "extra_args"),
+    [
+        pytest.param("pydantic_v2.BaseModel", [], id="pydantic"),
+        pytest.param("msgspec.Struct", [], id="msgspec"),
+        pytest.param(
+            "dataclasses.dataclass", ["--frozen-dataclasses", "--use-generic-container-types"], id="frozen-dataclass"
+        ),
+    ],
+)
+def test_main_unique_items_as_set_by_value_defaults(
+    output_model_type: str, extra_args: list[str], output_file: Path
+) -> None:
+    """Write a default under --use-unique-items-as-set-by-value with the sets its final types write.
+
+    An array of the default where a type alias that is a set sits, in a list, a union, a map or a tuple position, is
+    the set of its items, and a frozen set of the field or the alias takes a frozen set; an array whose items do not
+    hash and the arrays of a list alias stay lists. ``Model()`` holds the values that validating the defaults gives.
+    """
+    name = "unique_items_by_value_defaults"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            *extra_args,
+            "--use-type-alias",
+            "--use-unique-items-as-set",
+            "--use-unique-items-as-set-by-value",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    with _generated_model(output_file, name, "Model") as model:
+        default = model()
+        classes = {
+            field: _value_classes(getattr(default, field))
+            for field in json.loads((JSON_SCHEMA_DATA_PATH / f"{name}.json").read_text(encoding="utf-8"))["properties"]
+        }
+    assert_output(f"{json.dumps(classes, indent=2)}\n")
+
+
+def test_main_unique_items_as_set_by_value_unhashable_default(tmp_path: Path, output_file: Path) -> None:
+    """Keep an array of a default that sits where a set is written a list where its items do not hash.
+
+    The items of ``[[12]]`` are arrays, which no set of ``Row`` holds, so the default, which the schema rejects,
+    stays as the schema writes it.
+    """
+    (input_file := tmp_path / "unique_items_by_value_unhashable_default.json").write_text(
+        json.dumps({
+            "title": "Model",
+            "type": "object",
+            "properties": {"nested": {"type": "array", "items": {"$ref": "#/$defs/Row"}, "default": [[[12]]]}},
+            "$defs": {"Row": {"type": "array", "uniqueItems": True, "items": {"type": "integer"}}},
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_file,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--use-type-alias",
+            "--use-unique-items-as-set",
+            "--use-unique-items-as-set-by-value",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+
+
+def _value_classes(value: object) -> object:
+    """Return the class names of a value and of the items and values it holds, the items of a set sorted."""
+    match value:
+        case dict():
+            return {key: _value_classes(item) for key, item in value.items()}
+        case set() | frozenset():
+            return [type(value).__name__, *sorted(map(str, map(_value_classes, value)))]
+        case list() | tuple():
+            return [type(value).__name__, *map(_value_classes, value)]
+    return type(value).__name__
 
 
 def _validated_container(model: Any, field: str, value: object) -> object:

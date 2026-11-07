@@ -371,9 +371,10 @@ def _takes_default(  # noqa: PLR0911
     an array (``_reads_arrays``), an array that starts with its tag where it has one, and with ``attributes`` also such
     an object, which the factory converts from its attributes (``_attribute_default``); a type alias, what the type it
     names takes besides itself (``seen`` holds the aliases followed since the last value read), and None where it
-    writes None; a union, what one of its members takes; an array type, an array whose items its item types take; a
-    mapping, an object whose values its value types take; a Literal, its values; str, int, float, bool and None, values
-    of their JSON kind. An optional type takes None too, and any other type any value.
+    writes None; a union, what one of its members takes; an array type, an array (or the set a default writes for one)
+    whose items its item types take; a mapping, an object whose values its value types take; a Literal, its values;
+    str, int, float, bool and None, values of their JSON kind. An optional type takes None too, and any other type any
+    value.
     """
     if default is None and data_type.is_optional:
         return True
@@ -395,7 +396,7 @@ def _takes_default(  # noqa: PLR0911
     if (array := data_type in ARRAYS) or data_type in MAPPINGS:
         values: Iterable[object] = ()
         match default:
-            case list() if array:
+            case list() | set() | frozenset() if array:
                 values = default
             case dict() if not array:
                 values = default.values()
