@@ -67,7 +67,6 @@ from datamodel_code_generator.model._render_plan import (
     written_text,
 )
 from datamodel_code_generator.model.base import (
-    _FORBID_UNKNOWN_FIELDS_TEMPLATE_DATA_KEY,
     UNDEFINED,
     BaseClassDataType,
     BaseLayoutView,
@@ -76,6 +75,7 @@ from datamodel_code_generator.model.base import (
     _default_state,
     _field_source_name,
     _find_base_classes,
+    _forbids_unknown_fields_marked,
     _has_opaque_custom_base,
     _keeps_stripped_place,
     _model_key_of_model,
@@ -761,7 +761,7 @@ class Struct(DataModel):
         """
         data = self.extra_template_data
         return bool(
-            data.get(_FORBID_UNKNOWN_FIELDS_TEMPLATE_DATA_KEY)
+            _forbids_unknown_fields_marked(data)
             and data.get("extra_fields") not in {"allow", "ignore"}
             and not data.get("allow_extra_fields")
             and "forbid_unknown_fields" not in _user_struct_options(self)
@@ -892,13 +892,19 @@ class Struct(DataModel):
     ) -> list[DataModelFieldBase]:
         """Return the fields in the order the constructor needs, and make the struct options of the bases its own.
 
-        msgspec makes a struct take each option from the first class in its method resolution order that sets it.
+        msgspec makes a struct take each option from the first class in its method resolution order that sets it; an
+        option the generator wrote on that class keeps the syntax it wrote (``add_base_class_kwarg``).
         """
         options = _user_struct_options(self)
-        for _, (name, value) in resolve_members(
+        written = self._written_struct_options
+        for owner, (name, value) in resolve_members(
             linearize_data_models([self])[1:], _user_struct_option_items, itemgetter(0)
         ).values():
-            options.setdefault(name, value)
+            if name in options:
+                continue
+            options[name] = value
+            if isinstance(owner, Struct) and name in (owned := owner._written_struct_options):  # noqa: SLF001
+                written[name] = owned[name]
         return self.order_fields_for_construction(super().flatten_base_layouts(adopt_field))
 
     def _validate_base_layouts(self) -> None:
@@ -930,6 +936,11 @@ class Struct(DataModel):
                     "surrogate. Rename the property or use another --output-model-type."
                 )
                 raise Error(msg)
+
+    @property
+    def _written_struct_options(self) -> dict[str, str]:
+        """Return the struct options the generator wrote, by name, with the syntax it wrote them in."""
+        return self._internal_template_data["base_class_kwargs"]
 
     def add_base_class_kwarg(self, name: str, value: str) -> None:
         """Add keyword argument to base class constructor."""

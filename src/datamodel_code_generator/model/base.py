@@ -391,6 +391,19 @@ def _written_dataclass_arguments(arguments: Mapping[str, Any], *, keep_false: bo
     }
 
 
+def _mark_forbids_unknown_fields(template_data: dict[str, Any]) -> None:
+    """Mark the template data of a model whose schema admits no property but its own.
+
+    The parser marks it under --use-msgspec-forbid-unknown-fields, and a msgspec Struct reads it.
+    """
+    template_data[_FORBID_UNKNOWN_FIELDS_TEMPLATE_DATA_KEY] = True
+
+
+def _forbids_unknown_fields_marked(template_data: Mapping[str, Any]) -> bool:
+    """Return whether ``_mark_forbids_unknown_fields`` marked the template data of a model."""
+    return bool(template_data.get(_FORBID_UNKNOWN_FIELDS_TEMPLATE_DATA_KEY))
+
+
 def _order_refusals(arguments: Mapping[str, bool]) -> list[str]:
     """Return why ``dataclass()`` refuses ``order=True`` beside ``eq=False``: it raises ``ValueError``."""
     return ["order=True needs eq=True"] if arguments.get("order") and arguments.get("eq") is False else []
