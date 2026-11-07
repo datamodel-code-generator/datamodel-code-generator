@@ -72,7 +72,7 @@ SchemaRole: TypeAlias = TypeUseRole
 ApiObjectKind: TypeAlias = Literal["parameter", "request_body", "response", "media", "encoding", "header", "callback"]
 
 
-@record
+@record(public=True)
 class ApiDeclarationFrame:
     """Borrow declaration context only while the existing model engine processes it."""
 
