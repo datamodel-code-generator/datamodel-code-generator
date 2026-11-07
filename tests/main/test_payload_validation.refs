@@ -1299,6 +1299,9 @@ openapi/body_and_parameters_remote_ref.yaml::components.schemas.Error	payloads/n
 openapi/body_and_parameters_remote_ref.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/body_and_parameters_remote_ref.yaml::components.schemas.PetForm	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/body_and_parameters_remote_ref.yaml::paths./food/{food_id}.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/builtin_property_beside_root_model.yaml::components.schemas.Count	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/builtin_property_beside_root_model.yaml::components.schemas.Holder	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/builtin_property_beside_root_model.yaml::components.schemas.Items	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/builtin_type_field_names.yaml::components.schemas.BuiltinTypeFieldNames	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/byte_format.yaml::components.schemas.Data	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/collapse_constrained_string_members.yaml::components.schemas.Account	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -1710,6 +1713,8 @@ openapi/item_schema_31.yaml::components.schemas.Event	payloads/native_numeric_em
 openapi/item_schema_external_32/root.yaml::paths./owners.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/lazy_resolved_models.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/lazy_resolved_models.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/literal_property_enum_root_names.yaml::components.schemas.Holder	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/literal_property_enum_root_names.yaml::components.schemas.Kind	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/map_keyword_bodies.yaml::paths./codes.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/map_keyword_bodies.yaml::paths./scores.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/max_items_enum.yaml::components.schemas.Foo	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3369,6 +3374,9 @@ openapi/body_and_parameters_remote_ref.yaml::components.schemas.Error	payloads/n
 openapi/body_and_parameters_remote_ref.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/body_and_parameters_remote_ref.yaml::components.schemas.PetForm	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/body_and_parameters_remote_ref.yaml::paths./food/{food_id}.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/builtin_property_beside_root_model.yaml::components.schemas.Count	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/builtin_property_beside_root_model.yaml::components.schemas.Holder	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/builtin_property_beside_root_model.yaml::components.schemas.Items	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/builtin_type_field_names.yaml::components.schemas.BuiltinTypeFieldNames	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/byte_format.yaml::components.schemas.Data	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/collapse_constrained_string_members.yaml::components.schemas.Account	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3780,6 +3788,8 @@ openapi/item_schema_31.yaml::components.schemas.Event	payloads/native_numeric_em
 openapi/item_schema_external_32/root.yaml::paths./owners.get.responses.200.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/lazy_resolved_models.yaml::components.schemas.Error	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/lazy_resolved_models.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/literal_property_enum_root_names.yaml::components.schemas.Holder	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/literal_property_enum_root_names.yaml::components.schemas.Kind	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/map_keyword_bodies.yaml::paths./codes.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/map_keyword_bodies.yaml::paths./scores.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/max_items_enum.yaml::components.schemas.Foo	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

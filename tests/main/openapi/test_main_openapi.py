@@ -11916,19 +11916,43 @@ def test_main_openapi_shadowed_imports(output_file: Path) -> None:
             ["--use-type-alias", "--use-annotated", "--target-python-version", "3.12"],
             "annotated_property_type_statement.py",
         ),
+        ("alias_description_property_names.yaml", "pydantic_v2.BaseModel", [], None),
+        ("literal_property_enum_root_names.yaml", "pydantic_v2.BaseModel", ["--enum-field-as-literal", "all"], None),
+        ("annotated_property_use_annotated.yaml", "pydantic_v2.BaseModel", ["--use-annotated"], None),
     ],
 )
 def test_main_openapi_field_name_collision_with_alias_constraints(
-    output_file: Path, input_file: str, output_model_type: str, extra_args: list[str], expected_file: str
+    output_file: Path, input_file: str, output_model_type: str, extra_args: list[str], expected_file: str | None
 ) -> None:
-    """Models and properties named like ``Field`` or ``Annotated`` keep template calls bound beside alias imports."""
+    """Models and properties named like ``Field`` or ``Annotated`` keep template calls bound beside alias imports.
+
+    A root model of the module writes the alias of an import a property hides, in its root field and its base class.
+    """
     run_main_and_assert(
         input_path=OPEN_API_DATA_PATH / input_file,
         output_path=output_file,
         input_file_type="openapi",
         assert_func=assert_file_content,
-        expected_file=f"field_name_collision/{expected_file}",
+        expected_file=expected_file and f"field_name_collision/{expected_file}",
         extra_args=["--output-model-type", output_model_type, "--disable-timestamp", *extra_args],
+        force_exec_validation=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "output_model_type",
+    ["pydantic_v2.BaseModel", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+def test_main_openapi_builtin_property_beside_root_models(output_file: Path, output_model_type: str) -> None:
+    """A root model keeps the builtins that a property of another model hides, as the module binds them beside.
+
+    Only the fields of the model whose property hides ``list`` write the alias, as up to 0.90.0.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "builtin_property_beside_root_model.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", output_model_type, "--disable-timestamp", "--formatters", "builtin"],
         force_exec_validation=True,
     )
 

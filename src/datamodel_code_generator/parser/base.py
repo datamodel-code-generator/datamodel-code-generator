@@ -132,7 +132,7 @@ from datamodel_code_generator.model.base import (
     ConstraintsBase,  # noqa: F401  # Preserve the established parser.base export.
     DataModel,
     DataModelFieldBase,
-    _bind_builtin_names,
+    _bind_bare_loads,
     _build_for_target,
     _has_root_field_constraints,
     _model_package_class,
@@ -2711,7 +2711,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
             module_code = self.data_model_type.render_module_code(ctx.models)
             if module_code and (bindings := builtin_name_bindings(self._import_ledger, ctx.imports)):
-                module_code = _bind_builtin_names(module_code, bindings)
+                module_code = _bind_bare_loads(module_code, bindings)
             if module_code:
                 module_code_insertion_index = self.data_model_type.get_module_code_insertion_index(ctx.models)
                 if module_code_insertion_index:

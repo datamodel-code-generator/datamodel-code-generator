@@ -56,6 +56,7 @@ from datamodel_code_generator.imports import (
 from datamodel_code_generator.model._decisions.enum_kind import enum_member_kinds, literal_value_kind
 from datamodel_code_generator.model._decisions.tag_value import struct_union_refusal
 from datamodel_code_generator.model._render_plan import RENDER_READY
+from datamodel_code_generator.model._rendered_names import FieldNameBindings
 from datamodel_code_generator.model.base import BaseClassDataType, DataModel, _bare_loads_of, _model_key_of_model
 from datamodel_code_generator.model.enum import Enum, Member, get_raw_enum_member_value
 from datamodel_code_generator.model.output import _model_field_name_collisions
@@ -446,18 +447,21 @@ def _bind_module_field_names(  # noqa: PLR0913
     type_alias_imports = {
         _import_key(import_) for model in models if isinstance(model, TypeAliasBase) for import_ in model.imports
     }
-    bindings: dict[str, str] = {}
+    expressions: dict[str, str] = {}
+    loads: dict[str, str] = {}
     for name, (from_, imported_name) in shadowable_imports.items():
         if name not in collisions:
             continue
         alias = _reserve_import_alias(name, reserved_names)
         keep_unaliased = (from_, imported_name) in type_alias_imports
         aliased_import = Import(from_=from_, import_=imported_name, alias=alias, keep_unaliased=keep_unaliased)
-        bindings[name] = alias
         if from_ == "builtins" or keep_unaliased:
+            expressions[name] = alias
             ledger.append(imports, aliased_import, _FIELD_NAME_BINDINGS)
         else:
+            loads[name] = alias
             ledger.apply_alias(imports, aliased_import, _FIELD_NAME_BINDINGS)
+    bindings = FieldNameBindings(expressions, loads)
     for model in models:
         if not isinstance(model, TypeAliasBase):
             model.set_field_name_bindings(bindings)
