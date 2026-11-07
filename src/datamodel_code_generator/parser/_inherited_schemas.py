@@ -16,7 +16,7 @@ import operator
 from collections import Counter
 from functools import partial, reduce
 from itertools import islice
-from typing import TYPE_CHECKING, Any, Final, cast
+from typing import TYPE_CHECKING, Any, Final, TypeAlias, cast
 
 from typing_extensions import Protocol, Sentinel
 
@@ -32,6 +32,7 @@ from datamodel_code_generator._copy_on_change import unchanged
 from datamodel_code_generator._json_schema import (
     COMBINATOR_POSITIONS,
     MODELED_SCHEMA_MAPS,
+    SCHEMA_POSITIONS,
     admitted_types,
     non_null_types,
     schema_positions,
@@ -50,6 +51,7 @@ from datamodel_code_generator.parser._intersection import (
     declared_types,
     inherited_override_row,
     inherited_positional_tail,
+    json_values_equal,
     merge_inherited_keyword,
     merge_inherited_value,
 )
@@ -113,6 +115,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "InheritedSchemasHost",
+    "ModelDeclarations",
     "all_of_members",
     "build_missing_required_field",
     "checked_declarations",
@@ -156,6 +159,7 @@ __all__ = [
     "merge_inherited_type_shape_dict",
     "merge_inherited_union_branch",
     "merge_properties_with_parent_constraints",
+    "model_declarations",
     "normalize_inherited_constraint_compositions",
     "normalize_inherited_nested_schema_value",
     "override_row",
@@ -169,6 +173,7 @@ __all__ = [
     "sanitize_untyped_boolean_inherited_property",
     "select_inherited_distributed_shape",
     "sort_inherited_base_classes_for_mro",
+    "union_model_properties",
     "with_conjoined_properties",
 ]
 
@@ -191,8 +196,14 @@ _INHERITED_MATERIALIZED_TYPE_SHAPE_KEY = "_inherited_materialized_type_shape"
 _INHERITED_OVERRIDE_KEY = "_inherited_override"
 _READ_THROUGH_KEY = "_all_of_read_through"
 """Marks a member ``all_of_members`` reads in place of a ``$ref``, or within one, with the locations read through."""
+ModelDeclarations: TypeAlias = "tuple[dict[str, JsonSchemaObject | None], frozenset[str]]"
+"""The property declarations of a model, None for one it merges, and the names it requires (``model_declarations``)."""
 _CHECK_KEYWORDS: Final = NUMBER_KEYWORDS | STRING_KEYWORDS | ITEM_COUNT_KEYWORDS
 """The keywords that narrow the values of the type a schema is written as, never that type: bounds and pattern."""
+_DOCUMENTATION_KEYWORDS: Final = frozenset({"$comment", "deprecated", "description", "example", "examples", "title"})
+"""The annotations of a schema that give no value and do not split request and response models."""
+_MODEL_BUILDING_KEYWORDS: Final = frozenset({*SCHEMA_POSITIONS, *_REF_KEYWORDS, "enum"})
+"""The keywords a declaration may build a model of its own with: its subschemas, references and ``enum``."""
 _NO_INHERITED_SCHEMA_MERGE = Sentinel("_NO_INHERITED_SCHEMA_MERGE")
 
 
@@ -1999,6 +2010,72 @@ def linearize_inherited_schema_refs(parser: InheritedSchemasHost, base_classes: 
             )
         )
     return parser._inherited_schema_linearization_cache[direct_refs]  # noqa: SLF001
+
+
+def model_declarations(
+    parser: InheritedSchemasHost, schema: JsonSchemaObject | None, parents: list[Reference]
+) -> ModelDeclarations:
+    """Return the property declarations and the required names of a model built from ``schema`` and ``parents``.
+
+    The sources are ``schema`` with its inline allOf members and the schemas ``parents`` inherit, in C3 order
+    (``linearize_inherited_schema_refs``). A property one source declares as a schema is that declaration, as the
+    model writes it; one that several declare, or one declares as a boolean schema, is None: the model writes their
+    merge.
+    """
+    declared: dict[str, JsonSchemaObject | None] = {}
+    required: set[str] = set()
+    for source in (
+        *(_inline_all_of_closure(parser, schema) if schema is not None else ()),
+        *(
+            source
+            for ref in parser._linearize_inherited_schema_refs(parents)  # noqa: SLF001
+            for source in _inline_all_of_closure(parser, parser._load_inherited_schema_object(ref))  # noqa: SLF001
+        ),
+    ):
+        required.update(source.required)
+        for name, declaration in (source.properties or {}).items():
+            declared[name] = declaration if name not in declared and isinstance(declaration, JsonSchemaObject) else None
+    return declared, frozenset(required)
+
+
+def union_model_properties(
+    parser: InheritedSchemasHost, site: JsonSchemaObject, declarations: Sequence[ModelDeclarations]
+) -> dict[str, tuple[JsonSchemaObject, bool]]:
+    """Return the properties a union model of an allOf declares itself, and whether a base requires each.
+
+    A union model is a class of the site's properties and bases: one branch of each union and the class of the other
+    parts, whose ``declarations`` (``model_declarations``) come in that order. A property two of its bases declare is
+    written from the first in Python's method resolution order, and from the last by msgspec, so the check keywords
+    of the others would be lost. The class declares it with the check keywords of all (``checked_declarations``) where
+    each base declares it once: a property of the site is its own declaration, which the class writes already; another
+    is the first declaration, where every declaration writes the same keywords but for check keywords and
+    documentation and none holds a subschema, an ``enum`` or a reference, so the class writes the type its bases
+    write and builds no model of its own.
+    """
+    own = site.properties or {}
+    properties: dict[str, tuple[JsonSchemaObject, bool]] = {}
+    for name in dict.fromkeys(name for declared, _ in declarations for name in declared):
+        entries = [declared[name] for declared, _ in declarations if name in declared]
+        if len(entries) == 1 or None in entries:
+            continue
+        schemas = cast("list[JsonSchemaObject]", entries)
+        if (site_declaration := own.get(name)) is not None:
+            schemas = [
+                cast("JsonSchemaObject", site_declaration),
+                *(entry for entry in schemas if entry is not site_declaration),
+            ]
+        elif any(keyword in (written := _without_checks(schemas[0])) for keyword in _MODEL_BUILDING_KEYWORDS) or any(
+            not json_values_equal(_without_checks(other), written) for other in schemas[1:]
+        ):
+            continue
+        if (checked := checked_declarations(parser, name, schemas)) is not None:
+            properties[name] = checked[0], any(name in required for _, required in declarations)
+    return properties
+
+
+def _without_checks(declaration: JsonSchemaObject) -> dict[str, Any]:
+    """Return the dump of a declaration without its check keywords and documentation."""
+    return _dump_without_keywords(declaration, _CHECK_KEYWORDS | _DOCUMENTATION_KEYWORDS)
 
 
 def get_inherited_property_map(

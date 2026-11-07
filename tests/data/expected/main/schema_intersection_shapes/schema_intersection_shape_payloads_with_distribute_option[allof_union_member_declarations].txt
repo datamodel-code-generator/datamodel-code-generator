@@ -1,0 +1,252 @@
+pydantic_v2.BaseModel default inline {"x": 5} accepted
+pydantic_v2.BaseModel default inline {"x": -1} accepted
+pydantic_v2.BaseModel default inline {"c": 1} accepted
+pydantic_v2.BaseModel default inline {"x": 11} rejected
+pydantic_v2.BaseModel default refs {"name": "Tom"} accepted
+pydantic_v2.BaseModel default refs {"name": ""} accepted
+pydantic_v2.BaseModel default refs {"name": "abcdefghijk"} rejected
+pydantic_v2.BaseModel default required_branch {"x": 5} accepted
+pydantic_v2.BaseModel default required_branch {"c": 1} accepted
+pydantic_v2.BaseModel default required_branch {"x": 11} rejected
+pydantic_v2.BaseModel default required_branch {"x": -1} rejected
+pydantic_v2.BaseModel default two_unions {"x": 5} accepted
+pydantic_v2.BaseModel default two_unions {"x": 11, "d": "s"} accepted
+pydantic_v2.BaseModel default two_unions {"x": 11} rejected
+pydantic_v2.BaseModel default two_unions {"x": -1} rejected
+pydantic_v2.BaseModel default own {"x": 5} accepted
+pydantic_v2.BaseModel default own {"c": 1, "x": -1} accepted
+pydantic_v2.BaseModel default own {"x": 11} rejected
+pydantic_v2.BaseModel default own {"x": -1} rejected
+pydantic_v2.BaseModel default formats {"at": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.BaseModel default formats {"at": "2020-01-01T00:00:00.000000000000Z"} accepted
+pydantic_v2.dataclass default inline {"x": 5} accepted
+pydantic_v2.dataclass default inline {"x": -1} accepted
+pydantic_v2.dataclass default inline {"c": 1} accepted
+pydantic_v2.dataclass default inline {"x": 11} rejected
+pydantic_v2.dataclass default refs {"name": "Tom"} accepted
+pydantic_v2.dataclass default refs {"name": ""} accepted
+pydantic_v2.dataclass default refs {"name": "abcdefghijk"} rejected
+pydantic_v2.dataclass default required_branch {"x": 5} accepted
+pydantic_v2.dataclass default required_branch {"c": 1} accepted
+pydantic_v2.dataclass default required_branch {"x": 11} rejected
+pydantic_v2.dataclass default required_branch {"x": -1} rejected
+pydantic_v2.dataclass default two_unions {"x": 5} accepted
+pydantic_v2.dataclass default two_unions {"x": 11, "d": "s"} accepted
+pydantic_v2.dataclass default two_unions {"x": 11} rejected
+pydantic_v2.dataclass default two_unions {"x": -1} rejected
+pydantic_v2.dataclass default own {"x": 5} accepted
+pydantic_v2.dataclass default own {"c": 1, "x": -1} accepted
+pydantic_v2.dataclass default own {"x": 11} rejected
+pydantic_v2.dataclass default own {"x": -1} rejected
+pydantic_v2.dataclass default formats {"at": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.dataclass default formats {"at": "2020-01-01T00:00:00.000000000000Z"} accepted
+msgspec.Struct default inline {"x": 5} import error
+msgspec.Struct default inline {"x": -1} import error
+msgspec.Struct default inline {"c": 1} import error
+msgspec.Struct default inline {"x": 11} import error
+msgspec.Struct default refs {"name": "Tom"} import error
+msgspec.Struct default refs {"name": ""} import error
+msgspec.Struct default refs {"name": "abcdefghijk"} import error
+msgspec.Struct default required_branch {"x": 5} import error
+msgspec.Struct default required_branch {"c": 1} import error
+msgspec.Struct default required_branch {"x": 11} import error
+msgspec.Struct default required_branch {"x": -1} import error
+msgspec.Struct default two_unions {"x": 5} import error
+msgspec.Struct default two_unions {"x": 11, "d": "s"} import error
+msgspec.Struct default two_unions {"x": 11} import error
+msgspec.Struct default two_unions {"x": -1} import error
+msgspec.Struct default own {"x": 5} import error
+msgspec.Struct default own {"c": 1, "x": -1} import error
+msgspec.Struct default own {"x": 11} import error
+msgspec.Struct default own {"x": -1} import error
+msgspec.Struct default formats {"at": "2020-01-01T00:00:00Z"} import error
+msgspec.Struct default formats {"at": "2020-01-01T00:00:00.000000000000Z"} import error
+pydantic_v2.BaseModel --field-constraints inline {"x": 5} accepted
+pydantic_v2.BaseModel --field-constraints inline {"x": -1} accepted
+pydantic_v2.BaseModel --field-constraints inline {"c": 1} accepted
+pydantic_v2.BaseModel --field-constraints inline {"x": 11} rejected
+pydantic_v2.BaseModel --field-constraints refs {"name": "Tom"} accepted
+pydantic_v2.BaseModel --field-constraints refs {"name": ""} accepted
+pydantic_v2.BaseModel --field-constraints refs {"name": "abcdefghijk"} rejected
+pydantic_v2.BaseModel --field-constraints required_branch {"x": 5} accepted
+pydantic_v2.BaseModel --field-constraints required_branch {"c": 1} accepted
+pydantic_v2.BaseModel --field-constraints required_branch {"x": 11} rejected
+pydantic_v2.BaseModel --field-constraints required_branch {"x": -1} rejected
+pydantic_v2.BaseModel --field-constraints two_unions {"x": 5} accepted
+pydantic_v2.BaseModel --field-constraints two_unions {"x": 11, "d": "s"} accepted
+pydantic_v2.BaseModel --field-constraints two_unions {"x": 11} rejected
+pydantic_v2.BaseModel --field-constraints two_unions {"x": -1} rejected
+pydantic_v2.BaseModel --field-constraints own {"x": 5} accepted
+pydantic_v2.BaseModel --field-constraints own {"c": 1, "x": -1} accepted
+pydantic_v2.BaseModel --field-constraints own {"x": 11} rejected
+pydantic_v2.BaseModel --field-constraints own {"x": -1} rejected
+pydantic_v2.BaseModel --field-constraints formats {"at": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.BaseModel --field-constraints formats {"at": "2020-01-01T00:00:00.000000000000Z"} accepted
+pydantic_v2.BaseModel --use-annotated inline {"x": 5} accepted
+pydantic_v2.BaseModel --use-annotated inline {"x": -1} accepted
+pydantic_v2.BaseModel --use-annotated inline {"c": 1} accepted
+pydantic_v2.BaseModel --use-annotated inline {"x": 11} rejected
+pydantic_v2.BaseModel --use-annotated refs {"name": "Tom"} accepted
+pydantic_v2.BaseModel --use-annotated refs {"name": ""} accepted
+pydantic_v2.BaseModel --use-annotated refs {"name": "abcdefghijk"} rejected
+pydantic_v2.BaseModel --use-annotated required_branch {"x": 5} accepted
+pydantic_v2.BaseModel --use-annotated required_branch {"c": 1} accepted
+pydantic_v2.BaseModel --use-annotated required_branch {"x": 11} rejected
+pydantic_v2.BaseModel --use-annotated required_branch {"x": -1} rejected
+pydantic_v2.BaseModel --use-annotated two_unions {"x": 5} accepted
+pydantic_v2.BaseModel --use-annotated two_unions {"x": 11, "d": "s"} accepted
+pydantic_v2.BaseModel --use-annotated two_unions {"x": 11} rejected
+pydantic_v2.BaseModel --use-annotated two_unions {"x": -1} rejected
+pydantic_v2.BaseModel --use-annotated own {"x": 5} accepted
+pydantic_v2.BaseModel --use-annotated own {"c": 1, "x": -1} accepted
+pydantic_v2.BaseModel --use-annotated own {"x": 11} rejected
+pydantic_v2.BaseModel --use-annotated own {"x": -1} rejected
+pydantic_v2.BaseModel --use-annotated formats {"at": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.BaseModel --use-annotated formats {"at": "2020-01-01T00:00:00.000000000000Z"} accepted
+pydantic_v2.BaseModel --collapse-root-models inline {"x": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models inline {"x": -1} accepted
+pydantic_v2.BaseModel --collapse-root-models inline {"c": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models inline {"x": 11} rejected
+pydantic_v2.BaseModel --collapse-root-models refs {"name": "Tom"} accepted
+pydantic_v2.BaseModel --collapse-root-models refs {"name": ""} accepted
+pydantic_v2.BaseModel --collapse-root-models refs {"name": "abcdefghijk"} rejected
+pydantic_v2.BaseModel --collapse-root-models required_branch {"x": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models required_branch {"c": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models required_branch {"x": 11} rejected
+pydantic_v2.BaseModel --collapse-root-models required_branch {"x": -1} rejected
+pydantic_v2.BaseModel --collapse-root-models two_unions {"x": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models two_unions {"x": 11, "d": "s"} accepted
+pydantic_v2.BaseModel --collapse-root-models two_unions {"x": 11} rejected
+pydantic_v2.BaseModel --collapse-root-models two_unions {"x": -1} rejected
+pydantic_v2.BaseModel --collapse-root-models own {"x": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models own {"c": 1, "x": -1} accepted
+pydantic_v2.BaseModel --collapse-root-models own {"x": 11} rejected
+pydantic_v2.BaseModel --collapse-root-models own {"x": -1} rejected
+pydantic_v2.BaseModel --collapse-root-models formats {"at": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.BaseModel --collapse-root-models formats {"at": "2020-01-01T00:00:00.000000000000Z"} accepted
+msgspec.Struct --collapse-root-models inline {"x": 5} import error
+msgspec.Struct --collapse-root-models inline {"x": -1} import error
+msgspec.Struct --collapse-root-models inline {"c": 1} import error
+msgspec.Struct --collapse-root-models inline {"x": 11} import error
+msgspec.Struct --collapse-root-models refs {"name": "Tom"} import error
+msgspec.Struct --collapse-root-models refs {"name": ""} import error
+msgspec.Struct --collapse-root-models refs {"name": "abcdefghijk"} import error
+msgspec.Struct --collapse-root-models required_branch {"x": 5} import error
+msgspec.Struct --collapse-root-models required_branch {"c": 1} import error
+msgspec.Struct --collapse-root-models required_branch {"x": 11} import error
+msgspec.Struct --collapse-root-models required_branch {"x": -1} import error
+msgspec.Struct --collapse-root-models two_unions {"x": 5} import error
+msgspec.Struct --collapse-root-models two_unions {"x": 11, "d": "s"} import error
+msgspec.Struct --collapse-root-models two_unions {"x": 11} import error
+msgspec.Struct --collapse-root-models two_unions {"x": -1} import error
+msgspec.Struct --collapse-root-models own {"x": 5} import error
+msgspec.Struct --collapse-root-models own {"c": 1, "x": -1} import error
+msgspec.Struct --collapse-root-models own {"x": 11} import error
+msgspec.Struct --collapse-root-models own {"x": -1} import error
+msgspec.Struct --collapse-root-models formats {"at": "2020-01-01T00:00:00Z"} import error
+msgspec.Struct --collapse-root-models formats {"at": "2020-01-01T00:00:00.000000000000Z"} import error
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline {"x": 5} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline {"x": -1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline {"c": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs inline {"x": 11} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs refs {"name": "Tom"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs refs {"name": ""} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs refs {"name": "abcdefghijk"} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs required_branch {"x": 5} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs required_branch {"c": 1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs required_branch {"x": 11} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs required_branch {"x": -1} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_unions {"x": 5} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_unions {"x": 11, "d": "s"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_unions {"x": 11} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs two_unions {"x": -1} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs own {"x": 5} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs own {"c": 1, "x": -1} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs own {"x": 11} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs own {"x": -1} rejected
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs formats {"at": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.BaseModel --use-site-models-for-constrained-refs formats {"at": "2020-01-01T00:00:00.000000000000Z"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline {"x": 5} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline {"x": -1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline {"c": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs inline {"x": 11} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs refs {"name": "Tom"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs refs {"name": ""} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs refs {"name": "abcdefghijk"} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs required_branch {"x": 5} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs required_branch {"c": 1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs required_branch {"x": 11} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs required_branch {"x": -1} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_unions {"x": 5} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_unions {"x": 11, "d": "s"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_unions {"x": 11} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs two_unions {"x": -1} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs own {"x": 5} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs own {"c": 1, "x": -1} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs own {"x": 11} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs own {"x": -1} rejected
+pydantic_v2.dataclass --use-site-models-for-constrained-refs formats {"at": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.dataclass --use-site-models-for-constrained-refs formats {"at": "2020-01-01T00:00:00.000000000000Z"} accepted
+msgspec.Struct --use-site-models-for-constrained-refs inline {"x": 5} import error
+msgspec.Struct --use-site-models-for-constrained-refs inline {"x": -1} import error
+msgspec.Struct --use-site-models-for-constrained-refs inline {"c": 1} import error
+msgspec.Struct --use-site-models-for-constrained-refs inline {"x": 11} import error
+msgspec.Struct --use-site-models-for-constrained-refs refs {"name": "Tom"} import error
+msgspec.Struct --use-site-models-for-constrained-refs refs {"name": ""} import error
+msgspec.Struct --use-site-models-for-constrained-refs refs {"name": "abcdefghijk"} import error
+msgspec.Struct --use-site-models-for-constrained-refs required_branch {"x": 5} import error
+msgspec.Struct --use-site-models-for-constrained-refs required_branch {"c": 1} import error
+msgspec.Struct --use-site-models-for-constrained-refs required_branch {"x": 11} import error
+msgspec.Struct --use-site-models-for-constrained-refs required_branch {"x": -1} import error
+msgspec.Struct --use-site-models-for-constrained-refs two_unions {"x": 5} import error
+msgspec.Struct --use-site-models-for-constrained-refs two_unions {"x": 11, "d": "s"} import error
+msgspec.Struct --use-site-models-for-constrained-refs two_unions {"x": 11} import error
+msgspec.Struct --use-site-models-for-constrained-refs two_unions {"x": -1} import error
+msgspec.Struct --use-site-models-for-constrained-refs own {"x": 5} import error
+msgspec.Struct --use-site-models-for-constrained-refs own {"c": 1, "x": -1} import error
+msgspec.Struct --use-site-models-for-constrained-refs own {"x": 11} import error
+msgspec.Struct --use-site-models-for-constrained-refs own {"x": -1} import error
+msgspec.Struct --use-site-models-for-constrained-refs formats {"at": "2020-01-01T00:00:00Z"} import error
+msgspec.Struct --use-site-models-for-constrained-refs formats {"at": "2020-01-01T00:00:00.000000000000Z"} import error
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline {"x": 5} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline {"x": -1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline {"c": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs inline {"x": 11} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs refs {"name": "Tom"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs refs {"name": ""} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs refs {"name": "abcdefghijk"} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs required_branch {"x": 5} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs required_branch {"c": 1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs required_branch {"x": 11} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs required_branch {"x": -1} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_unions {"x": 5} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_unions {"x": 11, "d": "s"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_unions {"x": 11} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs two_unions {"x": -1} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs own {"x": 5} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs own {"c": 1, "x": -1} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs own {"x": 11} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs own {"x": -1} rejected
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs formats {"at": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.BaseModel --field-constraints --use-site-models-for-constrained-refs formats {"at": "2020-01-01T00:00:00.000000000000Z"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline {"x": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline {"x": -1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline {"c": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs inline {"x": 11} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs refs {"name": "Tom"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs refs {"name": ""} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs refs {"name": "abcdefghijk"} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs required_branch {"x": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs required_branch {"c": 1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs required_branch {"x": 11} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs required_branch {"x": -1} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_unions {"x": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_unions {"x": 11, "d": "s"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_unions {"x": 11} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs two_unions {"x": -1} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs own {"x": 5} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs own {"c": 1, "x": -1} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs own {"x": 11} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs own {"x": -1} rejected
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs formats {"at": "2020-01-01T00:00:00Z"} accepted
+pydantic_v2.BaseModel --collapse-root-models --use-site-models-for-constrained-refs formats {"at": "2020-01-01T00:00:00.000000000000Z"} accepted

@@ -193,6 +193,7 @@ DISTRIBUTE_DOCUMENTS: tuple[str, ...] = (
     "allof_union_parts",
     "allof_union_through_ref",
     "allof_value_unions",
+    "allof_union_member_declarations",
 )
 """The documents whose output --distribute-allof-over-unions changes, pinned with ``DISTRIBUTE_OPTION_ARGS`` too."""
 
