@@ -341,6 +341,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "--use-msgspec-tagged-unions --tag-msgspec-by-payload-name",
         "--no-tag-msgspec-by-payload-name",
         "--use-msgspec-nullable-enum-alias --use-msgspec-meta-for-map-keys --no-use-msgspec-meta-for-map-keys",
+        "--use-msgspec-forbid-unknown-fields --no-use-msgspec-forbid-unknown-fields",
     ),
     **_opts(
         _C.MODEL, "--use-frozen-field --no-use-frozen-field", group=_G.READ_ONLY_WRITE_ONLY, topic=OptionTopic.OPENAPI

@@ -88,6 +88,7 @@ OPT_IN_OPTIONS_20261106: tuple[str, ...] = (
     "--reuse-every-reached-input-model-type",
     "--use-x-python-type-unions",
     "--use-typed-nullable-map-values",
+    "--use-msgspec-forbid-unknown-fields",
 )
 """The options the 20261106 presets set beyond the 20261104 presets."""
 
@@ -308,6 +309,12 @@ CASES_20261106: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="use-typed-nullable-map-values",
+    ),
+    pytest.param(
+        JSON_SCHEMA_DATA_PATH / "msgspec_forbid_unknown_fields.json",
+        "jsonschema",
+        ["--output-model-type", "msgspec.Struct"],
+        id="use-msgspec-forbid-unknown-fields",
     ),
 )
 """The inputs each opt-in option of the 20261106 presets changes."""

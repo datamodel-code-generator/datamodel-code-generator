@@ -1,0 +1,18 @@
+{
+  "valid": [
+    {
+      "closed": {"a": "x"},
+      "pattern_keys": {"a": "x", "x-note": "y"},
+      "by_member": {"b": "y"},
+      "child": {"a": "x"},
+      "open": {"d": "z", "e": 1}
+    }
+  ],
+  "invalid": [
+    {"closed": {"a": "x", "z": 1}},
+    {"pattern_keys": {"a": "x", "zzz": 1}},
+    {"by_member": {"b": "y", "z": 1}},
+    {"child": {"a": "x", "z": 1}},
+    {"extra": 1}
+  ]
+}

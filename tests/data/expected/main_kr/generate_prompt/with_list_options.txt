@@ -220,6 +220,7 @@
 - `--no-use-default-kwarg`
 - `--no-use-duplicate-name-suffix-for-every-collision`
 - `--no-use-frozen-field`
+- `--no-use-msgspec-forbid-unknown-fields`
 - `--no-use-msgspec-meta-for-map-keys`
 - `--no-use-serialize-as-any-for-every-subclass`
 - `--no-use-subclass-enum`
@@ -246,6 +247,7 @@
 - `--use-frozen-field`: Generate frozen (immutable) field definitions for readOnly properties.
 - `--use-generic-base-class`: Generate a shared base class with model configuration to avoid repetition (DRY).
 - `--use-missing-sentinel`: Use Pydantic's MISSING sentinel for unset optional BaseModel or dataclass fields.
+- `--use-msgspec-forbid-unknown-fields`: Reject the unknown fields of a msgspec Struct whose schema admits no pr...
 - `--use-msgspec-meta-for-map-keys`: Check the keys of a msgspec map whose keys propertyNames or patternProperti...
 - `--use-msgspec-nullable-enum-alias`: Write a msgspec.Struct enum that lists null as an Enum and a nullable alias.
 - `--use-msgspec-tagged-unions`: Write a msgspec.Struct discriminated union as tagged structs as a whole.
@@ -1366,6 +1368,16 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         Generate a shared base class with model configuration
                         (e.g., extra='forbid') instead of repeating the
                         configuration in each model. Keeps code DRY.
+  --use-msgspec-forbid-unknown-fields, --no-use-msgspec-forbid-unknown-fields
+                        msgspec.Struct output only: write
+                        forbid_unknown_fields=True on a Struct whose schema
+                        admits no property but its own (additionalProperties:
+                        false without patternProperties beside it, also in an
+                        inline allOf member), so msgspec rejects the unknown
+                        fields the schema rejects, as Pydantic output does
+                        with extra='forbid'; --extra-fields allow or ignore
+                        and --allow-extra-fields keep it open. Without it such
+                        a Struct ignores unknown fields, as in 0.89.0
   --use-msgspec-meta-for-map-keys, --no-use-msgspec-meta-for-map-keys
                         msgspec.Struct output only: write the keys of a map
                         whose keys propertyNames or patternProperties

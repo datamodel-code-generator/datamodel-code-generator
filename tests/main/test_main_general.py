@@ -2018,6 +2018,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "keep_false_dataclass_arguments",
         "tag_msgspec_by_payload_name",
         "use_msgspec_meta_for_map_keys",
+        "use_msgspec_forbid_unknown_fields",
         "reuse_model",
         "pin_aliases_with_alias_generator",
         "treat_dot_as_module",

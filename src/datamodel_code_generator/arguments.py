@@ -607,6 +607,15 @@ _toggle(
     "constrain by pattern, minLength or maxLength as Annotated[str, Meta(...)], so msgspec checks them as Pydantic "
     "output does; without it the keys are str and every key is accepted, as in 0.88.0",
 )
+_toggle(
+    model_options,
+    "--use-msgspec-forbid-unknown-fields",
+    help="msgspec.Struct output only: write forbid_unknown_fields=True on a Struct whose schema admits no property "
+    "but its own (additionalProperties: false without patternProperties beside it, also in an inline allOf member), "
+    "so msgspec rejects the unknown fields the schema rejects, as Pydantic output does with extra='forbid'; "
+    "--extra-fields allow or ignore and --allow-extra-fields keep it open. Without it such a Struct ignores unknown "
+    "fields, as in 0.89.0",
+)
 _flag(
     model_options,
     "--use-msgspec-nullable-enum-alias",
