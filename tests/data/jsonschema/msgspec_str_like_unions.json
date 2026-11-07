@@ -1,0 +1,277 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "required": [
+    "id"
+  ],
+  "properties": {
+    "id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "plain_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "optional_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "one_of_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "string",
+          "minLength": 40
+        }
+      ]
+    },
+    "ids": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "url": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uri",
+          "minLength": 1
+        },
+        {
+          "type": "string",
+          "maxLength": 0
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "mixed": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "integer"
+        }
+      ]
+    },
+    "token": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "const": "none"
+        }
+      ]
+    },
+    "nested": {
+      "anyOf": [
+        {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "shared": {
+      "$ref": "#/$defs/IdOrText"
+    },
+    "lookup": {
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "level": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/Level"
+        }
+      ]
+    },
+    "nullable_ids": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        ]
+      }
+    },
+    "plain_level": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/PlainLevel"
+        }
+      ]
+    },
+    "id_list": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "$ref": "#/$defs/IdList"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "IdOrText": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "Color": {
+      "type": "string",
+      "enum": [
+        "red",
+        "blue"
+      ]
+    },
+    "Level": {
+      "type": "integer",
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "Paint": {
+      "type": "object",
+      "properties": {
+        "color": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "$ref": "#/$defs/Color"
+            }
+          ]
+        }
+      }
+    },
+    "PlainLevel": {
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "IdList": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      }
+    },
+    "Code": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "enum": [
+                "none",
+                1
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

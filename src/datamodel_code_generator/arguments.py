@@ -623,6 +623,18 @@ _toggle(
     "--extra-fields allow or ignore and --allow-extra-fields keep it open. Without it such a Struct ignores unknown "
     "fields, as in 0.89.0",
 )
+_toggle(
+    model_options,
+    "--merge-msgspec-str-like-union-members",
+    help="msgspec.Struct output only: write one str in place of the str-like members of a union (str, UUID, the "
+    "dates and times, Decimal, bytes, the str values of a Literal, and type aliases of them or of unions of only "
+    "them) when it holds more than one of them, which msgspec refuses to decode; the union then accepts every string "
+    "and decodes it as str, without the formats and constraints of those members, with a warning. A merged member "
+    "that admits null leaves None in the union, and a merged Literal keeps its values that are no str. A union whose "
+    "str-like members include an Enum of str values, a member typed by x-python-type, an alias of a union that mixes "
+    "str-like and other members or an alias of a Literal of str and other values is left as it is, with its warning. "
+    "Without it such a union is written as the schema gives it, with a warning, as in 0.90.0",
+)
 _flag(
     model_options,
     "--use-msgspec-nullable-enum-alias",

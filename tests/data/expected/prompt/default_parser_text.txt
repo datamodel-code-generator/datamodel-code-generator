@@ -196,6 +196,7 @@
 - `--keep-reference-null-on-collapsed-root-models`: Keep the null of a root model that admits null where `--coll...
 - `--keep-reference-null-on-merged-models`: Keep the null a reference's schema admits when its model is merged.
 - `--keyword-only`: Generate dataclasses with keyword-only fields (Python 3.10+).
+- `--merge-msgspec-str-like-union-members`: Write one str in place of the str-like members of a msgspec union th...
 - `--model-extra-keys`: Add model-level schema extensions to ConfigDict json_schema_extra.
 - `--model-extra-keys-without-x-prefix`: Strip x- prefix from model-level schema extensions and add to ConfigDic...
 - `--model-name-map`: Rename generated model classes from a JSON mapping.
@@ -211,6 +212,7 @@
 - `--no-keep-field-defaults-off-branch-roots`
 - `--no-keep-reference-null-on-collapsed-root-models`
 - `--no-keep-reference-null-on-merged-models`
+- `--no-merge-msgspec-str-like-union-members`
 - `--no-name-converted-payloads-by-message`
 - `--no-omit-redundant-reference-null`
 - `--no-pin-aliases-with-alias-generator`

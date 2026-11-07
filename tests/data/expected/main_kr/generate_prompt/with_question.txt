@@ -200,6 +200,7 @@ How do I convert enums to Literal types?
 - `--keep-reference-null-on-collapsed-root-models`: Keep the null of a root model that admits null where `--coll...
 - `--keep-reference-null-on-merged-models`: Keep the null a reference's schema admits when its model is merged.
 - `--keyword-only`: Generate dataclasses with keyword-only fields (Python 3.10+).
+- `--merge-msgspec-str-like-union-members`: Write one str in place of the str-like members of a msgspec union th...
 - `--model-extra-keys`: Add model-level schema extensions to ConfigDict json_schema_extra.
 - `--model-extra-keys-without-x-prefix`: Strip x- prefix from model-level schema extensions and add to ConfigDic...
 - `--model-name-map`: Rename generated model classes from a JSON mapping.
@@ -215,6 +216,7 @@ How do I convert enums to Literal types?
 - `--no-keep-field-defaults-off-branch-roots`
 - `--no-keep-reference-null-on-collapsed-root-models`
 - `--no-keep-reference-null-on-merged-models`
+- `--no-merge-msgspec-str-like-union-members`
 - `--no-name-converted-payloads-by-message`
 - `--no-omit-redundant-reference-null`
 - `--no-pin-aliases-with-alias-generator`
@@ -1208,6 +1210,24 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         rejects null, as in 0.89.0
   --keyword-only        Defined models as keyword only (for example
                         dataclass(kw_only=True)).
+  --merge-msgspec-str-like-union-members, --no-merge-msgspec-str-like-union-members
+                        msgspec.Struct output only: write one str in place of
+                        the str-like members of a union (str, UUID, the dates
+                        and times, Decimal, bytes, the str values of a
+                        Literal, and type aliases of them or of unions of only
+                        them) when it holds more than one of them, which
+                        msgspec refuses to decode; the union then accepts
+                        every string and decodes it as str, without the
+                        formats and constraints of those members, with a
+                        warning. A merged member that admits null leaves None
+                        in the union, and a merged Literal keeps its values
+                        that are no str. A union whose str-like members
+                        include an Enum of str values, a member typed by
+                        x-python-type, an alias of a union that mixes str-like
+                        and other members or an alias of a Literal of str and
+                        other values is left as it is, with its warning.
+                        Without it such a union is written as the schema gives
+                        it, with a warning, as in 0.90.0
   --model-name-map MODEL_NAME_MAP
                         Rename generated model classes by schema ref or
                         current generated class name using a JSON object or

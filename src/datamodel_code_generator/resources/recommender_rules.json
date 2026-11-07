@@ -974,6 +974,10 @@
       "not_recommended": "io",
       "reason": "Selects the remote reference lock file."
     },
+    "merge_msgspec_str_like_union_members": {
+      "not_recommended": "runtime-behaviour",
+      "reason": "msgspec.Struct output only: trades the typed str-like members of a union for one str that decodes; only the project can choose that."
+    },
     "merge_shared_variant_tags": {
       "rules": [
         "unions.merge-shared-variant-tags"

@@ -742,7 +742,10 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
                 lambda self, _: imports.warn_about_variant_discriminator_tags(self),
             ),
             PassSpec(
-                "warn_about_msgspec_decoding", lambda self, run: imports.warn_about_msgspec_decoding(self, run.contexts)
+                "warn_about_msgspec_decoding",
+                lambda self, run: imports.warn_about_msgspec_decoding(
+                    self, run.contexts, run.decisions.merged_str_like_unions
+                ),
             ),
             PassSpec(
                 "set_nested_model_default_factory_metadata",

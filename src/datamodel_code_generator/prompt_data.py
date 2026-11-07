@@ -120,6 +120,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--keyword-only": "Generate dataclasses with keyword-only fields (Python 3.10+).",
     "--locked": "Require an existing remote lock and validate each fetched resource against it (experimental).",
     "--lockfile": "Select the remote reference integrity lock file (experimental).",
+    "--merge-msgspec-str-like-union-members": "Write one str in place of the str-like members of a msgspec union th...",
     "--merge-shared-variant-tags": "Give a variant that discriminated unions tag differently every tag they give it.",
     "--model-extra-keys": "Add model-level schema extensions to ConfigDict json_schema_extra.",
     "--model-extra-keys-without-x-prefix": "Strip x- prefix from model-level schema extensions and add to ConfigDic...",

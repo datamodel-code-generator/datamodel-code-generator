@@ -31,6 +31,7 @@
 | [`--keep-reference-null-on-collapsed-root-models`](#keep-reference-null-on-collapsed-root-models) | Keep the null of a root model that admits null where `--coll... |
 | [`--keep-reference-null-on-merged-models`](#keep-reference-null-on-merged-models) | Keep the null a reference's schema admits when its model is ... |
 | [`--keyword-only`](#keyword-only) | Generate dataclasses with keyword-only fields (Python 3.10+)... |
+| [`--merge-msgspec-str-like-union-members`](#merge-msgspec-str-like-union-members) | Write one str in place of the str-like members of a msgspec ... |
 | [`--model-extra-keys`](#model-extra-keys) | Add model-level schema extensions to ConfigDict json_schema_... |
 | [`--model-extra-keys-without-x-prefix`](#model-extra-keys-without-x-prefix) | Strip x- prefix from model-level schema extensions and add t... |
 | [`--model-name-map`](#model-name-map) | Rename generated model classes from a JSON mapping. |
@@ -4533,6 +4534,475 @@ positional argument errors.
             passengers: String | None = None
             vehicle_class: String | None = None
             typename__: Literal['Vehicle'] | None = 'Vehicle'
+        ```
+
+        <!-- fmt: on -->
+
+---
+
+## `--merge-msgspec-str-like-union-members` {#merge-msgspec-str-like-union-members}
+
+Write one str in place of the str-like members of a msgspec union that holds more than one.
+
+msgspec decodes a union only if it holds at most one str-like member: `str` (with the str values of a `Literal`), an
+Enum of str values, `bytes`, the dates and times, `UUID` and `Decimal`. A schema whose `anyOf` or `oneOf` holds two
+of them, such as a `format: uuid` string beside a plain string, writes `UUID | str`, which msgspec refuses with
+`TypeError` for every document, and the generator warns about it. With this option such a union is written with one
+`str` in place of those members, also through the type aliases of one str-like type or of a union of only str-like
+members, so it decodes every string they accept, as `str`, without their formats and constraints; a warning names the
+members each union loses. A merged member that admits null leaves `None` in the union, and a merged `Literal` keeps
+its values that are no str. A union whose str-like members include an Enum of str values, a member typed by
+`x-python-type`, an alias of a union that mixes str-like and other members or an alias of a `Literal` of str and other
+values is left as it is, with its warning.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input msgspec_str_like_unions.json --output-model-type msgspec.Struct --use-standard-primitive-types --merge-msgspec-str-like-union-members # (1)!
+    ```
+
+    1. :material-arrow-left: `--merge-msgspec-str-like-union-members` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```json
+    {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "Model",
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "plain_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "optional_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "one_of_id": {
+          "oneOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "string",
+              "minLength": 40
+            }
+          ]
+        },
+        "ids": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uri",
+              "minLength": 1
+            },
+            {
+              "type": "string",
+              "maxLength": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "mixed": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "token": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "const": "none"
+            }
+          ]
+        },
+        "nested": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "shared": {
+          "$ref": "#/$defs/IdOrText"
+        },
+        "lookup": {
+          "type": "object",
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "level": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/Level"
+            }
+          ]
+        },
+        "nullable_ids": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "plain_level": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/PlainLevel"
+            }
+          ]
+        },
+        "id_list": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "$ref": "#/$defs/IdList"
+            }
+          ]
+        }
+      },
+      "$defs": {
+        "IdOrText": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "Color": {
+          "type": "string",
+          "enum": [
+            "red",
+            "blue"
+          ]
+        },
+        "Level": {
+          "type": "integer",
+          "enum": [
+            1,
+            2
+          ]
+        },
+        "Paint": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "$ref": "#/$defs/Color"
+                }
+              ]
+            }
+          }
+        },
+        "PlainLevel": {
+          "enum": [
+            1,
+            2
+          ]
+        },
+        "IdList": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Code": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "enum": [
+                    "none",
+                    1
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+    ```
+
+    **Output:**
+
+    === "With Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  msgspec_str_like_unions.json
+
+        from __future__ import annotations
+
+        from enum import Enum, IntEnum, StrEnum
+        from typing import Annotated
+        from uuid import UUID
+
+        from msgspec import UNSET, Meta, Struct, UnsetType
+
+        type OneOfId = Annotated[str, Meta(min_length=40)]
+
+
+        type Url = Annotated[str, Meta(min_length=1)]
+
+
+        type Url1 = Annotated[str, Meta(max_length=0)]
+
+
+        type IdOrText = str
+
+
+        class Color(StrEnum):
+            red = 'red'
+            blue = 'blue'
+
+
+        class Level(IntEnum):
+            integer_1 = 1
+            integer_2 = 2
+
+
+        class Paint(Struct):
+            color: UUID | Color | UnsetType = UNSET
+
+
+        class PlainLevel(Enum):
+            int_1 = 1
+            int_2 = 2
+
+
+        type IdList = list[str]
+
+
+        class Code1(Enum):
+            none = 'none'
+            int_1 = 1
+
+
+        class Code(Struct):
+            code: UUID | Code1 | UnsetType = UNSET
+
+
+        class Model(Struct):
+            id: str
+            plain_id: UUID | UnsetType = UNSET
+            optional_id: UUID | None | UnsetType = UNSET
+            one_of_id: str | UnsetType = UNSET
+            ids: list[str] | UnsetType = UNSET
+            url: str | None | UnsetType = UNSET
+            mixed: str | int | UnsetType = UNSET
+            token: str | UnsetType = UNSET
+            nested: str | int | UnsetType = UNSET
+            shared: IdOrText | UnsetType = UNSET
+            lookup: dict[str, str] | UnsetType = UNSET
+            level: str | Level | UnsetType = UNSET
+            nullable_ids: list[str | None] | UnsetType = UNSET
+            plain_level: str | PlainLevel | UnsetType = UNSET
+            id_list: UUID | IdList | UnsetType = UNSET
+        ```
+
+        <!-- fmt: on -->
+
+    === "Without Option"
+
+        <!-- fmt: off -->
+
+        ```python
+        # generated by datamodel-codegen:
+        #   filename:  msgspec_str_like_unions.json
+
+        from __future__ import annotations
+
+        from enum import Enum, IntEnum, StrEnum
+        from typing import Annotated, Literal
+        from uuid import UUID
+
+        from msgspec import UNSET, Meta, Struct, UnsetType
+
+        type OneOfId = Annotated[str, Meta(min_length=40)]
+
+
+        type Url = Annotated[str, Meta(min_length=1)]
+
+
+        type Url1 = Annotated[str, Meta(max_length=0)]
+
+
+        type IdOrText = UUID | str
+
+
+        class Color(StrEnum):
+            red = 'red'
+            blue = 'blue'
+
+
+        class Level(IntEnum):
+            integer_1 = 1
+            integer_2 = 2
+
+
+        class Paint(Struct):
+            color: UUID | Color | UnsetType = UNSET
+
+
+        class PlainLevel(Enum):
+            int_1 = 1
+            int_2 = 2
+
+
+        type IdList = list[UUID | str]
+
+
+        class Code1(Enum):
+            none = 'none'
+            int_1 = 1
+
+
+        class Code(Struct):
+            code: UUID | Code1 | UnsetType = UNSET
+
+
+        class Model(Struct):
+            id: UUID | str
+            plain_id: UUID | UnsetType = UNSET
+            optional_id: UUID | None | UnsetType = UNSET
+            one_of_id: UUID | OneOfId | UnsetType = UNSET
+            ids: list[UUID | str] | UnsetType = UNSET
+            url: str | None | UnsetType = UNSET
+            mixed: UUID | str | int | UnsetType = UNSET
+            token: UUID | Literal['none'] | UnsetType = UNSET
+            nested: UUID | int | str | UnsetType = UNSET
+            shared: IdOrText | UnsetType = UNSET
+            lookup: dict[str, UUID | str] | UnsetType = UNSET
+            level: UUID | str | Level | UnsetType = UNSET
+            nullable_ids: list[UUID | str | None] | UnsetType = UNSET
+            plain_level: UUID | str | PlainLevel | UnsetType = UNSET
+            id_list: UUID | IdList | UnsetType = UNSET
         ```
 
         <!-- fmt: on -->

@@ -237,6 +237,7 @@ from datamodel_code_generator.parser._pipeline import PARSE_CALLER, Runner, pars
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH
 from datamodel_code_generator.parser._serialize_as_any import SERIALIZE_AS_ANY_FOR_EVERY_SUBCLASS
 from datamodel_code_generator.parser._stdout_repair import _TOP_LEVEL_FUTURE_IMPORT_PATTERN
+from datamodel_code_generator.parser._str_like_unions import MERGE_MSGSPEC_STR_LIKE_UNION_MEMBERS
 from datamodel_code_generator.parser._tag_plan import TagCapabilities, TagPlan, tag_capabilities
 from datamodel_code_generator.parser._union_constraints import OMIT_UNTAKEN_UNION_CONSTRAINTS
 from datamodel_code_generator.parser._unique_sets import WRITE_UNIQUE_ITEMS_AS_SETS
@@ -694,6 +695,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     _DECISION_PASSES: ClassVar[tuple[DecisionPass[Any], ...]] = (
         OMIT_HELD_NULL,
         SERIALIZE_AS_ANY_FOR_EVERY_SUBCLASS,
+        MERGE_MSGSPEC_STR_LIKE_UNION_MEMBERS,
         OMIT_UNTAKEN_UNION_CONSTRAINTS,
         WRITE_UNIQUE_ITEMS_AS_SETS,
     )
@@ -1189,6 +1191,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.use_specialized_enum: bool = config.use_specialized_enum
         self.strict_nullable: bool = config.strict_nullable
         self.omit_redundant_reference_null: bool = config.omit_redundant_reference_null
+        self.merge_msgspec_str_like_union_members: bool = config.merge_msgspec_str_like_union_members
         self.keep_reference_null_on_merged_models: bool = config.keep_reference_null_on_merged_models
         self.use_generic_container_types: bool = config.use_generic_container_types
         self.use_union_operator: bool = config.use_union_operator

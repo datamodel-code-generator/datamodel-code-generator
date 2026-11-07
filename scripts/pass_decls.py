@@ -1861,8 +1861,26 @@ DECISION_DECLS: Final[dict[str, PassDecl]] = {
         after=(
             After("omit_held_null", "reads the item types after the None omission rewrote them"),
             After("omit_untaken_union_constraints", "reads the constraints the union decision wrote"),
+            After("merge_msgspec_str_like_union_members", "reads the item types after str-like union members merged"),
         ),
         condition="--use-unique-items-as-set-by-value",
+    ),
+    "merge_msgspec_str_like_union_members": PassDecl(
+        "merge_msgspec_str_like_union_members",
+        Phase.DECIDE,
+        Scope.GLOBAL,
+        PassKind.TRANSFORM,
+        reads=frozenset({Fact.FIELD_TYPES, Fact.MODEL_KIND}),
+        writes=frozenset({Fact.FIELD_TYPES}),
+        summary=(
+            "Writes one str in place of the str-like members of a msgspec union that holds more than one of them, which"
+            " msgspec refuses to decode."
+        ),
+        after=(
+            After("omit_held_null", "reads the union members after the None omission rewrote them"),
+            After("serialize_as_any_for_every_subclass", "writes the field types after the SerializeAsAny marks"),
+        ),
+        condition="--merge-msgspec-str-like-union-members",
     ),
 }
 """The declaration of each decision of the decision registries (``parser/_phases.py``), by the name its spec gives."""

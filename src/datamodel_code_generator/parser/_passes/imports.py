@@ -54,6 +54,11 @@ from datamodel_code_generator.imports import (
     _stored_import,
 )
 from datamodel_code_generator.model._decisions.enum_kind import enum_member_kinds, literal_value_kind
+from datamodel_code_generator.model._decisions.msgspec_str_like import (
+    MSGSPEC_STR_LIKE_TYPES,
+    merged_str_like_union_message,
+    msgspec_str_like_leaf,
+)
 from datamodel_code_generator.model._decisions.tag_value import struct_union_refusal
 from datamodel_code_generator.model._render_plan import RENDER_READY
 from datamodel_code_generator.model.base import BaseClassDataType, DataModel, _bare_loads_of, _model_key_of_model
@@ -635,18 +640,6 @@ def _msgspec_union_message(name: str, refusal: _MsgspecRefusal, *, discriminated
     )
 
 
-_MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS: frozenset[str] = frozenset({
-    "bytes",
-    "bytearray",
-    "datetime",
-    "date",
-    "time",
-    "timedelta",
-    "UUID",
-    "Decimal",
-})
-
-
 _MsgspecEnumClash: TypeAlias = tuple[str, tuple[str, ...], bool]
 """A kind of a union that msgspec refuses for an Enum, its written members, and whether ``--enum-field-as-literal all``
 writes every Enum among them as a Literal."""
@@ -677,7 +670,7 @@ def _msgspec_enum_clashes(
                     if key not in literal_enum_ids:
                         classes[kind].add(key)
             elif source is None and not leaf.data_types and not leaf.enum_member_literals:
-                if leaf.type in _MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS:
+                if leaf.type in MSGSPEC_STR_LIKE_TYPES:
                     refused.add("str")
                 for kind in (
                     {literal_value_kind(literal) for literal in leaf.literals} or {leaf.type or ""}
@@ -738,7 +731,7 @@ _MSGSPEC_ANNOTATION_KINDS: Final[Mapping[str, str]] = {
         for slot, written in SLOT_CLASSES.items()
         for name in (written.name, written.typing_name)
     },
-    **dict.fromkeys(("str", *_MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS), "str"),
+    **dict.fromkeys(("str", *MSGSPEC_STR_LIKE_TYPES), "str"),
 }
 """The kind that msgspec counts of each class a Python type annotation writes, by its name: the container classes
 (``SLOT_CLASSES``), str and the other str-like types."""
@@ -791,15 +784,8 @@ def _msgspec_member_slots(leaf: DataType) -> tuple[tuple[str, object], ...]:
         slot = "dict", leaf.type_hint
     elif leaf in ARRAYS:
         slot = "array", leaf.type_hint
-    elif leaf.literals and not leaf.data_types and not leaf.enum_member_literals:
-        if any(literal_value_kind(literal) == "str" for literal in leaf.literals):
-            slot = "str", "str"
-    elif (
-        not leaf.data_types
-        and not leaf.enum_member_literals
-        and (leaf.type == "str" or leaf.type in _MSGSPEC_STR_TYPES_REFUSED_BESIDE_LITERALS)
-    ):
-        slot = "str", leaf.type
+    elif (counted := msgspec_str_like_leaf(leaf)) is not None:
+        slot = "str", counted
     return () if slot is None else (slot,)
 
 
@@ -1374,14 +1360,29 @@ def warn_about_variant_discriminator_tags(parser: FinishHost) -> None:
             warn_as_parser_base(message, UserWarning, stacklevel=2)
 
 
-def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleContextView]) -> None:  # noqa: PLR0912
+def warn_about_msgspec_decoding(  # noqa: PLR0912
+    parser: FinishHost,
+    contexts: Sequence[ModuleContextView],
+    merged_str_like_unions: Sequence[tuple[DataModel, DataModelFieldBase, Sequence[DataType]]] = (),
+) -> None:
     """Warn once per union and enum of msgspec output that msgspec refuses to decode.
 
     A field whose ``Literal``, or union of ``Literal`` members, holds both bytes and str values, which no msgspec type
-    holds, is refused instead (``_refuse_msgspec_bytes_and_str_literal``).
+    holds, is refused instead (``_refuse_msgspec_bytes_and_str_literal``). Each field whose str-like union members
+    ``--merge-msgspec-str-like-union-members`` wrote as one ``str`` (``merged_str_like_unions``, from the decision
+    phase) is warned about first, naming the members it lost.
     """
     if not parser.data_model_type.REQUIRES_TAGGED_UNION_DISCRIMINATOR:
         return
+    for merged_model, merged_field, members in merged_str_like_unions:
+        warn_as_parser_base(
+            merged_str_like_union_message(
+                site_display_name(parser, merged_model, merged_field),
+                [*dict.fromkeys(member.type_hint for member in members)],
+            ),
+            UserWarning,
+            stacklevel=2,
+        )
     from datamodel_code_generator.model.union import _DataTypeUnionBase  # noqa: PLC0415
 
     models = _context_models(contexts)

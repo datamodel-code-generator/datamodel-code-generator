@@ -1,0 +1,25 @@
+valid: accepted
+valid: accepted
+valid: accepted
+valid: accepted
+valid: accepted
+invalid {"plain_id": "not-a-uuid"}: rejected
+invalid {"ids": [1]}: rejected
+invalid {"nested": 1.5}: rejected
+invalid {"level": 3}: rejected
+invalid {"plain_level": 3}: rejected
+invalid {"id_list": [1]}: rejected
+warning: --merge-msgspec-str-like-union-members writes Model.id with str in place of its str-like members UUID, str, which a msgspec union holds only one of; the union accepts every string and decodes it as str, without the formats and constraints of those members.
+warning: --merge-msgspec-str-like-union-members writes Model.id_list with str in place of its str-like members UUID, str, which a msgspec union holds only one of; the union accepts every string and decodes it as str, without the formats and constraints of those members.
+warning: --merge-msgspec-str-like-union-members writes Model.ids with str in place of its str-like members UUID, str, which a msgspec union holds only one of; the union accepts every string and decodes it as str, without the formats and constraints of those members.
+warning: --merge-msgspec-str-like-union-members writes Model.level with str in place of its str-like members UUID, str, which a msgspec union holds only one of; the union accepts every string and decodes it as str, without the formats and constraints of those members.
+warning: --merge-msgspec-str-like-union-members writes Model.lookup with str in place of its str-like members UUID, str, which a msgspec union holds only one of; the union accepts every string and decodes it as str, without the formats and constraints of those members.
+warning: --merge-msgspec-str-like-union-members writes Model.mixed with str in place of its str-like members UUID, str, which a msgspec union holds only one of; the union accepts every string and decodes it as str, without the formats and constraints of those members.
+warning: --merge-msgspec-str-like-union-members writes Model.nested with str in place of its str-like members UUID, str, which a msgspec union holds only one of; the union accepts every string and decodes it as str, without the formats and constraints of those members.
+warning: --merge-msgspec-str-like-union-members writes Model.nullable_ids with str in place of its str-like members UUID, str | None, which a msgspec union holds only one of; the union accepts every string and decodes it as str, without the formats and constraints of those members.
+warning: --merge-msgspec-str-like-union-members writes Model.one_of_id with str in place of its str-like members UUID, OneOfId, which a msgspec union holds only one of; the union accepts every string and decodes it as str, without the formats and constraints of those members.
+warning: --merge-msgspec-str-like-union-members writes Model.plain_level with str in place of its str-like members UUID, str, which a msgspec union holds only one of; the union accepts every string and decodes it as str, without the formats and constraints of those members.
+warning: --merge-msgspec-str-like-union-members writes Model.shared with str in place of its str-like members UUID, str, which a msgspec union holds only one of; the union accepts every string and decodes it as str, without the formats and constraints of those members.
+warning: --merge-msgspec-str-like-union-members writes Model.token with str in place of its str-like members UUID, Literal['none'], which a msgspec union holds only one of; the union accepts every string and decodes it as str, without the formats and constraints of those members.
+warning: msgspec cannot decode the union Paint.color: it holds the str-like members UUID, Color, while a msgspec union holds only one str-like member (str and Literal str values count as one).
+warning: msgspec checks all str members of a union against the constraints of each of them, so max_length, min_length of one member would reject values another member accepts; Model.url is generated without these constraints.
