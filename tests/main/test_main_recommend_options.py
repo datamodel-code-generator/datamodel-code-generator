@@ -23,6 +23,7 @@ from packaging.version import Version
 
 from datamodel_code_generator import NamingHintWarning, chdir, generate
 from datamodel_code_generator.__main__ import Config, Exit
+from datamodel_code_generator._recommend._signals import measure_signals
 from datamodel_code_generator.arguments import arg_parser
 from datamodel_code_generator.config import GenerateConfig
 from datamodel_code_generator.experimental import EXPERIMENTAL_FEATURES
@@ -1326,3 +1327,26 @@ def test_naming_hint_not_shown_by_generate(tmp_path: Path) -> None:
             config=GenerateConfig(input_file_type="openapi", output=tmp_path / "models.py", formatters=["builtin"]),
         )
     assert_output(_naming_hints(recorded))
+
+
+def test_recommend_options_reads_openapi_wrapped_components_as_plain_schemas() -> None:
+    """Measure a component whose only key is schema as a plain schema, as generation reads an OpenAPI component."""
+    document = {
+        "openapi": "3.1.0",
+        "components": {
+            "schemas": {
+                "Ev": {
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "kind": {"type": "string", "enum": ["a", "b"]},
+                            "when": {"type": "string", "format": "date-time"},
+                        },
+                    },
+                },
+            },
+        },
+    }
+    signals = measure_signals(document, "openapi")
+    assert signals.counts["inline_enums"] == 0
+    assert signals.counts["formats"] == 0
