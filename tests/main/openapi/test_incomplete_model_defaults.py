@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 INPUT = OPEN_API_DATA_PATH / "incomplete_model_defaults.yaml"
+STRIP_DEFAULT_NONE_INPUT = OPEN_API_DATA_PATH / "incomplete_model_defaults_strip_default_none.yaml"
 PAYLOADS = DATA_PATH / "payloads" / "incomplete_model_defaults.json"
 OPTION_SETS = {"released": (), "omit": ("--omit-incomplete-model-defaults",)}
 DECODED_OUTPUTS = ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct")
@@ -76,6 +77,27 @@ def test_incomplete_model_defaults(output_file: Path, output_model_type: str, op
         assert_output(
             "".join(f"{label}: {_verdict(model, document)}\n" for label, document in documents), name="payloads"
         )
+
+
+@pytest.mark.parametrize("output_model_type", ["dataclasses.dataclass", "pydantic_v2.dataclass"])
+def test_incomplete_model_defaults_strip_default_none(output_file: Path, output_model_type: str) -> None:
+    """Place a left-out default under ``--strip-default-none`` as a property without a default in a dataclass.
+
+    The option writes ``spec`` without its default, which ``--strip-default-none`` writes as no default at all, so it
+    precedes the defaulted ``priority`` in the constructor, as 0.90.0 orders such a property without a default. It
+    followed ``priority`` before, and the module failed to import (``non-default argument 'spec' follows default
+    argument``).
+    """
+    run_main_and_assert(
+        input_path=STRIP_DEFAULT_NONE_INPUT,
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            *("--output-model-type", output_model_type, "--formatters", "builtin", "--disable-timestamp"),
+            *("--omit-incomplete-model-defaults", "--strip-default-none"),
+        ],
+        force_exec_validation=True,
+    )
 
 
 def _verdict(model: Any, document: object) -> str:

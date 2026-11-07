@@ -98,6 +98,10 @@ COVERAGE_RUNS = (
         "--output-model-type typing.TypedDict"
     ),
     "--input tests/data/openapi/discriminator_enum.yaml --input-file-type openapi --use-enum-values-in-discriminator",
+    (
+        "--input tests/data/openapi/incomplete_model_defaults.yaml --input-file-type openapi "
+        "--omit-incomplete-model-defaults"
+    ),
 )
 """Runs that reach the passes no golden run reaches, each under the condition it names."""
 

@@ -27,3 +27,6 @@ typed_dict-omit	main/openapi/incomplete_model_defaults/incomplete_model_defaults
 typed_dict-omit	main/openapi/incomplete_model_defaults/incomplete_model_defaults[typed_dict-omit].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
 typed_dict-released	main/openapi/incomplete_model_defaults/incomplete_model_defaults[typed_dict-released].py	= main/openapi/incomplete_model_defaults/incomplete_model_defaults[typed_dict-omit].py
 typed_dict-released	main/openapi/incomplete_model_defaults/incomplete_model_defaults[typed_dict-released].warnings.txt	= main/jsonschema/optional_nested_factory_requirements/no_warnings.txt
+[test_incomplete_model_defaults_strip_default_none]
+dataclasses.dataclass	main/openapi/incomplete_model_defaults/strip_default_none[dataclasses.dataclass].py
+pydantic_v2.dataclass	main/openapi/incomplete_model_defaults/strip_default_none[pydantic_v2.dataclass].py
