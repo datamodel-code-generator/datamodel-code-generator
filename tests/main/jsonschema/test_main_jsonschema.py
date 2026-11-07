@@ -21256,6 +21256,7 @@ def test_main_jsonschema_type_alias_recursive_container(
         ("head_backward", "pydantic_v2.dataclass"),
         ("non_head_backward", "pydantic_v2.BaseModel"),
         ("reached_before_head", "pydantic_v2.BaseModel"),
+        ("container_without_cycle_reference", "pydantic_v2.BaseModel"),
     ],
 )
 def test_main_jsonschema_type_alias_recursive_container_head(
@@ -21266,7 +21267,8 @@ def test_main_jsonschema_type_alias_recursive_container_head(
     ``Link`` holds ``Chain``, the first alias of the cycle, and ``Knot``, which follows it, so ``Chain`` and ``Link``
     write their containers as strings, which mypy and pyright both resolve. A container whose backward reference names
     another alias of the cycle (``Twig``), or a cycle that an alias before its head reaches (``Entry``), keeps its names
-    quoted one by one.
+    quoted one by one. A container that references no alias of the cycle (``list[int]`` beside ``list[Link]``) does
+    not stop the deferral, even when an alias before the head (``Entry``) reaches the cycle.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / f"type_alias_recursive_{input_file}.json",

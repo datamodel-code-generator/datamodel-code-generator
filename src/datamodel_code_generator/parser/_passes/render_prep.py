@@ -888,7 +888,7 @@ def deferrable_alias_cycles(models: Sequence[DataModel], model_index: Mapping[st
         for field in model.fields:
             forward = {id(data_type) for data_type, _ in field_forward_references(field, model, model_index, index)}
             for container, _, kinds in _iter_cycle_containers(field.data_type, cycle, cycles, forward):
-                if len(kinds) == 1:
+                if len(kinds) <= 1:
                     continue
                 if cycle not in reached_before_head:
                     reached_before_head[cycle] = _reached_before_head(models, heads[cycle], cycles, cycle)
