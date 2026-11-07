@@ -189,7 +189,9 @@ NO_SITE_EFFECT: frozenset[str] = frozenset({
     "name_enum_member",
     "name_enum_member_literal_class",
     "name_reference",
+    "omit_field_default",
     "record_dropped_multiple_of",
+    "record_nullable_without_default",
     "record_site_constraints",
     "record_values_as_written",
     "record_widened_values",
@@ -1920,10 +1922,18 @@ class GenerationStore:  # noqa: PLR0904
     @staticmethod
     @deprecated("Use GenerationStore.builder().apply_literal_default() instead.", category=None)
     def apply_literal_default(field_: DataModelFieldBase, decision: LiteralDefault) -> None:
-        """Write the default, requiredness and nullability ``decide_literal_default`` decides for a field."""
-        from datamodel_code_generator.model.base import _apply_literal_default  # noqa: PLC0415
+        """Write the default, requiredness and nullability ``decide_literal_default`` decides for a field.
+
+        A field made not null keeps no ``nullable`` without its default (``record_nullable_without_default``).
+        """
+        from datamodel_code_generator.model.base import (  # noqa: PLC0415
+            NULLABLE_WITHOUT_DEFAULT_KEY,
+            _apply_literal_default,
+        )
 
         _apply_literal_default(field_, decision)
+        if decision.not_null:
+            field_.__dict__.pop(NULLABLE_WITHOUT_DEFAULT_KEY, None)
         bump_field(field_)
 
     @deprecated("Use GenerationStore.builder().drop_union_member_constraints() instead.", category=None)
@@ -1997,6 +2007,27 @@ class GenerationStore:  # noqa: PLR0904
     def set_field_default(field_: DataModelFieldBase, default: Any) -> None:
         """Write a field's default, which the facts do not record, so they stay current."""
         field_.default = default
+        bump_field(field_)
+
+    @staticmethod
+    @deprecated("Use GenerationStore.builder().record_nullable_without_default() instead.", category=None)
+    def record_nullable_without_default(field_: DataModelFieldBase, nullable: bool | None) -> None:  # noqa: FBT001
+        """Record the ``nullable`` a field has as one without its default; none where it equals its ``nullable``."""
+        from datamodel_code_generator.model.base import NULLABLE_WITHOUT_DEFAULT_KEY  # noqa: PLC0415
+
+        if nullable is field_.nullable:
+            field_.__dict__.pop(NULLABLE_WITHOUT_DEFAULT_KEY, None)
+        else:
+            field_.__dict__[NULLABLE_WITHOUT_DEFAULT_KEY] = nullable
+        bump_field(field_)
+
+    @staticmethod
+    @deprecated("Use GenerationStore.builder().omit_field_default() instead.", category=None)
+    def omit_field_default(field_: DataModelFieldBase) -> None:
+        """Write a field without its default: the default None, and the ``nullable`` it has without the default."""
+        field_.default = None
+        if (nullable := field_.nullable_without_default) is not field_.nullable:
+            field_.nullable = nullable
         bump_field(field_)
 
     @staticmethod
@@ -2874,6 +2905,14 @@ class GraphBuilder:
     def set_field_default(self, field_: DataModelFieldBase, default: Any) -> None:
         """Write a field's default, which the facts do not record, so they stay current."""
         self._store.set_field_default(field_, default)  # ty: ignore[deprecated]
+
+    def record_nullable_without_default(self, field_: DataModelFieldBase, nullable: bool | None) -> None:  # noqa: FBT001
+        """Record the ``nullable`` a field has as one without its default, through the store."""
+        self._store.record_nullable_without_default(field_, nullable)  # ty: ignore[deprecated]
+
+    def omit_field_default(self, field_: DataModelFieldBase) -> None:
+        """Write a field without its default, through the store."""
+        self._store.omit_field_default(field_)  # ty: ignore[deprecated]
 
     def set_field_extra(self, field_: DataModelFieldBase, key: str, value: Any) -> None:
         """Write one entry into a field's extras dict, which every holder of the dict sees."""

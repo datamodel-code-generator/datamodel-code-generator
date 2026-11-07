@@ -686,13 +686,6 @@ PIPELINE: tuple[StepLike[PipelineHost, _PipelineRun[Any, Any, Any]], ...] = (
         Phase.RENDER_PREPARATION,
         _as_finish_run,
         (
-            PassSpec(
-                "omit_incomplete_model_defaults",
-                lambda self, run: render_prep.omit_incomplete_model_defaults(
-                    self, _models_before_override_removal(self, run)
-                ),
-                when=lambda self, _: self.omit_incomplete_model_defaults,
-            ),
             ForEachModule(
                 "assign_forward_reference_fields_of_modules",
                 lambda self, _: self._prepared_modules,

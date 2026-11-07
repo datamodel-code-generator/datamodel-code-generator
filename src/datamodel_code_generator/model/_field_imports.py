@@ -35,7 +35,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model._decisions.nullability import FieldNullSource
 
 _ANY: Final = "Any"
-_NONE: Final = "None"
 _TYPING_IMPORT_NAMES: frozenset[str] = frozenset({
     IMPORT_ANNOTATED.import_,
     IMPORT_OPTIONAL.import_,
@@ -121,7 +120,7 @@ class _PythonTypeView(Protocol):
 
 
 class _DataTypeView(Protocol):  # noqa: PLR0904
-    """A data type as import collection reads it: ``DataType``. ``_ANY`` and ``_NONE`` are its ``ANY`` and ``NONE``."""
+    """A data type as import collection reads it: ``DataType``. ``_ANY`` is its ``ANY``."""
 
     @property
     def type(self) -> str | None:
@@ -675,16 +674,6 @@ def field_admits_none(field: FieldImportsHost[_D]) -> bool:
         or field._data_type_renders_none(data_type)  # noqa: SLF001
         or field_none_source(field, hint_has_none=False) is not None
     )
-
-
-def data_type_renders_none(field: FieldImportsHost[_D], data_type: _D) -> bool:
-    if data_type._is_container:  # noqa: SLF001
-        return False
-    if data_type.alias or data_type.reference or data_type.literals or data_type.enum_member_literals:
-        return False
-    if data_type.type == _NONE:
-        return not data_type.data_types
-    return len(data_type.data_types) == 1 and field._data_type_renders_none(data_type.data_types[0])  # noqa: SLF001
 
 
 def data_type_import_key(field: FieldImportsHost[_D], data_type: _D) -> tuple[Any, ...]:

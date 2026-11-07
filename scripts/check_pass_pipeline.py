@@ -463,6 +463,22 @@ VIEW_OWNERS: dict[type[Any], str] = {
 """The class whose ``ATTRIBUTE_FACTS`` rows each view reads."""
 VIEW_ACCESSORS = {
     "DataTypeView.admits_none": "rendered nullability, which is final at B1 (model/_decisions/nullability.py)",
+    "DataTypeView._renders_none": (
+        "the type, the name a type override gives it, the reference, the literals and the container kind of the type"
+        " and of its one member, final at B1: the names import binding and forward references give later go to types"
+        " that name a model"
+    ),
+    "DataTypeView._writes_nothing_of_its_own": (
+        "the type, the name a type override gives it, the reference and the container kind, final at B1: the names"
+        " import binding and forward references give later go to types that name a model"
+    ),
+    "FieldView.nullable_without_default": (
+        "the nullability the parse records without the default (NULLABLE_WITHOUT_DEFAULT_KEY), else NULLABLE, final"
+        " at B1"
+    ),
+    "ModelView.effective_fields": (
+        "the fields of the model and of its bases in C3 order (BASES, FIELD_SET), final at B1"
+    ),
     "ModelView.additional_properties_type": (
         "the type of the additional properties that the parser stores for the settings of the class (TypedDict"
         " extra_items), whose nodes are field types, final at B1"

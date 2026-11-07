@@ -40,9 +40,9 @@ class PodTemplateSpec(BaseModel):
     selector_or_name: Annotated[LabelSelector | str, Field(alias='selectorOrName', validate_default=True)] = {
         'matchLabels': {}
     }
-    spec: PodSpec = None
+    spec: PodSpec | None = None
     nullable_spec: Annotated[PodSpec | None, Field(alias='nullableSpec')] = None
     complete_spec: Annotated[PodSpec, Field(alias='completeSpec', validate_default=True)] = {
         'containers': ['app']
     }
-    workload: WorkloadSpec = None
+    workload: WorkloadSpec | None = None

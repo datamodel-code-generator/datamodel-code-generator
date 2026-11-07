@@ -146,7 +146,6 @@ CHECKED_MODELS: Final[dict[str, Callable[[Any, Any], Sequence[Any]]]] = {
     "tag_fields_of_tagged_bases": _context_models,
     "flatten_narrowed_inherited_fields": _context_models,
     "write_enum_member_tags_as_values": _context_models,
-    "omit_incomplete_model_defaults": _models_before_override_removal,
     "assign_forward_reference_fields": _model_list,
     "fix_constructor_field_ordering": _models_before_override_removal,
     "unbind_hidden_type_fields": _model_list,
@@ -401,6 +400,16 @@ def write_additional_properties_sets(original: Callable[..., None]) -> Callable[
         return original(self, viewed(model), [viewed(data_type) for data_type in lists])
 
     return write_additional_properties_sets
+
+
+def omit_default(original: Callable[..., None]) -> Callable[..., None]:
+    """Wrap ``_DecisionWriter.omit_default``: it writes the field that the guarded view it gets names."""
+
+    @wraps(original)
+    def omit_default(self: Any, model: Any, field: Any) -> None:
+        return original(self, viewed(model), viewed(field))
+
+    return omit_default
 
 
 def mark_serialized_as_any(original: Callable[..., None]) -> Callable[..., None]:

@@ -4,7 +4,7 @@
 9 write name: use GenerationStore.rename_field() or rename_model() or set_field_identity() instead of writing name
 9 write type: use GenerationStore.set_type_expressions() instead of writing type
 10 write decorators: decorators changes RenderFact.MODULE_CODE outside GenerationStore operations
-11 write nullable: use GenerationStore.apply_literal_default() instead of writing nullable
+11 write nullable: use GenerationStore.apply_literal_default() or omit_field_default() instead of writing nullable
 12 write has_default: has_default changes Fact.DEFAULTS outside GenerationStore operations
 13 write setattr(...): setattr with a computed name may write any fact; name the attribute
 14 write extras["kw_only"]: extras["kw_only"] changes RenderFact.KEYWORD_ONLY outside GenerationStore operations

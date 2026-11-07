@@ -1147,6 +1147,15 @@ class DataType(_BaseModel):  # noqa: PLR0904
         return not (self._own_text or self.reference or self._is_container)
 
     @property
+    def _renders_none(self) -> bool:
+        """Return whether the type writes ``None``: the type None, or a type whose one member writes it."""
+        if self._is_container or self.alias or self.reference or self.literals or self.enum_member_literals:
+            return False
+        if self.type == NONE:
+            return not self.data_types
+        return len(self.data_types) == 1 and self.data_types[0]._renders_none  # noqa: SLF001
+
+    @property
     def _wraps_one_list(self) -> bool:
         """Return whether the type is not a list and holds one member, which is a list."""
         return not self.is_list and len(self.data_types) == 1 and self.data_types[0].is_list

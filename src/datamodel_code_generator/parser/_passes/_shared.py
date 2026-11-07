@@ -13,7 +13,7 @@ from collections import defaultdict
 from copy import deepcopy
 from dataclasses import replace
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias
+from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias, TypeVar
 
 from typing_extensions import Protocol, final, override
 
@@ -58,6 +58,7 @@ from datamodel_code_generator.model.base import (
     ConstraintsBase,
     DataModel,
     _effective_field_owners,
+    _field_source_name,
     _find_base_classes,
     _ModelKeys,
     direct_base_models,
@@ -109,6 +110,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator.imports import Imports
     from datamodel_code_generator.model._decisions.tag_value import EnumTagMembers, FieldTagSite, TagFieldMatch
     from datamodel_code_generator.model._render_plan import AssignmentFacts
+    from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView, ReferenceView
     from datamodel_code_generator.model.base import DataModelFieldBase
     from datamodel_code_generator.parser._field_rows import FieldCopyFacts, FieldIdentity
     from datamodel_code_generator.parser._graph_ids import KeyedModels
@@ -119,6 +121,8 @@ if TYPE_CHECKING:
     from datamodel_code_generator.parser.generation import GenerationStore, GraphBuilder
     from datamodel_code_generator.reference import ModelResolver
     from datamodel_code_generator.types import DataTypeManager, DefaultValueDescriptor
+
+ModelT = TypeVar("ModelT", bound="ModelView")
 
 
 def with_dedupe_request_response_hint(message: str) -> str:
@@ -170,15 +174,60 @@ def iter_models_field_data_types(
 
 def _unwrap_type_alias(data_type: DataType) -> DataType:
     """Follow type alias references to the underlying data type."""
+    return follow_type_aliases(data_type, _type_alias_source)
+
+
+def _type_alias_source(reference: Reference) -> TypeAliasBase | None:
+    """Return the type alias a reference names, or None for any other target."""
+    return source if isinstance(source := reference.source, TypeAliasBase) else None
+
+
+def follow_type_aliases(data_type: Any, alias_of: Callable[[Any], Any]) -> Any:
+    """Follow the references to type aliases from ``data_type`` to the type of the last alias's field.
+
+    ``alias_of`` gives the type alias a reference names, or None for any other target; an alias without a field, or
+    one met again, ends the walk.
+    """
     current = data_type
     seen: set[int] = set()
-    while current.reference and isinstance(current.reference.source, TypeAliasBase):
-        source = current.reference.source
-        if id(source) in seen or not source.fields:
+    while (reference := current.reference) is not None and (alias := alias_of(reference)) is not None:
+        if id(alias) in seen or not alias.fields:
             break
-        seen.add(id(source))
-        current = source.fields[0].data_type
+        seen.add(id(alias))
+        current = alias.fields[0].data_type
     return current
+
+
+def required_fields_a_default_lacks(
+    field: FieldView, model_of: Callable[[ReferenceView], ModelT | None]
+) -> tuple[ModelT, list[str]] | None:
+    """Return the model a field's object default cannot be, with the names of its required fields the default lacks.
+
+    The default is in effect (the field need not be given a value, ``requires_value``) and a mapping; the field's type,
+    None aside and through type aliases, is one reference to an object model, which ``model_of`` gives; and the default
+    leaves out a field of that model or of its bases that must be given a value. JSON Schema does not validate a
+    default, an annotation, so a schema can give one that its own model rejects.
+    """
+    if requires_value(field) or not isinstance(default := field.default, dict):
+        return None
+
+    def alias_of(reference: ReferenceView) -> ModelView | None:
+        return model if (model := model_of(reference)) is not None and model.form == "alias" else None
+
+    data_type: DataTypeView = follow_type_aliases(field.data_type, alias_of)
+    if data_type._writes_nothing_of_its_own:  # noqa: SLF001
+        members = [member for member in data_type.data_types if not member._renders_none]  # noqa: SLF001
+        if len(members) != 1:
+            return None
+        data_type = follow_type_aliases(members[0], alias_of)
+    if (reference := data_type.reference) is None or (model := model_of(reference)) is None or model.form != "object":
+        return None
+    lacked = [
+        name
+        for model_field in model.effective_fields
+        if requires_value(model_field) and (name := _field_source_name(model_field)) is not None and name not in default
+    ]
+    return (model, lacked) if lacked else None
 
 
 def _unwrap_default_scalar_data_type(data_type: DataType) -> DataType:

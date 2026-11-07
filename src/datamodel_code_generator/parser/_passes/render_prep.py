@@ -30,10 +30,8 @@ from datamodel_code_generator.model.base import (
     DataModel,
     _default_state,
     _effective_field_owners,
-    _field_source_name,
     _find_base_classes,
     _model_key_of_model,
-    get_effective_fields,
     linearize_data_models,
     ordering_constructor_fields,
     set_item_models_keeping_builtin_hash,
@@ -66,6 +64,7 @@ from datamodel_code_generator.parser._passes._shared import (
     has_import_override,
     module_members,
     normalize_default_value_constraints,
+    required_fields_a_default_lacks,
     resolve_default_value_descriptor,
     run_unused_models,
     takes_positional_place,
@@ -152,10 +151,6 @@ class RenderPrepHost(
 
     _decimal_default_warning_count: int
     _decimal_default_warning_examples: list[str] | None
-
-    @property
-    def omit_incomplete_model_defaults(self) -> bool:
-        """Whether a field leaves out an object default that lacks required fields of its model."""
 
     @property
     def _quotes_hidden_types(self) -> bool:
@@ -435,18 +430,6 @@ def mark_set_item_models_hashable(parser: RenderPrepHost, models: list[DataModel
             model.enable_identity_hash()
 
 
-def omit_incomplete_model_defaults(parser: RenderPrepHost, models: list[DataModel]) -> None:
-    """Give the default None to each field whose object default lacks required fields of its model.
-
-    Under --omit-incomplete-model-defaults such a field (``_required_fields_a_default_lacks``) is written as a field
-    without a default, so this runs before the constructor ordering, which then places it as one.
-    """
-    for model in models:
-        for model_field in model.fields:
-            if _applies_default(model_field) and _required_fields_a_default_lacks(model_field):
-                parser._graph_builder.set_field_default(model_field, None)  # noqa: SLF001
-
-
 def set_validate_default_on_fields(
     parser: RenderPrepHost,
     models: list[DataModel],
@@ -454,8 +437,8 @@ def set_validate_default_on_fields(
     """Set validate_default=True on fields with structured defaults needing validation.
 
     The fields whose output validates an object default that lacks required fields of its model
-    (``_required_fields_a_default_lacks``) are named in one warning; --omit-incomplete-model-defaults gave them the
-    default None before (``omit_incomplete_model_defaults``).
+    (``required_fields_a_default_lacks``) are named in one warning; --omit-incomplete-model-defaults wrote them without
+    the default before (``parser/_incomplete_defaults.py``).
     """
     deserialized_default = False
     incomplete: list[str] = []
@@ -465,7 +448,9 @@ def set_validate_default_on_fields(
         for model_field in model.fields:
             if not _applies_default(model_field):
                 continue
-            if model_field.VALIDATES_STRUCTURED_DEFAULTS and (lacks := _required_fields_a_default_lacks(model_field)):
+            if model_field.VALIDATES_STRUCTURED_DEFAULTS and (
+                lacks := required_fields_a_default_lacks(model_field, _model_named)
+            ):
                 incomplete.append(_incomplete_model_default(model, model_field, *lacks))
             deserialized_default = (
                 deserialize_default_value(
@@ -506,35 +491,9 @@ def _incomplete_model_defaults_message(fields: list[str]) -> str:
     )
 
 
-def _required_fields_a_default_lacks(field: DataModelFieldBase) -> tuple[DataModel, list[str]] | None:
-    """Return the model a field's object default cannot be, with the names of its required fields the default lacks.
-
-    The field's type, None aside and through type aliases, is one reference to an object model, and the default a
-    mapping that leaves out a field of that model or of its bases that must be given a value (``requires_value``).
-    JSON Schema does not validate a default, an annotation, so a schema can give one that its own model rejects.
-    """
-    if not isinstance(default := field.default, dict):
-        return None
-    data_type = _unwrap_type_alias(field.data_type)
-    if data_type._writes_nothing_of_its_own:  # noqa: SLF001
-        members = [member for member in data_type.data_types if not field._data_type_renders_none(member)]  # noqa: SLF001
-        if len(members) != 1:
-            return None
-        data_type = _unwrap_type_alias(members[0])
-    if (
-        (reference := data_type.reference) is None
-        or not isinstance(model := reference.source, DataModel)
-        or isinstance(model, Enum)
-        or model.is_alias
-        or model.IS_ROOT_MODEL
-    ):
-        return None
-    lacked = [
-        name
-        for model_field in get_effective_fields(model)
-        if requires_value(model_field) and (name := _field_source_name(model_field)) is not None and name not in default
-    ]
-    return (model, lacked) if lacked else None
+def _model_named(reference: Any) -> DataModel | None:
+    """Return the model a reference names, or None for a reference that names none."""
+    return source if isinstance(source := reference.source, DataModel) else None
 
 
 def deserialize_default_value(
