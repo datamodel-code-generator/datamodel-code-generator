@@ -318,7 +318,7 @@ def _drop_duplicate_root_model(parser: StructureHost, model: DataModel, root_ref
 
     A root model whose root names the model itself has no other model to redirect them to: the models that inherit
     it drop it from their bases, as they drop every other root model, and the fields that use it keep naming it until
-    every module is processed (``_self_named_root_models``): ``type_users_of_dropped_root_models_by_any`` then types
+    every module is processed (``_self_named_root_models``): ``type_users_of_looping_ref_chains_by_any`` then types
     them ``Any`` where nothing builds from the annotations, and ``reject_alias_cycles_without_schema`` rejects them
     where Pydantic builds or msgspec decodes the output.
     """

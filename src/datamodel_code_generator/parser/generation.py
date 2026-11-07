@@ -1019,6 +1019,10 @@ class GenerationIndex:
             return ()
         return tuple(facts.data_type_facts[data_type_id] for data_type_id in data_type_ids)
 
+    def owner_of(self, fact: DataTypeFact) -> DataModel:
+        """Return the model that owns the data type occurrence ``fact``."""
+        return self._view().facts.model_facts[fact.owner_model].model
+
     def models_inheriting(self, reference: Reference) -> list[DataModel]:
         """Return the models whose bases name ``reference``, once each, in the order of those bases."""
         facts = self._view().facts
