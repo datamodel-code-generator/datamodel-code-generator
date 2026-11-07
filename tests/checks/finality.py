@@ -63,7 +63,8 @@ set, are replaced by ``_GuardedList`` copies: a list keeps being shared by the o
 other references to the original list, and ``type(x) is list`` is false for it. The copies outlive the parse; once no
 parse is armed they act as plain lists, and they copy and pickle as plain lists. Writes through ``object.__setattr__``,
 through ``__dict__``, into dict attributes, and into lists that an object got outside a store operation after arming are
-not seen by the guards; the finality check sees their effect at the next comparison.
+not seen by the guards; the finality check sees their effect at the next comparison. A store operation that writes one
+key of a dict attribute (an ``Access.ITEM`` row) touches the object it writes, as a guarded write does.
 """
 
 from __future__ import annotations
@@ -200,6 +201,14 @@ def _guarded_names(cls: type) -> tuple[frozenset[str], frozenset[str]]:
 
 
 _STORE_OPERATIONS: Final = frozenset(store_op for row in ATTRIBUTE_FACTS for store_op in row.store_ops)
+_ITEM_OPERATIONS: Final = frozenset(
+    store_op for row in ATTRIBUTE_FACTS if row.access is Access.ITEM for store_op in row.store_ops
+)
+"""The store operations that write one key of a dict attribute of their first argument, which no guard sees.
+
+They touch that object first, as a guarded write does, so that the pass running them answers for the change, also on a
+model of another module that the pass compares nowhere else.
+"""
 
 
 def _source_path(filename: str) -> str:
@@ -356,11 +365,6 @@ class KnownWrite:
     """The roadmap item that removes the violation."""
 
 
-_TAGGED_MODULES_WITNESS: Final = (
-    "--input tests/data/openapi/discriminator_msgspec_tagged_unions_modules_variants_first.yaml --input-file-type "
-    "openapi --output-model-type msgspec.Struct --use-msgspec-tagged-unions --target-python-version 3.10 "
-    "--formatters builtin"
-)
 _IMPORTS_CORRECT_WITNESS: Final = (
     "--input tests/data/jsonschema/imports_correct --output-model-type pydantic_v2.BaseModel --formatters builtin"
 )
@@ -391,9 +395,6 @@ KNOWN_WRITES: tuple[KnownWrite, ...] = (
         "--input tests/data/jsonschema/discriminator_with_external_reference --output-model-type msgspec.Struct "
         "--target-python-version 3.10 --formatters builtin",
         "RP17",
-    ),
-    KnownWrite(
-        "<MODULES>", Rule.UNATTRIBUTED, 'DataModelFieldBase.extras["is_classvar"]', _TAGGED_MODULES_WITNESS, "RP17"
     ),
     KnownWrite(
         "delete_duplicate_models",
@@ -1832,8 +1833,12 @@ def _graph_objects(models: Iterable[Any]) -> Iterator[object]:
 
 
 def _store_operation(checks: ParseChecks, name: str, operation: Callable[..., Any]) -> Callable[..., Any]:
+    touches = name in _ITEM_OPERATIONS
+
     @wraps(operation)
     def run(*args: Any, **kwargs: Any) -> Any:
+        if touches and (finality := checks.finality) is not None:
+            finality.touch(args[0])
         checks.operations.append(name)
         try:
             return operation(*args, **kwargs)

@@ -147,6 +147,45 @@ def test_ref_sibling_cycle_description_collapse_root_models_msgspec_decode(outpu
     assert_output(f"{parsed!r}\n", name="parsed")
 
 
+@pytest.mark.parametrize(
+    "output_model_type",
+    ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"],
+)
+def test_ref_sibling_cycle_maps_collapse_root_models(output_file: Path, output_model_type: str) -> None:
+    """Write None where --collapse-root-models inlines the root of a cycle without a type inside a map (#6318).
+
+    The map values, map keys and additional properties that name the cycle take None, as a field whose whole type it
+    is writes, instead of nothing: an empty key type, which is not Python, and a map that took any value.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "ref_sibling_cycle_maps.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", output_model_type, "--collapse-root-models"],
+        force_exec_validation=True,
+    )
+
+
+def test_ref_sibling_cycle_maps_collapse_root_models_validation(output_file: Path) -> None:
+    """Validate the maps that name a cycle without a type under --collapse-root-models: only empty maps match them."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "ref_sibling_cycle_maps.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--collapse-root-models"],
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name="ref_sibling_cycle_maps_collapse_root_models",
+        model_name="Holder",
+        valid_json='{"scores": {}, "tags": {}, "count": 1}',
+        invalid_json='{"tags": {"x": 1}}',
+        expected_error_type="none_required",
+        expected_attribute_path=("scores",),
+        expected_attribute_value={},
+    )
+
+
 def test_ref_sibling_cycle_description_error(output_file: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Name each component of the chain a model took in where Pydantic builds a class that uses it (#5261).
 

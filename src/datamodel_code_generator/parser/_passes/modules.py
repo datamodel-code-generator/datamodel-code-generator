@@ -535,6 +535,14 @@ class CollapseHost(
     def generate_schema_validators(self) -> bool:
         """Whether models get the schema validator rules the types cannot express."""
 
+    @property
+    def _self_named_root_models(self) -> list[DataModel]:
+        """The root models naming themselves that the deduplication of root models dropped, whose users name them."""
+
+    @property
+    def data_type_manager(self) -> DataTypeManager:
+        """The data type manager of the parser."""
+
 
 class DiscriminatorHost(InlineVariantHost, CollapsedReuseHost, RootModelHost, Protocol):
     """The options, run state and hooks of the parser that writing discriminator tags reads and writes."""
@@ -1706,14 +1714,17 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
 
                     continue
 
-                # set copied data_type
                 source_module_name = _get_model_module_name(root_type_model, model_path_to_module_name)
                 target_module_name = _get_model_module_name(model, model_path_to_module_name)
-                copied_data_type = (
-                    parser._copy_model_type(root_type_field.data_type)  # noqa: SLF001
-                    if source_module_name != target_module_name
-                    else graph_builder.inline_shared(root_type_field.data_type, data_type)
-                )
+                if isinstance(data_type.parent, DataType) and any(
+                    dropped is root_type_model
+                    for dropped in parser._self_named_root_models  # noqa: SLF001
+                ):
+                    copied_data_type = parser.data_type_manager.get_data_type(Types.null)
+                elif source_module_name != target_module_name:
+                    copied_data_type = parser._copy_model_type(root_type_field.data_type)  # noqa: SLF001
+                else:
+                    copied_data_type = graph_builder.inline_shared(root_type_field.data_type, data_type)
                 carry_const_narrowings(parser, root_type_field.data_type, copied_data_type)
                 has_remaining_root_references = has_other_root_references(parser, root_type_model.reference, data_type)
 
