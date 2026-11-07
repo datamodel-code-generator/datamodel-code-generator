@@ -1580,34 +1580,23 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             unconstrained=data_type.is_tuple or self._data_type_is_plain_union(data_type),
         )
 
-    def _meta_type(self, data_type: DataType, seen: frozenset[int] = frozenset()) -> DataType | None:
-        """Return the type msgspec checks the ``Meta`` of a type on, or None where that type takes no constraint.
+    def _meta_type(self, data_type: DataType) -> DataType | None:
+        """Return the type msgspec checks the ``Meta`` of a type on, or None where that type takes no constraint."""
+        return self.constrained_value_type(data_type)
 
-        A referenced type alias stands for its type, and takes none when that type writes None; any other referenced
-        model takes none. A chain of aliases that comes back to an alias of its own, and an alias without a field,
-        such as a GraphQL scalar, stand for themselves, as unclassified types.
-        """
-        if self._shape_meta_keywords(data_type) is not None:
-            return data_type
-        if (
-            (reference := data_type.reference) is not None
-            and (source := reference.source) is not None
-            and id(source) not in seen
-            and (source.fields or not isinstance(source, TypeAliasBase))
-        ):
-            alias_field = source.fields[0] if isinstance(source, TypeAliasBase) else None
-            if alias_field is None or any((
-                alias_field.nullable is True,
-                alias_field.type_has_null is True,
-                self._data_type_has_top_level_none(alias_field.data_type),
-            )):
-                return None
-            return self._meta_type(alias_field.data_type, seen | {id(source)})
-        if len(data_type.data_types) == 1 and not (
-            data_type.type or data_type.reference or data_type.python_type or data_type._is_container  # noqa: SLF001
-        ):
-            return self._meta_type(data_type.data_types[0], seen)
-        return data_type
+    @override
+    def _stops_constraint_walk(self, data_type: DataType) -> bool:
+        """Return whether ``data_type`` is a mapping, a fixed tuple or a union: it takes the keywords of its shape."""
+        return super()._stops_constraint_walk(data_type) or self._shape_meta_keywords(data_type) is not None
+
+    @override
+    def _alias_value_admits_null(self, alias_field: DataModelFieldBase) -> bool:
+        """Return whether the root of an alias writes None, so the alias takes no constraint."""
+        return super()._alias_value_admits_null(alias_field) or any((
+            alias_field.nullable is True,
+            alias_field.type_has_null is True,
+            self._data_type_has_top_level_none(alias_field.data_type),
+        ))
 
     def _union_meta_constraints(self) -> tuple[tuple[tuple[str, Any], ...], tuple[tuple[str, Any], ...]]:
         """Return the ``Meta`` constraints of the type, and them as the integer check of a union reads them exactly.

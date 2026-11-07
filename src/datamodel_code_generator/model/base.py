@@ -1154,6 +1154,42 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
             admits_none=not _ORDERS_BY_CONSTRUCTION_DEFAULTS.get() and self.data_type.admits_none,
         )
 
+    def constrained_value_type(self, data_type: DataType, seen: frozenset[int] = frozenset()) -> DataType | None:
+        """Return the type a constraint written beside ``data_type`` checks, or None where that type takes none.
+
+        A referenced type alias stands for its type, and takes none where the output says its type admits null
+        (``_alias_value_admits_null``); any other referenced model takes none. A chain of aliases that comes back to an
+        alias of its own, and an alias without a field, stand for themselves; a type whose shape decides its keywords
+        itself (``_stops_constraint_walk``) stands for itself.
+        """
+        from datamodel_code_generator.model.type_alias import TypeAliasBase  # noqa: PLC0415
+
+        if self._stops_constraint_walk(data_type):
+            return data_type
+        if (
+            (reference := data_type.reference) is not None
+            and (source := reference.source) is not None
+            and id(source) not in seen
+            and (source.fields or not isinstance(source, TypeAliasBase))
+        ):
+            alias_field = source.fields[0] if isinstance(source, TypeAliasBase) else None
+            if alias_field is None or self._alias_value_admits_null(alias_field):
+                return None
+            return self.constrained_value_type(alias_field.data_type, seen | {id(source)})
+        if len(data_type.data_types) == 1 and not (
+            data_type.type or data_type.reference or data_type.python_type or data_type._is_container  # noqa: SLF001
+        ):
+            return self.constrained_value_type(data_type.data_types[0], seen)
+        return data_type
+
+    def _stops_constraint_walk(self, data_type: DataType) -> bool:  # noqa: ARG002, PLR6301
+        """Return whether ``constrained_value_type`` takes ``data_type`` as it is: none here."""
+        return False
+
+    def _alias_value_admits_null(self, alias_field: DataModelFieldBase) -> bool:  # noqa: ARG002, PLR6301
+        """Return whether a constraint beside an alias whose root is ``alias_field`` checks no value: none here."""
+        return False
+
     def _has_numeric_data_type(self, type_name: str, strict_import_part: str | None = None) -> bool:
         """Return whether a field data type is ``type_name``, or a strict import naming ``strict_import_part``."""
         return any(
