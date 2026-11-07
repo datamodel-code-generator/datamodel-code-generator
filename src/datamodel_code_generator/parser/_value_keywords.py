@@ -54,6 +54,7 @@ from datamodel_code_generator.parser._null_facts import NullSources, dump_null_s
 from datamodel_code_generator.parser._schema_object import _ANNOTATION_KEYWORDS, JsonSchemaObject, _locate
 from datamodel_code_generator.parser._schema_reading import (
     _constraint_values,
+    _declares_key_keywords,
     _get_json_value_type,
     _object_map_other_types,
     _schema_dump,
@@ -120,6 +121,7 @@ __all__ = [
     "mark_type_dependent_constraints",
     "partition_enum_values",
     "positions_with_tail",
+    "reads_length_keywords_by_type",
     "resolve_array_field_required_nullable",
     "schema_kinds",
     "should_parse_empty_object_as_dict",
@@ -308,10 +310,6 @@ class ValueKeywordsHost(Protocol):
         """Whether constraints are written on fields (``--field-constraints``)."""
 
     @property
-    def ignore_enum_constraints(self) -> bool:
-        """Whether an enum leaves its constraints out (``--ignore-enum-constraints``)."""
-
-    @property
     def model_resolver(self) -> ModelResolver:
         """The resolver of references and class names."""
 
@@ -397,6 +395,9 @@ class ValueKeywordsHost(Protocol):
 
     def _null_facts(self, obj: JsonSchemaObject, site: NullSite, *, has_default: bool = False) -> NullFacts:
         """Return the null facts of a schema at a site."""
+
+    def _reads_enum(self, obj: JsonSchemaObject) -> bool:
+        """Return whether the run reads the enum of a schema: it has one and --ignore-enum-constraints is off."""
 
     def _ref_path(self, ref: str) -> str:
         """Return the reference key a reference names: its edge's key, or a plain string's ``resolve_ref``."""
@@ -657,7 +658,7 @@ def is_constraints_field(parser: ValueKeywordsHost, obj: JsonSchemaObject, data_
         return True
     if not parser.field_constraints or obj.ref or obj.allOf or obj.is_object:
         return False
-    if is_union_schema(obj) or (obj.enum and not parser.ignore_enum_constraints):
+    if is_union_schema(obj) or parser._reads_enum(obj):  # noqa: SLF001
         return _field_holds_literal(parser, data_type)
     return True
 
@@ -745,7 +746,7 @@ def declared_kinds(parser: ValueKeywordsHost, type_: str | list[str] | None, for
     )
 
 
-def _reads_by_type(parser: ValueKeywordsHost) -> bool:
+def reads_length_keywords_by_type(parser: ValueKeywordsHost) -> bool:
     """Return whether ``--read-length-keywords-by-type`` reads the string and array keywords for their own kind."""
     return length_keywords_by_type(parser.data_type_manager.constraint_options)
 
@@ -768,7 +769,7 @@ def declared_constraint_keywords(parser: ValueKeywordsHost, obj: JsonSchemaObjec
     declared array also holds minLength and maxLength, which are written as their length bounds, unless
     ``--read-length-keywords-by-type`` reads each kind's own keywords and leaves out those of the other.
     """
-    kinds = schema_kinds(parser, obj, by_type=(by_type := _reads_by_type(parser)))
+    kinds = schema_kinds(parser, obj, by_type=(by_type := reads_length_keywords_by_type(parser)))
     return declared_keywords(kinds, by_type=by_type) | other_kind_keywords(kinds, by_type=by_type)
 
 
@@ -825,7 +826,7 @@ def split_constraint_values(
         values = {key: value for key, value in values.items() if key not in carried}
     if not values:
         return values, {}
-    kinds = schema_kinds(parser, obj, by_type=(by_type := _reads_by_type(parser)))
+    kinds = schema_kinds(parser, obj, by_type=(by_type := reads_length_keywords_by_type(parser)))
     if data_type is None:
         declared = declared_keywords(kinds, by_type=by_type)
         return {key: value for key, value in values.items() if key in declared}, {}
@@ -1009,7 +1010,7 @@ def dropped_property_counts(parser: ValueKeywordsHost, obj: JsonSchemaObject, da
     """
     if (
         "legacy-map-null-left-to-field" in parser._legacy_object_maps  # noqa: SLF001
-        or not (obj.patternProperties or obj.propertyNames is not None)
+        or not _declares_key_keywords(obj)
         or _object_map_other_types(obj) is None
         or not any(member in MAPPINGS for member in data_type.data_types)
     ):

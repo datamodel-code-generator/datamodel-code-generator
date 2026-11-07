@@ -26,6 +26,7 @@ from datamodel_code_generator._graph import reach
 from datamodel_code_generator._message_text import install_command
 from datamodel_code_generator._requirements import python_target_meets
 from datamodel_code_generator._user_keys import ClassScope
+from datamodel_code_generator._user_keys import class_scope as _class_scope_of
 from datamodel_code_generator.model._decisions.enum_kind import decide_enum_kind, enum_as_literal
 from datamodel_code_generator.model._decisions.union_assembly import MEMBER, UnionPolicy, assemble_union
 from datamodel_code_generator.model.base import _find_base_classes, get_inherited_fields
@@ -334,7 +335,7 @@ class GraphQLParser(Parser["GraphQLParserConfig", "JsonSchemaFeatures"]):
 
         The class keys of the options read ``class_name``, then the class's names in the output (``output_names``).
         """
-        scope = None if class_name is None else ClassScope(class_name, output_names)
+        scope = _class_scope_of(class_name, output_names)
         final_data_type = self._graphql_data_type(is_optional=True)
         data_type = final_data_type
         obj = field.type

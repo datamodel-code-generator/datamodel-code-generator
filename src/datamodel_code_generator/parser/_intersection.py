@@ -77,6 +77,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "BRANCH_COMBINATION_LIMIT",
+    "ENUM_ENTRY_NAMES",
     "ENUM_METADATA_KEYWORDS",
     "INHERITED_SCHEMA_KEYWORDS",
     "INTERSECTED_KEYWORDS",
@@ -102,9 +103,11 @@ __all__ = [
     "intersect_types",
     "is_hash_safe_json_scalar",
     "json_values_equal",
+    "kept_enum_entries",
     "kept_legacy_rows",
     "merge_inherited_keyword",
     "merge_inherited_value",
+    "retained_enum_metadata",
     "warn_unsatisfiable",
     "warn_untaken_patterns",
 ]
@@ -133,7 +136,13 @@ POSITIONAL_SCHEMA_KEYWORDS: Final = frozenset(schema_positions("child", shapes=S
 """The keywords that can declare a tuple, whose positions an inherited property and its override merge by index."""
 _NOT_INHERITED: Final = {"constraints": frozenset({"default", "examples", "example"})}
 """The keywords an override does not inherit, by ``--allof-merge-mode`` value; ``none`` inherits no keyword."""
-ENUM_METADATA_KEYWORDS: Final = ("x-enum-varnames", "x-enumNames", "x-enum-descriptions")
+ENUM_ENTRY_NAMES: Final = (
+    ("x-enum-varnames", "x_enum_varnames"),
+    ("x-enumNames", "x_enum_names"),
+    ("x-enum-descriptions", "x_enum_descriptions"),
+)
+"""The keywords that list one entry per enum value, each with the name of its schema object field."""
+ENUM_METADATA_KEYWORDS: Final = tuple(keyword for keyword, _ in ENUM_ENTRY_NAMES)
 _HASHABLE_SCALAR_TYPES: Final = frozenset({str, int, float, bool, type(None)})
 _REMOVED: Final = Sentinel("_REMOVED")
 INTERSECTED_KEYWORDS: Final = _BOUNDS.union((
@@ -476,6 +485,39 @@ def enum_metadata(enum_parts: Sequence[Mapping[str, Any]], key: str, index: int)
     )
 
 
+def retained_enum_metadata(parts: Sequence[Mapping[str, Any]], indices: Sequence[int]) -> dict[str, list[object]]:
+    """Return the x-enum entries of the values of the first part's enum at ``indices`` (``enum_metadata``).
+
+    Only the keywords some part writes.
+    """
+    return {
+        key: [enum_metadata(parts, key, index) for index in indices]
+        for key in ENUM_METADATA_KEYWORDS
+        if any(part.get(key) for part in parts)
+    }
+
+
+def kept_enum_entries(
+    values: Sequence[object],
+    entries: Sequence[object],
+    keeps: Callable[[int], bool],
+    *,
+    skips_null: bool,
+    keeps_extra: bool,
+) -> list[object]:
+    """Return the x-enum entries whose enum value stays (``keeps``, by the value's position).
+
+    Each entry is matched to its value as the schema's enum class reads them: past the null where the entries leave it
+    out (``skips_null``). ``keeps_extra``: the entries past the last value matched stay.
+    """
+    positions = [position for position, value in enumerate(values) if value is not None or not skips_null]
+    return [
+        entry
+        for index, entry in enumerate(entries)
+        if (keeps(positions[index]) if index < len(positions) else keeps_extra)
+    ]
+
+
 @final
 class _Reconciler:
     """Rewrite the keywords of a row whose value enforces something other than the intersection of the parts."""
@@ -617,11 +659,7 @@ class _Reconciler:
         if isinstance(row_enum := row.get("enum"), list) and _same_values(row_enum, retained):
             return
         updates["enum"] = retained
-        updates.update({
-            key: [enum_metadata(enum_parts, key, index) for index in indices]
-            for key in ENUM_METADATA_KEYWORDS
-            if any(part.get(key) for part in enum_parts)
-        })
+        updates.update(retained_enum_metadata(enum_parts, indices))
 
     def _enum_outside_type(
         self,
@@ -656,10 +694,9 @@ class _Reconciler:
         skips_null = self.enum_entries_skip_null({
             key: value for key, value in {**row, **updates}.items() if value is not _REMOVED
         })
-        entry_positions = [index for index, value in enumerate(values) if value is not None or not skips_null]
         kept = set(indices)
         updates.update({
-            key: [entry for position, entry in zip(entry_positions, metadata, strict=False) if position in kept]
+            key: kept_enum_entries(values, metadata, kept.__contains__, skips_null=skips_null, keeps_extra=False)
             for key in ENUM_METADATA_KEYWORDS
             if isinstance(metadata := updates.get(key, row.get(key)), list)
         })
@@ -964,11 +1001,7 @@ def all_of_member_row(
     ):
         retained_ids = {id(value) for value in result["enum"]}
         indices = [index for index, value in enumerate(parent_enum) if id(value) in retained_ids]
-        result.update({
-            key: [enum_metadata((parent, child), key, index) for index in indices]
-            for key in ENUM_METADATA_KEYWORDS
-            if parent.get(key) or child.get(key)
-        })
+        result.update(retained_enum_metadata((parent, child), indices))
     return result
 
 

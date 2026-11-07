@@ -667,43 +667,35 @@ def mark_untaken_constraints(
     )
 
 
-def _is_class_name(annotation: DataType) -> bool:
-    """Return whether an override annotation is a bare class name, such as ``str`` or ``Decimal``, but not ``None``."""
-    from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
-        PythonTypeBoundName,
-        PythonTypeName,
-    )
+def _class_path(annotation: DataType) -> str | None:
+    """Return the path of the class an override annotation names as a bare class name, such as ``str`` or ``Decimal``.
 
-    return (
-        annotation.python_type is not None
-        and isinstance(expression := annotation.python_type.expression, PythonTypeName | PythonTypeBoundName)
-        and expression.value != "None"
-    )
-
-
-def _base_class_refusal(parser: TypeOverridesHost, override_import: Import, annotation: DataType | None) -> str | None:
-    """Return why an override cannot replace a base class, or None when it names a class.
-
-    A class path names a class, and so does an annotation that is a bare class name (``_is_class_name``);
-    ``typing.Any``, by its path or as ``Any``, is a class only on a target that can subclass it.
+    None for any other annotation, and for ``None``.
     """
     from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
         PythonTypeBoundName,
         PythonTypeName,
     )
 
+    expression = None if annotation.python_type is None else annotation.python_type.expression
+    if not isinstance(expression, PythonTypeName | PythonTypeBoundName) or expression.value == "None":
+        return None
+    return (
+        dotted_name(expression.import_from, expression.import_name)
+        if isinstance(expression, PythonTypeBoundName)
+        else expression.value
+    )
+
+
+def _base_class_refusal(parser: TypeOverridesHost, override_import: Import, annotation: DataType | None) -> str | None:
+    """Return why an override cannot replace a base class, or None when it names a class.
+
+    A class path names a class, and so does an annotation that is a bare class name (``_class_path``);
+    ``typing.Any``, by its path or as ``Any``, is a class only on a target that can subclass it.
+    """
     path = _import_path(override_import)
-    if annotation is not None:
-        if annotation.python_type is None or not _is_class_name(annotation):
-            return "is no class"
-        expression = annotation.python_type.expression
-        path = (
-            dotted_name(expression.import_from, expression.import_name)
-            if isinstance(expression, PythonTypeBoundName)
-            else expression.value
-            if isinstance(expression, PythonTypeName)
-            else path
-        )
+    if annotation is not None and (path := _class_path(annotation)) is None:
+        return "is no class"
     if path == "typing.Any" and not python_target_meets(
         "python.subclass_any", parser.target_python_version.version_key
     ):

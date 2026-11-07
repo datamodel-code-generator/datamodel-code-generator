@@ -112,6 +112,7 @@ from datamodel_code_generator._user_keys import (
     model_level_type_override,
     scoped_key,
 )
+from datamodel_code_generator._user_keys import class_scope as _class_scope_of
 from datamodel_code_generator._warning_control import quiet
 from datamodel_code_generator.enums import (
     ConstructorFieldOrder,
@@ -1547,7 +1548,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Get an explicit serialization alias for a field; ``output_names`` are the class's output names keyed."""
         if not self.serialization_aliases:
             return None
-        scope = None if class_name is None else ClassScope(class_name, output_names)
+        scope = _class_scope_of(class_name, output_names)
         return first_present(self.serialization_aliases, field_keys(scope, original_field_name, field_name))[0]
 
     def _apply_final_class_field_aliases(

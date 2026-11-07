@@ -887,14 +887,9 @@ class _XMLSchemaConverter:
     ) -> str | None:
         """Return the local name of the built-in type a declared simple type is or restricts; None for any other."""
         if type_name:
-            local = _local_name(type_name)
-            namespace = self._qname_namespace(type_name, context)
-            key = self._resolve_key(type_name, self.simple_types, self.complex_types, element=context)
-            is_user_defined = key in self.simple_types or key in self.complex_types
-            if namespace == XML_SCHEMA_NAMESPACE or (
-                namespace is None and local in BUILTIN_TYPE_SCHEMAS and not is_user_defined
-            ):
-                return local
+            builtin, key = self._builtin_qname(type_name, context)
+            if builtin:
+                return _local_name(type_name)
             if key not in self.simple_types or key in seen:
                 return None
             simple_type = self.simple_types[key]
@@ -1354,17 +1349,28 @@ class _XMLSchemaConverter:
         current = schema.get(key)
         schema[key] = current * value if isinstance(current, int) else value
 
-    def _schema_for_qname(self, qname: str, element: ET.Element | None = None) -> JsonSchema:
-        local = _local_name(qname)
+    def _builtin_qname(self, qname: str, element: ET.Element | None) -> tuple[bool, QNameKey]:
+        """Return whether a qname names a built-in type, and the key of the type it resolves to.
+
+        A name in the XML Schema namespace does, and so does an unprefixed name of a built-in type that no type of
+        the schema declares.
+        """
         namespace = self._qname_namespace(qname, element)
-        is_unprefixed_builtin = namespace is None and local in BUILTIN_TYPE_SCHEMAS
         key = self._resolve_key(qname, self.simple_types, self.complex_types, element=element)
-        is_user_defined = key in self.simple_types or key in self.complex_types
-        if namespace == XML_SCHEMA_NAMESPACE or (is_unprefixed_builtin and not is_user_defined):
-            return self._builtin_type_schema(local, default=STRING_SCHEMA)
-        if is_user_defined:
+        return namespace == XML_SCHEMA_NAMESPACE or (
+            namespace is None
+            and _local_name(qname) in BUILTIN_TYPE_SCHEMAS
+            and key not in self.simple_types
+            and key not in self.complex_types
+        ), key
+
+    def _schema_for_qname(self, qname: str, element: ET.Element | None = None) -> JsonSchema:
+        builtin, key = self._builtin_qname(qname, element)
+        if builtin:
+            return self._builtin_type_schema(_local_name(qname), default=STRING_SCHEMA)
+        if key in self.simple_types or key in self.complex_types:
             return {"$ref": self._ref(self._type_definition_key(key))}
-        return self._builtin_type_schema(local, default={})
+        return self._builtin_type_schema(_local_name(qname), default={})
 
     def _builtin_type_schema(self, local: str, *, default: JsonSchema) -> JsonSchema:
         schema = _copy_schema(BUILTIN_TYPE_SCHEMAS.get(local, default))

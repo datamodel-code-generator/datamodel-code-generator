@@ -21,6 +21,7 @@ document reading (``parser/_schema_documents.py``) shares.
 
 from __future__ import annotations
 
+from collections import deque
 from contextlib import nullcontext
 from copy import deepcopy
 from dataclasses import replace
@@ -41,6 +42,7 @@ from datamodel_code_generator._scc import find_circular_sccs, strongly_connected
 from datamodel_code_generator._url_redaction import named_location
 from datamodel_code_generator.parser._intersection import concatenating_row
 from datamodel_code_generator.parser._schema_dispatch import SchemaSite
+from datamodel_code_generator.parser._schema_documents import first_definitions
 from datamodel_code_generator.parser._schema_graph import (
     DocumentId,
     RefEdge,
@@ -68,7 +70,6 @@ from datamodel_code_generator.parser.base import get_special_path
 from datamodel_code_generator.reference import ModelResolver, Reference, SchemaLocation, context_variable, is_url
 
 if TYPE_CHECKING:
-    from collections import deque
     from collections.abc import Callable, Generator, Iterable, Iterator, Sequence
     from contextlib import AbstractContextManager
     from pathlib import Path
@@ -89,7 +90,6 @@ __all__ = [
     "build_anchor_indexes",
     "compute_edge_key",
     "compute_ref_key",
-    "current_document_root",
     "current_dynamic_document",
     "current_dynamic_scope",
     "declares_recursive_anchor",
@@ -217,6 +217,27 @@ class _DynamicSpecialization(NamedTuple):
     path: tuple[str, ...]
 
 
+class _Worklist:
+    """The items met while parsing that are parsed later, in the order met, each once."""
+
+    __slots__ = ("draining", "pending")
+
+    def __init__(self) -> None:
+        self.pending: deque[Any] = deque()
+        self.draining = False
+
+    def drain(self, handle: Callable[[Any], None]) -> None:
+        """Handle each pending item, also those that handling adds; nothing within a drain already running."""
+        if self.draining or not self.pending:
+            return
+        self.draining = True
+        try:
+            while self.pending:
+                handle(self.pending.popleft())
+        finally:
+            self.draining = False
+
+
 @final
 @record
 class _DynamicTarget:
@@ -256,7 +277,6 @@ class SchemaRefsHost(Protocol):
     _external_ref_mapping: dict[str, str]
     _unread_mapped_documents: set[str]
     _circular_ref_cache: dict[str, bool]
-    _draining_dynamic_specializations: bool
     _dynamic_anchor_index: dict[tuple[str, ...], dict[str, str]]
     _dynamic_anchor_usage: dict[_TargetNode, frozenset[str]]
     _dynamic_bindings: dict[str, str]
@@ -270,13 +290,12 @@ class SchemaRefsHost(Protocol):
     _document_roles: dict[str, dict[str, None]]
     _false_schema_refs: set[str] | None
     _has_embedded_schema_resources: bool
-    _pending_dynamic_specializations: deque[_DynamicSpecialization]
-    _pending_ref_sites: deque[_RefSite]
+    _dynamic_specialization_worklist: _Worklist
     _ref_site_models: dict[tuple[SchemaLocation, frozenset[tuple[str, str]]], tuple[Reference, dict[str, Any]]]
-    _draining_ref_sites: bool
     _parses_unowned_fields: bool
     _recursive_anchor_index: dict[tuple[str, ...], list[str]]
     _ref_data_type_facts: dict[str, tuple[Any, bool]]
+    _ref_site_worklist: _Worklist
     _ref_target_dumps: dict[tuple[_TargetNode, str], tuple[dict[str, Any], str]]
     _roles_recorded_after_preparation: bool
     _schema_resource_cache: dict[str, tuple[dict[str, Any], dict[str, Any]]]
@@ -627,13 +646,6 @@ def shared_object(
 ) -> _ValidatedT:
     """Return the ``kind`` object a value of a loaded document validates to, validated once by the schema graph."""
     return parser._graph.schema(raw, kind, validate)  # noqa: SLF001
-
-
-def current_document_root(parser: SchemaRefsHost) -> SchemaLocation:
-    """Return the location of the root of the document whose schemas are being parsed."""
-    return SchemaLocation(
-        parser.model_resolver.join_path(tuple(parser.model_resolver.current_root)).partition("#")[0], ()
-    )
 
 
 def derived_ref(parser: SchemaRefsHost, value: str, source: SchemaLocation | None, keyword: str, ref: str) -> str:
@@ -1053,7 +1065,7 @@ def dynamic_specialization_reference(parser: SchemaRefsHost, ref: str, resolved_
     )
     parser._dynamic_specializations[key] = reference  # noqa: SLF001
     parser._dynamic_specialization_paths.add(tuple(path))  # noqa: SLF001
-    parser._pending_dynamic_specializations.append(  # noqa: SLF001
+    parser._dynamic_specialization_worklist.pending.append(  # noqa: SLF001
         _DynamicSpecialization(resolved_ref, bindings, reference, tuple(path))
     )
     return reference
@@ -1100,7 +1112,7 @@ def ref_site_reference(parser: SchemaRefsHost, site: SchemaSite[JsonSchemaObject
             parser.parse_object(site.name, obj, path, singular_name=site.singular_name)
             return reference
         resolver = parser.model_resolver
-        parser._pending_ref_sites.append(  # noqa: SLF001
+        parser._ref_site_worklist.pending.append(  # noqa: SLF001
             _RefSite(
                 replace(site, path=path, scope=None),
                 tuple(resolver.current_root),
@@ -1120,36 +1132,25 @@ def ref_site_reference(parser: SchemaRefsHost, site: SchemaSite[JsonSchemaObject
 
 def parse_ref_sites(parser: SchemaRefsHost) -> None:
     """Parse the models of the `$ref` sites met so far, from the worklist, in the context each was met in."""
-    if parser._draining_ref_sites or not parser._pending_ref_sites:  # noqa: SLF001
-        return
-    parser._draining_ref_sites = True  # noqa: SLF001
     resolver = parser.model_resolver
-    try:
-        while parser._pending_ref_sites:  # noqa: SLF001
-            pending = parser._pending_ref_sites.popleft()  # noqa: SLF001
-            site, (document, path, pointer, bindings) = pending.site, pending.dynamic
-            with (
-                resolver.current_root_context(pending.root),
-                resolver.current_base_path_context(pending.base_path),
-                resolver.base_url_context(pending.base_url),
-                parser._dynamic_scope_context(path, bindings, pointer, document),  # noqa: SLF001
-                context_variable(partial(setattr, parser, "raw_obj"), parser.raw_obj, pending.raw_obj),
-            ):
-                parser.parse_object(site.name, site.obj, site.path, singular_name=site.singular_name)
-    finally:
-        parser._draining_ref_sites = False  # noqa: SLF001
+
+    def parse(pending: _RefSite) -> None:
+        site, (document, path, pointer, bindings) = pending.site, pending.dynamic
+        with (
+            resolver.current_root_context(pending.root),
+            resolver.current_base_path_context(pending.base_path),
+            resolver.base_url_context(pending.base_url),
+            parser._dynamic_scope_context(path, bindings, pointer, document),  # noqa: SLF001
+            context_variable(partial(setattr, parser, "raw_obj"), parser.raw_obj, pending.raw_obj),
+        ):
+            parser.parse_object(site.name, site.obj, site.path, singular_name=site.singular_name)
+
+    parser._ref_site_worklist.drain(parse)  # noqa: SLF001
 
 
 def parse_dynamic_specializations(parser: SchemaRefsHost) -> None:
     """Parse pending specialized models iteratively, outside of any specialization being parsed."""
-    if parser._draining_dynamic_specializations or not parser._pending_dynamic_specializations:  # noqa: SLF001
-        return
-    parser._draining_dynamic_specializations = True  # noqa: SLF001
-    try:
-        while parser._pending_dynamic_specializations:  # noqa: SLF001
-            parse_dynamic_specialization(parser, parser._pending_dynamic_specializations.popleft())  # noqa: SLF001
-    finally:
-        parser._draining_dynamic_specializations = False  # noqa: SLF001
+    parser._dynamic_specialization_worklist.drain(partial(parse_dynamic_specialization, parser))  # noqa: SLF001
 
 
 def parse_dynamic_specialization(parser: SchemaRefsHost, specialization: _DynamicSpecialization) -> None:
@@ -1445,18 +1446,17 @@ def document_recursive_anchors(
     which under --read-schema-version-per-document are those of its own version (``_schema_paths_at``).
     """
     anchors = ["#"] if raw.get("$recursiveAnchor") is True else []
-    for schema_path, split_schema_path in parser._schema_paths_at(location):  # noqa: SLF001
-        if definitions := cast("dict[str, YamlValue]", get_model_by_path(raw, split_schema_path)):
-            entries = chain(
-                ((str(key), model, [schema_path, str(key)]) for key, model in definitions.items()),
-                parser._iter_schema_definition_entries(definitions, [schema_path]),  # noqa: SLF001
-            )
-            anchors.extend(
-                parser._anchor_ref_path((), path)  # noqa: SLF001
-                for _, model, path in entries
-                if isinstance(model, dict) and model.get("$recursiveAnchor") is True
-            )
-            break
+    schema_path, definitions = first_definitions(parser, raw, location)
+    if definitions:
+        entries = chain(
+            ((str(key), model, [schema_path, str(key)]) for key, model in definitions.items()),
+            parser._iter_schema_definition_entries(definitions, [schema_path]),  # noqa: SLF001
+        )
+        anchors.extend(
+            parser._anchor_ref_path((), path)  # noqa: SLF001
+            for _, model, path in entries
+            if isinstance(model, dict) and model.get("$recursiveAnchor") is True
+        )
     return anchors
 
 

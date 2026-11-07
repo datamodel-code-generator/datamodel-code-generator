@@ -12,12 +12,14 @@ which custom templates can still read on the raw field.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeAlias
 
 from typing_extensions import TypedDict
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+
+    from datamodel_code_generator.model.base import DataModelFieldBase
 
 __all__ = [
     "FIELD_OPTIONS_LEFT_OUT",
@@ -29,7 +31,9 @@ __all__ = [
     "FieldFacts",
     "FieldIdentity",
     "FieldRow",
+    "RequiredFieldHost",
     "field_options_left_out",
+    "require_field",
     "uses_default_with_required",
 ]
 
@@ -216,3 +220,44 @@ def uses_default_with_required(*, required: bool, has_default: bool, use_default
     the field or makes it required later.
     """
     return required and use_default and has_default
+
+
+class _FieldRequirer(Protocol):
+    """The builder through which a field is made required."""
+
+    def require_field(self, field_: DataModelFieldBase, *, use_default_with_required: bool) -> None:
+        """Make a field required, and write its default beside it when ``use_default_with_required``."""
+
+
+class RequiredFieldHost(Protocol):
+    """The options and the builder that making a field required reads of the parser."""
+
+    @property
+    def apply_default_values_for_required_fields(self) -> bool:
+        """Whether a required field keeps its default (``--use-default``)."""
+
+    @property
+    def keep_defaults_of_inherited_required_fields(self) -> bool:
+        """Whether a field only a base requires keeps its default (``--keep-defaults-of-inherited-required-fields``)."""
+
+    @property
+    def _graph_builder(self) -> _FieldRequirer:
+        """The builder that changes the model graph through the generation store."""
+
+
+def require_field(parser: RequiredFieldHost, field: DataModelFieldBase, *, inherited: bool = False) -> None:
+    """Make ``field`` required; ``--use-default`` keeps its default beside it (``uses_default_with_required``).
+
+    ``inherited``: a model's own field that only a schema it inherits from lists as required keeps its default only
+    with ``--keep-defaults-of-inherited-required-fields``. The fields a read/write variant collects from its bases and
+    those a flattened model adopts from its bases keep it with ``--use-default`` alone.
+    """
+    parser._graph_builder.require_field(  # noqa: SLF001
+        field,
+        use_default_with_required=uses_default_with_required(
+            required=True,
+            has_default=field.has_default,
+            use_default=parser.apply_default_values_for_required_fields
+            and (not inherited or parser.keep_defaults_of_inherited_required_fields),
+        ),
+    )
