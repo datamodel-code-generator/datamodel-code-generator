@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from dataclasses import replace
+from dataclasses import fields, replace
 from decimal import Decimal
 from enum import Enum, auto
 from fractions import Fraction
@@ -1741,6 +1741,10 @@ STRING_KEYWORDS: frozenset[str] = _applicability.STRING_KEYWORDS
 ARRAY_KEYWORDS: frozenset[str] = _applicability.ARRAY_KEYWORDS
 SEQUENCE_KEYWORDS: frozenset[str] = _applicability.SEQUENCE_KEYWORDS
 TYPE_DEPENDENT_KEYWORDS: frozenset[str] = _applicability.TYPE_DEPENDENT_KEYWORDS
+_CONSTRAINT_OPTION_NAMES: Final[tuple[str, ...]] = tuple(
+    field.name for field in fields(_applicability.ConstraintOptions)
+)
+"""The options of the constraint table, which the type manager holds under the same names."""
 _UNION_PATHS: frozenset[str] = frozenset({"typing.Union", "typing.Optional", UNION, OPTIONAL})
 _QUALIFIER_PATHS: frozenset[str] = frozenset({"typing.Annotated", "typing.Final", IMPORT_ANNOTATED.import_, "Final"})
 _LITERAL_VALUE_TYPE_PATHS: Mapping[type, str] = MappingProxyType({
@@ -2066,14 +2070,7 @@ class DataTypeManager(ABC):
     @property
     def constraint_options(self) -> _applicability.ConstraintOptions:
         """The options of the constraint table, as the parser sets them on the type manager."""
-        return _applicability.ConstraintOptions(
-            omit_redundant_constraints=self.omit_redundant_constraints,
-            use_decimal_in_field_forms=self.use_decimal_in_field_forms,
-            use_encoded_str_for_constrained_base64=self.use_encoded_str_for_constrained_base64,
-            use_strict_str_for_base64=self.use_strict_str_for_base64,
-            read_length_keywords_by_type=self.read_length_keywords_by_type,
-            read_msgspec_union_bounds_exactly=self.read_msgspec_union_bounds_exactly,
-        )
+        return _applicability.ConstraintOptions(**{name: getattr(self, name) for name in _CONSTRAINT_OPTION_NAMES})
 
     @property
     def encodes_constrained_base64(self) -> bool:
@@ -2168,7 +2165,7 @@ class DataTypeManager(ABC):
                 if model.form != "alias":
                     keywords.update(cls.member_constraint_keywords(member, target_version, model_of) or ())
                     if model.has_length:
-                        keywords.update(_applicability.LENGTH_KEYWORDS | _applicability.ITEM_COUNT_KEYWORDS)
+                        keywords.update(_applicability.COUNT_KEYWORDS)
                 else:
                     pending.append((cast("DataType", model.fields[0].data_type), current_seen | {id(reference)}))
         return frozenset(keywords)
