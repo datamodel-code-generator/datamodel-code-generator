@@ -467,7 +467,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr, PythonTypeRuntimeSymbol
     from datamodel_code_generator._types import JSONSchemaParserConfigDict
     from datamodel_code_generator.config import JSONSchemaParserConfig
-    from datamodel_code_generator.parser._inherited_schemas import ModelDeclarations
+    from datamodel_code_generator.parser._inherited_schemas import InheritedParentRow, ModelDeclarations
     from datamodel_code_generator.parser._naming import Claim
     from datamodel_code_generator.parser._rw_split import _Site
     from datamodel_code_generator.parser._schema_reading import SlashNames
@@ -1335,6 +1335,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _reads_dynamic_anchors_in_document_order(self) -> bool:
         """Whether --read-dynamic-anchors-in-document-order resolves a $dynamicRef from its document as loaded."""
         return self.config.read_dynamic_anchors_in_document_order
+
+    @property
+    def _inherited_parent_row(self) -> InheritedParentRow:
+        """The order the allOf parents of an inherited schema are read in: their class's under the option.
+
+        Row ``class-bases`` under --read-allof-parents-in-mro-order, else row ``legacy-document-order``
+        (``_inherited_schemas.inherited_schema_parents``).
+        """
+        return "class-bases" if self.config.read_allof_parents_in_mro_order else "legacy-document-order"
 
     @property
     def _pointer_slash_names(self) -> SlashNames:
@@ -3753,7 +3762,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _linearize_inherited_schema_refs(self, base_classes: list[Reference]) -> tuple[str, ...]:
         """Return raw inherited schemas in the same C3 order as generated models.
 
-        The parents of each schema are its allOf references, ordered descendants first like the bases of its class.
+        The parents of each schema are those ``_inherited_schemas.inherited_schema_parents`` reads.
         """
         return _inherited_schemas.linearize_inherited_schema_refs(self, base_classes)
 

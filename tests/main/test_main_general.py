@@ -2037,6 +2037,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "intersect_allof_keywords",
         "intersect_combined_schema_keywords",
         "distribute_allof_over_unions",
+        "read_allof_parents_in_mro_order",
         "omit_redundant_constraints",
         "read_length_keywords_by_type",
         "read_msgspec_union_bounds_exactly",

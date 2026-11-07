@@ -32040,20 +32040,54 @@ def test_main_jsonschema_diamond_inherited_field_override(output_model_type: str
     )
 
 
-def test_main_jsonschema_allof_inherited_property_nearer_base(output_file: Path) -> None:
-    """Take a redeclared property from the nearer base, as the class MRO does, whichever order an allOf lists them."""
+@pytest.mark.cli_doc(
+    options=["--read-allof-parents-in-mro-order"],
+    option_description="""Read the allOf parents of every inherited schema in the order of the class bases.
+
+A property that several bases declare takes the declaration of the first base in the method resolution order of the
+generated class, the nearer one. With `BaseFirst = allOf: [A, B]` and `B = allOf: [A, {p: maxLength 3}]`, the class
+is `BaseFirst(B, A)`, but the parents of the inner allOf were read in document order, so a subclass that redeclares
+`p` took `A`'s `max_length=5` and accepted `"abcd"`, which `B` rejects. With `--read-allof-parents-in-mro-order` it
+takes `B`'s `max_length=3`, whichever order the allOf lists `A` and `B`.""",
+    input_schema="jsonschema/allof_inherited_property_nearer_base.json",
+    cli_args=["--read-allof-parents-in-mro-order"],
+    golden_output="main/jsonschema/main_jsonschema/allof_inherited_property_nearer_base[mro].py",
+    comparison_output="main/jsonschema/main_jsonschema/allof_inherited_property_nearer_base[no-mro].py",
+    related_options=["--allof-merge-mode"],
+)
+@pytest.mark.parametrize(
+    ("extra_args", "longest", "too_long"),
+    [
+        pytest.param([], "abcde", "abcdef", id="released"),
+        pytest.param(["--read-allof-parents-in-mro-order"], "abc", "abcd", id="mro"),
+        pytest.param(
+            ["--read-allof-parents-in-mro-order", "--no-read-allof-parents-in-mro-order"],
+            "abcde",
+            "abcdef",
+            id="no-mro",
+        ),
+    ],
+)
+def test_main_jsonschema_allof_inherited_property_nearer_base(
+    output_file: Path, extra_args: list[str], longest: str, too_long: str
+) -> None:
+    """Take a redeclared property from the nearer base, as the class MRO does, under the option (#5599).
+
+    Without it ``FromBaseFirst`` takes ``A``'s ``max_length=5`` through ``BaseFirst = allOf: [A, B]`` and accepts
+    ``"abcde"``, as in 0.90.0; ``FromDescendantFirst`` takes ``B``'s ``max_length=3`` either way.
+    """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "allof_inherited_property_nearer_base.json",
         output_path=output_file,
         input_file_type="jsonschema",
-        extra_args=["--disable-timestamp", "--formatters", "builtin"],
+        extra_args=[*extra_args, "--disable-timestamp", "--formatters", "builtin"],
     )
     assert_generated_model_json_validation(
         output_file,
         module_name="allof_inherited_property_nearer_base",
         model_name="Model",
-        valid_json='{"base_first": {"p": "abc", "q": 1}, "descendant_first": {"p": "abc", "q": 1}}',
-        invalid_json='{"base_first": {"p": "abcd", "q": 1}}',
+        valid_json=f'{{"base_first": {{"p": "{longest}", "q": 1}}, "descendant_first": {{"p": "abc", "q": 1}}}}',
+        invalid_json=f'{{"base_first": {{"p": "{too_long}", "q": 1}}}}',
         expected_error_type="string_too_long",
     )
     assert_generated_model_json_invalid(

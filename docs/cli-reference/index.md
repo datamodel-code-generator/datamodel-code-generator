@@ -9,7 +9,7 @@ This documentation is auto-generated from test cases.
 | Category | Options | Description |
 |----------|---------|-------------|
 | 📁 [Base Options](base-options.md) | 19 | Input/output configuration |
-| 🔧 [Typing Customization](typing-customization.md) | 52 | Type annotation and import behavior |
+| 🔧 [Typing Customization](typing-customization.md) | 53 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 38 | Field naming and docstring behavior |
 | 🏗️ [Model Customization](model-customization.md) | 64 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
@@ -312,6 +312,7 @@ These links are generated from CLI option metadata and summarize options that im
 
 ### R {#r}
 
+- [`--read-allof-parents-in-mro-order`](typing-customization.md#read-allof-parents-in-mro-order)
 - [`--read-const-beside-enum`](typing-customization.md#read-const-beside-enum)
 - [`--read-dynamic-anchors-in-document-order`](base-options.md#read-dynamic-anchors-in-document-order)
 - [`--read-escaped-ref-pointers`](base-options.md#read-escaped-ref-pointers)

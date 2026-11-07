@@ -152,6 +152,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--parent-scoped-naming": "Namespace models by their parent scope to avoid naming conflicts.",
     "--pin-aliases-with-alias-generator": "Decide a field's alias by the alias generator its model applies.",
     "--preset": "Apply an immutable built-in option preset.",
+    "--read-allof-parents-in-mro-order": "Read the allOf parents of every inherited schema in the order of the clas...",
     "--read-const-beside-enum": "Read a `const` beside an `enum` as JSON Schema does.",
     "--read-dynamic-anchors-in-document-order": "Resolve a `$dynamicRef` to the first `$dynamicAnchor` of its name ...",
     "--read-escaped-ref-pointers": "Read the escapes of a `$ref` JSON pointer as the characters they encode.",
