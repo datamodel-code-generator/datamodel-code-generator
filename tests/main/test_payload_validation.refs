@@ -1889,6 +1889,8 @@ openapi/read_only_write_only_empty_base.yaml::components.schemas.EmptyBase	paylo
 openapi/read_only_write_only_empty_base.yaml::components.schemas.HasFieldBase	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_external_directory/shapes.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_external_directory/single/api.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/read_only_write_only_extra_items_patterns.yaml::components.schemas.Passwords	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/read_only_write_only_extra_items_patterns.yaml::components.schemas.User	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_mixed.yaml::components.schemas.Address	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_mixed.yaml::components.schemas.Product	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_mixed.yaml::components.schemas.User	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3962,6 +3964,8 @@ openapi/read_only_write_only_empty_base.yaml::components.schemas.EmptyBase	paylo
 openapi/read_only_write_only_empty_base.yaml::components.schemas.HasFieldBase	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_external_directory/shapes.yaml::components.schemas.Pet	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_external_directory/single/api.yaml::components.schemas.Bar	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/read_only_write_only_extra_items_patterns.yaml::components.schemas.Passwords	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/read_only_write_only_extra_items_patterns.yaml::components.schemas.User	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_mixed.yaml::components.schemas.Address	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_mixed.yaml::components.schemas.Product	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_mixed.yaml::components.schemas.User	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

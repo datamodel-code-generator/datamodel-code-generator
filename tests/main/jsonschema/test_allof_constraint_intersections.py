@@ -26,6 +26,8 @@ from tests.main.jsonschema.conftest import EXPECTED_JSON_SCHEMA_PATH, assert_fil
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from _pytest.recwarn import WarningsRecorder
+
 
 @pytest.mark.parametrize("entry_point", ["api", "cli"])
 @pytest.mark.parametrize(
@@ -295,4 +297,25 @@ def test_allof_property_named_like_schema_keyword(output_file: Path) -> None:
         input_file_type="jsonschema",
         extra_args=["--disable-timestamp"],
         assert_func=assert_file_content,
+    )
+
+
+@pytest.mark.parametrize("order", ["child_first", "parent_first"])
+def test_allof_unsatisfiable_inherited_property_warning(
+    output_file: Path, recwarn: WarningsRecorder, order: str
+) -> None:
+    """Warn once that no value satisfies a property two allOf members declare, whether its child comes first or not.
+
+    Reading the inherited properties of the child checks the property with its warnings ignored; the parse of the
+    schema that declares it still reports it.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"allof_unsatisfiable_inherited_{order}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--disable-timestamp", "--formatters", "builtin", "--output-model-type", "pydantic_v2.BaseModel"],
+    )
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recwarn if issubclass(warning.category, UserWarning)),
+        name="warnings",
     )

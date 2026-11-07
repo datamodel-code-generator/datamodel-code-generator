@@ -4,18 +4,21 @@ A retry parse, a recommendation trial and a probe of a type run with their warni
 the user sees reports them; a parse again after one that failed shows only the warnings no parse before showed
 (``shown_once``); a warning about a schema is shown once per parse for each key it reports (``first_report``); and a
 warning names the frame its ``stacklevel`` counts without the wrapper frames that ``--debug`` puts around the functions
-it traces (``is_tracer_frame``). The module imports only the standard library, so every layer can import it.
+it traces (``is_tracer_frame``). ``shown_once`` and ``first_report`` record a warning as it is shown, past the filters
+(``_showing``), so a block whose warnings the filters ignore, as inside ``quiet``, leaves its keys to a later report.
+The module imports only the standard library, so every layer can import it.
 """
 
 from __future__ import annotations
 
 import warnings
 from contextlib import contextmanager
+from functools import partial
 from typing import TYPE_CHECKING, Final, TextIO, TypeVar
 from warnings import catch_warnings, simplefilter
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import Callable, Generator
     from types import FrameType
 
 __all__ = ["first_report", "is_tracer_frame", "quiet", "shown_once"]
@@ -41,9 +44,38 @@ def shown_once(seen: set[ShownWarning]) -> Generator[None, None, None]:
 
     The filters apply first, as to any warning; a warning they leave is shown as before.
     """
-    show = warnings.showwarning
+    with _showing(partial(_first_record, seen)):
+        yield
 
-    def show_new(  # noqa: PLR0913, PLR0917
+
+@contextmanager
+def first_report(seen: set[_KeyT], key: _KeyT) -> Generator[bool, None, None]:
+    """Yield whether ``key`` is unreported in ``seen``, recording it there once the block shows a warning.
+
+    A warning the filters ignore, as inside ``quiet``, is not shown and records nothing, so the next report of ``key``
+    shows its warning (#6540).
+    """
+    if key in seen:
+        yield False
+        return
+
+    def record(_shown: ShownWarning) -> bool:
+        seen.add(key)
+        return True
+
+    with _showing(record):
+        yield True
+
+
+@contextmanager
+def _showing(show: Callable[[ShownWarning], bool]) -> Generator[None, None, None]:
+    """Show a warning the block emits only where ``show`` returns True for its text, category and location.
+
+    The filters apply first, as to any warning: ``show`` sees only the warnings they leave, the ones shown.
+    """
+    show_warning = warnings.showwarning
+
+    def show_kept(  # noqa: PLR0913, PLR0917
         message: Warning | str,
         category: type[Warning],
         filename: str,
@@ -51,18 +83,18 @@ def shown_once(seen: set[ShownWarning]) -> Generator[None, None, None]:
         file: TextIO | None = None,
         line: str | None = None,
     ) -> None:
-        if first_report(seen, (str(message), category, filename, lineno)):
-            show(message, category, filename, lineno, file, line)
+        if show((str(message), category, filename, lineno)):
+            show_warning(message, category, filename, lineno, file, line)
 
-    warnings.showwarning = show_new  # ty: ignore[invalid-assignment]
+    warnings.showwarning = show_kept  # ty: ignore[invalid-assignment]
     try:
         yield
     finally:
-        warnings.showwarning = show
+        warnings.showwarning = show_warning
 
 
-def first_report(seen: set[_KeyT], key: _KeyT) -> bool:
-    """Return whether ``key`` is reported for the first time, recording it in ``seen``."""
+def _first_record(seen: set[_KeyT], key: _KeyT) -> bool:
+    """Return whether ``key`` is recorded for the first time, recording it in ``seen``."""
     if key in seen:
         return False
     seen.add(key)
