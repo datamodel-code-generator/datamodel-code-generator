@@ -28921,9 +28921,9 @@ def test_main_jsonschema_ref_to_json_list_file() -> None:
 def test_main_jsonschema_x_python_import_pointer_targets(
     output_file: Path, input_name: str, *, reuse_model: bool
 ) -> None:
-    """Write no model for an x-python-import schema outside $defs that only fields name; a base keeps its model.
+    """Write no empty model for an x-python-import schema outside $defs that only fields name; a base keeps its model.
 
-    The root of a document that a ``$ref`` names is such a schema too.
+    The root of a document that a ``$ref`` names is such a schema too. A model with fields or a root type is written.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / input_name,

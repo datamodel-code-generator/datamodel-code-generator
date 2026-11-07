@@ -193,7 +193,10 @@ from datamodel_code_generator.enums import (
     AliasGenerator,  # noqa: F401  # Preserve the established parser.jsonschema export.
 )
 from datamodel_code_generator.imports import IMPORT_ANY, Import, Imports
-from datamodel_code_generator.model import DataModel, DataModelFieldBase  # noqa: TC001  # Preserve the established parser.jsonschema export.
+from datamodel_code_generator.model import (  # Preserve the established parser.jsonschema export.
+    DataModel,
+    DataModelFieldBase,
+)
 from datamodel_code_generator.model._decisions.enum_kind import (
     decide_enum_kind,
     enum_as_literal,  # noqa: F401  # Preserve the established parser.jsonschema export.
@@ -8779,13 +8782,20 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
 
     def _note_python_import_target(self, target: YamlValue, path: list[str]) -> None:
-        """Note the model a ``$ref`` target parses into at ``path`` when its ``x-python-import`` types its uses.
+        """Note the empty model a ``$ref`` target parsed into at ``path`` when its ``x-python-import`` types its uses.
 
-        The target is that of a JSON pointer or the root of a document a ``$ref`` names (``_parse_document_root``). Only
-        a base that names the schema needs that model; unnamed, it is left out with the unused models (#5533).
+        The target is that of a JSON pointer or the root of a document a ``$ref`` names (``_parse_document_root``). A
+        model of no field and no generated base is one nobody can use: only a base that names the schema needs it, so
+        unnamed, it is left out with the unused models (#5533). A model with fields or a root type stays.
         """
-        if self._reads_as_python_import(target, path):
-            self._python_import_target_paths.add(self.model_resolver.join_path(tuple(path)))
+        if (
+            self._reads_as_python_import(target, path)
+            and (reference := self.model_resolver.references.get(key := self.model_resolver.join_path(tuple(path))))
+            and isinstance(model := reference.source, DataModel)
+            and not model.fields
+            and not any(base.reference for base in model.base_classes)
+        ):
+            self._python_import_target_paths.add(key)
 
     def _parse_document_root(
         self, name: str, obj: JsonSchemaObject, raw: dict[str, Any], path: list[str], *, referenced: bool
@@ -8794,9 +8804,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
         The root of an input document is no target: it keeps its model (``_note_python_import_target``).
         """
+        self.parse_obj(name, obj, path)
         if referenced:
             self._note_python_import_target(raw, path)
-        self.parse_obj(name, obj, path)
 
     def _check_version_specific_features(
         self,
@@ -9592,8 +9602,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                             else self._get_model_by_json_pointer(raw, object_paths, ref)
                         )
                         model_name = object_paths[-1]
-                        self._note_python_import_target(models, path)
                         self.parse_obj(model_name, self._validate_pointer_target(raw, object_paths, models, path), path)
+                        self._note_python_import_target(models, path)
                     elif not self.skip_root_model:
                         self._parse_document_root(
                             obj_name, root_obj, raw, path_parts or ["#"], referenced=ref is not None
@@ -9638,8 +9648,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 models = self._get_model_by_json_pointer(raw, object_paths, reserved_path)
                 tokens = self._pointer_path_tokens(reserved_path, reference_paths)
                 path = self._pointer_parse_path(path_parts, tokens)
-                self._note_python_import_target(models, path)
                 self.parse_obj(tokens[-1], self._validate_pointer_target(raw, object_paths, models, path), path)
+                self._note_python_import_target(models, path)
 
     def _pointer_parse_path(self, root: list[str], tokens: list[str]) -> list[str]:
         """Return the parse path of the target that the ``tokens`` of a JSON pointer name below the path ``root``.
