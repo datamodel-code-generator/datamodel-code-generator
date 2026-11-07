@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from typing_extensions import override
 
 from datamodel_code_generator import cached_path_exists
-from datamodel_code_generator.model.base import overrides_builtin_templates
+from datamodel_code_generator.model.base import _root_constraint_keywords, overrides_builtin_templates
 from datamodel_code_generator.model.pydantic_v2.base_model import has_lookaround_pattern
 from datamodel_code_generator.model.pydantic_v2.imports import IMPORT_ROOT_MODEL
 from datamodel_code_generator.model.pydantic_v2.root_model import RootModel
@@ -32,10 +32,7 @@ def _constrained_root_model(fields: list[DataModelFieldBase]) -> type[RootModel]
     """Keep constraints omitted by the alias template on an executable root class."""
     if len(fields) == 1 and (data_type := fields[0].data_type).type == NONE and not data_type.is_custom_type:
         return None
-    if any(
-        field.constraints and field.constraints.model_dump(exclude={"unique_items"}, exclude_none=True)
-        for field in fields
-    ) or has_lookaround_pattern(fields):
+    if any(map(_root_constraint_keywords, fields)) or has_lookaround_pattern(fields):
         return RootModel
     return None
 

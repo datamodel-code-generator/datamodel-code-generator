@@ -12,6 +12,7 @@ from __future__ import annotations
 import dataclasses
 import operator
 from collections import defaultdict
+from functools import partial
 from itertools import chain, repeat
 from keyword import iskeyword
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar, cast
@@ -33,6 +34,7 @@ from datamodel_code_generator._module_paths import (
     is_within_name,
     module_parts,
     normalized_path,
+    written_module_name,
     written_path,
 )
 from datamodel_code_generator._python_syntax import holds_lone_surrogate
@@ -103,6 +105,9 @@ from datamodel_code_generator.parser._passes._shared import (
     definition_reads,
     get_special_path,
     site_display_name,
+    tagged_structs,
+    unimported_model_keys,
+    union_structs,
     unique_items_plan,
     unused_model_lists,
 )
@@ -411,6 +416,17 @@ def _alias_reserved_names(
     }
 
 
+def _reserved_aliases(
+    ctx: ModuleContextView, shared_imports: Imports, names: Iterable[str], *, also: Iterable[str]
+) -> dict[str, str]:
+    """Return the alias each of ``names`` takes in the module, in their order (``_reserve_import_alias``).
+
+    The aliases keep off the names ``_alias_reserved_names`` gives and off each other.
+    """
+    reserved = _alias_reserved_names(ctx.models, ctx.imports, shared_imports, also=also)
+    return {name: _reserve_import_alias(name, reserved) for name in names}
+
+
 def _bind_module_field_names(  # noqa: PLR0913
     models: list[DataModel],
     imports: Imports,
@@ -527,10 +543,7 @@ def _released_name_imports(  # noqa: PLR0914
         for module, forwarder in forwarder_map.items()
         for released_name, name in forwarder.released
     }
-    unimported = {
-        *parser._base_stand_in_imports,  # noqa: SLF001
-        *(model_key_of(model.reference) for model in parser._self_named_root_models),  # noqa: SLF001
-    }
+    unimported = unimported_model_keys(parser)
     names: dict[ModulePath, tuple[tuple[ModulePath, str, str], ...]] = {}
     for module, forwarder in forwarder_map.items():
         if not forwarder.released:
@@ -586,18 +599,11 @@ _MsgspecRefusal: TypeAlias = tuple[tuple[DataModel, ...], str | None]
 _NO_MSGSPEC_REFUSAL: _MsgspecRefusal = ((), None)
 
 
-def _msgspec_refused_structs(models: Iterable[object]) -> _MsgspecRefusal:
+def _msgspec_refused_structs(structs: tuple[DataModel, ...]) -> _MsgspecRefusal:
     """Return the distinct Struct types of a union msgspec refuses, and how their tags clash if all are tagged.
 
     msgspec decodes a union of Struct types only if all are tagged, by one tag field, with distinct tags of one type.
     """
-    structs = (
-        *{
-            id(model): model
-            for model in models
-            if isinstance(model, DataModel) and model.REQUIRES_TAGGED_UNION_DISCRIMINATOR
-        }.values(),
-    )
     if (refusal := struct_union_refusal([struct.discriminator_tag for struct in structs])) is None:
         return _NO_MSGSPEC_REFUSAL
     kind, values = refusal
@@ -612,9 +618,7 @@ def _msgspec_refused_structs(models: Iterable[object]) -> _MsgspecRefusal:
 
 def _msgspec_refused_member_structs(data_types: Iterable[DataType]) -> _MsgspecRefusal:
     """Return the refused Struct types of a union, through the aliases it names."""
-    return _msgspec_refused_structs(
-        member.reference.source for member, _, _ in _iter_discriminator_data_types(data_types) if member.reference
-    )
+    return _msgspec_refused_structs(union_structs(data_types))
 
 
 def _msgspec_union_members(data_type: DataType) -> Sequence[DataType]:
@@ -726,28 +730,26 @@ def _msgspec_enum_clashes(
     )
 
 
-def _msgspec_refused_union_enums(
-    data_type: DataType, literal_enum_ids: Collection[ModelKey]
-) -> tuple[_MsgspecEnumClash, ...]:
-    """Return each kind of a union msgspec refuses for an Enum, unless an alias it names is refused for that kind."""
-    if not (members := _msgspec_union_members(data_type)) or not (
-        clashes := _msgspec_enum_clashes(members, literal_enum_ids)
-    ):
-        return ()
-    covered = {
-        clash[0]
-        for root in _iter_union_alias_roots(data_type)
-        for clash in _msgspec_enum_clashes((root,), literal_enum_ids)
-    }
-    return tuple(clash for clash in clashes if clash[0] not in covered)
-
-
 _MsgspecKindClash: TypeAlias = tuple[str, tuple[str, ...]]
 """A kind of the members of a union that msgspec refuses for holding more than one member of that kind, and its
 written members."""
 
 
 _ClashT = TypeVar("_ClashT", _MsgspecEnumClash, _MsgspecKindClash)
+
+
+def _refused_union_clashes(
+    data_type: DataType, clashes_of: Callable[[Sequence[DataType]], tuple[_ClashT, ...]]
+) -> tuple[_ClashT, ...]:
+    """Return each kind msgspec refuses a union for (``clashes_of`` its members), unless an alias it names is refused.
+
+    ``clashes_of`` is ``_msgspec_enum_clashes`` (an Enum of the kind) or ``_msgspec_kind_clashes`` (more than one
+    member of the kind).
+    """
+    if not (members := _msgspec_union_members(data_type)) or not (clashes := clashes_of(members)):
+        return ()
+    covered = {clash[0] for root in _iter_union_alias_roots(data_type) for clash in clashes_of((root,))}
+    return tuple(clash for clash in clashes if clash[0] not in covered)
 
 
 def _first_union_clashes(clashes: Iterable[_ClashT]) -> dict[str, _ClashT]:
@@ -876,22 +878,6 @@ def _msgspec_kind_clashes(
     if "int" in slots["number"]:
         covered.add("number")
     return tuple((kind, (*names[kind],)) for kind, counted in slots.items() if len(counted) > 1 and kind not in covered)
-
-
-def _msgspec_refused_union_kinds(
-    data_type: DataType, literal_enum_ids: Collection[ModelKey]
-) -> tuple[_MsgspecKindClash, ...]:
-    """Return each kind a union msgspec refuses for more than one member of, unless an alias it names is refused so."""
-    if not (members := _msgspec_union_members(data_type)) or not (
-        clashes := _msgspec_kind_clashes(members, literal_enum_ids)
-    ):
-        return ()
-    covered = {
-        clash[0]
-        for root in _iter_union_alias_roots(data_type)
-        for clash in _msgspec_kind_clashes((root,), literal_enum_ids)
-    }
-    return tuple(clash for clash in clashes if clash[0] not in covered)
 
 
 def _msgspec_kind_union_message(name: str, clash: _MsgspecKindClash) -> str:
@@ -1270,6 +1256,27 @@ def _evaluated_data_types(model: DataModel, *, evaluates_annotations: bool) -> I
         yield from model.all_data_types
 
 
+def _alias_reached_types(
+    data_types: Iterable[DataType], follows: Callable[[DataType], bool] = lambda _: True
+) -> Iterator[tuple[DataType, object]]:
+    """Yield the types of ``data_types`` and of the type aliases they name, last first, each with the model it names.
+
+    A type that ``follows`` gives a model it names the first time the walk meets that model, else ``None``; the types
+    of a type alias it gives so (``DataModel.all_data_types``) are read next, so an alias is read once, through
+    other aliases or not. The order is that of a stack, which decides the first failure a check reports.
+    """
+    pending = [*data_types]
+    seen: set[int] = set()
+    while pending:
+        data_type = pending.pop()
+        source = None
+        if follows(data_type) and (reference := data_type.reference) is not None and id(reference.source) not in seen:
+            seen.add(id(source := reference.source))
+        yield data_type, source
+        if isinstance(source, TypeAliasBase):
+            pending.extend(source.all_data_types)
+
+
 def reject_alias_cycles_without_schema(
     parser: FinishHost, contexts: Sequence[ModuleContextView], *, evaluates_annotations: bool
 ) -> None:
@@ -1293,16 +1300,9 @@ def reject_alias_cycles_without_schema(
         for model in models:
             if isinstance(model, TypeAliasBase):
                 continue
-            pending = [*model.all_data_types]
-            seen: set[int] = set()
-            while pending:
-                if (reference := pending.pop().reference) is None or id(source := reference.source) in seen:
-                    continue
-                if (cycle := cycles.get(id(source))) is not None:
+            for _, source in _alias_reached_types(model.all_data_types):
+                if source is not None and (cycle := cycles.get(id(source))) is not None:
                     raise _loop_error(model, cycle, failure, parser._folded_ref_chains)  # noqa: SLF001
-                seen.add(id(source))
-                if isinstance(source, TypeAliasBase):
-                    pending.extend(source.all_data_types)
     if not self_named:
         return
     for model in models:
@@ -1356,18 +1356,12 @@ def _lone_surrogate_held(model: DataModel, field: DataModelFieldBase) -> tuple[s
         ((kind, alias) for kind, alias in _pydantic_read_aliases(field) if holds_lone_surrogate(alias)), None
     ):
         return f"its {held[0]} {stable_repr(held[1])}", named_schema_location(origin, model.reference)
-    pending = [*field.data_type.all_data_types]
-    seen: set[int] = set()
-    while pending:
-        data_type = pending.pop()
+    for data_type, source in _alias_reached_types(
+        field.data_type.all_data_types, lambda data_type: not data_type.enum_member_literals
+    ):
         if value := next((v for v in data_type.literals if isinstance(v, str) and holds_lone_surrogate(v)), None):
             location = type_origin_of(data_type) or origin
             return f"the Literal value {stable_repr(value)}", named_schema_location(location, model.reference)
-        if data_type.enum_member_literals or (reference := data_type.reference) is None:
-            continue
-        if id(source := reference.source) in seen:
-            continue
-        seen.add(id(source))
         if isinstance(source, Enum):
             values = (get_raw_enum_member_value(member.default) for member in source.fields)
             if value := next((v for v in values if isinstance(v, str) and holds_lone_surrogate(v)), None):
@@ -1375,8 +1369,6 @@ def _lone_surrogate_held(model: DataModel, field: DataModelFieldBase) -> tuple[s
                     f"the value {stable_repr(value)} of the enum {source.class_name}",
                     named_schema_location(None, source.reference),
                 )
-        elif isinstance(source, TypeAliasBase):
-            pending.extend(source.all_data_types)
     return None
 
 
@@ -1447,6 +1439,8 @@ def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleCon
     models = _context_models(contexts)
     named = {model.class_name: model for model in models}
     literal_enum_ids = parser._literal_under_all_enum_reference_ids  # noqa: SLF001
+    enum_clashes_of = partial(_msgspec_enum_clashes, literal_enum_ids=literal_enum_ids)
+    kind_clashes_of = partial(_msgspec_kind_clashes, literal_enum_ids=literal_enum_ids)
     for model in models:
         if isinstance(model, Enum):
             for message in filter(
@@ -1462,7 +1456,8 @@ def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleCon
                 warn_as_parser_base(message, UserWarning, stacklevel=2)
             continue
         if isinstance(model, _DataTypeUnionBase):
-            if (refusal := _msgspec_refused_structs(named.get(field.name) for field in model.fields))[0]:
+            structs = tagged_structs(named.get(field.name) for field in model.fields)
+            if (refusal := _msgspec_refused_structs(structs))[0]:
                 warn_as_parser_base(
                     _msgspec_union_message(model.class_name, refusal, discriminated=False), UserWarning, stacklevel=2
                 )
@@ -1481,10 +1476,10 @@ def warn_about_msgspec_decoding(parser: FinishHost, contexts: Sequence[ModuleCon
                 refusal[1] is not None or not (discriminated and parser.use_msgspec_tagged_unions)
             )
             clashes = _first_union_clashes(
-                chain.from_iterable(_msgspec_refused_union_enums(data_type, literal_enum_ids) for data_type in nested)
+                chain.from_iterable(_refused_union_clashes(data_type, enum_clashes_of) for data_type in nested)
             )
             kind_clashes = _first_union_clashes(
-                chain.from_iterable(_msgspec_refused_union_kinds(data_type, literal_enum_ids) for data_type in nested)
+                chain.from_iterable(_refused_union_clashes(data_type, kind_clashes_of) for data_type in nested)
             )
             wide = _msgspec_wide_int(chain.from_iterable(data_type.literals for data_type in nested))
             if member is None and not refused and not clashes and not kind_clashes and wide is None:
@@ -1743,6 +1738,33 @@ def _rebind_import(  # noqa: PLR0913
     return alias
 
 
+def _rebind_users(  # noqa: PLR0913
+    parser: ImportsHost[Any],
+    ctx: ModuleContextView,
+    held: Mapping[str, Reference],
+    users: Mapping[str, tuple[_ImportKey, Sequence[DataType]]],
+    *,
+    held_by: Literal["builtin", "submodule"],
+    producer: ImportProducer,
+) -> None:
+    """Give each import that loses its name the name the module's resolver gives next, and rename the types using it.
+
+    ``users`` holds, by the name each import loses (``_rebind_import``), the import and the types that name a model
+    through it, in the order they are renamed; the names are taken in sorted order. A type writes the new name in place
+    of the old one before the rest of its expression (``list_1.Pop``), and the enum members of the defaults follow
+    (``_follow_renamed_enum_references``).
+    """
+    renamed: list[DataType] = []
+    for binding, (import_key, data_types) in sorted(users.items()):
+        alias = _rebind_import(parser, ctx, binding, held[binding], import_key, held_by=held_by, producer=producer)
+        for data_type in data_types:
+            parser._graph_builder.name_reference(  # noqa: SLF001
+                data_type, alias + (data_type.alias or binding)[len(binding) :]
+            )
+            renamed.append(data_type)
+    _follow_renamed_enum_references(parser, ctx.models, renamed)
+
+
 def _module_binding(expression: str | None) -> str | None:
     """Return the module binding of an expression ``<binding>.<Class>``, or None for another expression."""
     return expression.partition(".")[0] if expression and "." in expression else None
@@ -1840,26 +1862,18 @@ def _alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], ctx: Modul
         for model in ctx.models
         for name in _bare_loads_of(model.render(), shadowing, rule="legacy-flat-bare-loads")
     }
-    aliases = {
-        binding: _rebind_import(
-            parser,
-            ctx,
-            binding,
-            held[binding],
-            imported[binding],
-            held_by="builtin",
-            producer=_BUILTIN_MODULE_BINDINGS,
-        )
-        for binding in sorted(written)
-    }
-    renamed: list[DataType] = []
+    users: dict[str, dict[int, DataType]] = {binding: {} for binding in written}
     for data_type in references:
-        if (binding := _module_binding(data_type.alias)) in aliases:
-            parser._graph_builder.name_reference(  # noqa: SLF001
-                data_type, f"{aliases[binding]}{cast('str', data_type.alias)[len(binding) :]}"
-            )
-            renamed.append(data_type)
-    _follow_renamed_enum_references(parser, ctx.models, renamed)
+        if (binding := _module_binding(data_type.alias)) in users:
+            users[binding][id(data_type)] = data_type
+    _rebind_users(
+        parser,
+        ctx,
+        held,
+        {binding: (imported[binding], (*by_id.values(),)) for binding, by_id in users.items()},
+        held_by="builtin",
+        producer=_BUILTIN_MODULE_BINDINGS,
+    )
 
 
 def alias_builtin_shadowing_module_imports(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> None:
@@ -1915,25 +1929,19 @@ def _alias_imports_hidden_by_submodules(
             ):
                 continue
             users.setdefault(binding, []).append((data_type, _import_key(import_)))
-    renamed: list[DataType] = []
     if users:
         resolver.exclude_names.update(shared_import_bindings(parser.imports))
-    for binding, binding_users in sorted(users.items()):
-        alias = _rebind_import(
-            parser,
-            ctx,
-            binding,
-            held[binding],
-            binding_users[0][1],
-            held_by="submodule",
-            producer=_SUBMODULE_IMPORT_BINDINGS,
-        )
-        for data_type, _ in binding_users:
-            parser._graph_builder.name_reference(  # noqa: SLF001
-                data_type, alias + (data_type.alias or binding)[len(binding) :]
-            )
-            renamed.append(data_type)
-    _follow_renamed_enum_references(parser, ctx.models, renamed)
+    _rebind_users(
+        parser,
+        ctx,
+        held,
+        {
+            binding: (binding_users[0][1], [data_type for data_type, _ in binding_users])
+            for binding, binding_users in users.items()
+        },
+        held_by="submodule",
+        producer=_SUBMODULE_IMPORT_BINDINGS,
+    )
 
 
 def _alias_builtins_hidden_by_submodules(
@@ -1956,8 +1964,7 @@ def _alias_builtins_hidden_by_submodules(
     module_code = parser.data_model_type.render_module_code(ctx.models)
     if not (written := {name for found in loads.values() for name in found} | _bare_loads_of(module_code, hidden)):
         return
-    reserved = _alias_reserved_names(ctx.models, ctx.imports, parser.imports, also=submodule_names)
-    bindings = {name: _reserve_import_alias(name, reserved) for name in sorted(written)}
+    bindings = _reserved_aliases(ctx, parser.imports, sorted(written), also=submodule_names)
     parser._import_ledger.append(  # noqa: SLF001
         ctx.imports,
         [Import(from_="builtins", import_=name, alias=alias) for name, alias in bindings.items()],
@@ -2093,20 +2100,37 @@ def _submodules_hidden_by_imports(
     """
     result: dict[ModulePath, frozenset[tuple[str, ...]]] = {}
     for ctx in contexts:
-        imports = ctx.imports
         if modules := modules_hidden_by_imports(
-            imports,
-            (
-                (tuple(_get_data_type_target_full_name(data_type, reference, module_names).split(".")[:-1]), binding)
-                for model in ctx.models
-                for data_type in _named_data_types(model)
-                if (written := _written_reference(data_type)) is not None
-                and (stale := imports.reference_paths.get((reference := written[0]).path)) is not None
-                and (binding := _module_binding(written[1])) == stale.binding_name
-            ),
+            ctx.imports,
+            ((module, stale.binding_name) for *_, stale, module in _module_import_users(ctx, module_names)),
         ):
             result[ctx.module] = modules
     return result
+
+
+def _module_import_users(
+    ctx: ModuleContextView, module_names: Mapping[str, str]
+) -> Iterator[tuple[DataModel, DataType, Reference, Import, tuple[str, ...]]]:
+    """Yield the types of a module's models that name a model through the module import that binds its module.
+
+    Each such type writes the binding of the import before its class name (``pets.Pet``, ``_written_reference``); it
+    comes with its model, the model it names, the import and the parts of the dotted module the named model is in.
+    """
+    imports = ctx.imports
+    for model in ctx.models:
+        for data_type in _named_data_types(model):
+            if (
+                (written := _written_reference(data_type)) is not None
+                and (stale := imports.reference_paths.get((reference := written[0]).path)) is not None
+                and _module_binding(written[1]) == stale.binding_name
+            ):
+                yield (
+                    model,
+                    data_type,
+                    reference,
+                    stale,
+                    tuple(_get_data_type_target_full_name(data_type, reference, module_names).split(".")[:-1]),
+                )
 
 
 def _loaded_modules(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> set[str]:
@@ -2120,7 +2144,7 @@ def _loaded_modules(parser: ImportsHost[Any], state: _FinalizeState[Any]) -> set
     loaded = {target for targets in edges.values() for target in targets}
     if state.config.all_exports_scope is not None:
         loaded.update(
-            dotted_module(written_path(ctx.module, treat_dot_as_module=treat_dot_as_module))
+            written_module_name(ctx.module, treat_dot_as_module=treat_dot_as_module)
             for ctx in state.contexts
             if ctx.models
         )
@@ -2168,8 +2192,7 @@ def _alias_imports_hidden_by_loaded_submodules(parser: ImportsHost[Any], state: 
             )
         ):
             continue
-        reserved = _alias_reserved_names(ctx.models, ctx.imports, parser.imports, also=names)
-        bindings = {binding: _reserve_import_alias(binding, reserved) for binding in hidden}
+        bindings = _reserved_aliases(ctx, parser.imports, hidden, also=names)
         for binding, alias in bindings.items():
             from_, name = imported[binding]
             parser._import_ledger.apply_alias(  # noqa: SLF001
@@ -2214,16 +2237,7 @@ def import_models_of_hidden_submodules(parser: ImportsHost[Any], state: _Finaliz
         if not (modules := hidden.get(ctx.module)):
             continue
         imports = ctx.imports
-        users = [
-            (model, data_type, reference, stale)
-            for model in ctx.models
-            for data_type in _named_data_types(model)
-            if (written := _written_reference(data_type)) is not None
-            and tuple(_get_data_type_target_full_name(data_type, reference := written[0], module_names).split(".")[:-1])
-            in modules
-            and (stale := imports.reference_paths.get(reference.path)) is not None
-            and _module_binding(written[1]) == stale.binding_name
-        ]
+        users = [user[:4] for user in _module_import_users(ctx, module_names) if user[4] in modules]
         if not users:
             continue
         for model, *_, stale in users:
@@ -2479,8 +2493,7 @@ def _class_named_like_submodule(
         return None
     edges = module_import_edges(contexts, treat_dot_as_module=treat_dot_as_module, all_exports_scope=all_exports_scope)
     written_modules = {
-        ctx.module_key: dotted_module(written_path(ctx.module, treat_dot_as_module=treat_dot_as_module))
-        for ctx in contexts
+        ctx.module_key: written_module_name(ctx.module, treat_dot_as_module=treat_dot_as_module) for ctx in contexts
     }
     for ctx in contexts:
         if not ctx.models and (forwarder := forwarder_map.get(ctx.module_key)) is not None:
@@ -2835,9 +2848,7 @@ def check_import_reads(  # noqa: PLR0913
     output whose every module imports is parsed once.
     """
     treat_dot_as_module = parser.treat_dot_as_module
-
-    def written_module(path: ModulePath) -> str:
-        return dotted_module(written_path(path, treat_dot_as_module=treat_dot_as_module))
+    written_module = partial(written_module_name, treat_dot_as_module=treat_dot_as_module)
 
     imports_of: defaultdict[ModulePath, list[Imports]] = defaultdict(list)
     for path, imports in written:

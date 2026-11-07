@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, Final, cast
 from typing_extensions import Protocol
 
 from datamodel_code_generator._container_kinds import GENERIC_CONTAINERS, SETS
-from datamodel_code_generator._graph import reaching
+from datamodel_code_generator._graph import reach, reaching
 from datamodel_code_generator._message_text import english_list, for_count
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._records import record
@@ -389,25 +389,24 @@ def collect_set_item_references(models: list[DataModel]) -> list[Reference]:
 
     A type alias among them is read as its value too, whose models are the set's items.
     """
-    references: list[Reference] = []
-    pending = [
-        item_type
+
+    def value_types(data_type: DataType) -> Iterable[DataType]:
+        if (reference := data_type.reference) is None or not isinstance(alias := reference.source, TypeAliasBase):
+            return ()
+        return (nested for field in alias.fields for nested in field.data_type.all_data_types)
+
+    item_types = (
+        nested
         for model in models
         for field in model.fields
         for data_type in field.data_type.all_data_types
         if data_type in SETS
         for item_type in data_type.data_types
+        for nested in item_type.all_data_types
+    )
+    return [
+        reference for data_type in reach(item_types, value_types, id) if (reference := data_type.reference) is not None
     ]
-    aliases: set[int] = set()
-    while pending:
-        for nested in pending.pop().all_data_types:
-            if (reference := nested.reference) is None:
-                continue
-            references.append(reference)
-            if isinstance(alias := reference.source, TypeAliasBase) and id(alias) not in aliases:
-                aliases.add(id(alias))
-                pending.extend(field.data_type for field in alias.fields)
-    return references
 
 
 def mark_set_item_models_hashable(parser: RenderPrepHost, models: list[DataModel]) -> None:

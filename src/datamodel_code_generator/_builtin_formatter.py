@@ -22,6 +22,7 @@ from datamodel_code_generator._format_types import (
     TYPE_ALIAS_INLINE_ARGUMENT_COUNT,
     PythonVersionMin,
 )
+from datamodel_code_generator._module_paths import relative_level
 from datamodel_code_generator._python_decorator import string_token_spans
 from datamodel_code_generator._python_syntax import (
     aliased,
@@ -467,11 +468,11 @@ def _import_line_sort_key(line: str, names: _ImportNames = _PLAIN_NAMES) -> tupl
         return 0, 0, lower(line, target), 0, "", line
 
     module, _, imported = line.removeprefix("from ").partition(" import ")
-    relative_level = len(module) - len(module.lstrip("."))
+    level, relative_module = relative_level(module)
     alias_category, alias_name = _alias_sort_key(imported.split(",", 1)[0].strip(), names)
     line_key = lower(line, target)
-    if relative_level:
-        return 1, -relative_level, lower(module[relative_level:], target), int(alias_category), alias_name, line_key
+    if level:
+        return 1, -level, lower(relative_module, target), int(alias_category), alias_name, line_key
     return 1, 0, lower(module, target), int(alias_category), alias_name, line_key
 
 

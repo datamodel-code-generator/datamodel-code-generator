@@ -13,7 +13,7 @@ from collections import defaultdict
 from copy import deepcopy
 from dataclasses import replace
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias, TypeVar
+from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple, TypeAlias, TypeVar, cast
 
 from typing_extensions import Protocol, final, override
 
@@ -28,6 +28,7 @@ from datamodel_code_generator._container_kinds import (
     WRITTEN_CONTAINERS,
     hash_slot,
 )
+from datamodel_code_generator._graph import post_order, reach
 from datamodel_code_generator._graph_links import clear_parents
 from datamodel_code_generator._model_keys import model_key_of, ref_branch_schema_of
 from datamodel_code_generator._module_paths import (
@@ -68,7 +69,7 @@ from datamodel_code_generator.model.base import (
     sort_data_models_for_mro,
 )
 from datamodel_code_generator.model.enum import Enum, get_raw_enum_member_value
-from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement
+from datamodel_code_generator.model.type_alias import TypeAliasBase, TypeStatement, _alias_value
 from datamodel_code_generator.parser._field_rows import uses_default_with_required
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._intersection import inherits_keyword
@@ -569,13 +570,8 @@ def settle_python_bases(host: GenerationStoreHost, reference: Reference) -> None
     it; each model Python would refuse takes the bases of `python_base_classes`, its ancestors first.
     """
     index = host.generation_store.index
-    descendants: dict[int, DataModel] = {}
-    pending = index.models_inheriting(reference)
-    while pending:
-        if id(model := pending.pop()) not in descendants:
-            descendants[id(model)] = model
-            pending.extend(index.models_inheriting(model.reference))
-    refused = [model for model in descendants.values() if python_base_classes(model) is not None]
+    descendants = reach(index.models_inheriting(reference), lambda model: index.models_inheriting(model.reference), id)
+    refused = [model for model in descendants if python_base_classes(model) is not None]
     for model in reversed(sort_data_models_for_mro(refused)):
         if (bases := python_base_classes(model)) is not None:
             host._graph_builder.set_base_classes(model, bases)  # noqa: SLF001
@@ -1316,6 +1312,24 @@ def _iter_discriminator_data_types(
                 active.discard(read)
 
 
+def tagged_structs(models: Iterable[object]) -> tuple[DataModel, ...]:
+    """Return the distinct models of ``models`` whose class is tagged by struct tags (msgspec ``Struct``), in order."""
+    return (
+        *{
+            id(model): model
+            for model in models
+            if isinstance(model, DataModel) and model.REQUIRES_TAGGED_UNION_DISCRIMINATOR
+        }.values(),
+    )
+
+
+def union_structs(data_types: Iterable[DataType]) -> tuple[DataModel, ...]:
+    """Return the distinct Struct types a union lists, through the aliases it names (``tagged_structs``)."""
+    return tagged_structs(
+        member.reference.source for member, _, _ in _iter_discriminator_data_types(data_types) if member.reference
+    )
+
+
 def _get_model_module_name(model: DataModel, model_path_to_module_name: Mapping[str, str]) -> str:
     """Return the module name scope planning gives a model, or the model's own module name."""
     module_name = _module_name_of(model_path_to_module_name, model.reference)
@@ -1743,8 +1757,6 @@ def aliases_first(models: Sequence[DataModel]) -> list[DataModel]:
     so a chain of aliases of any length is ordered.
     """
     aliases = {id(model): model for model in models if isinstance(model, TypeAliasBase)}
-    ordered: dict[int, DataModel] = {}
-    visiting: set[int] = set()
 
     def named(alias: DataModel) -> Iterator[DataModel]:
         for field in alias.fields:
@@ -1752,20 +1764,7 @@ def aliases_first(models: Sequence[DataModel]) -> list[DataModel]:
                 if (reference := nested.reference) is not None and id(reference.source) in aliases:
                     yield aliases[id(reference.source)]
 
-    for alias in aliases.values():
-        if id(alias) in visiting:
-            continue
-        visiting.add(id(alias))
-        stack: list[tuple[DataModel, Iterator[DataModel]]] = [(alias, named(alias))]
-        while stack:
-            current, pending = stack[-1]
-            if (target := next((other for other in pending if id(other) not in visiting), None)) is None:
-                stack.pop()
-                ordered[id(current)] = current
-            else:
-                visiting.add(id(target))
-                stack.append((target, named(target)))
-    return [*ordered.values(), *(model for model in models if id(model) not in aliases)]
+    return [*post_order(aliases.values(), named, id), *(model for model in models if id(model) not in aliases)]
 
 
 @final
@@ -1812,6 +1811,29 @@ def _set_item_facts(data_type: DataType, sets: Collection[int], reading: _PlanRe
     return facts[0]
 
 
+def _tuple_positions_end(data_type: DataTypeView) -> int | None:
+    """Return where the positions of a tuple type that a set item reading reads end.
+
+    It reads every position of a tuple of any length, and the first of a tuple of a fixed length.
+    """
+    return None if (count := data_type.tuple_item_count) is None else min(count, 1)
+
+
+def _written_hash_slot(data_type: DataTypeView, sets: Collection[int]) -> ContainerSlot | None:
+    """Return the container a type is written as, as its values hash (``hash_slot``), or None for no container.
+
+    ``sets`` holds the lists that become sets, by id.
+    """
+    slot = (
+        "set"
+        if id(data_type) in sets
+        else next((slot for slot in WRITTEN_CONTAINERS if getattr(data_type, CONTAINER_FLAGS[slot])), None)
+    )
+    if slot is None:
+        return None
+    return hash_slot(slot, data_type.given_container, generic=cast("Any", data_type).use_generic_container)
+
+
 def _set_item_step(
     data_type: DataType, sets: Collection[int], reading: _PlanReading
 ) -> SetItemFacts | tuple[_Combined | None, list[_ItemRead]]:
@@ -1821,33 +1843,20 @@ def _set_item_step(
     """
     if data_type.is_optional:
         return SetItemFacts(null=True)
-    if (
-        (reference := data_type.reference) is not None
-        and isinstance(alias := reference.source, TypeAliasBase)
-        and id(alias) not in reading.aliases
-        and alias.fields
-    ):
-        value = (alias.fields[0].data_type, (), replace(reading, aliases=reading.aliases | {id(alias)}))
+    if (aliased := _alias_value(data_type)) is not None and id(alias := aliased[0]) not in reading.aliases:
+        value = (aliased[1].data_type, (), replace(reading, aliases=reading.aliases | {id(alias)}))
         return SetItemFacts(null=True) if alias.holds_null else (None, [value])
     if (
         reading.reads_classes
-        and reference is not None
+        and (reference := data_type.reference) is not None
         and isinstance(model := reference.source, DataModel)
         and model._instances_never_hash(reading.generic_base_config)  # noqa: SLF001
     ):
         return SetItemFacts(unhashable=True)
     if data_type.is_tuple:
-        count = data_type.tuple_item_count
-        positions = data_type.data_types if count is None else data_type.data_types[: min(count, 1)]
+        positions = data_type.data_types[: _tuple_positions_end(data_type)]
         return _Combined(positions=True, count=len(positions)), [(position, sets, reading) for position in positions]
-    if id(data_type) in sets:
-        slot: ContainerSlot | None = "set"
-    else:
-        slot = next((slot for slot in WRITTEN_CONTAINERS if getattr(data_type, CONTAINER_FLAGS[slot])), None)
-    written = (
-        None if slot is None else hash_slot(slot, data_type.given_container, generic=data_type.use_generic_container)
-    )
-    if written is None or written == "tuple":
+    if (written := _written_hash_slot(data_type, sets)) is None or written == "tuple":
         members = data_type.data_types
         return _Combined(positions=written is not None, count=len(members)), [
             (member, sets, reading) for member in members
@@ -1925,6 +1934,26 @@ def without_stand_ins(host: BaseStandInHost, models: list[DataModel]) -> list[Da
     if not (stand_ins := host._base_stand_in_imports):  # noqa: SLF001
         return models
     return [model for model in models if model_key_of(model.reference) not in stand_ins]
+
+
+class UnimportedModelsHost(BaseStandInHost, Protocol):
+    """The stand-ins and the roots that name themselves, which no module imports."""
+
+    @property
+    def _self_named_root_models(self) -> list[DataModel]:
+        """The root models whose root names the model itself, which deduplication dropped from every module."""
+
+
+def unimported_model_keys(host: UnimportedModelsHost) -> set[ModelKey]:
+    """Return the keys of the models no module imports.
+
+    A stand-in is never written, and a root that names itself, which deduplication dropped from every module, has no
+    module to import from.
+    """
+    return {
+        *host._base_stand_in_imports,  # noqa: SLF001
+        *(model_key_of(model.reference) for model in host._self_named_root_models),  # noqa: SLF001
+    }
 
 
 class TypeOverrideHost(BaseStandInHost, Protocol):

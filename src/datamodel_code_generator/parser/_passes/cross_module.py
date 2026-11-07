@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Final, cast
 
 from typing_extensions import Protocol
 
+from datamodel_code_generator._graph import post_order
 from datamodel_code_generator._model_keys import keyed_or_path
 from datamodel_code_generator._module_paths import dotted_name
 from datamodel_code_generator.imports import Import
@@ -209,17 +210,13 @@ def flatten_narrowed_inherited_fields(parser: FlattenAcrossModulesHost, run: Cro
     """
     flatten = _flattener(parser, run, "flatten-narrowed-inherited-fields")
     written = {id(model) for ctx in run.contexts for model in ctx.models}
-    visits = [(model, False) for ctx in reversed(run.contexts) for model in reversed(ctx.models)]
-    visited: set[int] = set()
-    while visits:
-        model, complete = visits.pop()
-        if complete:
-            if model._declares_inherited_fields():  # noqa: SLF001
-                flatten(model)
-        elif id(model) in written and id(model) not in visited:
-            visited.add(id(model))
-            visits.append((model, True))
-            visits.extend((base, False) for base in reversed(_find_base_classes(model)))
+    for model in post_order(
+        [model for ctx in run.contexts for model in ctx.models],
+        lambda model: [base for base in _find_base_classes(model) if id(base) in written],
+        id,
+    ):
+        if model._declares_inherited_fields():  # noqa: SLF001
+            flatten(model)
 
 
 def write_enum_member_tags_as_values(parser: CrossModuleHost, run: CrossModuleRun) -> None:

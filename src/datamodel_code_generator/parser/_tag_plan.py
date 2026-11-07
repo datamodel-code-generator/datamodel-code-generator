@@ -91,6 +91,7 @@ from datamodel_code_generator.parser._passes._shared import (
     _tag_field_matches,
     enum_discriminator_literal,
     enum_discriminator_members,
+    union_structs,
 )
 from datamodel_code_generator.parser._passes.render_prep import validates_structured_default
 from datamodel_code_generator.python_literal import stable_repr
@@ -254,6 +255,20 @@ def tag_capabilities(model_type: type[DataModel], field_type: type[DataModelFiel
         literal_holds_members=model_type._LITERAL_HOLDS_ENUM_MEMBERS,  # noqa: SLF001
         flattens_layouts=model_type.FLATTENS_CONFLICTING_BASE_LAYOUTS,
     )
+
+
+def taggable_variant(
+    data_type: DataType, field_type: type[DataModelFieldBase]
+) -> tuple[DataModel, TagCapabilities] | None:
+    """Return the model a union member names with its class rows, if the union can tag it.
+
+    It is a model whose class takes a tag field and that wraps no other type (no alias, no root model).
+    """
+    variant = cast("Reference", data_type.reference).source
+    if not isinstance(variant, DataModel) or _is_discriminator_wrapper(variant):
+        return None
+    capabilities = tag_capabilities(type(variant), field_type)
+    return (variant, capabilities) if capabilities.variant_takes_tag else None
 
 
 def site_mode(*, writes_argument: bool) -> ValidityMode:
@@ -949,14 +964,9 @@ def _site_tag_keys(  # noqa: PLR0913
             continue
         if data_type._is_container or not data_type.reference:  # noqa: SLF001
             return "dropped-invalid"
-        variant = data_type.reference.source
-        if (
-            not isinstance(variant, DataModel)
-            or not tag_capabilities(type(variant), field_type).variant_takes_tag
-            or _is_discriminator_wrapper(variant)
-        ):
+        if (taggable := taggable_variant(data_type, field_type)) is None:
             return "dropped-invalid"
-        capabilities = tag_capabilities(type(variant), field_type)
+        variant, capabilities = taggable
         values = tags_of_variant(
             "variant" if can_update_discriminator else "nested",
             variant,
@@ -1429,25 +1439,14 @@ def _bases_keep_instance_field(model: DataModel, source_name: str) -> bool:
     return any(_keeps_instance_field(field_, source_name) for field_ in _base_fields(model))
 
 
-def _structs_of_union(data_type: DataType) -> set[int]:
-    """Return the ids of the structs that a union lists, through the aliases it names."""
-    return {
-        id(source)
-        for member, _, _ in _iter_discriminator_data_types(data_type.data_types)
-        if member.reference
-        and isinstance(source := member.reference.source, DataModel)
-        and source.REQUIRES_TAGGED_UNION_DISCRIMINATOR
-    }
-
-
 def _structs_sharing_a_union(models: Iterable[DataModel]) -> set[int]:
     """Return the ids of the structs that a union lists beside another struct, which msgspec decodes only if tagged."""
     shared: set[int] = set()
     for model in models:
         for field_ in model.fields:
             for data_type in field_.data_type.all_data_types:
-                if data_type.is_union and len(structs := _structs_of_union(data_type)) > 1:
-                    shared |= structs
+                if data_type.is_union and len(structs := union_structs(data_type.data_types)) > 1:
+                    shared.update(map(id, structs))
     return shared
 
 

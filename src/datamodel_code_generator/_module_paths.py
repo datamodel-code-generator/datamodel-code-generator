@@ -153,6 +153,15 @@ def relative(
     return left, right
 
 
+def relative_level(from_: str) -> tuple[int, str]:
+    """Return how many dots a relative module ``from_`` starts with, and the module after them.
+
+    ``..a.b`` gives ``(2, "a.b")``; an absolute module has no dots.
+    """
+    module = from_.lstrip(".")
+    return len(from_) - len(module), module
+
+
 def absolute(current_module: str, from_: str, *, current_is_init: bool = False) -> str:
     """Return the dotted name of the module that the relative import ``from_`` of ``current_module`` names.
 
@@ -160,10 +169,10 @@ def absolute(current_module: str, from_: str, *, current_is_init: bool = False) 
     package up for each dot more. ``current_is_init`` makes ``current_module`` a package ``__init__``, which is that
     package itself. It reads the module part of an import as ``relative`` writes it.
     """
-    path = from_.lstrip(".")
+    level, path = relative_level(from_)
     parts = current_module.split(".") if current_module else []
     package = parts if current_is_init else parts[:-1]
-    kept = package[: max(len(package) - (len(from_) - len(path) - 1), 0)]
+    kept = package[: max(len(package) - (level - 1), 0)]
     return ".".join([*kept, *([path] if path else [])])
 
 
@@ -247,3 +256,8 @@ def written_path(path: Sequence[str], *, treat_dot_as_module: bool | None) -> tu
     """Return the path that the output writes the file at ``path`` at: normalized, and expanded with the option."""
     normalized = normalized_path(path, treat_dot_as_module=treat_dot_as_module)
     return expanded_path(normalized) if treat_dot_as_module else normalized
+
+
+def written_module_name(path: Sequence[str], *, treat_dot_as_module: bool | None) -> str:
+    """Return the dotted name of the module that the output writes the file at ``path`` as (``written_path``)."""
+    return dotted_module(written_path(path, treat_dot_as_module=treat_dot_as_module))

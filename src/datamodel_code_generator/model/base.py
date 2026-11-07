@@ -3987,6 +3987,13 @@ def _has_root_field_constraints(root_field: DataModelFieldBase, *, row: _RootCon
     )
 
 
+def _root_constraint_keywords(root_field: DataModelFieldBase) -> dict[str, Any]:
+    """Return the constraints other than ``unique_items`` that a root field sets, by their keywords."""
+    if not isinstance(constraints := root_field.constraints, ConstraintsBase):
+        return {}
+    return constraints.model_dump(by_alias=True, exclude_none=True, exclude={"unique_items"})
+
+
 def _named_field(field: DataModelFieldBase) -> str | None:
     return field.name or None
 
