@@ -6566,11 +6566,11 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         origin (``_origins.with_type_origin``).
         """
         location = item.schema_location
-        with nullcontext() if (scope := self._subschema_scope(item)) is None else scope:
+        with _schema_refs.NO_SCOPE if (scope := self._subschema_scope(item)) is None else scope:
             choice = self._FIELD_TABLE.choose(
                 self, SchemaSite(name, self._site_schema(item), path, singular_name=singular_name, parent=parent)
             )
-            with nullcontext() if (merged_scope := choice.site.scope) is None else merged_scope:
+            with _schema_refs.NO_SCOPE if (merged_scope := choice.site.scope) is None else merged_scope:
                 return with_unique_items(
                     with_type_origin(choice.build(self, choice.site), location), choice.site.obj.uniqueItems
                 )

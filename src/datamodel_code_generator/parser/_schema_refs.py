@@ -1262,6 +1262,10 @@ def get_dynamic_scope_data_type(parser: SchemaRefsHost, item: JsonSchemaObject, 
         return parser.get_ref_data_type(ref)
 
 
+NO_SCOPE: Final = nullcontext()
+"""The scope a schema object enters when it declares none: one shared instance, as ``nullcontext`` holds no state."""
+
+
 def subschema_scope(parser: SchemaRefsHost, obj: JsonSchemaObject) -> AbstractContextManager[None] | None:
     """Return the dynamic scope of a subschema that stands for another schema resource, if any.
 
@@ -1636,7 +1640,7 @@ def traverse_schema_objects(
     callback: Callable[[JsonSchemaObject, list[str]], None],
 ) -> None:
     """Traverse schema objects recursively and apply callback, within the schema resources they declare."""
-    with nullcontext() if (scope := parser._subschema_scope(obj)) is None else scope:  # noqa: SLF001
+    with NO_SCOPE if (scope := parser._subschema_scope(obj)) is None else scope:  # noqa: SLF001
         parser._walk_schema_objects(obj, path, callback)  # noqa: SLF001
 
 
