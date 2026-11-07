@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
-from msgspec import UNSET, Struct, UnsetType, convert, field
+from msgspec import UNSET, Struct, UnsetType, field
 
 
 class PodSpec(Struct):
@@ -26,7 +26,5 @@ class Model(Struct):
         default_factory=lambda: {'name': 'y'}
     )
     countsThenStruct: tuple[dict[str, int], PodSpec] | UnsetType = field(
-        default_factory=lambda: convert(
-            [{'a': 1}, {'name': 'z'}], type=tuple[dict[str, int], PodSpec]
-        )
+        default_factory=lambda: [{'a': 1}, {'name': 'z'}]
     )

@@ -46,7 +46,7 @@ class Model(Struct):
     )
     emptyAliasMap: PodMap | UnsetType = field(default_factory=dict)
     pair: tuple[PodSpec, int] | UnsetType = field(
-        default_factory=lambda: convert([{'name': 't'}, 1], type=tuple[PodSpec, int])
+        default_factory=lambda: [{'name': 't'}, 1]
     )
     structMapOrString: dict[str, PodSpec] | str | UnsetType = field(
         default_factory=lambda: convert({'e': {'name': 'r'}}, type=dict[str, PodSpec])

@@ -48,6 +48,17 @@
           "side": 2
         }
       ]
+    },
+    "aliasPair": {
+      "$ref": "#/$defs/Pair",
+      "default": [
+        {
+          "radius": 3
+        },
+        {
+          "side": 4
+        }
+      ]
     }
   },
   "$defs": {
@@ -79,6 +90,19 @@
           }
         ]
       }
+    },
+    "Pair": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/Circle"
+        },
+        {
+          "$ref": "#/$defs/Square"
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2
     }
   }
 }

@@ -558,9 +558,10 @@ def _names_structs(data_type: DataType, aliases: frozenset[int], *, containers: 
 
     A type that holds a union of a mapping beside other members, or of Structs msgspec refuses (``_refused_structs``),
     converts to none: msgspec takes neither, and the default stays the value, as beside a dict member of the field's
-    union. The members of a tuple are its positions, no union, and each is read on its own. ``aliases`` holds the
-    aliases, by id, whose values are read already. Without ``containers`` the items and values of arrays and mappings
-    are left out, as an empty default holds none.
+    union. The positions of a tuple, which a type alias holds, are no union, so msgspec refuses none of their Structs,
+    but a mapping among them converts it to none too, as the default reads them as alternatives (``_takes_default``).
+    ``aliases`` holds the aliases, by id, whose values are read already. Without ``containers`` the items and values
+    of arrays and mappings are left out, as an empty default holds none.
     """
     pending, followed, found = [data_type], set(aliases), False
     while pending:
@@ -571,11 +572,8 @@ def _names_structs(data_type: DataType, aliases: frozenset[int], *, containers: 
                 followed.add(id(source))
                 pending.append(source.fields[0].data_type)
         elif containers or not (current in ARRAYS or current in MAPPINGS):
-            members = current.data_types
-            if (
-                not current.is_tuple
-                and len(members) > 1
-                and (any(member in MAPPINGS for member in members) or _refused_structs(members))
+            if len(members := current.data_types) > 1 and (
+                any(member in MAPPINGS for member in members) or (not current.is_tuple and _refused_structs(members))
             ):
                 return False
             pending.extend(members)
@@ -2235,10 +2233,13 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
     def _written_conversion(self, data_type: DataType) -> _StructConversion | None:
         """Convert the default to an array or a mapping that names Structs, as its hint writes it, where it fits it.
 
-        The default fits it as ``_takes_default`` reads it; an empty default names no Struct inside it.
+        The default fits it as ``_takes_default`` reads it; an empty default names no Struct inside it. The default of a
+        field typed as a tuple stays the value, as ``_takes_default`` and ``_attribute_default`` read its positions as
+        alternatives.
         """
         if (
             (data_type in ARRAYS or data_type in MAPPINGS)
+            and not data_type.is_tuple
             and _takes_default(data_type, default := self.default)
             and _names_structs(data_type, frozenset(), containers=bool(default))
         ):

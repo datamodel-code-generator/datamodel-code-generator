@@ -323,7 +323,8 @@ def test_msgspec_array_like_struct_object_defaults(output_file: Path) -> None:
     ``Row`` takes ``array_like=True`` from the template data, so msgspec reads it from an array, or from the attributes
     of an object, not from an object: ``Model()`` and decoding ``{}`` hold the same Structs, for a field of the Struct,
     a union, a list, a type alias and a Struct holding it, by its arrays and maps too. An array default converts as
-    before.
+    before. The default of a tuple of a map and the Struct stays the value, as before, also through a type alias, so
+    ``Model()`` builds.
     """
     (template_data := output_file.parent / "array_like.json").write_text(
         json.dumps({"Row": {"base_class_kwargs": {"array_like": True}}}), encoding="utf-8"
@@ -384,12 +385,12 @@ def test_msgspec_array_member_union_defaults(output_file: Path) -> None:
     [pytest.param([], id="future-imports"), pytest.param(["--disable-future-imports"], id="no-future-imports")],
 )
 def test_msgspec_container_struct_defaults(extra_args: list[str], output_file: Path) -> None:
-    """Convert a default of a map, a tuple, nested lists or a list of a union of Structs to the type it is written as.
+    """Convert a default of a map, nested lists or a list of a union of Structs to the type it is written as.
 
-    ``Model()`` holds the Structs the type names, keys and positions included, as decoding its encoded defaults does;
-    a type alias of a map converts like the map, an empty one keeps the builtin factory, and defaults of types that
-    name no Struct stay values. A Struct the field's hint quotes, as the field ``PodSpec`` hides the class without
-    future imports, is named directly. Valid documents decode and invalid ones are rejected.
+    ``Model()`` holds the Structs the type names, keys included; a type alias of a map converts like the map, an empty
+    one keeps the builtin factory, and defaults of types that name no Struct stay values, as that of the tuple does, so
+    only its encoded default decodes to a value of its own. A Struct the field's hint quotes, as the field ``PodSpec``
+    hides the class without future imports, is named directly. Valid documents decode and invalid ones are rejected.
     """
     run_main_and_assert(
         input_path=JSON_SCHEMA_DATA_PATH / "msgspec_container_struct_defaults.json",
@@ -423,7 +424,7 @@ def test_msgspec_struct_beside_map_defaults(output_file: Path) -> None:
     """Keep the default of a union of a Struct beside a map a value, also inside a list or a type alias.
 
     msgspec takes no such union, which generation warns about, so a conversion would raise in ``Model()``; the defaults
-    stay the values they are written as. The positions of a tuple are no union, so a map beside a Struct there converts.
+    stay the values they are written as, as does the default of a tuple of a map and a Struct.
     """
     with pytest.warns(UserWarning, match=r"msgspec cannot decode the (union|type alias)"):
         run_main_and_assert(
@@ -442,8 +443,9 @@ def test_msgspec_untagged_structs_list_defaults(output_file: Path) -> None:
     """Keep the default of a list of a union of untagged Structs a value, also through a type alias.
 
     msgspec takes no union of Structs that are not all tagged, which generation warns about, so a conversion to
-    ``list[Circle | Square]`` would raise in ``Model()``; the defaults stay the values they are written as. The
-    positions of a tuple are no union, so the default of ``tuple[Circle, Square]`` converts.
+    ``list[Circle | Square]`` would raise in ``Model()``; the defaults stay the values they are written as, as does
+    that of a field typed ``tuple[Circle, Square]``. The positions of a tuple are no union, so the default of a type
+    alias of it converts.
     """
     with pytest.warns(UserWarning, match=r"msgspec cannot decode the union"):
         run_main_and_assert(
