@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from typing import TYPE_CHECKING, Any, Literal
 
 from datamodel_code_generator._json_output import dump_json
 from datamodel_code_generator._message_text import wrapped_lines
+from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence
 
 
-@dataclass(frozen=True)
+@record(slots=False)
 class _RegistryPage:
     """How a registry lists its entries: the summary columns and cells, the detail bullets and the Markdown page.
 

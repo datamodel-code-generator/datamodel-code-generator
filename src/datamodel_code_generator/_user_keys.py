@@ -60,6 +60,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Final, Literal, Protocol, TypeAlias, TypeVar
 
+from datamodel_code_generator._records import record
+
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
     from collections.abc import Set as AbstractSet
@@ -136,7 +138,7 @@ def class_key(row: ClassKeyRow, model: ModelNames | str) -> str:
     return model.name
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class ClassScope:
     """The names of one model that the class part of a key is compared with, in order.
 
@@ -239,7 +241,7 @@ def type_override_classes(type_overrides: Iterable[str]) -> frozenset[str]:
     return frozenset(class_name for key in type_overrides for class_name, _ in scoped_key(key, row="first-dot"))
 
 
-@dataclass(frozen=True, slots=True)
+@record
 class ConstructionKeys:
     """The class names the L1 rows key, for row ``legacy-reparse-for-final-names``."""
 
@@ -296,7 +298,7 @@ class ModelNameRecord:
     """The name of every generated model at the end of the run."""
 
 
-@dataclass(frozen=True, slots=True, eq=False)
+@record(eq=False)
 class ModelNameKeys:
     """The ``--model-name-map`` a run applies, with the user's key behind each of its keys and the reserved names.
 

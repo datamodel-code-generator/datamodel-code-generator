@@ -15,7 +15,8 @@ branch named as the union.
 Once every model has claimed its name, the L2 pass ``name_models`` records the names planned after the last claim
 (``NamingPlan``, made by ``plan_names`` under the ``NamingRules``), which L3 reads for the name a model was numbered
 from.
-This module imports only the standard library, ``typing_extensions`` and the model keys, so every layer may use it.
+This module imports only the standard library, ``typing_extensions``, the model keys and the record decorator, so
+every layer may use it.
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ from typing_extensions import Protocol, final
 
 from datamodel_code_generator._free_names import first_free, is_numbered
 from datamodel_code_generator._model_keys import ModelKey, model_key_of
+from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
@@ -142,7 +144,7 @@ VariantRole: TypeAlias = Literal["Request", "Response"]
 
 
 @final
-@dataclass(frozen=True, slots=True, eq=False)
+@record(eq=False)
 class Composed:
     """The claim of a model that L1 names after the name of another model, its base, and the word of its role."""
 
@@ -152,7 +154,7 @@ class Composed:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class Ordinal:
     """The claim of a union branch with no name of its own, which L1 names as the union: its position, from 1."""
 
@@ -160,7 +162,7 @@ class Ordinal:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class Tag:
     """The claim of a union branch named after its tag: the part of its name its tag gives, after the union's name."""
 
@@ -168,7 +170,7 @@ class Tag:
 
 
 @final
-@dataclass(frozen=True, slots=True, eq=False)
+@record(eq=False)
 class AllOfPart:
     """The claim of a class an allOf builds for a oneOf or anyOf it holds: a union member, or the shared part.
 
@@ -197,7 +199,7 @@ class BuildFrame:
 
 
 @final
-@dataclass(frozen=True, slots=True, eq=False)
+@record(eq=False)
 class BuildRecord:
     """The frames open when L1 records a model (``NamingFrames.record``), innermost first.
 
@@ -374,7 +376,7 @@ document root or an operation model.
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class NameClaim:
     """The claim of one model to a name, with the facts the naming rules read and the name L1 gave it.
 
@@ -413,7 +415,7 @@ class NameClaim:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class NamingRules:
     """The rules that plan the names of the models after their last claim (``plan_names``).
 
@@ -458,7 +460,7 @@ class NamingRules:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class PlannedName:
     """The name the plan gives a model: its module (dotted, ``""`` for the root module), its class, and its base.
 
@@ -471,7 +473,7 @@ class PlannedName:
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class NameRestore:
     """The class a model takes in its module where L3 gives back their bases to the models its planned name reads.
 
@@ -505,7 +507,7 @@ class _NamedModel(Protocol):
 
 
 @final
-@dataclass(frozen=True, slots=True)
+@record
 class NamingPlan:
     """The names planned after the last claim under ``rules``, by model key; a model it leaves out keeps its name.
 
