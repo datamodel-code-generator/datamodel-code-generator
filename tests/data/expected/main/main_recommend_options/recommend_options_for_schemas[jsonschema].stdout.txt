@@ -16,7 +16,7 @@ Schema  JSON Schema (http://json-schema.org/draft-07/schema#)
   integer/number/boolean schemas   6
   root schema                      object model 1, title words 4
 
-Start from  --preset standard-py314-20261104
+Start from  --preset standard-py314-20261106
 
 Add (3 options)
   --naming-strategy enclosing-model   [naming.qualify-shared-inline-names]
@@ -64,7 +64,7 @@ Notes
   - The rules were calibrated on the 20261017 presets.
 
 Command
-  datamodel-codegen --class-name ServiceConfig --enum-field-as-literal all --input service-config.json --naming-strategy enclosing-model --preset standard-py314-20261104 --target-python-version 3.14
+  datamodel-codegen --class-name ServiceConfig --enum-field-as-literal all --input service-config.json --naming-strategy enclosing-model --preset standard-py314-20261106 --target-python-version 3.14
 
 pyproject.toml
   [tool.datamodel-codegen]
@@ -72,5 +72,5 @@ pyproject.toml
   enum-field-as-literal = "all"
   input = "service-config.json"
   naming-strategy = "enclosing-model"
-  preset = "standard-py314-20261104"
+  preset = "standard-py314-20261106"
   target-python-version = "3.14"
