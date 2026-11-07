@@ -1,0 +1,13 @@
+openapi: 3.0.3
+info: {title: Root model factory, version: "1.0"}
+paths: {}
+components:
+  schemas:
+    DefaultItems:
+      type: array
+      items: {type: integer}
+    Holder:
+      type: object
+      properties:
+        list: {type: string}
+        items: {type: array, items: {type: integer}}

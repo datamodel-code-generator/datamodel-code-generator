@@ -1923,6 +1923,9 @@ pydantic_v2-single	main/openapi/main_openapi/reuse_scope_tree_shared_class_names
 pydantic_v2-single	main/openapi/main_openapi/reuse_scope_tree_shared_class_names[pydantic_v2-single]/
 [test_main_openapi_root_model_default_primitive]
 	main/openapi/root_model_default_primitive.py
+[test_main_openapi_root_model_factory_keeps_comprehension_local]
+	main/openapi/main_openapi/root_model_factory_keeps_comprehension_local.factory_result.txt
+	main/openapi/main_openapi/root_model_factory_keeps_comprehension_local.py
 [test_main_openapi_root_model_uses_aliased_field_import]
 	main/openapi/main_openapi/root_model_uses_aliased_field_import.py
 [test_main_openapi_same_name_objects]
