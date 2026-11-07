@@ -583,15 +583,32 @@ def _names_structs(data_type: DataType, aliases: frozenset[int], *, containers: 
 
 
 def _refused_structs(members: Sequence[DataType]) -> bool:
-    """Return whether msgspec refuses the Structs that union members name as a type (``struct_union_refusal``)."""
+    """Return whether msgspec refuses the Structs that union members hold as a type (``struct_union_refusal``).
+
+    msgspec flattens the unions and the type aliases among the members, so their Structs are members too
+    (``_union_leaves``).
+    """
     structs = {
         id(source): source
-        for member in members
-        if member.reference is not None
-        and isinstance(source := member.reference.source, DataModel)
+        for leaf in reach(members, _union_leaves, key=id)
+        if leaf.reference is not None
+        and isinstance(source := leaf.reference.source, DataModel)
         and source.REQUIRES_TAGGED_UNION_DISCRIMINATOR
     }
     return struct_union_refusal([struct.discriminator_tag for struct in structs.values()]) is not None
+
+
+def _union_leaves(data_type: DataType) -> Sequence[DataType]:
+    """Return what a union member spreads to where msgspec flattens it: a union its members, an alias its value."""
+    if members := union_members(data_type):
+        return members
+    if (
+        (reference := data_type.reference) is not None
+        and isinstance(source := reference.source, TypeAliasBase)
+        and source.fields
+    ):
+        return (source.fields[0].data_type,)
+    return ()
 
 
 def _is_instance_field(field: DataModelFieldBase) -> bool:

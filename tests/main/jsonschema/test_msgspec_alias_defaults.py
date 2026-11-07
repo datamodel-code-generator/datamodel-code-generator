@@ -458,6 +458,37 @@ def test_msgspec_untagged_structs_list_defaults(output_file: Path) -> None:
     assert_output(f"{json.dumps(actual, indent=2)}\n")
 
 
+@pytest.mark.parametrize("collapse", [[], ["--collapse-root-models"]])
+def test_msgspec_tagged_alias_beside_struct_list_defaults(collapse: list[str], output_file: Path) -> None:
+    """Keep the default of a list of a tagged union beside an untagged Struct a value, also as a nested union.
+
+    msgspec flattens the type alias of the tagged union and the nested union into one union with the untagged Struct,
+    which it refuses, so a conversion would raise in ``Model()``; ``--collapse-root-models`` writes the members in one
+    union. A union whose flattened Structs are all tagged converts.
+    """
+    with pytest.warns(UserWarning, match=r"msgspec cannot decode the union"):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "msgspec_tagged_alias_beside_struct_list_defaults.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            extra_args=[
+                "--output-model-type",
+                "msgspec.Struct",
+                *collapse,
+                "--formatters",
+                "builtin",
+                "--disable-timestamp",
+            ],
+        )
+    with _generated_model(output_file, f"msgspec_tagged_alias_beside_struct_{len(collapse)}", "Model") as model:
+        default = model()
+        actual = {
+            field: {"types": _type_names(value := getattr(default, field)), "value": msgspec.to_builtins(value)}
+            for field in default.__struct_fields__
+        }
+    assert_output(f"{json.dumps(actual, indent=2)}\n")
+
+
 @pytest.mark.parametrize(
     "target",
     [
