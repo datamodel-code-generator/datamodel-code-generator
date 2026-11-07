@@ -72,6 +72,9 @@ class DecisionStore(Protocol):
     def set_field_default(self, field_: Any, default: Any) -> None:
         """Write a field's default."""
 
+    def omit_field_default(self, field_: Any) -> None:
+        """Write a field without its default: the default None and the ``nullable`` it has without the default."""
+
     def replace_additional_properties_type(self, model: Any, data_type: Any) -> None:
         """Give a model the type of the additional properties its settings write (TypedDict ``extra_items``)."""
 
@@ -226,6 +229,11 @@ class _DecisionWriter:
         self._store.replace_additional_properties_type(
             model, rewrite_copied_type(self._store, self._copy, original, rewrites)
         )
+        self._changed[id(model)] = cast("DataModel", model)
+
+    def omit_default(self, model: ModelView, field: FieldView) -> None:
+        """Write ``field`` of ``model`` without its default (``IncompleteDefaultsWriter``)."""
+        self._store.omit_field_default(field)
         self._changed[id(model)] = cast("DataModel", model)
 
     def outcome(self, live_models: Iterable[DataModel]) -> DecisionOutcome:

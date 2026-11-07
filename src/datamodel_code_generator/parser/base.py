@@ -169,6 +169,7 @@ from datamodel_code_generator.parser._imports_plan import (
     ImportProducer,
     ModuleImportLedger,
 )
+from datamodel_code_generator.parser._incomplete_defaults import OMIT_INCOMPLETE_MODEL_DEFAULTS
 from datamodel_code_generator.parser._model_shapes import (
     KeySlot,
     ModelShapes,
@@ -710,6 +711,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         SERIALIZE_AS_ANY_FOR_EVERY_SUBCLASS,
         OMIT_UNTAKEN_UNION_CONSTRAINTS,
         WRITE_UNIQUE_ITEMS_AS_SETS,
+        OMIT_INCOMPLETE_MODEL_DEFAULTS,
     )
     """The decisions of the decision phase, in registration order; ``parser/_phases.py`` says how they run."""
     _http_fetch_session: _HTTPFetchSession | None = None

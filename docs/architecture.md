@@ -509,7 +509,7 @@ default, so the alias writes none.
 | `import_renamed_types` (`parser/_passes/cross_module.py`) | imports of types that a later module renamed |
 | `import_enum_member_literal_classes` (`parser/_passes/cross_module.py`) | imports for enum member literals |
 | `apply_generic_base_class` (`parser/_passes/cross_module.py`) | inserts the generated base model and rewrites base classes; the module an earlier attempt of the run seeded where an import of the class failed (`ImportCycleSeeds.base_class_module`) holds it |
-| decision phase: the decisions of `Parser._DECISION_PASSES` (`omit_held_null` behind `--omit-redundant-reference-null`, `omit_untaken_union_constraints` behind `--field-constraints`) | the facts each declares, read from `FinalFacts` ([Decision Phase](#decision-phase)) |
+| decision phase: the decisions of `Parser._DECISION_PASSES` (`omit_held_null` behind `--omit-redundant-reference-null`, `omit_untaken_union_constraints` behind `--field-constraints`, `omit_incomplete_model_defaults` behind `--omit-incomplete-model-defaults`) | the facts each declares, read from `FinalFacts` ([Decision Phase](#decision-phase)) |
 
 Render preparation, for the models each module had at the end of L5:
 
@@ -794,7 +794,6 @@ entry.
 | CROSS_MODULE | `import_renamed_types` | global | repair | IMPORT_ALIASES, MODULE_IMPORTS | CLASS_NAMES, MODULE_IMPORTS | Removed by RP15b. After `tag_fields_of_tagged_bases`: imports renamed types once the fields reused structs copy from their bases import theirs. After `flatten_narrowed_inherited_fields`: imports renamed types once the fields models copy from their bases import theirs. After `import_removed_reuse_canonicals`: imports renamed types next to the canonicals of removed reuse duplicates. |
 | CROSS_MODULE | `import_enum_member_literal_classes` | global | repair | FIELD_TYPES, IMPORT_ALIASES, MODULE_IMPORTS | DEFAULTS, FIELD_TYPES, MODULE_IMPORTS | Skipped unless: --use-enum-values-in-discriminator, or a const narrows a value to an enum member (_const_narrowed_values). Removed by RP15b. After `import_renamed_types`: imports literal classes next to the renamed types. After `warn_enums_admitting_other_values`: the warning reads the enum types before literal classes replace them. |
 | CROSS_MODULE | `apply_generic_base_class` | global | transform | BASES, MODELS_EXIST | BASES | Inserts the generated base model, in the module an earlier attempt seeded where its import failed, and rewrites the base classes; B1 follows. |
-| RENDER_PREPARATION | `omit_incomplete_model_defaults` | global | transform | DEFAULTS, DEFAULT_EXPRESSION | BASES, DEFAULTS, FIELD_NAMES, FIELD_SET, FIELD_TYPES, MODEL_KIND, NULLABLE, REQUIRED | Gives the default None to each field whose object default lacks required fields of its model, before the constructor ordering, which then places it as a field without a default. Runs when: --omit-incomplete-model-defaults. |
 | RENDER_PREPARATION | `assign_forward_reference_fields` | module | transform | ASSIGNMENT_FORM, FIELD_ORDER | DEFAULTS, FIELD_ORDER, FIELD_TYPES, MODEL_ORDER | Runs when: use_annotated with deferred annotations. |
 | RENDER_PREPARATION | `fix_constructor_field_ordering` | global | transform | FIELD_ORDER, FIELD_SET, FORCED_ASSIGNMENT, IMPORT_ALIASES, KEYWORD_ONLY, MODULE_IMPORTS, REQUIRED | ASSIGNMENT_FORM, BACKEND_CONFIG, CLASS_NAMES, DEFAULTS, FIELD_NAMES, FIELD_ORDER, FIELD_SET, FIELD_TYPES, FORCED_ASSIGNMENT, KEYWORD_ONLY, MODEL_KIND, MODULE_IMPORTS, NULLABLE, REQUIRED | Orders constructor fields so that fields without a default come first, reading the fields of bases, each model after its bases; an inherited field that bases put after a default gets a keyword-only copy. Skipped unless: a model orders keyword-only fields (SUPPORTS_KW_ONLY) or restores the fields it inherits (restore_required_inherited_field_state). After `assign_forward_reference_fields`: a field written by assignment is a dataclass default, which ordering reads from the bases of every module. |
 | RENDER_PREPARATION | `settle_module_unused_models` | global | bookkeeping | - | - | Keeps live the unused models that removal leaves written in a merged module (#5905). Runs when: a module leaves models unused. |
@@ -927,7 +926,7 @@ Provisional reads, from the explicit edges:
 ### Decision Phase
 
 The `decide` segment (`DECIDE`, entered at B1 right after `apply_generic_base_class`) runs the decisions of the
-parser's registry, `Parser._DECISION_PASSES` (`parser/_phases.py`). The registry holds three decisions. `omit_held_null`
+parser's registry, `Parser._DECISION_PASSES` (`parser/_phases.py`). The registry holds five decisions. `omit_held_null`
 (`parser/_held_null.py`, `--omit-redundant-reference-null`, #5081): a type that names a model holding null itself (a
 root model or type alias whose type admits None, or an enum with a None member) drops the None it restates of that
 model; the None it writes itself stays. `omit_untaken_union_constraints` (`parser/_union_constraints.py`,
@@ -940,7 +939,14 @@ None), or a member that would lose the check is a plain string, which then holds
 `--use-serialize-as-any-for-every-subclass`, #5673): every live model is marked by whether a live model below it in the
 class hierarchy, at any depth and by the bases final at B1, declares fields of its own
 (`GenerationStore.mark_serialized_as_any`); a type that names a marked model, by its name or through its module, is
-written `SerializeAsAny[...]` under `--use-serialize-as-any`. A decision is a
+written `SerializeAsAny[...]` under `--use-serialize-as-any`. `write_unique_items_as_sets` (`parser/_unique_sets.py`,
+`--use-unique-items-as-set-by-value`, #4834): a uniqueItems list becomes a set where every value of its final items
+hashes by value. `omit_incomplete_model_defaults` (`parser/_incomplete_defaults.py`,
+`--omit-incomplete-model-defaults`, #6551) runs last: a field whose object default lacks required fields of its model
+(`required_fields_a_default_lacks`, which the warning of render preparation reads too) is written without the default,
+with the default None and the nullability the parse records for it without the default
+(`DataModelFieldBase.nullable_without_default`, as `--strict-nullable` reads a property with a default as not null),
+so the constructor ordering places it as a field without a default. A decision is a
 `DecisionPass`: a `DecisionSpec` (the name of its `PassDecl` in
 `DECISION_DECLS` of `scripts/pass_decls.py`, a global transform of `DECIDE` that reads and writes `Fact` members only,
 and the issue it fixes), the writer protocol of its

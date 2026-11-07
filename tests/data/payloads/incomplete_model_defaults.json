@@ -7,6 +7,7 @@
   "invalid": [
     {"spec": {}},
     {"completeSpec": {"hostname": "h"}},
-    {"workload": {"replicas": 2}}
+    {"workload": {"replicas": 2}},
+    {"spec": null}
   ]
 }

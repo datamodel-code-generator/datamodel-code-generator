@@ -11,7 +11,13 @@ import pydantic
 import pytest
 
 from tests.conftest import assert_output
-from tests.main.conftest import DATA_PATH, OPEN_API_DATA_PATH, _generated_model, run_main_and_assert
+from tests.main.conftest import (
+    DATA_PATH,
+    JSON_SCHEMA_DATA_PATH,
+    OPEN_API_DATA_PATH,
+    _generated_model,
+    run_main_and_assert,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -19,7 +25,11 @@ if TYPE_CHECKING:
 INPUT = OPEN_API_DATA_PATH / "incomplete_model_defaults.yaml"
 STRIP_DEFAULT_NONE_INPUT = OPEN_API_DATA_PATH / "incomplete_model_defaults_strip_default_none.yaml"
 PAYLOADS = DATA_PATH / "payloads" / "incomplete_model_defaults.json"
-OPTION_SETS = {"released": (), "omit": ("--omit-incomplete-model-defaults",)}
+OPTION_SETS = {
+    "released": (),
+    "omit": ("--omit-incomplete-model-defaults",),
+    "omit_strict_nullable": ("--omit-incomplete-model-defaults", "--strict-nullable"),
+}
 DECODED_OUTPUTS = ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct")
 """The outputs that validate or convert an object default, and the outputs whose payloads the test decodes."""
 WARNING = r"^The defaults? of .* lacks? required fields of"
@@ -52,7 +62,12 @@ def test_incomplete_model_defaults(output_file: Path, output_model_type: str, op
     that default, as in 0.90.0, and the outputs that validate it, Pydantic and msgspec, reject input that leaves the
     property out, which one warning names with each such property. With it such a property is written as one without a
     default; a complete default, a map default, a default of a root model and one of a union stay. Every valid payload
-    decodes under the option and every invalid one is rejected under both option sets.
+    decodes under the option and every other invalid one is rejected under every option set; a null for such a property
+    decodes where its type admits None.
+
+    Under ``--strict-nullable``, which reads a property with a default as not null and one without as optional, the
+    property takes the form of one without a default too, ``PodSpec | None = None`` (#6551); it was written
+    ``PodSpec = None``, whose type left out the None of its default.
     """
     with warnings.catch_warnings(record=True) as caught:
         warnings.filterwarnings("always", WARNING, UserWarning)
@@ -79,14 +94,31 @@ def test_incomplete_model_defaults(output_file: Path, output_model_type: str, op
         )
 
 
-@pytest.mark.parametrize("output_model_type", ["dataclasses.dataclass", "pydantic_v2.dataclass"])
-def test_incomplete_model_defaults_strip_default_none(output_file: Path, output_model_type: str) -> None:
+@pytest.mark.parametrize(
+    ("output_model_type", "nullability"),
+    [
+        ("dataclasses.dataclass", ()),
+        ("pydantic_v2.dataclass", ()),
+        ("dataclasses.dataclass", ("--strict-nullable",)),
+        ("pydantic_v2.dataclass", ("--strict-nullable",)),
+    ],
+    ids=[
+        "dataclasses.dataclass",
+        "pydantic_v2.dataclass",
+        "dataclasses.dataclass-strict_nullable",
+        "pydantic_v2.dataclass-strict_nullable",
+    ],
+)
+def test_incomplete_model_defaults_strip_default_none(
+    output_file: Path, output_model_type: str, nullability: tuple[str, ...]
+) -> None:
     """Place a left-out default under ``--strip-default-none`` as a property without a default in a dataclass.
 
     The option writes ``spec`` without its default, which ``--strip-default-none`` writes as no default at all, so it
     precedes the defaulted ``priority`` in the constructor, as 0.90.0 orders such a property without a default. It
     followed ``priority`` before, and the module failed to import (``non-default argument 'spec' follows default
-    argument``).
+    argument``). Under ``--strict-nullable`` it is the optional ``spec: Spec | None`` of a property without a default
+    (#6551), not ``spec: Spec``.
     """
     run_main_and_assert(
         input_path=STRIP_DEFAULT_NONE_INPUT,
@@ -94,9 +126,28 @@ def test_incomplete_model_defaults_strip_default_none(output_file: Path, output_
         input_file_type="openapi",
         extra_args=[
             *("--output-model-type", output_model_type, "--formatters", "builtin", "--disable-timestamp"),
-            *("--omit-incomplete-model-defaults", "--strip-default-none"),
+            *("--omit-incomplete-model-defaults", "--strip-default-none", *nullability),
         ],
         force_exec_validation=True,
+    )
+
+
+def test_incomplete_model_defaults_strict_nullable_inherited(output_file: Path) -> None:
+    """Write an inherited property without its incomplete object default as one without a default (#6551).
+
+    Under ``--allof-merge-mode all`` the child's ``spec``, which only adds a description, inherits the default ``{}``
+    that lacks ``containers`` of ``PodSpec`` and is written ``PodSpec | None``, as its base's ``spec`` is under
+    ``--strict-nullable``. The child's ``kind`` narrows the type of the base's, which admits null, and is required, so
+    it is written as without the option.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "incomplete_model_defaults_inherited.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--formatters", "builtin", "--disable-timestamp", "--allof-merge-mode", "all"),
+            *("--omit-incomplete-model-defaults", "--strict-nullable"),
+        ],
     )
 
 

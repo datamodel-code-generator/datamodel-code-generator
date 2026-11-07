@@ -2195,6 +2195,10 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         )
         location = field.schema_location
         with_type_origin(with_field_origin(model_field, "property", location).data_type, location)
+        if self.omit_incomplete_model_defaults and has_default and not required:
+            self._graph_builder.record_nullable_without_default(
+                model_field, self._null_facts(field, "field").admits_null
+            )
         if self.model_resolver.default_value_overrides:
             model_field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = (
                 field.default if field.has_default else _RAW_SCHEMA_DEFAULT_UNDEFINED

@@ -149,6 +149,24 @@ def _apply_inherited_field_nullability(
         GenerationStore.clear_target_null(copied_field.data_type)  # ty: ignore[deprecated]
 
 
+def _keep_nullable_without_default(
+    copied_field: DataModelFieldBase,
+    inherited_field: DataModelFieldBase,
+    current_type: DataType | _InheritedTypeModifiers,
+) -> None:
+    """Give the copy the ``nullable`` without a default of the field whose ``nullable`` it takes, or none.
+
+    A copy that keeps the inherited ``nullable`` (``_inherited_field_nullability``) keeps what that field has without
+    its default; one whose override drops the null has a ``nullable`` of its own and records none.
+    """
+    without_default = inherited_field.nullable_without_default
+    match current_type:
+        case _InheritedTypeModifiers(excludes_null=True):
+            without_default = copied_field.nullable
+    if copied_field.nullable_without_default is not without_default:
+        GenerationStore.record_nullable_without_default(copied_field, without_default)  # ty: ignore[deprecated]
+
+
 def _copy_resolved_inherited_field(  # noqa: PLR0913
     field: DataModelFieldBase,
     inherited_field: DataModelFieldBase,
@@ -211,6 +229,7 @@ def _copy_resolved_inherited_field(  # noqa: PLR0913
                 **facts,
             )
             _apply_inherited_field_nullability(copied_field, current_type)
+            _keep_nullable_without_default(copied_field, inherited_field, current_type)
             if takes_default and _RAW_SCHEMA_DEFAULT_KEY in field.__dict__:
                 copied_field.__dict__[_RAW_SCHEMA_DEFAULT_KEY] = field.__dict__[_RAW_SCHEMA_DEFAULT_KEY]
         case _, ClassScope():

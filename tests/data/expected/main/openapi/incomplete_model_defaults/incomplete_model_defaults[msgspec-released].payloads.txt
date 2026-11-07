@@ -4,3 +4,4 @@ valid {"spec": {"containers": []}, "nullableSpec": {"containers": ["c"], "hostna
 invalid {"spec": {}}: rejected
 invalid {"completeSpec": {"hostname": "h"}}: rejected
 invalid {"workload": {"replicas": 2}}: rejected
+invalid {"spec": null}: rejected

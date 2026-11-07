@@ -167,7 +167,7 @@ if TYPE_CHECKING:
         RenderInputs,
         RenderReady,
     )
-    from datamodel_code_generator.model._views import ModelForm
+    from datamodel_code_generator.model._views import FieldView, ModelForm
     from datamodel_code_generator.python_literal import PythonRuntimeExpression
 
 TEMPLATE_DIR: Path = Path(__file__).parents[0] / "template"
@@ -559,6 +559,10 @@ def _normalized_constraint_kwargs(  # noqa: PLR0913
         key: Kwarg(key, value, Why(rule, sources[key][0].removeprefix("constraint:")), sources[key])
         for key, value in values.items()
     }
+
+
+NULLABLE_WITHOUT_DEFAULT_KEY: Final = "_nullable_without_default"
+"""The ``nullable`` a property field reads without its default, where it differs (``nullable_without_default``)."""
 
 
 class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
@@ -996,8 +1000,8 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
         """Return whether the field's annotation admits None, from the facts final at B1 and without rendering it."""
         return _field_imports.field_admits_none(self)
 
-    def _data_type_renders_none(self, data_type: DataType) -> bool:
-        return _field_imports.data_type_renders_none(self, data_type)
+    def _data_type_renders_none(self, data_type: DataType) -> bool:  # noqa: PLR6301
+        return data_type._renders_none  # noqa: SLF001
 
     def _data_type_import_key(self, data_type: DataType) -> tuple[Any, ...]:
         return _field_imports.data_type_import_key(self, data_type)
@@ -1271,6 +1275,16 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
     def fall_back_to_nullable(self) -> bool:
         """Check if optional fields should be nullable by default."""
         return True
+
+    @property
+    def nullable_without_default(self) -> bool | None:
+        """The ``nullable`` the field has as one without its default, which ``--strict-nullable`` reads as not null.
+
+        Under ``--omit-incomplete-model-defaults`` a property field built with a default records it where it differs
+        (``GenerationStore.record_nullable_without_default``), and a copy that takes another ``nullable`` drops it.
+        """
+        values = self.__dict__
+        return values.get(NULLABLE_WITHOUT_DEFAULT_KEY, self.nullable)
 
     def copy_deep(self) -> Self:
         """Create a copy that owns its type tree, extras, validation aliases and default (``copy_owning``)."""
@@ -2233,7 +2247,7 @@ def _classify_field_assignment(
     return classify_assignment(_assignment_inputs(field, row, written))
 
 
-def _field_source_name(field: DataModelFieldBase) -> str | None:
+def _field_source_name(field: FieldView) -> str | None:
     """Return the name the schema gives the field: its original name, else its name."""
     return field.original_name if field.original_name is not None else field.name
 
@@ -3326,6 +3340,11 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def is_alias(self) -> bool:
         """Whether is a type alias (i.e. not an instance of BaseModel/RootModel)."""
         return self.IS_ALIAS
+
+    @property
+    def effective_fields(self) -> tuple[DataModelFieldBase, ...]:
+        """The named fields of an instance after C3 inheritance and overrides (``get_effective_fields``)."""
+        return get_effective_fields(self)
 
     @property
     def holds_null(self) -> bool:

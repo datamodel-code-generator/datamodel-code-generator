@@ -474,7 +474,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.DEFAULTS, RenderFact.DEFAULT_EXPRESSION),
         Phase.IMPORTS,
         FreezePoint.B2,
-        store_ops=("set_field_default", "apply_literal_default"),
+        store_ops=("set_field_default", "apply_literal_default", "omit_field_default"),
     ),
     AttributeFact(
         "DataModelFieldBase",
@@ -547,7 +547,7 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.NULLABLE,),
         Phase.CROSS_MODULE,
         FreezePoint.B1,
-        store_ops=("apply_literal_default",),
+        store_ops=("apply_literal_default", "omit_field_default"),
     ),
     AttributeFact(
         "DataModelFieldBase",
@@ -746,6 +746,16 @@ ATTRIBUTE_FACTS: tuple[AttributeFact, ...] = (
         (Fact.CONSTRAINTS,),
         Phase.MODULES,
         FreezePoint.B1,
+        access=Access.DICT_KEY,
+    ),
+    AttributeFact(
+        "DataModelFieldBase",
+        "NULLABLE_WITHOUT_DEFAULT_KEY",
+        FactKind.FACT,
+        (Fact.NULLABLE,),
+        Phase.MODULES,
+        FreezePoint.B1,
+        store_ops=("record_nullable_without_default", "apply_literal_default"),
         access=Access.DICT_KEY,
     ),
     AttributeFact(
