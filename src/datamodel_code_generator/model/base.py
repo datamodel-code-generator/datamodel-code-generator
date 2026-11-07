@@ -119,7 +119,6 @@ from datamodel_code_generator.model._render_plan import (
     Kwarg,
     RuleId,
     Why,
-    frozen_render_plan,
     visible_nested_factories,
 )
 from datamodel_code_generator.model._rendered_names import (
@@ -152,6 +151,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator import types as _types
     from datamodel_code_generator._constraint_applicability import ConstraintOptions, OutputKeywords, RenderDrop
+    from datamodel_code_generator._parse_memo import ParseMemo
     from datamodel_code_generator._reference_graph import ReachedModels
     from datamodel_code_generator._requirements import PydanticConstruct
     from datamodel_code_generator.enums import TargetPydanticVersion
@@ -1119,7 +1119,7 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
 
     def _render_plan(self) -> FieldRenderPlan:
         """Return the plan the parse froze for this field, or the plan its facts give now (`live_render_plan`)."""
-        if (plan := frozen_render_plan(self)) is not None:
+        if (ready := RENDER_READY.get()) is not None and (plan := ready.plan_of(self)) is not None:
             return plan
         return live_render_plan(self)
 
@@ -1605,7 +1605,12 @@ def live_render_plan(field: DataModelFieldBase) -> FieldRenderPlan:
     """
     if (ready := RENDER_READY.get()) is None or (memo := ready.derived_from(field)) is None:
         return field._build_render_plan()  # noqa: SLF001
-    return memo.derived(MemoTable.FIELD_RENDER_PLAN, field, _plan_view(field, ready), field._build_render_plan)  # noqa: SLF001
+    return _kept_render_plan(field, memo, _plan_view(field, ready))
+
+
+def _kept_render_plan(field: DataModelFieldBase, memo: ParseMemo, view: Hashable) -> FieldRenderPlan:
+    """Return the live plan of ``field`` that the parse's memo keeps for ``view`` (`live_render_plan`)."""
+    return memo.derived(MemoTable.FIELD_RENDER_PLAN, field, view, field._build_render_plan)  # noqa: SLF001
 
 
 def field_imports(field: DataModelFieldBase) -> tuple[Import, ...]:
@@ -1615,8 +1620,9 @@ def field_imports(field: DataModelFieldBase) -> tuple[Import, ...]:
     """
     if (ready := RENDER_READY.get()) is None or (memo := ready.derived_from(field)) is None:
         return field.imports
-    plan = ready.plan_of(field) or live_render_plan(field)
-    return memo.derived(MemoTable.FIELD_IMPORTS, field, _plan_view(field, ready), lambda: field.imports, source=plan)
+    view = _plan_view(field, ready)
+    plan = ready.plan_of(field) or _kept_render_plan(field, memo, view)
+    return memo.derived(MemoTable.FIELD_IMPORTS, field, view, lambda: field.imports, source=plan)
 
 
 def _keeps_order_before_nullability(field: DataModelFieldBase) -> bool:
