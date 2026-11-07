@@ -1,0 +1,52 @@
+openapi: 3.0.3
+info:
+  title: properties beside a discriminated union of $ref branches
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Cat:
+      type: object
+      required: [petType, meow]
+      properties:
+        petType:
+          type: string
+        meow:
+          type: string
+    Dog:
+      type: object
+      required: [petType, bark]
+      properties:
+        petType:
+          type: string
+        bark:
+          type: string
+    Owned:
+      properties:
+        owner:
+          type: string
+      required: [owner]
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: petType
+    Mapped:
+      properties:
+        owner:
+          type: string
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: petType
+        mapping:
+          c: '#/components/schemas/Cat'
+          d: '#/components/schemas/Dog'
+    Holder:
+      type: object
+      properties:
+        owned:
+          $ref: '#/components/schemas/Owned'
+        mapped:
+          $ref: '#/components/schemas/Mapped'

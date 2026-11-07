@@ -412,7 +412,7 @@ the document that declares the mapping (`parser/_union_tags.py:located_mapping_p
 that location where it is the schema of one (`parser/_tag_plan.py:located_mapping`). The union an OpenAPI `$ref` to a
 discriminated schema is typed as records on each member the `$ref` of the subtype it stands for (`subtype_ref_of`),
 which a site that distributes its allOf members reads right after the build. The class of a `$ref` branch that takes
-the allOf members beside its union records the reference of the schema the branch names
+the parts of its site records the reference of the schema the branch names
 (`_model_keys.py:REF_BRANCH_SCHEMA_KEY`); a tag it takes from a mapping or a schema path is that schema's
 (`parser/_passes/_shared.py:_base_schema_paths`). Field construction already decides
 const handling: `DataModelFieldBase.__init__` calls `process_const()`, which types the const and decides its default

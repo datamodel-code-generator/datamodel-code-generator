@@ -4369,9 +4369,9 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ``legacy-ref-branch-without-site-parts`` is kept, the ``allOf`` members beside the union as further bases, as
         an inline branch merged with the site takes them: the ``allOf`` of the branch and those members with the
         site's other keywords (``parse_all_of``), the branch's class ``reference`` (``_BRANCH_REFERENCE_KEY``), a
-        dynamic scope's specialization included, its base; its reference records the branch's
-        (``REF_BRANCH_SCHEMA_KEY``), whose schema path gives a tag the class takes from a path. A branch the site adds
-        nothing to is the branch's own class.
+        dynamic scope's specialization included, its base. A branch the site adds nothing to is the branch's own class;
+        the reference of any other class records the branch's (``REF_BRANCH_SCHEMA_KEY``), whose schema path and
+        mapping keys give the tag the class takes.
         ``parse_combined_schema`` calls it, where the site distributes its ``allOf`` members, for each subtype a
         discriminator expanded a ``$ref`` branch to (``_expanded_variants``), numbering the models in union order.
         """
@@ -4384,12 +4384,13 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 path,
                 ignore_duplicate_model=True,
             )
-            assert data_type.reference is not None
-            data_type.reference.__dict__[REF_BRANCH_SCHEMA_KEY] = reference
-            return data_type
-        return self._parse_object_common_part(
-            name, obj, path, ignore_duplicate_model=True, fields=[], base_classes=[reference], required=[]
-        )
+        else:
+            data_type = self._parse_object_common_part(
+                name, obj, path, ignore_duplicate_model=True, fields=[], base_classes=[reference], required=[]
+            )
+        if (model_reference := data_type.reference) is not None and model_reference is not reference:
+            model_reference.__dict__[REF_BRANCH_SCHEMA_KEY] = reference
+        return data_type
 
     def parse_any_of(self, name: str, obj: JsonSchemaObject, path: list[str]) -> list[DataType]:
         """Parse anyOf schema into a list of data types."""

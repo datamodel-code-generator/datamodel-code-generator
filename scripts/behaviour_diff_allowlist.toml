@@ -279,3 +279,19 @@ match = "^\\[(?:type|config)\\] (?:allof_beside_site_discriminator:)?(?:Named|Ma
 reason = "with --distribute-allof-over-unions (the 20261104 presets), the class of a $ref branch of a oneOf with a discriminator beside an allOf took the position of the branch as its tag ('0', '1') where the discriminator has no mapping, and so did every tagged msgspec Struct, which also lost its mapping key, so the union rejected every payload; the class takes the tag of the schema its branch names ('Cat', or the mapping key 'c'), as that schema takes it without the option (owner decision: fix inside the option released in 0.90.0; the default output is unchanged)"
 decision = "#6408"
 release_note = "--distribute-allof-over-unions (and the 20261104 presets): the class of a $ref branch of a discriminated oneOf beside an allOf is tagged by the schema its branch names (Literal['Cat'], or its mapping key) instead of its position (Literal['0']), so the union accepts the payloads its schema accepts instead of rejecting every one; tagged msgspec Structs take the mapping key too"
+
+[[accepted]]
+input = "tests/data/openapi/schema_intersection"
+aspects = [ "numbered-name-removed", "type" ]
+match = "^\\[numbered-name-removed\\] ref_branches_beside_properties:Owned4: removed$|^\\[type\\] ref_branches_beside_properties:Holder:owned: Union\\[((?:None, )?)Owned, Owned4\\] -> Union\\[\\1Owned, Owned6\\]$"
+reason = "in a run over the whole directory with --distribute-allof-over-unions (the 20261104 presets), the Dog branch class of ref_branches_beside_properties is numbered after the classes the subtypes of allof_beside_discriminated_branch take now (#6283: Owned2, Owned3), so Owned4 is Owned6 there; as that class is tagged 'Dog' instead of '1' now (#6459), its signature no longer pairs it with Owned4, so the renumbering shows; it keeps its base and fields, and Holder.owned names it (owner decisions: renumbering in union order inside the option, tags by the schema name)"
+decision = "#6283, #6459"
+release_note = "--distribute-allof-over-unions (and the 20261104 presets): each subtype a discriminated $ref branch stands for takes the allOf members beside or around its union as a class of its own (Owned1(Cat), Owned2(Dog)), so it requires the members' properties; the classes of the branches after it are renumbered in union order (Owned1(Fish) becomes Owned3(Fish)), and in an allOf that holds the union the subtypes are no longer dropped"
+
+[[accepted]]
+input = [ "tests/data/openapi/schema_intersection/ref_branches_beside_properties.yaml", "tests/data/openapi/schema_intersection" ]
+aspects = [ "config", "type" ]
+match = "^\\[(?:type|config)\\] (?:ref_branches_beside_properties:)?Owned\\d*(?::pet_?[Tt]ype)?: .*'[01]'.* -> .*'(?:Cat|Dog)'.*$"
+reason = "a $ref branch of a oneOf with properties or required beside it and a discriminator without mapping is the class of the branch with those properties, which took the position of the branch as its tag ('0', '1') since 0.85.0, so the union rejected every payload; the class takes the tag of the schema its branch names ('Cat'), as that schema takes it as a variant itself, and keeps its name and fields (rejects-all fix)"
+decision = "#6459"
+release_note = "the class of a $ref branch of a discriminated oneOf with properties beside it and no mapping is tagged by the schema its branch names (Literal['Cat']) instead of its position (Literal['0']), so the union accepts the payloads its schema accepts instead of rejecting every one"

@@ -1067,7 +1067,7 @@ def _get_schema_path(model: DataModel | Reference) -> str:
 def _base_schema_paths(model: DataModel) -> list[str]:
     """Return the schema paths a model stands for through its bases, in base order.
 
-    The class of a ``$ref`` branch with the allOf members beside its union stands for the schema the branch names
+    The class of a ``$ref`` branch with the parts of its site stands for the schema the branch names
     first (``ref_branch_schema_of``), also where a later pass dropped its bases (a tagged msgspec Struct); a path is
     listed once.
     """
