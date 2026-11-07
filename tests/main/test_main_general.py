@@ -2087,6 +2087,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "check_pattern_maps_strictly",
         "use_type_checking_imports",
         "dedupe_request_response_variants",
+        "dedupe_numbered_request_response_variants",
         "keep_first_character_of_path_keys",
         "keep_content_parameter_refs",
         "skip_path_extension_keys",

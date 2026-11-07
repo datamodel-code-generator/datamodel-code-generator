@@ -522,6 +522,11 @@ def _rw_direction(suffix: Literal["Request", "Response"]) -> _RwDirection:
     return "request" if suffix == "Request" else "response"
 
 
+def _rw_suffix(direction: _RwDirection) -> Literal["Request", "Response"]:
+    """Return the class-name suffix of the read or write variant in ``direction``, as ``_rw_direction`` reads it."""
+    return "Request" if direction == "request" else "Response"
+
+
 T = TypeVar("T")
 
 

@@ -388,6 +388,7 @@ class BaseGenerateConfig(TypedDict):
     use_bytes_for_content_media_type: NotRequired[bool]
     read_only_write_only_model_type: NotRequired[ReadOnlyWriteOnlyModelType | None]
     dedupe_request_response_variants: NotRequired[bool]
+    dedupe_numbered_request_response_variants: NotRequired[bool]
     use_status_code_in_response_name: NotRequired[bool]
     keep_first_character_of_path_keys: NotRequired[bool]
     keep_content_parameter_refs: NotRequired[bool]

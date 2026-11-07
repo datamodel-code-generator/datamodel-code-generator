@@ -572,6 +572,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     **_opts(
         _C.OPENAPI,
         "--read-only-write-only-model-type --dedupe-request-response-variants --no-dedupe-request-response-variants",
+        "--dedupe-numbered-request-response-variants --no-dedupe-numbered-request-response-variants",
         group=_G.READ_ONLY_WRITE_ONLY,
     ),
     **_opts(

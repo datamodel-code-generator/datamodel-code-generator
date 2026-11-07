@@ -1680,6 +1680,13 @@ _toggle(
     help="Decide Request/Response variants from the schema graph and build each inline model once, without the "
     "unreferenced duplicate classes and shifted class numbers of 0.86.0",
 )
+_toggle(
+    openapi_options,
+    "--dedupe-numbered-request-response-variants",
+    help="Deduplicate a Request or Response variant of a numbered model (Page1Request of an inline copy Page1 of Page) "
+    "by the variant name of the name its model was numbered from, so it merges into PageRequest where it renders the "
+    "same; without it such a variant stays a class of its own, as in 0.90.0",
+)
 _flag(
     openapi_options,
     "--use-status-code-in-response-name",

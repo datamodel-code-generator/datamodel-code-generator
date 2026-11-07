@@ -1846,6 +1846,11 @@ openapi/query_parameters.yaml::components.schemas.PetForm	payloads/native_numeri
 openapi/query_parameters.yaml::paths./pets.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/query_parameters_with_config.yaml::components.schemas.Account	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/querystring_parameter_31.yaml::components.schemas.Event	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/read_only_numbered_variants.yaml::components.schemas.Holder	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/read_only_numbered_variants.yaml::components.schemas.Page	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/read_only_numbered_variants_by_direction.yaml::components.schemas.Holder	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/read_only_numbered_variants_by_direction.yaml::components.schemas.Other	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/read_only_numbered_variants_by_direction.yaml::components.schemas.Page	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only.yaml::components.schemas.User	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_allof.yaml::components.schemas.Credentials	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_allof.yaml::components.schemas.Timestamps	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3905,6 +3910,11 @@ openapi/query_parameters.yaml::components.schemas.PetForm	payloads/native_numeri
 openapi/query_parameters.yaml::paths./pets.post.requestBody.content.application/json	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/query_parameters_with_config.yaml::components.schemas.Account	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/querystring_parameter_31.yaml::components.schemas.Event	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/read_only_numbered_variants.yaml::components.schemas.Holder	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/read_only_numbered_variants.yaml::components.schemas.Page	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/read_only_numbered_variants_by_direction.yaml::components.schemas.Holder	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/read_only_numbered_variants_by_direction.yaml::components.schemas.Other	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/read_only_numbered_variants_by_direction.yaml::components.schemas.Page	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only.yaml::components.schemas.User	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_allof.yaml::components.schemas.Credentials	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/read_only_write_only_allof.yaml::components.schemas.Timestamps	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

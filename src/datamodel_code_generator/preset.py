@@ -1159,6 +1159,15 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
             "enum so, instead of an Enum class."
         ),
     ),
+    PresetOptionGroup(
+        title="Request and response variants of numbered models deduplicated",
+        config=PresetConfig(dedupe_numbered_request_response_variants=True),
+        description=(
+            "Under --read-only-write-only-model-type, merge a Request or Response variant of a numbered model, such "
+            "as Page1Request of an inline copy Page1 of Page, into PageRequest where it renders the same, as the "
+            "numbered model merges into Page."
+        ),
+    ),
 )
 """The 20261104 groups and the opt-in options of the release after 0.90.0."""
 
@@ -1532,7 +1541,10 @@ def render_presets_markdown() -> str:
             '`dict[str, "Entry"]`), and '
             "`--use-enum-field-as-literal-in-operations`: the enum of an OpenAPI request body or response is a root "
             "model of a `Literal` where `--enum-field-as-literal`, its map or `x-enum-field-as-literal` makes a "
-            "definition's enum one, instead of an `Enum` class."
+            "definition's enum one, instead of an `Enum` class, and `--dedupe-numbered-request-response-variants`: "
+            "under `--read-only-write-only-model-type` a Request or Response variant of a numbered model "
+            "(`Page1Request` of an inline copy `Page1` of `Page`) merges into `PageRequest` where it renders the same, "
+            "as the numbered model merges into `Page`."
         ),
         "",
         "## Override Preset Options",

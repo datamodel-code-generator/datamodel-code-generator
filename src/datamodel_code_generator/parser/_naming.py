@@ -24,7 +24,7 @@ from collections import Counter
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from string import digits
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar, cast
 
 from typing_extensions import Protocol, final
 
@@ -62,6 +62,7 @@ __all__ = [
     "build_record_of",
     "composed_name",
     "plan_names",
+    "rw_variant_class_name",
     "rw_variant_name",
 ]
 
@@ -104,6 +105,34 @@ def rw_variant_name(base_name: str, suffix: str, class_name_suffix: str) -> str:
         numeric_index = base_name.removeprefix(base_name_without_index)
         return f"{base_name_without_index[: -len(class_name_suffix)]}{suffix}{class_name_suffix}{numeric_index}"
     return f"{base_name}{suffix}"
+
+
+class _ClassName(Protocol):
+    """What ``rw_variant_class_name`` reads of the class name a resolver gives."""
+
+    @property
+    def name(self) -> str:
+        """The class name."""
+
+
+class _ClassNameResolver(Protocol):
+    """What ``rw_variant_class_name`` reads of the model resolver."""
+
+    @property
+    def class_name_suffix(self) -> str:
+        """The suffix every class name takes."""
+
+    def get_class_name(self, name: str, *args: Any, **kwargs: Any) -> _ClassName:
+        """Return the class name the resolver gives ``name``."""
+
+
+def rw_variant_class_name(
+    resolver: _ClassNameResolver, base_name: str, suffix: Literal["Request", "Response"], **kwargs: Any
+) -> str:
+    """Return the class name ``resolver`` gives the ``suffix`` variant of the model named ``base_name``."""
+    return resolver.get_class_name(
+        rw_variant_name(base_name, suffix, resolver.class_name_suffix), skip_affix=True, preserve_name=True, **kwargs
+    ).name
 
 
 BUILD_RECORD_KEY: Final = "_build_record"
@@ -455,6 +484,14 @@ class NameRestore:
     order: int
 
 
+class _NamedReference(Protocol):
+    """What ``NamingPlan.reference_base_of`` reads of a reference."""
+
+    @property
+    def duplicate_name(self) -> str | None:
+        """The name the resolver numbered the reference from, else None."""
+
+
 class _NamedModel(Protocol):
     """What ``NamingPlan.base_of`` and ``NamingPlan.restores_in`` read of a model."""
 
@@ -488,6 +525,11 @@ class NamingPlan:
         """
         planned = self.names.get(model_key_of(model.reference)) if self.names else None
         return model.duplicate_class_name if planned is None else planned.base
+
+    def reference_base_of(self, reference: _NamedReference) -> str:
+        """Return the name ``reference`` was numbered from, as ``base_of`` does for its model, also without one."""
+        planned = self.names.get(model_key_of(reference)) if self.names else None
+        return (reference.duplicate_name or "").rpartition(".")[2] if planned is None else planned.base
 
     def restores_in(self, models: Iterable[_NamedModelT]) -> list[tuple[_NamedModelT, NameRestore]]:
         """Return the models of ``models`` that have a restore, with it, each after the models it reads."""

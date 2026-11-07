@@ -29,7 +29,7 @@ from datamodel_code_generator.model import DataModel
 from datamodel_code_generator.model.base import _field_source_name
 from datamodel_code_generator.model.runtime_validation import _is_internal_schema_runtime_validation
 from datamodel_code_generator.parser._field_rows import uses_default_with_required
-from datamodel_code_generator.parser._naming import rw_variant_name
+from datamodel_code_generator.parser._naming import rw_variant_class_name
 from datamodel_code_generator.parser._origins import with_field_origin
 from datamodel_code_generator.parser._passes._shared import (
     _detach_deferred_inherited_field_parents,
@@ -1406,17 +1406,16 @@ def get_rw_model_variant_reference(
     if source_variant_exists:
         parser.model_resolver.add_ref(source_variant_ref, resolved=True)
 
-    variant_name = rw_variant_name(base_reference.name, suffix, parser.model_resolver.class_name_suffix)
     yielding = parser.model_resolver.is_yielding(base_reference)
     variant_path = _rw_variant_path(base_reference.path, _rw_direction(suffix))
-    unique_name = parser.model_resolver.get_class_name(
-        variant_name,
+    unique_name = rw_variant_class_name(
+        parser.model_resolver,
+        base_reference.name,
+        suffix,
         unique=True,
-        skip_affix=True,
-        preserve_name=True,
         yields=yielding,
         path=parser.model_resolver.join_path(tuple(variant_path)),
-    ).name
+    )
     reference = parser.model_resolver.add(
         variant_path,
         unique_name,

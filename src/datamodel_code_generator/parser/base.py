@@ -176,7 +176,7 @@ from datamodel_code_generator.parser._model_shapes import (
     ShapeRow,
     stdout_fingerprint,  # noqa: F401  # Preserve the established parser.base export.
 )
-from datamodel_code_generator.parser._naming import NamingFrames, NamingPlan, NamingRules
+from datamodel_code_generator.parser._naming import NamingFrames, NamingPlan, NamingRules, rw_variant_class_name
 from datamodel_code_generator.parser._passes import _shared, _state, settle, structure
 from datamodel_code_generator.parser._passes import modules as _modules
 from datamodel_code_generator.parser._passes import plans as _plans
@@ -248,6 +248,8 @@ from datamodel_code_generator.reference import (
     ModelResolver,
     ModelType,
     Reference,
+    _rw_suffix,
+    _rw_variant_of,
     location_of,
     split_module_name,  # noqa: F401  # Preserve the established parser.base export.
 )
@@ -580,12 +582,18 @@ class _ModelShapeSource:
     ``uniqueItems`` (``unique_items_positions``), as the decision on the final types writes sets there; without it
     (row ``legacy-dedup-keys-without-unique-items``) they hold the rendering alone, in which such an array is the list
     it still is, as 0.89.0 compared them."""
+    numbered_variant_name: Callable[[Reference], str] | None = None
+    """Under --dedupe-numbered-request-response-variants, the name a read or write variant of a numbered model was
+    numbered from (``Parser._numbered_rw_variant_name``)."""
 
     def own_class_name(self, model: DataModel) -> str | None:
         """Return the class name the model shares with its duplicates, or None for the name it renders under.
 
-        It is the name the model was numbered from (``NamingPlan.base_of``).
+        It is the name the model was numbered from (``NamingPlan.base_of``), for a read or write variant of a numbered
+        model under ``numbered_variant_name`` the one it gives (``Page1Request`` shares ``PageRequest``).
         """
+        if self.numbered_variant_name is not None and (name := self.numbered_variant_name(model.reference)):
+            return name
         return self.naming_plan.base_of(model)
 
     def render(self, model: DataModel, class_name: str | None) -> tuple[str, Hashable, tuple[Hashable, ...]]:
@@ -1427,6 +1435,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self._reuse_optimization_context = _ReuseOptimizationContext.from_type_overrides(self.type_overrides)
         self.read_only_write_only_model_type: ReadOnlyWriteOnlyModelType | None = config.read_only_write_only_model_type
         self.dedupe_request_response_variants: bool = config.dedupe_request_response_variants
+        self.dedupe_numbered_request_response_variants: bool = config.dedupe_numbered_request_response_variants
         self.use_frozen_field: bool = config.use_frozen_field
         self.use_serialization_alias: bool = config.use_serialization_alias
         self.use_default_factory_for_optional_nested_models: bool = (
@@ -1779,8 +1788,31 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 self.target_python_version,
                 self._naming_plan,
                 unique_items=self.use_unique_items_as_set and self.use_unique_items_as_set_by_value,
+                numbered_variant_name=(
+                    self._numbered_rw_variant_name if self.dedupe_numbered_request_response_variants else None
+                ),
             ),
             self._tag_plan.reuse_snapshot,
+        )
+
+    def _numbered_rw_variant_name(self, reference: Reference) -> str:
+        """Return the name a read or write variant of a numbered model was numbered from, else ``""``.
+
+        It is the name the variant reference holds where its model was not numbered: that of the variant of the name
+        the model was numbered from (``Page1Request`` of ``Page1``, numbered from ``Page``, was numbered from
+        ``PageRequest``), as ``_rw_split.get_rw_model_variant_reference`` names it.
+        ``--dedupe-numbered-request-response-variants`` deduplicates the variant by it, as a numbered model by the name
+        it asked for.
+        """
+        resolver = self.model_resolver
+        if (
+            (variant := _rw_variant_of(reference.path)) is None
+            or (base := resolver.references.get(variant[0])) is None
+            or not (asked := self._naming_plan.reference_base_of(base))
+        ):
+            return ""
+        return resolver.get_valid_field_name(
+            rw_variant_class_name(resolver, asked, _rw_suffix(variant[1]), unique=False), model_type=ModelType.CLASS
         )
 
     def _create_discriminator_data_type(
