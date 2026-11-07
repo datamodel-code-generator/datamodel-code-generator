@@ -129,6 +129,7 @@ from datamodel_code_generator.model._rendered_names import (
 )
 from datamodel_code_generator.python_literal import (
     _make_internal_type_expression,
+    _make_referencing_type_expression,
     message_repr,
     represent_python_value,
     stable_pformat,
@@ -3304,6 +3305,28 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     def _setting_data_types(self) -> Iterator[DataType]:  # ruff: ignore[no-self-use]
         """Yield the data types that the backend settings of the class write; the neutral model has none."""
         yield from ()
+
+    @property
+    def additional_properties_type(self) -> DataType | None:
+        """The type of the additional properties that the backend settings of the class write, or None.
+
+        TypedDict writes it as ``extra_items``; the neutral model writes none.
+        """
+        return None
+
+    def _write_additional_properties_type(self, data_type: DataType) -> None:
+        """Write ``data_type`` as the type of the additional properties, with its imports, as the settings render it.
+
+        The classes it names stay those recorded for the additional properties. ``GenerationStore`` runs it
+        (``replace_additional_properties_type``).
+        """
+        self.store_additional_properties_type(
+            self.extra_template_data,
+            _make_referencing_type_expression(data_type),
+            set(self.additional_properties_reference_classes),
+            imports=tuple(data_type.all_imports),
+        )
+        self._name_final_classes()
 
     def _decide_config_items(self) -> None:
         """Decide the config items the class writes, once every fact they read is final; the neutral model has none."""

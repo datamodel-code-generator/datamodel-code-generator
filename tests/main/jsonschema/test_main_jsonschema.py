@@ -9517,6 +9517,73 @@ def test_main_unique_items_as_set_nested_arrays(output_model: str, tmp_path: Pat
         )
 
 
+@pytest.mark.parametrize(
+    ("extra_args", "expected_repr"),
+    [
+        pytest.param(
+            [],
+            "{'scalars': {'label': 's', 'a': {1, 2}}, 'nested': {'a': [{3, 4}]}, 'members': {'a': {5, 6}, 'b': 'x'}, "
+            "'maps': {'a': {'k': {7}}}, 'unique': {'name': 'u', 'a': [8, 9]}, 'plain': {'name': 'p', 'a': [10, 10]}}",
+            id="default",
+        ),
+        pytest.param(
+            ["--use-unique-items-as-set-by-value"],
+            "{'scalars': {'label': 's', 'a': {1, 2}}, 'nested': {'a': [{3, 4}]}, 'members': {'a': {5, 6}, 'b': 'x'}, "
+            "'maps': {'a': {'k': {7}}}, 'unique': {'name': 'u', 'a': {8, 9}}, 'plain': {'name': 'p', 'a': [10, 10]}}",
+            id="by-value",
+        ),
+        pytest.param(
+            ["--use-generic-container-types"],
+            "{'scalars': {'label': 's', 'a': frozenset({1, 2})}, 'nested': {'a': frozenset({frozenset({3, 4})})}, "
+            "'members': {'a': frozenset({5, 6}), 'b': 'x'}, 'maps': {'a': {'k': frozenset({7})}}, "
+            "'unique': {'name': 'u', 'a': [8, 9]}, 'plain': {'name': 'p', 'a': [10, 10]}}",
+            id="generic-container-types",
+        ),
+    ],
+)
+def test_main_unique_items_as_set_extra_items(extra_args: list[str], expected_repr: str, output_file: Path) -> None:
+    """Write as a set the arrays that the additionalProperties of a TypedDict declare unique in its ``extra_items``.
+
+    ``extra_items`` takes the sets a field built from the same schema takes: the array itself, a member of an anyOf, the
+    values of a map, and the inner arrays of an array of arrays, which stays a list as no set holds a set but a frozen
+    set under --use-generic-container-types, whose import of ``Sequence`` goes. A set of an enum's values holds them; a
+    set of TypedDict items, which never hash, is a list again. ``Unique`` and ``Plain`` differ only in ``uniqueItems``:
+    without --use-unique-items-as-set-by-value --reuse-model merges ``Plain`` into ``Unique``, whose ``extra_items``
+    stays a list, as the values of a map do where a model merged into theirs declares no ``uniqueItems``; with it they
+    are kept apart and only ``Unique`` takes a set. Up to 0.89.0 ``extra_items`` stayed a list (#6328).
+    """
+    name = "unique_items_as_set_extra_items"
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / f"{name}.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        assert_func=assert_file_content,
+        extra_args=[
+            "--output-model-type",
+            "typing.TypedDict",
+            "--use-unique-items-as-set",
+            "--reuse-model",
+            *extra_args,
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=name,
+        model_name="Model",
+        valid_json=(
+            '{"scalars": {"label": "s", "a": [1, 2]}, "nested": {"a": [[3, 4]]}, "members": {"a": [5, 6], "b": "x"},'
+            ' "maps": {"a": {"k": [7]}}, "unique": {"name": "u", "a": [8, 9]}, "plain": {"name": "p", "a": [10, 10]}}'
+        ),
+        invalid_json='{"scalars": {"a": 1}}',
+        expected_error_type="frozen_set_type" if extra_args == ["--use-generic-container-types"] else "set_type",
+        expected_repr=expected_repr,
+    )
+
+
 @pytest.mark.parametrize("output_model", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass"])
 def test_main_nested_array_item_counts(output_model: str, tmp_path: Path, output_file: Path) -> None:
     """Write the item counts of a nested array on a type alias of its own, as the member of a type list takes them.

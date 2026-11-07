@@ -336,6 +336,7 @@ def test_checker_uses_generation_store_api_surface() -> None:
             "register_model",
             "rename_field",
             "rename_model",
+            "replace_additional_properties_type",
             "replace_data_type_ref",
             "replace_field_type",
             "replace_model",

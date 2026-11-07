@@ -1468,7 +1468,11 @@ def store_extra_items_type(
     reference_classes_required: bool,
     **kwargs: Any,
 ) -> None:
-    """Store the type TypedDict writes as extra_items, with the model classes it names where they are required."""
+    """Store the type TypedDict writes as extra_items, with the model classes it names where they are required.
+
+    Where they are, the output writes the type (TypedDict ``extra_items``), which keeps the data type it renders from,
+    also when it names no class: the passes that write uniqueItems arrays as sets write it as they write field types.
+    """
     reference_classes = (
         {item.reference.path for item in data_type.all_data_types if item.reference}
         if reference_classes_required
@@ -1476,7 +1480,7 @@ def store_extra_items_type(
     )
     parser._output_model_context.store_additional_properties_type(  # noqa: SLF001
         metadata,
-        _make_referencing_type_expression(data_type) if reference_classes else data_type.type_hint,
+        _make_referencing_type_expression(data_type) if reference_classes is not None else data_type.type_hint,
         reference_classes,
         imports=tuple(data_type.all_imports),
         **kwargs,

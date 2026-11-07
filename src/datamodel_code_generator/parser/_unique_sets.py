@@ -10,7 +10,9 @@ no model, and models whose instances hash by value (``hashes_by_value``: a froze
 frozen Pydantic class that keeps its builtin hash, whose field values hash). A model that hashes only by identity or
 never, ``Any`` and ``object``, and the containers whose values do not hash keep the list. Which models hash by value is
 decided for all of them together, as the sets of one model's fields decide whether its instances hash: every model its
-class allows is taken to, and the models a field contradicts are dropped until none is (a greatest fixed point).
+class allows is taken to, and the models a field contradicts are dropped until none is (a greatest fixed point). The
+type of the additional properties that a TypedDict writes as ``extra_items`` is decided as a field built from the
+additionalProperties schema (``additional_properties_holder``).
 """
 
 from __future__ import annotations
@@ -38,6 +40,7 @@ from datamodel_code_generator.model._decisions.hashability import (
 from datamodel_code_generator.parser._passes._shared import (
     UniqueItemsPlan,
     _declared_unique_arrays,
+    additional_properties_holder,
     names_alias_beside_arrays,
     plan_unique_sets,
     without_own_unique_sets,
@@ -50,6 +53,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._model_keys import ModelKey
     from datamodel_code_generator.model._decisions.hashability import SetItemHash
     from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView
+    from datamodel_code_generator.parser._passes._shared import AdditionalPropertiesHolder
     from datamodel_code_generator.parser._phases import FinalFacts
 
 __all__ = ["WRITE_UNIQUE_ITEMS_AS_SETS", "UniqueSetsWriter"]
@@ -67,6 +71,12 @@ class UniqueSetsWriter(DecisionWriter, Protocol):
         """Write each of ``lists``, types of ``field`` of ``model``, as a set, and ``default`` but None as its default.
 
         The field gets a copy of its type tree with the sets; the nodes other fields share stay as they are.
+        """
+
+    def write_additional_properties_sets(self, model: ModelView, lists: Sequence[DataTypeView]) -> None:
+        """Write each of ``lists``, types of the additional properties of ``model`` (``extra_items``), as a set.
+
+        The model takes a copy of the type tree with the sets; the nodes stay as they are.
         """
 
 
@@ -165,8 +175,11 @@ class _ByValue:
             sets = self._alias_sets[key] = {*map(id, self.plan(value).sets)}
             self.aliases[key] = every_value_hashes(self.item(value.data_type, sets))
 
-    def plan(self, field: FieldView) -> UniqueItemsPlan:
-        """Return the arrays of ``field`` that become sets, but those of the own level of an alias beside arrays."""
+    def plan(self, field: FieldView | AdditionalPropertiesHolder) -> UniqueItemsPlan:
+        """Return the arrays of ``field`` that become sets, but those of the own level of an alias beside arrays.
+
+        The type of the additional properties of a model (``additional_properties_holder``) is read as a field.
+        """
         live = cast("Any", field)
         plan = plan_unique_sets(
             live,
@@ -350,10 +363,17 @@ def _write_unique_items_as_sets(facts: FinalFacts, writer: UniqueSetsWriter) -> 
         reading.value_keys = kept
     fields = [(model, field) for model in facts.live_models for field in model.fields]
     defaults = {id(field): reading.written_default(field, plans[id(field)]) for _, field in fields}
+    additional = [
+        (model, plan)
+        for model in facts.live_models
+        if (holder := additional_properties_holder(model)) is not None and (plan := reading.plan(holder)).sets
+    ]
     for model, field in fields:
         default = defaults[id(field)]
         if (plan := plans[id(field)]).sets or default is not None:
             writer.write_sets(model, field, plan.sets, default)
+    for model, plan in additional:
+        writer.write_additional_properties_sets(model, plan.sets)
 
 
 def _item_types(node: Any, index: int) -> Sequence[Any]:

@@ -20,7 +20,7 @@ from typing_extensions import ReadOnly, TypedDict, final
 from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Sequence
+    from collections.abc import Callable, Iterable, Mapping, Sequence
 
     from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView, ReferenceView
     from datamodel_code_generator.model.base import DataModel
@@ -34,6 +34,7 @@ __all__ = [
     "DecisionWriter",
     "FinalFacts",
     "ModuleFacts",
+    "rewrite_copied_type",
 ]
 
 W = TypeVar("W", bound="DecisionWriter")
@@ -70,6 +71,9 @@ class DecisionStore(Protocol):
 
     def set_field_default(self, field_: Any, default: Any) -> None:
         """Write a field's default."""
+
+    def replace_additional_properties_type(self, model: Any, data_type: Any) -> None:
+        """Give a model the type of the additional properties its settings write (TypedDict ``extra_items``)."""
 
 
 @final
@@ -189,17 +193,54 @@ class _DecisionWriter:
         copied = self._copy(original)
         self._store.replace_field_type(field, copied)
         for source, target in zip(original.all_data_types, copied.all_data_types, strict=True):
-            if id(source) not in planned:
-                continue
-            set_type = target.model_copy(update={"is_list": False, "is_set": True})
-            for item in set_type.data_types:
-                item.parent = set_type
-            self._store.swap_data_type(target, set_type)
+            if id(source) in planned:
+                self._store.swap_data_type(target, _set_of(target))
         if default is not None:
             self._store.set_field_default(field, default)
+        self._changed[id(model)] = cast("DataModel", model)
+
+    def write_additional_properties_sets(self, model: ModelView, lists: Sequence[DataTypeView]) -> None:
+        """Write each of ``lists``, types of the additional properties of ``model``, as a set (``UniqueSetsWriter``).
+
+        The model takes a copy of the type tree with the sets (``rewrite_copied_type``); the nodes stay as they are.
+        """
+        original: Any = model.additional_properties_type
+        rewrites = dict.fromkeys(map(id, lists), _set_of)
+        self._store.replace_additional_properties_type(
+            model, rewrite_copied_type(self._store, self._copy, original, rewrites)
+        )
         self._changed[id(model)] = cast("DataModel", model)
 
     def outcome(self, live_models: Iterable[DataModel]) -> DecisionOutcome:
         """Return the models of ``live_models`` that the writes changed, in their order."""
         changed = self._changed
         return DecisionOutcome(tuple(model for model in live_models if id(model) in changed))
+
+
+def _set_of(data_type: Any) -> Any:
+    """Return the set copy of a list type, which holds its items."""
+    set_type = data_type.model_copy(update={"is_list": False, "is_set": True})
+    for item in set_type.data_types:
+        item.parent = set_type
+    return set_type
+
+
+def rewrite_copied_type(
+    store: DecisionStore, copy: Callable[[Any], Any], data_type: Any, rewrites: Mapping[int, Callable[[Any], Any]]
+) -> Any:
+    """Return a copy of the type tree of ``data_type`` whose copies of the nodes ``rewrites`` names are rewritten.
+
+    ``rewrites`` maps a node of the tree, by id, to what makes its rewrite of the node's copy; the nodes are rewritten
+    inner ones first, so a rewrite holds the rewrites of the nodes it holds. A copied node in a copied parent is
+    swapped through ``store``; the copied root, which no parent holds, is returned rewritten for its holder to take.
+    """
+    copied = copy(data_type)
+    root = copied
+    for source, target in list(zip(data_type.all_data_types, copied.all_data_types, strict=True)):
+        if (rewrite := rewrites.get(id(source))) is None:
+            continue
+        if target is copied:
+            root = rewrite(target)
+        else:
+            store.swap_data_type(target, rewrite(target))
+    return root

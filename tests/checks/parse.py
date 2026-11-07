@@ -373,6 +373,16 @@ def write_sets(original: Callable[..., None]) -> Callable[..., None]:
     return write_sets
 
 
+def write_additional_properties_sets(original: Callable[..., None]) -> Callable[..., None]:
+    """Wrap ``_DecisionWriter.write_additional_properties_sets``: it writes the objects the guarded views name."""
+
+    @wraps(original)
+    def write_additional_properties_sets(self: Any, model: Any, lists: Any) -> None:
+        return original(self, viewed(model), [viewed(data_type) for data_type in lists])
+
+    return write_additional_properties_sets
+
+
 def mark_serialized_as_any(original: Callable[..., None]) -> Callable[..., None]:
     """Wrap ``_DecisionWriter.mark_serialized_as_any``: it writes the model that the guarded view it gets names."""
 

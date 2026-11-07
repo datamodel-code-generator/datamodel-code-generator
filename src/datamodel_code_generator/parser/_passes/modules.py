@@ -131,9 +131,11 @@ from datamodel_code_generator.parser._passes._shared import (
     _is_discriminator_wrapper,
     _ModelPositions,
     _named_data_types,
+    _nodes_with_paths,
     _restore_inherited_field_names_for_unique_aliases,
     _rule_data_types,
     _runtime_validation_reference_keys,
+    additional_properties_holder,
     aliases_first,
     compared_models,
     definition_reads,
@@ -167,6 +169,7 @@ from datamodel_code_generator.parser._passes._state import (
     _KeptParentRoot,
 )
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
+from datamodel_code_generator.parser._phases import rewrite_copied_type
 from datamodel_code_generator.parser._tag_plan import (
     KeptTagField,
     MsgspecUnion,
@@ -1106,11 +1109,15 @@ def replace_merged_unique_list_to_set(parser: ModulesHost, models: list[DataMode
     holds one of each. An array of the field's own schema that ``replace_unique_list_to_set`` kept a list, as its items
     were lists then, is read again with them: it becomes a set where the sets they become hash, frozen sets under
     --use-generic-container-types, and every model merged into its model declares it too. The type aliases are decided
-    first, as in ``replace_unique_list_to_set``, so a holder never reads a set its alias's value keeps a list. Under
-    --use-unique-items-as-set-by-value the decision on the final types writes them (``parser/_unique_sets.py``).
+    first, as in ``replace_unique_list_to_set``, so a holder never reads a set its alias's value keeps a list. The type
+    of the additional properties that the settings of a model write (TypedDict ``extra_items``) is read as the field
+    built from the additionalProperties schema, whose arrays are all those of nested schemas
+    (``additional_properties_holder``). Under --use-unique-items-as-set-by-value the decision on the final types writes
+    them (``parser/_unique_sets.py``).
     """
     if not parser.use_unique_items_as_set or parser.use_unique_items_as_set_by_value:
         return
+    keeps_tuples = parser.use_tuple_for_closed_arrays
     for model in aliases_first(models):
         merged = merged_models(parser, model)
         for model_field in model.fields:
@@ -1121,13 +1128,22 @@ def replace_merged_unique_list_to_set(parser: ModulesHost, models: list[DataMode
                     model_field,
                     unique_items_plan(
                         model_field,
-                        keeps_tuples=parser.use_tuple_for_closed_arrays,
+                        keeps_tuples=keeps_tuples,
                         sources="merged",
                         merged=[_field_named(other, model_field.name) for other in merged],
                     ),
                 )
             ).sets:
                 _write_unique_sets(parser, model_field, plan)
+        if (holder := additional_properties_holder(model)) is not None and (
+            plan := unique_items_plan(
+                holder,
+                keeps_tuples=keeps_tuples,
+                sources="merged",
+                merged=[additional_properties_holder(other) for other in merged],
+            )
+        ).sets:
+            _write_additional_properties_nodes(parser, model, plan.sets, _unique_set_of(parser))
 
 
 def _sets_beside_arrays_kept(
@@ -1176,8 +1192,9 @@ def _write_unique_sets(parser: ModulesHost, model_field: DataModelFieldBase, pla
     """
     builder = parser._graph_builder  # noqa: SLF001
     field_type = model_field.data_type
+    as_set = _unique_set_of(parser)
     for list_type in plan.sets:
-        set_type = with_unique_items_set(parser._create_set_from_list(list_type))  # noqa: SLF001
+        set_type = as_set(list_type)
         if list_type is field_type:
             field_type = set_type
         else:
@@ -1188,6 +1205,33 @@ def _write_unique_sets(parser: ModulesHost, model_field: DataModelFieldBase, pla
     builder.replace_field_type(model_field, field_type)
 
 
+def _unique_set_of(parser: ModulesHost) -> Callable[[DataType], DataType]:
+    """Return what writes a list as the set --use-unique-items-as-set writes from it, which records that it is one."""
+    return lambda list_type: with_unique_items_set(parser._create_set_from_list(list_type))  # noqa: SLF001
+
+
+def _unique_list_of(set_type: DataType) -> DataType:
+    """Return the list that a set --use-unique-items-as-set wrote turns back into, without the set record."""
+    list_type = with_unique_items_set(set_type.model_copy(update={"is_set": False, "is_list": True}), wrote=False)
+    for item in list_type.data_types:
+        item.parent = list_type
+    return list_type
+
+
+def _write_additional_properties_nodes(
+    parser: ModulesHost, model: DataModel, nodes: Iterable[DataType], rewrite: Callable[[DataType], DataType]
+) -> None:
+    """Write the type of the additional properties of ``model`` with each of ``nodes`` as ``rewrite`` makes it.
+
+    The model takes a copy of the type tree with the rewrites (``rewrite_copied_type``), as a set of a field's type
+    turns back into a list; the nodes stay as they are.
+    """
+    builder = parser._graph_builder  # noqa: SLF001
+    rewrites = dict.fromkeys(map(id, nodes), rewrite)
+    original = cast("DataType", model.additional_properties_type)
+    builder.replace_additional_properties_type(model, rewrite_copied_type(builder, _copy_data_type, original, rewrites))
+
+
 def replace_unhashable_unique_set_to_list(parser: ModulesHost, models: list[DataModel]) -> None:
     """Write back as lists the uniqueItems sets that cannot hold their items once root models collapsed.
 
@@ -1196,7 +1240,8 @@ def replace_unhashable_unique_set_to_list(parser: ModulesHost, models: list[Data
     items take no hashable value, read with the class of the models they name, or that sits beside a member of its
     kind that such a set turned back into, is a list again (``unhashable_unique_sets``), asked for until none is left;
     a field none of whose sets of its own level is left takes back its list default. The type aliases are decided
-    first, as in ``replace_unique_list_to_set``, so a holder reads the lists their values hold again.
+    first, as in ``replace_unique_list_to_set``, so a holder reads the lists their values hold again. The type of the
+    additional properties that the settings of a model write is read as a field (``additional_properties_holder``).
     """
     if not parser.use_unique_items_as_set or parser.use_unique_items_as_set_by_value:
         return
@@ -1213,6 +1258,15 @@ def replace_unhashable_unique_set_to_list(parser: ModulesHost, models: list[Data
                 lists.update(paths)
             if id(model_field) in defaults and not holds_own_unique_items_set(model_field):
                 parser._graph_builder.set_field_default(model_field, defaults.pop(id(model_field))[1])  # noqa: SLF001
+        reverted: set[tuple[int, ...]] = set()
+        while (holder := additional_properties_holder(model)) is not None and (
+            paths := unhashable_unique_sets(
+                holder, keeps_tuples=keeps_tuples, generic_base_config=config, lists=reverted
+            )
+        ):
+            nodes = dict(_nodes_with_paths(holder.data_type, ()))
+            _write_additional_properties_nodes(parser, model, (nodes[path] for path in paths), _unique_list_of)
+            reverted.update(paths)
 
 
 def _write_unique_lists(parser: ModulesHost, model_field: DataModelFieldBase, paths: Iterable[tuple[int, ...]]) -> None:
@@ -1229,10 +1283,7 @@ def _write_unique_lists(parser: ModulesHost, model_field: DataModelFieldBase, pa
         target = copied
         for index in path:
             target = target.data_types[index]
-        list_type = with_unique_items_set(target.model_copy(update={"is_set": False, "is_list": True}), wrote=False)
-        for item in list_type.data_types:
-            item.parent = list_type
-        builder.swap_data_type(target, list_type)
+        builder.swap_data_type(target, _unique_list_of(target))
 
 
 def extract_inherited_enum(models: list[DataModel]) -> None:

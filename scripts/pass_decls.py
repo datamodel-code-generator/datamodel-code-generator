@@ -491,9 +491,16 @@ REPLACE_MERGED_UNIQUE_LIST_TO_SET = PassDecl(
     Scope.MODULE,
     PassKind.TRANSFORM,
     reads=_facts(
-        Fact.CONSTRAINTS, Fact.DEFAULTS, Fact.FIELD_TYPES, Fact.MODELS_EXIST, Fact.BASES, Fact.NULLABLE, Fact.REQUIRED
+        Fact.CONSTRAINTS,
+        Fact.DEFAULTS,
+        Fact.FIELD_TYPES,
+        Fact.MODELS_EXIST,
+        Fact.BASES,
+        Fact.NULLABLE,
+        Fact.REQUIRED,
+        RenderFact.BACKEND_CONFIG,
     ),
-    writes=_facts(Fact.CONTAINERS, Fact.FIELD_TYPES, Fact.DEFAULTS),
+    writes=_facts(Fact.CONTAINERS, Fact.FIELD_TYPES, Fact.DEFAULTS, RenderFact.BACKEND_CONFIG),
     after=(
         After("reuse_model", "converts the arrays reuse compares as lists once every merge into its model is known"),
     ),
@@ -538,8 +545,9 @@ REPLACE_UNHASHABLE_UNIQUE_SET_TO_LIST = PassDecl(
         Fact.BASES,
         Fact.NULLABLE,
         Fact.REQUIRED,
+        RenderFact.BACKEND_CONFIG,
     ),
-    writes=_facts(Fact.CONTAINERS, Fact.FIELD_TYPES, Fact.DEFAULTS),
+    writes=_facts(Fact.CONTAINERS, Fact.FIELD_TYPES, Fact.DEFAULTS, RenderFact.BACKEND_CONFIG),
     after=(
         After("collapse_root_models", "reads the models the items of a set name once collapse inlined root models"),
     ),
