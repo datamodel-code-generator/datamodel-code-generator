@@ -1,3 +1,4 @@
-exit=0
+exit=1
+allowlist: base_skip entry 1 (tests/data/*.json) is stale: it covers no cell
 summary: same=2, no-behaviour=0, crash-fix=0, accepted=0, violation=0, both-fail=0, opt-in=0, base-skipped=0
 cells: 2 (tier nightly, shard 2/3), cached base outputs: 0

@@ -34,8 +34,10 @@ With `--check` the run fails on a violation, on an entry without such a decision
 neither BASE nor an older release (an older table accepts nothing: BASE contains its changes); in the nightly and
 release tiers also on a stale entry: one that accepted no change in a run that has a cell it covers, or, in a run of
 the whole tier, one that covers no cell. The PR tier is a sample, so it never judges staleness.
-Cells the allowlist covers all run in shard 1, so that shard judges staleness exactly; `--select` narrows the
-inputs, so a selection may leave an entry's changes out.
+`--shard I/N` runs the cells of shard I by input hash; the cells an `[[accepted]]` or `[[base_skip]]` entry covers
+all run in one shard with those of each entry that shares a cell with them, the shard of their first input. So the N
+shards report the stale entries the unsharded run reports: each shard the entries whose cells it runs, shard 1 also
+the entries that cover no cell. `--select` narrows the inputs, so a selection may leave an entry's changes out.
 
 `record VERSION --shard I/N` records the cells of shard I (by input hash) and marks the record as that shard;
 `merge-record VERSION PART... --out DIR` merges the records of all N shards into the record an unsharded run writes.
@@ -63,7 +65,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -552,11 +554,53 @@ def payload_cells(gate: Gate, types: list[str]) -> list[Cell]:
     ]
 
 
-def shard_of(cell: Cell, allowlist: Allowlist, total: int) -> int:
-    """Return the 1-based shard of a cell: allowlist cells all run in shard 1, others by input hash."""
-    if any(allowlist.covers(index, cell.label, cell.backend) for index in range(len(allowlist.entries))):
-        return 1
-    return int(_stable(cell.label), 16) % total + 1
+@dataclass(frozen=True)
+class Placement:
+    """Where the cells of a run go, and the allowlist entries that cover a cell of it."""
+
+    anchors: dict[tuple[str, str], str] = field(default_factory=dict)
+    entries: frozenset[int] = frozenset()
+    skips: frozenset[int] = frozenset()
+
+    def shard(self, cell: Cell, total: int) -> int:
+        """Return the 1-based shard of a cell by the hash of its input, or of the first input of its entries."""
+        return int(_stable(self.anchors.get((cell.label, cell.backend), cell.label)), 16) % total + 1
+
+
+def place(pairs: Iterable[tuple[str, str]], allowlist: Allowlist, version: str) -> Placement:
+    """Place the cells of these (input, output model type) pairs, so the cells of an allowlist entry share a shard.
+
+    Entries that cover a common pair form a group (`[[base_skip]]` entries that skip the release `version` too); the
+    pairs of a group are placed by its first input, and every other pair by its own input.
+    """
+    count = len(allowlist.entries)
+    covering: dict[tuple[str, str], list[int]] = {}
+    for label, backend in set(pairs):
+        nodes = [index for index in range(count) if allowlist.covers(index, label, backend)]
+        if (skip := allowlist.skip_for(label, version)) is not None:
+            nodes.append(count + skip)
+        if nodes:
+            covering[label, backend] = nodes
+    parent = list(range(count + len(allowlist.base_skips)))
+
+    def root(node: int) -> int:
+        while parent[node] != node:
+            node = parent[node]
+        return node
+
+    for nodes in covering.values():
+        for node in nodes[1:]:
+            parent[root(node)] = root(nodes[0])
+    first: dict[int, str] = {}
+    for (label, _), nodes in covering.items():
+        group = root(nodes[0])
+        first[group] = min(first.get(group, label), label)
+    used = {node for nodes in covering.values() for node in nodes}
+    return Placement(
+        {pair: first[root(nodes[0])] for pair, nodes in covering.items()},
+        frozenset(node for node in used if node < count),
+        frozenset(node - count for node in used if node >= count),
+    )
 
 
 def _write_tree(tree: dict[str, str], directory: Path) -> Path:
@@ -841,7 +885,8 @@ def cell_row(result: Result) -> dict[str, Any]:
     }
 
 
-def _report(results: list[Result], gate: Gate, ns: argparse.Namespace) -> int:
+def _report(results: list[Result], gate: Gate, ns: argparse.Namespace, run: Placement | None = None) -> int:
+    """Print the results of a shard and return the exit code; `run` places the cells of every shard (default: these)."""
     counts = dict.fromkeys(CLASSES, 0)
     used: set[int] = set()
     skipped = Counter(r.base_skip for r in results if r.base_skip is not None)
@@ -857,19 +902,24 @@ def _report(results: list[Result], gate: Gate, ns: argparse.Namespace) -> int:
         entry = gate.allowlist.base_skips[index]
         print(f"base-skipped: {entry.get('input')} | {entry.get('reason')} ({entry.get('issue')}) | {cells} cells")
     problems = gate.loaded_allowlist.problems(ns.base)
-    entries = range(len(gate.allowlist.entries))
-    covered = {i for r in results for i in entries if gate.allowlist.covers(i, r.cell.label, r.cell.backend)}
-    whole = ns.shard_total == 1 and not ns.select
+    here = place([(r.cell.label, r.cell.backend) for r in results], gate.allowlist, ns.base)
+    run = here if run is None else run
+    judged = ns.tier != "pr"
+    whole = judged and not ns.select
+    lead = whole and ns.shard_index == 1
     problems += [
         f"base_skip entry {index + 1} ({entry.get('input')}) is stale: it covers no cell"
         for index, entry in enumerate(gate.allowlist.base_skips)
-        if ns.tier != "pr" and whole and index not in skipped and gate.allowlist.skip_applies(index, ns.base)
+        if whole
+        and index not in skipped
+        and gate.allowlist.skip_applies(index, ns.base)
+        and (index in here.skips or (lead and index not in run.skips))
     ]
     problems += [
         f"allowlist entry {index + 1} ({gate.allowlist.entries[index].get('input')}) is stale: "
-        + ("it accepted no change" if index in covered else "it covers no cell")
-        for index in entries
-        if ns.tier != "pr" and index not in used and (index in covered or whole)
+        + ("it accepted no change" if index in here.entries else "it covers no cell")
+        for index in range(len(gate.allowlist.entries))
+        if judged and index not in used and (index in here.entries or (lead and index not in run.entries))
     ]
     for problem in problems:
         print(f"allowlist: {problem}")
@@ -929,11 +979,9 @@ def gate_main(ns: argparse.Namespace) -> int:
     started = time.monotonic()
     gate, base_python = build_gate(ns)
     inventory = option_inventory(base_python)
-    cells = [
-        cell
-        for cell in build_cells(ns, gate, inventory)
-        if shard_of(cell, gate.allowlist, ns.shard_total) == ns.shard_index
-    ]
+    cells = build_cells(ns, gate, inventory)
+    run = place([(cell.label, cell.backend) for cell in cells], gate.allowlist, ns.base)
+    cells = [cell for cell in cells if run.shard(cell, ns.shard_total) == ns.shard_index]
     reasons = {cell: reason for cell in cells if (reason := opt_in_reason(cell.args(), inventory))}
     runnable = [cell for cell in cells if cell not in reasons]
     pool = ThreadPoolExecutor(ns.j)
@@ -948,7 +996,7 @@ def gate_main(ns: argparse.Namespace) -> int:
         gate.base.close()
         gate.candidate.close()
     results += [Result(cell, Verdict("opt-in", (f"the release has no {reason}",))) for cell, reason in reasons.items()]
-    code = _report(results, gate, ns)
+    code = _report(results, gate, ns, run)
     print(f"elapsed: {time.monotonic() - started:.1f}s", file=sys.stderr)
     return code
 
@@ -1092,7 +1140,7 @@ def record_main(ns: argparse.Namespace) -> int:
     cells = [Cell(recorder.root / name, name, file_type, backend) for name, file_type in inputs for backend in types]
     if not ns.select or any(pattern.startswith("payload:") for pattern in ns.select):
         cells += [cell for cell in payload_cells(gate, types) if _selected(cell.label, ns.select)]
-    cells = [cell for cell in cells if shard_of(cell, gate.allowlist, ns.shard_total) == ns.shard_index]
+    cells = [cell for cell in cells if Placement().shard(cell, ns.shard_total) == ns.shard_index]
     inventory = option_inventory(python, env)
 
     def run(cell: Cell) -> tuple[str, dict[str, Any]]:
