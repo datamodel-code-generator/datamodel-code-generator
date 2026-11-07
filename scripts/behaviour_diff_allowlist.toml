@@ -42,7 +42,7 @@ release_note = "the minProperties and maxProperties of a map of no properties th
 [[accepted]]
 input = "tests/data/jsonschema/x_python_import_pointer_targets*"
 aspects = [ "name-removed" ]
-match = "^\\[name-removed\\] (?:(?:other:)?Options|Tally): removed$"
+match = "^\\[name-removed\\] (?:(?:other:)?Options|Tally|Ledger): removed$"
 reason = "a schema with x-python-import outside $defs that only fields name, such as the root of a document a $ref names, was also written as an empty class that nothing used, beside the import that types those fields; like a schema in $defs it is the class it imports now, and a schema that a base names keeps its model (owner decision: the unusable empty stand-in is deleted by default)"
 decision = "#5533"
 release_note = "a schema with x-python-import that a $ref names outside $defs, such as #/components/Foo or a whole document (common.json), no longer also writes an empty class FooModel that nothing uses; the fields that name it keep the imported class"

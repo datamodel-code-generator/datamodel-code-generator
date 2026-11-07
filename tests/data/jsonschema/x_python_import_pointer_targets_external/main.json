@@ -6,6 +6,7 @@
     "empty": {"$ref": "other.json#/components/Empty"},
     "options": {"$ref": "other.json#/components/Options"},
     "count": {"$ref": "other.json#/components/Count"},
-    "tally": {"$ref": "tally.json"}
+    "tally": {"$ref": "tally.json"},
+    "entry": {"$ref": "ledger.json#/$defs/Entry"}
   }
 }
