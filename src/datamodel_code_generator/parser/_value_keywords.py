@@ -1151,14 +1151,18 @@ def warn_unchecked_prefix_positions(parser: ValueKeywordsHost, obj: JsonSchemaOb
     """Warn that the list an array with ``prefixItems`` is written as checks no position (#4849).
 
     The list holds the union of the position types, or any item, so an item in the wrong position is accepted. It is
-    exact, and no warning is written, where every position and the tail accept the same values.
+    exact, and no warning is written, where every position and the tail accept the same values; a ``false`` position
+    ends the array, so neither it, the positions after it nor the tail are compared.
     """
     read_ref = parser.model_resolver.resolve_ref
-    first, *others = (
-        get_position_validation_keywords(parser, schema, read_ref)
-        for schema in [*(obj.prefixItems or ()), *(get_list_item_schemas(parser, obj) or [True])]
+    prefix = obj.prefixItems or []
+    schemas = (
+        prefix[:false_index]
+        if (false_index := get_first_false_schema_index(type(parser), prefix)) is not None
+        else [*prefix, *(get_list_item_schemas(parser, obj) or [True])]
     )
-    if all(other == first for other in others):
+    keywords = [get_position_validation_keywords(parser, schema, read_ref) for schema in schemas]
+    if all(other == keywords[0] for other in keywords[1:]):
         return
     hint = ""
     if not parser.use_tuple_for_closed_arrays and (length := get_effective_array_length(type(parser), obj)) is not None:
