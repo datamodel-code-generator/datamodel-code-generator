@@ -31,6 +31,7 @@ from datamodel_code_generator._target_contract import (
     GeneratedTypeContractBatch,
     KindAt,
     LiteralScalar,
+    OpenAPIVersions,
     OperationContract,
     OperationId,
     SourceLocation,
@@ -116,7 +117,7 @@ class WirePlan:
     parameters: tuple[tuple[OperationId, tuple[ParameterPlan, ...]], ...]
     diagnostics: tuple[CodecDiagnostic, ...]
     kinds: LexicalKinds
-    version: OpenAPIVersion = OpenAPIVersion.V31
+    versions: OpenAPIVersions
     headers: tuple[tuple[TypeUseId, ParameterPlan], ...] = ()
     forms: tuple[tuple[TypeUseId, tuple[FieldPlan, ...], FieldPlan | None, tuple[ParameterPlan, ...]], ...] = ()
     styles: tuple[tuple[TypeUseId, tuple[ParameterPlan, ...]], ...] = ()
@@ -135,7 +136,7 @@ class _WirePlanner:
         self.batch = batch
         self.kinds = LexicalKinds(batch)
         self.diagnostics: list[CodecDiagnostic] = []
-        self.version = batch.openapi
+        self.versions = batch.versions
         self.uses = uses_by_id(batch)
 
 
@@ -218,7 +219,7 @@ def plan_wire(
         parameters,
         tuple(planner.diagnostics),
         planner.kinds,
-        planner.version,
+        planner.versions,
         headers,
         planned_forms,
         planned_styles,
@@ -420,7 +421,9 @@ def member_encodings(use: TypeUseBinding | None, encodings: Iterable[WireDeclara
     return (encoding for encoding in encodings if (encoding.name or "") in names)
 
 
-def part_json(kinds: LexicalKinds, value: TypeView, encoding: WireDeclaration | None, version: OpenAPIVersion) -> bool:
+def part_json(
+    kinds: LexicalKinds, value: TypeView, encoding: WireDeclaration | None, versions: OpenAPIVersions
+) -> bool:
     """Return whether a form-data member holding no files, of a type, is JSON by that type rather than text of its kind.
 
     A type without one kind is JSON, and so is one that takes any value unless the member's encoding gives it a style
@@ -429,7 +432,7 @@ def part_json(kinds: LexicalKinds, value: TypeView, encoding: WireDeclaration | 
     kind, leaf, _ = kinds.member(value)
     if kind is None:
         return True
-    given = encoding is not None and (form_styled(encoding, version, multipart=True) or bool(content_types(encoding)))
+    given = encoding is not None and (form_styled(encoding, versions, multipart=True) or bool(content_types(encoding)))
     return kinds.untyped(leaf) and not given
 
 
@@ -528,20 +531,20 @@ def parameter_plans(wire: WirePlan) -> dict[OperationId, dict[tuple[ParameterLoc
     return {operation: {(plan.location, plan.name): plan for plan in planned} for operation, planned in wire.parameters}
 
 
-def form_styled(encoding: WireDeclaration, version: OpenAPIVersion, *, multipart: bool) -> bool:
+def form_styled(encoding: WireDeclaration, versions: OpenAPIVersions, *, multipart: bool) -> bool:
     """Return whether an encoding gives its form member a query parameter's style, explode, or allowReserved.
 
     OpenAPI 3.0 applies them to application/x-www-form-urlencoded alone and ignores them for multipart/form-data,
     whose member is then written as its contentType says; 3.1 and later apply them to both, and write the parts they
-    give without percent-encoding.
+    give without percent-encoding. The version is that of the document that declares the encoding.
     """
-    if multipart and version == OpenAPIVersion.V30:
+    if multipart and versions.declared(encoding) == OpenAPIVersion.V30:
         return False
     return any(fact(encoding, key) is not None for key in STYLED)
 
 
 def _allow_reserved(version: OpenAPIVersion, location: ParameterLocation, declaration: WireDeclaration) -> bool:
-    """Return the effective allowReserved flag for the root OpenAPI version and parameter location."""
+    """Return the effective allowReserved flag for the parameter's OpenAPI version and location."""
     return fact(declaration, "allowReserved") is True and not (
         location == "path" and version in {OpenAPIVersion.V30, OpenAPIVersion.V31}
     )
@@ -673,7 +676,8 @@ def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[
         return _content_parameter(planner, declaration, location, name, required=required)
     shape, kind, fields, additional = _shape(_encoded(_schema_use(planner, declaration.schemas, source)).value)
     style, explode = _style_of(declaration, location)
-    if style == "cookie" and planner.version != OpenAPIVersion.V32:
+    version = planner.versions.declared(declaration)
+    if style == "cookie" and version != OpenAPIVersion.V32:
         raise _PlanError(source, "Cookie style requires OpenAPI 3.2")
     try:
         return ParameterPlan(
@@ -682,7 +686,7 @@ def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[
             style=style,
             explode=explode,
             required=required,
-            allow_reserved=_allow_reserved(planner.version, location, declaration),
+            allow_reserved=_allow_reserved(version, location, declaration),
             shape=shape,
             kind=kind,
             fields=fields,

@@ -383,6 +383,15 @@
   "security-roles-30": {
     "input": "auth-roles-30.yaml"
   },
+  "version-per-document": {
+    "input": "version-per-document.yaml",
+    "files": ["version-per-document-parameters.yaml"],
+    "model": {"read_schema_version_per_document": true}
+  },
+  "version-per-document-root": {
+    "input": "version-per-document.yaml",
+    "files": ["version-per-document-parameters.yaml"]
+  },
   "security-roles-read-as-30": {
     "input": "auth-roles.yaml",
     "model": {"schema_version": "3.0"}

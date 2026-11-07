@@ -763,7 +763,7 @@ class Planner:
             subject = f"The {name} encoding of the {media_type} media of {label(operation)}"
             if headers := self._headers(encoding):
                 headers_of[name] = headers
-            styled = form_styled(encoding, self.wire.version, multipart=True)
+            styled = form_styled(encoding, self.wire.versions, multipart=True)
             match content_types(encoding):
                 case _ if styled and members[name].file:
                     message = f"{subject} gives a style to a member holding files"
@@ -823,7 +823,7 @@ class Planner:
                 plan=PartPlan("", repeated=declared_extra.repeated, text=declared_extra.text), file=True
             )
         elif (extras := form_extras(self.wire.kinds, use)) is not None:
-            text = not part_json(self.wire.kinds, extras.type, None, self.wire.version)
+            text = not part_json(self.wire.kinds, extras.type, None, self.wire.versions)
             additional = PartSpec(
                 plan=PartPlan("", "string" if text else "json", repeated=extras.repeated),
                 use=_part_use(use, extras.source, None, TypeUseBinding(use.id, "bound", extras.type, None)),
@@ -836,7 +836,7 @@ class Planner:
         for name, member, facts in _members(use):
             part = declared[name]
             repeated = self.wire.kinds.member(facts.type)[2]
-            text = not part_json(self.wire.kinds, facts.type, encodings.get(name), self.wire.version)
+            text = not part_json(self.wire.kinds, facts.type, encodings.get(name), self.wire.versions)
             specs.append(
                 PartSpec(
                     plan=PartPlan(
@@ -1353,12 +1353,12 @@ def style_uses(request: TargetRequest) -> Iterator[tuple[TypeUseId, tuple[WireDe
 
     OpenAPI 3.0 gives none: it ignores a style for multipart/form-data.
     """
-    version = request.batch.openapi
+    versions = request.batch.versions
     for operation in request.operations:
         for media in request_media(operation):
             if _essence(media.name or "") == _FORM_DATA and (
                 encodings := tuple(
-                    child for child in children_of(media, "encoding") if form_styled(child, version, multipart=True)
+                    child for child in children_of(media, "encoding") if form_styled(child, versions, multipart=True)
                 )
             ):
                 yield from ((use, encodings) for use in media.schemas)

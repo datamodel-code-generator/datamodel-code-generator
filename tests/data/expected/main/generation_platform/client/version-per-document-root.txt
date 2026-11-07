@@ -1,0 +1,3 @@
+# version-per-document-root
+render pydantic_v2.BaseModel
+  Error: /paths/~1sessions/get/parameters/0: Cookie style requires OpenAPI 3.2
