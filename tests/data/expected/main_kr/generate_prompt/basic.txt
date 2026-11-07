@@ -173,6 +173,7 @@
 - `--allow-extra-fields`: Allow extra fields in generated Pydantic models (extra='allow').
 - `--allow-leading-underscore-class-name`: Allow an explicitly specified root class name to start with an unders...
 - `--allow-population-by-field-name`: Allow Pydantic model population by field name (not just alias).
+- `--apply-field-options-to-every-field`: Give every kind of field the field options the other fields take.
 - `--base-class`: Specify a custom base class for generated models.
 - `--base-class-map`: Specify different base classes for specific models via JSON mapping.
 - `--class-name`: Override the auto-generated class name with a custom name.
@@ -202,6 +203,7 @@
 - `--name-converted-payloads-by-message`: Name a converted payload that names no type of its own after its message.
 - `--naming-strategy`: Choose how models are named and how duplicate model names are told apart.
 - `--no-allow-population-by-field-name`
+- `--no-apply-field-options-to-every-field`
 - `--no-collapse-reuse-models`
 - `--no-collapse-root-models`
 - `--no-collapse-shared-parent-wrappers`
@@ -955,6 +957,15 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         schema's type, as in 0.89.0
 
 [36;1mField customization[0m:
+  --apply-field-options-to-every-field, --no-apply-field-options-to-every-field
+                        Apply the field options to every kind of field: a
+                        GraphQL field, a property whose schema is `true` or
+                        `false`, a required name without a property and the
+                        tag field a discriminator appends take the field
+                        options the other fields take, such as --use-default-
+                        kwarg, --use-annotated and --use-default-factory-for-
+                        optional-nested-models; without it they leave them
+                        out, as in 0.90.0
   --capitalise-enum-members, --capitalize-enum-members
                         Capitalize field names on enum
   --capitalise-numbered-enum-members, --no-capitalise-numbered-enum-members, --capitalize-numbered-enum-members, --no-capitalize-numbered-enum-members

@@ -145,6 +145,7 @@ datamodel-codegen [OPTIONS]
 | [`--allow-extra-fields`](model-customization.md#allow-extra-fields) | Allow extra fields in generated Pydantic models (extra='allow'). |
 | [`--allow-leading-underscore-class-name`](model-customization.md#allow-leading-underscore-class-name) | Allow an explicitly specified root class name to start with an underscore. |
 | [`--allow-population-by-field-name`](model-customization.md#allow-population-by-field-name) | Allow Pydantic model population by field name (not just alias). |
+| [`--apply-field-options-to-every-field`](model-customization.md#apply-field-options-to-every-field) | Give every kind of field the field options the other fields take. |
 | [`--base-class`](model-customization.md#base-class) | Specify a custom base class for generated models. |
 | [`--base-class-map`](model-customization.md#base-class-map) | Specify different base classes for specific models via JSON mapping. |
 | [`--class-name`](model-customization.md#class-name) | Override the auto-generated class name with a custom name. |
@@ -364,6 +365,7 @@ All options sorted alphabetically:
 - [`--allow-population-by-field-name`](model-customization.md#allow-population-by-field-name) - Allow Pydantic model population by field name (not just alia...
 - [`--allow-private-network`](general-options.md#allow-private-network) - Allow HTTP requests to private network schema endpoints.
 - [`--allow-remote-refs`](general-options.md#allow-remote-refs) - Enable fetching of `$ref` targets over HTTP/HTTPS.
+- [`--apply-field-options-to-every-field`](model-customization.md#apply-field-options-to-every-field) - Give every kind of field the field options the other fields ...
 - [`--base-class`](model-customization.md#base-class) - Specify a custom base class for generated models.
 - [`--base-class-map`](model-customization.md#base-class-map) - Specify different base classes for specific models via JSON ...
 - [`--capitalize-enum-members`](field-customization.md#capitalize-enum-members) - Capitalize enum member names to UPPER_CASE format.

@@ -1,0 +1,1 @@
+Owner {}: Owner(address=Address(city=None, typename__='Address'), name=None, typename__='Owner')

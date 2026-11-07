@@ -11,7 +11,7 @@ This documentation is auto-generated from test cases.
 | 📁 [Base Options](base-options.md) | 19 | Input/output configuration |
 | 🔧 [Typing Customization](typing-customization.md) | 53 | Type annotation and import behavior |
 | 🏷️ [Field Customization](field-customization.md) | 38 | Field naming and docstring behavior |
-| 🏗️ [Model Customization](model-customization.md) | 64 | Model generation behavior |
+| 🏗️ [Model Customization](model-customization.md) | 65 | Model generation behavior |
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 13 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
@@ -119,6 +119,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--allow-population-by-field-name`](model-customization.md#allow-population-by-field-name)
 - [`--allow-private-network`](general-options.md#allow-private-network)
 - [`--allow-remote-refs`](general-options.md#allow-remote-refs)
+- [`--apply-field-options-to-every-field`](model-customization.md#apply-field-options-to-every-field)
 
 ### B {#b}
 

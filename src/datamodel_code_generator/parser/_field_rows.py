@@ -5,8 +5,9 @@ required-only fields, the appended discriminator tags, the root fields of root m
 field takes every option of ``Parser._field_option_kwargs`` except those its row leaves out, so a new option reaches
 every kind of field unless a row names it. The rows keep the options each builder passed before they shared one: the
 ``legacy-*`` rows leave out options whose absence the generated code shows (see "Legacy rows" in
-``docs/architecture.md``); the other rows leave out options that the field kind does not write, which custom templates
-can still read on the raw field.
+``docs/architecture.md``), unless ``--apply-field-options-to-every-field`` gives their fields every option, as a
+``property`` takes (``field_options_left_out``); the other rows leave out options that the field kind does not write,
+which custom templates can still read on the raw field.
 """
 
 from __future__ import annotations
@@ -21,12 +22,14 @@ if TYPE_CHECKING:
 __all__ = [
     "FIELD_OPTIONS_LEFT_OUT",
     "FIELD_ROWS_BUILT_WITHOUT_VALIDATION",
+    "FIELD_ROWS_LEGACY",
     "FIELD_ROWS_WITHOUT_VALIDATION_ALIASES",
     "FieldAliasRow",
     "FieldCopyFacts",
     "FieldFacts",
     "FieldIdentity",
     "FieldRow",
+    "field_options_left_out",
     "uses_default_with_required",
 ]
 
@@ -178,6 +181,25 @@ FIELD_OPTIONS_LEFT_OUT: Final[Mapping[FieldRow, frozenset[str]]] = {
     | {"strip_default_none", "order_constructor_fields_by_written_defaults", "use_serialize_as_any", "use_annotated"},
 }
 """The options of ``Parser._field_option_kwargs`` each row leaves out."""
+
+FIELD_ROWS_LEGACY: Final[frozenset[FieldRow]] = frozenset({
+    "legacy-graphql-field",
+    "legacy-boolean-property",
+    "legacy-alias-option-only",
+})
+"""The ``legacy-*`` rows, whose fields take every option under ``--apply-field-options-to-every-field``."""
+
+
+def field_options_left_out(row: FieldRow, *, every_field: bool) -> frozenset[str]:
+    """Return the options of ``Parser._field_option_kwargs`` a field of ``row`` leaves out (``FIELD_OPTIONS_LEFT_OUT``).
+
+    ``every_field`` (``--apply-field-options-to-every-field``) gives the fields of a ``legacy-*`` row every option, as
+    a ``property`` takes: a GraphQL field, a property whose schema is ``true`` or ``false``, a required name without a
+    property and an appended tag field then write ``--use-default-kwarg``, ``--use-annotated`` and
+    ``--use-default-factory-for-optional-nested-models`` as the other fields of their model do.
+    """
+    return FIELD_OPTIONS_LEFT_OUT["property" if every_field and row in FIELD_ROWS_LEGACY else row]
+
 
 FIELD_ROWS_BUILT_WITHOUT_VALIDATION: Final[frozenset[FieldRow]] = frozenset({"property"})
 """The rows built with the validation-free constructor the field class declares (``PARSER_CONSTRUCTOR``), if any; the

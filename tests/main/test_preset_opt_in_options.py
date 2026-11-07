@@ -91,6 +91,7 @@ OPT_IN_OPTIONS_20261106: tuple[str, ...] = (
     "--use-msgspec-forbid-unknown-fields",
     "--keep-reference-null-on-collapsed-root-models",
     "--read-allof-parents-in-mro-order",
+    "--apply-field-options-to-every-field",
 )
 """The options the 20261106 presets set beyond the 20261104 presets."""
 
@@ -329,6 +330,12 @@ CASES_20261106: tuple[pytest.ParameterSet, ...] = (
         "jsonschema",
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="read-allof-parents-in-mro-order",
+    ),
+    pytest.param(
+        OPEN_API_DATA_PATH / "field_options_every_field.yaml",
+        "openapi",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="apply-field-options-to-every-field",
     ),
 )
 """The inputs each opt-in option of the 20261106 presets changes."""

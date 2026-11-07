@@ -509,6 +509,10 @@
       "not_recommended": "runtime-behaviour",
       "reason": "Python API spelling of --use-default; changes validation."
     },
+    "apply_field_options_to_every_field": {
+      "not_recommended": "preset",
+      "reason": "Set by the 20261106 presets; the recommendation starts from a preset."
+    },
     "base_class": {
       "not_recommended": "style",
       "reason": "The project's own base class."
