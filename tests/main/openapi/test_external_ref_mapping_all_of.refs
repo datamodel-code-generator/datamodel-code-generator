@@ -49,6 +49,8 @@ msgspec.Struct	main/openapi/external_ref_mapping_all_of/missing_document[msgspec
 pydantic_v2.BaseModel	main/openapi/external_ref_mapping_all_of/missing_document[pydantic_v2.BaseModel].py
 pydantic_v2.dataclass	main/openapi/external_ref_mapping_all_of/missing_document[pydantic_v2.dataclass].py
 typing.TypedDict	main/openapi/external_ref_mapping_all_of/missing_document[typing.TypedDict].py
+[test_external_ref_mapping_all_of_missing_document_file_uri]
+	main/openapi/external_ref_mapping_all_of/missing_document_file_uri.py	= main/openapi/external_ref_mapping_all_of/missing_document[pydantic_v2.BaseModel].py
 [test_external_ref_mapping_all_of_union_branch]
 	main/openapi/external_ref_mapping_all_of/union_branch.py
 [test_external_ref_mapping_all_of_unmapped_extra_items]

@@ -338,6 +338,28 @@ def test_external_ref_mapping_all_of_missing_document(output_model_type: str, ou
         )
 
 
+def test_external_ref_mapping_all_of_missing_document_file_uri(tmp_path: Path, output_file: Path) -> None:
+    """Inherit the mapped class where the mapping and the allOf member name the missing document by a file URI (#6277).
+
+    The mapping keeps a file URI as written, so the missing document is matched by its URI, not by the path it names.
+    """
+    missing_uri = (tmp_path / "absent" / "shared.yaml").as_uri()
+    input_path = tmp_path / "external_ref_mapping_all_of_missing.yaml"
+    input_path.write_text(
+        (OPEN_API_DATA_PATH / "external_ref_mapping_all_of_missing.yaml")
+        .read_text(encoding="utf-8")
+        .replace("absent/shared.yaml", missing_uri),
+        encoding="utf-8",
+    )
+    with pytest.warns(DanglingRefWarning, match=r"shared\.yaml' that --external-ref-mapping maps does not exist"):
+        run_main_and_assert(
+            input_path=input_path,
+            output_path=output_file,
+            input_file_type="openapi",
+            extra_args=["--external-ref-mapping", f"{missing_uri}=mapped.models", *COMMON_ARGS],
+        )
+
+
 def test_external_ref_mapping_all_of_missing_document_strict_refs(capsys: pytest.CaptureFixture[str]) -> None:
     """Keep the missing mapped document an error under --strict-refs, as before."""
     run_main_and_assert(

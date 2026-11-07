@@ -8120,7 +8120,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 str(path), default_factory=lambda _: self._load_ref_data_from_path(path)
             )
         except FileNotFoundError:
-            raise _schema_refs.RefDocumentNotFoundError(path) from None
+            raise _schema_refs.RefDocumentNotFoundError(path, _external_ref_mapping_key(ref, self.base_path)) from None
         except (IsADirectoryError, PermissionError) as exc:
             if not _is_directory_read_error(exc, path):
                 raise
