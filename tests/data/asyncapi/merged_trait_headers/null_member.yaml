@@ -1,0 +1,40 @@
+asyncapi: 3.0.0
+info:
+  title: Trait headers removed by a later trait or replaced by the message's own
+  version: 1.0.0
+channels:
+  c:
+    address: c
+    messages:
+      dropped:
+        payload:
+          type: string
+        traits:
+          - $ref: '#/components/messageTraits/H'
+          - headers:
+              type: object
+              properties:
+                a:
+                  type: string
+                b: null
+      cleared:
+        payload:
+          type: string
+        traits:
+          - $ref: '#/components/messageTraits/H'
+          - summary: A trait without headers
+          - headers: null
+      anyHeaders:
+        payload:
+          type: string
+        headers: true
+        traits:
+          - $ref: '#/components/messageTraits/H'
+components:
+  messageTraits:
+    H:
+      headers:
+        type: object
+        properties:
+          b:
+            type: integer

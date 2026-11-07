@@ -219,6 +219,7 @@ reviewed-safe asyncapi_version
 reviewed-safe include_path_parameters
 reviewed-safe keep_content_parameter_refs
 reviewed-safe keep_first_character_of_path_keys
+reviewed-safe merge_message_trait_headers
 reviewed-safe name_converted_payloads_by_message
 reviewed-safe openapi_as_definitions
 reviewed-safe openapi_include_info_version

@@ -101,6 +101,7 @@ OPT_IN_OPTIONS_20261106: tuple[str, ...] = (
     "--dedupe-numbered-request-response-variants",
     "--keep-defaults-of-inherited-required-fields",
     "--omit-incomplete-model-defaults",
+    "--merge-message-trait-headers",
 )
 """The options the 20261106 presets set beyond the 20261104 presets."""
 
@@ -405,6 +406,12 @@ CASES_20261106: tuple[pytest.ParameterSet, ...] = (
         "openapi",
         ["--output-model-type", "pydantic_v2.BaseModel"],
         id="omit-incomplete-model-defaults",
+    ),
+    pytest.param(
+        ASYNC_API_DATA_PATH / "merged_trait_headers" / "v3.yaml",
+        "asyncapi",
+        ["--output-model-type", "pydantic_v2.BaseModel"],
+        id="merge-message-trait-headers",
     ),
 )
 """The inputs each opt-in option of the 20261106 presets changes."""

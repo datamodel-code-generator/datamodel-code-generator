@@ -1,0 +1,67 @@
+asyncapi: 3.0.0
+info:
+  title: Message trait headers merged in order
+  version: 1.0.0
+channels:
+  c:
+    address: c
+    messages:
+      inlineFirst:
+        payload:
+          type: string
+        traits:
+          - headers:
+              type: object
+              properties:
+                a:
+                  type: string
+          - $ref: '#/components/messageTraits/H'
+      refFirst:
+        payload:
+          type: string
+        traits:
+          - $ref: '#/components/messageTraits/H'
+          - headers:
+              type: object
+              required:
+                - b
+              properties:
+                b:
+                  type: string
+                  maxLength: 8
+      ownHeaders:
+        payload:
+          type: string
+        headers:
+          type: object
+          required:
+            - id
+          properties:
+            id:
+              type: integer
+            b:
+              type: boolean
+        traits:
+          - $ref: '#/components/messageTraits/H'
+          - headers:
+              $ref: '#/components/schemas/Trace'
+      onlyRef:
+        payload:
+          type: string
+        traits:
+          - $ref: '#/components/messageTraits/H'
+components:
+  schemas:
+    Trace:
+      type: object
+      properties:
+        traceId:
+          type: string
+          format: uuid
+  messageTraits:
+    H:
+      headers:
+        type: object
+        properties:
+          b:
+            type: integer

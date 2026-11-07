@@ -1007,6 +1007,10 @@
         "unions.merge-shared-variant-tags"
       ]
     },
+    "merge_message_trait_headers": {
+      "not_recommended": "preset",
+      "reason": "AsyncAPI messages with several traits that define headers only: set by the 20261106 presets; the recommendation starts from a preset."
+    },
     "model_extra_keys": {
       "not_recommended": "style",
       "reason": "Copies x- schema keys into model configuration; a project need."

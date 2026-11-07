@@ -385,6 +385,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
     ),
     **_opts(_C.MODEL, "--skip-root-model --use-root-model-sequence-interface", group=_G.ROOT_MODEL),
     **_opts(_C.MODEL, "--use-generic-base-class", group=_G.MODEL_SHAPE),
+    **_opts(_C.MODEL, "--merge-message-trait-headers --no-merge-message-trait-headers", group=_G.MODEL_SHAPE),
     **_opts(_C.MODEL, "--model-extra-keys --model-extra-keys-without-x-prefix"),
     **_opts(_C.FIELD, "--snake-case-field --no-snake-case-field"),
     **_opts(

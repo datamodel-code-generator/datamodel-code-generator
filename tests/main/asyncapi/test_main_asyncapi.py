@@ -617,3 +617,69 @@ def test_main_asyncapi_trait_headers_inline_and_ref_in_either_order(output_file:
         input_file_type="asyncapi",
         extra_args=PY310_TARGET_ARGS,
     )
+
+
+@pytest.mark.cli_doc(
+    options=["--merge-message-trait-headers"],
+    option_description="""Give an AsyncAPI message the headers of all its traits, merged in order, and then its own.
+
+AsyncAPI 2 and 3 apply the traits of a message in the order they are listed, each as a JSON Merge Patch, and the
+message's own fields win over them. Without the option a message's headers are its own, else those of its one trait
+that is no `$ref` and defines them, else those of a referenced trait; the headers of the other traits are left out, and
+a second inline trait with headers is an error. With `--merge-message-trait-headers` the headers of every trait, inline
+or `$ref`, are merged in order and then the message's own: a property a later trait or the message gives replaces the
+earlier one, a `$ref` is read as the schema it names, and a property set to null is removed. A message whose headers
+come from one place keeps the model it has without the option.""",
+    input_schema="asyncapi/merged_trait_headers/v3.yaml",
+    cli_args=["--merge-message-trait-headers"],
+    golden_output="main/asyncapi/main_asyncapi/merge_message_trait_headers[v3-merged].py",
+    comparison_output="main/asyncapi/main_asyncapi/merge_message_trait_headers[v3-released].py",
+)
+@pytest.mark.parametrize(
+    ("input_name", "extra_args"),
+    [
+        pytest.param("merged_trait_headers/v3.yaml", [], id="v3-released"),
+        pytest.param("merged_trait_headers/v3.yaml", ["--merge-message-trait-headers"], id="v3-merged"),
+        pytest.param("merged_trait_headers/v2/api.yaml", [], id="v2-released"),
+        pytest.param("merged_trait_headers/v2/api.yaml", ["--merge-message-trait-headers"], id="v2-merged"),
+        pytest.param("merged_trait_headers/null_member.yaml", ["--merge-message-trait-headers"], id="null-merged"),
+    ],
+)
+def test_main_asyncapi_merge_message_trait_headers(output_file: Path, input_name: str, extra_args: list[str]) -> None:
+    """Merge the headers of every trait of a message in order, then its own, under ``--merge-message-trait-headers``.
+
+    Without the option an inline trait's headers drop those of a referenced trait in either order and a message's own
+    headers drop those of its traits (#5884); with it they are merged as JSON Merge Patches in AsyncAPI 2 and 3, a
+    later string ``b`` replacing an earlier integer one, a referenced ``Trace`` read as its properties, a ``$ref`` of
+    another file keeping its model and a null property or headers removed.
+    """
+    run_main_and_assert(
+        input_path=ASYNC_API_DATA_PATH / input_name,
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=[*PY310_TARGET_ARGS, "--output-model-type", "pydantic_v2.BaseModel", *extra_args],
+    )
+    if input_name == "merged_trait_headers/v3.yaml" and extra_args:
+        assert_generated_model_json_validation(
+            output_file,
+            module_name="asyncapi_merge_message_trait_headers",
+            model_name="COwnHeadersHeaders",
+            valid_json='{"id": 1, "b": true, "traceId": "123e4567-e89b-12d3-a456-426614174000"}',
+            invalid_json='{"b": true}',
+            expected_error_type="missing",
+        )
+
+
+def test_main_asyncapi_merge_message_trait_headers_of_two_inline_traits(output_file: Path) -> None:
+    """Merge the headers of two inline traits under ``--merge-message-trait-headers``, an error without it (#5884)."""
+    run_main_and_assert(
+        input_path=DATA_PATH / "asyncapi_invalid" / "multiple-trait-headers.yaml",
+        output_path=output_file,
+        input_file_type="asyncapi",
+        extra_args=[
+            *PY310_TARGET_ARGS,
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--merge-message-trait-headers",
+        ],
+    )

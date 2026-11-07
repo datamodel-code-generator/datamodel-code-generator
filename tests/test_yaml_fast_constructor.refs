@@ -13,6 +13,10 @@ asyncapi/dynamic_ref/shapes.yaml	yaml_fast_constructor/parity.txt
 asyncapi/edge-cases.yaml	yaml_fast_constructor/parity.txt
 asyncapi/external-message-ref.yaml	yaml_fast_constructor/parity.txt
 asyncapi/external-messages.yaml	yaml_fast_constructor/parity.txt
+asyncapi/merged_trait_headers/null_member.yaml	yaml_fast_constructor/parity.txt
+asyncapi/merged_trait_headers/v2/api.yaml	yaml_fast_constructor/parity.txt
+asyncapi/merged_trait_headers/v2/traits.yaml	yaml_fast_constructor/parity.txt
+asyncapi/merged_trait_headers/v3.yaml	yaml_fast_constructor/parity.txt
 asyncapi/multi-format-schemas.yaml	yaml_fast_constructor/parity.txt
 asyncapi/non-object-components.yaml	yaml_fast_constructor/parity.txt
 asyncapi/non_finite_embedded_schemas.yaml	yaml_fast_constructor/parity.txt

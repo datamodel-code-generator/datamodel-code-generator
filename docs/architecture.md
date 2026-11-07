@@ -168,12 +168,12 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 247 | Shared generation options. |
-| `GenerateConfig` | 262 | Public `generate()` configuration. |
+| `BaseGenerateConfig` | 248 | Shared generation options. |
+| `GenerateConfig` | 263 | Public `generate()` configuration. |
 | `ParserConfig` | 205 | Base parser dependency injection and parser options. |
 | `JSONSchemaParserConfig` | 207 | JSON Schema parser options. |
 | `OpenAPIParserConfig` | 218 | OpenAPI-specific parser options. |
-| `AsyncAPIParserConfig` | 220 | AsyncAPI-specific parser options. |
+| `AsyncAPIParserConfig` | 221 | AsyncAPI-specific parser options. |
 | `XMLSchemaParserConfig` | 208 | XML Schema-specific parser options. |
 | `ProtobufParserConfig` | 208 | Protocol Buffers-specific parser options. |
 | `AvroParserConfig` | 207 | Avro-specific parser options. |
@@ -1629,6 +1629,7 @@ is a new named row, never an anonymous `if`.
 | `legacy-first-character-of-path-key` | a paths key loses its first character when its operation models are named, a leading slash or not (`pets` names `EtsGetResponse`, `OpenAPIParser._process_path_items`), unless `--keep-first-character-of-path-keys` strips only a leading slash, as for webhook names | keep |
 | `legacy-content-parameter-copy` | a parameter whose `content` media schema is a Reference Object reads a copy of the schema it names: an object gets a model of its own (`Page1Request` beside `PageRequest` under `--read-only-write-only-model-type request-response`), a scalar its inline type with the default and description of the target (`OpenAPIParser._content_parameter_schema`), unless `--keep-content-parameter-refs` keeps the `$ref`, as a parameter's own schema does | #6322 |
 | `legacy-converter-placeholder-title` | an AsyncAPI payload in Avro or XML Schema that names no type of its own takes the converter's title `Model` (`convert_avro_schema_data`, `_convert_xml_schema_data`), which its field writes and `--use-title-as-name` names its class by, unless `--name-converted-payloads-by-message` drops it, so the payload is named after its message as a JSON Schema payload is | keep |
+| `legacy-one-inline-trait-headers` | an AsyncAPI message's headers are its own, else those of the one trait that is no reference and defines them, else those of a referenced trait, which keep their component model; a second inline trait with headers is an error (`AsyncAPIParser._iter_trait_schemas`), unless `--merge-message-trait-headers` merges the headers of every trait in order and then the message's own, as JSON Merge Patches (`_merge_patch`) | keep |
 | `legacy-whole-name-singular` | the item model of an array is named by singularizing its whole name as one word (`actions_caches` names `ActionsCach`, `ModelResolver._singular_name`), unless `--singularize-last-word-of-item-names` singularizes only its last word (`ActionsCache`) | keep |
 | `legacy-module-suffix-model` | the `module` scheme of L3 `replace_duplicate_name_in_module` gives a taken name the suffix `Model` without reading the `--duplicate-name-suffix` map, unless `--use-duplicate-name-suffix-for-every-collision` reads it (row `map-or-model`) | keep |
 | `legacy-variant-takes-parent-name` | a branch of a union that no tag, title or `--infer-union-variant-names` names takes the union's name (`composed_name`, role `variant-parent`), so its model is numbered after the union's, or prefixed with it under `--naming-strategy full-path` (`StreamEventStreamEvent`) | #4826 |

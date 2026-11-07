@@ -842,6 +842,14 @@ _toggle(
     "converter gives it (Field(..., title='Model'), and the class Model under --use-title-as-name); without it the "
     "placeholder stays, as in 0.88.0",
 )
+_toggle(
+    model_options,
+    "--merge-message-trait-headers",
+    help="AsyncAPI only: give a message the headers of all its traits, merged in order as AsyncAPI 2 and 3 apply "
+    "traits (a JSON Merge Patch each, a trait that is a $ref read as its target), and then its own headers, which win; "
+    "without it the message's own headers, else those of its one inline trait that defines them, are its headers, "
+    "and a second inline trait with headers is an error, as in 0.90.0",
+)
 model_options.add_argument(
     "--all-exports-scope",
     help="Generate __all__ in __init__.py with re-exports. "
