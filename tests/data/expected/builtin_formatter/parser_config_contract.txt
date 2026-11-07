@@ -112,6 +112,7 @@ reviewed-safe read_schema_version_per_document
 reviewed-safe read_unevaluated_properties
 reviewed-safe remote_text_cache
 reviewed-safe remove_special_field_name_prefix
+reviewed-safe remove_unused_models_beside_type_overrides
 reviewed-safe rename_submodules_hidden_by_classes
 reviewed-safe reuse_model
 reviewed-safe reuse_scope

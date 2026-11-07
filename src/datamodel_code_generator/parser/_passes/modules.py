@@ -320,6 +320,10 @@ class ModulesHost(
     """The options, run state and hooks of the parser that the module passes read and write."""
 
     @property
+    def remove_unused_models_beside_type_overrides(self) -> bool:
+        """Whether the unused models leave a module that model-level type overrides take models out of."""
+
+    @property
     def _python_import_target_paths(self) -> set[str]:
         """The paths of the models parsed for schemas whose ``x-python-import`` types their uses."""
 
@@ -2725,6 +2729,9 @@ def remove_overridden_models(parser: ModulesHost, state: ModuleStateView) -> Non
 
     Only model-level overrides (keys without dots) cause model removal.
     Scoped overrides (ClassName.field) only affect specific fields. The module keeps its list before the removal.
+    Under --remove-unused-models-beside-type-overrides the models leave the list the module structure recorded, which
+    stays the list the module writes, so unused-model removal takes the models collapse left out of it
+    (``unused_model_lists``); without it the module writes a new list, which keeps them, as in 0.90.0.
     Imports replace the stand-ins, and the unnamed models of ``x-python-import`` schemas leave first
     (``_drop_unnamed_python_import_models``).
     """
@@ -2744,7 +2751,11 @@ def remove_overridden_models(parser: ModulesHost, state: ModuleStateView) -> Non
             parser._graph_builder.retire_model(model)  # noqa: SLF001
         else:
             kept.append(model)
-    state.model_list = kept
+    if parser.remove_unused_models_beside_type_overrides:
+        state.model_list_before_override_removal = list(models)
+        models[:] = kept
+    else:
+        state.model_list = kept
 
 
 def _drop_unnamed_python_import_models(parser: ModulesHost, models: list[DataModel], imported: set[str]) -> None:

@@ -2014,6 +2014,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "keep_enum_literal_aliases",
         "keep_reference_null_on_collapsed_root_models",
         "collapse_constrained_root_models_as_annotated",
+        "remove_unused_models_beside_type_overrides",
         "collapse_reuse_models",
         "singularize_last_word_of_item_names",
         "disable_timestamp",

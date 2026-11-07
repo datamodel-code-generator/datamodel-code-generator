@@ -934,6 +934,10 @@
       "not_recommended": "preset",
       "reason": "Under --collapse-root-models with --use-annotated only: set by the 20261106 presets; the recommendation starts from a preset."
     },
+    "remove_unused_models_beside_type_overrides": {
+      "not_recommended": "preset",
+      "reason": "With model-level --type-overrides only: set by the 20261106 presets; the recommendation starts from a preset."
+    },
     "keep_enum_member_values": {
       "not_recommended": "preset",
       "reason": "Set by the 20261027 presets; the recommendation starts from a preset."

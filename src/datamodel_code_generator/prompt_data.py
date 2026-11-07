@@ -167,6 +167,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--read-unevaluated-properties": "Read a schema-valued `unevaluatedProperties` as `additionalProperties`.",
     "--recommend-options": "Recommend options for the input schema on top of the latest dated preset (experimental).",
     "--remove-special-field-name-prefix": "Remove the special prefix from field names.",
+    "--remove-unused-models-beside-type-overrides": "Remove the unused models from a module that a model-level `--t...",
     "--rename-submodules-hidden-by-classes": "Rename a submodule named like a class of its package.",
     "--reuse-every-reached-input-model-type": "Reach the types to reuse through every model kind and write no copy ...",
     "--reuse-model": "Reuse identical model definitions instead of generating duplicates.",

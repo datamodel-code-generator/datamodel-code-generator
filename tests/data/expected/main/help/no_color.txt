@@ -958,6 +958,12 @@ Model customization:
                         dataclass whose config names an alias generator.
                         Without it a field keeps the alias it has without the
                         generator, which the config then replaces.
+  --remove-unused-models-beside-type-overrides, --no-remove-unused-models-beside-type-overrides
+                        Remove the models that nothing uses, such as a root
+                        model --collapse-root-models inlined, also from a
+                        module a model-level --type-overrides key takes a
+                        model out of, as from every other module; without it
+                        they stay written there, as in 0.90.0
   --rename-submodules-hidden-by-classes, --no-rename-submodules-hidden-by-classes
                         Rename a submodule named like a class of its package,
                         such as pkg/Warn.py beside the class Warn of

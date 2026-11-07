@@ -221,6 +221,7 @@
 - `--no-omit-redundant-reference-null`
 - `--no-pin-aliases-with-alias-generator`
 - `--no-read-nullable-beside-type-list`
+- `--no-remove-unused-models-beside-type-overrides`
 - `--no-reuse-model`
 - `--no-singularize-last-word-of-item-names`
 - `--no-strict-nullable`
@@ -238,6 +239,7 @@
 - `--parent-scoped-naming`: Namespace models by their parent scope to avoid naming conflicts.
 - `--pin-aliases-with-alias-generator`: Decide a field's alias by the alias generator its model applies.
 - `--read-nullable-beside-type-list`: Write the null that `nullable: true` declares beside a `type` list into th...
+- `--remove-unused-models-beside-type-overrides`: Remove the unused models from a module that a model-level `--t...
 - `--reuse-model`: Reuse identical model definitions instead of generating duplicates.
 - `--reuse-scope`: Scope for model reuse detection (root or tree).
 - `--singularize-last-word-of-item-names`: Name the item model of an array by singularizing only the last word o...

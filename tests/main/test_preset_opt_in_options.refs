@@ -89,6 +89,8 @@ read-schema-version-per-document-practical	main/preset_opt_in_options/preset_set
 read-schema-version-per-document-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-schema-version-per-document-standard]/	= main/preset_opt_in_options/preset_sets_opt_in_option[read-schema-version-per-document-practical]/
 read-unevaluated-properties-practical	main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-practical].py
 read-unevaluated-properties-standard	main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[read-unevaluated-properties-practical].py
+remove-unused-models-beside-type-overrides-practical	main/preset_opt_in_options/preset_sets_opt_in_option[remove-unused-models-beside-type-overrides-practical].py
+remove-unused-models-beside-type-overrides-standard	main/preset_opt_in_options/preset_sets_opt_in_option[remove-unused-models-beside-type-overrides-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[remove-unused-models-beside-type-overrides-practical].py
 rename-submodules-hidden-by-classes-practical	main/preset_opt_in_options/preset_sets_opt_in_option[rename-submodules-hidden-by-classes-practical]/
 rename-submodules-hidden-by-classes-standard	main/preset_opt_in_options/preset_sets_opt_in_option[rename-submodules-hidden-by-classes-standard]/	= main/preset_opt_in_options/preset_sets_opt_in_option[rename-submodules-hidden-by-classes-practical]/
 singularize-last-word-of-item-names-practical	main/preset_opt_in_options/preset_sets_opt_in_option[singularize-last-word-of-item-names-practical].py
