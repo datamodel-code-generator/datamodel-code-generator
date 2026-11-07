@@ -16,7 +16,7 @@ INPUT_PATH = JSON_SCHEMA_DATA_PATH / "x_python_type_unions.json"
 
 
 @pytest.mark.cli_doc(
-    options=["--use-x-python-type-unions"],
+    options=["--use-x-python-type-as-written"],
     option_description="""Type a field by an `x-python-type` union spelled `Optional[...]` or `Union[...]`.
 
 An `x-python-type` types its field where it is not compatible with the schema's type, and a union spelled `X | Y`, such
@@ -25,7 +25,7 @@ as `Literal['a', 'b'] | None`, never is. Without this option the same union spel
 and the field takes the schema's `str`. With it every spelling of a union types the field, at a property, an item, a
 map value and a root.""",
     input_schema="jsonschema/x_python_type_unions.json",
-    cli_args=["--use-x-python-type-unions"],
+    cli_args=["--use-x-python-type-as-written"],
     golden_output="main/jsonschema/x_python_type_unions/x_python_type_unions[pydantic_v2-option].py",
     comparison_output="main/jsonschema/x_python_type_unions/x_python_type_unions[pydantic_v2].py",
 )
@@ -33,18 +33,21 @@ map value and a root.""",
     ("output_model_type", "extra_args", "validated"),
     [
         pytest.param("pydantic_v2.BaseModel", [], False, id="pydantic_v2"),
-        pytest.param("pydantic_v2.BaseModel", ["--use-x-python-type-unions"], True, id="pydantic_v2-option"),
+        pytest.param("pydantic_v2.BaseModel", ["--use-x-python-type-as-written"], True, id="pydantic_v2-option"),
         pytest.param(
             "pydantic_v2.BaseModel",
-            ["--use-x-python-type-unions", "--collapse-root-models"],
+            ["--use-x-python-type-as-written", "--collapse-root-models"],
             True,
             id="pydantic_v2-option-collapse_root_models",
         ),
         pytest.param(
-            "pydantic_v2.dataclass", ["--use-x-python-type-unions", "--use-annotated"], True, id="pydantic_dataclass"
+            "pydantic_v2.dataclass",
+            ["--use-x-python-type-as-written", "--use-annotated"],
+            True,
+            id="pydantic_dataclass",
         ),
-        pytest.param("msgspec.Struct", ["--use-x-python-type-unions"], False, id="msgspec-option"),
-        pytest.param("typing.TypedDict", ["--use-x-python-type-unions"], False, id="typed_dict-option"),
+        pytest.param("msgspec.Struct", ["--use-x-python-type-as-written"], False, id="msgspec-option"),
+        pytest.param("typing.TypedDict", ["--use-x-python-type-as-written"], False, id="typed_dict-option"),
     ],
 )
 def test_x_python_type_unions(

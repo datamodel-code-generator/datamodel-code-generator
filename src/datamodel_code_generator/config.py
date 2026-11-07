@@ -371,7 +371,7 @@ class ParserConfig(BaseModel):
     type_mappings: list[str] | None = None
     type_overrides: dict[str, str] | None = None
     type_overrides_replace_whole_type: bool = False
-    use_x_python_type_unions: bool = False
+    use_x_python_type_as_written: bool = False
     use_bytes_for_content_media_type: bool = False
     read_only_write_only_model_type: ReadOnlyWriteOnlyModelType | None = None
     dedupe_request_response_variants: bool = False

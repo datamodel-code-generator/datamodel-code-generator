@@ -441,7 +441,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--use-union-operator`](typing-customization.md#use-union-operator)
 - [`--use-unique-items-as-set`](typing-customization.md#use-unique-items-as-set)
 - [`--use-unique-items-as-set-by-value`](typing-customization.md#use-unique-items-as-set-by-value)
-- [`--use-x-python-type-unions`](typing-customization.md#use-x-python-type-unions)
+- [`--use-x-python-type-as-written`](typing-customization.md#use-x-python-type-as-written)
 
 ### V {#v}
 

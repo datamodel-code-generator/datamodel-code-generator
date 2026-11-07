@@ -76,7 +76,7 @@
 - `--no-use-union-operator`: Use Union[X, Y] / Optional[X] instead of X | Y union operator.
 - `--no-use-unique-items-as-set`
 - `--no-use-unique-items-as-set-by-value`
-- `--no-use-x-python-type-unions`
+- `--no-use-x-python-type-as-written`
 - `--output-date-class`: Specify date class type for date schema fields.
 - `--output-datetime-class`: Specify datetime class type for date-time schema fields.
 - `--read-allof-parents-in-mro-order`: Read the allOf parents of every inherited schema in the order of the clas...
@@ -114,7 +114,7 @@
 - `--use-union-operator`: Use | operator for Union types (PEP 604).
 - `--use-unique-items-as-set`: Generate set types for arrays with uniqueItems constraint.
 - `--use-unique-items-as-set-by-value`: Write a uniqueItems set only where its final items hash by value.
-- `--use-x-python-type-unions`: Type a field by an `x-python-type` union spelled `Optional[...]` or `Union[...]`.
+- `--use-x-python-type-as-written`: Type a field by an `x-python-type` union spelled `Optional[...]` or `Union[....
 
 ### Field Customization
 - `--aliases`: Apply custom field and class name aliases via inline JSON or a JSON file path.

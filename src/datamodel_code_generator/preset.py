@@ -1057,7 +1057,7 @@ _STANDARD_20261106_OPTION_GROUPS: tuple[PresetOptionGroup, ...] = (
     ),
     PresetOptionGroup(
         title="x-python-type unions",
-        config=PresetConfig(use_x_python_type_unions=True),
+        config=PresetConfig(use_x_python_type_as_written=True),
         description=(
             "Type a field by its x-python-type when that is a union spelled Optional[...] or Union[...], as one "
             "spelled X | Y already is, instead of the schema's type."
@@ -1453,7 +1453,7 @@ def render_presets_markdown() -> str:
             "`--skip-path-extension-keys`: the paths scope skips an `x-` key of `paths`, a specification extension, as "
             "the api scope does, and `--reuse-every-reached-input-model-type`: with `--input-model` and a reuse "
             "strategy, the types reached through dataclass fields are reused too, and no unused copy of a type a "
-            "field's Python type imports is written, and `--use-x-python-type-unions`: an `x-python-type` union "
+            "field's Python type imports is written, and `--use-x-python-type-as-written`: an `x-python-type` union "
             "spelled `Optional[...]` or `Union[...]`, such as `Optional[Literal['a', 'b']]`, types its field as one "
             "spelled `X | Y` already does, instead of the schema's type, and `--use-typed-nullable-map-values`: the "
             "values of a map whose type array lists object alone or with null, such as `[object, null]`, are typed as "

@@ -193,7 +193,7 @@ reviewed-safe use_typed_nullable_map_values
 reviewed-safe use_union_operator
 reviewed-safe use_unique_items_as_set
 reviewed-safe use_unique_items_as_set_by_value
-reviewed-safe use_x_python_type_unions
+reviewed-safe use_x_python_type_as_written
 reviewed-safe validation
 guarded validators
 reviewed-safe wrap_string_literal

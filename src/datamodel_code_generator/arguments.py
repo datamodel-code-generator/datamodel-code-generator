@@ -1225,7 +1225,7 @@ _toggle(
 )
 _toggle(
     typing_options,
-    "--use-x-python-type-unions",
+    "--use-x-python-type-as-written",
     help="Type a field by its x-python-type when that is a union spelled Optional[...] or Union[...], such as "
     "Optional[Literal['a', 'b']], as one spelled X | Y already is; without it such a union is ignored where the "
     "schema declares one type, and the field takes the schema's type, as in 0.89.0",

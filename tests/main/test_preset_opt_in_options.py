@@ -86,7 +86,7 @@ OPT_IN_OPTIONS_20261106: tuple[str, ...] = (
     "--keep-content-parameter-refs",
     "--skip-path-extension-keys",
     "--reuse-every-reached-input-model-type",
-    "--use-x-python-type-unions",
+    "--use-x-python-type-as-written",
     "--use-typed-nullable-map-values",
     "--use-msgspec-forbid-unknown-fields",
     "--keep-reference-null-on-collapsed-root-models",
@@ -306,7 +306,7 @@ CASES_20261106: tuple[pytest.ParameterSet, ...] = (
         JSON_SCHEMA_DATA_PATH / "x_python_type_unions.json",
         "jsonschema",
         ["--output-model-type", "pydantic_v2.BaseModel"],
-        id="use-x-python-type-unions",
+        id="use-x-python-type-as-written",
     ),
     pytest.param(
         JSON_SCHEMA_DATA_PATH / "typed_map_values_beside_other_types.json",

@@ -125,5 +125,5 @@ use-typed-nullable-map-values-practical	main/preset_opt_in_options/preset_sets_o
 use-typed-nullable-map-values-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-typed-nullable-map-values-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-typed-map-values-beside-other-types-practical].py
 use-unique-items-as-set-by-value-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-unique-items-as-set-by-value-practical].py
 use-unique-items-as-set-by-value-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-unique-items-as-set-by-value-standard].py
-use-x-python-type-unions-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-x-python-type-unions-practical].py
-use-x-python-type-unions-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-x-python-type-unions-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-x-python-type-unions-practical].py
+use-x-python-type-as-written-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-x-python-type-as-written-practical].py
+use-x-python-type-as-written-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-x-python-type-as-written-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-x-python-type-as-written-practical].py

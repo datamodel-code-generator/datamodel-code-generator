@@ -1587,7 +1587,7 @@
       "not_recommended": "preset",
       "reason": "Under --use-unique-items-as-set only: set by the 20261104 presets; the recommendation starts from a preset."
     },
-    "use_x_python_type_unions": {
+    "use_x_python_type_as_written": {
       "not_recommended": "preset",
       "reason": "Set by the 20261106 presets; the recommendation starts from a preset."
     },

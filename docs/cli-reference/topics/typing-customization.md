@@ -72,7 +72,7 @@ Scalar, date/time, and custom type mapping.
 | [`--use-standard-primitive-types`](../typing-customization.md#use-standard-primitive-types) | Use Python standard library types for string formats instead of str. |
 | [`--use-typed-map-values-beside-other-types`](../typing-customization.md#use-typed-map-values-beside-other-types) | Type the map values of type arrays that list object beside other types. |
 | [`--use-typed-nullable-map-values`](../typing-customization.md#use-typed-nullable-map-values) | Type the values of nullable maps as their schemas say instead of Any. |
-| [`--use-x-python-type-unions`](../typing-customization.md#use-x-python-type-unions) | Type a field by an `x-python-type` union spelled `Optional\[...\]` or `Union\[...\]`... |
+| [`--use-x-python-type-as-written`](../typing-customization.md#use-x-python-type-as-written) | Type a field by an `x-python-type` union spelled `Optional\[...\]` or `Union\[...\]`... |
 
 ## Type Syntax {#type-syntax}
 
