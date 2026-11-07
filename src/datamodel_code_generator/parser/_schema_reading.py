@@ -12,7 +12,7 @@ from dataclasses import replace
 from functools import partial
 from typing import TYPE_CHECKING, Any, Final, Literal, NamedTuple
 
-from typing_extensions import Sentinel
+from typing_extensions import Protocol, Sentinel
 
 from datamodel_code_generator._document_reader import ArrayIndexOutOfRangeError, member, member_key
 from datamodel_code_generator._json_pointer import decode_token, fragment_pointer, is_pointer_fragment
@@ -42,6 +42,18 @@ __all__ = ["get_model_by_path", "split_json_pointer", "unescape_json_pointer_seg
 def _merges_ref_siblings(obj: JsonSchemaObject) -> bool:
     """Return whether a definition reads the sibling keywords of its `$ref` with the schema it names."""
     return obj.has_ref_with_schema_keywords and not obj.is_ref_with_nullable_only
+
+
+class _RefSiblingsMerger(Protocol):
+    """What ``with_ref_siblings`` reads of the parser."""
+
+    def _merge_ref_with_schema(self, obj: JsonSchemaObject, where: str | None = None) -> JsonSchemaObject:
+        """Return the schema a ``$ref`` names merged with the sibling keywords of the reference."""
+
+
+def _with_ref_siblings(parser: _RefSiblingsMerger, schema: JsonSchemaObject) -> JsonSchemaObject:
+    """Return ``schema`` merged with the keywords beside its `$ref` where they are parts of it, else itself."""
+    return parser._merge_ref_with_schema(schema) if _merges_ref_siblings(schema) else schema  # noqa: SLF001
 
 
 def _schema_dump(schema: JsonSchemaObject | bool) -> dict[str, Any] | bool:  # ruff: ignore[boolean-type-hint-positional-argument]
@@ -137,6 +149,46 @@ def _intersect_dumps(  # noqa: PLR0913
         legacy_rows=legacy_rows,
         admits_value=_json_value_admitted if removes_enum_outside_type else None,
     )
+
+
+class _IntersectionReader(Protocol):
+    """What ``_intersect_parts`` reads of the parser."""
+
+    @property
+    def _legacy_intersection(self) -> frozenset[str]:
+        """The ``legacy-*`` rows of the schema intersection the run keeps."""
+
+    def _warn_intersection(self, where: str, intersection: KeywordIntersection, *parts: str) -> None:
+        """Warn about the keywords of an intersection whose parts have no value in common, and its untaken patterns."""
+
+
+def _intersect_parts(  # noqa: PLR0913
+    parser: _IntersectionReader,
+    dumps: Sequence[Mapping[str, Any]],
+    row: dict[str, Any],
+    *,
+    where: str | None = None,
+    parts: tuple[str, ...] = (),
+    ref_siblings_are_parts: bool = True,
+    legacy_rows: Collection[str] = (),
+    own_last: bool = True,
+) -> KeywordIntersection:
+    """Return the intersection of dumped schemas (``_intersect_dumps``), warned about at ``where`` where given.
+
+    The ``enum`` values the merged ``type`` rejects go unless ``legacy-enum-outside-type-kept`` is kept; ``parts``
+    names the parts in the warning.
+    """
+    intersection = _intersect_dumps(
+        dumps,
+        row,
+        ref_siblings_are_parts=ref_siblings_are_parts,
+        legacy_rows=legacy_rows,
+        removes_enum_outside_type="legacy-enum-outside-type-kept" not in parser._legacy_intersection,  # noqa: SLF001
+        own_last=own_last,
+    )
+    if where is not None:
+        parser._warn_intersection(where, intersection, *parts)  # noqa: SLF001
+    return intersection
 
 
 def _is_object_only_type(type_: str | list[str] | None) -> bool:

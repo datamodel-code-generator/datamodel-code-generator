@@ -397,7 +397,7 @@ from datamodel_code_generator.parser._schema_reading import (
     _enum_without_positions,
     _get_json_value_type,  # noqa: F401  # Preserve the established parser.jsonschema export.
     _get_model_by_decoded_path,
-    _intersect_dumps,
+    _intersect_parts,
     _merges_ref_siblings,
     _numeric_type_domain,
     _split_json_pointer,
@@ -4212,13 +4212,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         row = all_of_member_row(outer, branch, intersect_bounds=False)
         if "legacy-combined-branch-row" in self._legacy_intersection:
             return row
-        intersection = _intersect_dumps(
+        intersection = _intersect_parts(
+            self,
             [_without_nullable(outer), _without_nullable(branch)],
             _without_nullable(row),
-            removes_enum_outside_type="legacy-enum-outside-type-kept" not in self._legacy_intersection,
+            where=where,
+            parts=(f"the keywords beside its {keyword} and its own keywords",),
             own_last=False,
         )
-        self._warn_intersection(where, intersection, f"the keywords beside its {keyword} and its own keywords")
         return intersection.keywords | ({"nullable": row["nullable"]} if "nullable" in row else {})
 
     def parse_combined_schema(
@@ -5850,7 +5851,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
 
     def _pattern_value_alias(
         self, name: str, schema: JsonSchemaObject, value_type: DataType, path: list[str]
-    ) -> DataType | None:
+    ) -> DataType:
         """Return the type alias that writes a patternProperties value with the constraints its type leaves out.
 
         No field holds the value, so where the output writes constraints in ``Annotated``
@@ -5858,11 +5859,12 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         ``parse_item`` built, leaves out go on an alias of that type, ``<name>PatternProperty``, as a preserved root
         writes them: under --field-constraints those of the schema ``_constrained_value_schema`` reads, and otherwise
         the item counts of an array (``_writes_item_counts_on_alias``). The value keeps its type, so every model it
-        builds keeps its name; a type that names a model, an x-python-type and a merged enum take none. The alias gives
-        way to the name of every other model (``yielding_new_references``).
+        builds keeps its name; a type that names a model, an x-python-type and a merged enum take none, and the value
+        is written as ``value_type`` itself. The alias gives way to the name of every other model
+        (``yielding_new_references``).
         """
         if value_type.reference is not None or not self._output_model_context.supports_internal_annotated_constraints:
-            return None
+            return value_type
         schema = self._site_schema(schema)
         if not (
             (self.field_constraints or self._writes_item_counts_on_alias(schema))
@@ -5870,7 +5872,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
             and self._constrained_value_row(value_schema := constrained[0]) == "root"
             and self._assemble_field_constraints(value_schema, value_type, _ROOT_SITE, preserve=True).constraints
         ):
-            return None
+            return value_type
         with self.model_resolver.yielding_new_references():
             return JsonSchemaParser._parse_root_type_with_context(
                 self,

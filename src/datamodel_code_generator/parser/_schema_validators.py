@@ -363,8 +363,8 @@ class SchemaValidatorsHost(CollapseRootModelsHost, DataModelTypeHost, TargetPyth
 
     def _pattern_value_alias(
         self, name: str, schema: JsonSchemaObject, value_type: DataType, path: list[str]
-    ) -> DataType | None:
-        """Return the type alias that writes a patternProperties value with the constraints its type leaves out."""
+    ) -> DataType:
+        """Return the type alias that writes a patternProperties value with its constraints, else ``value_type``."""
 
     def _plain_pattern_root_annotations(self, obj: JsonSchemaObject, patterns: list[tuple[str, DataType]]) -> bool:
         """Recognize inert root annotations only in the standard generation context."""
@@ -552,11 +552,7 @@ def _get_conditional_property_values(item: JsonSchemaObject | bool | None) -> tu
     if not _is_empty_property_schema(item, allowed_keywords=frozenset({"type", *declared})):
         return None
     first, *others = declared.values()
-    values = tuple(
-        value
-        for value in first
-        if all(any(_json_literal_values_equal(value, other) for other in admitted) for admitted in others)
-    )
+    values = tuple(intersect_enum_values(first, others[0]) if others else first)
     if item.type is not None:
         schema_types = admitted_types(declared_types(item.type))
         values = tuple(value for value in values if _json_value_admitted(schema_types, value))
@@ -1830,7 +1826,7 @@ def collect_pattern_property_validators(
                             f"schemaValidators/patternProperties/{source_index}/{pattern_index}", path
                         )
                         value_type = parser.parse_item(name, schema, value_path)
-                        value_type = parser._pattern_value_alias(name, schema, value_type, value_path) or value_type  # noqa: SLF001
+                        value_type = parser._pattern_value_alias(name, schema, value_type, value_path)  # noqa: SLF001
                     pattern_value_types.append((pattern, value_type))
                 case False | JsonSchemaObject():
                     rejected_patterns.append(pattern)
