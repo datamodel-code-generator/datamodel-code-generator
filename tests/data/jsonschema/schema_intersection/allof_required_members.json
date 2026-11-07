@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model",
+  "type": "object",
+  "properties": {
+    "member": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/A"
+        },
+        {
+          "required": [
+            "id"
+          ]
+        }
+      ]
+    },
+    "sibling": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/A"
+        }
+      ],
+      "required": [
+        "id"
+      ]
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/A"
+          },
+          {
+            "required": [
+              "id"
+            ]
+          }
+        ]
+      }
+    },
+    "kept": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Required"
+        },
+        {
+          "required": [
+            "id"
+          ]
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "A": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "B": {
+      "type": "object",
+      "required": [
+        "n"
+      ],
+      "properties": {
+        "n": {
+          "type": "string"
+        }
+      }
+    },
+    "Required": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        }
+      }
+    },
+    "Branch": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/A"
+        },
+        {
+          "$ref": "#/$defs/B"
+        }
+      ],
+      "required": [
+        "id"
+      ]
+    }
+  }
+}

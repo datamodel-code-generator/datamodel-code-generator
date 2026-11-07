@@ -190,6 +190,10 @@ LEGACY_ROWS: Final[Mapping[str, Mapping[str, str]]] = {
             "the union of the variants an allOf member's anyOf or oneOf gives admits no null, even where every part "
             "does"
         ),
+        "legacy-all-of-required-names-dropped": (
+            "a field, an item or a branch whose allOf names one model and adds only `required` names to it, through a "
+            "member or beside the allOf, is that model, which does not require them"
+        ),
     },
     "distribute_allof_over_unions": {
         "legacy-ref-branch-without-site-parts": (

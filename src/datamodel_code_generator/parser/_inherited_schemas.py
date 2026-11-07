@@ -169,6 +169,7 @@ __all__ = [
     "property_conjunctions",
     "remove_inherited_distributed_shape",
     "remove_unconstrained_compositions",
+    "required_names_at",
     "resolve_inherited_parent_property",
     "sanitize_untyped_boolean_inherited_property",
     "select_inherited_distributed_shape",
@@ -2115,6 +2116,18 @@ def get_inherited_required_names(parser: InheritedSchemasHost, base_classes: lis
         for name in source.required
     )
     return result
+
+
+def required_names_at(parser: InheritedSchemasHost, resolved_ref: str) -> frozenset[str]:
+    """Return the names the schema at a reference key requires, with its inline allOf members and its ancestors.
+
+    These are the names ``get_inherited_required_names`` reads for the model of that schema as a base.
+    """
+    return frozenset(
+        name
+        for path in (resolved_ref, *get_inherited_schema_ancestor_paths(parser, resolved_ref))
+        for name in get_inline_required_names(parser, parser._load_inherited_schema_object(path))  # noqa: SLF001
+    )
 
 
 def get_inline_required_names(parser: InheritedSchemasHost, schema: JsonSchemaObject) -> tuple[str, ...]:
