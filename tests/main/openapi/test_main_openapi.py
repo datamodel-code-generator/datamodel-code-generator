@@ -96,6 +96,7 @@ from tests.main.conftest import (
 from tests.main.openapi.conftest import EXPECTED_OPENAPI_PATH, assert_file_content
 
 if TYPE_CHECKING:
+    from _pytest.recwarn import WarningsRecorder
     from pytest_mock import MockerFixture
 
 EXTERNAL_REF_MAPPING_DATA_PATH = OPEN_API_DATA_PATH / "external_ref_mapping"
@@ -13097,6 +13098,33 @@ def test_main_openapi_read_only_write_only_allof_member_declarations(output_file
             invalid_json=invalid_json,
             expected_error_type=error_type,
         )
+
+
+def test_main_openapi_read_only_write_only_extra_items_patterns(output_file: Path, recwarn: WarningsRecorder) -> None:
+    """Warn once about the patterns of a map's values that one regular expression cannot check together.
+
+    The request/response walk of ``Account`` reads the values of ``Passwords`` as the TypedDict extra items type with
+    its warnings ignored before ``Passwords`` is parsed; the parse still reports them.
+    """
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "read_only_write_only_extra_items_patterns.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+        extra_args=[
+            "--output-model-type",
+            "typing.TypedDict",
+            "--intersect-allof-keywords",
+            "--read-only-write-only-model-type",
+            "request-response",
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+        ],
+    )
+    assert_output(
+        "".join(f"{warning.message}\n" for warning in recwarn if issubclass(warning.category, UserWarning)),
+        name="warnings",
+    )
 
 
 def test_main_openapi_read_only_write_only_collision(output_file: Path) -> None:

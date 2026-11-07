@@ -527,6 +527,7 @@ openapi/read_only_write_only_external_directory/ext/other.yaml	yaml_fast_constru
 openapi/read_only_write_only_external_directory/ext/sub/other.yaml	yaml_fast_constructor/parity.txt
 openapi/read_only_write_only_external_directory/shapes.yaml	yaml_fast_constructor/parity.txt
 openapi/read_only_write_only_external_directory/single/api.yaml	yaml_fast_constructor/parity.txt
+openapi/read_only_write_only_extra_items_patterns.yaml	yaml_fast_constructor/parity.txt
 openapi/read_only_write_only_mixed.yaml	yaml_fast_constructor/parity.txt
 openapi/read_only_write_only_nested_allof.yaml	yaml_fast_constructor/parity.txt
 openapi/read_only_write_only_nested_allof_order.yaml	yaml_fast_constructor/parity.txt

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Child": {"allOf": [{"$ref": "#/$defs/Parent"}, {"properties": {"z": {"type": "integer"}}}]},
+    "Base": {"type": "object", "properties": {"id": {"type": "integer"}}},
+    "Parent": {
+      "allOf": [
+        {"$ref": "#/$defs/Base"},
+        {"properties": {"x": {"type": "string", "maxLength": 3}}},
+        {"properties": {"x": {"type": "string", "minLength": 5}}}
+      ]
+    }
+  }
+}
