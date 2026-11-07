@@ -35,6 +35,10 @@ class Short(RootModel[list[int]]):
     root: list[int] = Field(..., max_length=2)
 
 
+class Name(RootModel[str]):
+    root: str
+
+
 class LengthKeywordsByType(BaseModel):
     tags: list[str] | None = Field(None, max_length=2, min_length=1)
     counted: list[str] | None = Field(None, max_length=3)
@@ -49,3 +53,4 @@ class LengthKeywordsByType(BaseModel):
     as_text: str | None = Field(None, max_length=2)
     count: int | None = None
     short: Short | None = None
+    named: constr(min_length=1) | None = None

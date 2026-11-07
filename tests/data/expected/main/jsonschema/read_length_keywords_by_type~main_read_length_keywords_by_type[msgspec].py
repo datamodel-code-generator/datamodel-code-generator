@@ -34,6 +34,9 @@ class LetterSeqEnum(Enum):
 Short: TypeAlias = list[int]
 
 
+Name: TypeAlias = str
+
+
 class LengthKeywordsByType(Struct):
     tags: list[str] | UnsetType = UNSET
     counted: Annotated[list[str], Meta(max_length=3)] | UnsetType = UNSET
@@ -48,3 +51,4 @@ class LengthKeywordsByType(Struct):
     as_text: str | UnsetType = UNSET
     count: int | UnsetType = UNSET
     short: Short | UnsetType = UNSET
+    named: str | UnsetType = UNSET

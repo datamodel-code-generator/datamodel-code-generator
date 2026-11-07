@@ -23,9 +23,11 @@
     },
     "as_text": {"type": "array", "items": {"type": "integer"}, "maxLength": 2, "x-python-type": "str"},
     "count": {"type": "integer", "format": "int64", "maxLength": 2},
-    "short": {"$ref": "#/$defs/Short"}
+    "short": {"$ref": "#/$defs/Short"},
+    "named": {"$ref": "#/$defs/Name", "minItems": 1}
   },
   "$defs": {
-    "Short": {"type": "array", "items": {"type": "integer"}, "maxLength": 2}
+    "Short": {"type": "array", "items": {"type": "integer"}, "maxLength": 2},
+    "Name": {"type": "string"}
   }
 }
