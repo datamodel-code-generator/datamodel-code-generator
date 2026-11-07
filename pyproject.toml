@@ -308,6 +308,7 @@ ini_options.filterwarnings = [
   "ignore:^.*Default formatters will change to builtin.*:FutureWarning",
   "ignore:^.*Field name `name` is duplicated on Pet.*",
   "ignore:^.* has a required field after a field with a default.*:UserWarning",
+  "ignore:^.*additionalProperties is false beside patternProperties.*:UserWarning",
   "ignore:^.*one dict type cannot express this object, since it .*:UserWarning",
   "ignore:^.*no value satisfies every part of this schema .*:UserWarning",
   "ignore:^a Literal of the output model cannot hold the values? .*:UserWarning",

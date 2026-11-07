@@ -134,6 +134,7 @@ class TypedDict(DataModel):
     DEFAULT_IMPORTS: ClassVar[tuple[Import, ...]] = (IMPORT_TYPED_DICT,)
     REQUIRES_ADDITIONAL_PROPERTIES_REFERENCE_CLASSES: ClassVar[bool] = True
     SUPPORTS_TYPED_DICT_TOTAL_FALSE: ClassVar[bool] = True
+    WRITES_CLOSED_ADDITIONAL_PROPERTIES: ClassVar[bool] = True
     SUPPORTS_DESERIALIZED_DEFAULT_VALUES: ClassVar[bool] = False
     _FREEZES_FIELD_RENDER_PLANS: ClassVar[bool] = True
     _PYTHON_CHECKS_BASES: ClassVar[bool] = False
