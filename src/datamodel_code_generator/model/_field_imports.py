@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeVar
 
+from datamodel_code_generator._container_kinds import container_shape
 from datamodel_code_generator._internal_utils import to_hashable
 from datamodel_code_generator._target_unicode import host_identifiers
 from datamodel_code_generator.imports import IMPORT_ANNOTATED, IMPORT_ANY, IMPORT_OPTIONAL, IMPORT_UNION, Import
@@ -694,15 +695,7 @@ def data_type_import_key(field: FieldImportsHost[_D], data_type: _D) -> tuple[An
         data_type.is_custom_type,
         data_type.admits_none,
         data_type.is_func,
-        data_type.is_dict,
-        data_type.is_list,
-        data_type.is_set,
-        data_type.is_frozen_set,
-        data_type.is_mapping,
-        data_type.is_sequence,
-        data_type.is_tuple,
-        data_type.tuple_item_count,
-        data_type.given_container,
+        *container_shape(data_type),
         data_type.use_standard_collections,
         data_type.use_generic_container,
         data_type.use_union_operator,
