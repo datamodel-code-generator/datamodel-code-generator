@@ -10,6 +10,8 @@ read-const-beside-enum-command-line	main/preset_opt_in_options/preset_option_tur
 read-const-beside-enum-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-const-beside-enum-command-line].py
 read-length-keywords-by-type-command-line	main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-command-line].py
 read-length-keywords-by-type-pyproject	main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[read-length-keywords-by-type-command-line].py
+use-typed-nullable-map-values-command-line	main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-command-line].py
+use-typed-nullable-map-values-pyproject	main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-pyproject].py	= main/preset_opt_in_options/preset_option_turned_off[use-typed-nullable-map-values-command-line].py
 [test_preset_sets_opt_in_option]
 capitalise-numbered-enum-members-practical	main/preset_opt_in_options/preset_sets_opt_in_option[capitalise-numbered-enum-members-practical].py	= main/preset_opt_in_options/preset_sets_opt_in_option[capitalise-numbered-enum-members-standard].py
 capitalise-numbered-enum-members-standard	main/preset_opt_in_options/preset_sets_opt_in_option[capitalise-numbered-enum-members-standard].py
@@ -109,6 +111,8 @@ use-tuple-for-closed-arrays-practical	main/preset_opt_in_options/preset_sets_opt
 use-tuple-for-closed-arrays-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-tuple-for-closed-arrays-standard].py
 use-typed-map-values-beside-other-types-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-typed-map-values-beside-other-types-practical].py
 use-typed-map-values-beside-other-types-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-typed-map-values-beside-other-types-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-typed-map-values-beside-other-types-practical].py
+use-typed-nullable-map-values-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-typed-nullable-map-values-practical].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-typed-map-values-beside-other-types-practical].py
+use-typed-nullable-map-values-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-typed-nullable-map-values-standard].py	= main/preset_opt_in_options/preset_sets_opt_in_option[use-typed-map-values-beside-other-types-practical].py
 use-unique-items-as-set-by-value-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-unique-items-as-set-by-value-practical].py
 use-unique-items-as-set-by-value-standard	main/preset_opt_in_options/preset_sets_opt_in_option[use-unique-items-as-set-by-value-standard].py
 use-x-python-type-unions-practical	main/preset_opt_in_options/preset_sets_opt_in_option[use-x-python-type-unions-practical].py

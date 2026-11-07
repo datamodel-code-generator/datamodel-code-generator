@@ -2047,6 +2047,7 @@ def test_boolean_optional_option_sets_are_pinned() -> None:
         "merge_shared_variant_tags",
         "use_standard_collections",
         "use_object_type",
+        "use_typed_nullable_map_values",
         "use_typed_map_values_beside_other_types",
         "read_unevaluated_properties",
         "use_single_dict_for_object_maps",
