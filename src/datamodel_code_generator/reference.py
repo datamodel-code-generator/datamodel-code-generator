@@ -1381,8 +1381,7 @@ class ModelResolver:  # noqa: PLR0904
         record.allocated.append((path, generated.name, original_name))
         if generated.duplicate_name is None:
             return
-        module, dot, _ = generated.name.rpartition(".")
-        offered = f"{module}{dot}{generated.duplicate_name}"
+        offered = f"{_module_prefix_and_class(generated.name)[0]}{generated.duplicate_name}"
         if any(
             (holder := self.references.get(mapped_path)) is not None and holder.name == offered
             for mapped_path in self._model_name_map_paths
@@ -1537,8 +1536,7 @@ class ModelResolver:  # noqa: PLR0904
         """
         if (entry := self._yielding_names.pop(name, None)) is None or entry.reference.name != name:
             return
-        module, dot, _ = name.rpartition(".")
-        prefix = f"{module}{dot}"
+        prefix = _module_prefix_and_class(name)[0]
         new_name = prefix + self._get_unique_name(
             entry.base_name,
             camel=True,
@@ -2034,8 +2032,12 @@ class ModelResolver:  # noqa: PLR0904
         if self.parent_scoped_naming or self.naming_strategy == NamingStrategy.ParentPrefixed:
             name = f"{parent_name}_{name}"
         if self.naming_strategy in {NamingStrategy.FullPath, NamingStrategy.EnclosingModel}:
-            name = f"{parent_name}{snake_to_upper_camel(name, target_python_version=self.target_python_version)}"
+            name = self._camel_prefixed(parent_name, name)
         return name
+
+    def _camel_prefixed(self, parent_name: str, name: str) -> str:
+        """Return ``name`` in CamelCase after ``parent_name``, as ``full-path`` and ``enclosing-model`` join them."""
+        return f"{parent_name}{snake_to_upper_camel(name, target_python_version=self.target_python_version)}"
 
     @staticmethod
     def _is_primary_definition(path: Sequence[str]) -> bool:
@@ -2106,7 +2108,7 @@ class ModelResolver:  # noqa: PLR0904
         L1 reaches them, whatever each model is (a definition, an inline model, a variant) (#4825).
         """
         joined_path = self.join_path(tuple(path))
-        is_root = joined_path == "#" or (joined_path.endswith("#") and "/" not in joined_path.split("#")[-1])
+        is_root = _is_root_path(joined_path)
         reference: Reference | None = self.references.get(joined_path)
         old_ref_name: str | None = reference.name if reference else None
         if reference:
@@ -2694,6 +2696,17 @@ def get_last_word_singular_name(name: str, suffix: str = SINGULAR_NAME_SUFFIX) -
     if singular_word is False:
         return f"{name}{suffix}"
     return f"{name[: len(name) - len(last_word)]}{singular_word}"
+
+
+def _module_prefix_and_class(name: str) -> tuple[str, str]:
+    """Return the module of a dotted name, with its dot (``""`` for the root module), and its class."""
+    module, dot, cls = name.rpartition(".")
+    return f"{module}{dot}", cls
+
+
+def _is_root_path(path: str) -> bool:
+    """Return whether a joined reference path names the root of its document (``#``, ``file.json#``)."""
+    return path.endswith("#")
 
 
 @lru_cache(maxsize=4096)

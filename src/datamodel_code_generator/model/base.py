@@ -43,6 +43,7 @@ from datamodel_code_generator._format_types import (
     NEWEST_TARGET,
     PythonVersion,
 )
+from datamodel_code_generator._free_names import numbered_class as _numbered_class
 from datamodel_code_generator._graph_links import add_child, base_owners, chain_root, data_type_children, nearest_field
 from datamodel_code_generator._internal_utils import (
     get_most_of_parent,  # noqa: F401  # Preserve the established model.base export.
@@ -3313,7 +3314,7 @@ class DataModel(TemplateBase, Nullable, ABC):  # noqa: PLR0904
     @property
     def duplicate_class_name(self) -> str:
         """Get the duplicate class name without module path."""
-        return self._get_class_name(self.duplicate_name)
+        return _numbered_class(self.duplicate_name)
 
     @property
     def module_path(self) -> list[str]:
