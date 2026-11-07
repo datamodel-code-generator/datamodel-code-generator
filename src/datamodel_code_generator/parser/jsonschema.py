@@ -558,9 +558,6 @@ class _ConstraintSite:
     builds its type without them (``_build_field_shared_numeric_constraints``); a root's type carries them."""
     consumed_at_property: bool
     """The keywords a zero-bound class enforces are left out (row ``legacy-consumed-at-object-property``)."""
-    patterns_beside_literal: bool
-    """The pattern of an enum written as a ``Literal`` stays on the field: an object property writes none, which keeps
-    today's accepted payloads (row ``legacy-property-literal-pattern``)."""
     keeps_tuple_lengths: bool
     """Under ``--field-constraints`` (or as a preserved root) the lengths its schema declares for a fixed tuple stay on
     the field, with no item counts added to it, where an object property and the array builder leave them out (the
@@ -581,7 +578,6 @@ _PROPERTY_SITE = _ConstraintSite(
     holds_schema=False,
     numbers_keep_bounds=True,
     consumed_at_property=True,
-    patterns_beside_literal=False,
     keeps_tuple_lengths=False,
     counts_beside_models=True,
     records_by_option=False,
@@ -591,7 +587,6 @@ _ROOT_SITE = _ConstraintSite(
     holds_schema=True,
     numbers_keep_bounds=False,
     consumed_at_property=False,
-    patterns_beside_literal=True,
     keeps_tuple_lengths=True,
     counts_beside_models=False,
     records_by_option=True,
@@ -7428,13 +7423,6 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                     constraints.pop(key, None)
             if constraints is not None and field_constraints and obj.format == "hostname":
                 constraints["pattern"] = self.data_type_manager.HOSTNAME_REGEX
-            if (
-                constraints is not None
-                and not site.patterns_beside_literal
-                and obj.enum
-                and not self.ignore_enum_constraints
-            ):
-                constraints.pop("pattern", None)
         elif kept := _value_keywords.type_list_keywords(obj):
             constraints = kept
             type_list_unique = True

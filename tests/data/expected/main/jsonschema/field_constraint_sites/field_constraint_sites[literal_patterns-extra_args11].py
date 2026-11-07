@@ -21,4 +21,5 @@ class Model(BaseModel):
         regex_engine="python-re",
     )
     referenced: Repeated | None = None
+    inline: Annotated[Literal['aa', 'b'] | None, Field(pattern='(a)\\1')] = None
     fixed: Annotated[Literal['aa'] | None, Field(pattern='(a)\\1')] = None
