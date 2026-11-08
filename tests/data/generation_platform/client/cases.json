@@ -2502,7 +2502,22 @@
     "modules": [["client", "_generated", "security.py"]]
   },
   "auth-wire-conflicts": {
-    "input": "auth-wire-conflicts.yaml"
+    "input": "auth-wire-conflicts.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "auth-parameters": {
+    "input": "auth-parameters.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
   },
   "multipart-media-text": {
     "input": "multipart-media-text.yaml",

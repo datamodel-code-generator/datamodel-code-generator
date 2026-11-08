@@ -78,7 +78,8 @@ class ParameterPlan:
     """Describe one effective parameter: location, style or content media, and lexical kinds.
 
     An array plan that is `single` also takes one item alone, which its style writes as it writes a scalar, under
-    `item_name` when one is given.
+    `item_name` when one is given. A `credential` plan writes its value where an apiKey credential of its operation
+    goes; a call whose request carries a value there sends no credential at that position.
     """
 
     location: ParameterLocation
@@ -95,6 +96,7 @@ class ParameterPlan:
     reserved_names: tuple[str, ...] = ()
     single: bool = False
     item_name: str | None = None
+    credential: bool = False
 
     def __post_init__(self) -> None:
         """Reject style, content, and shape combinations without a reversible builtin form.

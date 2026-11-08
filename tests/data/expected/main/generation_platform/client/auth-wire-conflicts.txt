@@ -1,3 +1,24 @@
 # auth-wire-conflicts
 render pydantic_v2.BaseModel
-  Error: /paths/~1header/get/parameters/0: Expanded header parameter names collide; /paths/~1query/get/parameters/0: Expanded query parameter names collide; /paths/~1cookie/get/parameters/0: Expanded cookie parameter names collide; /paths/~1expanded/get/parameters/0: Expanded query parameter names collide
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /expanded (operationId 'expanded'), which the client cannot generate: /paths/~1expanded/get/parameters/0: Expanded query parameter names collide
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated/security.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/options.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/auth/__init__.py
+  client/resources/auth/_async.py
+  client/resources/auth/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/auth/__init__.py
+  client/types/auth/_operations.py
+  models.py

@@ -20,6 +20,7 @@ allowreserved-path-32-unknown	main/generation_platform/client/packages/allowrese
 allowreserved-path-32-unknown	main/generation_platform/client/runtime/allowreserved-path-32.txt	= main/generation_platform/client/runtime/allowreserved-path-32~client_runtime[allowreserved-path-32-unknown].txt
 auth-errors	main/generation_platform/client/runtime/auth-errors.txt
 auth-flows	main/generation_platform/client/runtime/auth-flows.txt
+auth-parameters	main/generation_platform/client/runtime/auth-parameters.txt
 auth-shared-wire	main/generation_platform/client/runtime/auth-shared-wire.txt
 auth-values	main/generation_platform/client/runtime/auth-values.txt
 bodies	main/generation_platform/client/runtime/bodies.txt
