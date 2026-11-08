@@ -19,7 +19,7 @@ from datamodel_code_generator import Error
 from tests.api_generation.scenarios.client_allowreserved import reserved_paths
 from tests.api_generation.scenarios.client_auth_errors import auth_errors
 from tests.api_generation.scenarios.client_auth_flows import auth_flows
-from tests.api_generation.scenarios.client_auth_values import auth_values
+from tests.api_generation.scenarios.client_auth_values import auth_shared_wire, auth_values
 from tests.api_generation.scenarios.client_bodies import bodies
 from tests.api_generation.scenarios.client_body_replay import body_replay, multipart_replay
 from tests.api_generation.scenarios.client_body_replay_faults import body_replay_faults
@@ -871,6 +871,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "auth-errors": ("auth", ("pydantic_v2.BaseModel",), auth_errors),
     "auth-values": ("auth", ("pydantic_v2.BaseModel",), auth_values),
     "auth-flows": ("auth", ("pydantic_v2.BaseModel",), auth_flows),
+    "auth-shared-wire": ("auth-shared-wire", ("pydantic_v2.BaseModel",), auth_shared_wire),
     "deadline-options": ("pets", ("pydantic_v2.BaseModel",), deadline_options),
     "deadline-cleanup": ("pets", ("pydantic_v2.BaseModel",), deadline_cleanup),
     "deadline-races": ("pets", ("pydantic_v2.BaseModel",), deadline_races),

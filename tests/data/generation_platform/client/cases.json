@@ -2504,6 +2504,20 @@
   "auth-wire-conflicts": {
     "input": "auth-wire-conflicts.yaml"
   },
+  "auth-shared-wire": {
+    "input": "auth-shared-wire.yaml",
+    "modules": [
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "security.py"
+      ]
+    ]
+  },
   "credential-name-errors": {
     "input": "credential-name-errors.yaml",
     "modules": [["client", "_client.py"], ["client", "auth.py"]]

@@ -19,7 +19,7 @@ _SCHEME_0: Final = SecurityScheme(
 
 _SCHEME_1: Final = SecurityScheme(
     name='appAuth',
-    kind='bearer',
+    kind='basic',
     location='header',
     wire_name='Authorization',
 )

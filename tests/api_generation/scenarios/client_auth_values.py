@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from types import ModuleType
 
 _OK: Final = raw_response(200, b"ok", "application/octet-stream")
+_ACCEPTED: Final = raw_response(204)
 _SECRETS: Final = ("token-secret", "key-secret", "pass word", "q secret", "cookie-secret", "vault-secret")
 
 
@@ -210,3 +211,22 @@ def auth_values(package: ModuleType, lines: list[str]) -> None:
         part(package, exchange, lines)
     lines.append("async")
     run(lambda: _async_values(package, exchange, lines))
+
+
+def auth_shared_wire(package: ModuleType, lines: list[str]) -> None:
+    """Send one credential for the schemes of an AND alternative that place one kind at one position."""
+    exchange = Exchange(lines)
+    for credentials in (
+        {"implicit": "token-secret"},
+        {"code": "token-secret"},
+        {"implicit": "token-secret", "code": "other-secret"},
+        {"code": "token-secret", "key": "key-secret"},
+        {"key_lower": "key-secret"},
+        {},
+    ):
+        lines.append(f"credentials {tuple(credentials)}")
+        with exchange.client() as http, package.Client(http_client=http, **credentials) as api:
+            exchange.respond(_ACCEPTED, _ACCEPTED, _ACCEPTED)
+            record(lines, "flows", api.auth.flows)
+            record(lines, "keyed flows", api.auth.keyed_flows)
+            record(lines, "keys", api.auth.keys)

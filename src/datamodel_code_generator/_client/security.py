@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import product
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._api_types import Diagnostic
@@ -33,7 +34,7 @@ from datamodel_code_generator._target_operations import declared_in, operation_r
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Iterator
 
     from datamodel_code_generator._openapi_features import ClientFeature
     from datamodel_code_generator._runtime.client.security import SecuritySchemeEntry
@@ -137,6 +138,20 @@ def _scheme(declaration: WireDeclaration) -> SecuritySchemeEntry:
     return unavailable
 
 
+def _shared(owners: Iterable[list[SecurityRequirement]]) -> Iterator[tuple[SecurityRequirement, ...]]:
+    """Return the alternatives one AND alternative means, one per choice among schemes of the same wire form.
+
+    A request carries one credential at a position, so schemes of one kind at one position are met by a single value
+    valid for all of them: whichever of their credentials is given, holding the scopes of them all.
+    """
+    groups = [(group, tuple(sorted({scope for item in group for scope in item.required_scopes}))) for group in owners]
+    for choice in product(*(group for group, _ in groups)):
+        yield tuple(
+            SecurityRequirement(scheme=item.scheme, required_scopes=scopes)
+            for item, (_, scopes) in zip(choice, groups, strict=True)
+        )
+
+
 class SecurityPlanner:
     """Resolve every requirement among the schemes of the document that uses its operation."""
 
@@ -228,8 +243,7 @@ class SecurityPlanner:
             if alternative is None:
                 self.problem(operation, "must contain only requirement objects")
                 continue
-            requirements: list[SecurityRequirement] = []
-            owners: set[tuple[str, str]] = set()
+            owners: dict[tuple[str, str], list[SecurityRequirement]] = {}
             for name, scopes in alternative:
                 if not isinstance(name, str) or not isinstance(scheme := schemes.get(name), SecurityScheme):
                     feature = None if (found := declared_schemes.get(name)) is None else _feature(found)
@@ -241,12 +255,11 @@ class SecurityPlanner:
                     self.problem(operation, invalid)
                     continue
                 required = tuple(sorted(set(scopes or ())))
-                position = parameter_key(scheme.location, scheme.wire_name)
-                if position in owners:
+                owner = owners.setdefault(parameter_key(scheme.location, scheme.wire_name), [])
+                if owner and owner[0].scheme.kind != scheme.kind:
                     self.problem(
                         operation, f"has overlapping {scheme.location} ownership in one AND alternative", conflict=True
                     )
-                owners.add(position)
-                requirements.append(SecurityRequirement(scheme=scheme, required_scopes=required))
-            alternatives.append(tuple(requirements))
+                owner.append(SecurityRequirement(scheme=scheme, required_scopes=required))
+            alternatives.extend(_shared(owners.values()))
         return SecurityBinding(schemes=tuple(schemes.values()), alternatives=tuple(alternatives))
