@@ -20,7 +20,9 @@ from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
 from datamodel_code_generator._format_types import PythonVersion  # noqa: F401  # Preserve the established cli_options export.
+from datamodel_code_generator._option_names import option_arguments as _arguments_negated_by
 from datamodel_code_generator._option_names import option_flag
+from datamodel_code_generator._option_names import values_arguments as _values_arguments_negated_by
 from datamodel_code_generator._option_rules import IMPLIED_OPTIONS
 from datamodel_code_generator._requirements import REQUIREMENTS
 from datamodel_code_generator.deprecations import cli_deprecations
@@ -36,6 +38,7 @@ from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from argparse import Action, ArgumentParser
+    from collections.abc import Iterable
 
 
 class OptionCategory(str, Enum):
@@ -777,6 +780,16 @@ def _negative_option(dest: str) -> str | None:
     if isinstance(action := index.actions.get(dest), BooleanOptionalAction):
         return _no_option(action)
     return flag if (flag := option_flag(dest, negative=True)) in index.canonical else None
+
+
+def _option_arguments(field: str, value: object) -> list[Any] | None:
+    """Return the arguments that set a config field to a value (``option_arguments``), with this parser's --no-."""
+    return _arguments_negated_by(field, value, negative=_negative_option)
+
+
+def _values_arguments(values: Iterable[tuple[str, object]]) -> list[Any]:
+    """Return the arguments that set config fields to values (``values_arguments``), with this parser's --no-."""
+    return _values_arguments_negated_by(values, negative=_negative_option)
 
 
 @lru_cache(maxsize=1)

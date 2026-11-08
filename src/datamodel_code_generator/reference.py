@@ -706,7 +706,19 @@ class FieldNameResolver:
             fallback = f"{self.special_field_name_prefix}_{fallback}"
         return fallback
 
-    def get_valid_name(  # noqa: PLR0912
+    def _cased(self, name: str, *, upper_camel: bool, host_upper: bool = False) -> str:
+        """Return ``name`` cased as a valid name: upper camel case, or upper case under --capitalise-enum-members.
+
+        ``host_upper`` upper-cases by the case tables of the running interpreter rather than the target's, as the name
+        an ASCII fallback gives is.
+        """
+        if upper_camel:
+            return snake_to_upper_camel(name, target_python_version=self.target_python_version)
+        if not self.capitalise_enum_members:
+            return name
+        return name.upper() if host_upper else upper(name, self.target_python_version)
+
+    def get_valid_name(
         self,
         name: str,
         excludes: set[str] | None = None,
@@ -744,15 +756,10 @@ class FieldNameResolver:
         if self.capitalise_enum_members or (self.snake_case_field and not ignore_snake_case_field):
             name = camel_to_snake(name, target)
         count = 1
-        validated_name = upper(name, target) if self.capitalise_enum_members else name
+        validated_name = self._cased(name, upper_camel=False)
         if iskeyword(validated_name) or not self._validate_field_name(validated_name):
             name += "_"
-        if upper_camel:
-            new_name = snake_to_upper_camel(name, target_python_version=target)
-        elif self.capitalise_enum_members:
-            new_name = upper(name, target)
-        else:
-            new_name = name
+        new_name = self._cased(name, upper_camel=upper_camel)
         while (
             not is_python_name(new_name, target)
             or (excludes and new_name in excludes)
@@ -761,12 +768,7 @@ class FieldNameResolver:
             if not new_name.isascii() and not is_identifier(new_name, target):
                 name = self._ascii_identifier_fallback(name)
                 count = 1
-                if upper_camel:
-                    new_name = snake_to_upper_camel(name, target_python_version=target)
-                elif self.capitalise_enum_members:
-                    new_name = name.upper()
-                else:
-                    new_name = name
+                new_name = self._cased(name, upper_camel=upper_camel, host_upper=True)
                 continue
             new_name = f"{name}{count}" if upper_camel else f"{name}_{count}"
             if self.capitalise_numbered_enum_members and self.capitalise_enum_members and not upper_camel:
@@ -1639,7 +1641,8 @@ class ModelResolver:  # noqa: PLR0904
         return self._current_root
 
     @property
-    def _current_root_id(self) -> str:
+    def current_document(self) -> str:
+        """Return the current document: its root path components joined by slashes, the scope of its ids."""
         return "/".join(self.current_root)
 
     def set_current_root(self, current_root: Sequence[str]) -> None:
@@ -1705,11 +1708,11 @@ class ModelResolver:  # noqa: PLR0904
         resolved from the base path, not from the directory of the document parsed now.
         """
         with self.current_base_path_context(self._base_path.resolve() if self.current_base_path else None):
-            self.ids[self._current_root_id][id_] = self.resolve_ref(path)
+            self.ids[self.current_document][id_] = self.resolve_ref(path)
 
     def registered_id(self, id_: str) -> str | None:
         """Return the resolved reference path an identifier is registered for in the current scope, if any."""
-        return self.ids.get(self._current_root_id, {}).get(id_)
+        return self.ids.get(self.current_document, {}).get(id_)
 
     def _get_path_absolute_local_file(self, ref: str) -> tuple[Path, str] | None:
         """Return the local file path for a path-absolute URI ref."""
@@ -1718,7 +1721,7 @@ class ModelResolver:  # noqa: PLR0904
 
         file_path, fragment = ref.partition("#")[::2]
         root_path = urlparse(self.root_id).path
-        current_root = self._current_root_id
+        current_root = self.current_document
         if not (root_path and current_root and root_path.endswith(f"/{current_root}")):
             return None
 
@@ -1760,7 +1763,7 @@ class ModelResolver:  # noqa: PLR0904
         """Resolve a reference path to its canonical form."""
         joined_path = path if isinstance(path, str) else self.join_path(tuple(path))
         if not joined_path or joined_path == "#":
-            return f"{self._current_root_id}#"
+            return f"{self.current_document}#"
         if path_absolute_ref := self._resolve_path_absolute_local_ref(joined_path):
             joined_path = path_absolute_ref
         if (
@@ -1796,7 +1799,7 @@ class ModelResolver:  # noqa: PLR0904
             and not is_pointer_fragment(joined_path[1:])
             and not _is_special_path(joined_path)
         ):
-            id_scope = self._current_root_id
+            id_scope = self.current_document
             scoped_ids = self.ids[id_scope]
             ref: str | None = scoped_ids.get(joined_path)
             if ref is None:
@@ -1810,7 +1813,7 @@ class ModelResolver:  # noqa: PLR0904
             if "#" not in joined_path:
                 joined_path += "#"
             elif joined_path[0] == "#" and self.current_root:
-                joined_path = f"{self._current_root_id}{joined_path}"
+                joined_path = f"{self.current_document}{joined_path}"
 
             file_path, fragment = joined_path.split("#", 1)
             ref = f"{file_path}#{fragment}"
@@ -1824,7 +1827,7 @@ class ModelResolver:  # noqa: PLR0904
 
         if is_url(ref):
             file_part, path_part = ref.split("#", 1)
-            id_scope = self._current_root_id
+            id_scope = self.current_document
             scoped_ids = self.ids[id_scope]
             if file_part in scoped_ids:
                 mapped_ref = scoped_ids[file_part]
@@ -1851,7 +1854,7 @@ class ModelResolver:  # noqa: PLR0904
         if is_url(ref):
             file_part, path_part = ref.split("#", 1)
             if file_part == self.root_id:  # pragma: no cover
-                return f"{self._current_root_id}#{path_part}"
+                return f"{self.current_document}#{path_part}"
             target_url: ParseResult = urlparse(file_part)
             if not (self.root_id and self.current_base_path):
                 return ref
@@ -2692,10 +2695,7 @@ def get_last_word_singular_name(name: str, suffix: str = SINGULAR_NAME_SUFFIX) -
     ``PaymentStatusItem``.
     """
     last_word = last_camel_word(name) or name
-    singular_word = _get_inflect_engine().singular_noun(cast("inflect.Word", last_word))  # ty: ignore[redundant-cast]
-    if singular_word is False:
-        return f"{name}{suffix}"
-    return f"{name[: len(name) - len(last_word)]}{singular_word}"
+    return f"{name[: len(name) - len(last_word)]}{get_singular_name(last_word, suffix)}"
 
 
 def _module_prefix_and_class(name: str) -> tuple[str, str]:

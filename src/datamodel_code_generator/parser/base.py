@@ -78,7 +78,9 @@ from datamodel_code_generator._name_words import pascal_words
 from datamodel_code_generator._parse_memo import PARSE_MEMO, MemoTable
 from datamodel_code_generator._parser_context import ParserSourceContext
 from datamodel_code_generator._paths import files_under
-from datamodel_code_generator._python_syntax import normalize_newlines
+from datamodel_code_generator._python_syntax import (
+    normalize_newlines,  # noqa: F401  # Preserve the established parser.base export.
+)
 from datamodel_code_generator._python_target_names import target_builtin_names
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import (
@@ -97,6 +99,7 @@ from datamodel_code_generator._source import (
     _is_parsed_source_cache_enabled,
     _read_parser_source_data_from_path,
 )
+from datamodel_code_generator._source import input_text as _input_text
 from datamodel_code_generator._target_unicode import title
 from datamodel_code_generator._template_data import copy_extra_template_data
 from datamodel_code_generator._url_redaction import named_location, redact_reference
@@ -553,7 +556,7 @@ class Source(BaseModel):
         record_watch_dependency(path)
         return cls(
             path=path.relative_to(base_path),
-            text=path.read_text(encoding=encoding) if data is None else normalize_newlines(data.decode(encoding)),
+            text=_input_text(path, encoding, data),
         )
 
     @classmethod

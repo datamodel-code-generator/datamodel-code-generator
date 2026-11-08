@@ -23,8 +23,17 @@ from datamodel_code_generator._json_output import (
     schema_document,
 )
 from datamodel_code_generator._message_text import english_list
-from datamodel_code_generator._option_names import mapping_argument, option_arguments
-from datamodel_code_generator.cli_options import CLI_OPTION_META, OptionCategory, _actions_by_dest, _negative_option
+from datamodel_code_generator._option_names import (
+    mapping_argument,
+    option_arguments,  # noqa: F401  # Preserve the established prompt export.
+)
+from datamodel_code_generator.cli_options import (
+    CLI_OPTION_META,
+    OptionCategory,
+    _actions_by_dest,
+    _canonical_option_key,
+    _option_arguments,
+)
 from datamodel_code_generator.prompt_data import OPTION_DESCRIPTIONS
 
 if TYPE_CHECKING:
@@ -246,8 +255,8 @@ def _canonical_option(action: Action) -> str:
     """Return the canonical option name for an argparse action."""
     if long_options := [option for option in action.option_strings if option.startswith("--")]:
         positive_options = [option for option in long_options if not option.startswith("--no-")]
-        return max(positive_options or long_options, key=lambda option: (len(option), option))
-    return max(action.option_strings, key=lambda option: (len(option), option))
+        return max(positive_options or long_options, key=_canonical_option_key)
+    return max(action.option_strings, key=_canonical_option_key)
 
 
 def _format_current_option(key: str, value: Any) -> str | None:
@@ -255,7 +264,7 @@ def _format_current_option(key: str, value: Any) -> str | None:
 
     A mapping is the JSON its option reads.
     """
-    if (arguments := option_arguments(key, value, negative=_negative_option)) is None:
+    if (arguments := _option_arguments(key, value)) is None:
         return None
     return " ".join(
         mapping_argument(key, argument) if isinstance(argument, Mapping) else str(argument) for argument in arguments

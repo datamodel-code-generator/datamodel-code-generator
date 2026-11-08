@@ -437,7 +437,11 @@ def _generate_models(  # noqa: PLR0913
         _settings_path_from,  # pyright: ignore[reportPrivateUsage]
     )
     from datamodel_code_generator._openapi_generation import TargetGenerationSession  # noqa: PLC0415
-    from datamodel_code_generator._publication import staged_artifact_path  # noqa: PLC0415
+    from datamodel_code_generator._publication import (  # noqa: PLC0415
+        STAGED_METADATA_NAME,
+        STAGED_OUTPUT_NAME,
+        staged_artifact_path,
+    )
     from datamodel_code_generator._target_binding import MetadataCycleError  # noqa: PLC0415
 
     source = _root_input(input_, cwd)
@@ -450,12 +454,15 @@ def _generate_models(  # noqa: PLR0913
     settings_path = _settings_path_from(formatter_cwd, prepared.settings_path)
     with ExitStack() as stack:
         staged_output = staged_artifact_path(
-            _staging(stack, output, cwd, target.output), output, "output", make_directory=(cwd / output).is_dir()
+            _staging(stack, output, cwd, target.output),
+            output,
+            STAGED_OUTPUT_NAME,
+            make_directory=(cwd / output).is_dir(),
         )
         updates: dict[str, Any] = {"output": staged_output}
         if (metadata := config.emit_model_metadata) is not None:
             updates["emit_model_metadata"] = staged_artifact_path(
-                _staging(stack, metadata, cwd), metadata, "model-metadata.json", make_directory=False
+                _staging(stack, metadata, cwd), metadata, STAGED_METADATA_NAME, make_directory=False
             )
         staged = prepared.model_copy(update=updates)
         staged._logical_output = output  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
@@ -909,10 +916,10 @@ class _Planner:
         modules, `own`, are staged beside it as they lie beside the package. Ruff reads and writes UTF-8 only, so the
         staged files are UTF-8 whatever encoding the files are written in.
         """
-        from datamodel_code_generator._format_types import Formatter  # noqa: PLC0415
+        from datamodel_code_generator._format_types import RUFF_FORMATTERS  # noqa: PLC0415
         from datamodel_code_generator.format import _RUFF_ENCODING  # noqa: PLC0415
 
-        if not paths or not {Formatter.RUFF_CHECK, Formatter.RUFF_FORMAT}.intersection(formatter.formatters):
+        if not paths or not RUFF_FORMATTERS.intersection(formatter.formatters):
             return
         with ExitStack() as stack:
             staged = _staging(stack, self.config.output, self.cwd) / self.root.name

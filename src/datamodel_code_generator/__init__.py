@@ -62,6 +62,7 @@ from datamodel_code_generator._source import (
 from datamodel_code_generator._source import (
     _read_parser_source_data_from_path as _read_parser_source_data_from_path,
 )
+from datamodel_code_generator._source import input_text as _input_text
 from datamodel_code_generator._url_redaction import redact_path, redact_url
 from datamodel_code_generator._warning_control import quiet
 from datamodel_code_generator.enums import (
@@ -154,7 +155,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator.model import DataModelSet
     from datamodel_code_generator.model_metadata import ModelMetadata
-    from datamodel_code_generator.parser.base import DocumentRoles, ImportCycleSeeds, Result
+    from datamodel_code_generator.parser.base import ParserRunContext, Result
     from datamodel_code_generator.remote_lock import RemoteReferenceLock
 
 T = TypeVar("T")
@@ -516,6 +517,13 @@ class _StructuredOutputUnavailableError(Error):
     """Raised when the installed Pydantic is too old for the payload models of the JSON output of the CLI."""
 
 
+def _written_paths(
+    output: Path | None, model_metadata: Path | None, lockfile: Path | None
+) -> tuple[tuple[str, Path | None], ...]:
+    """Return each path a generation writes with the label its refusals name it by, in the order they are checked."""
+    return (("Output", output), ("Model metadata", model_metadata), ("Remote lock", lockfile))
+
+
 def _validate_generation_path_conflicts(  # noqa: PLR0912
     input_: _GenerationInput,
     output: Path | None,
@@ -529,11 +537,7 @@ def _validate_generation_path_conflicts(  # noqa: PLR0912
 
     targets = [
         (label, path, lexical(path), resolved(path))
-        for label, path in (
-            ("Output", output),
-            ("Model metadata", model_metadata),
-            ("Remote lock", lockfile),
-        )
+        for label, path in _written_paths(output, model_metadata, lockfile)
         if path is not None
     ]
 
@@ -589,7 +593,7 @@ def _refuse_uncreatable_paths(
     """
     from datamodel_code_generator._paths import creation_root, lexical  # noqa: PLC0415
 
-    for label, path in (("Output", output), ("Model metadata", model_metadata), ("Remote lock", lockfile)):
+    for label, path in _written_paths(output, model_metadata, lockfile):
         if path is None:
             continue
         try:
@@ -597,6 +601,21 @@ def _refuse_uncreatable_paths(
         except OSError as exc:
             msg = f"{label} path cannot be created: {exc.strerror}: {exc.filename}"
             raise Error(msg) from exc
+
+
+def _refuse_written_path_conflicts(
+    input_: _GenerationInput,
+    output: Path | None,
+    model_metadata: Path | None,
+    lockfile: Path | None,
+    caller_cwd: Path,
+) -> None:
+    """Refuse the paths a generation writes that conflict with each other or the input, then one that cannot be made.
+
+    The command line checks only the conflicts (``_validate_generation_path_conflicts``) before the generation does.
+    """
+    _validate_generation_path_conflicts(input_, output, model_metadata, lockfile)
+    _refuse_uncreatable_paths(output, model_metadata, lockfile, caller_cwd)
 
 
 class DanglingRefWarning(UserWarning):
@@ -774,15 +793,6 @@ def _read_once_input(input_: _GenerationInput, input_file_type: InputFileType) -
     if stat.S_ISDIR(mode) or stat.S_ISREG(mode):
         return None
     return input_, input_.read_bytes()
-
-
-def _read_input_text(path: Path, encoding: str, data: bytes | None) -> str:
-    """Return the text of an input file as reading it as text does, decoding `data` when the file was read already."""
-    if data is None:
-        return path.read_text(encoding=encoding)
-    from datamodel_code_generator._python_syntax import normalize_newlines  # noqa: PLC0415
-
-    return normalize_newlines(data.decode(encoding))
 
 
 def _is_comment_only_source(source: str) -> bool:
@@ -1203,21 +1213,6 @@ def _resolve_schema_versions(input_file_type: InputFileType, schema_version: str
             return _parse_schema_version(JsonSchemaVersion, schema_version, "JSON Schema"), None, None, None, None
 
 
-def _openapi_shared_options(config: GenerateConfig) -> OpenAPIParserConfigDict:
-    return {
-        "openapi_scopes": config.openapi_scopes,
-        "include_path_parameters": config.include_path_parameters,
-        "use_status_code_in_response_name": config.use_status_code_in_response_name,
-        "keep_first_character_of_path_keys": config.keep_first_character_of_path_keys,
-        "keep_content_parameter_refs": config.keep_content_parameter_refs,
-        "skip_path_extension_keys": config.skip_path_extension_keys,
-        "use_enum_field_as_literal_in_operations": config.use_enum_field_as_literal_in_operations,
-        "openapi_include_paths": config.openapi_include_paths,
-        "openapi_include_info_version": config.openapi_include_info_version,
-        "openapi_as_definitions": config.openapi_as_definitions,
-    }
-
-
 def _normalize_raw_input(  # noqa: PLR0912
     input_: _GenerationInput,
     input_text: str | None,
@@ -1256,16 +1251,12 @@ def _normalize_raw_input(  # noqa: PLR0912
             else:
                 import io  # noqa: PLC0415
 
-                text = (
-                    _read_input_text(input_, config.encoding, read_once_data)
-                    if isinstance(input_, Path)
-                    else input_text
-                )
+                text = _input_text(input_, config.encoding, read_once_data) if isinstance(input_, Path) else input_text
                 obj = get_header_and_first_line(io.StringIO(text))
         elif input_file_type == InputFileType.Dict and isinstance(input_, Mapping):
             obj = input_
         elif input_file_type in {InputFileType.Yaml, InputFileType.Json, InputFileType.Dict}:
-            text = _read_input_text(input_, config.encoding, read_once_data) if isinstance(input_, Path) else input_text
+            text = _input_text(input_, config.encoding, read_once_data) if isinstance(input_, Path) else input_text
             assert text is not None
             if input_file_type == InputFileType.Yaml:
                 obj = load_yaml(text)
@@ -1306,7 +1297,7 @@ def _convert_mcp_tools(
             case Mapping() | list():
                 return input_
             case Path():
-                return load_text_data(_read_input_text(input_, config.encoding, read_once_data), mapping=False)
+                return load_text_data(_input_text(input_, config.encoding, read_once_data), mapping=False)
         assert input_text is not None
         return load_text_data(input_text, mapping=False)
 
@@ -1443,10 +1434,7 @@ def _prepare_parser_common_options(  # noqa: PLR0912, PLR0913, PLR0917
         "data_type_manager_type": data_model_types.data_type_manager,
         "dump_resolve_reference_action": data_model_types.dump_resolve_reference_action,
         "extra_template_data": extra_template_data,
-        "serialization_aliases": config.serialization_aliases,
-        "model_name_map": config.model_name_map,
         "generate_schema_validators": generate_schema_validators,
-        "schema_validator_base_class_name": config.schema_validator_base_class_name,
         "base_path": input_.parent if isinstance(input_, Path) and input_.exists() and not input_.is_dir() else None,
         "remote_text_cache": remote_text_cache,
         "known_third_party": data_model_types.known_third_party,
@@ -1455,20 +1443,15 @@ def _prepare_parser_common_options(  # noqa: PLR0912, PLR0913, PLR0917
         "target_date_class": config.output_date_class,
         "dataclass_arguments": dataclass_arguments,
         "defer_formatting": defer_formatting,
-        "use_type_checking_imports": config.use_type_checking_imports,
-        "use_single_line_docstring": config.use_single_line_docstring,
         "enum_field_as_literal": (
             config.enum_field_as_literal
             if config.enum_field_as_literal is not None
             else (LiteralType.All if config.output_model_type == DataModelType.TypingTypedDict else None)
         ),
-        "use_missing_sentinel": config.use_missing_sentinel,
         "set_default_enum_member": (
             True if config.output_model_type == DataModelType.DataclassesDataclass else config.set_default_enum_member
         ),
-        "use_object_type": config.use_object_type,
         "skip_root_model": skip_root_model,
-        "use_root_model_sequence_interface": config.use_root_model_sequence_interface,
     }
     return data_model_types, source, defer_formatting, additional_options, python_type_expressions
 
@@ -1493,7 +1476,6 @@ def _build_parser(  # noqa: PLR0911, PLR0913
             from datamodel_code_generator.parser.openapi import OpenAPIParser  # noqa: PLC0415
 
             openapi_additional_options: OpenAPIParserConfigDict = {
-                **_openapi_shared_options(config),
                 "openapi_version": openapi_version,
                 **additional_options,
             }
@@ -1509,10 +1491,7 @@ def _build_parser(  # noqa: PLR0911, PLR0913
             from datamodel_code_generator.parser.asyncapi import AsyncAPIParser  # noqa: PLC0415
 
             asyncapi_additional_options: AsyncAPIParserConfigDict = {
-                **_openapi_shared_options(config),
                 "asyncapi_version": asyncapi_version,
-                "name_converted_payloads_by_message": config.name_converted_payloads_by_message,
-                "merge_message_trait_headers": config.merge_message_trait_headers,
                 **additional_options,
             }
             parser_config = _create_parser_config(config, asyncapi_additional_options)
@@ -1690,10 +1669,10 @@ def _format_deferred_output(
     if not config.formatters:
         return
 
-    from datamodel_code_generator._format_types import Formatter  # noqa: PLC0415
+    from datamodel_code_generator._format_types import RUFF_FORMATTERS  # noqa: PLC0415
     from datamodel_code_generator.format import CodeFormatter, _model_formatter_arguments  # noqa: PLC0415
 
-    if Formatter.RUFF_CHECK not in config.formatters and Formatter.RUFF_FORMAT not in config.formatters:
+    if not RUFF_FORMATTERS.intersection(config.formatters):
         return
 
     code_formatter = CodeFormatter(
@@ -1910,14 +1889,12 @@ def _prepare_atomic_generation_remote_lock(
     input_: _GenerationInput, config: GenerateConfig, caller_cwd: Path
 ) -> tuple[GenerateConfig, Path, RemoteReferenceLock]:
     """Prepare the existing atomic update policy without resolving the original config."""
-    from datamodel_code_generator._lock_plan import default_lock_parent, remote_lock_plan  # noqa: PLC0415
+    from datamodel_code_generator._lock_plan import remote_lock_plan  # noqa: PLC0415
     from datamodel_code_generator.remote_lock import RemoteReferenceLock  # noqa: PLC0415
 
     config = _absolute_config_paths(config, ("output", "emit_model_metadata"), caller_cwd)
-    default_parent = default_lock_parent(config._pyproject_path, caller_cwd)  # noqa: SLF001
-    canonical_lockfile = remote_lock_plan(config, default_parent, caller_cwd).canonical_path
-    _validate_generation_path_conflicts(input_, config.output, config.emit_model_metadata, canonical_lockfile)
-    _refuse_uncreatable_paths(config.output, config.emit_model_metadata, canonical_lockfile, caller_cwd)
+    canonical_lockfile = remote_lock_plan(config, config._pyproject_path, caller_cwd).canonical_path  # noqa: SLF001
+    _refuse_written_path_conflicts(input_, config.output, config.emit_model_metadata, canonical_lockfile, caller_cwd)
     remote_lock = RemoteReferenceLock.open(canonical_lockfile, update=True, locked=False)
     return config, canonical_lockfile, remote_lock
 
@@ -2005,25 +1982,13 @@ def _build_generation_parser(  # noqa: PLR0913, PLR0917
     parser_options: _SharedParserConfigDict,
     data_model_types: DataModelSet,
     schema_versions: _SchemaVersions,
-    diagnostic_source_path: Path | None,
+    run_context: ParserRunContext,
     *,
-    prefetched_source: tuple[Path, bytes] | None = None,
-    formatter_cwd: Path | None = None,
-    preserve_circular_root_models: bool = False,
-    suppress_parse_warnings: bool = False,
-    untyped_nullable_maps: bool = False,
-    yielding_names: tuple[tuple[str, tuple[str, str | None]], ...] = (),
-    document_roles: DocumentRoles = (),
-    import_cycle_seeds: ImportCycleSeeds | None = None,
     reference_cache: Any | None = None,
     python_type_expressions: _PythonTypeExpressions | None = None,
     openapi_parser_factory: OpenAPIParserFactory | None = None,
-    model_name_keys: ModelNameKeys | None = None,
-    records_model_names: bool = False,
-    final_name_keys: tuple[tuple[str, tuple[str, ...]], ...] = (),
-    planned_names: tuple[tuple[str, tuple[str, str | None]], ...] = (),
 ) -> Any:
-    """Build one fresh parser using the caller's reference-resolution base."""
+    """Build one fresh parser using the caller's reference-resolution base, with the settings of its parse."""
     jsonschema_version, openapi_version, asyncapi_version, xmlschema_version, protobuf_version = schema_versions
     build_parser = _build_parser
     if openapi_parser_factory is not None:
@@ -2046,21 +2011,9 @@ def _build_generation_parser(  # noqa: PLR0913, PLR0917
         )
     if reference_cache is not None and hasattr(parser, "remote_object_cache"):
         parser.remote_object_cache = reference_cache
-    parser.configure_run_context(
-        diagnostic_source_path=diagnostic_source_path,
-        prefetched_source=prefetched_source,
-        formatter_cwd=formatter_cwd,
-        preserve_circular_root_models=preserve_circular_root_models,
-        suppress_parse_warnings=suppress_parse_warnings,
-        untyped_nullable_maps=untyped_nullable_maps,
-        yielding_names=yielding_names,
-        document_roles=document_roles,
-        model_name_keys=model_name_keys,
-        records_model_names=records_model_names,
-        final_name_keys=final_name_keys,
-        import_cycle_seeds=import_cycle_seeds,
-        planned_names=planned_names,
-    )
+    from dataclasses import fields  # noqa: PLC0415
+
+    parser.configure_run_context(**{field.name: getattr(run_context, field.name) for field in fields(run_context)})
     return parser
 
 
@@ -2124,28 +2077,25 @@ def _resolve_generation_remote_lock(
 ) -> GenerateConfig:
     """Resolve the ordinary remote-lock policy, retaining identity when inactive."""
     remote_lock = config.remote_lock
+    plan = None
     if config.remote_lock_resolved:
         lockfile = getattr(remote_lock, "path", None)
-        _validate_generation_path_conflicts(input_, config.output, config.emit_model_metadata, lockfile)
-        _refuse_uncreatable_paths(config.output, config.emit_model_metadata, lockfile, caller_cwd)
     else:
-        from datamodel_code_generator._lock_plan import default_lock_parent, remote_lock_plan  # noqa: PLC0415
+        from datamodel_code_generator._lock_plan import remote_lock_plan  # noqa: PLC0415
 
-        default_parent = default_lock_parent(config._pyproject_path, caller_cwd)  # noqa: SLF001
-        plan = remote_lock_plan(config, default_parent, caller_cwd)
+        plan = remote_lock_plan(config, config._pyproject_path, caller_cwd)  # noqa: SLF001
         lockfile = plan.canonical_path if plan.active else None
-        _validate_generation_path_conflicts(input_, config.output, config.emit_model_metadata, lockfile)
-        _refuse_uncreatable_paths(config.output, config.emit_model_metadata, lockfile, caller_cwd)
-        if plan.active:
-            config = config.model_copy()
-            from datamodel_code_generator.remote_lock import RemoteReferenceLock  # noqa: PLC0415
+    _refuse_written_path_conflicts(input_, config.output, config.emit_model_metadata, lockfile, caller_cwd)
+    if plan is not None and plan.active:
+        config = config.model_copy()
+        from datamodel_code_generator.remote_lock import RemoteReferenceLock  # noqa: PLC0415
 
-            remote_lock = RemoteReferenceLock.open(
-                plan.canonical_path,
-                update=config.update_lock,
-                locked=config.locked,
-            )
-            config.resolve_remote_lock(remote_lock)
+        remote_lock = RemoteReferenceLock.open(
+            plan.canonical_path,
+            update=config.update_lock,
+            locked=config.locked,
+        )
+        config.resolve_remote_lock(remote_lock)
     return config
 
 
@@ -2225,7 +2175,7 @@ def _prepare_generation_input(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915
                     prefetched_source = (detected_input_path, input_data)
                     input_text_ = input_data.decode(config.encoding)
                 case Path() as input_path:
-                    input_text_ = _read_input_text(get_first_file(input_path), config.encoding, read_once_data)
+                    input_text_ = _input_text(get_first_file(input_path), config.encoding, read_once_data)
                 case [Path(), *_] as input_paths:
                     detected_input_path = get_first_file(input_paths[0])
                     input_data = detected_input_path.read_bytes()
@@ -2355,36 +2305,26 @@ def _parse_again(  # noqa: PLR0913, PLR0917
     source_override: Mapping[str, Any] | None,
     dataclass_arguments: DataclassArguments,
     schema_versions: _SchemaVersions,
-    diagnostic_source_path: Path | None,
     config: GenerateConfig,
     extra_template_data: defaultdict[str, dict[str, Any]] | None,
     caches: tuple[DefaultPutDict[str, str], Any | None, Path],
+    run_context: ParserRunContext,
     *,
     skip_root_model: bool,
-    prefetched_source: tuple[Path, bytes] | None,
-    formatter_cwd: Path | None,
-    preserve_circular_root_models: bool,
     parser_settings_path: Path | None,
     collect_model_metadata: bool,
     capture: GenerationCaptureSession[object] | None,
     openapi_parser_factory: OpenAPIParserFactory | None,
-    model_name_keys: ModelNameKeys | None,
-    records_model_names: bool,
-    untyped_nullable_maps: bool = True,
-    yielding_names: tuple[tuple[str, tuple[str, str | None]], ...] = (),
-    document_roles: DocumentRoles = (),
-    import_cycle_seeds: ImportCycleSeeds | None = None,
     ignored_warnings: type[Warning] | None = Warning,
     collapse_retry: bool = False,
-    final_name_keys: tuple[tuple[str, tuple[str, ...]], ...] = (),
-    planned_names: tuple[tuple[str, tuple[str, str | None]], ...] = (),
 ) -> tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]:
     """Parse once more with a fresh parser that reuses the first parse's ``caches`` of documents and base path.
 
-    By default the values of nullable maps are untyped as earlier releases did, or typed under given names. The values
-    of nullable maps get models that give their names to every other model. Options keyed by class name are looked up
-    while models are created, so a run whose map value models end under other names, which such options name, is
-    parsed again with those models named as they end; one whose models renamed after L2 end under names such keys
+    ``run_context`` holds the settings of the run, each reparse replacing those it sets. The values of nullable maps
+    are untyped as earlier releases did (``untyped_nullable_maps``), or typed under given names (``yielding_names``).
+    The values of nullable maps get models that give their names to every other model. Options keyed by class name are
+    looked up while models are created, so a run whose map value models end under other names, which such options name,
+    is parsed again with those models named as they end; one whose models renamed after L2 end under names such keys
     name is parsed again with those names as further names of their paths (``final_name_keys``), and one whose naming
     plan renamed a model such keys name, by either name, with every reference named as it ended (``planned_names``).
 
@@ -2397,11 +2337,14 @@ def _parse_again(  # noqa: PLR0913, PLR0917
     with such roles that fails after recording more of them parses once more with every role, until none is new.
     ``import_cycle_seeds`` lays out otherwise what an earlier attempt found to fail as its output is imported.
     """
+    from dataclasses import replace  # noqa: PLC0415
+
+    run_context = replace(run_context, suppress_parse_warnings=True)
     remote_text_cache, reference_cache, base_path = caches
     with contextlib.nullcontext() if ignored_warnings is None else quiet(ignored_warnings):
         while True:
             data_model_types, parser_source, defer_formatting, parser_options, python_type_expressions = (
-                _prepare_parser_common_options(
+                _reparse_inputs(
                     input_,
                     input_text,
                     input_file_type,
@@ -2411,9 +2354,9 @@ def _parse_again(  # noqa: PLR0913, PLR0917
                     dataclass_arguments,
                     skip_root_model=skip_root_model,
                     remote_text_cache=remote_text_cache,
+                    base_path=base_path,
                 )
             )
-            parser_options["base_path"] = base_path
             parser = _build_generation_parser(
                 input_,
                 input_file_type,
@@ -2422,22 +2365,10 @@ def _parse_again(  # noqa: PLR0913, PLR0917
                 parser_options,
                 data_model_types,
                 schema_versions,
-                diagnostic_source_path,
-                prefetched_source=prefetched_source,
-                formatter_cwd=formatter_cwd,
-                preserve_circular_root_models=preserve_circular_root_models,
-                suppress_parse_warnings=True,
-                untyped_nullable_maps=untyped_nullable_maps,
-                yielding_names=yielding_names,
-                document_roles=document_roles,
-                import_cycle_seeds=import_cycle_seeds,
+                run_context,
                 reference_cache=reference_cache,
                 python_type_expressions=python_type_expressions,
                 openapi_parser_factory=openapi_parser_factory,
-                model_name_keys=model_name_keys,
-                records_model_names=records_model_names,
-                final_name_keys=final_name_keys,
-                planned_names=planned_names,
             )
             try:
                 results = (_parse_collapse_root_models_retry if collapse_retry else _parse_with_disposal)(
@@ -2450,43 +2381,67 @@ def _parse_again(  # noqa: PLR0913, PLR0917
                 )
                 break
             except Error:
-                if not document_roles or not (recorded := parser.document_roles_to_seed):
+                if not run_context.document_roles or not (recorded := parser.document_roles_to_seed):
                     raise
-                document_roles = recorded
+                run_context = replace(run_context, document_roles=recorded)
     return parser, results, data_model_types, defer_formatting, extra_template_data
+
+
+def _reparse_inputs(  # noqa: PLR0913, PLR0917
+    input_: _GenerationInput,
+    input_text: str | None,
+    input_file_type: InputFileType,
+    source_override: Mapping[str, Any] | None,
+    config: GenerateConfig,
+    extra_template_data: defaultdict[str, dict[str, Any]] | None,
+    dataclass_arguments: DataclassArguments,
+    *,
+    skip_root_model: bool,
+    remote_text_cache: DefaultPutDict[str, str],
+    base_path: Path | None,
+) -> _PreparedParser:
+    """Prepare the parser inputs of a config for a parse that reuses another's remote text cache and base path."""
+    prepared = _prepare_parser_common_options(
+        input_,
+        input_text,
+        input_file_type,
+        source_override,
+        config,
+        extra_template_data,
+        dataclass_arguments,
+        skip_root_model=skip_root_model,
+        remote_text_cache=remote_text_cache,
+    )
+    prepared[3]["base_path"] = base_path
+    return prepared
 
 
 def _parse_with_document_roles(
     parse_again: Callable[..., tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]],
     config: GenerateConfig,
     caches: tuple[DefaultPutDict[str, str], Any | None, Path],
-    document_roles: DocumentRoles,
+    run_context: ParserRunContext,
 ) -> tuple[Any, _ParserResults, DataModelSet, bool, defaultdict[str, dict[str, Any]] | None]:
     """Parse again a run that failed after references held documents it had prepared as objects of other roles.
 
     Such a document was prepared without the schemas its new role holds, so a reference to one failed; the parse starts
     with every role the failed attempt recorded (``hold_document_root``). Its warnings are shown once: the parse
     reports none of the parse warnings the failed attempt reported, and every later one. A collapse of root models
-    that needs its circular-reference fallback parses through that retry with the same roles.
+    that needs its circular-reference fallback parses through that retry with the same roles. ``run_context`` holds
+    the roles.
     """
+    from dataclasses import replace  # noqa: PLC0415
+
     try:
         return parse_again(
-            config,
-            _prepare_generation_extra_template_data(config),
-            caches,
-            preserve_circular_root_models=False,
-            untyped_nullable_maps=False,
-            document_roles=document_roles,
-            ignored_warnings=None,
+            config, _prepare_generation_extra_template_data(config), caches, run_context, ignored_warnings=None
         )
     except _CollapseRootModelsRecursionError:
         return parse_again(
             config,
             _prepare_generation_extra_template_data(config),
             caches,
-            preserve_circular_root_models=True,
-            untyped_nullable_maps=False,
-            document_roles=document_roles,
+            replace(run_context, preserve_circular_root_models=True),
             ignored_warnings=None,
             collapse_retry=True,
         )
@@ -2514,20 +2469,17 @@ def _parse_with_import_cycle_seeds(
     --rename-submodules-hidden-by-classes keeps while it seeds a parse again) raises it once every parse is disposed,
     the parsers that the caller replaces by this run (``replaced``) included.
     """
+    from dataclasses import replace  # noqa: PLC0415
+
     attempts = [parsed]
     with contextlib.suppress(Exception):
         while (seeds := (parser := attempts[-1][0]).import_cycle_seeds_to_apply) is not None:
-            context = parser.run_context
             attempts.append(
                 parse_again(
                     config,
                     _prepare_generation_extra_template_data(config),
                     _reparse_caches(parser),
-                    preserve_circular_root_models=context.preserve_circular_root_models,
-                    untyped_nullable_maps=context.untyped_nullable_maps,
-                    yielding_names=context.yielding_names,
-                    document_roles=context.document_roles,
-                    import_cycle_seeds=seeds,
+                    replace(parser.run_context, import_cycle_seeds=seeds),
                 )
             )
     kept = attempts[0] if attempts[-1][0].fails_to_import else attempts[-1]
@@ -2635,22 +2587,18 @@ def _parse_generation(  # noqa: PLR0913, PLR0917
             update={"model_name_map": {key: value for key, value in model_name_map.items() if key not in class_keys}}
         )
         record_template_data = _prepare_generation_extra_template_data(without_class_keys)
-        record_types, record_source, record_defer_formatting, record_options, record_expressions = (
-            _prepare_parser_common_options(
-                input_,
-                input_text,
-                input_file_type,
-                source_override,
-                without_class_keys,
-                record_template_data,
-                dataclass_arguments,
-                skip_root_model=skip_root_model,
-                remote_text_cache=DefaultPutDict()
-                if (cache := parser_options.get("remote_text_cache")) is None
-                else cache,
-            )
+        record_types, record_source, record_defer_formatting, record_options, record_expressions = _reparse_inputs(
+            input_,
+            input_text,
+            input_file_type,
+            source_override,
+            without_class_keys,
+            record_template_data,
+            dataclass_arguments,
+            skip_root_model=skip_root_model,
+            remote_text_cache=DefaultPutDict() if (cache := parser_options.get("remote_text_cache")) is None else cache,
+            base_path=parser_options["base_path"],
         )
-        record_options["base_path"] = parser_options["base_path"]
         try:
             with quiet(), unmatched_model_name_keys_unreported():
                 _, record = run(
@@ -2707,7 +2655,27 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
     model_name_keys: ModelNameKeys | None = None,
     records_model_names: bool = False,
 ) -> tuple[_ParsedGeneration, ModelNameRecord | None]:
-    """Parse one generation run, applying ``model_name_keys`` or recording what it names (``records_model_names``)."""
+    """Parse one generation run, applying ``model_name_keys`` or recording what it names (``records_model_names``).
+
+    The run's settings are one ``ParserRunContext``; each parse again replaces the settings it changes in the context of
+    the parse before it.
+    """
+    from dataclasses import replace  # noqa: PLC0415
+    from functools import partial  # noqa: PLC0415
+
+    from datamodel_code_generator.parser.base import (  # noqa: PLC0415
+        ParserRunContext,
+        pydantic_floors_recorded,
+        settle_diagnostics_reported_once,
+    )
+
+    run_context = ParserRunContext(
+        diagnostic_source_path=diagnostic_source_path,
+        prefetched_source=prefetched_source,
+        formatter_cwd=None if use_output_cwd else output_context_path,
+        model_name_keys=model_name_keys,
+        records_model_names=records_model_names,
+    )
     # Phase 3: build before chdir so initial reference resolution keeps the caller's cwd.
     parser = _build_generation_parser(
         input_,
@@ -2717,21 +2685,10 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
         parser_options,
         data_model_types,
         schema_versions,
-        diagnostic_source_path,
-        prefetched_source=prefetched_source,
-        formatter_cwd=None if use_output_cwd else output_context_path,
+        run_context,
         python_type_expressions=python_type_expressions,
         openapi_parser_factory=openapi_parser_factory,
-        model_name_keys=model_name_keys,
-        records_model_names=records_model_names,
     )
-    from functools import partial  # noqa: PLC0415
-
-    from datamodel_code_generator.parser.base import (  # noqa: PLC0415
-        pydantic_floors_recorded,
-        settle_diagnostics_reported_once,
-    )
-
     parse_again = partial(
         _parse_again,
         input_,
@@ -2740,16 +2697,11 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
         source_override,
         dataclass_arguments,
         schema_versions,
-        diagnostic_source_path,
         skip_root_model=skip_root_model,
-        prefetched_source=prefetched_source,
-        formatter_cwd=None if use_output_cwd else output_context_path,
         parser_settings_path=parser_settings_path,
         collect_model_metadata=collect_model_metadata,
         capture=capture,
         openapi_parser_factory=openapi_parser_factory,
-        model_name_keys=model_name_keys,
-        records_model_names=records_model_names,
     )
     # Phase 4: initial parse, disposal, and the complete retry flow share the output cwd.
     with (  # noqa: PLR1702
@@ -2773,8 +2725,7 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
                 config,
                 _prepare_generation_extra_template_data(config),
                 caches,
-                preserve_circular_root_models=True,
-                untyped_nullable_maps=False,
+                replace(run_context, preserve_circular_root_models=True, untyped_nullable_maps=False),
                 ignored_warnings=None,
                 collapse_retry=True,
             )
@@ -2784,54 +2735,36 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
             caches = _reparse_caches(parser)
             del parser
             parser, results, data_model_types, defer_formatting, extra_template_data = _parse_with_document_roles(
-                parse_again, config, caches, document_roles
+                parse_again,
+                config,
+                caches,
+                replace(run_context, untyped_nullable_maps=False, document_roles=document_roles),
             )
         if yielding_names := parser.yielding_names_to_assign:
             caches = _reparse_caches(parser)
-            preserve_circular_root_models = parser.run_context.preserve_circular_root_models
-            document_roles = parser.run_context.document_roles
+            context = replace(parser.run_context, untyped_nullable_maps=False, yielding_names=yielding_names)
             _dispose_capture_parser(parser, capture, discard=True)
             del parser
             parser, results, data_model_types, defer_formatting, extra_template_data = parse_again(
-                config,
-                _prepare_generation_extra_template_data(config),
-                caches,
-                preserve_circular_root_models=preserve_circular_root_models,
-                untyped_nullable_maps=False,
-                yielding_names=yielding_names,
-                document_roles=document_roles,
+                config, _prepare_generation_extra_template_data(config), caches, context
             )
         if planned_names := parser.planned_names_to_assign:
             caches = _reparse_caches(parser)
-            preserve_circular_root_models = parser.run_context.preserve_circular_root_models
-            document_roles = parser.run_context.document_roles
+            context = replace(
+                parser.run_context, untyped_nullable_maps=False, yielding_names=(), planned_names=planned_names
+            )
             _dispose_capture_parser(parser, capture, discard=True)
             del parser
-            parse_again = partial(parse_again, planned_names=planned_names)
             parser, results, data_model_types, defer_formatting, extra_template_data = parse_again(
-                config,
-                _prepare_generation_extra_template_data(config),
-                caches,
-                preserve_circular_root_models=preserve_circular_root_models,
-                untyped_nullable_maps=False,
-                document_roles=document_roles,
+                config, _prepare_generation_extra_template_data(config), caches, context
             )
         if final_name_keys := parser.final_name_keys_to_assign:
             caches = _reparse_caches(parser)
-            preserve_circular_root_models = parser.run_context.preserve_circular_root_models
-            yielding_names = parser.run_context.yielding_names
-            document_roles = parser.run_context.document_roles
+            context = replace(parser.run_context, untyped_nullable_maps=False, final_name_keys=final_name_keys)
             _dispose_capture_parser(parser, capture, discard=True)
             del parser
-            parse_again = partial(parse_again, final_name_keys=final_name_keys)
             parser, results, data_model_types, defer_formatting, extra_template_data = parse_again(
-                config,
-                _prepare_generation_extra_template_data(config),
-                caches,
-                preserve_circular_root_models=preserve_circular_root_models,
-                untyped_nullable_maps=False,
-                yielding_names=yielding_names,
-                document_roles=document_roles,
+                config, _prepare_generation_extra_template_data(config), caches, context
             )
         parser, results, data_model_types, defer_formatting, extra_template_data = _parse_with_import_cycle_seeds(
             parse_again, config, (parser, results, data_model_types, defer_formatting, extra_template_data), capture
@@ -2843,9 +2776,7 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
                     config,
                     _prepare_generation_extra_template_data(config),
                     _reparse_caches(parser),
-                    preserve_circular_root_models=parser.run_context.preserve_circular_root_models,
-                    document_roles=parser.run_context.document_roles,
-                    import_cycle_seeds=parser.run_context.import_cycle_seeds,
+                    replace(parser.run_context, untyped_nullable_maps=True, yielding_names=()),
                 )
             except BaseException:
                 with contextlib.suppress(BaseException):
@@ -2867,9 +2798,12 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
             legacy_inventory = parser.generated_model_inventory
             legacy_source_fingerprint = parser.source_data_fingerprint
             retry_caches = _reparse_caches(parser)
-            preserve_circular_root_models = parser.run_context.preserve_circular_root_models
-            untyped_nullable_maps = parser.run_context.untyped_nullable_maps or parser.typed_nullable_maps
-            document_roles = parser.run_context.document_roles
+            retry_context = replace(
+                parser.run_context,
+                untyped_nullable_maps=parser.run_context.untyped_nullable_maps or parser.typed_nullable_maps,
+                yielding_names=(),
+                import_cycle_seeds=run_context.import_cycle_seeds,
+            )
         model_name_record = parser.model_resolver.model_name_record
         if capture is None:
             parser.dispose()
@@ -2892,13 +2826,7 @@ def _parse_generation_run(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, PLR0917
             retry_completed = False
             with contextlib.suppress(Exception):
                 retry_parser, retry_results, retry_data_model_types, retry_defer_formatting, _ = parse_again(
-                    retry_config,
-                    extra_template_data,
-                    retry_caches,
-                    preserve_circular_root_models=preserve_circular_root_models,
-                    untyped_nullable_maps=untyped_nullable_maps,
-                    document_roles=document_roles,
-                    ignored_warnings=DanglingRefWarning,
+                    retry_config, extra_template_data, retry_caches, retry_context, ignored_warnings=DanglingRefWarning
                 )
                 retry_completed = True
 

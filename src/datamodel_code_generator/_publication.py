@@ -186,6 +186,12 @@ def staging_directory_for(
     return tempfile.TemporaryDirectory(prefix=".datamodel-codegen-", dir=creation_root(location.parent))
 
 
+STAGED_OUTPUT_NAME = "output"
+"""The name an output without a name of its own is staged under."""
+STAGED_METADATA_NAME = "model-metadata.json"
+"""The name a model metadata file without a name of its own is staged under."""
+
+
 def staged_artifact_path(directory: Path, target: Path, default_name: str, *, make_directory: bool) -> Path:
     """Return where an artifact is staged in a private staging directory, created as an empty directory if asked.
 
@@ -307,7 +313,7 @@ def stage_outputs(
         is_directory = output.is_dir()
         staged, anchor = stage_artifact(
             output,
-            "output",
+            STAGED_OUTPUT_NAME,
             root if is_directory else parent,
             contexts,
             anchors,
@@ -316,7 +322,7 @@ def stage_outputs(
         staged_output = StagedArtifact(staged, output, root, parent, anchor)
     if metadata is not None:
         parent = cast("Path", metadata_parent)
-        staged, anchor = stage_artifact(metadata, "model-metadata.json", parent, contexts, anchors)
+        staged, anchor = stage_artifact(metadata, STAGED_METADATA_NAME, parent, contexts, anchors)
         staged_metadata = StagedArtifact(staged, metadata, parent, parent, anchor)
     return StagedOutputs(staged_output, staged_metadata)
 
@@ -635,6 +641,13 @@ def _restore_backup(backup: Path, target: Path) -> None:
     _replace(backup, target)
 
 
+def _raise_rollback_failure(publish_error: BaseException, failures: list[Path]) -> None:
+    """Raise the OSError a batch publication failed with, naming the paths ``failures`` that it did not roll back."""
+    if failures and isinstance(publish_error, OSError):
+        paths = ", ".join(path.as_posix() for path in failures)
+        raise OSError(f"{publish_error}; failed to roll back batch output: {paths}") from publish_error
+
+
 def _rollback_published_file(published_file: _PublishedFile) -> list[Path]:
     try:
         if published_file.backup is not None:
@@ -833,9 +846,7 @@ def _publish_staged_files_at(files: Sequence[StagedFile]) -> None:  # noqa: PLR0
                 _rmdir(directory.name, dir_fd=directory.parent_fd)
             except OSError:
                 failures.append(directory.path)
-        if failures and isinstance(publish_error, OSError):
-            paths = ", ".join(path.as_posix() for path in failures)
-            raise OSError(f"{publish_error}; failed to roll back batch output: {paths}") from publish_error
+        _raise_rollback_failure(publish_error, failures)
         raise
     else:
         for published_file in journal:
@@ -876,9 +887,7 @@ def _publish_staged_files_by_path(files: Sequence[StagedFile]) -> None:  # pragm
             failures.extend(_rollback_published_file(published_file))
         for directory in reversed(created_directories):
             failures.extend(_remove_created_directory(directory))
-        if failures and isinstance(publish_error, OSError):
-            paths = ", ".join(path.as_posix() for path in failures)
-            raise OSError(f"{publish_error}; failed to roll back batch output: {paths}") from publish_error
+        _raise_rollback_failure(publish_error, failures)
         raise
     for published_file in journal:
         if published_file.backup is not None:

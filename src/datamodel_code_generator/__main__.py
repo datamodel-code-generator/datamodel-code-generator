@@ -136,12 +136,12 @@ from datamodel_code_generator._option_names import (
     field_name,
     hyphenated,
     mapping_argument,
-    option_arguments,
+    option_arguments,  # noqa: F401  # Preserve the established __main__ export.
     option_flag,
     shell_command,
     toml_table,
     toml_text,
-    values_arguments,
+    values_arguments,  # noqa: F401  # Preserve the established __main__ export.
 )
 from datamodel_code_generator._option_names import json_ready as _json_ready
 from datamodel_code_generator._paths import (
@@ -162,6 +162,7 @@ from datamodel_code_generator._project_config import (
     _resolve_relative_paths_from,
     names_profile,
 )
+from datamodel_code_generator._project_config import profile_table_keys as _profile_table_keys
 from datamodel_code_generator._python_syntax import normalize_newlines
 from datamodel_code_generator._url_redaction import is_url, redact_url
 from datamodel_code_generator.arguments import _reset_namespace, arg_parser, namespace
@@ -421,9 +422,9 @@ class _StagedJobPlan(NamedTuple):
 
 def _remote_lock_plan(config: Config, pyproject_path: Path | None) -> _RemoteLockPlan:
     """Resolve the project-relative default lock path without importing lock machinery."""
-    from datamodel_code_generator._lock_plan import default_lock_parent, remote_lock_plan  # noqa: PLC0415
+    from datamodel_code_generator._lock_plan import remote_lock_plan  # noqa: PLC0415
 
-    return remote_lock_plan(config, default_lock_parent(pyproject_path))
+    return remote_lock_plan(config, pyproject_path)
 
 
 def _watch_remote_lock_setup(
@@ -1280,7 +1281,7 @@ def _format_cli_value(value: str | list[str]) -> str:
 
 def generate_cli_command(config: dict[str, TomlValue]) -> str:
     """Generate CLI command from pyproject.toml configuration."""
-    from datamodel_code_generator.cli_options import _negative_option  # noqa: PLC0415
+    from datamodel_code_generator.cli_options import _option_arguments  # noqa: PLC0415
 
     parts: list[str] = ["datamodel-codegen"]
 
@@ -1291,7 +1292,7 @@ def generate_cli_command(config: dict[str, TomlValue]) -> str:
             if argument := mapping_argument(key, value):
                 parts.extend((option_flag(key), argument))
             continue
-        match option_arguments(key, value, negative=_negative_option):
+        match _option_arguments(key, value):
             case [option, *items] if items and isinstance(value, list | tuple):
                 parts.extend((option, _format_cli_value(items)))
             case [option, *items]:
@@ -1416,9 +1417,9 @@ def _invalid_class_name_message(error: InvalidClassNameError, args: Namespace, c
 
 def _cli_arguments(config: Mapping[str, TomlValue]) -> list[str]:
     """Return the CLI arguments for configuration values keyed by field name, as an argument list."""
-    from datamodel_code_generator.cli_options import _negative_option  # noqa: PLC0415
+    from datamodel_code_generator.cli_options import _values_arguments  # noqa: PLC0415
 
-    return [str(argument) for argument in values_arguments(sorted(config.items()), negative=_negative_option)]
+    return [str(argument) for argument in _values_arguments(sorted(config.items()))]
 
 
 def _recommend_lock_observer(config: Config, pyproject_path: Path | None) -> Any:
@@ -1729,9 +1730,9 @@ def _target_lockfile(config: Config, pyproject_path: Path | None) -> Path | None
     The default lock file sits next to pyproject.toml or in the working directory, so it reaches the target only
     while a policy uses it: an update, a locked run, or an existing file to verify.
     """
-    from datamodel_code_generator._lock_plan import default_lock_parent, models_lockfile  # noqa: PLC0415
+    from datamodel_code_generator._lock_plan import models_lockfile  # noqa: PLC0415
 
-    return models_lockfile(config, default_lock_parent(pyproject_path))
+    return models_lockfile(config, pyproject_path)
 
 
 def _target_settings(config: Config, args: Sequence[str], lockfile: Path | None) -> GenerateConfig:
@@ -2696,7 +2697,7 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
             cli_config_args,
             pyproject_path,
             selector=("--profile", namespace.profile) if names_profile(namespace.profile) else (),
-            table=config_table("profiles", namespace.profile) if names_profile(namespace.profile) else CONFIG_TABLE,
+            table=config_table(*_profile_table_keys(namespace.profile)),
         )
 
     _imply_remote_refs(config)
@@ -2823,22 +2824,9 @@ def _main(  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
     try:
         input_: Path | str | ParseResult | Mapping[str, Any]
         if config.input_model:
-            from datamodel_code_generator.input_model import Error as InputModelError  # noqa: PLC0415
-            from datamodel_code_generator.input_model import (  # noqa: PLC0415
-                _load_model_schema_with_python_type_expressions,
-            )
+            from datamodel_code_generator.input_model import _load_config_input_model  # noqa: PLC0415
 
-            try:
-                input_ = _load_model_schema_with_python_type_expressions(
-                    config.input_model,
-                    config.input_file_type,
-                    config.input_model_ref_strategy,
-                    config.output_model_type,
-                    read_dataclass_fields_by_alias=config.read_input_model_dataclass_fields_by_alias,
-                    reuse_every_reached_type=config.reuse_every_reached_input_model_type,
-                )
-            except InputModelError as e:
-                raise Error(str(e)) from e
+            input_ = _load_config_input_model(config)
             if config.input_file_type == InputFileType.Auto:
                 config.input_file_type = InputFileType.JsonSchema
         else:

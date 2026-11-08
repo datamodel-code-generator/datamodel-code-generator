@@ -47,6 +47,7 @@ from datamodel_code_generator.parser.openapi import (
     OpenAPIParser,
     ParameterLocation,
     ReferenceObject,
+    _DiscriminatorScan,
     _mapping,
     _missing_operation_id,
     _parameter_array,
@@ -152,6 +153,7 @@ class ApiOpenAPIParser(OpenAPIParser):
     """Collect API schema declarations through the ordinary model engine."""
 
     _supports_api_scope: ClassVar[bool] = True
+    _discriminator_scan: ClassVar[_DiscriminatorScan] = _DiscriminatorScan(canonical_keys=True, string_refs=True)
     _model_resolver_factory = staticmethod(ApiModelResolver)
     model_resolver: ApiModelResolver
 
@@ -412,9 +414,7 @@ class ApiOpenAPIParser(OpenAPIParser):
     @contextmanager
     def _api_object_context(self, target: _ApiObject) -> Generator[None, None, None]:
         """Borrow external declaration context and restore it even after failure."""
-        if target.document is self.raw_obj and target.declaration.document == "/".join(
-            self.model_resolver.current_root
-        ):
+        if target.document is self.raw_obj and target.declaration.document == self.model_resolver.current_document:
             yield
             return
         previous = self.raw_obj
@@ -529,37 +529,10 @@ class ApiOpenAPIParser(OpenAPIParser):
             callback = _mapping(value, path)
             self._walk_callback(callback, path, self._get_model_name(key, "", "Callback"), self._declared(callback))
 
-    def _collect_discriminator_document(self, raw: dict[str, YamlValue]) -> None:
-        """Use the same canonical keys for parent registrations and subtype edges."""
-        document = self.model_resolver.join_path(tuple(self.model_resolver.current_root))
-        if document in self._discriminator_documents:
-            return
-        self._discriminator_documents.add(document)
+    @override
+    def _note_scanned_document(self, document: str, raw: dict[str, YamlValue]) -> None:
+        """Hold a document whose discriminators are collected among the API documents, by its canonical path."""
         self._api_documents[document.partition("#")[0]] = raw
-        self._register_discriminator_schema("#", raw)
-        components = _mapping(raw.get("components", {}), [document, "components"])
-        schemas = _mapping(components.get("schemas", {}), [document, "components", "schemas"])
-        potential: list[tuple[str, dict[str, YamlValue], list[str]]] = []
-        for name, schema in self._named_components(schemas, [document, "components", "schemas"]).items():
-            local_ref = "#" + pointer_fragment(("components", "schemas", name))
-            match schema:
-                case bool():
-                    continue
-                case dict():
-                    self._register_discriminator_schema(local_ref, schema)
-                    if isinstance(all_of := schema.get("allOf"), list):
-                        refs = [
-                            ref
-                            for item in all_of
-                            if isinstance(item, dict) and isinstance(ref := item.get("$ref"), str)
-                        ]
-                        if refs:
-                            potential.append((local_ref, schema, refs))
-                case _:
-                    self._validate_member(
-                        schema, [document, "components", "schemas", name], self._member_location(schemas, name)
-                    )
-        self._link_discriminator_subtypes(document, potential)
 
     def _acquire_schema(
         self, name: str, raw: YamlValue, path: list[str], *, declaration: SchemaLocation, role: SchemaRole

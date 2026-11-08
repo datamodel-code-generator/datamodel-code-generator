@@ -18,10 +18,9 @@ from datamodel_code_generator._option_names import (
     shell_command,
     toml_table,
     toml_text,
-    values_arguments,
 )
 from datamodel_code_generator._paths import names_directory
-from datamodel_code_generator._project_config import names_profile
+from datamodel_code_generator._project_config import profile_table_keys
 from datamodel_code_generator._target_documents import shown
 from datamodel_code_generator.enums import _ExitCode
 from datamodel_code_generator.python_literal import stable_repr
@@ -100,14 +99,14 @@ def _implied_notice(  # noqa: PLR0913, PLR0917
     lead = f"{_target_side(config)[1]} set the options it needs that you left unset; to set them yourself"
     selected = any(getattr(namespace, name, None) is not None for name in ("generate_server", "generate_client"))
     if pyproject is not None and (job or not selected):
-        named = ("jobs", job) if job else ("profiles", namespace.profile) if names_profile(namespace.profile) else ()
+        named = ("jobs", job) if job else profile_table_keys(namespace.profile)
         table = toml_table(config_table(*named), "legacy-ascii-table-keys")
         lines = (f"  {key} = {toml_text(data)}" for key, data in hyphenated(values).items())
         where = os.path.relpath(pyproject, Path.cwd())
         return "\n".join((f"{lead}, add to {table} of {Path(where).as_posix()}:", *lines))
-    from datamodel_code_generator.cli_options import _negative_option  # noqa: PLC0415
+    from datamodel_code_generator.cli_options import _values_arguments  # noqa: PLC0415
 
-    flags = values_arguments(values.items(), negative=_negative_option)
+    flags = _values_arguments(values.items())
     stdin = "" if config.input or config.url else " (with the same input on stdin)"
     return f"{lead}, run{stdin}:\n  {shell_command((*args, *flags))}"
 

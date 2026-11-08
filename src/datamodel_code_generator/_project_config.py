@@ -31,6 +31,11 @@ def names_profile(name: str | None) -> TypeGuard[str]:
     return bool(name)
 
 
+def profile_table_keys(name: str | None) -> tuple[str, ...]:
+    """Return the keys of the table a profile selection names below the settings table: none if it names no profile."""
+    return ("profiles", name) if names_profile(name) else ()
+
+
 def _resolve_profile_extends(
     profiles: Mapping[str, Any],
     profile_name: str,
