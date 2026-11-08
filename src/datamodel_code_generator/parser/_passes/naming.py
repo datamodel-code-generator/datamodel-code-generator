@@ -9,7 +9,7 @@ the claims L1 recorded (``NameClaim``) and gives the planned names through ``Gen
 
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, deque
 from typing import TYPE_CHECKING, Any, cast
 
 from typing_extensions import Protocol
@@ -78,9 +78,9 @@ def _claimed_references(results: Sequence[DataModel]) -> list[Any]:
     """
     references: list[Any] = [model.reference for model in results]
     seen = {model_key_of(reference) for reference in references}
-    pending = list(references)
+    pending = deque(references)
     while pending:
-        if (record := build_record_of(reference := pending.pop(0))) is None:
+        if (record := build_record_of(reference := pending.popleft())) is None:
             continue
         claim = record.claim_for(reference)
         for other in (record.owner, claim.base if isinstance(claim, Composed) else None):
