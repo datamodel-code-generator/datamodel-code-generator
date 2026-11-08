@@ -25,6 +25,7 @@ This page lists features that are available but still experimental.
 | `input-format.mcp-tools` | input-format | `--input-file-type mcp-tools` | 0.60.0 | - |
 | `input-format.protobuf` | input-format | `--input-file-type protobuf` | 0.59.0 | - |
 | `input-format.xmlschema` | input-format | `--input-file-type xmlschema` | 0.59.0 | - |
+| `python-api.generate-dynamic-module` | python-api | `generate_dynamic_module(), DynamicModule, and register_module=True` | 0.91.1 | - |
 
 ## Details
 
@@ -217,3 +218,13 @@ The parser generates Python models from .proto schemas; it does not provide prot
 XML Schema input support is experimental and may change as real-world usage is validated.
 
 The parser focuses on model generation from XSD documents, not full XML instance validation.
+
+### `python-api.generate-dynamic-module`
+
+- **Kind:** python-api
+- **Target:** `generate_dynamic_module(), DynamicModule, and register_module=True`
+- **Since:** 0.91.1
+
+Dynamic module generation is experimental; its parameters, the DynamicModule attributes, the schema locations it keys classes by, and the module registration rules may change.
+
+generate_dynamic_module() generates the classes like generate_dynamic_models() and also returns the class of the document itself and the class of each schema location. With register_module=True, it keeps the module of the classes registered in sys.modules, so that the classes and their instances pickle. generate_dynamic_models() is not experimental.

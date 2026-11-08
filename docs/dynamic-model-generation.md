@@ -69,6 +69,12 @@ def generate_dynamic_models(
 
 ### `generate_dynamic_module()`
 
+!!! warning "Experimental"
+
+    `generate_dynamic_module()`, `DynamicModule` and `register_module=True` are experimental. Their parameters,
+    attributes and registration rules may change. See [Experimental Features](experimental.md).
+    `generate_dynamic_models()` is not experimental.
+
 ```python
 def generate_dynamic_module(
     input_: Mapping[str, Any],
@@ -275,6 +281,12 @@ tree = Node(
 ```
 
 ## Root Class and Schema Locations
+
+!!! warning "Experimental"
+
+    `generate_dynamic_module()`, `DynamicModule` and `register_module=True` are experimental. Their parameters,
+    attributes and registration rules may change. See [Experimental Features](experimental.md).
+    `generate_dynamic_models()` is not experimental.
 
 `generate_dynamic_module()` finds the class of the document itself and the class of each schema location, so you
 need not guess them from titles or class names:
