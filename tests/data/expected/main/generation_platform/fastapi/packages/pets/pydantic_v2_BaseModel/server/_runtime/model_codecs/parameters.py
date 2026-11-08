@@ -151,7 +151,8 @@ def _reversible(plan: ParameterPlan, shape: ValueShape | None = None) -> bool:
             return values == "object" and plan.explode
         case _, "array" | "object", False:
             return plan.location != "cookie"
-    return True
+        case _:
+            return True
 
 
 def _item(plan: ParameterPlan) -> ParameterPlan:
