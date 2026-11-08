@@ -2555,6 +2555,19 @@
   "multipart-union-parts-errors": {
     "input": "multipart-union-parts-errors.yaml"
   },
+  "query-free-objects": {
+    "input": "query-free-objects.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
   "binary-json-bodies": {
     "input": "binary-json-bodies.yaml",
     "backends": [

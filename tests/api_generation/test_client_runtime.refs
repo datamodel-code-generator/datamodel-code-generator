@@ -109,6 +109,7 @@ polling-resume	main/generation_platform/client/runtime/polling-resume.txt
 protocol-contracts	main/generation_platform/client/runtime/protocol-contracts.txt
 protocol-errors	main/generation_platform/client/runtime/protocol-errors.txt
 query	main/generation_platform/client/runtime/query.txt
+query-free-objects	main/generation_platform/client/runtime/query-free-objects.txt
 querystring	main/generation_platform/client/runtime/querystring.txt
 raw	main/generation_platform/client/runtime/raw.txt
 redirect-head	main/generation_platform/client/runtime/redirect-head.txt

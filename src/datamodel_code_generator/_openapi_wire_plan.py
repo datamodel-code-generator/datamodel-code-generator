@@ -653,14 +653,24 @@ def _parameters(planner: _WirePlanner, operation: OperationContract) -> tuple[Pa
         for declaration in declarations
         if (plan := _planned(planner, operation.id, declaration, names, written=planner.writes)) is not None
     ]
-    planner.diagnostics.extend(parameter_collisions(operation, plans, auth))
+    planner.diagnostics.extend(parameter_collisions(operation, plans, auth, writes=planner.writes))
     return tuple(_reserving(plan, plans) for plan in plans)
 
 
 def parameter_collisions(
-    operation: OperationContract, plans: Sequence[ParameterPlan], auth: Sequence[tuple[object, str]]
+    operation: OperationContract,
+    plans: Sequence[ParameterPlan],
+    auth: Sequence[tuple[object, str]],
+    *,
+    writes: bool,
 ) -> tuple[CodecDiagnostic, ...]:
-    """Report each location whose expanded parameter names or the `auth` apiKey names collide."""
+    """Report each location whose expanded parameter names or the `auth` apiKey names collide.
+
+    Names that two parameters always write, as their declarations name them, collide wherever they are read or
+    written. Each exploded object that takes other properties writes the pairs of its own members, so several of them,
+    or one beside a `deepObject`, collide only when the names they take are read back, which no pair tells apart:
+    parameters that are only written (`writes`) keep them.
+    """
     found: list[CodecDiagnostic] = []
     for location in API_KEY_LOCATIONS.values():
         claimed = [
@@ -668,7 +678,9 @@ def parameter_collisions(
             *{parameter_key(location, name)[1] for kind, name in auth if kind == location},
         ]
         absorbing = [
-            plan for plan in plans if plan.location == location and plan.additional is not None and _spread(plan)
+            plan
+            for plan in plans
+            if not writes and plan.location == location and plan.additional is not None and _spread(plan)
         ]
         if (
             len(set(claimed)) != len(claimed)
