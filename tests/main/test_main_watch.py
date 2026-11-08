@@ -920,6 +920,40 @@ def test_watch_cli_regenerates_file_output_on_change(tmp_path: Path) -> None:
         _stop_watch_cli(process, stdout_thread, stderr_thread)
 
 
+@pytest.mark.skipif(
+    os.name == "nt" or os.geteuid() == 0,
+    reason="removing every permission denies reading only to an unprivileged POSIX user",
+)
+def test_watch_cli_keeps_watching_beside_an_unreadable_directory(tmp_path: Path) -> None:
+    """A directory the user cannot read beside the watched files does not stop watch mode."""
+    input_file = tmp_path / "schema.json"
+    output_file = tmp_path / "output.py"
+    unreadable_directory = tmp_path / "pgdata"
+    input_file.write_text(WATCH_SCHEMA_INITIAL, encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text("[tool.datamodel-codegen]\n", encoding="utf-8")
+    unreadable_directory.mkdir()
+    unreadable_directory.chmod(0)
+    try:
+        process, stdout_lines, stderr_lines, stdout_thread, stderr_thread = _start_watch_cli_until_ready(
+            input_file, output_file, working_directory=tmp_path
+        )
+        try:
+            _write_watch_cli_input_and_wait(
+                process,
+                stdout_lines,
+                stderr_lines,
+                input_file,
+                WATCH_SCHEMA_CHANGED,
+                lambda: _file_contains(output_file, "age: int | None = None"),
+                "file output to be regenerated",
+            )
+            assert_output(output_file.read_text(encoding="utf-8"))
+        finally:
+            _stop_watch_cli(process, stdout_thread, stderr_thread)
+    finally:
+        unreadable_directory.chmod(0o700)
+
+
 @pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later")
 def test_watch_cli_regenerates_server_on_change(tmp_path: Path) -> None:
     """Regenerate the models and the server package of a single run whenever its input changes."""

@@ -28,6 +28,8 @@ unchanged-roots	main/watch_file_initial.py
 [test_watch_cli_keeps_input_changes_during_generation]
 	main/watch_file_change.py
 	main/watch_file_initial.py
+[test_watch_cli_keeps_watching_beside_an_unreadable_directory]
+	main/main_watch/watch_cli_keeps_watching_beside_an_unreadable_directory.txt
 [test_watch_cli_locked_lock_recovery_after_external_deletion]
 	http/remote_lock_nested.py
 [test_watch_cli_naming_hint]
