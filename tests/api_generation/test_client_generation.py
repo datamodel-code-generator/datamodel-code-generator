@@ -204,6 +204,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "binary-json-bodies",
         "multipart-union-parts",
         "multipart-union-parts-errors",
+        "query-free-objects",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:

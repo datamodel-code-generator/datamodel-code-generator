@@ -328,6 +328,9 @@ polling-plans	main/generation_platform/client/packages/polling-plans/msgspec_Str
 polling-plans	main/generation_platform/client/packages/polling-plans/pydantic_v2_dataclass//*.py
 polling-plans	main/generation_platform/client/packages/polling-plans/typing_TypedDict//*.py
 polling-plans	main/generation_platform/client/polling-plans.txt
+query-free-objects	main/generation_platform/client/packages/query-free-objects/msgspec_Struct//*.py	= main/generation_platform/client/packages/query-free-objects/pydantic_v2_BaseModel//*.py
+query-free-objects	main/generation_platform/client/packages/query-free-objects/pydantic_v2_BaseModel//*.py
+query-free-objects	main/generation_platform/client/query-free-objects.txt
 querystring	main/generation_platform/client/packages/querystring/pydantic_v2_BaseModel//*.py
 querystring	main/generation_platform/client/querystring.txt
 querystring-targets	main/generation_platform/client/packages/querystring-targets/pydantic_v2_BaseModel//*.py

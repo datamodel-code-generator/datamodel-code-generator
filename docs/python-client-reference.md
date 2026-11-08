@@ -845,7 +845,10 @@ reason `unencodable` before sending; OpenAPI 3.0 ignores them for `multipart/for
 one without them, in its `contentType`. Generation stops for a form whose exploded object that allows other properties
 shares the form with another such member, a `deepObject` member, or other properties of its own that its schema allows
 with `additionalProperties` as `true` or a schema, or that its Pydantic model keeps by its configuration, such as
-`--extra-fields allow`, which would write the same names, as it does for query parameters.
+`--extra-fields allow`, which would write the same names. An operation's query parameters are only written, so they
+may hold several exploded objects that allow other properties: each writes the pairs of
+its own members, and a call that gives two of them the same name sends both pairs, as the style writes them. Names that
+two query parameters always write, as their declarations name them, still leave the operation out.
 The SDK does not check parts against the schema. A part header HTTPX2 refuses, and a part that is not
 a `FieldPart` or a `FilePart` with a string name, raises a request `DecodeError` with the reason `unencodable` before
 sending. A body whose parts are all bytes is encoded once, with `Content-Length`; a body without parts, which HTTPX2

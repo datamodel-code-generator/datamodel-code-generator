@@ -87,3 +87,20 @@ def item_or_array(package: ModuleType, lines: list[str]) -> None:
             exchange.respond(raw_response(204))
             record(lines, label, lambda arguments=arguments: api.default.list_advisories(**arguments))
         record(lines, "empty path array", lambda: api.default.list_advisories(ids=[]))
+
+
+def free_objects(package: ModuleType, lines: list[str]) -> None:
+    """Write several exploded query objects that take other properties, each as the pairs of its members."""
+    exchange = Exchange(lines)
+    with exchange.client() as http, package.Client(http_client=http) as api:
+        arguments = {
+            name: argument(package, "listApps", "query", name, wire)
+            for name, wire in (
+                ("per_page", 2),
+                ("sort_by", {"name": "asc", "created": "desc"}),
+                ("filter", {"app_type": "sso", "owner": "files"}),
+            )
+        }
+        exchange.respond(raw_response(204), raw_response(204))
+        record(lines, "objects", lambda: api.default.list_apps(**arguments))
+        record(lines, "one object", lambda: api.default.list_apps(sort_by=arguments["sort_by"]))
