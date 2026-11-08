@@ -1,0 +1,48 @@
+# auth-shared-wire pydantic_v2.BaseModel
+credentials ('implicit',)
+  > GET https://api.example.com/flows
+    [host: api.example.com, accept-encoding: gzip, deflate, authorization: Bearer token-secret] b''
+  flows = None
+  keyed flows ! ConfigurationError: ConfigurationError(operation_id='keyedFlows', reason='missing_credentials', field_path='auth') [operation_id='keyedFlows', field_path=('auth',)] missing_credentials
+  > GET https://api.example.com/keys
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  keys = None
+credentials ('code',)
+  > GET https://api.example.com/flows
+    [host: api.example.com, accept-encoding: gzip, deflate, authorization: Bearer token-secret] b''
+  flows = None
+  keyed flows ! ConfigurationError: ConfigurationError(operation_id='keyedFlows', reason='missing_credentials', field_path='auth') [operation_id='keyedFlows', field_path=('auth',)] missing_credentials
+  > GET https://api.example.com/keys
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  keys = None
+credentials ('implicit', 'code')
+  > GET https://api.example.com/flows
+    [host: api.example.com, accept-encoding: gzip, deflate, authorization: Bearer token-secret] b''
+  flows = None
+  keyed flows ! ConfigurationError: ConfigurationError(operation_id='keyedFlows', reason='missing_credentials', field_path='auth') [operation_id='keyedFlows', field_path=('auth',)] missing_credentials
+  > GET https://api.example.com/keys
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  keys = None
+credentials ('code', 'key')
+  > GET https://api.example.com/flows
+    [host: api.example.com, accept-encoding: gzip, deflate, authorization: Bearer token-secret] b''
+  flows = None
+  > GET https://api.example.com/keyed-flows
+    [host: api.example.com, accept-encoding: gzip, deflate, authorization: Bearer token-secret, x-key: key-secret] b''
+  keyed flows = None
+  > GET https://api.example.com/keys
+    [host: api.example.com, accept-encoding: gzip, deflate, x-key: key-secret] b''
+  keys = None
+credentials ('key_lower',)
+  flows ! ConfigurationError: ConfigurationError(operation_id='flows', reason='missing_credentials', field_path='auth') [operation_id='flows', field_path=('auth',)] missing_credentials
+  keyed flows ! ConfigurationError: ConfigurationError(operation_id='keyedFlows', reason='missing_credentials', field_path='auth') [operation_id='keyedFlows', field_path=('auth',)] missing_credentials
+  > GET https://api.example.com/keys
+    [host: api.example.com, accept-encoding: gzip, deflate, x-key: key-secret] b''
+  keys = None
+credentials ()
+  flows ! ConfigurationError: ConfigurationError(operation_id='flows', reason='missing_credentials', field_path='auth') [operation_id='flows', field_path=('auth',)] missing_credentials
+  keyed flows ! ConfigurationError: ConfigurationError(operation_id='keyedFlows', reason='missing_credentials', field_path='auth') [operation_id='keyedFlows', field_path=('auth',)] missing_credentials
+  > GET https://api.example.com/keys
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  keys = None
+  unused responders: 7

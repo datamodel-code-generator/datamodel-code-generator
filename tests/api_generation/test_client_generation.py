@@ -57,6 +57,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "version-per-document-root",
         "auth-context",
         "auth-wire-conflicts",
+        "auth-shared-wire",
         "credential-name-errors",
         "pets-unpack",
         "retries",

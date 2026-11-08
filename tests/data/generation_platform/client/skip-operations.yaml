@@ -71,7 +71,7 @@ paths:
 components:
   securitySchemes:
     userAuth: {type: http, scheme: bearer}
-    appAuth: {type: http, scheme: bearer}
+    appAuth: {type: http, scheme: basic}
   schemas:
     Pet:
       type: object

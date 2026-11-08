@@ -23243,7 +23243,7 @@ call that receives it fails with an `APIConnectionError` whose cause is msgspec'
 
 An operation whose own declarations the client cannot support is left out, and the others are generated. Such an
 operation is one that declares a path placeholder without a path parameter, security the client cannot send (an
-unavailable scheme, or two schemes that own the same header in one requirement), a media key that is no media type,
+unavailable scheme, or two schemes of different kinds that own the same header in one requirement), a media key that is no media type,
 a body or parameter no builtin encoding writes, or expanded parameter names that collide. Each left-out operation is
 named in one `UserWarning` with its method, path and operationId, and the reasons it would be refused for:
 

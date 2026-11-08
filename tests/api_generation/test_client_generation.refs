@@ -129,6 +129,8 @@ auth-roles	main/generation_platform/client/packages/auth-roles/pydantic_v2_BaseM
 auth-roles-30	main/generation_platform/client/auth-roles-30.txt
 auth-roles-30-read-as-31	main/generation_platform/client/auth-roles-30-read-as-31.txt
 auth-roles-30-read-as-31	main/generation_platform/client/packages/auth-roles-30-read-as-31/pydantic_v2_BaseModel//*.py
+auth-shared-wire	main/generation_platform/client/auth-shared-wire.txt
+auth-shared-wire	main/generation_platform/client/packages/auth-shared-wire/pydantic_v2_BaseModel//*.py
 auth-wire-conflicts	main/generation_platform/client/auth-wire-conflicts.txt
 binary-allowed	main/generation_platform/client/binary-allowed.txt
 binary-allowed	main/generation_platform/client/packages/binary-allowed/dataclasses_dataclass//*.py
