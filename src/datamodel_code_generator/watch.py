@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 from datamodel_code_generator._message_text import install_command
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterator
 
     from datamodel_code_generator.__main__ import Config, Exit
     from datamodel_code_generator.watch_dependencies import WatchDependencies
@@ -111,6 +111,18 @@ def _regenerate_after_change(changes: set[tuple[Any, str]] | None, regenerate: C
         print(f"Error: {e}", file=sys.stderr)  # noqa: T201
 
 
+def _watch_stream(watchfiles: Any, watch_roots: tuple[Path, ...], **options: Any) -> Iterator[set[tuple[Any, str]]]:
+    """Yield the change batches of a watcher on ``watch_roots``.
+
+    A watcher that cannot start because a directory below a root is unreadable starts again skipping such directories.
+    Only then: skipping also silences the ``FileNotFoundError`` of a root that vanished before the watcher started.
+    """
+    try:
+        yield from watchfiles.watch(*watch_roots, **options)
+    except PermissionError:
+        yield from watchfiles.watch(*watch_roots, ignore_permission_denied=True, **options)
+
+
 def _watch_changes(
     context: _WatchContext,
     watch_roots: tuple[Path, ...],
@@ -124,8 +136,9 @@ def _watch_changes(
     poll_delay_ms = min(300, debounce_ms)
     pending_polling_fallback = False
     try:
-        for changes in context.watchfiles.watch(
-            *watch_roots,
+        for changes in _watch_stream(
+            context.watchfiles,
+            watch_roots,
             debounce=debounce_ms,
             step=debounce_ms,
             force_polling=force_polling,
