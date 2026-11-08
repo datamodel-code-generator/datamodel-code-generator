@@ -9,9 +9,9 @@ import warnings
 from copy import deepcopy
 from functools import lru_cache
 from io import BytesIO
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, TypeVar
 
-from typing_extensions import Sentinel
+from typing_extensions import Sentinel, override
 
 from datamodel_code_generator.deprecations import warn_deprecated
 
@@ -21,6 +21,8 @@ if TYPE_CHECKING:
     from types import ModuleType
 
     from datamodel_code_generator._format_types import PythonVersion
+
+_T = TypeVar("_T")
 
 
 @lru_cache(maxsize=1)
@@ -78,6 +80,10 @@ _YAML_DEPRECATED_BOOL_WARNING_MODULE = "datamodel_code_generator"
 _YAML_UNSUPPORTED_TAGS = {"tag:yaml.org,2002:set"}
 _YAML_UNSUPPORTED_TAG_MARKERS = ("!!set", "tag:yaml.org,2002:set")
 _YAML_TAG_DIRECTIVE_PATTERN = re.compile(r"(?m)^%TAG(?:\s|$)")
+_YAML_LINE_BREAKS = "\r\n\x85\u2028\u2029"
+_YAML_LINE_ENDS = f"\0{_YAML_LINE_BREAKS}"
+_YAML_BLANKS = " \t"
+_YAML_TOKEN_ENDS = f"\0{_YAML_BLANKS}{_YAML_LINE_BREAKS}"
 # Pattern for scientific notation without decimal point (e.g., 1e-5, 1E+10)
 # Standard YAML only matches floats with decimal points, missing patterns like "1e-5"
 _YAML_SCIENTIFIC_NOTATION_PATTERN = re.compile(r"^[-+]?[0-9][0-9_]*[eE][-+]?[0-9]+$")
@@ -164,7 +170,7 @@ def reject_unsupported_yaml_tags(text: str) -> None:
 
     import yaml  # noqa: PLC0415
 
-    node = yaml.compose(text, Loader=cast("type[yaml.SafeLoader | yaml.CSafeLoader]", get_safe_loader()))
+    node = read_yaml_text(yaml.compose, text)
     if node is None:
         return
     for yaml_node in _iter_yaml_nodes(node):
@@ -287,23 +293,18 @@ def _fast_construct_document(loader: Any, root: Any) -> Any:  # noqa: PLR0914, P
     return result
 
 
-@lru_cache(maxsize=1)
-def get_safe_loader() -> type:
-    """Get customized SafeLoader lazily."""
-    try:
-        from yaml import CSafeLoader as _SafeLoader  # noqa: PLC0415
-    except ImportError:  # pragma: no cover
-        from yaml import SafeLoader as _SafeLoader  # noqa: PLC0415
+def _custom_safe_loader(base: Any) -> type:
+    """Return ``base`` with YAML 1.2 bool handling, timestamps as strings and exponents without a point."""
 
-    class CustomSafeLoader(_SafeLoader):  # ty: ignore[unsupported-base]
+    class CustomSafeLoader(base):
         """SafeLoader with YAML 1.2 bool handling and timestamp-as-string."""
 
-        yaml_constructors = _SafeLoader.yaml_constructors.copy()
+        yaml_constructors = base.yaml_constructors.copy()
         yaml_implicit_resolvers = {  # noqa: RUF012
             k: v
             for k, v in (
                 (k, [(tag, pat) for tag, pat in v if tag != "tag:yaml.org,2002:bool"])
-                for k, v in _SafeLoader.yaml_implicit_resolvers.items()
+                for k, v in base.yaml_implicit_resolvers.items()
             )
             if v
         }
@@ -341,6 +342,102 @@ def get_safe_loader() -> type:
         ))
 
     return CustomSafeLoader
+
+
+@lru_cache(maxsize=1)
+def get_pure_safe_loader() -> type:
+    """Get the customized SafeLoader on PyYAML's own scanner, which reads tabs as libyaml does, lazily.
+
+    Tabs separate tokens on a line except before a simple key in block context, and stand between the words of a
+    plain scalar, where a tab left of the scalar's indentation on a continuation line is an error. PyYAML's scanner
+    reads spaces alone there, so a document that libyaml reads would not be read without it.
+    """
+    import yaml  # noqa: PLC0415
+    from yaml.scanner import ScannerError  # noqa: PLC0415
+
+    def at_document_marker(scanner: Any) -> bool:
+        return scanner.prefix(3) in {"---", "..."} and scanner.peek(3) in _YAML_TOKEN_ENDS
+
+    class TabReadingSafeLoader(yaml.SafeLoader):
+        @override
+        def scan_to_next_token(self) -> None:
+            if self.index == 0 and self.peek() == "\ufeff":
+                self.forward()
+            while True:
+                while (character := self.peek()) == " " or (
+                    character == "\t" and (self.flow_level or not self.allow_simple_key)
+                ):
+                    self.forward()
+                if self.peek() == "#":
+                    while self.peek() not in _YAML_LINE_ENDS:
+                        self.forward()
+                if not self.scan_line_break():
+                    return
+                if not self.flow_level:
+                    self.allow_simple_key = True
+
+        @override
+        def scan_plain_spaces(self, indent: int, start_mark: Any) -> list[str] | None:
+            length = 0
+            while self.peek(length) in _YAML_BLANKS:
+                length += 1
+            whitespaces = self.prefix(length)
+            self.forward(length)
+            if self.peek() not in _YAML_LINE_BREAKS:
+                return [whitespaces] if whitespaces else []
+            line_break = self.scan_line_break()
+            self.allow_simple_key = True
+            if at_document_marker(self):
+                return None
+            breaks: list[str] = []
+            while (character := self.peek()) in _YAML_BLANKS or character in _YAML_LINE_BREAKS:
+                if character in _YAML_LINE_BREAKS:
+                    breaks.append(self.scan_line_break())
+                    if at_document_marker(self):
+                        return None
+                    continue
+                if character == "\t" and self.column < indent:
+                    msg = "while scanning a plain scalar"
+                    raise ScannerError(
+                        msg,
+                        start_mark,
+                        "found a tab character that violates indentation",
+                        self.get_mark(),
+                    )
+                self.forward()
+            if line_break != "\n":
+                return [line_break, *breaks]
+            return breaks or [" "]
+
+    return _custom_safe_loader(TabReadingSafeLoader)
+
+
+@lru_cache(maxsize=1)
+def get_safe_loader() -> type:
+    """Get customized SafeLoader lazily: on libyaml where PyYAML has it, else on PyYAML's own scanner."""
+    try:
+        from yaml import CSafeLoader  # noqa: PLC0415
+    except ImportError:
+        return get_pure_safe_loader()
+    return _custom_safe_loader(CSafeLoader)
+
+
+def read_yaml_text(read: Callable[..., _T], text: str) -> _T:
+    """Read YAML text with ``read`` (``yaml.load`` or ``yaml.compose``), so that every install reads it alike.
+
+    libyaml, where PyYAML has it, reads first; a document it cannot read, such as one with a tab inside a block
+    scalar, is read on PyYAML's own scanner (``get_pure_safe_loader``), whose error is raised as on an install without
+    libyaml. Both read every document they both accept to the same data.
+    """
+    import yaml  # noqa: PLC0415
+
+    loader = get_safe_loader()
+    try:
+        return read(text, Loader=loader)
+    except yaml.YAMLError as error:
+        if isinstance(error, yaml.constructor.ConstructorError) or (pure := get_pure_safe_loader()) is loader:
+            raise
+    return read(text, Loader=pure)
 
 
 YamlBackend = Literal["ryaml", "pyyaml"]

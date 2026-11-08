@@ -2048,6 +2048,7 @@ openapi/strip_default_none_constructor_order.yaml::components.schemas.Plain	payl
 openapi/strip_default_none_constructor_order.yaml::components.schemas.WithDefault	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/strip_default_none_pydantic_v2.yaml::components.schemas.Issue1816Model	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/strip_default_none_semantic.yaml::components.schemas.SemanticNoneModel	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/tab_characters.yaml::components.schemas.Clutter	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_alias.yaml::components.schemas.AnnotatedType	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_alias.yaml::components.schemas.ArrayType	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_alias.yaml::components.schemas.SimpleString	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -4126,6 +4127,7 @@ openapi/strip_default_none_constructor_order.yaml::components.schemas.Plain	payl
 openapi/strip_default_none_constructor_order.yaml::components.schemas.WithDefault	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/strip_default_none_pydantic_v2.yaml::components.schemas.Issue1816Model	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/strip_default_none_semantic.yaml::components.schemas.SemanticNoneModel	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/tab_characters.yaml::components.schemas.Clutter	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_alias.yaml::components.schemas.AnnotatedType	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_alias.yaml::components.schemas.ArrayType	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/type_alias.yaml::components.schemas.SimpleString	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

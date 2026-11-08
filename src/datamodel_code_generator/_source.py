@@ -183,9 +183,9 @@ def _load_pyyaml(text: str) -> YamlValue:
     """Load YAML content with PyYAML."""
     import yaml  # noqa: PLC0415
 
-    from datamodel_code_generator.util import SafeLoader  # noqa: PLC0415
+    from datamodel_code_generator.util import read_yaml_text  # noqa: PLC0415
 
-    return yaml.load(text, Loader=SafeLoader)  # noqa: S506
+    return read_yaml_text(yaml.load, text)
 
 
 def _expect_dict(result: YamlValue) -> dict[str, YamlValue]:
