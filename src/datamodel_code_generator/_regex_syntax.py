@@ -47,7 +47,10 @@ _LOOKAROUND_PATTERN: Final = r"\(\?<?[=!]"
 _WHITE_SPACE_CHARACTERS = "\t-\r \x85\xa0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000"
 _UNICODE_WHITE_SPACE = f"[{_WHITE_SPACE_CHARACTERS}]*"
 _VERBOSE_SPACE = rf"(?:[{_WHITE_SPACE_CHARACTERS}]|#[^\n]*(?=\n|\Z))*"
-_REGEX_ESCAPE_TOKENS = r"\\[pPxuUbB]\{[^}]*\}?|\\(?P<escape>.)?|(?P<open>\[\^?\]?)"
+_REGEX_ESCAPE_TOKENS = (
+    r"(?P<code>\\u[0-9A-Fa-f]{4}|\\U[0-9A-Fa-f]{8}|\\[xuU]\{[0-9A-Fa-f]+\})"
+    r"|\\[pPxuUbB]\{[^}]*\}?|\\(?P<escape>.)?|(?P<open>\[\^?\]?)"
+)
 
 
 def _counted_repetition(space: str) -> str:
@@ -72,6 +75,9 @@ _VERBOSE_FLAGS: Final = r"\(\?(?P<flags>[A-Za-z]*x[A-Za-z]*(?:-[A-Za-wyz]+)?)\)"
 _RUST_REJECTED_ESCAPES = frozenset("0123456789NZ")
 _RUST_REJECTED_CLASS_ESCAPES = frozenset("0123456789NZb")
 _RUST_REJECTED_FLAGS = frozenset("aL")
+_FIRST_SURROGATE = 0xD800
+_LAST_SURROGATE = 0xDFFF
+_LAST_CODE_POINT = 0x10FFFF
 _PY_310 = (3, 10)
 _PY_311 = (3, 11)
 _PY_314 = (3, 14)
@@ -96,8 +102,21 @@ def _exceeds(lower: str | None, upper: str | None) -> bool:
     return (len(lower), lower) > (len(upper), upper)
 
 
+def _names_no_scalar_value(code: str | None) -> bool:
+    r"""Return whether a hexadecimal escape names a surrogate or a code point past U+10FFFF, which Rust rejects.
+
+    Python's ``re`` reads ``\uD800`` and ``\U0000D800`` as the surrogate they name; no braced escape (``\x{D800}``).
+    """
+    if code is None:
+        return False
+    value = int(code[2:].strip("{}"), 16)
+    return _FIRST_SURROGATE <= value <= _LAST_SURROGATE or value > _LAST_CODE_POINT
+
+
 def _regex_token_requirements(match: re.Match[str]) -> tuple[bool, tuple[int, int]] | None:
     """Return whether a token outside character classes is Rust-rejected and the Python its syntax needs."""
+    if (code := match["code"]) is not None:
+        return _names_no_scalar_value(code), _PY_310
     if (escape := match["escape"]) is not None:
         return escape in _RUST_REJECTED_ESCAPES, _PY_314 if escape == "z" else _PY_310
     if (flags := match["flags"]) is not None:
@@ -116,12 +135,13 @@ def scan_regex_syntax(pattern: str, *, read_verbose: bool = False) -> tuple[bool
     escapes such as ``\p{L}``, ``\x{41}`` or ``\b{start}``, and counted repetitions with whitespace are
     consumed whole, with separate tokens inside and outside character classes. It reports backreferences and
     octal escapes, ``\N{...}``, ``\Z``, ``[\b]``, ``(?P=name)``, atomic groups, conditionals, comments, the
-    ``a`` and ``L`` flags, braces that cannot start a counted repetition and counted repetitions whose minimum
-    exceeds their maximum (``a{ 3 , 2 }``, which Python's ``re`` reads as text). Atomic groups and possessive
-    quantifiers need Python 3.11, and ``\z`` needs Python 3.14. Returns None for verbose patterns, whose
-    whitespace and comments the scan does not model, unless ``read_verbose`` reads the ones that start with a
-    global ``(?x)`` group. Their comments run to the end of the line, also inside a character class, where Rust
-    then reports the class unclosed; any other flag group that mentions ``x`` still gives None.
+    ``a`` and ``L`` flags, braces that cannot start a counted repetition, counted repetitions whose minimum
+    exceeds their maximum (``a{ 3 , 2 }``, which Python's ``re`` reads as text) and hexadecimal escapes of a
+    surrogate or of a code point past U+10FFFF (``\uD800``, which Python's ``re`` reads as that surrogate). Atomic
+    groups and possessive quantifiers need Python 3.11, and ``\z`` needs Python 3.14. Returns None for verbose
+    patterns, whose whitespace and comments the scan does not model, unless ``read_verbose`` reads the ones that
+    start with a global ``(?x)`` group. Their comments run to the end of the line, also inside a character class,
+    where Rust then reports the class unclosed; any other flag group that mentions ``x`` still gives None.
     """
     rejected = False
     minimum_python = _PY_310
@@ -138,7 +158,7 @@ def scan_regex_syntax(pattern: str, *, read_verbose: bool = False) -> tuple[bool
         position = match.end()
         if depth or match["open"]:
             depth += bool(match["open"]) - bool(depth and match["close"])
-            rejected |= match["escape"] in _RUST_REJECTED_CLASS_ESCAPES
+            rejected |= match["escape"] in _RUST_REJECTED_CLASS_ESCAPES or _names_no_scalar_value(match["code"])
             continue
         if (requirements := _regex_token_requirements(match)) is None:
             return None

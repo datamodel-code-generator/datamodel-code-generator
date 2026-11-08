@@ -39,6 +39,12 @@ REVERSED_REPETITION_PAYLOADS = {
     "SpacedOrdered": ("aa", "a{ 2 , 3 }"),
 }
 
+CODE_POINT_PAYLOADS = {
+    "SurrogateRanges": ("tab\tand text", "bell\u0007"),
+    "SurrogateOutsideClass": ("a", "b"),
+    "BracedCode": ("AA", "B"),
+}
+
 
 def _outcome(validate: Callable[[str], object], payload: object) -> str:
     """Return ``valid``, or the types of the errors that the validator reports for a JSON payload."""
@@ -171,6 +177,34 @@ def test_counted_repetitions_with_a_minimum_above_the_maximum_select_the_python_
     outcomes = ""
     for name, payloads in REVERSED_REPETITION_PAYLOADS.items():
         with _generated_model(output_file, "rust_unsupported_reversed_repetition", name) as model:
+            outcomes += _outcomes(model, {f"{name} {payload!r}": payload for payload in payloads})
+    assert_output(outcomes, name="payloads")
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass"])
+def test_surrogate_escapes_select_the_python_engine(output_file: Path, output_model_type: str) -> None:
+    r"""Select ``python-re`` for a pattern escaping a surrogate, which Rust rejects and Python's ``re`` reads (#6593).
+
+    AWS documents write ``\\uD800`` inside a class, outside a class it is the same, and only Python's ``re`` imports
+    the model. ``\\x{41}``, which only Rust reads, stays on the default engine.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_code_points.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            output_model_type,
+            "--field-constraints",
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+        force_exec_validation=True,
+    )
+    outcomes = ""
+    for name, payloads in CODE_POINT_PAYLOADS.items():
+        with _generated_model(output_file, "rust_unsupported_code_points", name) as model:
             outcomes += _outcomes(model, {f"{name} {payload!r}": payload for payload in payloads})
     assert_output(outcomes, name="payloads")
 

@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "SurrogateRanges": {
+      "type": "string",
+      "pattern": "^[\\u0020-\\uD7FF\\uE000-\\uFFFD\\uD800\\uDBFF-\\uDC00\\uDFFF\\t]*$"
+    },
+    "SurrogateOutsideClass": {
+      "type": "string",
+      "pattern": "^a\\uDFFF?$"
+    },
+    "BracedCode": {
+      "type": "string",
+      "pattern": "^\\x{41}+$"
+    }
+  }
+}
