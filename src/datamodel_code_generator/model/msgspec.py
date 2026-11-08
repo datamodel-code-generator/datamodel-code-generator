@@ -21,7 +21,7 @@ from datamodel_code_generator._document_reader import as_mapping
 from datamodel_code_generator._graph import reach
 from datamodel_code_generator._graph_links import clear_parents, link_members
 from datamodel_code_generator._mro import resolve_members
-from datamodel_code_generator._python_syntax import call_text, holds_lone_surrogate, keyword_argument, subscript_text
+from datamodel_code_generator._python_syntax import holds_lone_surrogate, keyword_argument, subscript_text
 from datamodel_code_generator._records import record
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot, walk_graph
 from datamodel_code_generator._target_unicode import is_identifier
@@ -131,6 +131,8 @@ UNSET = _UNSET()
 
 _ANNOTATED_CONSTRAINTS_CONTEXT: object = Sentinel("_ANNOTATED_CONSTRAINTS_CONTEXT")
 _UNCONSTRAINED_UNION_MEMBERS_KEY = "_unconstrained_union_members"
+_NO_UNCONSTRAINED_MEMBERS: tuple[frozenset[Any], ...] = (frozenset(), frozenset(), frozenset(), frozenset())
+"""The kinds, keywords, integer keywords and implied constraints of a field without union members left unconstrained."""
 _BOUND_SIDES: Mapping[str, str] = MappingProxyType({"ge": "ge", "gt": "ge", "le": "le", "lt": "le"})
 """The side of each ``Meta`` bound, which the integer check of a union reads at the bounds the schema writes."""
 
@@ -308,7 +310,7 @@ class _StructConversion:
 
 def _meta_call_text(call: CallPlan) -> str:
     """Write a ``Meta(...)`` call: its arguments sorted by their text."""
-    return call_text("Meta", sorted(keyword_argument(k.name, represent_python_value(k.value)) for k in call.kwargs))
+    return f"Meta({_meta_keywords_text((k.name, k.value) for k in call.kwargs)})"
 
 
 class _MetaAnnotatedType(DataType):
@@ -345,8 +347,9 @@ class _MetaType(DataType):
     @override
     def type_hint(self) -> str:
         """Write ``Annotated`` over the type and the ``Meta()`` call, its arguments sorted by their text."""
-        keywords = sorted(keyword_argument(k, represent_python_value(v)) for k, v in self.meta_keywords.items())
-        return subscript_text("Annotated", (super().type_hint, call_text("Meta", keywords)))
+        return subscript_text(
+            "Annotated", (super().type_hint, f"Meta({_meta_keywords_text(self.meta_keywords.items())})")
+        )
 
     @property
     @override
@@ -516,7 +519,7 @@ def _struct_attribute_default(struct: Struct, value: dict[str, object]) -> objec
     Its values are read by the types of the fields of their schema names, those of its bases included.
     """
     fields: dict[str, DataModelFieldBase] = {}
-    for current in reach((struct,), lambda model: reversed(_struct_bases(model)), key=id):
+    for current in _struct_chain(struct, order="listed"):
         for field in filter(_is_instance_field, current.fields):
             fields.setdefault(cast("str", _field_source_name(field)), field)
     read = {
@@ -551,12 +554,24 @@ def _first_attribute_default(members: Sequence[DataType], value: object, seen: f
 def _reads_arrays(struct: Struct) -> bool:
     """Return whether msgspec reads a struct from an array, not an object (``array_like``).
 
-    The option is that of the first struct that sets it among the struct and the generated structs it inherits from,
-    each before its bases, in the order the bases are listed.
+    The option is that of the first struct that sets it in the chain of order ``listed`` (``_struct_chain``).
     """
-    ancestry = reach((struct,), lambda current: reversed(_struct_bases(current)), key=id)
-    options = (_user_struct_options(current).get("array_like") for current in ancestry)
-    return next((value in {True, "True"} for value in options if value is not None), False)
+    return _first_struct_flag(
+        map(_user_struct_options, _struct_chain(struct, order="listed")), "array_like", default=False
+    )
+
+
+def _struct_chain(struct: Struct, *, order: Literal["listed", "graph"]) -> list[Struct]:
+    """Return the struct and its generated bases, each once before its bases, in ``listed`` or ``graph`` order."""
+    if order == "listed":
+        return reach((struct,), lambda current: reversed(_struct_bases(current)), key=id)
+    walk = walk_graph(GraphSnapshot.SET_ITEM_CLASSES, EdgeKind.BASE, (struct,), _model_key_of_model, _struct_bases)
+    return [walk.node_of[key] for key in walk.graph.preorder(walk.starts[0], EdgeKind.BASE)]
+
+
+def _first_struct_flag(options: Iterable[Mapping[str, Any]], name: str, *, default: bool) -> bool:
+    """Return whether the first of the struct options ``options`` that sets ``name`` turns it on, else ``default``."""
+    return next((value in {True, "True"} for option in options if (value := option.get(name)) is not None), default)
 
 
 def _names_structs(data_type: DataType, aliases: frozenset[int], *, containers: bool = True) -> bool:
@@ -1054,22 +1069,15 @@ class Struct(DataModel):
     def _class_hash(self, generic_base_config: Mapping[str, Any] | None) -> SetItemHash:
         """Return how the struct hashes: by value where it compares by value (``eq`` on, the default) and is frozen.
 
-        Each option is the one of the first struct of the chain (the struct and the generated structs it inherits from,
-        as a walk of the reference graph meets them, then the generic base class all of them inherit from) that sets
-        it.
+        Each option is the one of the first struct of the chain of order ``graph`` (``_struct_chain``), then the generic
+        base class all of them inherit from, that sets it.
         """
-        walk = walk_graph(GraphSnapshot.SET_ITEM_CLASSES, EdgeKind.BASE, (self,), _model_key_of_model, _struct_bases)
-        chain = [walk.node_of[key] for key in walk.graph.preorder(walk.starts[0], EdgeKind.BASE)]
+        chain = _struct_chain(self, order="graph")
         options = [_user_struct_options(struct) for struct in chain]
         if generic_base_config is not None and self.SUPPORTS_GENERIC_BASE_CLASS:
             options.append({key: str(value) for key, value in self._mapped_struct_options(generic_base_config)})
-
-        def first(name: str, *, default: bool) -> bool:
-            return next(
-                (value in {True, "True"} for option in options if (value := option.get(name)) is not None), default
-            )
-
-        compares_by_value, frozen = first("eq", default=True), first("frozen", default=False)
+        compares_by_value = _first_struct_flag(options, "eq", default=True)
+        frozen = _first_struct_flag(options, "frozen", default=False)
         hashes = {struct._compared_class_hash(compares_by_value=compares_by_value, frozen=frozen) for struct in chain}  # noqa: SLF001
         return next(kind for kind in ("identity", "never", "value") if kind in hashes)
 
@@ -1212,10 +1220,14 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         return any(self._data_type_renders_none(child) for child in data_type.data_types)
 
     def _field_has_top_level_none(self) -> bool:
+        return self._top_level_none_of(self)
+
+    def _top_level_none_of(self, field: DataModelFieldBase) -> bool:
+        """Return whether ``field`` writes None at the top: nullable, with a null type, or a type that writes None."""
         return any((
-            self.nullable is True,
-            self.type_has_null is True,
-            self._data_type_has_top_level_none(self.data_type),
+            field.nullable is True,
+            field.type_has_null is True,
+            self._data_type_has_top_level_none(field.data_type),
         ))
 
     @staticmethod
@@ -1554,9 +1566,9 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         a mapping and a mapping class msgspec decodes as a dict (``DataTypeManager.MAPPING_CLASS_PATHS``, also
         subscripted, as ``counts_keys`` reads it) take lengths, which count their keys, a fixed tuple and a union take
         none, and an unclassified type keeps them all. A referenced type alias takes what its type takes
-        (``_meta_type``); any other referenced model, such as an enum or a Struct, takes none.
+        (``constrained_value_type``); any other referenced model, such as an enum or a Struct, takes none.
         """
-        if (target := self._meta_type(data_type)) is None:
+        if (target := self.constrained_value_type(data_type)) is None:
             return _applicability.NO_KEYWORDS
         if (keywords := self._shape_meta_keywords(target)) is not None:
             return keywords
@@ -1573,10 +1585,6 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             unconstrained=data_type.is_tuple or self._data_type_is_plain_union(data_type),
         )
 
-    def _meta_type(self, data_type: DataType) -> DataType | None:
-        """Return the type msgspec checks the ``Meta`` of a type on, or None where that type takes no constraint."""
-        return self.constrained_value_type(data_type)
-
     @override
     def _stops_constraint_walk(self, data_type: DataType) -> bool:
         """Return whether ``data_type`` is a mapping, a fixed tuple or a union: it takes the keywords of its shape."""
@@ -1585,11 +1593,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
     @override
     def _alias_value_admits_null(self, alias_field: DataModelFieldBase) -> bool:
         """Return whether the root of an alias writes None, so the alias takes no constraint."""
-        return super()._alias_value_admits_null(alias_field) or any((
-            alias_field.nullable is True,
-            alias_field.type_has_null is True,
-            self._data_type_has_top_level_none(alias_field.data_type),
-        ))
+        return super()._alias_value_admits_null(alias_field) or self._top_level_none_of(alias_field)
 
     def _union_meta_constraints(self) -> tuple[tuple[tuple[str, Any], ...], tuple[tuple[str, Any], ...]]:
         """Return the ``Meta`` constraints of the type, and them as the integer check of a union reads them exactly.
@@ -1696,7 +1700,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         annotates_int = (
             has_integer_constraints
             and self.use_annotated
-            and (target := self._meta_type(self._annotated_base_data_type())) is not None
+            and (target := self.constrained_value_type(self._annotated_base_data_type())) is not None
             and self._names_int(target)
         )
 
@@ -2039,7 +2043,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         if not kinds and not integer_keywords:
             return
         recorded_kinds, recorded_keywords, recorded_integer_keywords, recorded_implied = self.__dict__.get(
-            _UNCONSTRAINED_UNION_MEMBERS_KEY, (frozenset(), frozenset(), frozenset(), frozenset())
+            _UNCONSTRAINED_UNION_MEMBERS_KEY, _NO_UNCONSTRAINED_MEMBERS
         )
         self.__dict__[_UNCONSTRAINED_UNION_MEMBERS_KEY] = (
             recorded_kinds | frozenset(kinds),
@@ -2075,9 +2079,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
         if beyond:
             reasons.append(
                 "msgspec.Meta takes the number constraints of an int only within the 64-bit range, not "
-                + ", ".join(
-                    keyword_argument(name, represent_python_value(value)) for name, value in sorted(beyond.items())
-                )
+                + _meta_keywords_text(beyond.items())
             )
         if inexact is not None:
             reasons.append(
@@ -2085,7 +2087,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
                 f"{represent_python_value(inexact.value)} that floats only approximate"
             )
         kinds, union_keywords, integer_keywords, implied = self.__dict__.get(
-            _UNCONSTRAINED_UNION_MEMBERS_KEY, (frozenset(), frozenset(), frozenset(), frozenset())
+            _UNCONSTRAINED_UNION_MEMBERS_KEY, _NO_UNCONSTRAINED_MEMBERS
         )
         if kinds:
             reasons.append(
@@ -2184,10 +2186,7 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             if item_type.reference and isinstance(item_type.reference.source, Struct):
                 items = [item_type]
         for item in items:
-            if (reference := item.reference) and (
-                isinstance(source := reference.source, Struct)
-                or (isinstance(source, TypeAliasBase) and self._type_alias_needs_struct_conversion(source))
-            ):
+            if (reference := item.reference) and self._converts_to_structs(reference):
                 return _StructConversion(self._PARSE_METHOD, self.default, item, self.data_type)
         return self._written_conversion(self.data_type)
 
@@ -2206,12 +2205,16 @@ class DataModelField(_FieldCallWriter, DataModelFieldBase):
             ):
                 return self._list_conversion(member, child)
         elif (reference := member.reference) is not None:
-            if isinstance(source := reference.source, Struct) or (
-                isinstance(source, TypeAliasBase) and self._type_alias_needs_struct_conversion(source)
-            ):
+            if self._converts_to_structs(reference):
                 return _StructConversion(self._PARSE_METHOD, self.default, member)
             return None
         return self._written_conversion(member)
+
+    def _converts_to_structs(self, reference: Reference) -> bool:
+        """Return whether the default converts to the Struct ``reference`` names, or to its alias of Structs."""
+        return isinstance(source := reference.source, Struct) or (
+            isinstance(source, TypeAliasBase) and self._type_alias_needs_struct_conversion(source)
+        )
 
     def _written_conversion(self, data_type: DataType) -> _StructConversion | None:
         """Convert the default to an array or a mapping that names Structs, as its hint writes it, where it fits it.

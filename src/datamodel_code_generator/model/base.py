@@ -1217,7 +1217,11 @@ class DataModelFieldBase(_BaseModel):  # noqa: PLR0904
                 and data_type.import_
                 and strict_import_part in data_type.import_.import_
             )
-            for data_type in chain(self.data_type.all_data_types, value_type.all_data_types)
+            for data_type in (
+                self.data_type.all_data_types
+                if value_type is self.data_type
+                else chain(self.data_type.all_data_types, value_type.all_data_types)
+            )
         )
 
     def _takes_nested_model_factory(self) -> bool:
