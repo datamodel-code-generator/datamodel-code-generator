@@ -11,68 +11,112 @@ import models
 
 from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
-codec_0: Final[PydanticCodec[models.ParameterPostHeaderXRequestKeyParameter]] = PydanticCodec(models.ParameterPostHeaderXRequestKeyParameter)
+codec_0: Final[PydanticCodec[models.ParameterPostHeaderXRequestKeyParameter]] = (
+    PydanticCodec(models.ParameterPostHeaderXRequestKeyParameter)
+)
 """Codec of /paths/~1parameter/post parameter (request header X-Request-Key)."""
 
-codec_1: Final[PydanticCodec[models.ParameterPostResponse]] = PydanticCodec(models.ParameterPostResponse)
+codec_1: Final[PydanticCodec[models.ParameterPostResponse]] = PydanticCodec(
+    models.ParameterPostResponse
+)
 """Codec of /paths/~1parameter/post response_body (response 200 text/plain)."""
 
-codec_2: Final[PydanticCodec[models.ParameterPostResponse200XIdempotencyHeader]] = PydanticCodec(models.ParameterPostResponse200XIdempotencyHeader)
+codec_2: Final[PydanticCodec[models.ParameterPostResponse200XIdempotencyHeader]] = (
+    PydanticCodec(models.ParameterPostResponse200XIdempotencyHeader)
+)
 """Codec of /paths/~1parameter/post response_header (response X-Idempotency 200)."""
 
-codec_3: Final[PydanticCodec[models.ApiKeyPostResponse]] = PydanticCodec(models.ApiKeyPostResponse)
+codec_3: Final[PydanticCodec[models.ApiKeyPostResponse]] = PydanticCodec(
+    models.ApiKeyPostResponse
+)
 """Codec of /paths/~1api-key/post response_body (response 200 text/plain)."""
 
-codec_4: Final[PydanticCodec[models.ApiKeyPostResponse200XIdempotencyHeader]] = PydanticCodec(models.ApiKeyPostResponse200XIdempotencyHeader)
+codec_4: Final[PydanticCodec[models.ApiKeyPostResponse200XIdempotencyHeader]] = (
+    PydanticCodec(models.ApiKeyPostResponse200XIdempotencyHeader)
+)
 """Codec of /paths/~1api-key/post response_header (response X-Idempotency 200)."""
 
-codec_5: Final[PydanticCodec[models.BearerPostResponse]] = PydanticCodec(models.BearerPostResponse)
+codec_5: Final[PydanticCodec[models.BearerPostResponse]] = PydanticCodec(
+    models.BearerPostResponse
+)
 """Codec of /paths/~1bearer/post response_body (response 200 text/plain)."""
 
-codec_6: Final[PydanticCodec[models.BearerPostResponse200XIdempotencyHeader]] = PydanticCodec(models.BearerPostResponse200XIdempotencyHeader)
+codec_6: Final[PydanticCodec[models.BearerPostResponse200XIdempotencyHeader]] = (
+    PydanticCodec(models.BearerPostResponse200XIdempotencyHeader)
+)
 """Codec of /paths/~1bearer/post response_header (response X-Idempotency 200)."""
 
-codec_7: Final[PydanticCodec[models.OauthPostResponse]] = PydanticCodec(models.OauthPostResponse)
+codec_7: Final[PydanticCodec[models.OauthPostResponse]] = PydanticCodec(
+    models.OauthPostResponse
+)
 """Codec of /paths/~1oauth/post response_body (response 200 text/plain)."""
 
-codec_8: Final[PydanticCodec[models.OauthPostResponse200XIdempotencyHeader]] = PydanticCodec(models.OauthPostResponse200XIdempotencyHeader)
+codec_8: Final[PydanticCodec[models.OauthPostResponse200XIdempotencyHeader]] = (
+    PydanticCodec(models.OauthPostResponse200XIdempotencyHeader)
+)
 """Codec of /paths/~1oauth/post response_header (response X-Idempotency 200)."""
 
-codec_9: Final[PydanticCodec[models.OpenidPostResponse]] = PydanticCodec(models.OpenidPostResponse)
+codec_9: Final[PydanticCodec[models.OpenidPostResponse]] = PydanticCodec(
+    models.OpenidPostResponse
+)
 """Codec of /paths/~1openid/post response_body (response 200 text/plain)."""
 
-codec_10: Final[PydanticCodec[models.OpenidPostResponse200XIdempotencyHeader]] = PydanticCodec(models.OpenidPostResponse200XIdempotencyHeader)
+codec_10: Final[PydanticCodec[models.OpenidPostResponse200XIdempotencyHeader]] = (
+    PydanticCodec(models.OpenidPostResponse200XIdempotencyHeader)
+)
 """Codec of /paths/~1openid/post response_header (response X-Idempotency 200)."""
 
-codec_11: Final[PydanticCodec[models.CookiePostResponse]] = PydanticCodec(models.CookiePostResponse)
+codec_11: Final[PydanticCodec[models.CookiePostResponse]] = PydanticCodec(
+    models.CookiePostResponse
+)
 """Codec of /paths/~1cookie/post response_body (response 200 text/plain)."""
 
-codec_12: Final[PydanticCodec[models.CookiePostResponse200XIdempotencyHeader]] = PydanticCodec(models.CookiePostResponse200XIdempotencyHeader)
+codec_12: Final[PydanticCodec[models.CookiePostResponse200XIdempotencyHeader]] = (
+    PydanticCodec(models.CookiePostResponse200XIdempotencyHeader)
+)
 """Codec of /paths/~1cookie/post response_header (response X-Idempotency 200)."""
 
-codec_13: Final[PydanticCodec[models.QueryPostResponse]] = PydanticCodec(models.QueryPostResponse)
+codec_13: Final[PydanticCodec[models.QueryPostResponse]] = PydanticCodec(
+    models.QueryPostResponse
+)
 """Codec of /paths/~1query/post response_body (response 200 text/plain)."""
 
-codec_14: Final[PydanticCodec[models.QueryPostResponse200XIdempotencyHeader]] = PydanticCodec(models.QueryPostResponse200XIdempotencyHeader)
+codec_14: Final[PydanticCodec[models.QueryPostResponse200XIdempotencyHeader]] = (
+    PydanticCodec(models.QueryPostResponse200XIdempotencyHeader)
+)
 """Codec of /paths/~1query/post response_header (response X-Idempotency 200)."""
 
-codec_15: Final[PydanticCodec[models.IgnoredPostResponse]] = PydanticCodec(models.IgnoredPostResponse)
+codec_15: Final[PydanticCodec[models.IgnoredPostResponse]] = PydanticCodec(
+    models.IgnoredPostResponse
+)
 """Codec of /paths/~1ignored/post response_body (response 200 text/plain)."""
 
-codec_16: Final[PydanticCodec[models.IgnoredPostResponse200XIdempotencyHeader]] = PydanticCodec(models.IgnoredPostResponse200XIdempotencyHeader)
+codec_16: Final[PydanticCodec[models.IgnoredPostResponse200XIdempotencyHeader]] = (
+    PydanticCodec(models.IgnoredPostResponse200XIdempotencyHeader)
+)
 """Codec of /paths/~1ignored/post response_header (response X-Idempotency 200)."""
 
-codec_17: Final[PydanticCodec[models.DirectionPostHeaderXRetryControlParameter]] = PydanticCodec(models.DirectionPostHeaderXRetryControlParameter)
+codec_17: Final[PydanticCodec[models.DirectionPostHeaderXRetryControlParameter]] = (
+    PydanticCodec(models.DirectionPostHeaderXRetryControlParameter)
+)
 """Codec of /paths/~1direction/post parameter (request header X-Retry-Control)."""
 
-codec_18: Final[PydanticCodec[models.DirectionPostResponse]] = PydanticCodec(models.DirectionPostResponse)
+codec_18: Final[PydanticCodec[models.DirectionPostResponse]] = PydanticCodec(
+    models.DirectionPostResponse
+)
 """Codec of /paths/~1direction/post response_body (response 200 text/plain)."""
 
-codec_19: Final[PydanticCodec[models.DirectionPostResponse200XIdempotencyHeader]] = PydanticCodec(models.DirectionPostResponse200XIdempotencyHeader)
+codec_19: Final[PydanticCodec[models.DirectionPostResponse200XIdempotencyHeader]] = (
+    PydanticCodec(models.DirectionPostResponse200XIdempotencyHeader)
+)
 """Codec of /paths/~1direction/post response_header (response X-Idempotency 200)."""
 
-codec_20: Final[PydanticCodec[models.UnusedPostResponse]] = PydanticCodec(models.UnusedPostResponse)
+codec_20: Final[PydanticCodec[models.UnusedPostResponse]] = PydanticCodec(
+    models.UnusedPostResponse
+)
 """Codec of /paths/~1unused/post response_body (response 200 text/plain)."""
 
-codec_21: Final[PydanticCodec[models.UnusedPostResponse200XIdempotencyHeader]] = PydanticCodec(models.UnusedPostResponse200XIdempotencyHeader)
+codec_21: Final[PydanticCodec[models.UnusedPostResponse200XIdempotencyHeader]] = (
+    PydanticCodec(models.UnusedPostResponse200XIdempotencyHeader)
+)
 """Codec of /paths/~1unused/post response_header (response X-Idempotency 200)."""

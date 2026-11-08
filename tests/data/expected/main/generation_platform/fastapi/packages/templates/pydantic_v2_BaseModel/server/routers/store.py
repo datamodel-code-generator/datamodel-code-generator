@@ -54,9 +54,7 @@ def _add_get_inventory(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-LITERAL_ROUTES: Final = (
-    ('get_inventory', _add_get_inventory),
-)
+LITERAL_ROUTES: Final = (('get_inventory', _add_get_inventory),)
 TEMPLATED_ROUTES: Final = ()
 
 

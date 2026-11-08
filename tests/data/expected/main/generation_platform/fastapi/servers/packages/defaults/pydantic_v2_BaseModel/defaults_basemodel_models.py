@@ -79,4 +79,6 @@ class ValuesGetQueryToneParameter(StrEnum):
     blue = 'blue'
 
 
-ValuesGetHeaderXColorsParameter = TypeAliasType("ValuesGetHeaderXColorsParameter", list[Color])
+ValuesGetHeaderXColorsParameter = TypeAliasType(
+    "ValuesGetHeaderXColorsParameter", list[Color]
+)

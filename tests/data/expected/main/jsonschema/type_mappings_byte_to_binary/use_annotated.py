@@ -17,13 +17,17 @@ from typing_extensions import TypeAliasType
 
 
 class Item(
-    RootModel[Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)]]
+    RootModel[
+        Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)]
+    ]
 ):
     root: Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)]
 
 
 class Choice(
-    RootModel[Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)]]
+    RootModel[
+        Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)]
+    ]
 ):
     root: Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)]
 

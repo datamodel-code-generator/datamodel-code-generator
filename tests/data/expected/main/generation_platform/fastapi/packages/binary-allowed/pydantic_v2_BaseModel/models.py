@@ -32,7 +32,9 @@ class PageSize(RootModel[int]):
     root: int = Field(20, title='Page size')
 
 
-FilesPostQueryDigestParameter = TypeAliasType("FilesPostQueryDigestParameter", Base64Bytes)
+FilesPostQueryDigestParameter = TypeAliasType(
+    "FilesPostQueryDigestParameter", Base64Bytes
+)
 
 
 FilesPostQueryShortParameter = TypeAliasType(

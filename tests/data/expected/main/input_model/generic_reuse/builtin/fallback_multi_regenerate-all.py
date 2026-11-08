@@ -10,7 +10,9 @@ class BoxAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3(BaseMo
     value: conint(gt=3) = Field(..., title='Value')
 
 
-class DefaultBoxAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3(BaseModel):
+class DefaultBoxAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3(
+    BaseModel
+):
     value: conint(gt=3) | None = Field(4, title='Value')
     label: str | None = Field('kept', title='Label')
 
@@ -23,7 +25,9 @@ class NamedBoxInt(BaseModel):
     value: int = Field(..., title='Value')
 
 
-class PairAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3Item(BaseModel):
+class PairAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3Item(
+    BaseModel
+):
     first: conint(gt=3) = Field(..., title='First')
     second: Item
 
@@ -49,7 +53,9 @@ class RepeatedRoot(BaseModel):
 
 class FutureMixedRoot(BaseModel):
     fallback: PairAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3Item
-    defaulted: DefaultBoxAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3
+    defaulted: (
+        DefaultBoxAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3
+    )
     ordinary: NamedBoxInt
     qualified: WrappedInt
     alias: BoxAnnotatedIntFieldInfoAnnotationNoneTypeRequiredTrueMetadataGtGt3

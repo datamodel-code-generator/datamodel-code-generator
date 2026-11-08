@@ -16,15 +16,11 @@ Node = TypedDict(
 
 
 # Generated from the API document; regenerate instead of editing.
-
-
 class Named(Node):
     name: NotRequired[str]
 
 
 # Generated from the API document; regenerate instead of editing.
-
-
 class Dated(Node):
     created: NotRequired[str]
 

@@ -21,6 +21,8 @@ class Old:
 class Model:
     const: Literal['a𞓐'] | None = None
     enum: Literal['b𞓐', 'c'] | None = None
-    text: str | None = ('𞓐 long text 𞓐 long text 𞓐 long text 𞓐 long text 𞓐 long text 𞓐 long text 𞓐 '
- 'long text 𞓐 long text ')
+    text: str | None = (
+        '𞓐 long text 𞓐 long text 𞓐 long text 𞓐 long text 𞓐 long text 𞓐 long text 𞓐 '
+        'long text 𞓐 long text '
+    )
     old: Old | None = None

@@ -9,5 +9,13 @@ import tests.data.python.input_model.generic_reuse
 
 
 class AnnotatedRepeatedRoot(BaseModel):
-    first: tests.data.python.input_model.generic_reuse.AnnotatedRepeatedRoot.model_fields['first'].annotation
-    second: tests.data.python.input_model.generic_reuse.AnnotatedRepeatedRoot.model_fields['first'].annotation
+    first: (
+        tests.data.python.input_model.generic_reuse.AnnotatedRepeatedRoot.model_fields[
+            'first'
+        ].annotation
+    )
+    second: (
+        tests.data.python.input_model.generic_reuse.AnnotatedRepeatedRoot.model_fields[
+            'first'
+        ].annotation
+    )

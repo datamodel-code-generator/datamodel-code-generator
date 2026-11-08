@@ -155,14 +155,20 @@ class Model:
     ) = None
     iOverlap: (
         list[
-            dict[Annotated[str, StringConstraints(pattern=r'^a|b$')], IOverlapPatternProperty | IOverlapPatternProperty1]
+            dict[
+                Annotated[str, StringConstraints(pattern=r'^a|b$')],
+                IOverlapPatternProperty | IOverlapPatternProperty1,
+            ]
         ]
         | None
     ) = None
     mOverlap: (
         dict[
             str,
-            dict[Annotated[str, StringConstraints(pattern=r'^a|b$')], MOverlapPatternProperty | MOverlapPatternProperty1],
+            dict[
+                Annotated[str, StringConstraints(pattern=r'^a|b$')],
+                MOverlapPatternProperty | MOverlapPatternProperty1,
+            ],
         ]
         | None
     ) = None
@@ -186,14 +192,20 @@ class Model:
     ) = None
     iNamesTwo: (
         list[
-            dict[Annotated[str, StringConstraints(pattern=r'^a|^b', max_length=3)], int | str]
+            dict[
+                Annotated[str, StringConstraints(pattern=r'^a|^b', max_length=3)],
+                int | str,
+            ]
         ]
         | None
     ) = None
     mNamesTwo: (
         dict[
             str,
-            dict[Annotated[str, StringConstraints(pattern=r'^a|^b', max_length=3)], int | str],
+            dict[
+                Annotated[str, StringConstraints(pattern=r'^a|^b', max_length=3)],
+                int | str,
+            ],
         ]
         | None
     ) = None

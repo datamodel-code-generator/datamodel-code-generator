@@ -22,9 +22,7 @@ NullableNames = TypeAliasType(
 
 NullableCount = TypeAliasType(
     "NullableCount",
-    Annotated[
-        dict[str, int] | None, Field(..., max_length=3, min_length=1)
-    ],
+    Annotated[dict[str, int] | None, Field(..., max_length=3, min_length=1)],
 )
 
 

@@ -22,9 +22,7 @@ _SCHEME_0: Final = SecurityScheme(
 )
 
 
-ROOT_SCHEMES: Final[tuple[SecuritySchemeEntry, ...]] = (
-    _SCHEME_0,
-)
+ROOT_SCHEMES: Final[tuple[SecuritySchemeEntry, ...]] = (_SCHEME_0,)
 
 
 OPERATION_0: Final = SecurityBinding(

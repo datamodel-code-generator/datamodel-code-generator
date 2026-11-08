@@ -49,7 +49,23 @@ class StoreFile:
         short: bytes | None
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(ParameterArgument(name='short', plan=ParameterPlan(location='query', name='short', style='form', explode=True, reserved_names=('digest',)), adapter=TypeAdapter(Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)])),),
+        arguments=(
+            ParameterArgument(
+                name='short',
+                plan=ParameterPlan(
+                    location='query',
+                    name='short',
+                    style='form',
+                    explode=True,
+                    reserved_names=('digest',),
+                ),
+                adapter=TypeAdapter(
+                    Annotated[
+                        bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)
+                    ]
+                ),
+            ),
+        ),
         record=Parameters,
     )
     BODY: Final = BodyAdapter(
@@ -65,7 +81,25 @@ class Upload:
     """Plans of the upload operation."""
 
     BODY: Final = BodyAdapter(
-        media=(BodyMedia(media_type='multipart/form-data', kind='multipart', adapter=TypeAdapter(models.UploadsPostRequest), fields=(FieldPlan('icon', 'string'),), json_parts=(JsonPart('record', field_adapter(models.UploadsPostRequest, 'record')),), file_parts=(FilePart('file'), FilePart('pages', repeated=True), FilePart('scan')), additional=JsonPart('', TypeAdapter(object), untyped=True)),),
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                adapter=TypeAdapter(models.UploadsPostRequest),
+                fields=(FieldPlan('icon', 'string'),),
+                json_parts=(
+                    JsonPart(
+                        'record', field_adapter(models.UploadsPostRequest, 'record')
+                    ),
+                ),
+                file_parts=(
+                    FilePart('file'),
+                    FilePart('pages', repeated=True),
+                    FilePart('scan'),
+                ),
+                additional=JsonPart('', TypeAdapter(object), untyped=True),
+            ),
+        ),
     )
     RESPONSES: Final = OperationResponses(
         responses={'204': Declared()},
@@ -77,10 +111,20 @@ class StoreMark:
     """Plans of the store_mark operation."""
 
     BODY: Final = BodyAdapter(
-        media=(BodyMedia(media_type='application/octet-stream', kind='text', adapter=TypeAdapter(models.Mark)),),
+        media=(
+            BodyMedia(
+                media_type='application/octet-stream',
+                kind='text',
+                adapter=TypeAdapter(models.Mark),
+            ),
+        ),
     )
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/octet-stream', kind='text', model=models.Mark)},
+        responses={
+            '200': Declared(
+                media_type='application/octet-stream', kind='text', model=models.Mark
+            )
+        },
         primary=200,
     )
 
@@ -89,10 +133,22 @@ class StoreStamp:
     """Plans of the store_stamp operation."""
 
     BODY: Final = BodyAdapter(
-        media=(BodyMedia(media_type='application/octet-stream', kind='binary', adapter=TypeAdapter(models.StampsPostRequest)),),
+        media=(
+            BodyMedia(
+                media_type='application/octet-stream',
+                kind='binary',
+                adapter=TypeAdapter(models.StampsPostRequest),
+            ),
+        ),
     )
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/octet-stream', kind='binary', model=models.StampsPostResponse)},
+        responses={
+            '200': Declared(
+                media_type='application/octet-stream',
+                kind='binary',
+                model=models.StampsPostResponse,
+            )
+        },
         primary=200,
     )
 

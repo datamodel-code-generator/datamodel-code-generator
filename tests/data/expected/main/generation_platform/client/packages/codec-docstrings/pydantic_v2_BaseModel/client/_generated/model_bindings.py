@@ -11,11 +11,17 @@ import models
 
 from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
-codec_0: Final[PydanticCodec[models.ABGetQueryQParameter]] = PydanticCodec(models.ABGetQueryQParameter)
+codec_0: Final[PydanticCodec[models.ABGetQueryQParameter]] = PydanticCodec(
+    models.ABGetQueryQParameter
+)
 """Codec of /paths/~1a\x00b/get parameter (request query q\"\"\"\\)."""
 
-codec_1: Final[PydanticCodec[models.ABGetResponse]] = PydanticCodec(models.ABGetResponse)
+codec_1: Final[PydanticCodec[models.ABGetResponse]] = PydanticCodec(
+    models.ABGetResponse
+)
 """Codec of /paths/~1a\x00b/get response_body (response 200 application/json)."""
 
-codec_2: Final[PydanticCodec[models.CDEGetResponse]] = PydanticCodec(models.CDEGetResponse)
+codec_2: Final[PydanticCodec[models.CDEGetResponse]] = PydanticCodec(
+    models.CDEGetResponse
+)
 """Codec of /paths/~1c\"\"\"d\\e"/get response_body (response 200 application/json)."""

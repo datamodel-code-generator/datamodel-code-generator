@@ -52,7 +52,7 @@ def test_wrap_string_literal_keeps_escape_sequences_whole(output_file: Path) -> 
         )
 
 
-@pytest.mark.parametrize("line_length", [18, 21])
+@pytest.mark.parametrize("line_length", [18, 20, 21])
 def test_wrap_string_literal_with_a_line_length_that_leaves_no_room(output_file: Path, line_length: int) -> None:
     """Finish when the line length leaves no room for content, or room for less than one escape sequence.
 
@@ -247,4 +247,95 @@ def test_one_key_functional_typed_dict_keeps_its_trailing_comma(output_file: Pat
         output_path=output_file,
         input_file_type="jsonschema",
         extra_args=["--output-model-type", "typing.TypedDict", "--formatters", *formatters],
+    )
+
+
+@pytest.mark.parametrize("formatters", [["black", "isort"], ["builtin"]], ids=["black", "builtin"])
+def test_docstrings_keep_line_ends_black_keeps(output_file: Path, formatters: list[str]) -> None:
+    """Lay out docstrings as black does, and keep the line ends of those black leaves as they are.
+
+    A docstring with a backslash at a line end is left alone by black; the builtin formatter stripped its trailing
+    spaces, and those of every attribute docstring, which black never changes.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "builtin_docstring_line_ends.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--use-schema-description", "--use-field-description", "--formatters", *formatters],
+    )
+
+
+def _write_custom_base_model_template(output_file: Path, body: str) -> Path:
+    template_dir = output_file.parent / "templates"
+    (template_dir / "pydantic_v2").mkdir(parents=True)
+    (template_dir / "pydantic_v2" / "BaseModel.jinja2").write_text(
+        "class {{ class_name }}({{ base_class }}):\n" + body, encoding="utf-8"
+    )
+    (input_path := output_file.parent / "custom_template_model.json").write_text(
+        json.dumps({"title": "Model", "type": "object", "properties": {"name": {"type": "string"}}}), encoding="utf-8"
+    )
+    return input_path
+
+
+@pytest.mark.parametrize("formatters", [["black", "isort"], ["builtin"]], ids=["black", "builtin"])
+def test_custom_template_return_annotation_is_split_at_its_brackets(output_file: Path, formatters: list[str]) -> None:
+    """Split a too long return annotation of a method without parameters at its brackets, as black does.
+
+    The builtin formatter put the annotation in parentheses with a trailing comma, which made it a tuple, and split
+    a union the same way.
+    """
+    input_path = _write_custom_base_model_template(
+        output_file,
+        "    name: str | None = None\n\n"
+        "    def first_names() -> tuple[dict[str, frozenset[bytes]], dict[str, frozenset[bytearray]]"
+        ", memoryview, int]:\n"
+        "        pass\n\n"
+        "    def other_names() -> frozenset[bytearray] | frozenset[memoryview] | frozenset[bytes] | None:\n"
+        "        pass\n",
+    )
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--custom-template-dir",
+            str(output_file.parent / "templates"),
+            "--formatters",
+            *formatters,
+            "--disable-timestamp",
+        ],
+        skip_code_validation=True,
+    )
+
+
+@pytest.mark.parametrize("formatters", [["black", "isort"], ["builtin"]], ids=["black", "builtin"])
+def test_wrap_string_literal_joins_implicitly_concatenated_strings(output_file: Path, formatters: list[str]) -> None:
+    """Wrap a long keyword value of implicitly concatenated strings as one string, as black does.
+
+    The builtin formatter wrapped the first string alone and left the next one after the parentheses, which does not
+    parse.
+    """
+    input_path = _write_custom_base_model_template(
+        output_file,
+        "    name: dict[str, str] = dict(\n"
+        "        description='A name written by a custom template with a long description that goes on'\n"
+        "        ' Done.'\n"
+        "    )\n",
+    )
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--custom-template-dir",
+            str(output_file.parent / "templates"),
+            "--formatters",
+            *formatters,
+            "--wrap-string-literal",
+            "--disable-timestamp",
+        ],
     )

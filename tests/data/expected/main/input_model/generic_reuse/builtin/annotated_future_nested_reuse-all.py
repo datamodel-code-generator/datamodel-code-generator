@@ -9,4 +9,6 @@ import tests.data.python.input_model.generic_reuse_future
 
 
 class NestedRoot(BaseModel):
-    box: tests.data.python.input_model.generic_reuse_future.NestedOwner.NestedRoot.model_fields['box'].annotation
+    box: tests.data.python.input_model.generic_reuse_future.NestedOwner.NestedRoot.model_fields[
+        'box'
+    ].annotation

@@ -56,17 +56,33 @@ ROOT_SCHEMES: Final[tuple[SecuritySchemeEntry, ...]] = (
 
 OPERATION_0: Final = SecurityBinding(
     schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3),
-    alternatives=((SecurityRequirement(scheme=_SCHEME_0, required_scopes=('read', 'write')),), (SecurityRequirement(scheme=_SCHEME_1, required_scopes=('read', 'write')),)),
+    alternatives=(
+        (SecurityRequirement(scheme=_SCHEME_0, required_scopes=('read', 'write')),),
+        (SecurityRequirement(scheme=_SCHEME_1, required_scopes=('read', 'write')),),
+    ),
 )
 
 
 OPERATION_1: Final = SecurityBinding(
     schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3),
-    alternatives=((SecurityRequirement(scheme=_SCHEME_0, required_scopes=('write',)), SecurityRequirement(scheme=_SCHEME_2, required_scopes=())), (SecurityRequirement(scheme=_SCHEME_1, required_scopes=('write',)), SecurityRequirement(scheme=_SCHEME_2, required_scopes=()))),
+    alternatives=(
+        (
+            SecurityRequirement(scheme=_SCHEME_0, required_scopes=('write',)),
+            SecurityRequirement(scheme=_SCHEME_2, required_scopes=()),
+        ),
+        (
+            SecurityRequirement(scheme=_SCHEME_1, required_scopes=('write',)),
+            SecurityRequirement(scheme=_SCHEME_2, required_scopes=()),
+        ),
+    ),
 )
 
 
 OPERATION_2: Final = SecurityBinding(
     schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2, _SCHEME_3),
-    alternatives=((SecurityRequirement(scheme=_SCHEME_2, required_scopes=()),), (SecurityRequirement(scheme=_SCHEME_3, required_scopes=()),), ()),
+    alternatives=(
+        (SecurityRequirement(scheme=_SCHEME_2, required_scopes=()),),
+        (SecurityRequirement(scheme=_SCHEME_3, required_scopes=()),),
+        (),
+    ),
 )

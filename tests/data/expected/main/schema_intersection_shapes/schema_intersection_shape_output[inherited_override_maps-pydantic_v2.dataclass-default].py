@@ -34,5 +34,7 @@ class Base:
 class Child(Base):
     settings: Settings | None = None
     tagged: (
-        dict[constr(pattern=r'^n'), conint(ge=0)] | dict[constr(pattern=r'type'), str] | None
+        dict[constr(pattern=r'^n'), conint(ge=0)]
+        | dict[constr(pattern=r'type'), str]
+        | None
     ) = None

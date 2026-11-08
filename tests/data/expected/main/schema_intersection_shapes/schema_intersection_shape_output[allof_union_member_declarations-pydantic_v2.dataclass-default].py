@@ -128,7 +128,9 @@ class TwoUnions7(TwoUnions2, TwoUnions3):
     pass
 
 
-TwoUnions = TypeAliasType("TwoUnions", TwoUnions4 | TwoUnions5 | TwoUnions6 | TwoUnions7)
+TwoUnions = TypeAliasType(
+    "TwoUnions", TwoUnions4 | TwoUnions5 | TwoUnions6 | TwoUnions7
+)
 
 
 @dataclass

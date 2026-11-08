@@ -30,6 +30,11 @@ PLAN_0: Final[PaginationPlan[Sequence_1, ListPetsResponse]] = PaginationPlan(
     call=_operations.OPERATION_0,
     items=_items_0,
     items_selector=BodySelector(pointer='/items'),
-    continuation=CursorPlan(read=BodySelector(pointer='/next'), write=ParameterTarget(location='query', name='cursor'), end_missing=True, empty_string_ends=True),
+    continuation=CursorPlan(
+        read=BodySelector(pointer='/next'),
+        write=ParameterTarget(location='query', name='cursor'),
+        end_missing=True,
+        empty_string_ends=True,
+    ),
     fingerprint='9d230fb300e0f65af3cddc1001412177c96404e2a75dc1b21497720bed7e1d14',
 )

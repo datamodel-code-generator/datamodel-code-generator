@@ -27,9 +27,9 @@ class Model(BaseModel):
     model_config = ConfigDict(
         regex_engine="python-re",
     )
-    anchored_tail: (
-        constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))') | None
-    ) = None
+    anchored_tail: constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))') | None = (
+        None
+    )
     anchored_tail_sibling: (
         constr(pattern=r'\A(?=[\s\S]*?(?:^a))(?=[\s\S]*?(?:b$))') | None
     ) = None

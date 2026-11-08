@@ -11,31 +11,41 @@ import models
 
 from .._runtime.model_codecs.msgspec_structs import MsgspecCodec
 
-codec_0: Final[MsgspecCodec[models.WorkGetQueryCaseParameter]] = MsgspecCodec(models.WorkGetQueryCaseParameter)
+codec_0: Final[MsgspecCodec[models.WorkGetQueryCaseParameter]] = MsgspecCodec(
+    models.WorkGetQueryCaseParameter
+)
 """Codec of /paths/~1work/get parameter (request query case)."""
 
 codec_1: Final[MsgspecCodec[models.Home]] = MsgspecCodec(models.Home)
 """Codec of /paths/~1work/get response_body (response 200 application/json)."""
 
-codec_2: Final[MsgspecCodec[models.WorkGetQueryCaseParameter]] = MsgspecCodec(models.WorkGetQueryCaseParameter)
+codec_2: Final[MsgspecCodec[models.WorkGetQueryCaseParameter]] = MsgspecCodec(
+    models.WorkGetQueryCaseParameter
+)
 """Codec of /paths/~1work/put parameter (request query case)."""
 
 codec_3: Final[MsgspecCodec[models.Home]] = MsgspecCodec(models.Home)
 """Codec of /paths/~1work/put request_body (request application/json)."""
 
-codec_4: Final[MsgspecCodec[models.WorkGetQueryCaseParameter]] = MsgspecCodec(models.WorkGetQueryCaseParameter)
+codec_4: Final[MsgspecCodec[models.WorkGetQueryCaseParameter]] = MsgspecCodec(
+    models.WorkGetQueryCaseParameter
+)
 """Codec of /paths/~1office/get parameter (request query case)."""
 
 codec_5: Final[MsgspecCodec[models.Home]] = MsgspecCodec(models.Home)
 """Codec of /paths/~1office/get response_body (response 200 application/json)."""
 
-codec_6: Final[MsgspecCodec[models.WorkGetQueryCaseParameter]] = MsgspecCodec(models.WorkGetQueryCaseParameter)
+codec_6: Final[MsgspecCodec[models.WorkGetQueryCaseParameter]] = MsgspecCodec(
+    models.WorkGetQueryCaseParameter
+)
 """Codec of /paths/~1home/get parameter (request query case)."""
 
 codec_7: Final[MsgspecCodec[models.Home | None]] = MsgspecCodec(models.Home | None)
 """Codec of /paths/~1home/get response_body (response 200 application/json)."""
 
-codec_8: Final[MsgspecCodec[models.WorkGetQueryCaseParameter]] = MsgspecCodec(models.WorkGetQueryCaseParameter)
+codec_8: Final[MsgspecCodec[models.WorkGetQueryCaseParameter]] = MsgspecCodec(
+    models.WorkGetQueryCaseParameter
+)
 """Codec of /paths/~1person/put parameter (request query case)."""
 
 codec_9: Final[MsgspecCodec[models.Person]] = MsgspecCodec(models.Person)

@@ -18,34 +18,51 @@ from .._runtime.model_codecs.stdlib_typeddicts import (
 
 MODELS: Final[dict[type, Model]] = {
     models.Home: Model((Field('street', 'street'),)),
-    models.Person: Model((Field('work', 'work', models.Home), Field('home', 'home', Choice((('object', models.Home),))))),
+    models.Person: Model(
+        (
+            Field('work', 'work', models.Home),
+            Field('home', 'home', Choice((('object', models.Home),))),
+        )
+    ),
 }
 
-codec_0: Final[TypedDictCodec[models.WorkGetQueryCaseParameter]] = TypedDictCodec(None, MODELS)
+codec_0: Final[TypedDictCodec[models.WorkGetQueryCaseParameter]] = TypedDictCodec(
+    None, MODELS
+)
 """Codec of /paths/~1work/get parameter (request query case)."""
 
 codec_1: Final[TypedDictCodec[models.Home]] = TypedDictCodec(models.Home, MODELS)
 """Codec of /paths/~1work/get response_body (response 200 application/json)."""
 
-codec_2: Final[TypedDictCodec[models.WorkGetQueryCaseParameter]] = TypedDictCodec(None, MODELS)
+codec_2: Final[TypedDictCodec[models.WorkGetQueryCaseParameter]] = TypedDictCodec(
+    None, MODELS
+)
 """Codec of /paths/~1work/put parameter (request query case)."""
 
 codec_3: Final[TypedDictCodec[models.Home]] = TypedDictCodec(models.Home, MODELS)
 """Codec of /paths/~1work/put request_body (request application/json)."""
 
-codec_4: Final[TypedDictCodec[models.WorkGetQueryCaseParameter]] = TypedDictCodec(None, MODELS)
+codec_4: Final[TypedDictCodec[models.WorkGetQueryCaseParameter]] = TypedDictCodec(
+    None, MODELS
+)
 """Codec of /paths/~1office/get parameter (request query case)."""
 
 codec_5: Final[TypedDictCodec[models.Home]] = TypedDictCodec(models.Home, MODELS)
 """Codec of /paths/~1office/get response_body (response 200 application/json)."""
 
-codec_6: Final[TypedDictCodec[models.WorkGetQueryCaseParameter]] = TypedDictCodec(None, MODELS)
+codec_6: Final[TypedDictCodec[models.WorkGetQueryCaseParameter]] = TypedDictCodec(
+    None, MODELS
+)
 """Codec of /paths/~1home/get parameter (request query case)."""
 
-codec_7: Final[TypedDictCodec[models.Home | None]] = TypedDictCodec(Choice((('object', models.Home),)), MODELS)
+codec_7: Final[TypedDictCodec[models.Home | None]] = TypedDictCodec(
+    Choice((('object', models.Home),)), MODELS
+)
 """Codec of /paths/~1home/get response_body (response 200 application/json)."""
 
-codec_8: Final[TypedDictCodec[models.WorkGetQueryCaseParameter]] = TypedDictCodec(None, MODELS)
+codec_8: Final[TypedDictCodec[models.WorkGetQueryCaseParameter]] = TypedDictCodec(
+    None, MODELS
+)
 """Codec of /paths/~1person/put parameter (request query case)."""
 
 codec_9: Final[TypedDictCodec[models.Person]] = TypedDictCodec(models.Person, MODELS)

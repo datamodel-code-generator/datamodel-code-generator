@@ -28,7 +28,25 @@ OPERATION_0: Final[OperationPlan[CreateVoiceResponse]] = OperationPlan(
     path='/voices',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', form=MultipartForm(parts=(PartPlan('type', codec=model_bindings.codec_1), PartPlan('name', codec=model_bindings.codec_2), PartPlan('audio_sample'), PartPlan('prompt', codec=model_bindings.codec_3)), additional=PartPlan('', 'json'))),), default='multipart/form-data', required=True),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                form=MultipartForm(
+                    parts=(
+                        PartPlan('type', codec=model_bindings.codec_1),
+                        PartPlan('name', codec=model_bindings.codec_2),
+                        PartPlan('audio_sample'),
+                        PartPlan('prompt', codec=model_bindings.codec_3),
+                    ),
+                    additional=PartPlan('', 'json'),
+                ),
+            ),
+        ),
+        default='multipart/form-data',
+        required=True,
+    ),
 )
 
 OPERATION_1: Final[OperationPlan[UpdateSettingsResponse]] = OperationPlan(
@@ -37,5 +55,16 @@ OPERATION_1: Final[OperationPlan[UpdateSettingsResponse]] = OperationPlan(
     path='/settings',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', codec=model_bindings.codec_0, form=MultipartForm(members=True)),), default='multipart/form-data', required=True),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                codec=model_bindings.codec_0,
+                form=MultipartForm(members=True),
+            ),
+        ),
+        default='multipart/form-data',
+        required=True,
+    ),
 )

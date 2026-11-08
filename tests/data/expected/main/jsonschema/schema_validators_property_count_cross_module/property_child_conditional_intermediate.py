@@ -31,8 +31,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 
 
 class PropertyChildConditionalIntermediate(
-    _JsonSchemaRuntimeValidationBase,
-    ConditionalIntermediate,
+    _JsonSchemaRuntimeValidationBase, ConditionalIntermediate
 ):
     __json_schema_property_count_rule__: ClassVar[tuple[Any, ...]] = (2, None)
     child: str | None = None

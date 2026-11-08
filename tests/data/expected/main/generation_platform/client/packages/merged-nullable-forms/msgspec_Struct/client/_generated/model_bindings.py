@@ -23,11 +23,17 @@ codec_2: Final[MsgspecCodec[models.WrapNullable]] = MsgspecCodec(models.WrapNull
 codec_3: Final[MsgspecCodec[models.WrapNullable]] = MsgspecCodec(models.WrapNullable)
 """Codec of /paths/~1wrap/put response_body (response 200 application/json)."""
 
-codec_4: Final[MsgspecCodec[models.WrapNullable | None]] = MsgspecCodec(models.WrapNullable | None)
+codec_4: Final[MsgspecCodec[models.WrapNullable | None]] = MsgspecCodec(
+    models.WrapNullable | None
+)
 """Codec of /paths/~1wrap-nullable/put request_body (request application/json)."""
 
-codec_5: Final[MsgspecCodec[models.WrapNullable | None]] = MsgspecCodec(models.WrapNullable | None)
+codec_5: Final[MsgspecCodec[models.WrapNullable | None]] = MsgspecCodec(
+    models.WrapNullable | None
+)
 """Codec of /paths/~1wrap-nullable/put response_body (response 200 application/json)."""
 
-codec_6: Final[MsgspecCodec[models.NullObj | None]] = MsgspecCodec(models.NullObj | None)
+codec_6: Final[MsgspecCodec[models.NullObj | None]] = MsgspecCodec(
+    models.NullObj | None
+)
 """Codec of /paths/~1null-object/get response_body (response 200 application/json)."""

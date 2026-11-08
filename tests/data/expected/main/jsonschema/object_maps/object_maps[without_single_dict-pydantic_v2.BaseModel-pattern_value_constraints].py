@@ -58,14 +58,17 @@ class Model(BaseModel):
     pRefSib: dict[constr(pattern=r'^r'), conint(ge=1, le=10)] | None = None
     pNull: dict[constr(pattern=r'^z'), conint(ge=0) | None] | None = None
     pSame: (
-        dict[constr(pattern=r'^a|^b'), PSamePatternProperty | PSamePatternProperty1] | None
+        dict[constr(pattern=r'^a|^b'), PSamePatternProperty | PSamePatternProperty1]
+        | None
     ) = None
     pItems: dict[constr(pattern=r'^i'), PItemsPatternProperty] | None = None
     pObjCount: dict[constr(pattern=r'^o'), PObjCountPatternProperty] | None = None
     pOther: dict[constr(pattern=r'^n'), conint(ge=0)] | None = None
     pEnumKeys: dict[Literal['a1', 'zz'], conint(ge=0)] | None = None
     pAny: (
-        dict[constr(pattern=r'^a'), conint(ge=0)] | dict[constr(pattern=r'^b'), Any] | None
+        dict[constr(pattern=r'^a'), conint(ge=0)]
+        | dict[constr(pattern=r'^b'), Any]
+        | None
     ) = None
     pPlain: dict[constr(pattern=r'^p'), int] | None = None
     rPat: Pat | None = None

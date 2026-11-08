@@ -1806,8 +1806,8 @@ builtin-api-preserved	main/input_model/generic_reuse/preserved.py
 builtin-api-regenerate-all-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_alias_regenerate-all.txt
 builtin-api-regenerate-all-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_alias_regenerate-all.py
 builtin-api-regenerate-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_containers_regenerate-all.txt
-builtin-api-regenerate-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_containers_regenerate-all.py	?
-builtin-api-regenerate-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/builtin/annotated_containers_regenerate-all.py	?	= main/input_model/generic_reuse/builtin/annotated_containers_regenerate-all.py
+builtin-api-regenerate-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_containers_regenerate-all.py	?	= main/input_model/generic_reuse/external/annotated_containers_regenerate-all.py
+builtin-api-regenerate-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/builtin/annotated_containers_regenerate-all.py	?	= main/input_model/generic_reuse/external/annotated_containers_regenerate-all.py
 builtin-api-regenerate-all-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_dataclass_regenerate-all.txt
 builtin-api-regenerate-all-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_dataclass_regenerate-all.py
 builtin-api-regenerate-all-annotated_future_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_alias_regenerate-all.txt
@@ -1860,11 +1860,11 @@ builtin-api-regenerate-all-enum-pydantic_v2.BaseModel	main/input_model/generic_r
 builtin-api-regenerate-all-enum-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/builtin/enum_regenerate-all.py	?
 builtin-api-regenerate-all-export-pydantic_v2.BaseModel	main/input_model/generic_reuse/export_regenerate-all.py
 builtin-api-regenerate-all-export-pydantic_v2.BaseModel	main/input_model/generic_reuse/export_regenerate-all.txt
-builtin-api-regenerate-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_regenerate-all.py
+builtin-api-regenerate-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_regenerate-all.py	= main/input_model/generic_reuse/dataclass/external/fallback_mixed_regenerate-all.py
 builtin-api-regenerate-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_regenerate-all.txt
 builtin-api-regenerate-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/fallback_mixed_regenerate-all.py
 builtin-api-regenerate-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_regenerate-all.txt
-builtin-api-regenerate-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reverse_regenerate-all.py
+builtin-api-regenerate-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reverse_regenerate-all.py	= main/input_model/generic_reuse/dataclass/external/fallback_mixed_reverse_regenerate-all.py
 builtin-api-regenerate-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_reverse_regenerate-all.txt
 builtin-api-regenerate-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/fallback_mixed_reverse_regenerate-all.py
 builtin-api-regenerate-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_reverse_regenerate-all.txt
@@ -1925,8 +1925,8 @@ builtin-api-regenerate-all-typed-pydantic_v2.BaseModel	main/input_model/generic_
 builtin-api-reuse-all-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_alias_reuse-all.txt
 builtin-api-reuse-all-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_alias_reuse-all.py
 builtin-api-reuse-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_containers_reuse-all.txt
-builtin-api-reuse-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_containers_reuse-all.py	?
-builtin-api-reuse-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/builtin/annotated_containers_reuse-all.py	?	= main/input_model/generic_reuse/builtin/annotated_containers_reuse-all.py
+builtin-api-reuse-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_containers_reuse-all.py	?	= main/input_model/generic_reuse/external/annotated_containers_reuse-all.py
+builtin-api-reuse-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/builtin/annotated_containers_reuse-all.py	?	= main/input_model/generic_reuse/external/annotated_containers_reuse-all.py
 builtin-api-reuse-all-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_dataclass_reuse-all.txt
 builtin-api-reuse-all-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_dataclass_reuse-all.py
 builtin-api-reuse-all-annotated_future_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_alias_reuse-all.txt
@@ -1979,11 +1979,11 @@ builtin-api-reuse-all-enum-pydantic_v2.BaseModel	main/input_model/generic_reuse/
 builtin-api-reuse-all-enum-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/builtin/enum_reuse-all.py	?	= main/input_model/generic_reuse/enum_reuse-all.py
 builtin-api-reuse-all-export-pydantic_v2.BaseModel	main/input_model/generic_reuse/export_reuse-all.py
 builtin-api-reuse-all-export-pydantic_v2.BaseModel	main/input_model/generic_reuse/export_reuse-all.txt
-builtin-api-reuse-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reuse-all.py
+builtin-api-reuse-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reuse-all.py	= main/input_model/generic_reuse/dataclass/external/fallback_mixed_reuse-all.py
 builtin-api-reuse-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_reuse-all.txt
 builtin-api-reuse-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/fallback_mixed_reuse-all.py
 builtin-api-reuse-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_reuse-all.txt
-builtin-api-reuse-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reverse_reuse-all.py
+builtin-api-reuse-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reverse_reuse-all.py	= main/input_model/generic_reuse/dataclass/external/fallback_mixed_reverse_reuse-all.py
 builtin-api-reuse-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_reverse_reuse-all.txt
 builtin-api-reuse-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/fallback_mixed_reverse_reuse-all.py
 builtin-api-reuse-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_reverse_reuse-all.txt
@@ -2038,8 +2038,8 @@ builtin-api-reuse-all-typed-pydantic_v2.BaseModel	main/input_model/generic_reuse
 builtin-api-reuse-foreign-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_alias_reuse-all.txt
 builtin-api-reuse-foreign-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_alias_reuse-all.py
 builtin-api-reuse-foreign-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_containers_reuse-all.txt
-builtin-api-reuse-foreign-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_containers_reuse-all.py	?
-builtin-api-reuse-foreign-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/builtin/annotated_containers_reuse-all.py	?	= main/input_model/generic_reuse/builtin/annotated_containers_reuse-all.py
+builtin-api-reuse-foreign-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_containers_reuse-all.py	?	= main/input_model/generic_reuse/external/annotated_containers_reuse-all.py
+builtin-api-reuse-foreign-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/builtin/annotated_containers_reuse-all.py	?	= main/input_model/generic_reuse/external/annotated_containers_reuse-all.py
 builtin-api-reuse-foreign-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_dataclass_reuse-all.txt
 builtin-api-reuse-foreign-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_dataclass_reuse-all.py
 builtin-api-reuse-foreign-annotated_future_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_alias_reuse-all.txt
@@ -2092,11 +2092,11 @@ builtin-api-reuse-foreign-enum-pydantic_v2.BaseModel	main/input_model/generic_re
 builtin-api-reuse-foreign-enum-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/builtin/enum_reuse-all.py	?	= main/input_model/generic_reuse/enum_reuse-all.py
 builtin-api-reuse-foreign-export-pydantic_v2.BaseModel	main/input_model/generic_reuse/export_reuse-all.py
 builtin-api-reuse-foreign-export-pydantic_v2.BaseModel	main/input_model/generic_reuse/export_reuse-all.txt
-builtin-api-reuse-foreign-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_regenerate-all.py
+builtin-api-reuse-foreign-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_regenerate-all.py	= main/input_model/generic_reuse/dataclass/external/fallback_mixed_regenerate-all.py
 builtin-api-reuse-foreign-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_regenerate-all.txt
 builtin-api-reuse-foreign-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/fallback_mixed_reuse-all.py
 builtin-api-reuse-foreign-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_reuse-all.txt
-builtin-api-reuse-foreign-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reverse_regenerate-all.py
+builtin-api-reuse-foreign-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reverse_regenerate-all.py	= main/input_model/generic_reuse/dataclass/external/fallback_mixed_reverse_regenerate-all.py
 builtin-api-reuse-foreign-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_reverse_regenerate-all.txt
 builtin-api-reuse-foreign-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/fallback_mixed_reverse_reuse-all.py
 builtin-api-reuse-foreign-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_reverse_reuse-all.txt
@@ -2156,8 +2156,8 @@ builtin-cli-preserved	main/input_model/generic_reuse/preserved.py
 builtin-cli-regenerate-all-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_alias_regenerate-all.txt
 builtin-cli-regenerate-all-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_alias_regenerate-all.py
 builtin-cli-regenerate-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_containers_regenerate-all.txt
-builtin-cli-regenerate-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_containers_regenerate-all.py	?
-builtin-cli-regenerate-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/builtin/annotated_containers_regenerate-all.py	?	= main/input_model/generic_reuse/builtin/annotated_containers_regenerate-all.py
+builtin-cli-regenerate-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_containers_regenerate-all.py	?	= main/input_model/generic_reuse/external/annotated_containers_regenerate-all.py
+builtin-cli-regenerate-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/builtin/annotated_containers_regenerate-all.py	?	= main/input_model/generic_reuse/external/annotated_containers_regenerate-all.py
 builtin-cli-regenerate-all-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_dataclass_regenerate-all.txt
 builtin-cli-regenerate-all-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_dataclass_regenerate-all.py
 builtin-cli-regenerate-all-annotated_future_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_alias_regenerate-all.txt
@@ -2210,11 +2210,11 @@ builtin-cli-regenerate-all-enum-pydantic_v2.BaseModel	main/input_model/generic_r
 builtin-cli-regenerate-all-enum-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/builtin/enum_regenerate-all.py	?
 builtin-cli-regenerate-all-export-pydantic_v2.BaseModel	main/input_model/generic_reuse/export_regenerate-all.py
 builtin-cli-regenerate-all-export-pydantic_v2.BaseModel	main/input_model/generic_reuse/export_regenerate-all.txt
-builtin-cli-regenerate-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_regenerate-all.py
+builtin-cli-regenerate-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_regenerate-all.py	= main/input_model/generic_reuse/dataclass/external/fallback_mixed_regenerate-all.py
 builtin-cli-regenerate-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_regenerate-all.txt
 builtin-cli-regenerate-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/fallback_mixed_regenerate-all.py
 builtin-cli-regenerate-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_regenerate-all.txt
-builtin-cli-regenerate-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reverse_regenerate-all.py
+builtin-cli-regenerate-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reverse_regenerate-all.py	= main/input_model/generic_reuse/dataclass/external/fallback_mixed_reverse_regenerate-all.py
 builtin-cli-regenerate-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_reverse_regenerate-all.txt
 builtin-cli-regenerate-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/fallback_mixed_reverse_regenerate-all.py
 builtin-cli-regenerate-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_reverse_regenerate-all.txt
@@ -2275,8 +2275,8 @@ builtin-cli-regenerate-all-typed-pydantic_v2.BaseModel	main/input_model/generic_
 builtin-cli-reuse-all-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_alias_reuse-all.txt
 builtin-cli-reuse-all-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_alias_reuse-all.py
 builtin-cli-reuse-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_containers_reuse-all.txt
-builtin-cli-reuse-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_containers_reuse-all.py	?
-builtin-cli-reuse-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/builtin/annotated_containers_reuse-all.py	?	= main/input_model/generic_reuse/builtin/annotated_containers_reuse-all.py
+builtin-cli-reuse-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_containers_reuse-all.py	?	= main/input_model/generic_reuse/external/annotated_containers_reuse-all.py
+builtin-cli-reuse-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/builtin/annotated_containers_reuse-all.py	?	= main/input_model/generic_reuse/external/annotated_containers_reuse-all.py
 builtin-cli-reuse-all-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_dataclass_reuse-all.txt
 builtin-cli-reuse-all-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_dataclass_reuse-all.py
 builtin-cli-reuse-all-annotated_future_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_alias_reuse-all.txt
@@ -2329,11 +2329,11 @@ builtin-cli-reuse-all-enum-pydantic_v2.BaseModel	main/input_model/generic_reuse/
 builtin-cli-reuse-all-enum-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/builtin/enum_reuse-all.py	?	= main/input_model/generic_reuse/enum_reuse-all.py
 builtin-cli-reuse-all-export-pydantic_v2.BaseModel	main/input_model/generic_reuse/export_reuse-all.py
 builtin-cli-reuse-all-export-pydantic_v2.BaseModel	main/input_model/generic_reuse/export_reuse-all.txt
-builtin-cli-reuse-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reuse-all.py
+builtin-cli-reuse-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reuse-all.py	= main/input_model/generic_reuse/dataclass/external/fallback_mixed_reuse-all.py
 builtin-cli-reuse-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_reuse-all.txt
 builtin-cli-reuse-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/fallback_mixed_reuse-all.py
 builtin-cli-reuse-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_reuse-all.txt
-builtin-cli-reuse-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reverse_reuse-all.py
+builtin-cli-reuse-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reverse_reuse-all.py	= main/input_model/generic_reuse/dataclass/external/fallback_mixed_reverse_reuse-all.py
 builtin-cli-reuse-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_reverse_reuse-all.txt
 builtin-cli-reuse-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/fallback_mixed_reverse_reuse-all.py
 builtin-cli-reuse-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_reverse_reuse-all.txt
@@ -2388,8 +2388,8 @@ builtin-cli-reuse-all-typed-pydantic_v2.BaseModel	main/input_model/generic_reuse
 builtin-cli-reuse-foreign-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_alias_reuse-all.txt
 builtin-cli-reuse-foreign-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_alias_reuse-all.py
 builtin-cli-reuse-foreign-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_containers_reuse-all.txt
-builtin-cli-reuse-foreign-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_containers_reuse-all.py	?
-builtin-cli-reuse-foreign-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/builtin/annotated_containers_reuse-all.py	?	= main/input_model/generic_reuse/builtin/annotated_containers_reuse-all.py
+builtin-cli-reuse-foreign-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_containers_reuse-all.py	?	= main/input_model/generic_reuse/external/annotated_containers_reuse-all.py
+builtin-cli-reuse-foreign-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/builtin/annotated_containers_reuse-all.py	?	= main/input_model/generic_reuse/external/annotated_containers_reuse-all.py
 builtin-cli-reuse-foreign-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_dataclass_reuse-all.txt
 builtin-cli-reuse-foreign-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/annotated_dataclass_reuse-all.py
 builtin-cli-reuse-foreign-annotated_future_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_alias_reuse-all.txt
@@ -2442,11 +2442,11 @@ builtin-cli-reuse-foreign-enum-pydantic_v2.BaseModel	main/input_model/generic_re
 builtin-cli-reuse-foreign-enum-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/builtin/enum_reuse-all.py	?	= main/input_model/generic_reuse/enum_reuse-all.py
 builtin-cli-reuse-foreign-export-pydantic_v2.BaseModel	main/input_model/generic_reuse/export_reuse-all.py
 builtin-cli-reuse-foreign-export-pydantic_v2.BaseModel	main/input_model/generic_reuse/export_reuse-all.txt
-builtin-cli-reuse-foreign-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_regenerate-all.py
+builtin-cli-reuse-foreign-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_regenerate-all.py	= main/input_model/generic_reuse/dataclass/external/fallback_mixed_regenerate-all.py
 builtin-cli-reuse-foreign-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_regenerate-all.txt
 builtin-cli-reuse-foreign-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/fallback_mixed_reuse-all.py
 builtin-cli-reuse-foreign-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_reuse-all.txt
-builtin-cli-reuse-foreign-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reverse_regenerate-all.py
+builtin-cli-reuse-foreign-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reverse_regenerate-all.py	= main/input_model/generic_reuse/dataclass/external/fallback_mixed_reverse_regenerate-all.py
 builtin-cli-reuse-foreign-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_reverse_regenerate-all.txt
 builtin-cli-reuse-foreign-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/builtin/fallback_mixed_reverse_reuse-all.py
 builtin-cli-reuse-foreign-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_reverse_reuse-all.txt
@@ -2519,7 +2519,7 @@ external-api-regenerate-all-annotated_future_inline-dataclasses.dataclass	main/i
 external-api-regenerate-all-annotated_future_inline-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_inline_regenerate-all.txt
 external-api-regenerate-all-annotated_future_inline-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_inline_regenerate-all.py	= main/input_model/generic_reuse/builtin/annotated_future_inline_regenerate-all.py
 external-api-regenerate-all-annotated_future_list-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_list_regenerate-all.txt
-external-api-regenerate-all-annotated_future_list-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_list_regenerate-all.py
+external-api-regenerate-all-annotated_future_list-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_list_regenerate-all.py	= main/input_model/generic_reuse/builtin/annotated_future_list_regenerate-all.py
 external-api-regenerate-all-annotated_future_model-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/annotated_future_model_regenerate-all.txt
 external-api-regenerate-all-annotated_future_model-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/annotated_future_model_regenerate-all.py
 external-api-regenerate-all-annotated_future_model-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_model_regenerate-all.txt
@@ -2531,7 +2531,7 @@ external-api-regenerate-all-annotated_future_typed-dataclasses.dataclass	main/in
 external-api-regenerate-all-annotated_future_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_typed_regenerate-all.py
 external-api-regenerate-all-annotated_future_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_typed_regenerate-all.txt
 external-api-regenerate-all-annotated_future_union-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_union_regenerate-all.txt
-external-api-regenerate-all-annotated_future_union-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_union_regenerate-all.py	?
+external-api-regenerate-all-annotated_future_union-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_union_regenerate-all.py	?	= main/input_model/generic_reuse/builtin/annotated_future_union_regenerate-all.py
 external-api-regenerate-all-annotated_future_union-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_union_regenerate-all_black23.py	?
 external-api-regenerate-all-annotated_inline-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_inline_regenerate-all.txt
 external-api-regenerate-all-annotated_inline-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_inline_regenerate-all.py	= main/input_model/generic_reuse/builtin/annotated_inline_regenerate-all.py
@@ -2542,7 +2542,7 @@ external-api-regenerate-all-annotated_repeated-pydantic_v2.BaseModel	main/input_
 external-api-regenerate-all-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_typed_regenerate-all.txt
 external-api-regenerate-all-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_typed_regenerate-all.py	= main/input_model/generic_reuse/builtin/annotated_typed_regenerate-all.py
 external-api-regenerate-all-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_wrapper_regenerate-all.txt
-external-api-regenerate-all-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_wrapper_regenerate-all.py
+external-api-regenerate-all-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_wrapper_regenerate-all.py	= main/input_model/generic_reuse/builtin/annotated_wrapper_regenerate-all.py
 external-api-regenerate-all-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/arguments_regenerate-all.py	?
 external-api-regenerate-all-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/arguments_regenerate-all.txt
 external-api-regenerate-all-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/external/arguments_regenerate-all.py	?	= main/input_model/generic_reuse/pydantic20/builtin/arguments_regenerate-all.py
@@ -2564,19 +2564,19 @@ external-api-regenerate-all-export-pydantic_v2.BaseModel	main/input_model/generi
 external-api-regenerate-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_regenerate-all.py	?
 external-api-regenerate-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/fallback_mixed_regenerate-all.py	?
 external-api-regenerate-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_regenerate-all.txt
-external-api-regenerate-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_regenerate-all.py	?
+external-api-regenerate-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_regenerate-all.py	?	= main/input_model/generic_reuse/builtin/fallback_mixed_regenerate-all.py
 external-api-regenerate-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_regenerate-all_black23.py	?
 external-api-regenerate-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_regenerate-all.txt
 external-api-regenerate-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reverse_regenerate-all.py	?
 external-api-regenerate-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/fallback_mixed_reverse_regenerate-all.py	?
 external-api-regenerate-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_reverse_regenerate-all.txt
-external-api-regenerate-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reverse_regenerate-all.py	?
+external-api-regenerate-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reverse_regenerate-all.py	?	= main/input_model/generic_reuse/builtin/fallback_mixed_reverse_regenerate-all.py
 external-api-regenerate-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reverse_regenerate-all_black23.py	?
 external-api-regenerate-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_reverse_regenerate-all.txt
-external-api-regenerate-all-fallback_multi-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_regenerate-all.py	?
+external-api-regenerate-all-fallback_multi-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_regenerate-all.py	?	= main/input_model/generic_reuse/builtin/fallback_multi_regenerate-all.py
 external-api-regenerate-all-fallback_multi-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_regenerate-all_black23.py	?
 external-api-regenerate-all-fallback_multi-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_multi_regenerate-all.txt
-external-api-regenerate-all-fallback_multi_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reverse_regenerate-all.py	?
+external-api-regenerate-all-fallback_multi_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reverse_regenerate-all.py	?	= main/input_model/generic_reuse/builtin/fallback_multi_reverse_regenerate-all.py
 external-api-regenerate-all-fallback_multi_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reverse_regenerate-all_black23.py	?
 external-api-regenerate-all-fallback_multi_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_multi_reverse_regenerate-all.txt
 external-api-regenerate-all-inheritance-pydantic_v2.BaseModel	main/input_model/generic_reuse/inheritance_regenerate-all.py
@@ -2630,12 +2630,12 @@ external-api-regenerate-all-repeated-pydantic_v2.BaseModel	main/input_model/gene
 external-api-regenerate-all-typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/typed_regenerate-all.py
 external-api-regenerate-all-typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/typed_regenerate-all.txt
 external-api-reuse-all-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_alias_reuse-all.txt
-external-api-reuse-all-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_alias_reuse-all.py
+external-api-reuse-all-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_alias_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_alias_reuse-all.py
 external-api-reuse-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_containers_reuse-all.txt
 external-api-reuse-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_containers_reuse-all.py	?
 external-api-reuse-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/external/annotated_containers_reuse-all.py	?	= main/input_model/generic_reuse/external/annotated_containers_reuse-all.py
 external-api-reuse-all-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_dataclass_reuse-all.txt
-external-api-reuse-all-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_dataclass_reuse-all.py
+external-api-reuse-all-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_dataclass_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_dataclass_reuse-all.py
 external-api-reuse-all-annotated_future_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_alias_reuse-all.txt
 external-api-reuse-all-annotated_future_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_alias_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_future_alias_reuse-all.py
 external-api-reuse-all-annotated_future_export-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_export_reuse-all.txt
@@ -2647,11 +2647,11 @@ external-api-reuse-all-annotated_future_inline-pydantic_v2.BaseModel	main/input_
 external-api-reuse-all-annotated_future_list-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_list_reuse-all.txt
 external-api-reuse-all-annotated_future_list-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_list_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_future_list_reuse-all.py
 external-api-reuse-all-annotated_future_model-dataclasses.dataclass	main/input_model/generic_reuse/annotated_future_model_reuse-all.txt
-external-api-reuse-all-annotated_future_model-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/annotated_future_model_reuse-all.py
+external-api-reuse-all-annotated_future_model-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/annotated_future_model_reuse-all.py	= main/input_model/generic_reuse/dataclass/builtin/annotated_future_model_reuse-all.py
 external-api-reuse-all-annotated_future_model-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_model_reuse-all.txt
-external-api-reuse-all-annotated_future_model-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_model_reuse-all.py
+external-api-reuse-all-annotated_future_model-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_model_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_future_model_reuse-all.py
 external-api-reuse-all-annotated_future_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_nested_reuse-all.txt
-external-api-reuse-all-annotated_future_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_nested_reuse-all.py
+external-api-reuse-all-annotated_future_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_nested_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_future_nested_reuse-all.py
 external-api-reuse-all-annotated_future_typed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/annotated_future_typed_regenerate-all.py
 external-api-reuse-all-annotated_future_typed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/annotated_future_typed_regenerate-all.txt
 external-api-reuse-all-annotated_future_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_typed_regenerate-all.py
@@ -2659,16 +2659,16 @@ external-api-reuse-all-annotated_future_typed-pydantic_v2.BaseModel	main/input_m
 external-api-reuse-all-annotated_future_union-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_union_reuse-all.txt
 external-api-reuse-all-annotated_future_union-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_union_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_future_union_reuse-all.py
 external-api-reuse-all-annotated_inline-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_inline_reuse-all.txt
-external-api-reuse-all-annotated_inline-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_inline_reuse-all.py
+external-api-reuse-all-annotated_inline-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_inline_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_inline_reuse-all.py
 external-api-reuse-all-annotated_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_nested_reuse-all.txt
-external-api-reuse-all-annotated_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_nested_reuse-all.py
+external-api-reuse-all-annotated_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_nested_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_nested_reuse-all.py
 external-api-reuse-all-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_repeated_reuse-all.txt
-external-api-reuse-all-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all.py	?
+external-api-reuse-all-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all.py	?	= main/input_model/generic_reuse/builtin/annotated_repeated_reuse-all.py
 external-api-reuse-all-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all_black23.py	?
 external-api-reuse-all-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_typed_reuse-all.txt
 external-api-reuse-all-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_typed_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_typed_reuse-all.py
 external-api-reuse-all-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_wrapper_reuse-all.txt
-external-api-reuse-all-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_wrapper_reuse-all.py
+external-api-reuse-all-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_wrapper_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_wrapper_reuse-all.py
 external-api-reuse-all-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/arguments_reuse-all.py	?
 external-api-reuse-all-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/arguments_reuse-all.txt
 external-api-reuse-all-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/external/arguments_reuse-all.py	?	= main/input_model/generic_reuse/arguments_reuse-all.py
@@ -2690,31 +2690,31 @@ external-api-reuse-all-export-pydantic_v2.BaseModel	main/input_model/generic_reu
 external-api-reuse-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reuse-all.py	?
 external-api-reuse-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/fallback_mixed_reuse-all.py	?
 external-api-reuse-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_reuse-all.txt
-external-api-reuse-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reuse-all.py	?
+external-api-reuse-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reuse-all.py	?	= main/input_model/generic_reuse/builtin/fallback_mixed_reuse-all.py
 external-api-reuse-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reuse-all_black23.py	?
 external-api-reuse-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_reuse-all.txt
 external-api-reuse-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reverse_reuse-all.py	?
 external-api-reuse-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/fallback_mixed_reverse_reuse-all.py	?
 external-api-reuse-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_reverse_reuse-all.txt
-external-api-reuse-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reverse_reuse-all.py	?
+external-api-reuse-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reverse_reuse-all.py	?	= main/input_model/generic_reuse/builtin/fallback_mixed_reverse_reuse-all.py
 external-api-reuse-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reverse_reuse-all_black23.py	?
 external-api-reuse-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_reverse_reuse-all.txt
-external-api-reuse-all-fallback_multi-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reuse-all.py
+external-api-reuse-all-fallback_multi-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reuse-all.py	= main/input_model/generic_reuse/builtin/fallback_multi_reuse-all.py
 external-api-reuse-all-fallback_multi-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_multi_reuse-all.txt
-external-api-reuse-all-fallback_multi_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reverse_reuse-all.py
+external-api-reuse-all-fallback_multi_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reverse_reuse-all.py	= main/input_model/generic_reuse/builtin/fallback_multi_reverse_reuse-all.py
 external-api-reuse-all-fallback_multi_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_multi_reverse_reuse-all.txt
 external-api-reuse-all-inheritance-pydantic_v2.BaseModel	main/input_model/generic_reuse/inheritance_reuse-all.py
 external-api-reuse-all-inheritance-pydantic_v2.BaseModel	main/input_model/generic_reuse/inheritance_reuse-all.txt
 external-api-reuse-all-int-pydantic_v2.BaseModel	main/input_model/generic_reuse/int_reuse-all.py
 external-api-reuse-all-int-pydantic_v2.BaseModel	main/input_model/generic_reuse/int_reuse-all.txt
-external-api-reuse-all-local_enum-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/local_enum_reuse-all.py
+external-api-reuse-all-local_enum-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/local_enum_reuse-all.py	= main/input_model/generic_reuse/dataclass/builtin/local_enum_reuse-all.py
 external-api-reuse-all-local_enum-dataclasses.dataclass	main/input_model/generic_reuse/local_enum_reuse-all.txt
-external-api-reuse-all-local_enum-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_reuse-all.py
+external-api-reuse-all-local_enum-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_reuse-all.py	= main/input_model/generic_reuse/builtin/local_enum_reuse-all.py
 external-api-reuse-all-local_enum-pydantic_v2.BaseModel	main/input_model/generic_reuse/local_enum_reuse-all.txt
-external-api-reuse-all-local_enum_dataclass-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/local_enum_dataclass_reuse-all.py	?
+external-api-reuse-all-local_enum_dataclass-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/local_enum_dataclass_reuse-all.py	?	= main/input_model/generic_reuse/dataclass/builtin/local_enum_dataclass_reuse-all.py
 external-api-reuse-all-local_enum_dataclass-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/local_enum_dataclass_reuse-all_black23.py	?
 external-api-reuse-all-local_enum_dataclass-dataclasses.dataclass	main/input_model/generic_reuse/local_enum_dataclass_reuse-all.txt
-external-api-reuse-all-local_enum_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_dataclass_reuse-all.py	?
+external-api-reuse-all-local_enum_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_dataclass_reuse-all.py	?	= main/input_model/generic_reuse/builtin/local_enum_dataclass_reuse-all.py
 external-api-reuse-all-local_enum_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_dataclass_reuse-all_black23.py	?
 external-api-reuse-all-local_enum_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/local_enum_dataclass_reuse-all.txt
 external-api-reuse-all-local_enum_future-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/local_enum_future_reuse-all.py	?
@@ -2723,10 +2723,10 @@ external-api-reuse-all-local_enum_future-dataclasses.dataclass	main/input_model/
 external-api-reuse-all-local_enum_future-pydantic_v2.BaseModel	main/input_model/generic_reuse/local_enum_future_reuse-all.py	?
 external-api-reuse-all-local_enum_future-pydantic_v2.BaseModel	main/input_model/generic_reuse/local_enum_future_reuse-all.txt
 external-api-reuse-all-local_enum_future-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/builtin/local_enum_future_reuse-all.py	?
-external-api-reuse-all-local_enum_typed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/local_enum_typed_reuse-all.py	?
+external-api-reuse-all-local_enum_typed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/local_enum_typed_reuse-all.py	?	= main/input_model/generic_reuse/dataclass/builtin/local_enum_typed_reuse-all.py
 external-api-reuse-all-local_enum_typed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/local_enum_typed_reuse-all_black23.py	?
 external-api-reuse-all-local_enum_typed-dataclasses.dataclass	main/input_model/generic_reuse/local_enum_typed_reuse-all.txt
-external-api-reuse-all-local_enum_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_typed_reuse-all.py	?
+external-api-reuse-all-local_enum_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_typed_reuse-all.py	?	= main/input_model/generic_reuse/builtin/local_enum_typed_reuse-all.py
 external-api-reuse-all-local_enum_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_typed_reuse-all_black23.py	?
 external-api-reuse-all-local_enum_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/local_enum_typed_reuse-all.txt
 external-api-reuse-all-mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/mixed_reuse-all.py
@@ -2752,12 +2752,12 @@ external-api-reuse-all-repeated-pydantic_v2.BaseModel	main/input_model/generic_r
 external-api-reuse-all-typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/typed_reuse-all.py
 external-api-reuse-all-typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/typed_reuse-all.txt
 external-api-reuse-foreign-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_alias_reuse-all.txt
-external-api-reuse-foreign-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_alias_reuse-all.py
+external-api-reuse-foreign-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_alias_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_alias_reuse-all.py
 external-api-reuse-foreign-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_containers_reuse-all.txt
 external-api-reuse-foreign-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_containers_reuse-all.py	?
 external-api-reuse-foreign-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/external/annotated_containers_reuse-all.py	?	= main/input_model/generic_reuse/external/annotated_containers_reuse-all.py
 external-api-reuse-foreign-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_dataclass_reuse-all.txt
-external-api-reuse-foreign-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_dataclass_reuse-all.py
+external-api-reuse-foreign-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_dataclass_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_dataclass_reuse-all.py
 external-api-reuse-foreign-annotated_future_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_alias_reuse-all.txt
 external-api-reuse-foreign-annotated_future_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_alias_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_future_alias_reuse-all.py
 external-api-reuse-foreign-annotated_future_export-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_export_reuse-all.txt
@@ -2771,9 +2771,9 @@ external-api-reuse-foreign-annotated_future_list-pydantic_v2.BaseModel	main/inpu
 external-api-reuse-foreign-annotated_future_model-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/annotated_future_model_regenerate-all.txt
 external-api-reuse-foreign-annotated_future_model-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/annotated_future_model_regenerate-all.py
 external-api-reuse-foreign-annotated_future_model-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_model_reuse-all.txt
-external-api-reuse-foreign-annotated_future_model-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_model_reuse-all.py
+external-api-reuse-foreign-annotated_future_model-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_model_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_future_model_reuse-all.py
 external-api-reuse-foreign-annotated_future_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_nested_reuse-all.txt
-external-api-reuse-foreign-annotated_future_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_nested_reuse-all.py
+external-api-reuse-foreign-annotated_future_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_nested_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_future_nested_reuse-all.py
 external-api-reuse-foreign-annotated_future_typed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/annotated_future_typed_regenerate-all.py
 external-api-reuse-foreign-annotated_future_typed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/annotated_future_typed_regenerate-all.txt
 external-api-reuse-foreign-annotated_future_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_typed_regenerate-all.py
@@ -2781,16 +2781,16 @@ external-api-reuse-foreign-annotated_future_typed-pydantic_v2.BaseModel	main/inp
 external-api-reuse-foreign-annotated_future_union-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_union_reuse-all.txt
 external-api-reuse-foreign-annotated_future_union-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_union_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_future_union_reuse-all.py
 external-api-reuse-foreign-annotated_inline-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_inline_reuse-all.txt
-external-api-reuse-foreign-annotated_inline-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_inline_reuse-all.py
+external-api-reuse-foreign-annotated_inline-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_inline_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_inline_reuse-all.py
 external-api-reuse-foreign-annotated_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_nested_reuse-all.txt
-external-api-reuse-foreign-annotated_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_nested_reuse-all.py
+external-api-reuse-foreign-annotated_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_nested_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_nested_reuse-all.py
 external-api-reuse-foreign-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_repeated_reuse-all.txt
-external-api-reuse-foreign-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all.py	?
+external-api-reuse-foreign-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all.py	?	= main/input_model/generic_reuse/builtin/annotated_repeated_reuse-all.py
 external-api-reuse-foreign-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all_black23.py	?
 external-api-reuse-foreign-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_typed_reuse-all.txt
 external-api-reuse-foreign-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_typed_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_typed_reuse-all.py
 external-api-reuse-foreign-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_wrapper_reuse-all.txt
-external-api-reuse-foreign-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_wrapper_reuse-all.py
+external-api-reuse-foreign-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_wrapper_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_wrapper_reuse-all.py
 external-api-reuse-foreign-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/arguments_reuse-all.py	?
 external-api-reuse-foreign-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/arguments_reuse-all.txt
 external-api-reuse-foreign-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/external/arguments_reuse-all.py	?	= main/input_model/generic_reuse/arguments_reuse-all.py
@@ -2812,19 +2812,19 @@ external-api-reuse-foreign-export-pydantic_v2.BaseModel	main/input_model/generic
 external-api-reuse-foreign-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_regenerate-all.py	?
 external-api-reuse-foreign-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/fallback_mixed_regenerate-all.py	?
 external-api-reuse-foreign-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_regenerate-all.txt
-external-api-reuse-foreign-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reuse-all.py	?
+external-api-reuse-foreign-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reuse-all.py	?	= main/input_model/generic_reuse/builtin/fallback_mixed_reuse-all.py
 external-api-reuse-foreign-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reuse-all_black23.py	?
 external-api-reuse-foreign-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_reuse-all.txt
 external-api-reuse-foreign-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reverse_regenerate-all.py	?
 external-api-reuse-foreign-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/fallback_mixed_reverse_regenerate-all.py	?
 external-api-reuse-foreign-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_reverse_regenerate-all.txt
-external-api-reuse-foreign-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reverse_reuse-all.py	?
+external-api-reuse-foreign-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reverse_reuse-all.py	?	= main/input_model/generic_reuse/builtin/fallback_mixed_reverse_reuse-all.py
 external-api-reuse-foreign-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reverse_reuse-all_black23.py	?
 external-api-reuse-foreign-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_reverse_reuse-all.txt
-external-api-reuse-foreign-fallback_multi-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reuse-foreign.py	?
+external-api-reuse-foreign-fallback_multi-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reuse-foreign.py	?	= main/input_model/generic_reuse/builtin/fallback_multi_reuse-foreign.py
 external-api-reuse-foreign-fallback_multi-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reuse-foreign_black23.py	?
 external-api-reuse-foreign-fallback_multi-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_multi_reuse-foreign.txt
-external-api-reuse-foreign-fallback_multi_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reverse_reuse-foreign.py	?
+external-api-reuse-foreign-fallback_multi_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reverse_reuse-foreign.py	?	= main/input_model/generic_reuse/builtin/fallback_multi_reverse_reuse-foreign.py
 external-api-reuse-foreign-fallback_multi_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reverse_reuse-foreign_black23.py	?
 external-api-reuse-foreign-fallback_multi_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_multi_reverse_reuse-foreign.txt
 external-api-reuse-foreign-inheritance-pydantic_v2.BaseModel	main/input_model/generic_reuse/inheritance_reuse-all.py
@@ -2834,12 +2834,12 @@ external-api-reuse-foreign-int-pydantic_v2.BaseModel	main/input_model/generic_re
 external-api-reuse-foreign-local_enum-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/local_enum_regenerate-all.py	?
 external-api-reuse-foreign-local_enum-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/pydantic20/builtin/local_enum_regenerate-all.py	?
 external-api-reuse-foreign-local_enum-dataclasses.dataclass	main/input_model/generic_reuse/local_enum_regenerate-all.txt
-external-api-reuse-foreign-local_enum-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_reuse-all.py
+external-api-reuse-foreign-local_enum-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_reuse-all.py	= main/input_model/generic_reuse/builtin/local_enum_reuse-all.py
 external-api-reuse-foreign-local_enum-pydantic_v2.BaseModel	main/input_model/generic_reuse/local_enum_reuse-all.txt
 external-api-reuse-foreign-local_enum_dataclass-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/local_enum_dataclass_regenerate-all.py	?
 external-api-reuse-foreign-local_enum_dataclass-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/pydantic20/builtin/local_enum_dataclass_regenerate-all.py	?
 external-api-reuse-foreign-local_enum_dataclass-dataclasses.dataclass	main/input_model/generic_reuse/local_enum_dataclass_regenerate-all.txt
-external-api-reuse-foreign-local_enum_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_dataclass_reuse-all.py	?
+external-api-reuse-foreign-local_enum_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_dataclass_reuse-all.py	?	= main/input_model/generic_reuse/builtin/local_enum_dataclass_reuse-all.py
 external-api-reuse-foreign-local_enum_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_dataclass_reuse-all_black23.py	?
 external-api-reuse-foreign-local_enum_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/local_enum_dataclass_reuse-all.txt
 external-api-reuse-foreign-local_enum_future-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/local_enum_future_regenerate-all.py	?
@@ -2851,7 +2851,7 @@ external-api-reuse-foreign-local_enum_future-pydantic_v2.BaseModel	main/input_mo
 external-api-reuse-foreign-local_enum_typed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/local_enum_typed_regenerate-all.py	?
 external-api-reuse-foreign-local_enum_typed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/pydantic20/builtin/local_enum_typed_regenerate-all.py	?
 external-api-reuse-foreign-local_enum_typed-dataclasses.dataclass	main/input_model/generic_reuse/local_enum_typed_regenerate-all.txt
-external-api-reuse-foreign-local_enum_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_typed_reuse-all.py	?
+external-api-reuse-foreign-local_enum_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_typed_reuse-all.py	?	= main/input_model/generic_reuse/builtin/local_enum_typed_reuse-all.py
 external-api-reuse-foreign-local_enum_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_typed_reuse-all_black23.py	?
 external-api-reuse-foreign-local_enum_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/local_enum_typed_reuse-all.txt
 external-api-reuse-foreign-mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/mixed_reuse-all.py
@@ -2894,7 +2894,7 @@ external-cli-regenerate-all-annotated_future_inline-dataclasses.dataclass	main/i
 external-cli-regenerate-all-annotated_future_inline-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_inline_regenerate-all.txt
 external-cli-regenerate-all-annotated_future_inline-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_inline_regenerate-all.py	= main/input_model/generic_reuse/builtin/annotated_future_inline_regenerate-all.py
 external-cli-regenerate-all-annotated_future_list-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_list_regenerate-all.txt
-external-cli-regenerate-all-annotated_future_list-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_list_regenerate-all.py
+external-cli-regenerate-all-annotated_future_list-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_list_regenerate-all.py	= main/input_model/generic_reuse/builtin/annotated_future_list_regenerate-all.py
 external-cli-regenerate-all-annotated_future_model-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/annotated_future_model_regenerate-all.txt
 external-cli-regenerate-all-annotated_future_model-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/annotated_future_model_regenerate-all.py
 external-cli-regenerate-all-annotated_future_model-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_model_regenerate-all.txt
@@ -2906,7 +2906,7 @@ external-cli-regenerate-all-annotated_future_typed-dataclasses.dataclass	main/in
 external-cli-regenerate-all-annotated_future_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_typed_regenerate-all.py
 external-cli-regenerate-all-annotated_future_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_typed_regenerate-all.txt
 external-cli-regenerate-all-annotated_future_union-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_union_regenerate-all.txt
-external-cli-regenerate-all-annotated_future_union-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_union_regenerate-all.py	?
+external-cli-regenerate-all-annotated_future_union-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_union_regenerate-all.py	?	= main/input_model/generic_reuse/builtin/annotated_future_union_regenerate-all.py
 external-cli-regenerate-all-annotated_future_union-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_union_regenerate-all_black23.py	?
 external-cli-regenerate-all-annotated_inline-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_inline_regenerate-all.txt
 external-cli-regenerate-all-annotated_inline-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_inline_regenerate-all.py	= main/input_model/generic_reuse/builtin/annotated_inline_regenerate-all.py
@@ -2917,7 +2917,7 @@ external-cli-regenerate-all-annotated_repeated-pydantic_v2.BaseModel	main/input_
 external-cli-regenerate-all-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_typed_regenerate-all.txt
 external-cli-regenerate-all-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_typed_regenerate-all.py	= main/input_model/generic_reuse/builtin/annotated_typed_regenerate-all.py
 external-cli-regenerate-all-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_wrapper_regenerate-all.txt
-external-cli-regenerate-all-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_wrapper_regenerate-all.py
+external-cli-regenerate-all-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_wrapper_regenerate-all.py	= main/input_model/generic_reuse/builtin/annotated_wrapper_regenerate-all.py
 external-cli-regenerate-all-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/arguments_regenerate-all.py	?
 external-cli-regenerate-all-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/arguments_regenerate-all.txt
 external-cli-regenerate-all-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/external/arguments_regenerate-all.py	?	= main/input_model/generic_reuse/pydantic20/builtin/arguments_regenerate-all.py
@@ -2939,19 +2939,19 @@ external-cli-regenerate-all-export-pydantic_v2.BaseModel	main/input_model/generi
 external-cli-regenerate-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_regenerate-all.py	?
 external-cli-regenerate-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/fallback_mixed_regenerate-all.py	?
 external-cli-regenerate-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_regenerate-all.txt
-external-cli-regenerate-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_regenerate-all.py	?
+external-cli-regenerate-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_regenerate-all.py	?	= main/input_model/generic_reuse/builtin/fallback_mixed_regenerate-all.py
 external-cli-regenerate-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_regenerate-all_black23.py	?
 external-cli-regenerate-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_regenerate-all.txt
 external-cli-regenerate-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reverse_regenerate-all.py	?
 external-cli-regenerate-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/fallback_mixed_reverse_regenerate-all.py	?
 external-cli-regenerate-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_reverse_regenerate-all.txt
-external-cli-regenerate-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reverse_regenerate-all.py	?
+external-cli-regenerate-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reverse_regenerate-all.py	?	= main/input_model/generic_reuse/builtin/fallback_mixed_reverse_regenerate-all.py
 external-cli-regenerate-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reverse_regenerate-all_black23.py	?
 external-cli-regenerate-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_reverse_regenerate-all.txt
-external-cli-regenerate-all-fallback_multi-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_regenerate-all.py	?
+external-cli-regenerate-all-fallback_multi-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_regenerate-all.py	?	= main/input_model/generic_reuse/builtin/fallback_multi_regenerate-all.py
 external-cli-regenerate-all-fallback_multi-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_regenerate-all_black23.py	?
 external-cli-regenerate-all-fallback_multi-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_multi_regenerate-all.txt
-external-cli-regenerate-all-fallback_multi_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reverse_regenerate-all.py	?
+external-cli-regenerate-all-fallback_multi_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reverse_regenerate-all.py	?	= main/input_model/generic_reuse/builtin/fallback_multi_reverse_regenerate-all.py
 external-cli-regenerate-all-fallback_multi_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reverse_regenerate-all_black23.py	?
 external-cli-regenerate-all-fallback_multi_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_multi_reverse_regenerate-all.txt
 external-cli-regenerate-all-inheritance-pydantic_v2.BaseModel	main/input_model/generic_reuse/inheritance_regenerate-all.py
@@ -3005,12 +3005,12 @@ external-cli-regenerate-all-repeated-pydantic_v2.BaseModel	main/input_model/gene
 external-cli-regenerate-all-typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/typed_regenerate-all.py
 external-cli-regenerate-all-typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/typed_regenerate-all.txt
 external-cli-reuse-all-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_alias_reuse-all.txt
-external-cli-reuse-all-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_alias_reuse-all.py
+external-cli-reuse-all-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_alias_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_alias_reuse-all.py
 external-cli-reuse-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_containers_reuse-all.txt
 external-cli-reuse-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_containers_reuse-all.py	?
 external-cli-reuse-all-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/external/annotated_containers_reuse-all.py	?	= main/input_model/generic_reuse/external/annotated_containers_reuse-all.py
 external-cli-reuse-all-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_dataclass_reuse-all.txt
-external-cli-reuse-all-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_dataclass_reuse-all.py
+external-cli-reuse-all-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_dataclass_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_dataclass_reuse-all.py
 external-cli-reuse-all-annotated_future_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_alias_reuse-all.txt
 external-cli-reuse-all-annotated_future_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_alias_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_future_alias_reuse-all.py
 external-cli-reuse-all-annotated_future_export-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_export_reuse-all.txt
@@ -3022,11 +3022,11 @@ external-cli-reuse-all-annotated_future_inline-pydantic_v2.BaseModel	main/input_
 external-cli-reuse-all-annotated_future_list-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_list_reuse-all.txt
 external-cli-reuse-all-annotated_future_list-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_list_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_future_list_reuse-all.py
 external-cli-reuse-all-annotated_future_model-dataclasses.dataclass	main/input_model/generic_reuse/annotated_future_model_reuse-all.txt
-external-cli-reuse-all-annotated_future_model-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/annotated_future_model_reuse-all.py
+external-cli-reuse-all-annotated_future_model-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/annotated_future_model_reuse-all.py	= main/input_model/generic_reuse/dataclass/builtin/annotated_future_model_reuse-all.py
 external-cli-reuse-all-annotated_future_model-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_model_reuse-all.txt
-external-cli-reuse-all-annotated_future_model-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_model_reuse-all.py
+external-cli-reuse-all-annotated_future_model-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_model_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_future_model_reuse-all.py
 external-cli-reuse-all-annotated_future_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_nested_reuse-all.txt
-external-cli-reuse-all-annotated_future_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_nested_reuse-all.py
+external-cli-reuse-all-annotated_future_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_nested_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_future_nested_reuse-all.py
 external-cli-reuse-all-annotated_future_typed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/annotated_future_typed_regenerate-all.py
 external-cli-reuse-all-annotated_future_typed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/annotated_future_typed_regenerate-all.txt
 external-cli-reuse-all-annotated_future_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_typed_regenerate-all.py
@@ -3034,16 +3034,16 @@ external-cli-reuse-all-annotated_future_typed-pydantic_v2.BaseModel	main/input_m
 external-cli-reuse-all-annotated_future_union-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_union_reuse-all.txt
 external-cli-reuse-all-annotated_future_union-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_union_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_future_union_reuse-all.py
 external-cli-reuse-all-annotated_inline-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_inline_reuse-all.txt
-external-cli-reuse-all-annotated_inline-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_inline_reuse-all.py
+external-cli-reuse-all-annotated_inline-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_inline_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_inline_reuse-all.py
 external-cli-reuse-all-annotated_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_nested_reuse-all.txt
-external-cli-reuse-all-annotated_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_nested_reuse-all.py
+external-cli-reuse-all-annotated_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_nested_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_nested_reuse-all.py
 external-cli-reuse-all-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_repeated_reuse-all.txt
-external-cli-reuse-all-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all.py	?
+external-cli-reuse-all-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all.py	?	= main/input_model/generic_reuse/builtin/annotated_repeated_reuse-all.py
 external-cli-reuse-all-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all_black23.py	?
 external-cli-reuse-all-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_typed_reuse-all.txt
 external-cli-reuse-all-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_typed_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_typed_reuse-all.py
 external-cli-reuse-all-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_wrapper_reuse-all.txt
-external-cli-reuse-all-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_wrapper_reuse-all.py
+external-cli-reuse-all-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_wrapper_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_wrapper_reuse-all.py
 external-cli-reuse-all-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/arguments_reuse-all.py	?
 external-cli-reuse-all-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/arguments_reuse-all.txt
 external-cli-reuse-all-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/external/arguments_reuse-all.py	?	= main/input_model/generic_reuse/arguments_reuse-all.py
@@ -3065,31 +3065,31 @@ external-cli-reuse-all-export-pydantic_v2.BaseModel	main/input_model/generic_reu
 external-cli-reuse-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reuse-all.py	?
 external-cli-reuse-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/fallback_mixed_reuse-all.py	?
 external-cli-reuse-all-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_reuse-all.txt
-external-cli-reuse-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reuse-all.py	?
+external-cli-reuse-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reuse-all.py	?	= main/input_model/generic_reuse/builtin/fallback_mixed_reuse-all.py
 external-cli-reuse-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reuse-all_black23.py	?
 external-cli-reuse-all-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_reuse-all.txt
 external-cli-reuse-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reverse_reuse-all.py	?
 external-cli-reuse-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/fallback_mixed_reverse_reuse-all.py	?
 external-cli-reuse-all-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_reverse_reuse-all.txt
-external-cli-reuse-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reverse_reuse-all.py	?
+external-cli-reuse-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reverse_reuse-all.py	?	= main/input_model/generic_reuse/builtin/fallback_mixed_reverse_reuse-all.py
 external-cli-reuse-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reverse_reuse-all_black23.py	?
 external-cli-reuse-all-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_reverse_reuse-all.txt
-external-cli-reuse-all-fallback_multi-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reuse-all.py
+external-cli-reuse-all-fallback_multi-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reuse-all.py	= main/input_model/generic_reuse/builtin/fallback_multi_reuse-all.py
 external-cli-reuse-all-fallback_multi-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_multi_reuse-all.txt
-external-cli-reuse-all-fallback_multi_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reverse_reuse-all.py
+external-cli-reuse-all-fallback_multi_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reverse_reuse-all.py	= main/input_model/generic_reuse/builtin/fallback_multi_reverse_reuse-all.py
 external-cli-reuse-all-fallback_multi_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_multi_reverse_reuse-all.txt
 external-cli-reuse-all-inheritance-pydantic_v2.BaseModel	main/input_model/generic_reuse/inheritance_reuse-all.py
 external-cli-reuse-all-inheritance-pydantic_v2.BaseModel	main/input_model/generic_reuse/inheritance_reuse-all.txt
 external-cli-reuse-all-int-pydantic_v2.BaseModel	main/input_model/generic_reuse/int_reuse-all.py
 external-cli-reuse-all-int-pydantic_v2.BaseModel	main/input_model/generic_reuse/int_reuse-all.txt
-external-cli-reuse-all-local_enum-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/local_enum_reuse-all.py
+external-cli-reuse-all-local_enum-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/local_enum_reuse-all.py	= main/input_model/generic_reuse/dataclass/builtin/local_enum_reuse-all.py
 external-cli-reuse-all-local_enum-dataclasses.dataclass	main/input_model/generic_reuse/local_enum_reuse-all.txt
-external-cli-reuse-all-local_enum-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_reuse-all.py
+external-cli-reuse-all-local_enum-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_reuse-all.py	= main/input_model/generic_reuse/builtin/local_enum_reuse-all.py
 external-cli-reuse-all-local_enum-pydantic_v2.BaseModel	main/input_model/generic_reuse/local_enum_reuse-all.txt
-external-cli-reuse-all-local_enum_dataclass-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/local_enum_dataclass_reuse-all.py	?
+external-cli-reuse-all-local_enum_dataclass-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/local_enum_dataclass_reuse-all.py	?	= main/input_model/generic_reuse/dataclass/builtin/local_enum_dataclass_reuse-all.py
 external-cli-reuse-all-local_enum_dataclass-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/local_enum_dataclass_reuse-all_black23.py	?
 external-cli-reuse-all-local_enum_dataclass-dataclasses.dataclass	main/input_model/generic_reuse/local_enum_dataclass_reuse-all.txt
-external-cli-reuse-all-local_enum_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_dataclass_reuse-all.py	?
+external-cli-reuse-all-local_enum_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_dataclass_reuse-all.py	?	= main/input_model/generic_reuse/builtin/local_enum_dataclass_reuse-all.py
 external-cli-reuse-all-local_enum_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_dataclass_reuse-all_black23.py	?
 external-cli-reuse-all-local_enum_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/local_enum_dataclass_reuse-all.txt
 external-cli-reuse-all-local_enum_future-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/local_enum_future_reuse-all.py	?
@@ -3098,10 +3098,10 @@ external-cli-reuse-all-local_enum_future-dataclasses.dataclass	main/input_model/
 external-cli-reuse-all-local_enum_future-pydantic_v2.BaseModel	main/input_model/generic_reuse/local_enum_future_reuse-all.py	?
 external-cli-reuse-all-local_enum_future-pydantic_v2.BaseModel	main/input_model/generic_reuse/local_enum_future_reuse-all.txt
 external-cli-reuse-all-local_enum_future-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/builtin/local_enum_future_reuse-all.py	?
-external-cli-reuse-all-local_enum_typed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/local_enum_typed_reuse-all.py	?
+external-cli-reuse-all-local_enum_typed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/local_enum_typed_reuse-all.py	?	= main/input_model/generic_reuse/dataclass/builtin/local_enum_typed_reuse-all.py
 external-cli-reuse-all-local_enum_typed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/local_enum_typed_reuse-all_black23.py	?
 external-cli-reuse-all-local_enum_typed-dataclasses.dataclass	main/input_model/generic_reuse/local_enum_typed_reuse-all.txt
-external-cli-reuse-all-local_enum_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_typed_reuse-all.py	?
+external-cli-reuse-all-local_enum_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_typed_reuse-all.py	?	= main/input_model/generic_reuse/builtin/local_enum_typed_reuse-all.py
 external-cli-reuse-all-local_enum_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_typed_reuse-all_black23.py	?
 external-cli-reuse-all-local_enum_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/local_enum_typed_reuse-all.txt
 external-cli-reuse-all-mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/mixed_reuse-all.py
@@ -3127,12 +3127,12 @@ external-cli-reuse-all-repeated-pydantic_v2.BaseModel	main/input_model/generic_r
 external-cli-reuse-all-typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/typed_reuse-all.py
 external-cli-reuse-all-typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/typed_reuse-all.txt
 external-cli-reuse-foreign-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_alias_reuse-all.txt
-external-cli-reuse-foreign-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_alias_reuse-all.py
+external-cli-reuse-foreign-annotated_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_alias_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_alias_reuse-all.py
 external-cli-reuse-foreign-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_containers_reuse-all.txt
 external-cli-reuse-foreign-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_containers_reuse-all.py	?
 external-cli-reuse-foreign-annotated_containers-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/external/annotated_containers_reuse-all.py	?	= main/input_model/generic_reuse/external/annotated_containers_reuse-all.py
 external-cli-reuse-foreign-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_dataclass_reuse-all.txt
-external-cli-reuse-foreign-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_dataclass_reuse-all.py
+external-cli-reuse-foreign-annotated_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_dataclass_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_dataclass_reuse-all.py
 external-cli-reuse-foreign-annotated_future_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_alias_reuse-all.txt
 external-cli-reuse-foreign-annotated_future_alias-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_alias_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_future_alias_reuse-all.py
 external-cli-reuse-foreign-annotated_future_export-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_export_reuse-all.txt
@@ -3146,9 +3146,9 @@ external-cli-reuse-foreign-annotated_future_list-pydantic_v2.BaseModel	main/inpu
 external-cli-reuse-foreign-annotated_future_model-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/annotated_future_model_regenerate-all.txt
 external-cli-reuse-foreign-annotated_future_model-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/annotated_future_model_regenerate-all.py
 external-cli-reuse-foreign-annotated_future_model-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_model_reuse-all.txt
-external-cli-reuse-foreign-annotated_future_model-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_model_reuse-all.py
+external-cli-reuse-foreign-annotated_future_model-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_model_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_future_model_reuse-all.py
 external-cli-reuse-foreign-annotated_future_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_nested_reuse-all.txt
-external-cli-reuse-foreign-annotated_future_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_nested_reuse-all.py
+external-cli-reuse-foreign-annotated_future_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_nested_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_future_nested_reuse-all.py
 external-cli-reuse-foreign-annotated_future_typed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/annotated_future_typed_regenerate-all.py
 external-cli-reuse-foreign-annotated_future_typed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/annotated_future_typed_regenerate-all.txt
 external-cli-reuse-foreign-annotated_future_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_typed_regenerate-all.py
@@ -3156,16 +3156,16 @@ external-cli-reuse-foreign-annotated_future_typed-pydantic_v2.BaseModel	main/inp
 external-cli-reuse-foreign-annotated_future_union-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_future_union_reuse-all.txt
 external-cli-reuse-foreign-annotated_future_union-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_future_union_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_future_union_reuse-all.py
 external-cli-reuse-foreign-annotated_inline-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_inline_reuse-all.txt
-external-cli-reuse-foreign-annotated_inline-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_inline_reuse-all.py
+external-cli-reuse-foreign-annotated_inline-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_inline_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_inline_reuse-all.py
 external-cli-reuse-foreign-annotated_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_nested_reuse-all.txt
-external-cli-reuse-foreign-annotated_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_nested_reuse-all.py
+external-cli-reuse-foreign-annotated_nested-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_nested_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_nested_reuse-all.py
 external-cli-reuse-foreign-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_repeated_reuse-all.txt
-external-cli-reuse-foreign-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all.py	?
+external-cli-reuse-foreign-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all.py	?	= main/input_model/generic_reuse/builtin/annotated_repeated_reuse-all.py
 external-cli-reuse-foreign-annotated_repeated-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_repeated_reuse-all_black23.py	?
 external-cli-reuse-foreign-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_typed_reuse-all.txt
 external-cli-reuse-foreign-annotated_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_typed_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_typed_reuse-all.py
 external-cli-reuse-foreign-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/annotated_wrapper_reuse-all.txt
-external-cli-reuse-foreign-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_wrapper_reuse-all.py
+external-cli-reuse-foreign-annotated_wrapper-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/annotated_wrapper_reuse-all.py	= main/input_model/generic_reuse/builtin/annotated_wrapper_reuse-all.py
 external-cli-reuse-foreign-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/arguments_reuse-all.py	?
 external-cli-reuse-foreign-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/arguments_reuse-all.txt
 external-cli-reuse-foreign-arguments-pydantic_v2.BaseModel	main/input_model/generic_reuse/pydantic20/external/arguments_reuse-all.py	?	= main/input_model/generic_reuse/arguments_reuse-all.py
@@ -3187,19 +3187,19 @@ external-cli-reuse-foreign-export-pydantic_v2.BaseModel	main/input_model/generic
 external-cli-reuse-foreign-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_regenerate-all.py	?
 external-cli-reuse-foreign-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/fallback_mixed_regenerate-all.py	?
 external-cli-reuse-foreign-fallback_mixed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_regenerate-all.txt
-external-cli-reuse-foreign-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reuse-all.py	?
+external-cli-reuse-foreign-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reuse-all.py	?	= main/input_model/generic_reuse/builtin/fallback_mixed_reuse-all.py
 external-cli-reuse-foreign-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reuse-all_black23.py	?
 external-cli-reuse-foreign-fallback_mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_reuse-all.txt
 external-cli-reuse-foreign-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/fallback_mixed_reverse_regenerate-all.py	?
 external-cli-reuse-foreign-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/external/fallback_mixed_reverse_regenerate-all.py	?
 external-cli-reuse-foreign-fallback_mixed_reverse-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/fallback_mixed_reverse_regenerate-all.txt
-external-cli-reuse-foreign-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reverse_reuse-all.py	?
+external-cli-reuse-foreign-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reverse_reuse-all.py	?	= main/input_model/generic_reuse/builtin/fallback_mixed_reverse_reuse-all.py
 external-cli-reuse-foreign-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_mixed_reverse_reuse-all_black23.py	?
 external-cli-reuse-foreign-fallback_mixed_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_mixed_reverse_reuse-all.txt
-external-cli-reuse-foreign-fallback_multi-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reuse-foreign.py	?
+external-cli-reuse-foreign-fallback_multi-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reuse-foreign.py	?	= main/input_model/generic_reuse/builtin/fallback_multi_reuse-foreign.py
 external-cli-reuse-foreign-fallback_multi-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reuse-foreign_black23.py	?
 external-cli-reuse-foreign-fallback_multi-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_multi_reuse-foreign.txt
-external-cli-reuse-foreign-fallback_multi_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reverse_reuse-foreign.py	?
+external-cli-reuse-foreign-fallback_multi_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reverse_reuse-foreign.py	?	= main/input_model/generic_reuse/builtin/fallback_multi_reverse_reuse-foreign.py
 external-cli-reuse-foreign-fallback_multi_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/fallback_multi_reverse_reuse-foreign_black23.py	?
 external-cli-reuse-foreign-fallback_multi_reverse-pydantic_v2.BaseModel	main/input_model/generic_reuse/fallback_multi_reverse_reuse-foreign.txt
 external-cli-reuse-foreign-inheritance-pydantic_v2.BaseModel	main/input_model/generic_reuse/inheritance_reuse-all.py
@@ -3209,12 +3209,12 @@ external-cli-reuse-foreign-int-pydantic_v2.BaseModel	main/input_model/generic_re
 external-cli-reuse-foreign-local_enum-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/local_enum_regenerate-all.py	?
 external-cli-reuse-foreign-local_enum-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/pydantic20/builtin/local_enum_regenerate-all.py	?
 external-cli-reuse-foreign-local_enum-dataclasses.dataclass	main/input_model/generic_reuse/local_enum_regenerate-all.txt
-external-cli-reuse-foreign-local_enum-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_reuse-all.py
+external-cli-reuse-foreign-local_enum-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_reuse-all.py	= main/input_model/generic_reuse/builtin/local_enum_reuse-all.py
 external-cli-reuse-foreign-local_enum-pydantic_v2.BaseModel	main/input_model/generic_reuse/local_enum_reuse-all.txt
 external-cli-reuse-foreign-local_enum_dataclass-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/local_enum_dataclass_regenerate-all.py	?
 external-cli-reuse-foreign-local_enum_dataclass-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/pydantic20/builtin/local_enum_dataclass_regenerate-all.py	?
 external-cli-reuse-foreign-local_enum_dataclass-dataclasses.dataclass	main/input_model/generic_reuse/local_enum_dataclass_regenerate-all.txt
-external-cli-reuse-foreign-local_enum_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_dataclass_reuse-all.py	?
+external-cli-reuse-foreign-local_enum_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_dataclass_reuse-all.py	?	= main/input_model/generic_reuse/builtin/local_enum_dataclass_reuse-all.py
 external-cli-reuse-foreign-local_enum_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_dataclass_reuse-all_black23.py	?
 external-cli-reuse-foreign-local_enum_dataclass-pydantic_v2.BaseModel	main/input_model/generic_reuse/local_enum_dataclass_reuse-all.txt
 external-cli-reuse-foreign-local_enum_future-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/local_enum_future_regenerate-all.py	?
@@ -3226,7 +3226,7 @@ external-cli-reuse-foreign-local_enum_future-pydantic_v2.BaseModel	main/input_mo
 external-cli-reuse-foreign-local_enum_typed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/builtin/local_enum_typed_regenerate-all.py	?
 external-cli-reuse-foreign-local_enum_typed-dataclasses.dataclass	main/input_model/generic_reuse/dataclass/pydantic20/builtin/local_enum_typed_regenerate-all.py	?
 external-cli-reuse-foreign-local_enum_typed-dataclasses.dataclass	main/input_model/generic_reuse/local_enum_typed_regenerate-all.txt
-external-cli-reuse-foreign-local_enum_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_typed_reuse-all.py	?
+external-cli-reuse-foreign-local_enum_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_typed_reuse-all.py	?	= main/input_model/generic_reuse/builtin/local_enum_typed_reuse-all.py
 external-cli-reuse-foreign-local_enum_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/external/local_enum_typed_reuse-all_black23.py	?
 external-cli-reuse-foreign-local_enum_typed-pydantic_v2.BaseModel	main/input_model/generic_reuse/local_enum_typed_reuse-all.txt
 external-cli-reuse-foreign-mixed-pydantic_v2.BaseModel	main/input_model/generic_reuse/mixed_reuse-all.py

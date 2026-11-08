@@ -55,9 +55,7 @@ def _add_get_route(
     )
 
 
-LITERAL_ROUTES: Final = (
-    ('get_route', _add_get_route),
-)
+LITERAL_ROUTES: Final = (('get_route', _add_get_route),)
 TEMPLATED_ROUTES: Final = ()
 
 

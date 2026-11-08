@@ -18,7 +18,10 @@ ROUTES: Final = (
     *default.LITERAL_ROUTES,
     *default.TEMPLATED_ROUTES,
 )
-INFO: Final[dict[str, Any]] = {'title': 'Directions that one schema view per direction serves', 'version': '1'}
+INFO: Final[dict[str, Any]] = {
+    'title': 'Directions that one schema view per direction serves',
+    'version': '1',
+}
 
 
 def build_router(

@@ -60,7 +60,9 @@ class MissingType(BaseModel):
 MissingTypeWrapper = TypeAliasType("MissingTypeWrapper", MissingType)
 
 
-NestedMissingType = TypeAliasType("NestedMissingType", MissingTypeWrapper | ItemReference)
+NestedMissingType = TypeAliasType(
+    "NestedMissingType", MissingTypeWrapper | ItemReference
+)
 
 
 RecursiveItem = TypeAliasType("RecursiveItem", Union["RecursiveItem", ItemReference])
@@ -90,9 +92,7 @@ UniqueOuter = TypeAliasType(
 
 NullableUnique = TypeAliasType(
     "NullableUnique",
-    Annotated[
-        UniqueA | UniqueB | None, Field(..., discriminator='type')
-    ],
+    Annotated[UniqueA | UniqueB | None, Field(..., discriminator='type')],
 )
 
 

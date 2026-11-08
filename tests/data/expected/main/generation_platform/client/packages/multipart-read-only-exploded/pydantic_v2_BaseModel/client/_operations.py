@@ -30,5 +30,31 @@ OPERATION_0: Final[OperationPlan[CreateItemResponse]] = OperationPlan(
     path='/items',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', codec=model_bindings.codec_0, form=MultipartForm(members=True, additional=PartPlan('', 'json'), encoded=(ParameterPlan(location='query', name='filter', style='form', explode=True, shape='object', fields=(FieldPlan('id', 'string'),), additional=FieldPlan('', 'string'), reserved_names=('id',)),))),), default='multipart/form-data', required=True),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                codec=model_bindings.codec_0,
+                form=MultipartForm(
+                    members=True,
+                    additional=PartPlan('', 'json'),
+                    encoded=(
+                        ParameterPlan(
+                            location='query',
+                            name='filter',
+                            style='form',
+                            explode=True,
+                            shape='object',
+                            fields=(FieldPlan('id', 'string'),),
+                            additional=FieldPlan('', 'string'),
+                            reserved_names=('id',),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+        default='multipart/form-data',
+        required=True,
+    ),
 )

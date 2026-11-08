@@ -225,16 +225,12 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 
 
 class UniqueMapping(_JsonSchemaRuntimeValidationBase, RootModel[dict[str, list[int]]]):
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        ('__json_schema_mapping_values__',),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (('__json_schema_mapping_values__',),)
 
     root: dict[str, list[int]]
 
 
 class UniqueItemsUnionRefMappingRoot(_JsonSchemaRuntimeValidationBase, RootModel[UniqueMapping | dict[str, list[int]]]):
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        ('__json_schema_mapping_values__',),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (('__json_schema_mapping_values__',),)
 
     root: UniqueMapping | dict[str, list[int]] = Field(..., title='UniqueItemsUnionRefMappingRoot')

@@ -24,7 +24,9 @@ class Note(RootModel[constr(max_length=80)]):
     root: constr(max_length=80)
 
 
-RunsGetQueryOrderParameter = TypeAliasType("RunsGetQueryOrderParameter", Literal['newest'])
+RunsGetQueryOrderParameter = TypeAliasType(
+    "RunsGetQueryOrderParameter", Literal['newest']
+)
 
 
 class RunsGetResponse200xModeHeader(RootModel[Literal['fast']]):

@@ -27,17 +27,27 @@ codec_0: Final[DataclassCodec[models.NullObj]] = DataclassCodec(models.NullObj, 
 codec_1: Final[DataclassCodec[models.NullObj]] = DataclassCodec(models.NullObj, MODELS)
 """Codec of /paths/~1plain/put response_body (response 200 application/json)."""
 
-codec_2: Final[DataclassCodec[models.WrapNullable]] = DataclassCodec(models.WrapNullable, MODELS)
+codec_2: Final[DataclassCodec[models.WrapNullable]] = DataclassCodec(
+    models.WrapNullable, MODELS
+)
 """Codec of /paths/~1wrap/put request_body (request application/json)."""
 
-codec_3: Final[DataclassCodec[models.WrapNullable]] = DataclassCodec(models.WrapNullable, MODELS)
+codec_3: Final[DataclassCodec[models.WrapNullable]] = DataclassCodec(
+    models.WrapNullable, MODELS
+)
 """Codec of /paths/~1wrap/put response_body (response 200 application/json)."""
 
-codec_4: Final[DataclassCodec[models.WrapNullable | None]] = DataclassCodec(Choice((('object', models.WrapNullable),)), MODELS)
+codec_4: Final[DataclassCodec[models.WrapNullable | None]] = DataclassCodec(
+    Choice((('object', models.WrapNullable),)), MODELS
+)
 """Codec of /paths/~1wrap-nullable/put request_body (request application/json)."""
 
-codec_5: Final[DataclassCodec[models.WrapNullable | None]] = DataclassCodec(Choice((('object', models.WrapNullable),)), MODELS)
+codec_5: Final[DataclassCodec[models.WrapNullable | None]] = DataclassCodec(
+    Choice((('object', models.WrapNullable),)), MODELS
+)
 """Codec of /paths/~1wrap-nullable/put response_body (response 200 application/json)."""
 
-codec_6: Final[DataclassCodec[models.NullObj | None]] = DataclassCodec(Choice((('object', models.NullObj),)), MODELS)
+codec_6: Final[DataclassCodec[models.NullObj | None]] = DataclassCodec(
+    Choice((('object', models.NullObj),)), MODELS
+)
 """Codec of /paths/~1null-object/get response_body (response 200 application/json)."""

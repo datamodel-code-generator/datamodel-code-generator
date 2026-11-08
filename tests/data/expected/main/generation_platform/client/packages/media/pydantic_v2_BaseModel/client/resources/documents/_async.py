@@ -131,7 +131,14 @@ class AsyncDocumentsResource:
         self,
         *,
         body: JSONValue | str | models.Draft,
-        media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
+        media_type: (
+            Literal[
+                'application/json',
+                'text/plain; charset=utf-16',
+                'application/vnd.api+json',
+            ]
+            | None
+        ) = None,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> StoreDocumentResponse:
@@ -319,7 +326,14 @@ class AsyncDocumentsWithResponse:
         self,
         *,
         body: JSONValue | str | models.Draft,
-        media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
+        media_type: (
+            Literal[
+                'application/json',
+                'text/plain; charset=utf-16',
+                'application/vnd.api+json',
+            ]
+            | None
+        ) = None,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> Response[StoreDocumentResponse]:
@@ -453,7 +467,14 @@ class AsyncDocumentsWithRawResponse:
         self,
         *,
         body: JSONValue | str | models.Draft,
-        media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
+        media_type: (
+            Literal[
+                'application/json',
+                'text/plain; charset=utf-16',
+                'application/vnd.api+json',
+            ]
+            | None
+        ) = None,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
@@ -587,7 +608,14 @@ class AsyncDocumentsWithStreamingResponse:
         self,
         *,
         body: JSONValue | str | models.Draft,
-        media_type: Literal['application/json', 'text/plain; charset=utf-16', 'application/vnd.api+json'] | None = None,
+        media_type: (
+            Literal[
+                'application/json',
+                'text/plain; charset=utf-16',
+                'application/vnd.api+json',
+            ]
+            | None
+        ) = None,
         response_media_type: Literal['application/json', 'text/plain'] | None = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:

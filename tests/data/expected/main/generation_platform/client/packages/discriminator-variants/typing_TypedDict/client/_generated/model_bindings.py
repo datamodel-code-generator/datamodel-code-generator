@@ -27,20 +27,53 @@ MODELS: Final[dict[type, Model]] = {
     models.Fish: Model((Field('kind', 'kind'), Field('fins', 'fins'))),
     models.Bird: Model((Field('kind', 'kind'),)),
     models.Item: Model((Field('name', 'name'), Field('count', 'count'))),
-    models.ChildResponse: Model((Field('pet', 'pet', Choice((), 'kind', (('c', models.LionResponse), ('d', models.Wolf)))), Field('pets_by_name', 'pets_by_name', Values(Choice((), 'kind', (('c', models.LionResponse), ('d', models.Wolf))))), Field('note', 'note'))),
-    models.Holder: Model((Field('pet', 'pet', Choice((), 'kind', (('Fish', models.Fish), ('Bird', models.Bird)))),)),
+    models.ChildResponse: Model(
+        (
+            Field(
+                'pet',
+                'pet',
+                Choice((), 'kind', (('c', models.LionResponse), ('d', models.Wolf))),
+            ),
+            Field(
+                'pets_by_name',
+                'pets_by_name',
+                Values(
+                    Choice((), 'kind', (('c', models.LionResponse), ('d', models.Wolf)))
+                ),
+            ),
+            Field('note', 'note'),
+        )
+    ),
+    models.Holder: Model(
+        (
+            Field(
+                'pet',
+                'pet',
+                Choice((), 'kind', (('Fish', models.Fish), ('Bird', models.Bird))),
+            ),
+        )
+    ),
 }
 
-codec_0: Final[TypedDictCodec[models.PetRequest]] = TypedDictCodec(Choice((), 'kind', (('kitty', models.CatRequest), ('doggo', models.Dog))), MODELS)
+codec_0: Final[TypedDictCodec[models.PetRequest]] = TypedDictCodec(
+    Choice((), 'kind', (('kitty', models.CatRequest), ('doggo', models.Dog))), MODELS
+)
 """Codec of /paths/~1pets/post request_body (request application/json)."""
 
-codec_1: Final[TypedDictCodec[models.PetResponse]] = TypedDictCodec(Choice((), 'kind', (('kitty', models.CatResponse), ('doggo', models.Dog))), MODELS)
+codec_1: Final[TypedDictCodec[models.PetResponse]] = TypedDictCodec(
+    Choice((), 'kind', (('kitty', models.CatResponse), ('doggo', models.Dog))), MODELS
+)
 """Codec of /paths/~1pets/post response_body (response 200 application/json)."""
 
-codec_2: Final[TypedDictCodec[models.PetsListGetResponseResponse]] = TypedDictCodec(Items(Choice((), 'kind', (('Cat', models.CatResponse), ('Dog', models.Dog)))), MODELS)
+codec_2: Final[TypedDictCodec[models.PetsListGetResponseResponse]] = TypedDictCodec(
+    Items(Choice((), 'kind', (('Cat', models.CatResponse), ('Dog', models.Dog)))),
+    MODELS,
+)
 """Codec of /paths/~1pets~1list/get response_body (response 200 application/json)."""
 
-codec_3: Final[TypedDictCodec[models.ChildResponse]] = TypedDictCodec(models.ChildResponse, MODELS)
+codec_3: Final[TypedDictCodec[models.ChildResponse]] = TypedDictCodec(
+    models.ChildResponse, MODELS
+)
 """Codec of /paths/~1child/get response_body (response 200 application/json)."""
 
 codec_4: Final[TypedDictCodec[models.Holder]] = TypedDictCodec(models.Holder, MODELS)

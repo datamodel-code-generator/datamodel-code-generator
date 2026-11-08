@@ -20,27 +20,65 @@ from .._runtime.model_codecs.stdlib_dataclasses import (
 
 MODELS: Final[dict[type, Model]] = {
     models.CatRequest: Model((Field('kind', 'kind'),)),
-    models.CatResponse: Model((Field('kind', 'kind'), Field('lives', 'lives', omit_none=True))),
+    models.CatResponse: Model(
+        (Field('kind', 'kind'), Field('lives', 'lives', omit_none=True))
+    ),
     models.Dog: Model((Field('kind', 'kind'), Field('bark', 'bark', omit_none=True))),
-    models.LionResponse: Model((Field('kind', 'kind'), Field('mane', 'mane', omit_none=True))),
+    models.LionResponse: Model(
+        (Field('kind', 'kind'), Field('mane', 'mane', omit_none=True))
+    ),
     models.Wolf: Model((Field('kind', 'kind'),)),
     models.Fish: Model((Field('kind', 'kind'), Field('fins', 'fins', omit_none=True))),
     models.Bird: Model((Field('kind', 'kind'),)),
     models.Item: Model((Field('name', 'name'), Field('count', 'count'))),
-    models.ChildResponse: Model((Field('pet', 'pet', Choice((), 'kind', (('c', models.LionResponse), ('d', models.Wolf)))), Field('pets_by_name', 'pets_by_name', Values(Choice((), 'kind', (('c', models.LionResponse), ('d', models.Wolf))))), Field('note', 'note', omit_none=True))),
-    models.Holder: Model((Field('pet', 'pet', Choice((), 'kind', (('Fish', models.Fish), ('Bird', models.Bird))), omit_none=True),)),
+    models.ChildResponse: Model(
+        (
+            Field(
+                'pet',
+                'pet',
+                Choice((), 'kind', (('c', models.LionResponse), ('d', models.Wolf))),
+            ),
+            Field(
+                'pets_by_name',
+                'pets_by_name',
+                Values(
+                    Choice((), 'kind', (('c', models.LionResponse), ('d', models.Wolf)))
+                ),
+            ),
+            Field('note', 'note', omit_none=True),
+        )
+    ),
+    models.Holder: Model(
+        (
+            Field(
+                'pet',
+                'pet',
+                Choice((), 'kind', (('Fish', models.Fish), ('Bird', models.Bird))),
+                omit_none=True,
+            ),
+        )
+    ),
 }
 
-codec_0: Final[DataclassCodec[models.PetRequest]] = DataclassCodec(Choice((), 'kind', (('Cat', models.CatRequest), ('Dog', models.Dog))), MODELS)
+codec_0: Final[DataclassCodec[models.PetRequest]] = DataclassCodec(
+    Choice((), 'kind', (('Cat', models.CatRequest), ('Dog', models.Dog))), MODELS
+)
 """Codec of /paths/~1pets/post request_body (request application/json)."""
 
-codec_1: Final[DataclassCodec[models.PetResponse]] = DataclassCodec(Choice((), 'kind', (('Cat', models.CatResponse), ('Dog', models.Dog))), MODELS)
+codec_1: Final[DataclassCodec[models.PetResponse]] = DataclassCodec(
+    Choice((), 'kind', (('Cat', models.CatResponse), ('Dog', models.Dog))), MODELS
+)
 """Codec of /paths/~1pets/post response_body (response 200 application/json)."""
 
-codec_2: Final[DataclassCodec[models.PetsListGetResponseResponse]] = DataclassCodec(Items(Choice((), 'kind', (('Cat', models.CatResponse), ('Dog', models.Dog)))), MODELS)
+codec_2: Final[DataclassCodec[models.PetsListGetResponseResponse]] = DataclassCodec(
+    Items(Choice((), 'kind', (('Cat', models.CatResponse), ('Dog', models.Dog)))),
+    MODELS,
+)
 """Codec of /paths/~1pets~1list/get response_body (response 200 application/json)."""
 
-codec_3: Final[DataclassCodec[models.ChildResponse]] = DataclassCodec(models.ChildResponse, MODELS)
+codec_3: Final[DataclassCodec[models.ChildResponse]] = DataclassCodec(
+    models.ChildResponse, MODELS
+)
 """Codec of /paths/~1child/get response_body (response 200 application/json)."""
 
 codec_4: Final[DataclassCodec[models.Holder]] = DataclassCodec(models.Holder, MODELS)

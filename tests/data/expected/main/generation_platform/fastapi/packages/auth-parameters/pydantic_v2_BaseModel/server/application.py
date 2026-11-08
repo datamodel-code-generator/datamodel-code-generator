@@ -25,7 +25,11 @@ ROUTES: Final = (
     *auth.LITERAL_ROUTES,
     *auth.TEMPLATED_ROUTES,
 )
-INFO: Final[dict[str, Any]] = {'title': 'Credential parameters', 'version': '1.0.0', 'servers': [{'url': 'https://api.example.com'}]}
+INFO: Final[dict[str, Any]] = {
+    'title': 'Credential parameters',
+    'version': '1.0.0',
+    'servers': [{'url': 'https://api.example.com'}],
+}
 
 
 def build_router(

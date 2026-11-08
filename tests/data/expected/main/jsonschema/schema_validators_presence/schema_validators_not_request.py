@@ -38,9 +38,7 @@ class PresenceRulesRequest(BaseModel):
 
 
 class PresenceRules(_JsonSchemaRuntimeValidationBase):
-    __json_schema_not_required_groups__: ClassVar[tuple[Any, ...]] = (
-        ((('id',),),),
-    )
+    __json_schema_not_required_groups__: ClassVar[tuple[Any, ...]] = (((('id',),),),)
 
     guard: int
     a: Any | None = None

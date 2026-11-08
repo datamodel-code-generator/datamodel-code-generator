@@ -34,7 +34,23 @@ OPERATION_0: Final[OperationPlan[UploadFilesResponse]] = OperationPlan(
     path='/files',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', form=MultipartForm(parts=(PartPlan('note', codec=model_bindings.codec_0), PartPlan('file')), additional=PartPlan('', 'json'))),), default='multipart/form-data', required=True),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                form=MultipartForm(
+                    parts=(
+                        PartPlan('note', codec=model_bindings.codec_0),
+                        PartPlan('file'),
+                    ),
+                    additional=PartPlan('', 'json'),
+                ),
+            ),
+        ),
+        default='multipart/form-data',
+        required=True,
+    ),
 )
 
 OPERATION_1: Final[OperationPlan[DownloadFilesResponse]] = OperationPlan(
@@ -42,5 +58,20 @@ OPERATION_1: Final[OperationPlan[DownloadFilesResponse]] = OperationPlan(
     method='GET',
     path='/files',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((parts_branch('200', 'multipart/form-data', PartsReader[str | bytes]((value_part('note', 'string', model_bindings.codec_1), file_part('file', required=True)), additional=file_part('', repeated=True))),), ()),
+    responses=ResponseDecoder(
+        (
+            parts_branch(
+                '200',
+                'multipart/form-data',
+                PartsReader[str | bytes](
+                    (
+                        value_part('note', 'string', model_bindings.codec_1),
+                        file_part('file', required=True),
+                    ),
+                    additional=file_part('', repeated=True),
+                ),
+            ),
+        ),
+        (),
+    ),
 )

@@ -555,7 +555,52 @@ value does not tell apart stay left out. `--no-client-deep-object-brackets` turn
         path='/v1/charges/{charge}',
         servers=_SERVERS_0,
         responses=ResponseDecoder((empty_branch('204'),), ()),
-        parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='charge', style='simple', required=True), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='expand', style='deepObject', explode=True, shape='array', reserved_names=('created', 'limit'), brackets=True), codec=model_bindings.codec_1), ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='deepObject', explode=True, kind='integer', reserved_names=('created', 'expand'), brackets=True), codec=model_bindings.codec_2), ParameterSpec(plan=ParameterPlan(location='query', name='created', style='deepObject', explode=True, shape='object', fields=(FieldPlan('gt', 'integer'),), additional=FieldPlan('', 'string'), reserved_names=('expand', 'limit'), brackets=True), codec=model_bindings.codec_3)),
+        parameters=(
+            ParameterSpec(
+                plan=ParameterPlan(
+                    location='path', name='charge', style='simple', required=True
+                ),
+                codec=model_bindings.codec_0,
+            ),
+            ParameterSpec(
+                plan=ParameterPlan(
+                    location='query',
+                    name='expand',
+                    style='deepObject',
+                    explode=True,
+                    shape='array',
+                    reserved_names=('created', 'limit'),
+                    brackets=True,
+                ),
+                codec=model_bindings.codec_1,
+            ),
+            ParameterSpec(
+                plan=ParameterPlan(
+                    location='query',
+                    name='limit',
+                    style='deepObject',
+                    explode=True,
+                    kind='integer',
+                    reserved_names=('created', 'expand'),
+                    brackets=True,
+                ),
+                codec=model_bindings.codec_2,
+            ),
+            ParameterSpec(
+                plan=ParameterPlan(
+                    location='query',
+                    name='created',
+                    style='deepObject',
+                    explode=True,
+                    shape='object',
+                    fields=(FieldPlan('gt', 'integer'),),
+                    additional=FieldPlan('', 'string'),
+                    reserved_names=('expand', 'limit'),
+                    brackets=True,
+                ),
+                codec=model_bindings.codec_3,
+            ),
+        ),
     )
     ```
 
@@ -684,8 +729,32 @@ servers keep them.
         method='GET',
         path='/pets',
         servers=_SERVERS_0,
-        responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_2),), ()),
-        parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='form', explode=True, kind='integer', reserved_names=('cursor',)), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='cursor', style='form', explode=True, reserved_names=('limit',)), codec=model_bindings.codec_1)),
+        responses=ResponseDecoder(
+            (model_branch('200', 'application/json', 'json', model_bindings.codec_2),), ()
+        ),
+        parameters=(
+            ParameterSpec(
+                plan=ParameterPlan(
+                    location='query',
+                    name='limit',
+                    style='form',
+                    explode=True,
+                    kind='integer',
+                    reserved_names=('cursor',),
+                ),
+                codec=model_bindings.codec_0,
+            ),
+            ParameterSpec(
+                plan=ParameterPlan(
+                    location='query',
+                    name='cursor',
+                    style='form',
+                    explode=True,
+                    reserved_names=('limit',),
+                ),
+                codec=model_bindings.codec_1,
+            ),
+        ),
     )
 
     OPERATION_1: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
@@ -693,8 +762,18 @@ servers keep them.
         method='POST',
         path='/pets',
         servers=_SERVERS_0,
-        responses=ResponseDecoder((model_branch('201', 'application/json', 'json', model_bindings.codec_4),), ()),
-        body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_3),), default='application/json', required=True),
+        responses=ResponseDecoder(
+            (model_branch('201', 'application/json', 'json', model_bindings.codec_4),), ()
+        ),
+        body=RequestBody(
+            media=(
+                BodyMedia(
+                    media_type='application/json', kind='json', codec=model_bindings.codec_3
+                ),
+            ),
+            default='application/json',
+            required=True,
+        ),
     )
     ```
 
@@ -2653,8 +2732,32 @@ against the document's URL when it is read from one.
         method='GET',
         path='/pets',
         servers=_SERVERS_0,
-        responses=ResponseDecoder((model_branch('200', 'application/json', 'json', model_bindings.codec_2),), ()),
-        parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='form', explode=True, kind='integer', reserved_names=('cursor',)), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='cursor', style='form', explode=True, reserved_names=('limit',)), codec=model_bindings.codec_1)),
+        responses=ResponseDecoder(
+            (model_branch('200', 'application/json', 'json', model_bindings.codec_2),), ()
+        ),
+        parameters=(
+            ParameterSpec(
+                plan=ParameterPlan(
+                    location='query',
+                    name='limit',
+                    style='form',
+                    explode=True,
+                    kind='integer',
+                    reserved_names=('cursor',),
+                ),
+                codec=model_bindings.codec_0,
+            ),
+            ParameterSpec(
+                plan=ParameterPlan(
+                    location='query',
+                    name='cursor',
+                    style='form',
+                    explode=True,
+                    reserved_names=('limit',),
+                ),
+                codec=model_bindings.codec_1,
+            ),
+        ),
     )
 
     OPERATION_1: Final[OperationPlan[CreatePetResponse]] = OperationPlan(
@@ -2662,8 +2765,18 @@ against the document's URL when it is read from one.
         method='POST',
         path='/pets',
         servers=_SERVERS_0,
-        responses=ResponseDecoder((model_branch('201', 'application/json', 'json', model_bindings.codec_4),), ()),
-        body=RequestBody(media=(BodyMedia(media_type='application/json', kind='json', codec=model_bindings.codec_3),), default='application/json', required=True),
+        responses=ResponseDecoder(
+            (model_branch('201', 'application/json', 'json', model_bindings.codec_4),), ()
+        ),
+        body=RequestBody(
+            media=(
+                BodyMedia(
+                    media_type='application/json', kind='json', codec=model_bindings.codec_3
+                ),
+            ),
+            default='application/json',
+            required=True,
+        ),
     )
     ```
 
@@ -4371,9 +4484,7 @@ Choose how the server package lays out its routes (experimental).
         ('list_pets', _add_list_pets),
         ('create_pet', _add_create_pet),
     )
-    TEMPLATED_ROUTES: Final = (
-        ('replace_pet', _add_replace_pet),
-    )
+    TEMPLATED_ROUTES: Final = (('replace_pet', _add_replace_pet),)
 
 
     def build_router(
@@ -5325,9 +5436,7 @@ without a file against the working directory, and against the pyproject.toml dir
         ('list_pets', _add_list_pets),
         ('create_pet', _add_create_pet),
     )
-    TEMPLATED_ROUTES: Final = (
-        ('replace_pet', _add_replace_pet),
-    )
+    TEMPLATED_ROUTES: Final = (('replace_pet', _add_replace_pet),)
 
 
     def build_router(

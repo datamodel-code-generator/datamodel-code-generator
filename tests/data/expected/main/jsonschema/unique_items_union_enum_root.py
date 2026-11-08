@@ -231,11 +231,8 @@ class UniqueItemsUnionEnumRoot1(Enum):
 
 
 class UniqueItemsUnionEnumRoot(
-    _JsonSchemaRuntimeValidationBase,
-    RootModel[dict[str, list[int]] | UniqueItemsUnionEnumRoot1],
+    _JsonSchemaRuntimeValidationBase, RootModel[dict[str, list[int]] | UniqueItemsUnionEnumRoot1]
 ):
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        ('__json_schema_mapping_values__',),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (('__json_schema_mapping_values__',),)
 
     root: dict[str, list[int]] | UniqueItemsUnionEnumRoot1 = Field(..., title='UniqueItemsUnionEnumRoot')

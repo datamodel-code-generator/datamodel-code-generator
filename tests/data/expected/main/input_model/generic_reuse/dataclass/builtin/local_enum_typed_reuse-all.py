@@ -13,4 +13,8 @@ class LocalEnumTyped:
     box: tests.data.python.input_model.generic_reuse.LocalEnumTyped.__annotations__[
         'box'
     ]
-    validated: tests.data.python.input_model.generic_reuse.LocalEnumTyped.__annotations__['validated']
+    validated: (
+        tests.data.python.input_model.generic_reuse.LocalEnumTyped.__annotations__[
+            'validated'
+        ]
+    )

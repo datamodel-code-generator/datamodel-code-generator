@@ -237,8 +237,7 @@ class UniqueParent(_JsonSchemaRuntimeValidationBase):
 
 
 class RepeatedChild(UniqueParent):
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ()
 
     value: list[int] = Field(..., title='Value')
 

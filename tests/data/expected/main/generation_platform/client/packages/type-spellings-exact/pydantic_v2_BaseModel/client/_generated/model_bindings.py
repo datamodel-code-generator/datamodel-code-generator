@@ -20,10 +20,14 @@ from models.pets import Pet
 
 from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
-codec_0: Final[PydanticCodec[PetsGetQueryCursorParameter]] = PydanticCodec(PetsGetQueryCursorParameter)
+codec_0: Final[PydanticCodec[PetsGetQueryCursorParameter]] = PydanticCodec(
+    PetsGetQueryCursorParameter
+)
 """Codec of /paths/~1pets/get parameter (request query cursor)."""
 
-codec_1: Final[PydanticCodec[PetsGetQueryIdParameter]] = PydanticCodec(PetsGetQueryIdParameter)
+codec_1: Final[PydanticCodec[PetsGetQueryIdParameter]] = PydanticCodec(
+    PetsGetQueryIdParameter
+)
 """Codec of /paths/~1pets/get parameter (request query id)."""
 
 codec_2: Final[PydanticCodec[Page]] = PydanticCodec(Page)

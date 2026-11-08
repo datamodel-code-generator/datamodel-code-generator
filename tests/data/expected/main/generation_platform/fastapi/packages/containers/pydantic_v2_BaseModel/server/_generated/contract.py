@@ -37,7 +37,33 @@ class GetRoute:
         names: MutableSequence[str] | None
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(ParameterArgument(name='stops', plan=ParameterPlan(location='query', name='stops', style='form', explode=True, shape='array', kind='integer', reserved_names=('names',)), adapter=TypeAdapter(tuple[Annotated[int, Field(ge=1)], ...])), ParameterArgument(name='names', plan=ParameterPlan(location='query', name='names', style='form', explode=True, shape='array', reserved_names=('stops',)), adapter=TypeAdapter(MutableSequence[str]))),
+        arguments=(
+            ParameterArgument(
+                name='stops',
+                plan=ParameterPlan(
+                    location='query',
+                    name='stops',
+                    style='form',
+                    explode=True,
+                    shape='array',
+                    kind='integer',
+                    reserved_names=('names',),
+                ),
+                adapter=TypeAdapter(tuple[Annotated[int, Field(ge=1)], ...]),
+            ),
+            ParameterArgument(
+                name='names',
+                plan=ParameterPlan(
+                    location='query',
+                    name='names',
+                    style='form',
+                    explode=True,
+                    shape='array',
+                    reserved_names=('stops',),
+                ),
+                adapter=TypeAdapter(MutableSequence[str]),
+            ),
+        ),
         record=Parameters,
     )
     RESPONSES: Final = OperationResponses(

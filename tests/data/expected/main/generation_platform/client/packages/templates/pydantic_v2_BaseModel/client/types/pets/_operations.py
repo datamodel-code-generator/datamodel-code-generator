@@ -25,10 +25,50 @@ ListPetsResponse: TypeAlias = models.PetsGetResponse | models.Error
 ListPetsResult: TypeAlias = ListPetsResponse
 
 
-_LIST_PETS_HEADERS: Final[ResponseHeaders[models.PetsGetResponse200XNextHeader | models.PetsGetResponse200XRateHeader, UNSET]] = ResponseHeaders(
+_LIST_PETS_HEADERS: Final[
+    ResponseHeaders[
+        models.PetsGetResponse200XNextHeader | models.PetsGetResponse200XRateHeader,
+        UNSET,
+    ]
+] = ResponseHeaders(
     'listPets',
     frozenset({'200', 'default'}),
-    (('X-Next', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Next', style='simple'), codec=model_bindings.codec_5, missing=optional_header)),)), ('X-Rate', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Rate', style='simple', required=True, kind='integer'), codec=model_bindings.codec_6, missing=required_header)),))),
+    (
+        (
+            'X-Next',
+            (
+                (
+                    '200',
+                    HeaderBranch(
+                        plan=ParameterPlan(
+                            location='header', name='X-Next', style='simple'
+                        ),
+                        codec=model_bindings.codec_5,
+                        missing=optional_header,
+                    ),
+                ),
+            ),
+        ),
+        (
+            'X-Rate',
+            (
+                (
+                    '200',
+                    HeaderBranch(
+                        plan=ParameterPlan(
+                            location='header',
+                            name='X-Rate',
+                            style='simple',
+                            required=True,
+                            kind='integer',
+                        ),
+                        codec=model_bindings.codec_6,
+                        missing=required_header,
+                    ),
+                ),
+            ),
+        ),
+    ),
 )
 
 
@@ -38,6 +78,8 @@ def decode_list_pets_header(
     *,
     name: Literal['X-Next'],
 ) -> models.PetsGetResponse200XNextHeader | UNSET: ...
+
+
 @overload
 def decode_list_pets_header(
     info: ResponseInfo,
@@ -50,7 +92,9 @@ def decode_list_pets_header(
     info: ResponseInfo,
     *,
     name: Literal['X-Next', 'X-Rate'],
-) -> models.PetsGetResponse200XNextHeader | models.PetsGetResponse200XRateHeader | UNSET:
+) -> (
+    models.PetsGetResponse200XNextHeader | models.PetsGetResponse200XRateHeader | UNSET
+):
     """Decode one declared response header of list_pets from a response's metadata."""
     return _LIST_PETS_HEADERS.decode(info, name)
 
@@ -71,10 +115,28 @@ HeadPetResponse: TypeAlias = None
 HeadPetResult: TypeAlias = HeadPetResponse
 
 
-_HEAD_PET_HEADERS: Final[ResponseHeaders[models.PetsPetIdHeadResponse200ETagHeader, UNSET]] = ResponseHeaders(
+_HEAD_PET_HEADERS: Final[
+    ResponseHeaders[models.PetsPetIdHeadResponse200ETagHeader, UNSET]
+] = ResponseHeaders(
     'headPet',
     frozenset({'200'}),
-    (('ETag', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='ETag', style='simple'), codec=model_bindings.codec_17, missing=optional_header)),)),),
+    (
+        (
+            'ETag',
+            (
+                (
+                    '200',
+                    HeaderBranch(
+                        plan=ParameterPlan(
+                            location='header', name='ETag', style='simple'
+                        ),
+                        codec=model_bindings.codec_17,
+                        missing=optional_header,
+                    ),
+                ),
+            ),
+        ),
+    ),
 )
 
 

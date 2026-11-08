@@ -29,5 +29,26 @@ OPERATION_0: Final[OperationPlan[SendCycleResponse]] = OperationPlan(
     path='/cycles',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', codec=model_bindings.codec_0, form=MultipartForm(members=True, parts=(PartPlan('a', 'string'), PartPlan('b', 'string')), additional=PartPlan('', 'json'))), BodyMedia(media_type='application/x-www-form-urlencoded', kind='form', codec=model_bindings.codec_1, fields=(FieldPlan('a', 'string'), FieldPlan('b', 'integer')), additional=FieldPlan('', 'string'))), required=True),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                codec=model_bindings.codec_0,
+                form=MultipartForm(
+                    members=True,
+                    parts=(PartPlan('a', 'string'), PartPlan('b', 'string')),
+                    additional=PartPlan('', 'json'),
+                ),
+            ),
+            BodyMedia(
+                media_type='application/x-www-form-urlencoded',
+                kind='form',
+                codec=model_bindings.codec_1,
+                fields=(FieldPlan('a', 'string'), FieldPlan('b', 'integer')),
+                additional=FieldPlan('', 'string'),
+            ),
+        ),
+        required=True,
+    ),
 )

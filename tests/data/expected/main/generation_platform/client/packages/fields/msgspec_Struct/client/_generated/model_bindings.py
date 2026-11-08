@@ -11,7 +11,9 @@ import models
 
 from .._runtime.model_codecs.msgspec_structs import MsgspecCodec
 
-codec_0: Final[MsgspecCodec[models.PetsPostQueryTagParameter]] = MsgspecCodec(models.PetsPostQueryTagParameter)
+codec_0: Final[MsgspecCodec[models.PetsPostQueryTagParameter]] = MsgspecCodec(
+    models.PetsPostQueryTagParameter
+)
 """Codec of /paths/~1pets/post parameter (request query tag)."""
 
 codec_1: Final[MsgspecCodec[models.NewPet]] = MsgspecCodec(models.NewPet)
@@ -23,37 +25,51 @@ codec_2: Final[MsgspecCodec[models.PetForm]] = MsgspecCodec(models.PetForm)
 codec_3: Final[MsgspecCodec[models.Pet]] = MsgspecCodec(models.Pet)
 """Codec of /paths/~1pets/post response_body (response 201 application/json)."""
 
-codec_4: Final[MsgspecCodec[models.PetsPetIdPatchPathPetIdParameter]] = MsgspecCodec(models.PetsPetIdPatchPathPetIdParameter)
+codec_4: Final[MsgspecCodec[models.PetsPetIdPatchPathPetIdParameter]] = MsgspecCodec(
+    models.PetsPetIdPatchPathPetIdParameter
+)
 """Codec of /paths/~1pets~1{petId}/patch parameter (request path petId)."""
 
 codec_5: Final[MsgspecCodec[models.PetPatch]] = MsgspecCodec(models.PetPatch)
 """Codec of /paths/~1pets~1{petId}/patch request_body (request application/json)."""
 
-codec_6: Final[MsgspecCodec[models.PetsPetIdVisitsPostPathPetIdParameter]] = MsgspecCodec(models.PetsPetIdVisitsPostPathPetIdParameter)
+codec_6: Final[MsgspecCodec[models.PetsPetIdVisitsPostPathPetIdParameter]] = (
+    MsgspecCodec(models.PetsPetIdVisitsPostPathPetIdParameter)
+)
 """Codec of /paths/~1pets~1{petId}~1visits/post parameter (request path petId)."""
 
 codec_7: Final[MsgspecCodec[models.Visit]] = MsgspecCodec(models.Visit)
 """Codec of /paths/~1pets~1{petId}~1visits/post request_body (request application/json)."""
 
-codec_8: Final[MsgspecCodec[models.PetsPetIdOwnerPutPathPetIdParameter]] = MsgspecCodec(models.PetsPetIdOwnerPutPathPetIdParameter)
+codec_8: Final[MsgspecCodec[models.PetsPetIdOwnerPutPathPetIdParameter]] = MsgspecCodec(
+    models.PetsPetIdOwnerPutPathPetIdParameter
+)
 """Codec of /paths/~1pets~1{petId}~1owner/put parameter (request path petId)."""
 
 codec_9: Final[MsgspecCodec[models.Owner]] = MsgspecCodec(models.Owner)
 """Codec of /paths/~1pets~1{petId}~1owner/put request_body (request application/json)."""
 
-codec_10: Final[MsgspecCodec[models.OwnersPostRequest]] = MsgspecCodec(models.OwnersPostRequest)
+codec_10: Final[MsgspecCodec[models.OwnersPostRequest]] = MsgspecCodec(
+    models.OwnersPostRequest
+)
 """Codec of /paths/~1owners/post request_body (request application/json)."""
 
-codec_11: Final[MsgspecCodec[models.PetsPetIdLabelsPutPathPetIdParameter]] = MsgspecCodec(models.PetsPetIdLabelsPutPathPetIdParameter)
+codec_11: Final[MsgspecCodec[models.PetsPetIdLabelsPutPathPetIdParameter]] = (
+    MsgspecCodec(models.PetsPetIdLabelsPutPathPetIdParameter)
+)
 """Codec of /paths/~1pets~1{petId}~1labels/put parameter (request path petId)."""
 
 codec_12: Final[MsgspecCodec[models.Labels]] = MsgspecCodec(models.Labels)
 """Codec of /paths/~1pets~1{petId}~1labels/put request_body (request application/json)."""
 
-codec_13: Final[MsgspecCodec[models.PetsPetIdPhotoPutPathPetIdParameter]] = MsgspecCodec(models.PetsPetIdPhotoPutPathPetIdParameter)
+codec_13: Final[MsgspecCodec[models.PetsPetIdPhotoPutPathPetIdParameter]] = (
+    MsgspecCodec(models.PetsPetIdPhotoPutPathPetIdParameter)
+)
 """Codec of /paths/~1pets~1{petId}~1photo/put parameter (request path petId)."""
 
-codec_14: Final[MsgspecCodec[models.PetsPetIdRecordsPutPathPetIdParameter]] = MsgspecCodec(models.PetsPetIdRecordsPutPathPetIdParameter)
+codec_14: Final[MsgspecCodec[models.PetsPetIdRecordsPutPathPetIdParameter]] = (
+    MsgspecCodec(models.PetsPetIdRecordsPutPathPetIdParameter)
+)
 """Codec of /paths/~1pets~1{petId}~1records/put parameter (request path petId)."""
 
 codec_15: Final[MsgspecCodec[models.Pet]] = MsgspecCodec(models.Pet)

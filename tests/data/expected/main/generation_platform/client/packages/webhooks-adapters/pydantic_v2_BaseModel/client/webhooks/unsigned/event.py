@@ -29,7 +29,13 @@ __all__ = [
 
 _PLAN: Final[EventPlan[models.Invoice | models.Customer]] = EventPlan(
     helper_id='unsigned.event',
-    event=MappedEventDecoder('/meta/type', {'invoice.paid': EventDecoder(model_bindings.codec_0), 'customer.created': EventDecoder(model_bindings.codec_1)}),
+    event=MappedEventDecoder(
+        '/meta/type',
+        {
+            'invoice.paid': EventDecoder(model_bindings.codec_0),
+            'customer.created': EventDecoder(model_bindings.codec_1),
+        },
+    ),
 )
 
 

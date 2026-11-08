@@ -19,7 +19,12 @@ bearer = ASCIIHTTPBearer(
 
 
 oauth = OAuth2Bearer(
-    flows={'clientCredentials': {'tokenUrl': 'https://auth.example.com/token', 'scopes': {'read': 'Read', 'write:pets': 'Write pets'}}},
+    flows={
+        'clientCredentials': {
+            'tokenUrl': 'https://auth.example.com/token',
+            'scopes': {'read': 'Read', 'write:pets': 'Write pets'},
+        }
+    },
     scheme_name='oauth',
     auto_error=False,
 )

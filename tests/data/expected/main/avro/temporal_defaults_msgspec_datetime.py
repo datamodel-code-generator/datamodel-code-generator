@@ -15,84 +15,114 @@ class LogicalRecord(Struct):
 
 
 class TemporalDefaults(Struct):
-    datetime_module: date | UnsetType = (
-        datetime_module_aliased.date.fromisoformat('1970-01-01')
+    datetime_module: date | UnsetType = datetime_module_aliased.date.fromisoformat(
+        '1970-01-01'
     )
-    date_before: date | UnsetType = (
-        datetime_module_aliased.date.fromisoformat('1969-12-31')
+    date_before: date | UnsetType = datetime_module_aliased.date.fromisoformat(
+        '1969-12-31'
     )
-    date_after: date | UnsetType = (
-        datetime_module_aliased.date.fromisoformat('1970-01-02')
+    date_after: date | UnsetType = datetime_module_aliased.date.fromisoformat(
+        '1970-01-02'
     )
-    date_min: date | UnsetType = (
-        datetime_module_aliased.date.fromisoformat('0001-01-01')
+    date_min: date | UnsetType = datetime_module_aliased.date.fromisoformat(
+        '0001-01-01'
     )
-    date_max: date | UnsetType = (
-        datetime_module_aliased.date.fromisoformat('9999-12-31')
+    date_max: date | UnsetType = datetime_module_aliased.date.fromisoformat(
+        '9999-12-31'
     )
-    time_millis_zero: time | UnsetType = (
-        datetime_module_aliased.time.fromisoformat('00:00:00')
+    time_millis_zero: time | UnsetType = datetime_module_aliased.time.fromisoformat(
+        '00:00:00'
     )
-    time_millis: time | UnsetType = (
-        datetime_module_aliased.time.fromisoformat('00:00:01.001000')
+    time_millis: time | UnsetType = datetime_module_aliased.time.fromisoformat(
+        '00:00:01.001000'
     )
-    time_millis_last: time | UnsetType = (
-        datetime_module_aliased.time.fromisoformat('23:59:59.999000')
+    time_millis_last: time | UnsetType = datetime_module_aliased.time.fromisoformat(
+        '23:59:59.999000'
     )
-    time_micros: time | UnsetType = (
-        datetime_module_aliased.time.fromisoformat('00:00:01.234567')
+    time_micros: time | UnsetType = datetime_module_aliased.time.fromisoformat(
+        '00:00:01.234567'
     )
-    time_micros_last: time | UnsetType = (
-        datetime_module_aliased.time.fromisoformat('23:59:59.999999')
+    time_micros_last: time | UnsetType = datetime_module_aliased.time.fromisoformat(
+        '23:59:59.999999'
     )
     timestamp_millis: datetime | UnsetType = (
-        datetime_module_aliased.datetime.fromisoformat('1970-01-01T00:00:01.001000+00:00')
+        datetime_module_aliased.datetime.fromisoformat(
+            '1970-01-01T00:00:01.001000+00:00'
+        )
     )
     timestamp_micros_before: datetime | UnsetType = (
-        datetime_module_aliased.datetime.fromisoformat('1969-12-31T23:59:59.999999+00:00')
+        datetime_module_aliased.datetime.fromisoformat(
+            '1969-12-31T23:59:59.999999+00:00'
+        )
     )
     timestamp_micros_exact: datetime | UnsetType = (
-        datetime_module_aliased.datetime.fromisoformat('2255-06-05T23:47:34.740991+00:00')
+        datetime_module_aliased.datetime.fromisoformat(
+            '2255-06-05T23:47:34.740991+00:00'
+        )
     )
     timestamp_micros_min: datetime | UnsetType = (
         datetime_module_aliased.datetime.fromisoformat('0001-01-01T00:00:00+00:00')
     )
     timestamp_micros_max: datetime | UnsetType = (
-        datetime_module_aliased.datetime.fromisoformat('9999-12-31T23:59:59.999999+00:00')
+        datetime_module_aliased.datetime.fromisoformat(
+            '9999-12-31T23:59:59.999999+00:00'
+        )
     )
     timestamp_nanos: datetime | UnsetType = (
-        datetime_module_aliased.datetime.fromisoformat('1970-01-01T00:00:00.000001+00:00')
+        datetime_module_aliased.datetime.fromisoformat(
+            '1970-01-01T00:00:00.000001+00:00'
+        )
     )
     timestamp_nanos_before: datetime | UnsetType = (
-        datetime_module_aliased.datetime.fromisoformat('1969-12-31T23:59:59.999999+00:00')
+        datetime_module_aliased.datetime.fromisoformat(
+            '1969-12-31T23:59:59.999999+00:00'
+        )
     )
     local_millis: str | UnsetType = '1969-12-31T23:59:59.999000'
     local_micros: str | UnsetType = '1970-01-01T00:00:01.000001'
     local_nanos: str | UnsetType = '1969-12-31T23:59:59.999999'
-    date_union: date | None | UnsetType = (
-        datetime_module_aliased.date.fromisoformat('1970-01-02')
+    date_union: date | None | UnsetType = datetime_module_aliased.date.fromisoformat(
+        '1970-01-02'
     )
     plain_union: int | datetime | UnsetType = 1000
     nullable: datetime | None | UnsetType = UNSET
     wrapped: str | UnsetType = '1969-12-31T23:59:59.999999'
-    wrapped_union: time | None | UnsetType = (
-        datetime_module_aliased.time.fromisoformat('00:00:01')
+    wrapped_union: time | None | UnsetType = datetime_module_aliased.time.fromisoformat(
+        '00:00:01'
     )
     date_array: list[date] | UnsetType = field(
-        default_factory=lambda: [datetime_module_aliased.date.fromisoformat('1970-01-02'), datetime_module_aliased.date.fromisoformat('1969-12-31')]
+        default_factory=lambda: [
+            datetime_module_aliased.date.fromisoformat('1970-01-02'),
+            datetime_module_aliased.date.fromisoformat('1969-12-31'),
+        ]
     )
     time_map: dict[str, time] | UnsetType = field(
-        default_factory=lambda: {'z': datetime_module_aliased.time.fromisoformat('00:00:00.001001'), 'a': datetime_module_aliased.time.fromisoformat('00:00:00.000001')}
+        default_factory=lambda: {
+            'z': datetime_module_aliased.time.fromisoformat('00:00:00.001001'),
+            'a': datetime_module_aliased.time.fromisoformat('00:00:00.000001'),
+        }
     )
     record: LogicalRecord | UnsetType = field(
         default_factory=lambda: convert(
-            {'instant': datetime_module_aliased.datetime.fromisoformat('1970-01-01T00:00:01.000001+00:00'), 'day': datetime_module_aliased.date.fromisoformat('1970-01-02')},
+            {
+                'instant': datetime_module_aliased.datetime.fromisoformat(
+                    '1970-01-01T00:00:01.000001+00:00'
+                ),
+                'day': datetime_module_aliased.date.fromisoformat('1970-01-02'),
+            },
             type=LogicalRecord,
         )
     )
     record_array: list[LogicalRecord] | UnsetType = field(
         default_factory=lambda: convert(
-            [{'day': datetime_module_aliased.date.fromisoformat('1969-12-31'), 'instant': datetime_module_aliased.datetime.fromisoformat('1969-12-31T23:59:59.999999+00:00')}],
+            [
+                {
+                    'day': datetime_module_aliased.date.fromisoformat('1969-12-31'),
+                    'instant': datetime_module_aliased.datetime.fromisoformat(
+                        '1969-12-31T23:59:59.999999+00:00'
+                    ),
+                }
+            ],
             type=list[LogicalRecord],
         )
     )

@@ -269,9 +269,7 @@ LITERAL_ROUTES: Final = (
     ('literal', _add_literal),
     ('literal_model', _add_literal_model),
 )
-TEMPLATED_ROUTES: Final = (
-    ('get_pet', _add_get_pet),
-)
+TEMPLATED_ROUTES: Final = (('get_pet', _add_get_pet),)
 
 
 def build_router(

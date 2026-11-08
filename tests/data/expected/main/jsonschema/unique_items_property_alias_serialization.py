@@ -228,8 +228,6 @@ class UniqueItemsPropertyAlias(_JsonSchemaRuntimeValidationBase):
     model_config = ConfigDict(
         extra='allow',
     )
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        (('my_list',),),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ((('my_list',),),)
 
     my_list: list[int] | None = Field(None, serialization_alias='my-list')

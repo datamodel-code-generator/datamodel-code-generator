@@ -5,13 +5,21 @@ from __future__ import annotations
 
 from typing_extensions import TypeAliasType
 
-FilesFileNameExtGetPathFileNameParameter = TypeAliasType("FilesFileNameExtGetPathFileNameParameter", str)
+FilesFileNameExtGetPathFileNameParameter = TypeAliasType(
+    "FilesFileNameExtGetPathFileNameParameter", str
+)
 
 
-FilesFileNameExtGetPathExtParameter = TypeAliasType("FilesFileNameExtGetPathExtParameter", str)
+FilesFileNameExtGetPathExtParameter = TypeAliasType(
+    "FilesFileNameExtGetPathExtParameter", str
+)
 
 
-FilesFileNameExtGetQueryClassParameter = TypeAliasType("FilesFileNameExtGetQueryClassParameter", str)
+FilesFileNameExtGetQueryClassParameter = TypeAliasType(
+    "FilesFileNameExtGetQueryClassParameter", str
+)
 
 
-FilesFileNameExtGetHeaderField2faParameter = TypeAliasType("FilesFileNameExtGetHeaderField2faParameter", str | None)
+FilesFileNameExtGetHeaderField2faParameter = TypeAliasType(
+    "FilesFileNameExtGetHeaderField2faParameter", str | None
+)

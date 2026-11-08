@@ -181,7 +181,9 @@ class DefaultService(Protocol):
     def post_multi(
         self,
         *,
-        body: nullable_basemodel_models.Item | nullable_basemodel_models.MultiPostRequest,
+        body: (
+            nullable_basemodel_models.Item | nullable_basemodel_models.MultiPostRequest
+        ),
         media_type: str | None,
     ) -> None | HTTPResult[None] | Response:
         """
@@ -192,7 +194,11 @@ class DefaultService(Protocol):
     def post_multi_optional(
         self,
         *,
-        body: nullable_basemodel_models.Item | nullable_basemodel_models.MultiOptionalPostRequest | None,
+        body: (
+            nullable_basemodel_models.Item
+            | nullable_basemodel_models.MultiOptionalPostRequest
+            | None
+        ),
         media_type: str | None,
     ) -> None | HTTPResult[None] | Response:
         """

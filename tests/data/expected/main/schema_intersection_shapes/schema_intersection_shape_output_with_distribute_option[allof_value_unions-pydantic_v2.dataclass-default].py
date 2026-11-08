@@ -137,7 +137,9 @@ class WithProperties5(WithProperties1):
     pass
 
 
-WithProperties = TypeAliasType("WithProperties", WithProperties4 | WithProperties5 | str | int)
+WithProperties = TypeAliasType(
+    "WithProperties", WithProperties4 | WithProperties5 | str | int
+)
 
 
 class WithEnum1(Enum):

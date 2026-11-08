@@ -9,5 +9,9 @@ import tests.data.python.input_model.generic_reuse
 
 
 class LocalEnumRoot(BaseModel):
-    box: tests.data.python.input_model.generic_reuse.LocalEnumRoot.model_fields['box'].annotation
-    validated: tests.data.python.input_model.generic_reuse.LocalEnumRoot.model_fields['validated'].annotation
+    box: tests.data.python.input_model.generic_reuse.LocalEnumRoot.model_fields[
+        'box'
+    ].annotation
+    validated: tests.data.python.input_model.generic_reuse.LocalEnumRoot.model_fields[
+        'validated'
+    ].annotation

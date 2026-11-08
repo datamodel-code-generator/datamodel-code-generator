@@ -225,17 +225,13 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 
 
 class ChildRequest(_JsonSchemaRuntimeValidationBase):
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        (('requestValues',),),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ((('requestValues',),),)
 
     requestValues: list[int]
 
 
 class ChildResponse(_JsonSchemaRuntimeValidationBase):
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        (('responseValues',),),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ((('responseValues',),),)
 
     responseValues: list[int]
 

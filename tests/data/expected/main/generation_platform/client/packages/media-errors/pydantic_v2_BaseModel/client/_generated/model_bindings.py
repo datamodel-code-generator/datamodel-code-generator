@@ -11,5 +11,7 @@ import models
 
 from .._runtime.model_codecs.pydantic_models import PydanticCodec
 
-codec_0: Final[PydanticCodec[models.UnionPartsPostRequest]] = PydanticCodec(models.UnionPartsPostRequest)
+codec_0: Final[PydanticCodec[models.UnionPartsPostRequest]] = PydanticCodec(
+    models.UnionPartsPostRequest
+)
 """Codec of /paths/~1union-parts/post request_body (request multipart/form-data)."""

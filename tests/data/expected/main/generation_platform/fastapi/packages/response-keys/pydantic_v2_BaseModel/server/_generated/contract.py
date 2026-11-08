@@ -39,7 +39,9 @@ class GetFallback:
     """Plans of the get_fallback operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'default': Declared(media_type='application/json', model=models.Item)},
+        responses={
+            'default': Declared(media_type='application/json', model=models.Item)
+        },
     )
 
 
@@ -47,7 +49,10 @@ class GetLowercase:
     """Plans of the get_lowercase operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=models.Item), '4XX': Declared(media_type='application/json', model=models.Plain)},
+        responses={
+            '200': Declared(media_type='application/json', model=models.Item),
+            '4XX': Declared(media_type='application/json', model=models.Plain),
+        },
     )
 
 
@@ -63,7 +68,11 @@ class GetInvalid:
     """Plans of the get_invalid operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=models.InvalidGetResponse)},
+        responses={
+            '200': Declared(
+                media_type='application/json', model=models.InvalidGetResponse
+            )
+        },
     )
 
 
@@ -71,5 +80,9 @@ class GetInformational:
     """Plans of the get_informational operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'101': Declared(), '1XX': Declared(), '200': Declared(media_type='application/json', model=models.Item)},
+        responses={
+            '101': Declared(),
+            '1XX': Declared(),
+            '200': Declared(media_type='application/json', model=models.Item),
+        },
     )

@@ -12,9 +12,9 @@ from typing_extensions import TypeAliasType
 
 @dataclass
 class Model:
-    values: dict[str, dict[constr(pattern=r'^t@.+$'), Union["Entry", str]] | str] | None = (
-        None
-    )
+    values: (
+        dict[str, dict[constr(pattern=r'^t@.+$'), Union["Entry", str]] | str] | None
+    ) = None
 
 
 Entry = TypeAliasType(

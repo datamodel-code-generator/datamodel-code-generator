@@ -40,9 +40,9 @@ class LookReference:
 @dataclass(config=ConfigDict(regex_engine="python-re"))
 class Model:
     lookDeclared: LookDeclared | None = None
-    lookUndeclared: dict[constr(pattern=r'^x'), LookUndeclaredPatternProperty] | None = (
-        None
-    )
+    lookUndeclared: (
+        dict[constr(pattern=r'^x'), LookUndeclaredPatternProperty] | None
+    ) = None
     crossedLength: CrossedLength | None = None
     crossedRange: CrossedRange | None = None
     lookReference: LookReference | None = None

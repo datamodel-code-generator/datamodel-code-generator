@@ -23,11 +23,17 @@ codec_2: Final[PydanticCodec[models.WrapNullable]] = PydanticCodec(models.WrapNu
 codec_3: Final[PydanticCodec[models.WrapNullable]] = PydanticCodec(models.WrapNullable)
 """Codec of /paths/~1wrap/put response_body (response 200 application/json)."""
 
-codec_4: Final[PydanticCodec[models.WrapNullable | None]] = PydanticCodec(models.WrapNullable | None)
+codec_4: Final[PydanticCodec[models.WrapNullable | None]] = PydanticCodec(
+    models.WrapNullable | None
+)
 """Codec of /paths/~1wrap-nullable/put request_body (request application/json)."""
 
-codec_5: Final[PydanticCodec[models.WrapNullable | None]] = PydanticCodec(models.WrapNullable | None)
+codec_5: Final[PydanticCodec[models.WrapNullable | None]] = PydanticCodec(
+    models.WrapNullable | None
+)
 """Codec of /paths/~1wrap-nullable/put response_body (response 200 application/json)."""
 
-codec_6: Final[PydanticCodec[models.NullObj | None]] = PydanticCodec(models.NullObj | None)
+codec_6: Final[PydanticCodec[models.NullObj | None]] = PydanticCodec(
+    models.NullObj | None
+)
 """Codec of /paths/~1null-object/get response_body (response 200 application/json)."""

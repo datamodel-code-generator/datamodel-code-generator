@@ -52,9 +52,7 @@ def _add_get_session(
     )
 
 
-LITERAL_ROUTES: Final = (
-    ('get_session', _add_get_session),
-)
+LITERAL_ROUTES: Final = (('get_session', _add_get_session),)
 TEMPLATED_ROUTES: Final = ()
 
 

@@ -10,19 +10,25 @@ from typing_extensions import TypeAliasType
 
 
 class Item(
-    RootModel[Annotated[StrictStr, Field(max_length=8), EncodedStr(encoder=Base64Encoder)]]
+    RootModel[
+        Annotated[StrictStr, Field(max_length=8), EncodedStr(encoder=Base64Encoder)]
+    ]
 ):
     root: Annotated[StrictStr, Field(max_length=8), EncodedStr(encoder=Base64Encoder)]
 
 
 class Values(
-    RootModel[Annotated[StrictStr, Field(pattern=r'^Y'), EncodedStr(encoder=Base64Encoder)]]
+    RootModel[
+        Annotated[StrictStr, Field(pattern=r'^Y'), EncodedStr(encoder=Base64Encoder)]
+    ]
 ):
     root: Annotated[StrictStr, Field(pattern=r'^Y'), EncodedStr(encoder=Base64Encoder)]
 
 
 class Member(
-    RootModel[Annotated[StrictStr, Field(max_length=8), EncodedStr(encoder=Base64Encoder)]]
+    RootModel[
+        Annotated[StrictStr, Field(max_length=8), EncodedStr(encoder=Base64Encoder)]
+    ]
 ):
     root: Annotated[StrictStr, Field(max_length=8), EncodedStr(encoder=Base64Encoder)]
 
@@ -34,7 +40,9 @@ BranchString = TypeAliasType(
 
 
 class Short(
-    RootModel[Annotated[StrictStr, Field(max_length=8), EncodedStr(encoder=Base64Encoder)]]
+    RootModel[
+        Annotated[StrictStr, Field(max_length=8), EncodedStr(encoder=Base64Encoder)]
+    ]
 ):
     root: Annotated[StrictStr, Field(max_length=8), EncodedStr(encoder=Base64Encoder)]
 

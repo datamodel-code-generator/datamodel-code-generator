@@ -10,6 +10,6 @@ from pydantic import BaseModel, condecimal
 
 class NativeDecimalDefaultConstrained(BaseModel):
     Decimal: str | None = 'shadow'
-    amount: (
-        condecimal(multiple_of=Decimal_aliased('0.25')) | None
-    ) = Decimal_aliased('1.25')
+    amount: condecimal(multiple_of=Decimal_aliased('0.25')) | None = Decimal_aliased(
+        '1.25'
+    )

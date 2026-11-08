@@ -54,7 +54,9 @@ ValuesGetQueryWordsParameterItem = TypeAliasType(
 )
 
 
-ValuesGetQueryWordsParameter = TypeAliasType("ValuesGetQueryWordsParameter", list[ValuesGetQueryWordsParameterItem])
+ValuesGetQueryWordsParameter = TypeAliasType(
+    "ValuesGetQueryWordsParameter", list[ValuesGetQueryWordsParameterItem]
+)
 
 
 ValuesGetHeaderXLevelParameter = TypeAliasType(
@@ -82,4 +84,6 @@ class ValuesGetQueryToneParameter(StrEnum):
     blue = 'blue'
 
 
-ValuesGetHeaderXColorsParameter = TypeAliasType("ValuesGetHeaderXColorsParameter", list[Color])
+ValuesGetHeaderXColorsParameter = TypeAliasType(
+    "ValuesGetHeaderXColorsParameter", list[Color]
+)

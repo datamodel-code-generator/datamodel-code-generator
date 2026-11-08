@@ -18,34 +18,51 @@ from .._runtime.model_codecs.stdlib_dataclasses import (
 
 MODELS: Final[dict[type, Model]] = {
     models.Home: Model((Field('street', 'street', omit_none=True),)),
-    models.Person: Model((Field('work', 'work', models.Home), Field('home', 'home', Choice((('object', models.Home),))))),
+    models.Person: Model(
+        (
+            Field('work', 'work', models.Home),
+            Field('home', 'home', Choice((('object', models.Home),))),
+        )
+    ),
 }
 
-codec_0: Final[DataclassCodec[models.WorkGetQueryCaseParameter]] = DataclassCodec(None, MODELS)
+codec_0: Final[DataclassCodec[models.WorkGetQueryCaseParameter]] = DataclassCodec(
+    None, MODELS
+)
 """Codec of /paths/~1work/get parameter (request query case)."""
 
 codec_1: Final[DataclassCodec[models.Home]] = DataclassCodec(models.Home, MODELS)
 """Codec of /paths/~1work/get response_body (response 200 application/json)."""
 
-codec_2: Final[DataclassCodec[models.WorkGetQueryCaseParameter]] = DataclassCodec(None, MODELS)
+codec_2: Final[DataclassCodec[models.WorkGetQueryCaseParameter]] = DataclassCodec(
+    None, MODELS
+)
 """Codec of /paths/~1work/put parameter (request query case)."""
 
 codec_3: Final[DataclassCodec[models.Home]] = DataclassCodec(models.Home, MODELS)
 """Codec of /paths/~1work/put request_body (request application/json)."""
 
-codec_4: Final[DataclassCodec[models.WorkGetQueryCaseParameter]] = DataclassCodec(None, MODELS)
+codec_4: Final[DataclassCodec[models.WorkGetQueryCaseParameter]] = DataclassCodec(
+    None, MODELS
+)
 """Codec of /paths/~1office/get parameter (request query case)."""
 
 codec_5: Final[DataclassCodec[models.Home]] = DataclassCodec(models.Home, MODELS)
 """Codec of /paths/~1office/get response_body (response 200 application/json)."""
 
-codec_6: Final[DataclassCodec[models.WorkGetQueryCaseParameter]] = DataclassCodec(None, MODELS)
+codec_6: Final[DataclassCodec[models.WorkGetQueryCaseParameter]] = DataclassCodec(
+    None, MODELS
+)
 """Codec of /paths/~1home/get parameter (request query case)."""
 
-codec_7: Final[DataclassCodec[models.Home | None]] = DataclassCodec(Choice((('object', models.Home),)), MODELS)
+codec_7: Final[DataclassCodec[models.Home | None]] = DataclassCodec(
+    Choice((('object', models.Home),)), MODELS
+)
 """Codec of /paths/~1home/get response_body (response 200 application/json)."""
 
-codec_8: Final[DataclassCodec[models.WorkGetQueryCaseParameter]] = DataclassCodec(None, MODELS)
+codec_8: Final[DataclassCodec[models.WorkGetQueryCaseParameter]] = DataclassCodec(
+    None, MODELS
+)
 """Codec of /paths/~1person/put parameter (request query case)."""
 
 codec_9: Final[DataclassCodec[models.Person]] = DataclassCodec(models.Person, MODELS)

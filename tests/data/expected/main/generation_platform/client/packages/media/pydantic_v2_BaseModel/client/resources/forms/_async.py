@@ -176,7 +176,9 @@ class AsyncFormsResource:
     async def read_parts(
         self,
         *,
-        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
+        response_media_type: (
+            Literal['multipart/mixed', 'multipart/form-data'] | None
+        ) = None,
         options: RequestOptions | None = None,
     ) -> ReadPartsResponse:
         """
@@ -551,7 +553,9 @@ class AsyncFormsWithResponse:
     async def read_parts(
         self,
         *,
-        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
+        response_media_type: (
+            Literal['multipart/mixed', 'multipart/form-data'] | None
+        ) = None,
         options: RequestOptions | None = None,
     ) -> Response[ReadPartsResponse]:
         """
@@ -905,7 +909,9 @@ class AsyncFormsWithRawResponse:
     async def read_parts(
         self,
         *,
-        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
+        response_media_type: (
+            Literal['multipart/mixed', 'multipart/form-data'] | None
+        ) = None,
         options: RequestOptions | None = None,
     ) -> AsyncRawResponse:
         """
@@ -1259,7 +1265,9 @@ class AsyncFormsWithStreamingResponse:
     def read_parts(
         self,
         *,
-        response_media_type: Literal['multipart/mixed', 'multipart/form-data'] | None = None,
+        response_media_type: (
+            Literal['multipart/mixed', 'multipart/form-data'] | None
+        ) = None,
         options: RequestOptions | None = None,
     ) -> AbstractAsyncContextManager[AsyncRawResponse]:
         """

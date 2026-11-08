@@ -6,7 +6,9 @@ from __future__ import annotations
 from pydantic import RootModel
 from typing_extensions import TypeAliasType
 
-SessionsGetCookieSessionParameter = TypeAliasType("SessionsGetCookieSessionParameter", str)
+SessionsGetCookieSessionParameter = TypeAliasType(
+    "SessionsGetCookieSessionParameter", str
+)
 
 
 class SessionsGetResponse(RootModel[str]):

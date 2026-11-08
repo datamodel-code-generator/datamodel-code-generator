@@ -27,8 +27,8 @@ class DecimalDefaults(BaseModel):
     zero: Decimal_aliased | None = Decimal_aliased('0E-4')
     trailing: Decimal_aliased | None = Decimal_aliased('1200E-2')
     no_scale: Decimal_aliased | None = Decimal_aliased('123E-0')
-    large: Decimal_aliased | None = (
-        Decimal_aliased('12345678901234567890123456789012345678901234567890123456789012345678901234567890E-29')
+    large: Decimal_aliased | None = Decimal_aliased(
+        '12345678901234567890123456789012345678901234567890123456789012345678901234567890E-29'
     )
     fixed: Money | None = Field(Decimal_aliased('258E-2'), validate_default=True)
     reference: Money | None = Field(Decimal_aliased('-258E-2'), validate_default=True)

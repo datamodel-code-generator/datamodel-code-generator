@@ -84,9 +84,7 @@ def _add_router(
     )
 
 
-LITERAL_ROUTES: Final = (
-    ('router', _add_router),
-)
+LITERAL_ROUTES: Final = (('router', _add_router),)
 TEMPLATED_ROUTES: Final = ()
 
 

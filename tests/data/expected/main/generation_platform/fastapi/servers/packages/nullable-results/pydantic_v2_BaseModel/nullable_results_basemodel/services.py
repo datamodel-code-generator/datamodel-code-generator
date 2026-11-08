@@ -22,7 +22,21 @@ class DefaultService(Protocol):
         self,
         *,
         case: str,
-    ) -> nullable_results_basemodel_models.TextsGetResponse | None | HTTPResult[nullable_results_basemodel_models.TextsGetResponse | nullable_results_basemodel_models.TextsGetResponse1 | nullable_results_basemodel_models.Thing | nullable_results_basemodel_models.TextsGetResponse2 | Any | nullable_results_basemodel_models.Color | nullable_results_basemodel_models.Pet | None] | Response:
+    ) -> (
+        nullable_results_basemodel_models.TextsGetResponse
+        | None
+        | HTTPResult[
+            nullable_results_basemodel_models.TextsGetResponse
+            | nullable_results_basemodel_models.TextsGetResponse1
+            | nullable_results_basemodel_models.Thing
+            | nullable_results_basemodel_models.TextsGetResponse2
+            | Any
+            | nullable_results_basemodel_models.Color
+            | nullable_results_basemodel_models.Pet
+            | None
+        ]
+        | Response
+    ):
         """
         Handle GET /texts.
         """
@@ -42,7 +56,12 @@ class DefaultService(Protocol):
         self,
         *,
         case: str,
-    ) -> nullable_results_basemodel_models.ListsGetResponse | None | HTTPResult[nullable_results_basemodel_models.ListsGetResponse] | Response:
+    ) -> (
+        nullable_results_basemodel_models.ListsGetResponse
+        | None
+        | HTTPResult[nullable_results_basemodel_models.ListsGetResponse]
+        | Response
+    ):
         """
         Handle GET /lists.
         """
@@ -52,7 +71,12 @@ class DefaultService(Protocol):
         self,
         *,
         case: str,
-    ) -> nullable_results_basemodel_models.Name | None | HTTPResult[nullable_results_basemodel_models.Name | None] | Response:
+    ) -> (
+        nullable_results_basemodel_models.Name
+        | None
+        | HTTPResult[nullable_results_basemodel_models.Name | None]
+        | Response
+    ):
         """
         Handle GET /names.
         """
@@ -62,7 +86,12 @@ class DefaultService(Protocol):
         self,
         *,
         case: str,
-    ) -> nullable_results_basemodel_models.ValuesGetResponse | None | HTTPResult[nullable_results_basemodel_models.ValuesGetResponse] | Response:
+    ) -> (
+        nullable_results_basemodel_models.ValuesGetResponse
+        | None
+        | HTTPResult[nullable_results_basemodel_models.ValuesGetResponse]
+        | Response
+    ):
         """
         Handle GET /values.
         """
@@ -82,7 +111,12 @@ class DefaultService(Protocol):
         self,
         *,
         case: str,
-    ) -> nullable_results_basemodel_models.Pet | None | HTTPResult[nullable_results_basemodel_models.Pet | None] | Response:
+    ) -> (
+        nullable_results_basemodel_models.Pet
+        | None
+        | HTTPResult[nullable_results_basemodel_models.Pet | None]
+        | Response
+    ):
         """
         Handle GET /pets.
         """
@@ -92,7 +126,11 @@ class DefaultService(Protocol):
         self,
         *,
         case: str,
-    ) -> nullable_results_basemodel_models.Thing | HTTPResult[nullable_results_basemodel_models.Thing] | Response:
+    ) -> (
+        nullable_results_basemodel_models.Thing
+        | HTTPResult[nullable_results_basemodel_models.Thing]
+        | Response
+    ):
         """
         Handle GET /things.
         """
@@ -102,7 +140,11 @@ class DefaultService(Protocol):
         self,
         *,
         case: str,
-    ) -> nullable_results_basemodel_models.NotesGetResponse | HTTPResult[nullable_results_basemodel_models.NotesGetResponse] | Response:
+    ) -> (
+        nullable_results_basemodel_models.NotesGetResponse
+        | HTTPResult[nullable_results_basemodel_models.NotesGetResponse]
+        | Response
+    ):
         """
         Handle GET /notes.
         """
@@ -113,7 +155,12 @@ class DefaultService(Protocol):
         *,
         case: str,
         body: nullable_results_basemodel_models.MemosPostRequest | None,
-    ) -> nullable_results_basemodel_models.MemosPostResponse | None | HTTPResult[nullable_results_basemodel_models.MemosPostResponse | None] | Response:
+    ) -> (
+        nullable_results_basemodel_models.MemosPostResponse
+        | None
+        | HTTPResult[nullable_results_basemodel_models.MemosPostResponse | None]
+        | Response
+    ):
         """
         Handle POST /memos.
         """
@@ -123,7 +170,12 @@ class DefaultService(Protocol):
         self,
         *,
         case: str,
-    ) -> nullable_results_basemodel_models.RangesGetResponse | None | HTTPResult[nullable_results_basemodel_models.RangesGetResponse] | Response:
+    ) -> (
+        nullable_results_basemodel_models.RangesGetResponse
+        | None
+        | HTTPResult[nullable_results_basemodel_models.RangesGetResponse]
+        | Response
+    ):
         """
         Handle GET /ranges.
         """
@@ -133,7 +185,11 @@ class DefaultService(Protocol):
         self,
         *,
         case: str,
-    ) -> nullable_results_basemodel_models.Thing | HTTPResult[nullable_results_basemodel_models.Thing] | Response:
+    ) -> (
+        nullable_results_basemodel_models.Thing
+        | HTTPResult[nullable_results_basemodel_models.Thing]
+        | Response
+    ):
         """
         Handle GET /accepted.
         """
@@ -143,7 +199,11 @@ class DefaultService(Protocol):
         self,
         *,
         case: str,
-    ) -> nullable_results_basemodel_models.Thing | HTTPResult[nullable_results_basemodel_models.Thing] | Response:
+    ) -> (
+        nullable_results_basemodel_models.Thing
+        | HTTPResult[nullable_results_basemodel_models.Thing]
+        | Response
+    ):
         """
         Handle GET /defaults.
         """
@@ -163,7 +223,12 @@ class DefaultService(Protocol):
         self,
         *,
         case: str,
-    ) -> nullable_results_basemodel_models.Ok | None | HTTPResult[nullable_results_basemodel_models.Ok] | Response:
+    ) -> (
+        nullable_results_basemodel_models.Ok
+        | None
+        | HTTPResult[nullable_results_basemodel_models.Ok]
+        | Response
+    ):
         """
         Handle GET /oks.
         """
@@ -174,7 +239,12 @@ class DefaultService(Protocol):
         *,
         case: str,
         body: nullable_results_basemodel_models.Ok | None,
-    ) -> nullable_results_basemodel_models.Ok | None | HTTPResult[nullable_results_basemodel_models.Ok] | Response:
+    ) -> (
+        nullable_results_basemodel_models.Ok
+        | None
+        | HTTPResult[nullable_results_basemodel_models.Ok]
+        | Response
+    ):
         """
         Handle POST /oks.
         """
@@ -184,7 +254,12 @@ class DefaultService(Protocol):
         self,
         *,
         case: str,
-    ) -> nullable_results_basemodel_models.AnyAlias | None | HTTPResult[nullable_results_basemodel_models.AnyAlias] | Response:
+    ) -> (
+        nullable_results_basemodel_models.AnyAlias
+        | None
+        | HTTPResult[nullable_results_basemodel_models.AnyAlias]
+        | Response
+    ):
         """
         Handle GET /any-aliases.
         """
@@ -195,7 +270,12 @@ class DefaultService(Protocol):
         *,
         case: str,
         body: nullable_results_basemodel_models.AnyAlias | None,
-    ) -> nullable_results_basemodel_models.AnyAlias | None | HTTPResult[nullable_results_basemodel_models.AnyAlias] | Response:
+    ) -> (
+        nullable_results_basemodel_models.AnyAlias
+        | None
+        | HTTPResult[nullable_results_basemodel_models.AnyAlias]
+        | Response
+    ):
         """
         Handle POST /any-aliases.
         """

@@ -11,10 +11,14 @@ class PetsGetResponse(RootModel[list[str]]):
     root: list[str]
 
 
-PetsPetIdDeletePathPetIdParameter = TypeAliasType("PetsPetIdDeletePathPetIdParameter", int)
+PetsPetIdDeletePathPetIdParameter = TypeAliasType(
+    "PetsPetIdDeletePathPetIdParameter", int
+)
 
 
-PetsPetIdMovesPostPathPetIdParameter = TypeAliasType("PetsPetIdMovesPostPathPetIdParameter", int)
+PetsPetIdMovesPostPathPetIdParameter = TypeAliasType(
+    "PetsPetIdMovesPostPathPetIdParameter", int
+)
 
 
 class PetsPetIdMovesPostResponse201LocationHeader(RootModel[str]):

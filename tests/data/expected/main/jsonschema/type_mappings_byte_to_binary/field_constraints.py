@@ -16,19 +16,25 @@ from pydantic import (
 
 
 class Item(
-    RootModel[Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)]]
+    RootModel[
+        Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)]
+    ]
 ):
     root: Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)]
 
 
 class Choice(
-    RootModel[Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)]]
+    RootModel[
+        Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)]
+    ]
 ):
     root: Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)]
 
 
 class Mapping(
-    RootModel[Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)]]
+    RootModel[
+        Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)]
+    ]
 ):
     root: Annotated[bytes, Field(max_length=8), EncodedBytes(encoder=Base64Encoder)]
 

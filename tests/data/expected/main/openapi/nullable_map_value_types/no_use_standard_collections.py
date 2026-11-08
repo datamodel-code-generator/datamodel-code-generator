@@ -64,7 +64,9 @@ class Board(BaseModel):
     fixed: Dict[str, int] = None
 
 
-ScoresGetQueryPlayersParameter = TypeAliasType("ScoresGetQueryPlayersParameter", Dict[str, Player] | None)
+ScoresGetQueryPlayersParameter = TypeAliasType(
+    "ScoresGetQueryPlayersParameter", Dict[str, Player] | None
+)
 
 
 class ScoresPostRequest(RootModel[Dict[str, int] | None]):

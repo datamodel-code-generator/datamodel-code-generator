@@ -15,22 +15,24 @@ from pydantic import (
 )
 
 
-class EmptyLiteralDefaults(BaseModel):
-    some_really_long_field_name_that_goes_on_and_on_and_on_and_on: dict[str, str] = (
-        {}
+class EmptyLiteralDefaults(
+    BaseModel
+):
+    some_really_long_field_name_that_goes_on_and_on_and_on_and_on: dict[
+        str, str
+    ] = {}
+    another_really_long_list_field_name_that_goes_on_and_on_and_on_and_on: list[
+        str
+    ] = []
+    mapping: dict[
+        str, Any
+    ] = Field(
+        default={},
+        description='x',
     )
-    another_really_long_list_field_name_that_goes_on_and_on_and_on_and_on: list[str] = (
-        []
-    )
-    mapping: dict[str, Any] = (
-        Field(
-            default={},
-            description='x',
-        )
-    )
-    values: list[str] = (
-        Field(
-            default=[],
-            description='y',
-        )
+    values: list[
+        str
+    ] = Field(
+        default=[],
+        description='y',
     )

@@ -186,9 +186,7 @@ LITERAL_ROUTES: Final = (
     ('upload', _add_upload),
     ('search', _add_search),
 )
-TEMPLATED_ROUTES: Final = (
-    ('get_values', _add_get_values),
-)
+TEMPLATED_ROUTES: Final = (('get_values', _add_get_values),)
 
 
 def build_router(

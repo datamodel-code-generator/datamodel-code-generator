@@ -47,13 +47,17 @@ ROOT_SCHEMES: Final[tuple[SecuritySchemeEntry, ...]] = (
 
 OPERATION_0: Final = SecurityBinding(
     schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2),
-    alternatives=((SecurityRequirement(scheme=_SCHEME_0, required_scopes=('Billing Admin',)),),),
+    alternatives=(
+        (SecurityRequirement(scheme=_SCHEME_0, required_scopes=('Billing Admin',)),),
+    ),
 )
 
 
 OPERATION_1: Final = SecurityBinding(
     schemes=(_SCHEME_0, _SCHEME_1, _SCHEME_2),
-    alternatives=((SecurityRequirement(scheme=_SCHEME_1, required_scopes=('admin',)),),),
+    alternatives=(
+        (SecurityRequirement(scheme=_SCHEME_1, required_scopes=('admin',)),),
+    ),
 )
 
 

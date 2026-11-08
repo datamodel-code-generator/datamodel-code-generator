@@ -20,7 +20,10 @@ class Upload(BaseModel):
     )
     encoded: str | None = Field(
         None,
-        json_schema_extra={'contentMediaType': 'image/png', 'contentEncoding': 'base64'},
+        json_schema_extra={
+            'contentMediaType': 'image/png',
+            'contentEncoding': 'base64',
+        },
     )
     email: EmailStr | None = Field(
         None, json_schema_extra={'contentMediaType': 'text/plain'}

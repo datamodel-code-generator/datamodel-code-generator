@@ -231,8 +231,6 @@ class UniqueItemsPropertyAlias(_JsonSchemaRuntimeValidationBase):
         populate_by_name=True,
         alias_generator=to_camel,
     )
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        (('myList', 'my_list'),),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ((('myList', 'my_list'),),)
 
     my_list: list[int] | None = Field(None, serialization_alias='my-list')

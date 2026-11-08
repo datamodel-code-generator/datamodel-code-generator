@@ -8,19 +8,27 @@ from typing_extensions import TypeAliasType
 RouterGetQueryWiringParameter = TypeAliasType("RouterGetQueryWiringParameter", str)
 
 
-RouterGetQueryRouterHandlerParameter = TypeAliasType("RouterGetQueryRouterHandlerParameter", str)
+RouterGetQueryRouterHandlerParameter = TypeAliasType(
+    "RouterGetQueryRouterHandlerParameter", str
+)
 
 
-RouterGetQueryRouterPrincipalParameter = TypeAliasType("RouterGetQueryRouterPrincipalParameter", str)
+RouterGetQueryRouterPrincipalParameter = TypeAliasType(
+    "RouterGetQueryRouterPrincipalParameter", str
+)
 
 
-RouterGetQueryRouterAuthorizeParameter = TypeAliasType("RouterGetQueryRouterAuthorizeParameter", str)
+RouterGetQueryRouterAuthorizeParameter = TypeAliasType(
+    "RouterGetQueryRouterAuthorizeParameter", str
+)
 
 
 RouterGetQueryApiKeyParameter = TypeAliasType("RouterGetQueryApiKeyParameter", str)
 
 
-RouterGetCookieParametersParameter = TypeAliasType("RouterGetCookieParametersParameter", str)
+RouterGetCookieParametersParameter = TypeAliasType(
+    "RouterGetCookieParametersParameter", str
+)
 
 
 WiringGetQueryRouterParameter = TypeAliasType("WiringGetQueryRouterParameter", str)
@@ -35,10 +43,16 @@ WiringGetQueryDispatchParameter = TypeAliasType("WiringGetQueryDispatchParameter
 WiringGetQueryCheckedParameter = TypeAliasType("WiringGetQueryCheckedParameter", str)
 
 
-WiringGetCookieWiringHandlerParameter = TypeAliasType("WiringGetCookieWiringHandlerParameter", str)
+WiringGetCookieWiringHandlerParameter = TypeAliasType(
+    "WiringGetCookieWiringHandlerParameter", str
+)
 
 
-SecurityGetQuerySecurityParameter = TypeAliasType("SecurityGetQuerySecurityParameter", str)
+SecurityGetQuerySecurityParameter = TypeAliasType(
+    "SecurityGetQuerySecurityParameter", str
+)
 
 
-SecurityGetQueryAuthenticateHandlerParameter = TypeAliasType("SecurityGetQueryAuthenticateHandlerParameter", str)
+SecurityGetQueryAuthenticateHandlerParameter = TypeAliasType(
+    "SecurityGetQueryAuthenticateHandlerParameter", str
+)

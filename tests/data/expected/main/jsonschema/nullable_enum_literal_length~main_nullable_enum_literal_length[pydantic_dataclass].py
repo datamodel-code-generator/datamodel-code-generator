@@ -10,7 +10,5 @@ from typing_extensions import TypeAliasType
 
 Status = TypeAliasType(
     "Status",
-    Annotated[
-        Literal['a', 'bb'] | None, Field(..., min_length=2, title='Status')
-    ],
+    Annotated[Literal['a', 'bb'] | None, Field(..., min_length=2, title='Status')],
 )

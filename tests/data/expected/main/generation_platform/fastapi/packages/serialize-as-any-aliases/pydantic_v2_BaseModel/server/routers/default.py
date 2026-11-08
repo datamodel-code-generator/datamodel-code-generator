@@ -53,9 +53,7 @@ def _add_list_tags(
     )
 
 
-LITERAL_ROUTES: Final = (
-    ('list_tags', _add_list_tags),
-)
+LITERAL_ROUTES: Final = (('list_tags', _add_list_tags),)
 TEMPLATED_ROUTES: Final = ()
 
 

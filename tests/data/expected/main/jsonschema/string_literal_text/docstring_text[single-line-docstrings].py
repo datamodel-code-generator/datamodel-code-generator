@@ -17,7 +17,7 @@ class Mode(Enum):
 
 @dataclass
 class Literals:
-    """A model with "quotes" and a null \x00 byte, ending with a quote \""""
+    """A model with "quotes" and a null \x00 byte, ending with a quote \" """
 
     quoted: str | None = None
     """say "hi\""""

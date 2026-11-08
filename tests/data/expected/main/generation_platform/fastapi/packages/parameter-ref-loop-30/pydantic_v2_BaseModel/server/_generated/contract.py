@@ -36,7 +36,18 @@ class ListItems:
         limit: models.Back
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(ParameterArgument(name='limit', plan=ParameterPlan(location='query', name='limit', content_media_type='application/json'), adapter=TypeAdapter(models.Back), default=models.Back.model_construct(5)),),
+        arguments=(
+            ParameterArgument(
+                name='limit',
+                plan=ParameterPlan(
+                    location='query',
+                    name='limit',
+                    content_media_type='application/json',
+                ),
+                adapter=TypeAdapter(models.Back),
+                default=models.Back.model_construct(5),
+            ),
+        ),
         record=Parameters,
     )
     RESPONSES: Final = OperationResponses(

@@ -18,7 +18,10 @@ ROUTES: Final = (
     *default.LITERAL_ROUTES,
     *default.TEMPLATED_ROUTES,
 )
-INFO: Final[dict[str, Any]] = {'title': 'Parameters that the builtin codecs encode', 'version': '1'}
+INFO: Final[dict[str, Any]] = {
+    'title': 'Parameters that the builtin codecs encode',
+    'version': '1',
+}
 
 
 def build_router(

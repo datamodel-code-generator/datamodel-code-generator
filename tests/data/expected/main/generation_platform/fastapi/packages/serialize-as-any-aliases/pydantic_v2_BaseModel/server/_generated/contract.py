@@ -35,7 +35,19 @@ class ListTags:
         tags: list[SerializeAsAny[str]] | None
 
     PARAMETERS: Final = ParameterAdapter(
-        arguments=(ParameterArgument(name='tags', plan=ParameterPlan(location='query', name='tags', content_media_type='application/json'), adapter=TypeAdapter(list[SerializeAsAny[Annotated[str, StringConstraints(max_length=5)]]])),),
+        arguments=(
+            ParameterArgument(
+                name='tags',
+                plan=ParameterPlan(
+                    location='query', name='tags', content_media_type='application/json'
+                ),
+                adapter=TypeAdapter(
+                    list[
+                        SerializeAsAny[Annotated[str, StringConstraints(max_length=5)]]
+                    ]
+                ),
+            ),
+        ),
         record=Parameters,
     )
     RESPONSES: Final = OperationResponses(

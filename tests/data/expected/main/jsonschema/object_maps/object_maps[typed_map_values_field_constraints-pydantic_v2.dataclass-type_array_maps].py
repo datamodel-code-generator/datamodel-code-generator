@@ -62,7 +62,9 @@ ArrayOrNamesCountObject = TypeAliasType(
 )
 
 
-ArrayOrNamesCount = TypeAliasType("ArrayOrNamesCount", ArrayOrNamesCountObject | list[Any] | None)
+ArrayOrNamesCount = TypeAliasType(
+    "ArrayOrNamesCount", ArrayOrNamesCountObject | list[Any] | None
+)
 
 
 @dataclass
@@ -78,8 +80,8 @@ class Model:
     iStringOrNames: list[IStringOrNamesObject | str | None] | None = None
     mStringOrNames: dict[str, MStringOrNamesObject | str | None] | None = None
     iArrayOrNamesCount: list[IArrayOrNamesCountObject | list[Any] | None] | None = None
-    mArrayOrNamesCount: dict[str, MArrayOrNamesCountObject | list[Any] | None] | None = (
-        None
-    )
+    mArrayOrNamesCount: (
+        dict[str, MArrayOrNamesCountObject | list[Any] | None] | None
+    ) = None
     pArrayOrPatternCounts: dict[str, str | int] | list[str] | None = None
     pArrayOrNamedCounts: dict[constr(max_length=3), int] | list[str] | None = None

@@ -9,17 +9,23 @@ from pydantic import BaseModel, RootModel, constr
 
 
 class Model(BaseModel):
-    direct: dict[constr(pattern=r'^types@.+$'), Union["ImportsEntry", Any]] | Any | None = (
-        None
-    )
+    direct: (
+        dict[constr(pattern=r'^types@.+$'), Union["ImportsEntry", Any]] | Any | None
+    ) = None
     items: (
-        list[dict[constr(pattern=r'^types@.+$'), Union["ImportsEntry", Any]] | Any] | None
+        list[dict[constr(pattern=r'^types@.+$'), Union["ImportsEntry", Any]] | Any]
+        | None
     ) = None
     values: (
-        dict[str, dict[constr(pattern=r'^types@.+$'), Union["ImportsEntry", Any]] | Any] | None
+        dict[str, dict[constr(pattern=r'^types@.+$'), Union["ImportsEntry", Any]] | Any]
+        | None
     ) = None
     patterns: (
-        dict[constr(pattern=r'^#.+$'), dict[constr(pattern=r'^types@.+$'), Union["ImportsEntry", Any]] | Any] | None
+        dict[
+            constr(pattern=r'^#.+$'),
+            dict[constr(pattern=r'^types@.+$'), Union["ImportsEntry", Any]] | Any,
+        ]
+        | None
     ) = None
 
 

@@ -31,7 +31,13 @@ PLAN_0: Final[PaginationPlan[models.Thing, ListThingsResponse]] = PaginationPlan
     call=_operations.OPERATION_0,
     items=_items_0,
     items_selector=BodySelector(pointer='/data'),
-    continuation=CountPlan(kind='offset', write=ParameterTarget(location='query', name='offset'), first=0, step=None, has_more=BodySelector(pointer='/has_more')),
+    continuation=CountPlan(
+        kind='offset',
+        write=ParameterTarget(location='query', name='offset'),
+        first=0,
+        step=None,
+        has_more=BodySelector(pointer='/has_more'),
+    ),
     fingerprint='a976e0815119c52996749258fedcb100e18c6ad7b891c1261152fd83c2157e91',
 )
 

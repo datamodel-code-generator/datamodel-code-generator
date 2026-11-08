@@ -22,10 +22,14 @@ class Filter(BaseModel):
 ValuesGetQueryAmountParameter = TypeAliasType("ValuesGetQueryAmountParameter", Decimal)
 
 
-ValuesGetQueryAmountsParameter = TypeAliasType("ValuesGetQueryAmountsParameter", list[Decimal])
+ValuesGetQueryAmountsParameter = TypeAliasType(
+    "ValuesGetQueryAmountsParameter", list[Decimal]
+)
 
 
-ValuesGetHeaderXAmountsParameter = TypeAliasType("ValuesGetHeaderXAmountsParameter", list[Decimal])
+ValuesGetHeaderXAmountsParameter = TypeAliasType(
+    "ValuesGetHeaderXAmountsParameter", list[Decimal]
+)
 
 
 ValuesGetQueryStepParameter = TypeAliasType(
@@ -51,7 +55,9 @@ class ValuesGetQueryLevelParameter(IntEnum):
 ValuesGetQueryMixedParameter = TypeAliasType("ValuesGetQueryMixedParameter", int | str)
 
 
-ValuesGetQueryMixedsParameter = TypeAliasType("ValuesGetQueryMixedsParameter", list[int | str])
+ValuesGetQueryMixedsParameter = TypeAliasType(
+    "ValuesGetQueryMixedsParameter", list[int | str]
+)
 
 
 ValuesGetQueryCodesParameter = TypeAliasType(

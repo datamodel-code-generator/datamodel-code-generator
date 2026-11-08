@@ -18,13 +18,25 @@ from .._runtime.model_codecs.stdlib_dataclasses import (
 
 MODELS: Final[dict[type, Model]] = {
     models.Leg: Model((Field('name', 'name'),)),
-    models.Route: Model((Field('has_more', 'has_more'), Field('stops', 'stops', Items(None, 'tuple')), Field('names', 'names'), Field('legs', 'legs', Items(models.Leg, 'tuple'), omit_none=True), Field('counts', 'counts', omit_none=True))),
+    models.Route: Model(
+        (
+            Field('has_more', 'has_more'),
+            Field('stops', 'stops', Items(None, 'tuple')),
+            Field('names', 'names'),
+            Field('legs', 'legs', Items(models.Leg, 'tuple'), omit_none=True),
+            Field('counts', 'counts', omit_none=True),
+        )
+    ),
 }
 
-codec_0: Final[DataclassCodec[models.RoutesGetQueryStopsParameter]] = DataclassCodec(Items(None, 'tuple'), MODELS)
+codec_0: Final[DataclassCodec[models.RoutesGetQueryStopsParameter]] = DataclassCodec(
+    Items(None, 'tuple'), MODELS
+)
 """Codec of /paths/~1routes/get parameter (request query stops)."""
 
-codec_1: Final[DataclassCodec[models.RoutesGetQueryOffsetParameter]] = DataclassCodec(None, MODELS)
+codec_1: Final[DataclassCodec[models.RoutesGetQueryOffsetParameter]] = DataclassCodec(
+    None, MODELS
+)
 """Codec of /paths/~1routes/get parameter (request query offset)."""
 
 codec_2: Final[DataclassCodec[models.Route]] = DataclassCodec(models.Route, MODELS)

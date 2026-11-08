@@ -26,5 +26,9 @@ class ListOrders:
     """Plans of the list_orders operation."""
 
     RESPONSES: Final = OperationResponses(
-        responses={'200': Declared(media_type='application/json', model=models.OrdersGetResponse)},
+        responses={
+            '200': Declared(
+                media_type='application/json', model=models.OrdersGetResponse
+            )
+        },
     )

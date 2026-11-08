@@ -13,7 +13,9 @@ class Leg(BaseModel):
     name: str
 
 
-RoutesGetQueryStopsParameter = TypeAliasType("RoutesGetQueryStopsParameter", tuple[int, ...])
+RoutesGetQueryStopsParameter = TypeAliasType(
+    "RoutesGetQueryStopsParameter", tuple[int, ...]
+)
 
 
 RoutesGetQueryOffsetParameter = TypeAliasType("RoutesGetQueryOffsetParameter", int)

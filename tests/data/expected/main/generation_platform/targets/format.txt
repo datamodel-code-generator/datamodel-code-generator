@@ -52,7 +52,9 @@ show models.py
   |     root: list[Pet]
   | 
   | 
-  | StoreOrdersGetQueryLimitParameter = TypeAliasType("StoreOrdersGetQueryLimitParameter", int)
+  | StoreOrdersGetQueryLimitParameter = TypeAliasType(
+  |     "StoreOrdersGetQueryLimitParameter", int
+  | )
   | 
   | 
   | class Order(BaseModel):

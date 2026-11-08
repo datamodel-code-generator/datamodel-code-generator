@@ -28,8 +28,32 @@ OPERATION_0: Final[OperationPlan[SendBoxResponse]] = OperationPlan(
     method='POST',
     path='/boxes',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((object_branch('200', 'multipart/form-data', model_bindings.codec_1, (PartPlan('free', 'string'), PartPlan('size', 'integer')), PartPlan('', 'integer')),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='multipart/form-data', kind='multipart', codec=model_bindings.codec_0, form=MultipartForm(members=True, content_types=(('free', 'text/plain'),))),), default='multipart/form-data', required=True),
+    responses=ResponseDecoder(
+        (
+            object_branch(
+                '200',
+                'multipart/form-data',
+                model_bindings.codec_1,
+                (PartPlan('free', 'string'), PartPlan('size', 'integer')),
+                PartPlan('', 'integer'),
+            ),
+        ),
+        (),
+    ),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='multipart/form-data',
+                kind='multipart',
+                codec=model_bindings.codec_0,
+                form=MultipartForm(
+                    members=True, content_types=(('free', 'text/plain'),)
+                ),
+            ),
+        ),
+        default='multipart/form-data',
+        required=True,
+    ),
 )
 
 OPERATION_1: Final[OperationPlan[SendCrateResponse]] = OperationPlan(
@@ -37,6 +61,39 @@ OPERATION_1: Final[OperationPlan[SendCrateResponse]] = OperationPlan(
     method='POST',
     path='/crates',
     servers=_SERVERS_0,
-    responses=ResponseDecoder((object_branch('200', 'multipart/form-data', model_bindings.codec_3, (PartPlan('free', 'string'), PartPlan('size', 'integer'), PartPlan('open', 'string'), PartPlan('label', 'string')), PartPlan('', 'integer')),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='application/x-www-form-urlencoded', kind='form', codec=model_bindings.codec_2, fields=(FieldPlan('free', 'string'), FieldPlan('size', 'integer'), FieldPlan('open', 'string'), FieldPlan('label', 'string')), additional=FieldPlan('', 'integer')),), default='application/x-www-form-urlencoded', required=True),
+    responses=ResponseDecoder(
+        (
+            object_branch(
+                '200',
+                'multipart/form-data',
+                model_bindings.codec_3,
+                (
+                    PartPlan('free', 'string'),
+                    PartPlan('size', 'integer'),
+                    PartPlan('open', 'string'),
+                    PartPlan('label', 'string'),
+                ),
+                PartPlan('', 'integer'),
+            ),
+        ),
+        (),
+    ),
+    body=RequestBody(
+        media=(
+            BodyMedia(
+                media_type='application/x-www-form-urlencoded',
+                kind='form',
+                codec=model_bindings.codec_2,
+                fields=(
+                    FieldPlan('free', 'string'),
+                    FieldPlan('size', 'integer'),
+                    FieldPlan('open', 'string'),
+                    FieldPlan('label', 'string'),
+                ),
+                additional=FieldPlan('', 'integer'),
+            ),
+        ),
+        default='application/x-www-form-urlencoded',
+        required=True,
+    ),
 )

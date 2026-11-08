@@ -18,10 +18,28 @@ from ...responses import ResponseInfo
 ParameterResponse: TypeAlias = models.ParameterPostResponse
 
 
-_PARAMETER_HEADERS: Final[ResponseHeaders[models.ParameterPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
+_PARAMETER_HEADERS: Final[
+    ResponseHeaders[models.ParameterPostResponse200XIdempotencyHeader, UNSET]
+] = ResponseHeaders(
     'parameter',
     frozenset({'200'}),
-    (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_2, missing=optional_header)),)),),
+    (
+        (
+            'X-Idempotency',
+            (
+                (
+                    '200',
+                    HeaderBranch(
+                        plan=ParameterPlan(
+                            location='header', name='X-Idempotency', style='simple'
+                        ),
+                        codec=model_bindings.codec_2,
+                        missing=optional_header,
+                    ),
+                ),
+            ),
+        ),
+    ),
 )
 
 
@@ -37,10 +55,28 @@ def decode_parameter_header(
 ApiKeyResponse: TypeAlias = models.ApiKeyPostResponse
 
 
-_API_KEY_HEADERS: Final[ResponseHeaders[models.ApiKeyPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
+_API_KEY_HEADERS: Final[
+    ResponseHeaders[models.ApiKeyPostResponse200XIdempotencyHeader, UNSET]
+] = ResponseHeaders(
     'api_key',
     frozenset({'200'}),
-    (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_4, missing=optional_header)),)),),
+    (
+        (
+            'X-Idempotency',
+            (
+                (
+                    '200',
+                    HeaderBranch(
+                        plan=ParameterPlan(
+                            location='header', name='X-Idempotency', style='simple'
+                        ),
+                        codec=model_bindings.codec_4,
+                        missing=optional_header,
+                    ),
+                ),
+            ),
+        ),
+    ),
 )
 
 
@@ -56,10 +92,28 @@ def decode_api_key_header(
 BearerResponse: TypeAlias = models.BearerPostResponse
 
 
-_BEARER_HEADERS: Final[ResponseHeaders[models.BearerPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
+_BEARER_HEADERS: Final[
+    ResponseHeaders[models.BearerPostResponse200XIdempotencyHeader, UNSET]
+] = ResponseHeaders(
     'bearer',
     frozenset({'200'}),
-    (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_6, missing=optional_header)),)),),
+    (
+        (
+            'X-Idempotency',
+            (
+                (
+                    '200',
+                    HeaderBranch(
+                        plan=ParameterPlan(
+                            location='header', name='X-Idempotency', style='simple'
+                        ),
+                        codec=model_bindings.codec_6,
+                        missing=optional_header,
+                    ),
+                ),
+            ),
+        ),
+    ),
 )
 
 
@@ -75,10 +129,28 @@ def decode_bearer_header(
 OauthResponse: TypeAlias = models.OauthPostResponse
 
 
-_OAUTH_HEADERS: Final[ResponseHeaders[models.OauthPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
+_OAUTH_HEADERS: Final[
+    ResponseHeaders[models.OauthPostResponse200XIdempotencyHeader, UNSET]
+] = ResponseHeaders(
     'oauth',
     frozenset({'200'}),
-    (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_8, missing=optional_header)),)),),
+    (
+        (
+            'X-Idempotency',
+            (
+                (
+                    '200',
+                    HeaderBranch(
+                        plan=ParameterPlan(
+                            location='header', name='X-Idempotency', style='simple'
+                        ),
+                        codec=model_bindings.codec_8,
+                        missing=optional_header,
+                    ),
+                ),
+            ),
+        ),
+    ),
 )
 
 
@@ -94,10 +166,28 @@ def decode_oauth_header(
 OpenidResponse: TypeAlias = models.OpenidPostResponse
 
 
-_OPENID_HEADERS: Final[ResponseHeaders[models.OpenidPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
+_OPENID_HEADERS: Final[
+    ResponseHeaders[models.OpenidPostResponse200XIdempotencyHeader, UNSET]
+] = ResponseHeaders(
     'openid',
     frozenset({'200'}),
-    (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_10, missing=optional_header)),)),),
+    (
+        (
+            'X-Idempotency',
+            (
+                (
+                    '200',
+                    HeaderBranch(
+                        plan=ParameterPlan(
+                            location='header', name='X-Idempotency', style='simple'
+                        ),
+                        codec=model_bindings.codec_10,
+                        missing=optional_header,
+                    ),
+                ),
+            ),
+        ),
+    ),
 )
 
 
@@ -113,10 +203,28 @@ def decode_openid_header(
 CookieResponse: TypeAlias = models.CookiePostResponse
 
 
-_COOKIE_HEADERS: Final[ResponseHeaders[models.CookiePostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
+_COOKIE_HEADERS: Final[
+    ResponseHeaders[models.CookiePostResponse200XIdempotencyHeader, UNSET]
+] = ResponseHeaders(
     'cookie',
     frozenset({'200'}),
-    (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_12, missing=optional_header)),)),),
+    (
+        (
+            'X-Idempotency',
+            (
+                (
+                    '200',
+                    HeaderBranch(
+                        plan=ParameterPlan(
+                            location='header', name='X-Idempotency', style='simple'
+                        ),
+                        codec=model_bindings.codec_12,
+                        missing=optional_header,
+                    ),
+                ),
+            ),
+        ),
+    ),
 )
 
 
@@ -132,10 +240,28 @@ def decode_cookie_header(
 QueryResponse: TypeAlias = models.QueryPostResponse
 
 
-_QUERY_HEADERS: Final[ResponseHeaders[models.QueryPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
+_QUERY_HEADERS: Final[
+    ResponseHeaders[models.QueryPostResponse200XIdempotencyHeader, UNSET]
+] = ResponseHeaders(
     'query',
     frozenset({'200'}),
-    (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_14, missing=optional_header)),)),),
+    (
+        (
+            'X-Idempotency',
+            (
+                (
+                    '200',
+                    HeaderBranch(
+                        plan=ParameterPlan(
+                            location='header', name='X-Idempotency', style='simple'
+                        ),
+                        codec=model_bindings.codec_14,
+                        missing=optional_header,
+                    ),
+                ),
+            ),
+        ),
+    ),
 )
 
 
@@ -151,10 +277,28 @@ def decode_query_header(
 IgnoredResponse: TypeAlias = models.IgnoredPostResponse
 
 
-_IGNORED_HEADERS: Final[ResponseHeaders[models.IgnoredPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
+_IGNORED_HEADERS: Final[
+    ResponseHeaders[models.IgnoredPostResponse200XIdempotencyHeader, UNSET]
+] = ResponseHeaders(
     'ignored',
     frozenset({'200'}),
-    (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_16, missing=optional_header)),)),),
+    (
+        (
+            'X-Idempotency',
+            (
+                (
+                    '200',
+                    HeaderBranch(
+                        plan=ParameterPlan(
+                            location='header', name='X-Idempotency', style='simple'
+                        ),
+                        codec=model_bindings.codec_16,
+                        missing=optional_header,
+                    ),
+                ),
+            ),
+        ),
+    ),
 )
 
 
@@ -170,10 +314,28 @@ def decode_ignored_header(
 DirectionResponse: TypeAlias = models.DirectionPostResponse
 
 
-_DIRECTION_HEADERS: Final[ResponseHeaders[models.DirectionPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
+_DIRECTION_HEADERS: Final[
+    ResponseHeaders[models.DirectionPostResponse200XIdempotencyHeader, UNSET]
+] = ResponseHeaders(
     'direction',
     frozenset({'200'}),
-    (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_19, missing=optional_header)),)),),
+    (
+        (
+            'X-Idempotency',
+            (
+                (
+                    '200',
+                    HeaderBranch(
+                        plan=ParameterPlan(
+                            location='header', name='X-Idempotency', style='simple'
+                        ),
+                        codec=model_bindings.codec_19,
+                        missing=optional_header,
+                    ),
+                ),
+            ),
+        ),
+    ),
 )
 
 
@@ -189,10 +351,28 @@ def decode_direction_header(
 UnusedResponse: TypeAlias = models.UnusedPostResponse
 
 
-_UNUSED_HEADERS: Final[ResponseHeaders[models.UnusedPostResponse200XIdempotencyHeader, UNSET]] = ResponseHeaders(
+_UNUSED_HEADERS: Final[
+    ResponseHeaders[models.UnusedPostResponse200XIdempotencyHeader, UNSET]
+] = ResponseHeaders(
     'unused',
     frozenset({'200'}),
-    (('X-Idempotency', (('200', HeaderBranch(plan=ParameterPlan(location='header', name='X-Idempotency', style='simple'), codec=model_bindings.codec_21, missing=optional_header)),)),),
+    (
+        (
+            'X-Idempotency',
+            (
+                (
+                    '200',
+                    HeaderBranch(
+                        plan=ParameterPlan(
+                            location='header', name='X-Idempotency', style='simple'
+                        ),
+                        codec=model_bindings.codec_21,
+                        missing=optional_header,
+                    ),
+                ),
+            ),
+        ),
+    ),
 )
 
 

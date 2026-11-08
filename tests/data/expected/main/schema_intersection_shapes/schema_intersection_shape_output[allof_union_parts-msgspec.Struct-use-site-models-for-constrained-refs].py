@@ -294,7 +294,24 @@ class Many23(Many4, Many7):
     pass
 
 
-Many: TypeAlias = Many8 | Many9 | Many10 | Many11 | Many12 | Many13 | Many14 | Many15 | Many16 | Many17 | Many18 | Many19 | Many20 | Many21 | Many22 | Many23
+Many: TypeAlias = (
+    Many8
+    | Many9
+    | Many10
+    | Many11
+    | Many12
+    | Many13
+    | Many14
+    | Many15
+    | Many16
+    | Many17
+    | Many18
+    | Many19
+    | Many20
+    | Many21
+    | Many22
+    | Many23
+)
 
 
 class Field1(A, Field):

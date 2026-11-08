@@ -31,7 +31,7 @@
         }
 --- server/README.md (baseline input)
 +++ server/README.md (current input)
-@@ -141,12 +141,11 @@
+@@ -149,12 +149,11 @@
  - `fastapi>=0.141.1`
  - `pydantic>=2.14.0`
  - `typing-extensions>=4.16`
@@ -45,7 +45,7 @@
  ```
  
  Running the application also needs an ASGI server: `uvicorn`, or `fastapi[standard]` for `fastapi dev`, as in [Next steps](#next-steps).
-@@ -226,7 +225,6 @@
+@@ -234,7 +233,6 @@
  A repeated single value is taken as FastAPI takes it, by adapters too: the last query value, cookie, form field, and object member, and the first header.
  A cookie parameter with a single value arrives as the request sent it, without percent-decoding.
  Adapters accept integers and numbers as JSON writes them and booleans as `true` or `false`, which is fewer spellings than FastAPI accepts for the parameters it reads.

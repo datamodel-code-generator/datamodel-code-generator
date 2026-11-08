@@ -1,0 +1,27 @@
+{
+  "title": "DocstringLineEnds",
+  "description": "A Windows path ends with a backslash: C:\\ ",
+  "type": "object",
+  "properties": {
+    "path": {
+      "type": "string",
+      "description": "The folder, written with a trailing backslash \\ "
+    },
+    "steps": {
+      "type": "string",
+      "description": "First step  \nSecond step ends in a backslash\\"
+    },
+    "example": {
+      "type": "string",
+      "description": "  Indented example\n  continues here"
+    },
+    "tabbed": {
+      "type": "string",
+      "description": "Columns\n\tindented with a tab"
+    },
+    "spaced": {
+      "type": "string",
+      "description": "Ends with a no-break space "
+    }
+  }
+}

@@ -53,9 +53,7 @@ def _add_list_items(
     )
 
 
-LITERAL_ROUTES: Final = (
-    ('list_items', _add_list_items),
-)
+LITERAL_ROUTES: Final = (('list_items', _add_list_items),)
 TEMPLATED_ROUTES: Final = ()
 
 

@@ -63,31 +63,49 @@ output with a custom template, please open an issue with a small reproducer.
 
 ## Built-in formatter scope
 
-The built-in formatter is intentionally small. It is not a general Python formatter and is not expected to produce byte-for-byte identical output to the latest Black, isort, or Ruff for arbitrary Python files.
+The built-in formatter is intentionally small. It is not a general Python formatter. For the code generated from
+the standard templates it aims to write the same bytes as the default Black and isort formatters (Black's stable
+style), so that it can become the default formatter.
 
 It covers the generated-code patterns that matter for model modules:
 
-- Removes trailing whitespace and writes a final newline.
+- Removes trailing whitespace outside string literals and writes a final newline.
 - Parses the module with `ast`.
 - Sorts only the leading import block. It stops at the first non-import statement.
 - Splits `import a, b` into separate `import` lines.
 - Groups imports in this order: `__future__`, standard library, third-party, relative imports.
-- Sorts `from ... import ...` names and merges imports from the same module.
+- Sorts `from ... import ...` names and merges imports from the same module; aliased names get their own lines in
+  name order, like isort.
 - Wraps long `from ... import ...` statements with parentheses when they exceed the configured line length.
 - Leaves commented import lines in place instead of dropping comments while sorting imports.
 - Sorts imports inside a top-level `if TYPE_CHECKING:` block when that block contains only imports.
-- Keeps two blank lines before a top-level `class`, `def`, or `async def` after the import block.
-- Wraps generated model statements for common long `Field(...)`, `Annotated[...]`, and `ConfigDict(...)` lines.
+- Lays out module-level and class-level simple statements (assignments, annotated assignments, expression
+  statements, `type` statements), class and function headers and decorators the way Black splits long lines: the
+  right-hand split, splits at commas and operators, optional parentheses around annotations and assigned values,
+  and magic trailing commas.
+- Lays out docstrings the way Black does: re-indented, trailing whitespace removed and padded before the closing
+  quotes when needed. A docstring with a backslash at a line end stays as it is, as Black leaves it.
+- Keeps two blank lines around top-level `class`, `def`, or `async def` definitions and removes blank lines after
+  a decorator.
 - Normalizes simple generated string quotes to double quotes when `--use-double-quotes` is passed or `[tool.black].skip-string-normalization = false`.
 
 If the generated code cannot be parsed as Python, the built-in formatter only applies whitespace cleanup and returns the code.
 
-The built-in formatter does not currently format:
+Known differences from Black and isort:
 
-- General expressions inside classes or functions.
-- List, dict, tuple, or arbitrary call argument layout outside the generated model patterns listed above.
-- General quote style rewrites outside simple generated strings.
-- String wrapping outside supported generated call arguments.
+- Statements inside function bodies and compound statements (`if`, `for`, `with`, `try`) are not laid out, except
+  long `and`/`or` groups in generated methods.
+- A statement that holds a comment, a multi-line string, a backslash continuation, a slice, a `**` power operator
+  or a `lambda` with parameters is left as it is.
+- Spacing inside a line that fits is kept as written (Black also normalizes spaces around operators and removes
+  redundant parentheses: doubled ones, empty ones after a class name and those around a walrus in an `if` header).
+- A conditional expression (`a if b else c`) that is split inside brackets or inside another conditional
+  expression gets no parentheses of its own; Black wraps it in them.
+- Module-level `del`, `assert`, `raise`, `global` and similar statements, and definitions with PEP 695 type
+  parameters (`def f[T]`), are not laid out.
+- Quote normalization rewrites only plain single-quoted strings; it leaves escaped quotes, triple-quoted strings,
+  f-strings that need a quote change and string prefix case as written.
+- `--wrap-string-literal` splits only long keyword string arguments; Black's preview string processing does more.
 - Comment placement beyond preserving commented import lines.
 - Import section rules beyond the simple groups listed above.
 
@@ -101,7 +119,7 @@ The built-in formatter is not run before external formatters.
 
 ## Line length
 
-The built-in formatter uses line length for wrapping `from ... import ...` statements and the generated model
+The built-in formatter uses line length for wrapping `from ... import ...` statements, docstrings and the
 statements listed above.
 
 Set it in `pyproject.toml`:

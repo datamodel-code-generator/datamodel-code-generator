@@ -78,7 +78,9 @@ class Model(BaseModel):
         return True
 
     @staticmethod
-    def unicode_names_with_a_quoted_return_annotation(日本語の長い入力フィールド名, expected) -> "Literal[True, False, ')']":
+    def unicode_names_with_a_quoted_return_annotation(
+        日本語の長い入力フィールド名, expected
+    ) -> "Literal[True, False, ')']":
         return (
             (isinstance(日本語の長い入力フィールド名, dict) or isinstance(日本語の長い入力フィールド名, _collections_abc.Mapping))
             and 日本語の長い入力フィールド名 == expected
@@ -129,7 +131,5 @@ class Model(BaseModel):
             self.evaluate_async_with_a_descriptive_multiline_annotation_coverage()
         )
 
-    async def evaluate_async_with_a_descriptive_multiline_annotation_coverage(self) -> Literal[
-        True, False, ")"
-    ]:
+    async def evaluate_async_with_a_descriptive_multiline_annotation_coverage(self) -> Literal[True, False, ")"]:
         return await async_boolean(self.value)

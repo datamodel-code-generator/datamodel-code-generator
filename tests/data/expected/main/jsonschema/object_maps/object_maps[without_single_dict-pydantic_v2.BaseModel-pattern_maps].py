@@ -35,7 +35,10 @@ class Overlap(
         | dict[constr(pattern=r'b$'), conint(le=9)]
     ]
 ):
-    root: dict[constr(pattern=r'^a'), conint(ge=0)] | dict[constr(pattern=r'b$'), conint(le=9)]
+    root: (
+        dict[constr(pattern=r'^a'), conint(ge=0)]
+        | dict[constr(pattern=r'b$'), conint(le=9)]
+    )
 
 
 class AnyMember(
@@ -58,7 +61,10 @@ class NamesTwo(
         | dict[constr(pattern=r'^b', max_length=3), str]
     ]
 ):
-    root: dict[constr(pattern=r'^a', max_length=3), int] | dict[constr(pattern=r'^b', max_length=3), str]
+    root: (
+        dict[constr(pattern=r'^a', max_length=3), int]
+        | dict[constr(pattern=r'^b', max_length=3), str]
+    )
 
 
 class Model(BaseModel):
@@ -70,7 +76,10 @@ class Model(BaseModel):
     rClosedTwo: ClosedTwo
     pOpenTwo: dict[constr(pattern=r'^a'), int] | dict[constr(pattern=r'^b'), str]
     rOpenTwo: OpenTwo
-    pOverlap: dict[constr(pattern=r'^a'), conint(ge=0)] | dict[constr(pattern=r'b$'), conint(le=9)]
+    pOverlap: (
+        dict[constr(pattern=r'^a'), conint(ge=0)]
+        | dict[constr(pattern=r'b$'), conint(le=9)]
+    )
     rOverlap: Overlap
     pAnyMember: dict[constr(pattern=r'^a'), Any] | dict[constr(pattern=r'^b'), int]
     rAnyMember: AnyMember
@@ -78,7 +87,10 @@ class Model(BaseModel):
     rAnnotatedSame: AnnotatedSame
     pTrueEmpty: dict[constr(pattern=r'^a|^b'), Any]
     rTrueEmpty: TrueEmpty
-    pNamesTwo: dict[constr(pattern=r'^a', max_length=3), int] | dict[constr(pattern=r'^b', max_length=3), str]
+    pNamesTwo: (
+        dict[constr(pattern=r'^a', max_length=3), int]
+        | dict[constr(pattern=r'^b', max_length=3), str]
+    )
     rNamesTwo: NamesTwo
     iClosedOne: list[dict[constr(pattern=r'^a'), int]] | None = None
     mClosedOne: dict[str, dict[constr(pattern=r'^a'), int]] | None = None
@@ -88,33 +100,54 @@ class Model(BaseModel):
         list[dict[constr(pattern=r'^a'), int] | dict[constr(pattern=r'^b'), str]] | None
     ) = None
     mClosedTwo: (
-        dict[str, dict[constr(pattern=r'^a'), int] | dict[constr(pattern=r'^b'), str]] | None
+        dict[str, dict[constr(pattern=r'^a'), int] | dict[constr(pattern=r'^b'), str]]
+        | None
     ) = None
     iOpenTwo: (
         list[dict[constr(pattern=r'^a'), int] | dict[constr(pattern=r'^b'), str]] | None
     ) = None
     mOpenTwo: (
-        dict[str, dict[constr(pattern=r'^a'), int] | dict[constr(pattern=r'^b'), str]] | None
+        dict[str, dict[constr(pattern=r'^a'), int] | dict[constr(pattern=r'^b'), str]]
+        | None
     ) = None
     iOverlap: (
-        list[dict[constr(pattern=r'^a'), conint(ge=0)] | dict[constr(pattern=r'b$'), conint(le=9)]] | None
+        list[
+            dict[constr(pattern=r'^a'), conint(ge=0)]
+            | dict[constr(pattern=r'b$'), conint(le=9)]
+        ]
+        | None
     ) = None
     mOverlap: (
-        dict[str, dict[constr(pattern=r'^a'), conint(ge=0)] | dict[constr(pattern=r'b$'), conint(le=9)]] | None
+        dict[
+            str,
+            dict[constr(pattern=r'^a'), conint(ge=0)]
+            | dict[constr(pattern=r'b$'), conint(le=9)],
+        ]
+        | None
     ) = None
     iAnyMember: (
         list[dict[constr(pattern=r'^a'), Any] | dict[constr(pattern=r'^b'), int]] | None
     ) = None
     mAnyMember: (
-        dict[str, dict[constr(pattern=r'^a'), Any] | dict[constr(pattern=r'^b'), int]] | None
+        dict[str, dict[constr(pattern=r'^a'), Any] | dict[constr(pattern=r'^b'), int]]
+        | None
     ) = None
     iAnnotatedSame: list[dict[constr(pattern=r'^a|^b'), int]] | None = None
     mAnnotatedSame: dict[str, dict[constr(pattern=r'^a|^b'), int]] | None = None
     iTrueEmpty: list[dict[constr(pattern=r'^a|^b'), Any]] | None = None
     mTrueEmpty: dict[str, dict[constr(pattern=r'^a|^b'), Any]] | None = None
     iNamesTwo: (
-        list[dict[constr(pattern=r'^a', max_length=3), int] | dict[constr(pattern=r'^b', max_length=3), str]] | None
+        list[
+            dict[constr(pattern=r'^a', max_length=3), int]
+            | dict[constr(pattern=r'^b', max_length=3), str]
+        ]
+        | None
     ) = None
     mNamesTwo: (
-        dict[str, dict[constr(pattern=r'^a', max_length=3), int] | dict[constr(pattern=r'^b', max_length=3), str]] | None
+        dict[
+            str,
+            dict[constr(pattern=r'^a', max_length=3), int]
+            | dict[constr(pattern=r'^b', max_length=3), str],
+        ]
+        | None
     ) = None

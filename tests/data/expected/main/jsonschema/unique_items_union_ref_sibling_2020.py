@@ -225,9 +225,7 @@ class _JsonSchemaRuntimeValidationBase(BaseModel):
 
 
 class UniqueItemsUnionRefSibling2020(_JsonSchemaRuntimeValidationBase, RootModel[list[int] | Literal['ignored']]):
-    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = (
-        (),
-    )
+    __json_schema_unique_items__: ClassVar[tuple[tuple[object, ...], ...]] = ((),)
 
     root: list[int] | Literal['ignored'] = Field(..., title='UniqueItemsUnionRefSibling2020')
 
