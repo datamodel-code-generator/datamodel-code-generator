@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING
 from datamodel_code_generator.model._rendered_names import _class_bodies, _expression_names, _parsed
 from datamodel_code_generator.model.base import (
     _ADDITIONAL_PROPERTIES_TYPE_TEMPLATE_DATA_KEY,
-    _FORBID_UNKNOWN_FIELDS_TEMPLATE_DATA_KEY,
     ALL_MODEL,
+    _mark_forbids_unknown_fields,
 )
 from datamodel_code_generator.reference import ModelType
 
@@ -77,7 +77,7 @@ def prepare_output_model_config(  # noqa: PLR0913, PLR0912
     if extra_fields:
         (base_config if use_generic_base_class else extra_template_data[ALL_MODEL])["extra_fields"] = extra_fields
         if extra_fields == "forbid" and use_msgspec_forbid_unknown_fields and not use_generic_base_class:
-            extra_template_data[ALL_MODEL][_FORBID_UNKNOWN_FIELDS_TEMPLATE_DATA_KEY] = True
+            _mark_forbids_unknown_fields(extra_template_data[ALL_MODEL])
     if enable_faux_immutability:
         (base_config if use_generic_base_class else extra_template_data[ALL_MODEL])["allow_mutation"] = False
     if use_attribute_docstrings:

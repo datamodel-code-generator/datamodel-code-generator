@@ -6,7 +6,7 @@ Provides Constraints, DataModelField, and BaseModelBase used by Pydantic v2 mode
 from __future__ import annotations
 
 from abc import ABC
-from functools import cached_property
+from functools import cache, cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, cast
 
@@ -85,6 +85,13 @@ def _constraint_arguments(constraints: type[_ConstraintsBase]) -> dict[str, str]
 
 
 _FIELD_CONSTRAINT_ARGUMENTS: dict[str, str] = _constraint_arguments(Constraints)
+
+
+@cache
+def _constraint_keywords_of(constraints: type[_ConstraintsBase]) -> dict[str, str]:
+    """Return the schema keyword of each field of a constraints model: its alias, else its name."""
+    return {name: info.alias or name for name, info in constraints.model_fields.items()}
+
 
 _FIELD_CALL = Why(RuleId("D11.pydantic.field-call"))
 """The field writes a ``Field()`` call: an argument, a default factory or a required ``None`` needs one."""
@@ -349,12 +356,12 @@ class DataModelField(DataModelFieldBase):
             )
         ) is None:
             return {}
-        fields = type(cast("Constraints", self.constraints)).model_fields
+        keywords = _constraint_keywords_of(type(cast("Constraints", self.constraints)))
         return {
             key: keyword
             for key in declared
             if key not in self._UNWRITTEN_CONSTRAINT_ARGUMENTS
-            and (keyword := fields[key].alias or key) in _applicability.TYPE_DEPENDENT_KEYWORDS
+            and (keyword := keywords[key]) in _applicability.TYPE_DEPENDENT_KEYWORDS
             and keyword not in taken
         }
 
@@ -444,13 +451,13 @@ class DataModelField(DataModelFieldBase):
         constraints = self.constraints
         anyurl = self._drops_constraints_for_anyurl()
         if constraints is not None and anyurl:
-            fields = type(constraints).model_fields
+            keywords = _constraint_keywords_of(type(constraints))
             omitted.extend(
                 Omitted(
                     f"constraint:{name}",
                     value,
                     "anyurl",
-                    Why(_ANYURL, fields[name].alias or name),
+                    Why(_ANYURL, keywords[name]),
                     warns=value is not None,
                 )
                 for name, value in constraints._exclude_unset_dump.items()  # noqa: SLF001
@@ -525,9 +532,9 @@ class DataModelField(DataModelFieldBase):
         if not written:
             return {}
         constraints = cast("Constraints", self.constraints)
-        fields = type(constraints).model_fields
+        keywords = _constraint_keywords_of(type(constraints))
         return {
-            fields[name].alias or name: value
+            keywords[name]: value
             for name, value in constraints._exclude_unset_dump.items()  # noqa: SLF001
             if f"constraint:{name}" in written
         }
