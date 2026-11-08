@@ -759,6 +759,19 @@ class DataType(_BaseModel):  # noqa: PLR0904
 
         return new_obj
 
+    def _context_class(self, name: str, base: builtins.type[DataType]) -> builtins.type[DataType]:
+        """Return the context class ``name`` over ``base`` with the six context flags of this data type."""
+        return _create_context_data_type(
+            name,
+            base,
+            self.python_version,
+            self.use_standard_collections,
+            self.use_generic_container,
+            self.use_union_operator,
+            self.treat_dot_as_module,
+            self.use_serialize_as_any,
+        )
+
     @classmethod
     def from_import(  # noqa: PLR0913
         cls: builtins.type[DataTypeT],
@@ -1958,6 +1971,19 @@ class DataTypeManager(ABC):
             use_union_operator,
             treat_dot_as_module,
             use_serialize_as_any,
+        )
+
+    def _context_class(self, name: str, base: type[DataType]) -> type[DataType]:
+        """Return the context class ``name`` over ``base`` with the six context options of this manager."""
+        return _create_context_data_type(
+            name,
+            base,
+            self.python_version,
+            self.use_standard_collections,
+            self.use_generic_container_types,
+            self.use_union_operator,
+            self.treat_dot_as_module,
+            self.use_serialize_as_any,
         )
 
     @abstractmethod
