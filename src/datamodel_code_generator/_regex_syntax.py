@@ -34,6 +34,7 @@ __all__ = [
     "pattern_admits",
     "pattern_engine",
     "pattern_implies",
+    "python_rejects",
     "read_pattern",
     "scan_regex_syntax",
     "selects_python_engine",
@@ -242,7 +243,7 @@ def _class_escape_ranges(pattern: str) -> bool:
     return False
 
 
-def _python_rejects(pattern: str) -> bool:
+def python_rejects(pattern: str) -> bool:
     r"""Return whether Python's ``re`` rejects a pattern on every Python from 3.10 on, decided statically.
 
     It rejects any ``\p`` or ``\P``, a braced hexadecimal escape (``\x{41}``), a class escape as the start of a range,
@@ -450,12 +451,12 @@ def read_pattern(pattern: str, engines: frozenset[str]) -> str | None:
 
     The engines, at least one, are ``python`` (Python's ``re``) and ``rust`` (pydantic-core's default, beside which
     Pydantic selects ``python-re``). A pattern no engine of the output compiles is left out (None): one that Python's
-    ``re`` rejects (``_python_rejects``) where Rust rejects it too or is not an engine. Where Rust is the default
+    ``re`` rejects (``python_rejects``) where Rust rejects it too or is not an engine. Where Rust is the default
     engine, a ``[`` inside a class that leaves the class open for Rust is escaped (``_escaped_class_brackets``).
     Otherwise the pattern is written as the schema writes it. The decision reads the text alone, never an installed
     engine.
     """
-    if _python_rejects(pattern) and ("rust" not in engines or _rust_rejects(pattern)):
+    if python_rejects(pattern) and ("rust" not in engines or _rust_rejects(pattern)):
         return None
     if "rust" in engines and (escaped := _escaped_class_brackets(pattern)) is not None:
         return escaped

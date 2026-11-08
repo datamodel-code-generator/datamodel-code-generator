@@ -258,6 +258,53 @@ def test_patterns_no_engine_compiles_as_written(
     assert_output(outcomes, name="outcomes")
 
 
+@pytest.mark.parametrize(
+    "extra_args",
+    [
+        pytest.param(["--output-model-type", "pydantic_v2.BaseModel", "--field-constraints"], id="field_constraints"),
+        pytest.param(
+            ["--output-model-type", "pydantic_v2.BaseModel", "--use-annotated", "--collapse-root-models"],
+            id="base_model_collapsed",
+        ),
+        pytest.param(["--output-model-type", "pydantic_v2.dataclass", "--use-annotated"], id="dataclass_alias"),
+    ],
+)
+def test_patterns_the_python_engine_rejects_beside_one_it_needs(
+    output_file: Path, recwarn: pytest.WarningsRecorder, extra_args: list[str]
+) -> None:
+    r"""Leave out with a warning a pattern Python's ``re`` rejects where its config selects ``python-re`` (#6593).
+
+    A model selects ``python-re`` for a lookaround, so every other pattern its config builds runs on that engine:
+    ``\\P{C}`` and a class of Unicode properties, which only the default engine reads, are left out of its fields,
+    and of a type alias it builds, while a root model with a config of its own keeps its pattern. AWS documents, under
+    the dated presets, wrote such models. The module imports, each valid payload keeps its value and the lookaround
+    still rejects what it rejects.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "python_engine_beside_unicode_properties.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[*extra_args, "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    outcomes = "".join(f"{warning.message}\n" for warning in recwarn if "regex engine" in str(warning.message))
+    payloads = {
+        "valid": {
+            "dateFieldFormat": "yyyy-MM-dd",
+            "indexFieldName": "Name",
+            "description": "Déjà vu",
+            "tagKeys": ["k"],
+        },
+        "space before the date format": {"dateFieldFormat": " yyyy"},
+        "control character in the name": {"indexFieldName": "a\u0007"},
+    }
+    with _generated_model(output_file, "python_engine_beside_unicode_properties", "FieldMapping") as model:
+        outcomes += _outcomes(model, payloads)
+        value = _model_json_validator(model)(json.dumps(payloads["valid"]))
+        outcomes += f"value: {value.description!r} {[getattr(key, 'root', key) for key in value.tagKeys]!r}\n"
+    assert_output(outcomes, name="outcomes")
+
+
 def test_encoded_str_roots_build_their_pattern_with_the_python_engine(output_file: Path) -> None:
     """Write a base64 root model whose pattern needs ``python-re`` with only the decoded type in its base (#6603).
 

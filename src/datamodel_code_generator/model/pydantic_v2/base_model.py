@@ -86,6 +86,7 @@ from datamodel_code_generator.model.base import (
 from datamodel_code_generator.model.field_name import PYDANTIC_BASE_MODEL_ATTRIBUTES, PydanticFieldNameResolver
 from datamodel_code_generator.model.imports import IMPORT_CLASSVAR
 from datamodel_code_generator.model.pydantic_base import (
+    PYTHON_ENGINE_BUILDS_KEY,
     BaseModelBase,
     _constraint_arguments,
     _FieldArguments,
@@ -1573,17 +1574,17 @@ def _holds_lone_surrogate(models: Iterable[DataModel]) -> bool:
     )
 
 
-def _config_pattern_engines(model: DataModel) -> Iterator[tuple[str, PatternEngine]]:
-    """Yield the patterns that the config a model applies builds, with what each asks of it.
+def _config_scopes(model: DataModel) -> Iterator[tuple[DataModel, bool]]:
+    """Yield the models whose patterns the config a model applies builds, each with whether it is a type alias.
 
-    Those of its fields, of the fields of the bases it inherits, which Pydantic builds again with its config, and the
-    string patterns of the type aliases it reaches through any chain of fields and base classes
-    (``models_reaching_string_pattern_aliases``).
+    The model and the bases it inherits, whose fields Pydantic builds again with its config, and the type aliases it
+    reaches through any chain of fields and base classes (``models_reaching_string_pattern_aliases``), whose string
+    patterns it builds.
     """
     from datamodel_code_generator.model.type_alias import TypeAliasBase  # noqa: PLC0415
 
     for current in reach((model,), _find_base_classes, key=id):
-        yield from _pattern_engines(current.fields)
+        yield current, False
     reached = reach(
         (model,),
         lambda current: [
@@ -1595,7 +1596,13 @@ def _config_pattern_engines(model: DataModel) -> Iterator[tuple[str, PatternEngi
     )
     for alias in reached:
         if isinstance(alias, TypeAliasBase):
-            yield from _alias_pattern_engines(alias)
+            yield alias, True
+
+
+def _config_pattern_engines(model: DataModel) -> Iterator[tuple[str, PatternEngine]]:
+    """Yield the patterns that the config a model applies builds (``_config_scopes``), with what each asks of it."""
+    for current, alias in _config_scopes(model):
+        yield from _alias_pattern_engines(current) if alias else _pattern_engines(current.fields)
 
 
 def _uses_reached_alias(model: _PydanticV2Model, reached: Collection[int]) -> bool:
@@ -1757,7 +1764,9 @@ class _PydanticV2Model(DataModel):
         A BaseModel whose own patterns need the engine selects it (``has_lookaround_pattern``); a config that already
         names an engine is kept. So does a model that reaches a string pattern type alias: the references of its fields
         count, and those of the bases whose config it does not take (``_bases_without_inherited_config``). A lone
-        surrogate selects it where the config allows it (``_select_surrogate_regex_engines``).
+        surrogate selects it where the config allows it (``_select_surrogate_regex_engines``). Every model whose
+        patterns a config selecting it builds (``_config_scopes``), a dataclass's once it selected its engine, is
+        marked (``PYTHON_ENGINE_BUILDS_KEY``), so its fields leave out a pattern Python's ``re`` rejects (#6593).
         """
         for model in models:
             if isinstance(model, BaseModel) and has_lookaround_pattern(model.fields, surrogates=False):
@@ -1767,6 +1776,20 @@ class _PydanticV2Model(DataModel):
                 if isinstance(model, cls) and _uses_reached_alias(model, reached):
                     _select_python_engine(model, through_alias=True)
         _select_surrogate_regex_engines(models, cls)
+        for model in models:
+            if isinstance(model, _PydanticV2Model) and model._builds_patterns_with_python_engine():  # noqa: SLF001
+                for current, _ in _config_scopes(model):
+                    current._set_internal_template_data(PYTHON_ENGINE_BUILDS_KEY, value=True)  # noqa: SLF001
+                    for field in current.fields:
+                        field.invalidate_semantic_caches()
+
+    def _builds_patterns_with_python_engine(self) -> bool:
+        """Return whether the config the model applies selects ``python-re``."""
+        return self._applied_config_items().get("regex_engine") == '"python-re"'
+
+    @abstractmethod
+    def _applied_config_items(self, visiting: frozenset[int] = frozenset()) -> dict[str, str]:
+        """Return the config items Pydantic applies to the model."""
 
     def _surrogate_pattern_scopes(self) -> Iterator[list[DataModelFieldBase]]:
         """Yield the fields whose lone surrogates ask for the model's engine: its own."""
@@ -2077,6 +2100,7 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
         self._set_config(config_parameters)
         self.invalidate_render_caches()
 
+    @override
     def _applied_config_items(self, visiting: frozenset[int] = frozenset()) -> dict[str, str]:
         """Return the config items Pydantic applies: those of the bases merged in order, then the model's own.
 
