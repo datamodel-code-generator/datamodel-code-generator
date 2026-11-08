@@ -2966,7 +2966,8 @@ def main(args: Sequence[str] | None = None) -> Exit:
     """Execute datamodel code generation from command-line arguments.
 
     A warning turned into an error that no step reports, such as one raised while the options are processed, ends
-    the run with its traceback, as in a generation.
+    the run with its traceback, as in a generation. A run that reads ``sys.argv``, the command line, first raises the
+    soft limit on open files to the hard limit (``raise_open_file_limit``).
     """
     from datamodel_code_generator import _StructuredOutputUnavailableError  # ruff: ignore[import-outside-top-level]
     from datamodel_code_generator._naming_hint import naming_hint_scope  # ruff: ignore[import-outside-top-level]
@@ -2974,6 +2975,12 @@ def main(args: Sequence[str] | None = None) -> Exit:
         cli_migration_warning_scope,
     )
 
+    if args is None:
+        from datamodel_code_generator._open_file_limit import (  # ruff: ignore[import-outside-top-level]
+            raise_open_file_limit,
+        )
+
+        raise_open_file_limit()
     try:
         with cli_migration_warning_scope(), naming_hint_scope():
             return _main(args, start_watch=True)
