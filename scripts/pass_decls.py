@@ -1304,9 +1304,12 @@ FINALIZE_TYPE_ALIAS_USERS = PassDecl(
     Phase.RENDER_PREPARATION,
     Scope.GLOBAL,
     PassKind.TRANSFORM,
-    reads=_facts(Fact.MODEL_KIND, Fact.FIELD_TYPES),
+    reads=_facts(Fact.MODEL_KIND, Fact.FIELD_TYPES, Fact.CONSTRAINTS),
     writes=_facts(RenderFact.BACKEND_CONFIG),
-    summary="Lets the backend configure the models that use type aliases (model hook).",
+    summary=(
+        "Lets the backend configure the regex engine of its models from their final patterns, also through the type "
+        "aliases they use (model hook)."
+    ),
 )
 MARK_SET_ITEM_MODELS_HASHABLE = PassDecl(
     "mark_set_item_models_hashable",

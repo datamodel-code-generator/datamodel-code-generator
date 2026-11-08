@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "WordsBeyondTheSizeLimit": {
+      "type": "string",
+      "pattern": "^[\\w.@() -]{1,255}$"
+    },
+    "TextBeyondTheSizeLimit": {
+      "type": "string",
+      "pattern": "^.{0,262144}$"
+    },
+    "BracketInClass": {
+      "type": "string",
+      "pattern": "^[[A-Z0-9]{1,18}$"
+    },
+    "JavaPrintable": {
+      "type": "string",
+      "pattern": "^\\p{Print}+$"
+    },
+    "ClassEscapeRange": {
+      "type": "string",
+      "pattern": "^[\\w- ]*$"
+    },
+    "Letters": {
+      "type": "string",
+      "pattern": "^\\p{L}+$"
+    },
+    "DigitsWithinTheSizeLimit": {
+      "type": "string",
+      "pattern": "^[a-z]{1,8}-\\d{1,300}$"
+    },
+    "NotAngleBracketsBeyondTheSizeLimit": {
+      "type": "string",
+      "pattern": "^[^<>]{0,20000}$"
+    },
+    "AnythingBeyondTheSizeLimit": {
+      "type": "string",
+      "pattern": "^[\\s\\S]{0,20000}$"
+    },
+    "NoSpacesBeyondTheSizeLimit": {
+      "type": "string",
+      "pattern": "^[^\\s]{1,20000}$"
+    },
+    "ControlFreeJava": {
+      "type": "string",
+      "pattern": "^[^\\p\\{C\\}]*$"
+    },
+    "AsciiWordsWithinTheSizeLimit": {
+      "type": "string",
+      "pattern": "^(?-u:\\w){1,300}$"
+    },
+    "AtLeastTwoLetters": {
+      "type": "string",
+      "pattern": "^[a-z]{2,}$"
+    }
+  }
+}

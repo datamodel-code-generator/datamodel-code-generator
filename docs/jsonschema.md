@@ -258,10 +258,12 @@ older. A pattern in a type alias has no model that owns it, so the alias carries
 | Atomic groups | `(?>a+)` | `python-re`; Python's `re` parses them from 3.11 on |
 | Escaped characters and character class members | `\\1`, `\(\?>`, `[(?>{]` | Rust engine (default); the lookaround check still matches `(?=` and `(?<!` even when escaped or inside a class |
 | Rust-only syntax | `a{2, 3}`, `\p{L}`, `\x{41}`, `\b{start}`, `[[a-z]{]`, `(?P<ids[]>x)` | Rust engine |
-| Syntax both engines reject | `(?L)`, `([a-z])\1\p{L}` | `python-re`; still fails at import, with Python's error |
+| Syntax both engines reject | `(?L)`, `a{99999999999}` | `python-re`; still fails at import, with Python's error |
+| Syntax both engines are known to reject | `\p{Print}`, `[\w- ]`, `([a-z])\1\p{L}` | the `pattern` is left out, with a warning |
+| A `[` inside a class that leaves the class open for Rust | `[[A-Z0-9]{1,18}` | written `[\[A-Z0-9]{1,18}`, which both engines read as Python's `re` reads the pattern; Rust engine |
 | Possessive quantifiers | `a++`, `a*+` | Rust engine; pydantic-core accepts them as nested repetitions |
 | Syntax only Pydantic 2.0.0-2.0.2 rejects | `\/`, `\:`, `(?<name>x)`, `[a&&b]` | Rust engine |
-| Patterns over Rust's compiled size limit | `[\w.-]{1,256}` | Rust engine; not detectable from the syntax |
+| A counted repetition past Rust's compiled size limit | `[\w.-]{1,256}`, `\S{1,8192}`, `.{0,262144}` | `python-re` where one repetition reaches the copies every pydantic-core release refuses for its atom; a limit reached only by several repetitions together keeps the Rust engine |
 | Verbose patterns that start with `(?x)` | `(?x) ([a-z])\1`, `(?x) a b # note \1` | `python-re` for the first; the Rust engine for the second, whose comment runs to the end of the line |
 | Other verbose patterns | `a(?x) b`, `(?x:a) b`, `(?x) a (?-x) b` | Rust engine; the scan reads no other flag group that mentions `x` |
 
@@ -281,6 +283,8 @@ field (`--use-missing-sentinel`), so such a pattern fails at import there too. A
 beside `bytes`, such as `str | bytes`, follows the string rules for every target. With a target older than `2.14`
 the generation warns about every `bytes` pattern it writes (see
 [Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)).
+msgspec output validates with Python's `re` alone, so it leaves out, with the same warning, a `pattern` that Python's
+`re` rejects, such as `\p{L}`; standard-library outputs write no pattern.
 Because `regex_engine` is a model setting, every pattern in that model then uses Python's `re` semantics, for
 example `$` also matches before a trailing newline. Python's `re` is a backtracking engine without the Rust engine's
 linear-time guarantee: review such patterns, and bound input length (for example with `maxLength`) when they

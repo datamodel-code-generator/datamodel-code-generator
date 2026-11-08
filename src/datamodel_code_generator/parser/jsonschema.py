@@ -371,6 +371,7 @@ from datamodel_code_generator.parser._schema_object import (
     EXCLUDE_FIELD_KEYS,  # noqa: F401  # Preserve the established parser.jsonschema export.
     EXCLUDE_FIELD_KEYS_IN_JSON_SCHEMA,  # noqa: F401  # Preserve the established parser.jsonschema export.
     IGNORED_REF_SIBLINGS_CONTEXT,
+    PATTERN_READING_CONTEXT,
     READ_UNEVALUATED_PROPERTIES_CONTEXT,
     Discriminator,  # noqa: F401  # Preserve the established parser.jsonschema export.
     JSONReference,
@@ -1102,6 +1103,7 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         self._unescaped_slash_pointers: dict[tuple[str, str], str] = {}
         """Under --read-escaped-ref-pointers, the pointer of the key a dangling reference's unescaped ``/`` splits."""
         self._empty_enum_locations: set[SchemaLocation] = set()
+        self._unread_patterns: dict[SchemaLocation, str] = {}
         self._documents_as_written: dict[int, tuple[dict[str, YamlValue], dict[str, YamlValue]]] = {}
         self._held_value: tuple[YamlValue, SchemaLocation] | None = None
         self._inexact_object_maps: set[str] = set()
@@ -8417,11 +8419,14 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
     def _schema_validation_context(self) -> dict[str, object]:
         """Return the validation context of the schema objects.
 
-        It collects the schema objects whose ``enum`` lists no value (``_report_parse_diagnostics``), says whether
+        It collects the schema objects whose ``enum`` lists no value (``_report_parse_diagnostics``), passes the regex
+        engines of the output's models, which read each ``pattern`` and collect those no engine compiles, says whether
         they read ``unevaluatedProperties``, and under --ignore-ref-siblings-by-schema-version whether the version of a
         location ignores the keywords beside a ``$ref`` (``_ref_siblings_apply_to``).
         """
         context: dict[str, object] = {EMPTY_ENUM_CONTEXT: self._empty_enum_locations}
+        if engines := self.data_type_manager.REGEX_ENGINES:
+            context[PATTERN_READING_CONTEXT] = (engines, self._unread_patterns)
         if self.read_unevaluated_properties:
             context[READ_UNEVALUATED_PROPERTIES_CONTEXT] = True
         if self.config.ignore_ref_siblings_by_schema_version:
@@ -9201,7 +9206,8 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
         """Report each unique dangling local reference and compatibility resolution after schema parsing completes.
 
         Each schema object of a document whose ``enum`` lists no value is reported too: no value is valid against it,
-        while the generated code reads it as if it had no ``enum``.
+        while the generated code reads it as if it had no ``enum``. So is each ``pattern`` that no regex engine of the
+        output compiles, which the generated code leaves out (``read_pattern``).
         """
         for message in sorted(self._resource_ref_warnings):
             warn(message, SchemaResourceRefWarning, stacklevel=stacklevel_at_parse_caller())
@@ -9221,6 +9227,15 @@ class JsonSchemaParser(Parser["JSONSchemaParserConfig", "JsonSchemaFeatures"]):
                 stacklevel=stacklevel_at_parse_caller(),
             )
         self._empty_enum_locations.clear()
+        for where, pattern in sorted(
+            (named_location(location, "schema"), pattern) for location, pattern in self._unread_patterns.items()
+        ):
+            warn(
+                f"The pattern {stable_repr(pattern)} of the schema at {where} is left out: no regex engine of the "
+                "output compiles it, so the generated code does not check it.",
+                stacklevel=stacklevel_at_parse_caller(),
+            )
+        self._unread_patterns.clear()
         if not self._dangling_refs:
             return
 

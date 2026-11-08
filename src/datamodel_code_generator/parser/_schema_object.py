@@ -24,6 +24,7 @@ from pydantic_core import core_schema
 from typing_extensions import override
 
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, non_null_types, schema_positions
+from datamodel_code_generator._regex_syntax import read_pattern
 from datamodel_code_generator.parser._null_facts import NullSources, resolve_null_facts
 from datamodel_code_generator.parser._schema_graph import SCHEMA_GRAPH, canonical_ref_spelling, validate_resolved_ref
 from datamodel_code_generator.parser.base import SPECIAL_PATH_FORMAT
@@ -47,6 +48,7 @@ __all__ = [
     "EXCLUDE_FIELD_KEYS",
     "EXCLUDE_FIELD_KEYS_IN_JSON_SCHEMA",
     "IGNORED_REF_SIBLINGS_CONTEXT",
+    "PATTERN_READING_CONTEXT",
     "READ_UNEVALUATED_PROPERTIES_CONTEXT",
     "Discriminator",
     "JSONReference",
@@ -271,6 +273,9 @@ IGNORED_REF_SIBLINGS_CONTEXT: Final = "ignored_ref_siblings"
 siblings."""
 EMPTY_ENUM_CONTEXT: Final = "empty_enum"
 """The context key of the set that collects the location of each schema object whose ``enum`` lists no value."""
+PATTERN_READING_CONTEXT: Final = "pattern_reading"
+"""The context key of the regex engines of the output's models and the map that collects, by location, each
+``pattern`` that no engine compiles (``_regex_syntax.read_pattern``)."""
 
 
 _PROPERTY_EVALUATING_KEYWORDS: Final = frozenset({
@@ -423,6 +428,30 @@ class JsonSchemaObject(BaseModel):  # noqa: PLR0904
         if "const" in alias_extras:  # pragma: no cover
             extras["const"] = alias_extras["const"]
         return {**values, cls.__extra_key__: extras}
+
+    @model_validator(mode="before")
+    @classmethod
+    def read_pattern_as_the_engines_compile_it(cls, values: Any, info: ValidationInfo) -> Any:
+        """Write a schema's ``pattern`` as the regex engines of the output's models compile it (``read_pattern``).
+
+        The parser passes the engines in the validation context with the map that collects, by location, each pattern
+        no engine compiles, which is left out and reported after the schema parsing; a ``[`` inside a class that only
+        Rust leaves open is escaped. The decision reads the pattern's text alone. Only an object with a location is
+        read, a document object or the dump of one, so that a pattern is never left out unreported. It runs after the
+        validators that read the document object as written.
+        """
+        if (
+            (reading := (info.context or {}).get(PATTERN_READING_CONTEXT)) is None
+            or not isinstance(values, dict)
+            or not isinstance(pattern := values.get("pattern"), str)
+            or (read := read_pattern(pattern, reading[0])) == pattern
+            or (location := _source_location(values)) is None
+        ):
+            return values
+        if read is None:
+            reading[1].setdefault(location, pattern)
+            return _located({key: value for key, value in values.items() if key != "pattern"}, location)
+        return _located({**values, "pattern": read}, location)
 
     @model_validator(mode="before")
     @classmethod

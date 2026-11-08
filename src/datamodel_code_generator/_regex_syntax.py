@@ -9,7 +9,8 @@ from __future__ import annotations
 
 import re
 from functools import cache
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 
 from typing_extensions import final
 
@@ -17,7 +18,7 @@ from datamodel_code_generator._python_syntax import holds_lone_surrogate
 from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Iterable, Iterator, Sequence
 
 __all__ = [
     "EngineRow",
@@ -33,6 +34,7 @@ __all__ = [
     "pattern_admits",
     "pattern_engine",
     "pattern_implies",
+    "read_pattern",
     "scan_regex_syntax",
     "selects_python_engine",
 ]
@@ -136,13 +138,23 @@ def scan_regex_syntax(pattern: str, *, read_verbose: bool = False) -> tuple[bool
     consumed whole, with separate tokens inside and outside character classes. It reports backreferences and
     octal escapes, ``\N{...}``, ``\Z``, ``[\b]``, ``(?P=name)``, atomic groups, conditionals, comments, the
     ``a`` and ``L`` flags, braces that cannot start a counted repetition, counted repetitions whose minimum
-    exceeds their maximum (``a{ 3 , 2 }``, which Python's ``re`` reads as text) and hexadecimal escapes of a
-    surrogate or of a code point past U+10FFFF (``\uD800``, which Python's ``re`` reads as that surrogate). Atomic
+    exceeds their maximum (``a{ 3 , 2 }``, which Python's ``re`` reads as text), hexadecimal escapes of a
+    surrogate or of a code point past U+10FFFF (``\uD800``, which Python's ``re`` reads as that surrogate) and, in a
+    pattern that is not verbose, what ``_rust_rejects_beyond_tokens`` reads: Unicode properties Rust does not
+    implement, a class escape as the end of a range and a counted repetition past Rust's compiled-size limit. Atomic
     groups and possessive quantifiers need Python 3.11, and ``\z`` needs Python 3.14. Returns None for verbose
     patterns, whose whitespace and comments the scan does not model, unless ``read_verbose`` reads the ones that
     start with a global ``(?x)`` group. Their comments run to the end of the line, also inside a character class,
     where Rust then reports the class unclosed; any other flag group that mentions ``x`` still gives None.
     """
+    if (tokens := _scan_tokens(pattern, read_verbose=read_verbose)) is None:
+        return None
+    rejected, minimum_python, depth, verbose = tokens
+    return (rejected or (depth > 0 if verbose else _rust_rejects_beyond_tokens(pattern)), minimum_python)
+
+
+def _scan_tokens(pattern: str, *, read_verbose: bool) -> tuple[bool, tuple[int, int], int, bool] | None:
+    """Return what the token scan of ``scan_regex_syntax`` finds: rejection, oldest Python, open classes, verbosity."""
     rejected = False
     minimum_python = _PY_310
     depth = 0
@@ -164,7 +176,201 @@ def scan_regex_syntax(pattern: str, *, read_verbose: bool = False) -> tuple[bool
             return None
         rejected |= requirements[0]
         minimum_python = max(minimum_python, requirements[1])
-    return (rejected or (verbose and depth > 0), minimum_python)
+    return rejected, minimum_python, depth, verbose
+
+
+_ESCAPE: Final = r"(?s)\\(?:[pP](?:\{[^}]*\}|.?)|[xuU]\{|.)"
+_CLASS_ESCAPES: Final = frozenset("wWdDsS")
+_UNIMPLEMENTED_PROPERTIES: Final = frozenset({"alnum", "blank", "graph", "print", "xdigit", "all"})
+"""The UTS #18 compatibility properties Rust's regex crate does not implement, and Java's ``all``, loosely named."""
+_PYTHON_REJECTED_ESCAPES: Final = frozenset("ceghijklmopqyCEFGHIJKLMOPQRTVXY")
+"""The letters Python's ``re`` reads after a backslash nowhere, on every Python from 3.10 on, ``p`` and ``P`` too."""
+_BRACED_CODES: Final = frozenset({"x{", "u{", "U{"})
+_PYTHON_CLASS: Final = r"(?<!\\)(?:\\\\)*\[\^?\]?(?:[^\\\]]|\\.)*\]"
+_CLASS_ITEM: Final = r"(?s)\\[pP]\{[^}]*\}|\\.|."
+_SIZE_THRESHOLDS: Final = MappingProxyType({
+    "w": 218,
+    "W": 233,
+    "d": 2256,
+    "D": 899,
+    "s": 15420,
+    "S": 5449,
+    "dot": 10878,
+    "literal": 327674,
+})
+r"""The copies of an atom from which Rust's compiled-size limit (10 MiB) refuses a pattern, by the kind of the atom.
+
+Each is the largest count, required (``a{N}``) or optional (``a{0,N}``), that a pydantic-core release from 2.10 to
+2.50 still refuses for one repetition of the atom alone: ``\w`` and a class of it and ASCII (``w``), ``\W``, ``\d``,
+``\D``, ``\s``, ``\S``, any character (``dot``, also a negated class) and a literal or anything else (``literal``).
+Unicode only grows, which lowers the counts Rust refuses, so a count that reaches one is refused by every release.
+"""
+_SIZE_QUANTIFIER: Final = r"\{\s*(?P<lower>[0-9]+)\s*(?:(?P<comma>,)\s*(?P<upper>[0-9]*)\s*)?\}[?+]?|[*+?][?+]?"
+_ASCII_FLAG_GROUP: Final = r"\(\?[A-Za-z]*-[A-Za-z]*u"
+_VERBOSE_FLAG_GROUP: Final = r"\(\?[A-Za-z-]*x"
+_PYTHON_REJECTED_FLAGS: Final = r"\(\?[A-Za-z]*-[A-Za-z]*[auL]"
+_ZERO_WIDTH: Final = frozenset("bBAzZ<>^$")
+"""The escape letters and characters of an atom that matches no character, which Rust compiles to no copy of one."""
+_GROUP_PREFIX: Final = r"\((?:\?(?:<?[=!]|P?<[^>]*>|[A-Za-z-]*:|>))?"
+
+
+def _escapes(text: str) -> Iterator[str]:
+    """Yield each escape of a pattern, read from its start so that an escaped backslash escapes nothing else."""
+    return (match.group() for match in _compiled(_ESCAPE).finditer(text) if match.group().startswith("\\"))
+
+
+def _rust_rejects_property(escape: str) -> bool:
+    r"""Return whether Rust rejects a ``\p`` escape: a name it does not implement, or one letter that is no letter."""
+    if escape.startswith("{", 2):
+        name = escape[3:-1].replace(" ", "").replace("_", "").replace("-", "").lower()
+        return name in _UNIMPLEMENTED_PROPERTIES or name.startswith("java")
+    return not escape[2:].isascii() or not escape[2:].isalpha()
+
+
+def _class_escape_ranges(pattern: str) -> bool:
+    r"""Return whether a class uses a class escape as the start of a range (``[\w- ]``), which both engines reject."""
+    for match in _compiled(_PYTHON_CLASS).finditer(pattern):
+        body = match.group()
+        tokens = _compiled(_CLASS_ITEM).findall(body[body.index("[") + 1 : -1])
+        for index, token in enumerate(tokens[:-2]):
+            if tokens[index + 1] == "-" and token[:1] == "\\" and (token[1] in _CLASS_ESCAPES or token[1] in "pP"):
+                return True
+    return False
+
+
+def _python_rejects(pattern: str) -> bool:
+    r"""Return whether Python's ``re`` rejects a pattern on every Python from 3.10 on, decided statically.
+
+    It rejects any ``\p`` or ``\P``, a braced hexadecimal escape (``\x{41}``), a class escape as the start of a range,
+    a flag group that turns ``a``, ``u`` or ``L`` off and the letters it reads after a backslash nowhere. A verbose
+    pattern is never decided, as a comment may hold any text.
+    """
+    if _compiled(_VERBOSE_FLAG_GROUP).search(pattern) is not None:
+        return False
+    return (
+        _class_escape_ranges(pattern)
+        or _compiled(_PYTHON_REJECTED_FLAGS).search(pattern) is not None
+        or any(escape[1] in _PYTHON_REJECTED_ESCAPES or escape[1:] in _BRACED_CODES for escape in _escapes(pattern))
+    )
+
+
+@cache
+def _rust_rejects_beyond_tokens(pattern: str) -> bool:
+    """Return whether Rust rejects a pattern that is not verbose for what the token scan does not read.
+
+    A Unicode property Rust does not implement (``_rust_rejects_property``), a class escape as the start of a range
+    and a counted repetition past the compiled-size limit (``_exceeds_compiled_size``).
+    """
+    return (
+        any(escape[1] in "pP" and _rust_rejects_property(escape) for escape in _escapes(pattern))
+        or _class_escape_ranges(pattern)
+        or _exceeds_compiled_size(pattern)
+    )
+
+
+class _SizeScan:
+    """Read the counted repetitions of a pattern with the atoms they repeat, for Rust's compiled-size limit."""
+
+    def __init__(self, pattern: str) -> None:
+        self.pattern = pattern
+        self.position = 0
+
+    def _peek(self) -> str:
+        return self.pattern[self.position : self.position + 1]
+
+    def alternation(self) -> tuple[set[str], list[tuple[int, int]]]:
+        """Return the kinds of the atoms of an alternation, and each repetition's copies with its threshold."""
+        kinds: set[str] = set()
+        repetitions: list[tuple[int, int]] = []
+        while True:
+            sequence_kinds, sequence_repetitions = self._sequence()
+            kinds |= sequence_kinds
+            repetitions += sequence_repetitions
+            if self._peek() != "|":
+                return kinds, repetitions
+            self.position += 1
+
+    def _sequence(self) -> tuple[set[str], list[tuple[int, int]]]:
+        kinds: set[str] = set()
+        repetitions: list[tuple[int, int]] = []
+        while self._peek() not in {"", "|", ")"}:
+            atom_kinds, atom_repetitions = self._atom()
+            copies, counted = self._quantifier()
+            if counted and atom_kinds:
+                repetitions.append((copies, min(_SIZE_THRESHOLDS[kind] for kind in atom_kinds)))
+            repetitions += [(inner * copies, threshold) for inner, threshold in atom_repetitions]
+            kinds |= atom_kinds if copies else set()
+        return kinds, repetitions
+
+    def _quantifier(self) -> tuple[int, bool]:
+        """Return how many copies of the atom Rust compiles, and whether a counted repetition with a maximum asks."""
+        if (match := _compiled(_SIZE_QUANTIFIER).match(self.pattern, self.position)) is None:
+            return 1, False
+        self.position = match.end()
+        if match["lower"] is None:
+            return 1, False
+        if match["comma"] is None:
+            return int(match["lower"]), True
+        if match["upper"]:
+            return int(match["upper"]), True
+        return max(int(match["lower"]), 1), False
+
+    def _atom(self) -> tuple[set[str], list[tuple[int, int]]]:
+        """Return the kinds of one atom, none for one that matches no character, and the repetitions it holds."""
+        character = self._peek()
+        if character == "(":
+            return self._group()
+        if character == "[":
+            end, _ = _class_end(self.pattern, self.position)
+            body = self.pattern[self.position : end]
+            self.position = end
+            return {_class_kind(body)}, []
+        if character == "\\":
+            escape = next(_escapes(self.pattern[self.position :]), "\\")
+            self.position += len(escape)
+            character = escape[1:2]
+            kind = character if character in _CLASS_ESCAPES else "literal"
+        else:
+            self.position += 1
+            kind = "dot" if character == "." else "literal"
+        return (set() if character in _ZERO_WIDTH else {kind}), []
+
+    def _group(self) -> tuple[set[str], list[tuple[int, int]]]:
+        """Return the kinds and repetitions of a group; a group that only sets flags holds none."""
+        if (flags := _compiled(_FLAG_GROUP).match(self.pattern, self.position)) is not None and flags["end"] == ")":
+            self.position = flags.end()
+            return set(), []
+        prefix = _compiled(_GROUP_PREFIX).match(self.pattern, self.position)
+        self.position = cast("re.Match[str]", prefix).end()
+        kinds, repetitions = self.alternation()
+        self.position += self._peek() == ")"
+        return kinds, repetitions
+
+
+def _class_kind(body: str) -> str:
+    r"""Return the kind of atom a class counts as: its cheapest class escape, any character, or a literal.
+
+    A negated class counts as any character, or as the cheapest escape where it holds one; a class holding an escape
+    and its negation (``[\s\S]``) counts as any character.
+    """
+    escapes = {escape[1] for escape in _escapes(body[1:-1]) if escape[1] in _CLASS_ESCAPES}
+    if body.startswith("[^"):
+        return "s" if escapes else "dot"
+    if any(letter in escapes and letter.swapcase() in escapes for letter in "wds"):
+        return "dot"
+    return max(escapes, key=_SIZE_THRESHOLDS.__getitem__, default="literal")
+
+
+def _exceeds_compiled_size(pattern: str) -> bool:
+    r"""Return whether one counted repetition reaches the copies Rust refuses for its atom (``_SIZE_THRESHOLDS``).
+
+    The copies of a repetition inside another multiply. A repetition of a group counts as its cheapest atom, as each
+    copy compiles every atom of every branch. Other atoms only add, so the pattern is refused whatever they are. A
+    pattern with a group that turns Unicode off, where ``\w`` and ``.`` are ASCII, is not read.
+    """
+    if _compiled(_ASCII_FLAG_GROUP).search(pattern) is not None:
+        return False
+    return any(copies >= threshold for copies, threshold in _SizeScan(pattern).alternation()[1])
 
 
 def pattern_engine(pattern: str, *, row: EngineRow, compiled: bool = True) -> PatternEngine | None:
@@ -193,6 +399,58 @@ def pattern_engine(pattern: str, *, row: EngineRow, compiled: bool = True) -> Pa
     if rejected:
         return "python"
     return "surrogate" if holds_lone_surrogate(pattern) else "default"
+
+
+def _rust_rejects(pattern: str) -> bool:
+    """Return whether Rust rejects a pattern for certain: a lookaround, syntax the scan reports, or a class left open.
+
+    A verbose pattern is never decided.
+    """
+    return has_lookaround(pattern) or (
+        (scan := scan_regex_syntax(pattern)) is not None
+        and (
+            scan[0] or cast("tuple[bool, tuple[int, int], int, bool]", _scan_tokens(pattern, read_verbose=False))[2] > 0
+        )
+    )
+
+
+def _escaped_class_brackets(pattern: str) -> str | None:
+    r"""Return a pattern with each ``[`` inside a class escaped, where only that makes Rust read it as Python does.
+
+    Rust reads a ``[`` inside a class as a nested class, Python's ``re`` and ECMA-262 as the character, so Rust leaves
+    ``[[A-Z]`` open and refuses it. Escaped (``[\[A-Z]``), every engine reads the class alike. None where Rust reads
+    the pattern as written, where the escaped pattern is still read otherwise, or where Python cannot read it.
+    """
+    escaped = _compiled(_PYTHON_CLASS).sub(
+        lambda match: (
+            match.group()[: match.group().index("[") + 1]
+            + _compiled(r"(?s)(\\.)|\[").sub(
+                lambda inner: inner.group(1) or "\\[", match.group()[match.group().index("[") + 1 :]
+            )
+        ),
+        pattern,
+    )
+    if escaped == pattern or not _rust_rejects(pattern) or _rust_rejects(escaped) or not _reads_alike(escaped):
+        return None
+    return escaped
+
+
+@cache
+def read_pattern(pattern: str, engines: frozenset[str]) -> str | None:
+    """Return the pattern an output whose models compile patterns on ``engines`` writes for a schema's ``pattern``.
+
+    The engines, at least one, are ``python`` (Python's ``re``) and ``rust`` (pydantic-core's default, beside which
+    Pydantic selects ``python-re``). A pattern no engine of the output compiles is left out (None): one that Python's
+    ``re`` rejects (``_python_rejects``) where Rust rejects it too or is not an engine. Where Rust is the default
+    engine, a ``[`` inside a class that leaves the class open for Rust is escaped (``_escaped_class_brackets``).
+    Otherwise the pattern is written as the schema writes it. The decision reads the text alone, never an installed
+    engine.
+    """
+    if _python_rejects(pattern) and ("rust" not in engines or _rust_rejects(pattern)):
+        return None
+    if "rust" in engines and (escaped := _escaped_class_brackets(pattern)) is not None:
+        return escaped
+    return pattern
 
 
 def selects_python_engine(engines: Iterable[PatternEngine | None], *, surrogates: bool = True) -> bool:

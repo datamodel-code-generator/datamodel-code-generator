@@ -45,6 +45,19 @@ CODE_POINT_PAYLOADS = {
     "BracedCode": ("AA", "B"),
 }
 
+SIZE_AND_DIALECT_PAYLOADS = {
+    "WordsBeyondTheSizeLimit": ("user.name@example (x)", "a" * 256),
+    "TextBeyondTheSizeLimit": ("any text", "two\nlines"),
+    "BracketInClass": ("[A1", "a1"),
+    "Letters": ("Déjà", "abc1"),
+    "DigitsWithinTheSizeLimit": ("abc-123", "abc-"),
+    "NotAngleBracketsBeyondTheSizeLimit": ("a and b", "a<b"),
+    "AnythingBeyondTheSizeLimit": ("two\nlines", "x" * 20001),
+    "NoSpacesBeyondTheSizeLimit": ("abc", "a b"),
+    "AsciiWordsWithinTheSizeLimit": ("abc_1", "Déjà"),
+    "AtLeastTwoLetters": ("ab", "a"),
+}
+
 
 def _outcome(validate: Callable[[str], object], payload: object) -> str:
     """Return ``valid``, or the types of the errors that the validator reports for a JSON payload."""
@@ -207,6 +220,39 @@ def test_surrogate_escapes_select_the_python_engine(output_file: Path, output_mo
         with _generated_model(output_file, "rust_unsupported_code_points", name) as model:
             outcomes += _outcomes(model, {f"{name} {payload!r}": payload for payload in payloads})
     assert_output(outcomes, name="payloads")
+
+
+@pytest.mark.parametrize("output_model_type", ["pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"])
+def test_patterns_no_engine_compiles_as_written(
+    output_file: Path, recwarn: pytest.WarningsRecorder, output_model_type: str
+) -> None:
+    r"""Write each pattern so that an engine of the output compiles it, or leave it out with a warning (#6593).
+
+    A repetition past Rust's compiled-size limit selects ``python-re``; a ``[`` inside a class that only Rust leaves
+    open is escaped, which every engine reads alike. A pattern no engine of the output compiles, a Java property, an
+    escaped brace after ``\\p`` or a class escape as the start of a range, and for msgspec, which only runs Python's
+    ``re``, ``\\p{L}`` and a group that turns Unicode off, is left out with a warning; one both engines read stays as
+    written, and so does one only Rust reads where Rust is the engine. Each valid payload keeps its value and each
+    invalid one fails.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_sizes_and_dialects.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", output_model_type, "--formatters", "builtin", "--disable-timestamp"],
+        force_exec_validation=True,
+    )
+    outcomes = "".join(
+        f"{warning.message}\n" for warning in recwarn if "no regex engine of the output" in str(warning.message)
+    )
+    if output_model_type != "msgspec.Struct":
+        for name, payloads in SIZE_AND_DIALECT_PAYLOADS.items():
+            with _generated_model(output_file, "rust_unsupported_sizes_and_dialects", name) as model:
+                validate = _model_json_validator(model)
+                outcomes += _outcomes(model, {f"{name} {payload!r}": payload for payload in payloads})
+                value = validate(json.dumps(payloads[0]))
+                outcomes += f"{name} value: {getattr(value, 'root', value) == payloads[0]}\n"
+    assert_output(outcomes, name="outcomes")
 
 
 def test_verbose_pattern_properties_select_the_python_engine_alike(output_file: Path) -> None:

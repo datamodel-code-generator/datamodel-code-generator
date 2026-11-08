@@ -1,2 +1,6 @@
+The pattern '^\\p{L}' of the schema at edges.yaml#/$defs/Letter is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '\\x{62}' of the schema at edges.yaml#/properties/braced_escape/allOf/1 is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '\\p{L}' of the schema at edges.yaml#/properties/non_alike_enum is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '\\p{L}' of the schema at edges.yaml#/properties/rust_escape/allOf/0 is left out: no regex engine of the output compiles it, so the generated code does not check it.
 msgspec cannot decode the enum NanSibling: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes. A float value, which a msgspec Literal does not hold, is written as float.
 msgspec cannot decode the enum Mixed: its values are neither all str nor all int. Pass --enum-field-as-literal all to write enums as Literal values, which msgspec decodes. A float value, which a msgspec Literal does not hold, is written as float.

@@ -1752,12 +1752,16 @@ class _PydanticV2Model(DataModel):
     @classmethod
     @override
     def finalize_type_alias_users(cls, models: list[DataModel]) -> None:
-        """Select Python's regex engine in the models that reach a string pattern type alias, and for lone surrogates.
+        """Select Python's regex engine where the patterns ask for it, once every model and its patterns are final.
 
-        The references of a model's fields count, and those of the bases whose config it does not take
-        (``_bases_without_inherited_config``). A lone surrogate selects it where the config allows it, once every
-        model and its patterns are final (``_select_surrogate_regex_engines``).
+        A BaseModel whose own patterns need the engine selects it (``has_lookaround_pattern``); a config that already
+        names an engine is kept. So does a model that reaches a string pattern type alias: the references of its fields
+        count, and those of the bases whose config it does not take (``_bases_without_inherited_config``). A lone
+        surrogate selects it where the config allows it (``_select_surrogate_regex_engines``).
         """
+        for model in models:
+            if isinstance(model, BaseModel) and has_lookaround_pattern(model.fields, surrogates=False):
+                model._select_python_regex_engine()  # noqa: SLF001
         if reached := models_reaching_string_pattern_aliases(models):
             for model in models:
                 if isinstance(model, cls) and _uses_reached_alias(model, reached):
@@ -2056,8 +2060,9 @@ class BaseModel(_PydanticV2Model, BaseModelBase):
     def refresh_field_config(self) -> None:
         """Select Python's regex engine for lookaround patterns, also those fields gained after ``__init__``.
 
-        Collapsed root models inline their patterns; a config that already names an engine is kept. A lone surrogate
-        selects it once every model is final (``_select_surrogate_regex_engines``).
+        Collapsed root models inline their patterns; a config that already names an engine is kept. The patterns that
+        later passes give the fields select it once every model is final (``finalize_type_alias_users``), and so does a
+        lone surrogate (``_select_surrogate_regex_engines``).
         """
         if has_lookaround_pattern(self.fields, surrogates=False):
             self._select_python_regex_engine()

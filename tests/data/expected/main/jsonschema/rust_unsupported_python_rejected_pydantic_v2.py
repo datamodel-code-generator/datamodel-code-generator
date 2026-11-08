@@ -14,10 +14,7 @@ class Model(RootModel[Any]):
 
 
 class PythonRejected(RootModel[str]):
-    model_config = ConfigDict(
-        regex_engine="python-re",
-    )
-    root: constr(pattern=r'^([a-z])\1\p{L}$')
+    root: str
 
 
 class MidPatternFlag(RootModel[str]):
