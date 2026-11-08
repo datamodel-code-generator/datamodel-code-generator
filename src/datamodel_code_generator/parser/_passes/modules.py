@@ -1926,12 +1926,14 @@ def keep_root_null(
     Under --keep-reference-null-on-collapsed-root-models. The null is the root field's own (``nullable``, as an
     OpenAPI 3.0 ``nullable: true`` root reads), which the root type inlined at ``site`` does not write; a type that
     is optional itself already writes its null. The inlined copies ``shared_holders`` that hold ``site`` beside its
-    parent (``shared_member_holders``) take the same type in its place.
+    parent (``shared_member_holders``) take the same type in its place. That type is the plain type of the type
+    manager, not the class of ``site``, which can write its own text (the ``Annotated`` string type of
+    --collapse-constrained-root-models-as-annotated) in place of its members'.
     """
     if not parser.keep_reference_null_on_collapsed_root_models or root_field.nullable is not True or site.is_optional:
         return
     graph_builder = parser._graph_builder  # noqa: SLF001
-    holder = type(site)(is_optional=True)
+    holder = parser.data_type_manager.data_type(is_optional=True)
     graph_builder.swap_data_type(site, holder)
     for shared_holder in shared_holders:
         graph_builder.set_nested_data_types(

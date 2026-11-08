@@ -1,0 +1,3 @@
+{"codes": ["abc", null], "byName": {"k": null, "l": "abcde"}}: accepted
+{"codes": ["abcdef"]}: rejected
+{"byName": {"k": "abcdef"}}: rejected

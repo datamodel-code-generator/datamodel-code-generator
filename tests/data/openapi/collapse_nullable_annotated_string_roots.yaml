@@ -1,0 +1,22 @@
+openapi: 3.0.3
+info:
+  title: collapse nullable annotated string roots
+  version: "1"
+paths: {}
+components:
+  schemas:
+    Code:
+      type: string
+      maxLength: 5
+      nullable: true
+    Holder:
+      type: object
+      properties:
+        codes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Code'
+        byName:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Code'
