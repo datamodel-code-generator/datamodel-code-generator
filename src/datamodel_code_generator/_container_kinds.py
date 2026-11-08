@@ -38,8 +38,10 @@ __all__ = [
     "GivenContainerName",
     "LegacyKindRow",
     "abstract_class_module",
+    "container_shape",
     "given_container_of",
     "hash_slot",
+    "written_container",
     "written_slot",
 ]
 
@@ -59,6 +61,9 @@ CONTAINER_FLAGS: Final[Mapping[ContainerSlot, str]] = MappingProxyType({
 })
 """The flag that puts a node in each slot: the ``WRITTEN_CONTAINERS`` in their order, then the tuple, a form of its
 own."""
+
+container_shape: Final = attrgetter(*CONTAINER_FLAGS.values(), "tuple_item_count", "given_container")
+"""Return the container a node is in, as keys compare it: its slot flags, its tuple's item count, its given class."""
 
 
 class ContainerClass(NamedTuple):
@@ -168,22 +173,28 @@ def _abstract(name: str, module: str | None = None) -> ContainerClass:
     return ContainerClass(name, name, abstract=True, module=module)
 
 
+def _slot_class_rows(
+    written: ContainerSlot, slot: ContainerSlot | None = None, *, variadic: bool = False
+) -> dict[str, GivenContainer]:
+    """Return the rows of the class of ``written`` under each of its names, giving a node ``slot`` or ``written``."""
+    written_class = SLOT_CLASSES[written]
+    return {
+        name: GivenContainer(slot or written, written_class, variadic)
+        for name in dict.fromkeys((written_class.name, written_class.typing_name))
+    }
+
+
 GIVEN_CONTAINERS: Final[Mapping[str, GivenContainer]] = MappingProxyType({
-    "list": GivenContainer("list", SLOT_CLASSES["list"]),
-    "List": GivenContainer("list", SLOT_CLASSES["list"]),
-    "set": GivenContainer("set", SLOT_CLASSES["set"]),
-    "Set": GivenContainer("set", SLOT_CLASSES["set"]),
-    "frozenset": GivenContainer("frozen_set", SLOT_CLASSES["frozen_set"]),
-    "FrozenSet": GivenContainer("frozen_set", SLOT_CLASSES["frozen_set"]),
-    "Sequence": GivenContainer("sequence", SLOT_CLASSES["sequence"]),
+    **_slot_class_rows("list"),
+    **_slot_class_rows("set"),
+    **_slot_class_rows("frozen_set"),
+    **_slot_class_rows("sequence"),
     "MutableSequence": GivenContainer("sequence", _abstract("MutableSequence")),
-    "tuple": GivenContainer("list", SLOT_CLASSES["tuple"], variadic=True),
-    "Tuple": GivenContainer("list", SLOT_CLASSES["tuple"], variadic=True),
+    **_slot_class_rows("tuple", "list", variadic=True),
     "AbstractSet": GivenContainer("frozen_set", _abstract("AbstractSet", "typing")),
     "MutableSet": GivenContainer("set", _abstract("MutableSet")),
-    "dict": GivenContainer("dict", SLOT_CLASSES["dict"]),
-    "Dict": GivenContainer("dict", SLOT_CLASSES["dict"]),
-    "Mapping": GivenContainer("mapping", SLOT_CLASSES["mapping"]),
+    **_slot_class_rows("dict"),
+    **_slot_class_rows("mapping"),
     "MutableMapping": GivenContainer("mapping", _abstract("MutableMapping")),
 })
 """The container each container class an ``x-python-type`` names gives a node, by the class's name.
@@ -200,15 +211,26 @@ def given_container_of(name: str | None, slot: str) -> GivenContainer | None:
     return given
 
 
+_SLOT_CONTAINERS: Final[Mapping[ContainerSlot, GivenContainer]] = MappingProxyType({
+    slot: GivenContainer(slot, written) for slot, written in SLOT_CLASSES.items()
+})
+
+
+def written_container(slot: ContainerSlot, given: str | None, *, generic: bool) -> GivenContainer:
+    """Return the container a node in ``slot`` is written as: its ``given`` class, else ``written_slot``'s."""
+    if (found := given_container_of(given, slot)) is not None:
+        return found
+    return _SLOT_CONTAINERS[written_slot(slot, generic=generic)]
+
+
 def hash_slot(slot: ContainerSlot, given: str | None, *, generic: bool) -> ContainerSlot:
     """Return the slot whose values a node in ``slot`` takes as it is written, which tells whether they hash.
 
-    ``given`` is the class an ``x-python-type`` gives the node (``DataType.given_container``): a tuple's values are
-    those of a ``tuple`` and any other class's those of its slot; without one the node is written as ``written_slot``.
+    A tuple's values are those of a ``tuple``, and any other container's those of the slot that writes it
+    (``written_container``).
     """
-    if (found := given_container_of(given, slot)) is None:
-        return written_slot(slot, generic=generic)
-    return "tuple" if found.variadic else slot
+    container = written_container(slot, given, generic=generic)
+    return "tuple" if container.variadic else container.slot
 
 
 BUILTIN_CONTAINERS: Final[Mapping[str, ContainerSlot]] = MappingProxyType({

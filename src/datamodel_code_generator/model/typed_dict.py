@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from typing_extensions import override
 
+from datamodel_code_generator._container_kinds import container_shape
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator._python_syntax import SINGLE_QUOTED_ESCAPES, keyword_argument, subscript_text
 from datamodel_code_generator._target_unicode import is_python_name
@@ -68,9 +69,6 @@ def _is_valid_field_name(field: DataModelFieldBase) -> bool:
     return is_python_name(name, field.data_type.python_version)
 
 
-_CONTAINERS = ("is_dict", "is_list", "is_set", "is_frozen_set", "is_mapping", "is_sequence", "is_tuple")
-
-
 def _written_union(data_types: Iterable[DataType]) -> tuple[frozenset[tuple[object, ...]], bool]:
     """Return the types a union of ``data_types`` writes, in no order, a model by its key, and whether it holds None.
 
@@ -101,9 +99,7 @@ def _written(data_type: DataType) -> Iterator[tuple[object, ...]]:
         frozenset((type(value), value) for value in data_type.literals),
         None if enum is None else model_key_of(enum),
         frozenset(member for _, member in data_type.enum_member_literals),
-        tuple(getattr(data_type, container) for container in _CONTAINERS),
-        data_type.tuple_item_count,
-        data_type.given_container,
+        container_shape(data_type),
         None if (key := data_type.dict_key) is None else _written_union((key,)),
         tuple(_written_union((member,)) for member in members) if data_type.is_tuple else _written_union(members),
     )

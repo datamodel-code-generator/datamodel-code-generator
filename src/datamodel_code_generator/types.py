@@ -64,7 +64,7 @@ from datamodel_code_generator._container_kinds import (
     WRITTEN_CONTAINERS,
     GivenContainerName,
     given_container_of,
-    written_slot,
+    written_container,
 )
 from datamodel_code_generator._format_types import (
     DateClassType,
@@ -1406,10 +1406,8 @@ def _container_name(data_type: DataType, container: str) -> str | None:
     """
     if container not in WRITTEN_CONTAINERS or not getattr(data_type, CONTAINER_FLAGS[container]):
         return None
-    if (given := given_container_of(data_type.given_container, container)) is not None:
-        return given.written.written(standard=data_type.use_standard_collections)
-    written = SLOT_CLASSES[written_slot(container, generic=data_type.use_generic_container)]
-    return written.written(standard=data_type.use_standard_collections)
+    written = written_container(container, data_type.given_container, generic=data_type.use_generic_container)
+    return written.written.written(standard=data_type.use_standard_collections)
 
 
 def _given_container_imports(*, standard: bool) -> dict[str, Import]:
