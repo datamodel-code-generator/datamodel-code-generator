@@ -149,6 +149,7 @@ class _WirePlanner:
         self.diagnostics: list[CodecDiagnostic] = []
         self.versions = batch.versions
         self.uses = uses_by_id(batch)
+        self.order = {use: index for index, use in enumerate(self.uses)}
 
 
 def declared_media(name: str) -> tuple[str, str | None]:
@@ -868,10 +869,10 @@ def _finite(planner: _WirePlanner, declaration: WireDeclaration) -> None:
 
 
 def _schema_use(planner: _WirePlanner, uses: tuple[TypeUseId, ...], source: SourceLocation) -> TypeUseBinding:
-    """Return the first of a declaration's type uses that has a schema."""
-    if (use := next((item for item in planner.batch.type_uses if item.id in uses and item.schema), None)) is None:
+    """Return the first of a declaration's type uses, in the order of the batch, that has a schema."""
+    if not (found := [use for item in uses if (use := planner.uses.get(item)) is not None and use.schema]):
         raise _PlanError(source, "A style-based parameter requires a schema")
-    return use
+    return min(found, key=lambda use: planner.order[use.id])
 
 
 def _located(use: TypeUseBinding) -> SourceLocation:
