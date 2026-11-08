@@ -112,9 +112,8 @@ def carries(request: httpx2.Request, location: str, name: str) -> bool:
         case "header":
             return name in request.headers
         case _:
-            return any(
-                cookie_name(pair) == name for value in request.headers.get_list("cookie") for pair in value.split(";")
-            )
+            pass
+    return any(cookie_name(pair) == name for value in request.headers.get_list("cookie") for pair in value.split(";"))
 
 
 def unfilled(alternative: tuple[RequirementT, ...], given: Collection[tuple[str, str]]) -> tuple[RequirementT, ...]:

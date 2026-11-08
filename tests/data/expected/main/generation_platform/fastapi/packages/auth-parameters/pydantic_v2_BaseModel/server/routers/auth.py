@@ -102,7 +102,7 @@ def _add_query(
     def query(
         *,
         principal: Annotated[object, Depends(query_principal)],
-        key: Annotated[str | None, Query(alias='key')] = None,
+        key: Annotated[str, Query(alias='key')] = 'DEMO_KEY',
     ) -> object:
         return dispatch(
             query_handler(

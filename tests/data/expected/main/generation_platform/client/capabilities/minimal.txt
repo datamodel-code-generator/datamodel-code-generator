@@ -15,7 +15,7 @@ copied runtime
   client/operations.py: 867
   client/options.py: 309
   client/paths.py: 47
-  client/positions.py: 176
+  client/positions.py: 175
   client/raw.py: 733
   client/responses.py: 87
   client/retry.py: 321
@@ -29,7 +29,7 @@ copied runtime
   model_codecs/pydantic_models.py: 31
   model_codecs/shared.py: 70
   model_codecs/unset.py: 11
-total 25 modules, 6550 lines
+total 25 modules, 6549 lines
 public files
   publication_client/__init__.py
   publication_client/errors.py
