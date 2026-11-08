@@ -42,6 +42,7 @@ __all__ = (
     "is_numeric",
     "is_python_name",
     "is_upper",
+    "lent_text",
     "lower",
     "nfc",
     "nfkc",
@@ -629,6 +630,12 @@ def host_identifiers(source: str) -> HostIdentifiers | None:
     if source.isascii() or not (unknown := _unknown(source)):
         return None
     return HostIdentifiers(source, unknown)
+
+
+def lent_text(source: str) -> tuple[str, Callable[[str], str]]:
+    """Return source with identifier letters lent (``host_identifiers``), and the restorer of a text read from it."""
+    lent = host_identifiers(source)
+    return (source, str) if lent is None else (lent.source, lent.restore_text)
 
 
 def _assignment(match: re.Match[str]) -> str:

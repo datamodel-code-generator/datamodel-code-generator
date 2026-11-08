@@ -288,10 +288,11 @@ def _make_referencing_type_expression(source: _TypeHintSource) -> _InternalTypeE
     return _InternalTypeExpression(source.type_hint, _INTERNAL_TYPE_EXPRESSION_TOKEN, source=source)
 
 
-def _normalized_safe_python_name(value: object, target: PythonVersion, *, dotted: bool = False) -> str | None:
+def _normalized_safe_python_name(value: object, target: PythonVersion | None, *, dotted: bool = False) -> str | None:
     """Return untrusted data as a plain string when it is a Python name, or Python names joined by dots with ``dotted``.
 
-    Only a ``str`` counts, read without its subclass's overrides, and its names are names of the target Python.
+    Only a ``str`` counts, read without its subclass's overrides, and its names are names of the target Python, the
+    newest when ``target`` is None.
     Template keys, option names and the simple type names of built-in templates (``str``, ``datetime.date``) take this
     form; more expressive type syntax belongs to the parser-owned boundary above, since accepting it here would parse
     source at runtime and make this public extension point an execution sink.
@@ -300,12 +301,12 @@ def _normalized_safe_python_name(value: object, target: PythonVersion, *, dotted
         return None
     normalized_value = _normalize_string(value)
     is_name = is_dotted_python_name if dotted else is_python_name
-    return normalized_value if is_name(normalized_value, target) else None
+    return normalized_value if is_name(normalized_value, NEWEST_TARGET if target is None else target) else None
 
 
 def is_safe_public_type_name(value: object, *, target: PythonVersion | None = None) -> bool:
     """Return whether public data is a bare or dotted Python identifier of the target Python, the newest by default."""
-    return _normalized_safe_python_name(value, NEWEST_TARGET if target is None else target, dotted=True) is not None
+    return _normalized_safe_python_name(value, target, dotted=True) is not None
 
 
 def represent_untrusted_public_type_name(value: Any, *, target: PythonVersion | None = None) -> str:
@@ -314,9 +315,7 @@ def represent_untrusted_public_type_name(value: Any, *, target: PythonVersion | 
     A name of the target Python, the newest by default, is written as a name, and any other text as a string.
     """
     if isinstance(value, str):
-        if normalized_value := _normalized_safe_python_name(
-            value, NEWEST_TARGET if target is None else target, dotted=True
-        ):
+        if normalized_value := _normalized_safe_python_name(value, target, dotted=True):
             return normalized_value
         return represent_untrusted_python_value(_normalize_string(value))
     return represent_untrusted_python_value(value)

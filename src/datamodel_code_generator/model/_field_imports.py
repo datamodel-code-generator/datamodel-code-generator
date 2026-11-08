@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeVar
 
 from datamodel_code_generator._container_kinds import container_shape
 from datamodel_code_generator._internal_utils import to_hashable
-from datamodel_code_generator._target_unicode import host_identifiers
+from datamodel_code_generator._target_unicode import lent_text
 from datamodel_code_generator.imports import IMPORT_ANNOTATED, IMPORT_ANY, IMPORT_OPTIONAL, IMPORT_UNION, Import
 from datamodel_code_generator.model._decisions.nullability import field_renders_none, takes_member_null
 from datamodel_code_generator.model._rendered_names import _names_of
@@ -93,7 +93,7 @@ def _annotation_typing_import_names(annotation: str) -> frozenset[str]:
         return frozenset()
 
     try:
-        tree = ast.parse(lent.source if (lent := host_identifiers(annotation)) else annotation, mode="eval")
+        tree = ast.parse(lent_text(annotation)[0], mode="eval")
     except SyntaxError:
         return frozenset()
 

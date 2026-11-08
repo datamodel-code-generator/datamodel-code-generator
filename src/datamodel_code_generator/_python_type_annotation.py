@@ -526,6 +526,12 @@ def _holds_bytes_and_str(expression: PythonTypeExpr) -> bool:
     return bytes in types and str in types
 
 
+def _held_children(expression: PythonTypeExpr) -> tuple[tuple[PythonTypeExpr, ...] | None, int]:
+    """Return the children of an expression and how many hold its values: all but the metadata of ``Annotated``."""
+    children = _children(expression, "all")
+    return children, 0 if children is None else len(children) - len(_annotation_metadata(expression))
+
+
 def bytes_and_str_literal(expression: PythonTypeExpr) -> PythonTypeExpr | None:
     """Return the first ``Literal`` of a type, or union of ``Literal`` members, that holds both bytes and str values.
 
@@ -533,8 +539,8 @@ def bytes_and_str_literal(expression: PythonTypeExpr) -> PythonTypeExpr | None:
     is a member of. None means that no part of the type holds both; the metadata of an ``Annotated`` type are not
     searched, as msgspec reads no value from them.
     """
-    children = _children(expression, "all") or ()
-    for child in children[: len(children) - len(_annotation_metadata(expression))]:
+    children, held = _held_children(expression)
+    for child in (children or ())[:held]:
         if (found := bytes_and_str_literal(child)) is not None:
             return found
     return expression if _holds_bytes_and_str(expression) else None
@@ -559,9 +565,9 @@ def literal_values_as_text(expression: PythonTypeExpr) -> PythonTypeExpr:
                 )
             ),
         )
-    if (children := _children(expression, "all")) is None:
+    children, held = _held_children(expression)
+    if children is None:
         return expression
-    held = len(children) - len(_annotation_metadata(expression))
     return _with_children(
         expression, "all", children, (*map(literal_values_as_text, children[:held]), *children[held:])
     )
@@ -597,9 +603,10 @@ def write_refused_literal_values(
                 *dict.fromkeys(python_type_name(type(m.value).__name__) for m in written),
             )
             return items[0] if len(items) == 1 else PythonTypeUnion(items)
-        if (children := _children(node, "all")) is None:
+        children, values_held = _held_children(node)
+        if children is None:
             return node
-        values_held = len(children) - len(_annotation_metadata(node)) if held else 0
+        values_held = values_held if held else 0
         return _with_children(
             node,
             "all",

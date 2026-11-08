@@ -22,6 +22,7 @@ from datamodel_code_generator._format_types import (
     TYPE_ALIAS_INLINE_ARGUMENT_COUNT,
     PythonVersionMin,
 )
+from datamodel_code_generator._python_decorator import string_token_spans
 from datamodel_code_generator._python_syntax import (
     aliased,
     call_text,
@@ -2169,10 +2170,6 @@ def _normalize_top_level_blank_lines(code: str) -> str:
     return "\n".join(formatted_lines)
 
 
-_FSTRING_START = getattr(tokenize, "FSTRING_START", -1)
-_FSTRING_END = getattr(tokenize, "FSTRING_END", -1)
-
-
 def _source_span(lines: list[str], start: tuple[int, int], end: tuple[int, int]) -> str:
     """Return the text between two ``(row, column)`` token positions of ``lines``."""
     (start_row, start_column), (end_row, end_column) = start, end
@@ -2185,22 +2182,12 @@ def _source_span(lines: list[str], start: tuple[int, int], end: tuple[int, int])
 def _string_tokens(code: str) -> Iterator[tokenize.TokenInfo]:
     """Yield the tokens of ``code`` with each f-string as one STRING token, as tokenize reads it before Python 3.12."""
     lines = code.split("\n")
-    depth = 0
-    f_string: list[tokenize.TokenInfo] = []
-    for token in tokenize.generate_tokens(StringIO(code).readline):
-        if token.type == _FSTRING_START:
-            depth += 1
-        if not depth:
-            yield token
-            continue
-        f_string.append(token)
-        if token.type == _FSTRING_END:
-            depth -= 1
-            if not depth:
-                start = f_string[0]
-                text = _source_span(lines, start.start, token.end)
-                yield tokenize.TokenInfo(tokenize.STRING, text, start.start, token.end, start.line)
-                f_string.clear()
+    for first, last in string_token_spans(code, template_strings=False):
+        if first is last:
+            yield first
+        else:
+            text = _source_span(lines, first.start, last.end)
+            yield tokenize.TokenInfo(tokenize.STRING, text, first.start, last.end, first.line)
 
 
 def _normalize_string_quotes(code: str) -> str:
