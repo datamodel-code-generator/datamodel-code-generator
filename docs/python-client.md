@@ -1526,8 +1526,9 @@ it, as the [supported features](supported_formats.md#supported-features-from-cod
 other than `basic` and `bearer`, `mutualTLS`, `style: deepObject` on a value that is no object, `style: cookie` in a
 document before OpenAPI 3.2, values written with a style that are no single scalar kind (but for a parameter outside a
 header that takes one item or an array of them), binary strings in text media, multipart media other than
-`multipart/form-data` with an object schema, and an encoding `contentType` of a part holding no files that is a form or
-multipart media type, or other than JSON for objects and arrays:
+`multipart/form-data` with an object schema or a union of objects that agree on the parts of each property, and an
+encoding `contentType` of a part holding no files that is a form or multipart media type, or other than JSON for
+objects and arrays:
 
 ```text
 app/client: Skipping GET /certificates (operationId 'listCertificates'), which uses mutualTLS (OAS 3.1) that the

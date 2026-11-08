@@ -1225,7 +1225,8 @@ def _unsupported(kind: MediaKind, essence: str, use: TypeUseBinding | None, *, r
     """Return why a media type cannot be sent or read yet, or None when it can.
 
     Multipart without a schema is sent as form-data parts and read as bytes of any multipart media; with a
-    schema, only form-data maps its parts to the schema's members, which must be an object's.
+    schema, only form-data maps its parts to the schema's members, which must be an object's, or those of a union of
+    objects that agree on the parts of each property (`PartFacts.object`).
     """
     if kind != "multipart":
         return None
@@ -1233,7 +1234,11 @@ def _unsupported(kind: MediaKind, essence: str, use: TypeUseBinding | None, *, r
         return None if essence == _FORM_DATA or not request else "is not supported yet"
     if essence != _FORM_DATA:
         return "is not supported yet"
-    return None if _parts(use).object else "needs an object schema to be sent as parts"
+    return (
+        None
+        if _parts(use).object
+        else "needs an object schema, or objects that agree on the parts of each property, to be sent as parts"
+    )
 
 
 def _parts(use: TypeUseBinding | None) -> PartFacts:

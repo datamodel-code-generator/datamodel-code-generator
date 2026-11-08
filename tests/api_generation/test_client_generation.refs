@@ -219,6 +219,7 @@ media	main/generation_platform/client/media.txt
 media	main/generation_platform/client/packages/media/pydantic_v2_BaseModel//*.py
 media	main/generation_platform/client/packages/media/typing_TypedDict//*.py
 media-errors	main/generation_platform/client/media-errors.txt
+media-errors	main/generation_platform/client/packages/media-errors/pydantic_v2_BaseModel//*.py
 media-item-parts	main/generation_platform/client/media-item-parts.txt
 media-item-parts	main/generation_platform/client/packages/media-item-parts/pydantic_v2_BaseModel//*.py
 merged-nullable-forms	main/generation_platform/client/merged-nullable-forms.txt
@@ -249,6 +250,10 @@ multipart-referenced-items	main/generation_platform/client/packages/multipart-re
 multipart-text-files	main/generation_platform/client/multipart-text-files.txt
 multipart-text-files	main/generation_platform/client/packages/multipart-text-files/msgspec_Struct//*.py	= main/generation_platform/client/packages/multipart-text-files/pydantic_v2_BaseModel//*.py
 multipart-text-files	main/generation_platform/client/packages/multipart-text-files/pydantic_v2_BaseModel//*.py
+multipart-union-parts	main/generation_platform/client/multipart-union-parts.txt
+multipart-union-parts	main/generation_platform/client/packages/multipart-union-parts/msgspec_Struct//*.py
+multipart-union-parts	main/generation_platform/client/packages/multipart-union-parts/pydantic_v2_BaseModel//*.py
+multipart-union-parts-errors	main/generation_platform/client/multipart-union-parts-errors.txt
 name-errors	main/generation_platform/client/name-errors.txt
 names	main/generation_platform/client/names.txt
 names	main/generation_platform/client/packages/names/pydantic_v2_BaseModel//*.py

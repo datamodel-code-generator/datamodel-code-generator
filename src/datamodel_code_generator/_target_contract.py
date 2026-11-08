@@ -445,8 +445,9 @@ class PartSchema:
 class PartFacts:
     """How a multipart body encodes its parts, by the type and members its use binds.
 
-    `object` says its type is one object or takes any value; `members` gives each property's encoding by wire name,
-    and `extra` that of any other property: none when its model allows no others, None when any value.
+    `object` says its type is one object, a union of objects that agree on the parts of each property, or takes any
+    value; `members` gives each property's encoding by wire name, and `extra` that of any other property: none when
+    its model allows no others, None when any value.
     """
 
     object: bool

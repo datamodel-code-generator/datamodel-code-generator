@@ -511,8 +511,8 @@ class OpenAPISchemaFeatures(JsonSchemaFeatures):
         metadata=FeatureMetadata(
             introduced="OAS 3.0",
             doc_name="multipart media types",
-            description="Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema "
-            "only, such as not `multipart/related`",
+            description="Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema, "
+            "or a union of objects that agree on the parts of each property, only, such as not `multipart/related`",
             status="supported",
             client_status="partial",
         ),
