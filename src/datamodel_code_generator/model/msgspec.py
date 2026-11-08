@@ -95,7 +95,7 @@ from datamodel_code_generator.model.imports import (
     IMPORT_MSGSPEC_UNSET,
     IMPORT_MSGSPEC_UNSETTYPE,
 )
-from datamodel_code_generator.model.type_alias import TypeAliasBase
+from datamodel_code_generator.model.type_alias import TypeAliasBase, _alias_value
 from datamodel_code_generator.model.types import DataTypeManager as _DataTypeManager
 from datamodel_code_generator.python_literal import (
     PythonCode,
@@ -106,12 +106,12 @@ from datamodel_code_generator.python_literal import (
 )
 from datamodel_code_generator.reference import FieldNameResolver, ModelType, field_origin_of, named_schema_location
 from datamodel_code_generator.types import (
-    JSON_SCALAR_VALUE_TYPES,
     NONE,
     DataType,
     _copy_data_type,
     _is_value_literal,
     _qualified_type_path,
+    _takes_json_scalar,
     build_union,
     chain_as_tuple,
     union_members,
@@ -468,9 +468,7 @@ def _takes_default(  # noqa: PLR0911
         )
     if data_type.data_types:
         return any(_takes_default(member, default, seen, attributes=attributes) for member in data_type.data_types)
-    if data_type.literals:
-        return any(type(literal) is type(default) and literal == default for literal in data_type.literals)
-    return (kinds := JSON_SCALAR_VALUE_TYPES.get(data_type.type or "")) is None or type(default) in kinds
+    return _takes_json_scalar(data_type, default)
 
 
 def _struct_takes_default(struct: Struct, default: object, *, attributes: bool) -> bool:
@@ -587,11 +585,11 @@ def _names_structs(data_type: DataType, aliases: frozenset[int], *, containers: 
     pending, followed, found = [data_type], set(aliases), False
     while pending:
         if (reference := (current := pending.pop()).reference) is not None:
-            if isinstance(source := reference.source, Struct):
+            if isinstance(reference.source, Struct):
                 found = True
-            elif isinstance(source, TypeAliasBase) and source.fields and id(source) not in followed:
-                followed.add(id(source))
-                pending.append(source.fields[0].data_type)
+            elif (aliased := _alias_value(current)) is not None and id(aliased[0]) not in followed:
+                followed.add(id(aliased[0]))
+                pending.append(aliased[1].data_type)
         elif containers or not (current in ARRAYS or current in MAPPINGS):
             if len(members := current.data_types) > 1 and (
                 any(member in MAPPINGS for member in members) or (not current.is_tuple and _refused_structs(members))
@@ -621,12 +619,8 @@ def _union_leaves(data_type: DataType) -> Sequence[DataType]:
     """Return what a union member spreads to where msgspec flattens it: a union its members, an alias its value."""
     if members := union_members(data_type):
         return members
-    if (
-        (reference := data_type.reference) is not None
-        and isinstance(source := reference.source, TypeAliasBase)
-        and source.fields
-    ):
-        return (source.fields[0].data_type,)
+    if (aliased := _alias_value(data_type)) is not None:
+        return (aliased[1].data_type,)
     return ()
 
 

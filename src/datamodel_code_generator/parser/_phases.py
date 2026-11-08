@@ -20,7 +20,7 @@ from typing_extensions import ReadOnly, TypedDict, final
 from datamodel_code_generator._records import record
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping, Sequence
+    from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 
     from datamodel_code_generator.model._views import DataTypeView, FieldView, ModelView, ReferenceView
     from datamodel_code_generator.model.base import DataModel
@@ -34,7 +34,10 @@ __all__ = [
     "DecisionWriter",
     "FinalFacts",
     "ModuleFacts",
+    "container_copy",
+    "rewrite_additional_properties",
     "rewrite_copied_type",
+    "rewrite_field_copy",
 ]
 
 W = TypeVar("W", bound="DecisionWriter")
@@ -208,13 +211,7 @@ class _DecisionWriter:
         Fields share type nodes, so the field gets a copy of its type tree, whose copies of the lists are then swapped
         for sets, inner ones first; the nodes stay as the other fields see them.
         """
-        planned = {id(data_type) for data_type in lists}
-        original: Any = field.data_type
-        copied = self._copy(original)
-        self._store.replace_field_type(field, copied)
-        for source, target in zip(original.all_data_types, copied.all_data_types, strict=True):
-            if id(source) in planned:
-                self._store.swap_data_type(target, _set_of(target))
+        rewrite_field_copy(self._store, self._copy, field, container_copy, ids={id(data_type) for data_type in lists})
         if default is not None:
             self._store.set_field_default(field, default)
         self._changed[id(model)] = cast("DataModel", model)
@@ -224,11 +221,7 @@ class _DecisionWriter:
 
         The model takes a copy of the type tree with the sets (``rewrite_copied_type``); the nodes stay as they are.
         """
-        original: Any = model.additional_properties_type
-        rewrites = dict.fromkeys(map(id, lists), _set_of)
-        self._store.replace_additional_properties_type(
-            model, rewrite_copied_type(self._store, self._copy, original, rewrites)
-        )
+        rewrite_additional_properties(self._store, self._copy, model, lists, container_copy)
         self._changed[id(model)] = cast("DataModel", model)
 
     def omit_default(self, model: ModelView, field: FieldView) -> None:
@@ -242,12 +235,15 @@ class _DecisionWriter:
         return DecisionOutcome(tuple(model for model in live_models if id(model) in changed))
 
 
-def _set_of(data_type: Any) -> Any:
-    """Return the set copy of a list type, which holds its items."""
-    set_type = data_type.model_copy(update={"is_list": False, "is_set": True})
-    for item in set_type.data_types:
-        item.parent = set_type
-    return set_type
+def container_copy(data_type: Any, *, is_set: bool = True) -> Any:
+    """Return the set copy of a list type, or with ``is_set`` false the list copy of a set type.
+
+    The copy holds the items of the type.
+    """
+    copied = data_type.model_copy(update={"is_list": not is_set, "is_set": is_set})
+    for item in copied.data_types:
+        item.parent = copied
+    return copied
 
 
 def rewrite_copied_type(
@@ -264,3 +260,44 @@ def rewrite_copied_type(
         if (rewrite := rewrites.get(id(source))) is not None:
             store.swap_data_type(target, rewrite(target))
     return copied
+
+
+def rewrite_field_copy(  # noqa: PLR0913
+    store: DecisionStore,
+    copy: Callable[[Any], Any],
+    field: Any,
+    rewrite: Callable[[Any], Any],
+    *,
+    ids: Collection[int] = (),
+    paths: Iterable[tuple[int, ...]] = (),
+) -> None:
+    """Give ``field`` a copy of its type tree, whose copies of the chosen nodes are swapped for what ``rewrite`` makes.
+
+    Fields share type nodes, so the nodes stay as the other fields see them. The nodes are chosen by id (``ids``, inner
+    ones first) or by their paths of indexes from the root (``paths``, in their order): a node that the tree holds at
+    two paths is chosen at both by its id, and at the paths listed by its paths.
+    """
+    original = field.data_type
+    copied = copy(original)
+    store.replace_field_type(field, copied)
+    for source, target in zip(original.all_data_types, copied.all_data_types, strict=True):
+        if id(source) in ids:
+            store.swap_data_type(target, rewrite(target))
+    for path in paths:
+        target = copied
+        for index in path:
+            target = target.data_types[index]
+        store.swap_data_type(target, rewrite(target))
+
+
+def rewrite_additional_properties(
+    store: DecisionStore, copy: Callable[[Any], Any], model: Any, nodes: Iterable[Any], rewrite: Callable[[Any], Any]
+) -> None:
+    """Write the type of the additional properties of ``model`` with each of ``nodes`` as ``rewrite`` makes it.
+
+    The model takes a copy of the type tree with the rewrites (``rewrite_copied_type``); the nodes stay as they are.
+    """
+    rewrites = dict.fromkeys(map(id, nodes), rewrite)
+    store.replace_additional_properties_type(
+        model, rewrite_copied_type(store, copy, model.additional_properties_type, rewrites)
+    )

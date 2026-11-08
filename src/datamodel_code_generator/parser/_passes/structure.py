@@ -985,14 +985,19 @@ def snapshot_union_tags(parser: StructureHost, state: _StructureState) -> None:
     )
 
 
+def _regroup_live_models(parser: StructureHost, state: _StructureState, live_models: Iterable[DataModel]) -> None:
+    """Group the sorted models that are among ``live_models`` by module again, in their sorted order."""
+    live_model_ids = set(map(id, live_models))
+    _group_models_by_module(
+        parser, state, (model for model in state.sorted_data_models.values() if id(model) in live_model_ids)
+    )
+
+
 def apply_forced_invalid_dotted_stdout_repair(parser: StructureHost, state: _StructureState) -> None:
     """Apply the repair of invalid dotted stdout modules, and group the models again when it applied."""
     if not parser._apply_forced_invalid_dotted_stdout_repair(state.module_models, state.module_split_mode):  # noqa: SLF001
         return
-    live_model_ids = {id(model) for _, models in state.module_models for model in models}
-    _group_models_by_module(
-        parser, state, (model for model in state.sorted_data_models.values() if id(model) in live_model_ids)
-    )
+    _regroup_live_models(parser, state, (model for _, models in state.module_models for model in models))
 
 
 def _module_segment_renamed(model: DataModel, index: int, segment: str) -> tuple[str | None, Path | None]:
@@ -1107,10 +1112,7 @@ def rename_submodules_hidden_by_classes(parser: StructureHost, state: _Structure
         ),
     }:
         forget_model_memos(stale, MemoTable.DEDUP_KEYS)
-    live_model_ids = set(map(id, live_models))
-    _group_models_by_module(
-        parser, state, (model for model in state.sorted_data_models.values() if id(model) in live_model_ids)
-    )
+    _regroup_live_models(parser, state, live_models)
 
 
 def apply_reuse_model_tree_scope(parser: StructureHost, state: _StructureState) -> None:

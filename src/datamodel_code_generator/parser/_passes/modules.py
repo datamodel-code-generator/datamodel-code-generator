@@ -78,6 +78,7 @@ from datamodel_code_generator.model.base import (
     _model_key_of_model,
     _ModelKeys,
     _reference_names_model,
+    _root_constraint_keywords,
     _share_path_identity,
     get_inherited_fields,
     inherited_root_field,
@@ -134,7 +135,6 @@ from datamodel_code_generator.parser._passes._shared import (
     _derived_models,
     _get_enum_from_base,
     _get_model_module_name,
-    _is_discriminator_wrapper,
     _ModelPositions,
     _named_data_types,
     _nodes_with_paths,
@@ -161,6 +161,7 @@ from datamodel_code_generator.parser._passes._shared import (
     subclass_duplicate,
     takes_hashable_value,
     unhashable_unique_sets,
+    unimported_model_keys,
     unique_items_plan,
     without_stand_ins,
 )
@@ -173,7 +174,7 @@ from datamodel_code_generator.parser._passes._state import (
     _KeptParentRoot,
 )
 from datamodel_code_generator.parser._passes._warnings import warn_as_parser_base
-from datamodel_code_generator.parser._phases import rewrite_copied_type
+from datamodel_code_generator.parser._phases import container_copy, rewrite_additional_properties, rewrite_field_copy
 from datamodel_code_generator.parser._tag_plan import (
     KeptTagField,
     MsgspecUnion,
@@ -200,6 +201,7 @@ from datamodel_code_generator.parser._tag_plan import (
     tag_capabilities,
     tag_msgspec_unions,
     tag_satisfies_pattern,
+    taggable_variant,
     union_site,
 )
 from datamodel_code_generator.python_literal import runtime_expression_imports, stable_repr
@@ -452,6 +454,19 @@ class ReuseHost(RecursionFactsHost, DeduplicationHost, Protocol):
     @property
     def _removed_reuse_users(self) -> dict[int, tuple[DataType, list[str]]]:
         """The data types whose duplicate reuse removed, by id, with the paths they named."""
+
+
+class ParsedModelsHost(Protocol):
+    """The parsed models."""
+
+    @property
+    def results(self) -> list[DataModel]:
+        """The parsed models."""
+
+
+def _parsed_and_module_models(parser: ParsedModelsHost, models: Iterable[DataModel]) -> Collection[DataModel]:
+    """Return the parsed models and ``models``, each once, in the order they come first."""
+    return {id(model): model for model in chain(parser.results, models)}.values()
 
 
 class InlineVariantHost(Protocol):
@@ -992,11 +1007,11 @@ def _parent_strategy_skipped(inner_class_name: str, reason: str) -> str:
     return f"Cannot apply 'parent' strategy for '{inner_class_name}' - {reason}. Skipping collapse."
 
 
-def _reaches_data_type(data_type: DataType, target: DataType) -> bool:
-    """Return whether target is data_type or lies under it, through nested data types and dict keys."""
+def _reached_ids(data_type: DataType) -> set[int]:
+    """Return the ids of ``data_type`` and the types under it, through nested data types and dict keys."""
     reached: set[int] = set()
     data_type.walk(lambda _: None, reached)
-    return id(target) in reached
+    return reached
 
 
 def _tag_discriminator_unions(
@@ -1179,7 +1194,13 @@ def replace_merged_unique_list_to_set(parser: ModulesHost, models: list[DataMode
                 merged=[additional_properties_holder(other) for other in merged],
             )
         ).sets:
-            _write_additional_properties_nodes(parser, model, plan.sets, _unique_set_of(parser))
+            rewrite_additional_properties(
+                parser._graph_builder,  # noqa: SLF001
+                _copy_data_type,
+                model,
+                plan.sets,
+                _unique_set_of(parser),
+            )
 
 
 def _field_named(model: DataModel, name: str | None) -> DataModelFieldBase | None:
@@ -1215,24 +1236,7 @@ def _unique_set_of(parser: ModulesHost) -> Callable[[DataType], DataType]:
 
 def _unique_list_of(set_type: DataType) -> DataType:
     """Return the list that a set --use-unique-items-as-set wrote turns back into, without the set record."""
-    list_type = with_unique_items_set(set_type.model_copy(update={"is_set": False, "is_list": True}), wrote=False)
-    for item in list_type.data_types:
-        item.parent = list_type
-    return list_type
-
-
-def _write_additional_properties_nodes(
-    parser: ModulesHost, model: DataModel, nodes: Iterable[DataType], rewrite: Callable[[DataType], DataType]
-) -> None:
-    """Write the type of the additional properties of ``model`` with each of ``nodes`` as ``rewrite`` makes it.
-
-    The model takes a copy of the type tree with the rewrites (``rewrite_copied_type``), as a set of a field's type
-    turns back into a list; the nodes stay as they are.
-    """
-    builder = parser._graph_builder  # noqa: SLF001
-    rewrites = dict.fromkeys(map(id, nodes), rewrite)
-    original = cast("DataType", model.additional_properties_type)
-    builder.replace_additional_properties_type(model, rewrite_copied_type(builder, _copy_data_type, original, rewrites))
+    return with_unique_items_set(container_copy(set_type, is_set=False), wrote=False)
 
 
 def replace_unhashable_unique_set_to_list(parser: ModulesHost, models: list[DataModel]) -> None:
@@ -1245,6 +1249,8 @@ def replace_unhashable_unique_set_to_list(parser: ModulesHost, models: list[Data
     a field none of whose sets of its own level is left takes back its list default. The type aliases are decided
     first, as in ``replace_unique_list_to_set``, so a holder reads the lists their values hold again. The type of the
     additional properties that the settings of a model write is read as a field (``additional_properties_holder``).
+    A field takes a copy of its type tree, as collapse shares the nodes of a root type with every holder, whose sets
+    at those paths are lists (``rewrite_field_copy`` by path, as the decision reads where each set sits).
     """
     if not parser.use_unique_items_as_set or parser.use_unique_items_as_set_by_value:
         return
@@ -1257,7 +1263,13 @@ def replace_unhashable_unique_set_to_list(parser: ModulesHost, models: list[Data
             while paths := unhashable_unique_sets(
                 model_field, keeps_tuples=keeps_tuples, generic_base_config=config, lists=lists
             ):
-                _write_unique_lists(parser, model_field, paths)
+                rewrite_field_copy(
+                    parser._graph_builder,  # noqa: SLF001
+                    _copy_data_type,
+                    model_field,
+                    _unique_list_of,
+                    paths=paths,
+                )
                 lists.update(paths)
             if id(model_field) in defaults and not holds_own_unique_items_set(model_field):
                 parser._graph_builder.set_field_default(model_field, defaults.pop(id(model_field))[1])  # noqa: SLF001
@@ -1268,25 +1280,14 @@ def replace_unhashable_unique_set_to_list(parser: ModulesHost, models: list[Data
             )
         ):
             nodes = dict(_nodes_with_paths(holder.data_type, ()))
-            _write_additional_properties_nodes(parser, model, (nodes[path] for path in paths), _unique_list_of)
+            rewrite_additional_properties(
+                parser._graph_builder,  # noqa: SLF001
+                _copy_data_type,
+                model,
+                (nodes[path] for path in paths),
+                _unique_list_of,
+            )
             reverted.update(paths)
-
-
-def _write_unique_lists(parser: ModulesHost, model_field: DataModelFieldBase, paths: Iterable[tuple[int, ...]]) -> None:
-    """Write the sets at ``paths`` of a field's type, which --use-unique-items-as-set wrote, as the lists they were.
-
-    Collapse inlines a root type that shares its nodes with the root model's field and every other holder, so the
-    field gets a copy of its type tree, whose copies of the sets are then swapped for lists without the set record,
-    inner ones first; the nodes stay as the other fields see them.
-    """
-    builder = parser._graph_builder  # noqa: SLF001
-    copied = _copy_data_type(model_field.data_type)
-    builder.replace_field_type(model_field, copied)
-    for path in paths:
-        target = copied
-        for index in path:
-            target = target.data_types[index]
-        builder.swap_data_type(target, _unique_list_of(target))
 
 
 def extract_inherited_enum(models: list[DataModel]) -> None:
@@ -1450,13 +1451,6 @@ def _root_type_models(model: DataModel) -> list[DataModel]:
         for data_type in model.fields[0].data_type.all_data_types
         if data_type.reference and isinstance(source_model := data_type.reference.source, DataModel)
     ]
-
-
-def _root_constraint_keywords(root_field: DataModelFieldBase) -> dict[str, Any]:
-    """Return the constraints other than ``unique_items`` that a root field sets, by their keywords."""
-    if not isinstance(constraints := root_field.constraints, ConstraintsBase):
-        return {}
-    return constraints.model_dump(by_alias=True, exclude_none=True, exclude={"unique_items"})
 
 
 def _constrains_root_field(model: DataModel) -> bool:
@@ -1848,7 +1842,7 @@ def collapse_root_models_in_scope(  # noqa: PLR0912, PLR0913, PLR0914, PLR0915, 
                 model_field.inherit_untaken_constraints(
                     root_type_field, whole_type=isinstance(field_, parser.data_model_field_type)
                 )
-                if isinstance(owner := data_type.parent, DataType) and _reaches_data_type(copied_data_type, owner):
+                if isinstance(owner := data_type.parent, DataType) and id(owner) in _reached_ids(copied_data_type):
                     msg = (
                         f"Inlining {root_type_model.class_name} into {model.class_name} would make a data type "
                         "contain itself"
@@ -1914,8 +1908,7 @@ def shared_member_holders(
         holders := parser.generation_store.index.inlined_holders_of(member)
     ):
         return (), ()
-    reached: set[int] = set()
-    replacement.walk(lambda _: None, reached)
+    reached = _reached_ids(replacement)
     return (
         tuple(holder for holder in holders if id(holder) not in reached),
         tuple(holder for holder in holders if id(holder) in reached),
@@ -1953,14 +1946,9 @@ def carry_const_narrowings(parser: CollapseHost, source: DataType, copied: DataT
     """
     if not parser._const_narrowed_values:  # noqa: SLF001
         return
-    pending = [(source, copied)]
-    while pending:
-        source_node, copied_node = pending.pop()
+    for source_node, copied_node in zip(source.all_data_types, copied.all_data_types, strict=True):
         if (entry := parser._const_narrowed_values.get(id(source_node))) is not None and entry[0] is source_node:  # noqa: SLF001
             parser._const_narrowed_values[id(copied_node)] = (copied_node, entry[1])  # noqa: SLF001
-        pending.extend(zip(source_node.data_types, copied_node.data_types, strict=True))
-        if (key := source_node.dict_key) is not None:
-            pending.append((key, cast("DataType", copied_node.dict_key)))
 
 
 def carry_site_constraints(parser: CollapseHost, replaced: DataType, copied: DataType) -> None:
@@ -2285,14 +2273,9 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
         ):
             if not data_type.reference:  # pragma: no cover
                 continue
-            discriminator_model = data_type.reference.source
-            if (
-                not isinstance(discriminator_model, DataModel)
-                or not tag_capabilities(type(discriminator_model), type(field)).variant_takes_tag
-                or _is_discriminator_wrapper(discriminator_model)
-            ):  # pragma: no cover
+            if (taggable := taggable_variant(data_type, type(field))) is None:  # pragma: no cover
                 continue
-            struct_tags = tag_capabilities(type(discriminator_model), type(field)).struct_tags
+            discriminator_model, struct_tags = taggable[0], taggable[1].struct_tags
 
             annotates_new_tag = index is not None and reused_variant and not (tagged_unions and struct_tags)
             # A resolved Python name can equal a different field's wire name.
@@ -2431,7 +2414,7 @@ def apply_discriminator_type(  # noqa: PLR0912, PLR0914, PLR0915
         plan.deferred_msgspec = _tag_discriminator_unions(
             builder,
             [*deferred, *unions],
-            _derived_models({id(model): model for model in chain(parser.results, models)}.values()),
+            _derived_models(_parsed_and_module_models(parser, models)),
             defers_related=plan.defers_related,
         )
 
@@ -2659,11 +2642,11 @@ def _adopt_keyless_references(
     of the model reaches them. A root model that collapse replaced stays among the parsed models at the path of the
     inner model that took its name, and is no candidate: the emitted model is.
     """
-    models = {
-        id(model): model
-        for model in chain(parser.results, all_models)
+    models = [
+        model
+        for model in _parsed_and_module_models(parser, all_models)
         if id(model) not in parser._replaced_root_models  # noqa: SLF001
-    }.values()
+    ]
     keyed = keyed_models(models, "renamed types")
     if (source := keyed.models.get(keyed.key_at(reference.path))) is None:
         return None
@@ -2755,7 +2738,7 @@ def rename_fields_hiding_types(parser: ModulesHost, models: list[DataModel], *, 
     if not declarations:
         return
     positions = _ModelPositions(models, "hidden named types")
-    all_models = {id(model): model for model in chain(parser.results, models)}.values()
+    all_models = _parsed_and_module_models(parser, models)
     derived_models = _derived_models(all_models)
     rename_type = renames_colliding_types(parser)
     class_names = {model.class_name for model in models} if rename_type else set()
@@ -3198,10 +3181,7 @@ def change_from_import(parser: ImportFromHost, state: ModuleStateView) -> None:
     whose imports follow its written hints, which the new expressions changed, registers its imports again.
     """
     models = without_stand_ins(parser, module_members(parser, state.model_list))
-    unimported = {
-        *parser._base_stand_in_imports,  # noqa: SLF001
-        *(model_key_of(model.reference) for model in parser._self_named_root_models),  # noqa: SLF001
-    }
+    unimported = unimported_model_keys(parser)
     members = keyed_models(models, "module members")
     imports, scoped_model_resolver = state.imports, state.scoped_model_resolver
     model_path_to_module_name = state.model_path_to_module_name
@@ -3274,6 +3254,25 @@ def settle_update_actions(parser: RecursionFactsHost, listed_paths: Iterable[str
             keyed.resolve(path for path in listed_paths if path not in held) - {UNRESOLVED_MODEL_KEY}
         ),
         circular_roots=recursion_facts["circular_roots"],
+    )
+
+
+def _rebuilt_as(parser: RuleAliasHost, model: DataModel, model_type: type[DataModel]) -> DataModel:
+    """Return a model of ``model_type`` built from ``model``: its reference, fields, options and template data."""
+    return parser._create_data_model(  # noqa: SLF001
+        model_type=model_type,
+        reference=model.reference,
+        fields=model.fields,
+        decorators=model.decorators,
+        custom_base_class=model.custom_base_class,
+        custom_template_dir=parser.custom_template_dir,
+        extra_template_data=defaultdict(dict, {model.path: model.extra_template_data}),
+        path=model.file_path,
+        description=model.description,
+        nullable=model.nullable,
+        keyword_only=parser.keyword_only,
+        treat_dot_as_module=parser.treat_dot_as_module,
+        dataclass_arguments=parser.dataclass_arguments,
     )
 
 
@@ -3350,24 +3349,7 @@ def write_plain_aliases_for_recursive_models(
                     _recursive_alias_message(alias.class_name, target.class_name, users), UserWarning, stacklevel=2
                 )
         return
-    replacements = {
-        id(alias): parser._create_data_model(  # noqa: SLF001
-            model_type=PlainTypeAlias,
-            reference=alias.reference,
-            fields=alias.fields,
-            decorators=alias.decorators,
-            custom_base_class=alias.custom_base_class,
-            custom_template_dir=parser.custom_template_dir,
-            extra_template_data=defaultdict(dict, {alias.path: alias.extra_template_data}),
-            path=alias.file_path,
-            description=alias.description,
-            nullable=alias.nullable,
-            keyword_only=parser.keyword_only,
-            treat_dot_as_module=parser.treat_dot_as_module,
-            dataclass_arguments=parser.dataclass_arguments,
-        )
-        for alias, _ in aliases
-    }
+    replacements = {id(alias): _rebuilt_as(parser, alias, PlainTypeAlias) for alias, _ in aliases}
     _replace_aliases(parser, run, [alias for alias, _ in aliases], replacements)
 
 
@@ -3401,24 +3383,7 @@ def write_rule_aliases_as_classes(parser: RuleAliasHost, run: ProcessingRun[Any,
     root_model_type = cast(
         "Callable[[], type[DataModel]]", parser.data_model_type.SCHEMA_RUNTIME_VALIDATION_ROOT_MODEL
     )()
-    replacements = {
-        id(model): parser._create_data_model(  # noqa: SLF001
-            model_type=root_model_type,
-            reference=model.reference,
-            fields=model.fields,
-            decorators=model.decorators,
-            custom_base_class=model.custom_base_class,
-            custom_template_dir=parser.custom_template_dir,
-            extra_template_data=defaultdict(dict, {model.path: model.extra_template_data}),
-            path=model.file_path,
-            description=model.description,
-            nullable=model.nullable,
-            keyword_only=parser.keyword_only,
-            treat_dot_as_module=parser.treat_dot_as_module,
-            dataclass_arguments=parser.dataclass_arguments,
-        )
-        for model in aliases
-    }
+    replacements = {id(model): _rebuilt_as(parser, model, root_model_type) for model in aliases}
     _replace_aliases(parser, run, aliases, replacements)
     classes = {id(model) for model in replacements.values()}
     for ctx in run.contexts:

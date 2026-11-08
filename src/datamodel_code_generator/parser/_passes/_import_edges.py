@@ -39,6 +39,7 @@ from datamodel_code_generator._module_paths import (
     is_package_init,
     module_parts,
     package_path,
+    relative_level,
     written_path,
 )
 from datamodel_code_generator._records import record
@@ -366,8 +367,8 @@ def _failing_import_cycles(  # noqa: PLR0913
 
 def _written_order(from_: str) -> tuple[int, str]:
     """Return where the formatters write the relative import block of ``from_``: the furthest package first."""
-    module = from_.lstrip(".")
-    return len(module) - len(from_), module
+    level, module = relative_level(from_)
+    return -level, module
 
 
 def written_import_blocks(importer: str, imports: Iterable[Imports], *, is_init: bool) -> tuple[ImportBlock, ...]:

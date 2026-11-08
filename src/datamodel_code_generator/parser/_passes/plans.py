@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 from typing_extensions import Protocol
 
 from datamodel_code_generator import ReuseScope
-from datamodel_code_generator._graph import reach
+from datamodel_code_generator._graph import post_order, reach
 from datamodel_code_generator._module_paths import dotted_module
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot
 from datamodel_code_generator._user_keys import model_type_override
@@ -180,16 +180,9 @@ def flatten_conflicting_base_layouts(parser: PlansHost, module_models: ModuleMod
         lambda model: duplicates.get(id(model), model),
         lambda model: model_type_override(overrides, model.reference, row="class-name") is not None,
     )
-    visits = [(model, False) for model in reversed(joins)]
-    visited: set[int] = set()
-    while visits:
-        model, complete = visits.pop()
-        if complete and len(model.base_classes) > 1:
+    for model in post_order(joins, _find_base_classes, id):
+        if len(model.base_classes) > 1:
             model.flatten_conflicting_base_layouts(view, partial(flatten_base_layouts, parser))
-        elif not complete and id(model) not in visited:
-            visited.add(id(model))
-            visits.append((model, True))
-            visits.extend((base, False) for base in reversed(_find_base_classes(model)))
 
 
 def flatten_base_layouts(parser: FlattenHost, model: DataModel) -> None:

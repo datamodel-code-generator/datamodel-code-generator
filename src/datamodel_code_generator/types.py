@@ -167,6 +167,19 @@ JSON_SCALAR_VALUE_TYPES: Mapping[str, tuple[type, ...]] = MappingProxyType({
     NONE: (type(None),),
 })
 """The Python types of the JSON values that each scalar type takes, as a default or ``msgspec.convert`` reads them."""
+
+
+def _takes_json_scalar(node: Any, value: object) -> bool:
+    """Return whether a type without members takes a JSON value: one of its ``Literal`` values, of the same Python type.
+
+    A type without literals takes the values of its JSON kind (``JSON_SCALAR_VALUE_TYPES``), and any other type any
+    value.
+    """
+    if node.literals:
+        return any(type(literal) is type(value) and literal == value for literal in node.literals)
+    return (kinds := JSON_SCALAR_VALUE_TYPES.get(node.type or "")) is None or type(value) in kinds
+
+
 ANY = "Any"
 LITERAL = "Literal"
 SEQUENCE = "Sequence"
@@ -1505,7 +1518,7 @@ def _render_apply(expr: TypeApply) -> tuple[str, bool]:
     """Write what one data type writes: its own text or its form, its container, its quotes, its None or its call.
 
     Return the text and whether the hint holds the None ``DataType._hint_null_source`` reads: the type's own, its
-    nullable model's, or the one the members of its union hold.
+    nullable model's, or the one the members of its union hold (``rendered_nullability``).
     """
     node = expr.node
     text = node._own_text  # noqa: SLF001
@@ -1528,11 +1541,17 @@ def _render_apply(expr: TypeApply) -> tuple[str, bool]:
             text = container
     if not expr.base and node._is_forward_reference:  # noqa: SLF001
         text = stable_repr(text) if '"' in text or "\\" in text else f'"{text}"'
+    core = _nullability_core()
     if (
-        hint_null := node.is_optional or member_null or (expr.form != "base" and node.adds_reference_null)
+        hint_null := core.rendered_nullability(
+            own=node.is_optional,
+            reference=expr.form != "base" and node.adds_reference_null,
+            member_nulls=(member_null,),
+        )
+        is not None
     ) and text != ANY:
         return node._optional_hint(text, node.use_union_operator), True  # noqa: SLF001
-    hint_null = hint_null or (merged_null and node._takes_member_null(_nullability_core()))  # noqa: SLF001
+    hint_null = hint_null or (merged_null and node._takes_member_null(core))  # noqa: SLF001
     if not expr.base and node.is_func and node.kwargs:
         return call_text(
             text, (keyword_argument(k, represent_python_value(v)) for k, v in node.kwargs.items())

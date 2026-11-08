@@ -13,6 +13,7 @@ from itertools import starmap
 from typing import TYPE_CHECKING, Any, Final, TypeAlias, get_args
 
 from datamodel_code_generator._free_names import first_free
+from datamodel_code_generator._module_paths import relative_level
 from datamodel_code_generator._openapi_codec_plan import artifact_module
 from datamodel_code_generator._python_syntax import aliased, from_import, module_import
 from datamodel_code_generator._target_contract import (
@@ -200,7 +201,7 @@ class TypeNames:
         override = self.overrides.get(name) if module != "__future__" else None
         if override is None or not override.startswith("."):
             return override or module, name
-        level = len(override) - len(rest := override.lstrip("."))
+        level, rest = relative_level(override)
         parts = self.package.split(".") if self.package else []
         if not parts or level > len(parts):
             return override, name

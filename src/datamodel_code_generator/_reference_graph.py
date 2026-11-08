@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Generic, Protocol, TypeVar, final
 from typing_extensions import NamedTuple, Self
 
 from datamodel_code_generator._all_or_none import all_or_none
-from datamodel_code_generator._graph import reach, stable_toposort
+from datamodel_code_generator._graph import post_order, reach, stable_toposort
 from datamodel_code_generator._parse_memo import note_reads
 from datamodel_code_generator._records import record
 from datamodel_code_generator._scc import find_circular_sccs, strongly_connected_components
@@ -166,19 +166,7 @@ class ReferenceGraph:
 
         A model of ``met`` is left out with the models reached only through it; every model returned is added to it.
         """
-        order: list[ModelKey] = []
-        entered: list[ModelKey] = []
-        stack = [iter((key,))]
-        while stack:
-            if (target := next(stack[-1], None)) is None:
-                stack.pop()
-                if entered:
-                    order.append(entered.pop())
-            elif target not in met:
-                met.add(target)
-                entered.append(target)
-                stack.append(iter(self.ordered_targets(target, kind)))
-        return order
+        return [*post_order((key,), lambda current: self.ordered_targets(current, kind), entered=met)]
 
     def meets_a_group_twice(
         self, keys: Iterable[ModelKey], group_of: Callable[[ModelKey], Hashable], kinds: Collection[EdgeKind]

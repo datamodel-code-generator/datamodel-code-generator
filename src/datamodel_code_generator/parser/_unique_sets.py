@@ -23,14 +23,12 @@ from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from datamodel_code_generator._container_kinds import (
     ARRAYS,
-    CONTAINER_FLAGS,
     CONTAINERS,
     MAPPINGS,
     UNHASHABLE_CONTAINERS,
-    WRITTEN_CONTAINERS,
-    hash_slot,
     written_slot,
 )
+from datamodel_code_generator._graph import post_order
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator.model._decisions.hashability import (
     ValueHashItem,
@@ -41,11 +39,13 @@ from datamodel_code_generator.model._decisions.hashability import (
 from datamodel_code_generator.parser._passes._shared import (
     UniqueItemsPlan,
     _declared_unique_arrays,
+    _tuple_positions_end,
+    _written_hash_slot,
     additional_properties_holder,
     plan_unique_sets,
 )
 from datamodel_code_generator.parser._phases import DecisionPass, DecisionWriter
-from datamodel_code_generator.types import JSON_SCALAR_VALUE_TYPES
+from datamodel_code_generator.types import _takes_json_scalar
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterable, Iterator, Sequence
@@ -108,12 +108,16 @@ class _ByValue:
         self.aliases: dict[ModelKey, bool] = {}
         self._alias_sets: dict[ModelKey, set[int]] = {}
 
+    def _valued_alias(self, key: ModelKey) -> ModelView | None:
+        """Return the live model of ``key`` if it is a type alias with a value (``DataModel.form``), else None."""
+        return model if (model := self.live.get(key)) is not None and model.form == "alias" and model.fields else None
+
     def _named_aliases(self, key: ModelKey) -> Iterator[ModelKey]:
         """Yield the type aliases with a value that the value of the alias ``key`` names, by key."""
         pending = [self.live[key].fields[0].data_type]
         while pending:
             if (reference := (data_type := pending.pop()).reference) is not None:
-                if self.class_hash.get(named := model_key_of(reference)) == "alias" and self.live[named].fields:
+                if self._valued_alias(named := model_key_of(reference)) is not None:
                     yield named
             else:
                 pending.extend(data_type.data_types)
@@ -124,22 +128,7 @@ class _ByValue:
         They are walked with a stack of their own, so a chain of aliases of any length is ordered; of a cycle of
         aliases, the alias the walk enters it at comes last.
         """
-        ordered: dict[ModelKey, None] = {}
-        visiting: set[ModelKey] = set()
-        for alias in (key for key, class_hash in self.class_hash.items() if class_hash == "alias"):
-            if alias in visiting or not self.live[alias].fields:
-                continue
-            visiting.add(alias)
-            stack = [(alias, self._named_aliases(alias))]
-            while stack:
-                current, pending = stack[-1]
-                if (target := next((key for key in pending if key not in visiting), None)) is None:
-                    stack.pop()
-                    ordered[current] = None
-                else:
-                    visiting.add(target)
-                    stack.append((target, self._named_aliases(target)))
-        return list(ordered)
+        return [*post_order((key for key in self.live if self._valued_alias(key) is not None), self._named_aliases)]
 
     def read_aliases(self) -> None:
         """Read whether every value of each type alias hashes, as ``value_keys`` reads the models, in alias order.
@@ -178,12 +167,9 @@ class _ByValue:
         bound Python type annotation writes as that annotation (``python_type_value_hash``).
         """
         if (reference := data_type.reference) is not None and (key := model_key_of(reference)) in self.live:
-            match self.class_hash[key]:
-                case "alias":
-                    return ValueHashItem(hashes=self.aliases.get(key, False))
-                case "value":
-                    return ValueHashItem(hashes=key in self.value_keys)
-            return ValueHashItem(hashes=False)
+            if self.live[key].form == "alias":
+                return ValueHashItem(hashes=self.aliases.get(key, False))
+            return ValueHashItem(hashes=self.class_hash[key] == "value" and key in self.value_keys)
         if (python_type := data_type.python_type) is not None:
             return python_type_value_hash(python_type.expression)
 
@@ -191,20 +177,12 @@ class _ByValue:
             return self.item(nested, sets)
 
         if data_type.is_tuple:
-            count = data_type.tuple_item_count
-            positions = data_type.data_types if count is None else data_type.data_types[: min(count, 1)]
-            return ValueHashItem(members=tuple(map(read, positions)))
-        slot = (
-            "set"
-            if id(data_type) in sets
-            else next((slot for slot in WRITTEN_CONTAINERS if getattr(data_type, CONTAINER_FLAGS[slot])), None)
-        )
-        if slot is None:
+            return ValueHashItem(members=tuple(map(read, data_type.data_types[: _tuple_positions_end(data_type)])))
+        if (written := _written_hash_slot(data_type, sets)) is None:
             if data_type.data_types:
                 return ValueHashItem(members=tuple(map(read, data_type.data_types)))
             return ValueHashItem(hashes=data_type.type not in _ANY_TYPES)
-        generic = cast("Any", data_type).use_generic_container
-        if hash_slot(slot, data_type.given_container, generic=generic) in UNHASHABLE_CONTAINERS.slots:
+        if written in UNHASHABLE_CONTAINERS.slots:
             return ValueHashItem(hashes=False)
         return ValueHashItem(members=tuple(map(read, data_type.data_types)))
 
@@ -281,9 +259,9 @@ class _ByValue:
         if value is None and node.admits_none:
             return True
         if (reference := node.reference) is not None:
-            if self.class_hash.get(key := model_key_of(reference)) != "alias" or not (fields := self.live[key].fields):
+            if (alias := self._valued_alias(key := model_key_of(reference))) is None:
                 return True
-            return key not in followed and self._takes(fields[0].data_type, value, followed | {key})
+            return key not in followed and self._takes(alias.fields[0].data_type, value, followed | {key})
         if node in ARRAYS or node in MAPPINGS:
             match value:
                 case list() | tuple() if node in ARRAYS:
@@ -297,9 +275,7 @@ class _ByValue:
             return all(not types or any(self._takes(type_, item) for type_ in types) for types, item in items)
         if node.data_types:
             return any(self._takes(member, value, followed) for member in node.data_types)
-        if node.literals:
-            return any(type(literal) is type(value) and literal == value for literal in node.literals)
-        return (kinds := JSON_SCALAR_VALUE_TYPES.get(node.type or "")) is None or type(value) in kinds
+        return _takes_json_scalar(node, value)
 
     def fields(self, model: ModelView) -> Iterator[FieldView]:
         """Yield the fields of a model and of the live models it inherits from, each model once and each name once.
