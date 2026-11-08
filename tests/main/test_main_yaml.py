@@ -255,6 +255,18 @@ def test_main_yaml_tabs_read_alike(output_file: Path) -> None:
     )
 
 
+@pytest.mark.parametrize("yaml_backend", ["pyyaml"], indirect=True)
+@pytest.mark.parametrize("libyaml", ["libyaml", "pure"], indirect=True)
+@pytest.mark.usefixtures("yaml_backend", "libyaml")
+def test_main_yaml_plain_equals_is_text(output_file: Path) -> None:
+    """A plain `=` reads as the string "=" with and without libyaml, as YAML 1.2 reads it (#6611)."""
+    run_main_and_assert(
+        input_path=OPEN_API_DATA_PATH / "equals_enum.yaml",
+        output_path=output_file,
+        input_file_type="openapi",
+    )
+
+
 @pytest.mark.parametrize(
     ("document", "error"),
     [
@@ -267,6 +279,11 @@ def test_main_yaml_tabs_read_alike(output_file: Path) -> None:
             "root:\n  child: !!python/name:os.system\n",
             "ConstructorError: could not determine a constructor for the tag 'tag:yaml.org,2002:python/name:os.system'",
             id="unknown_tag",
+        ),
+        pytest.param(
+            "root:\n  child: !!value =\n",
+            "ConstructorError: could not determine a constructor for the tag 'tag:yaml.org,2002:value'",
+            id="value_tag",
         ),
     ],
 )

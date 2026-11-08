@@ -334,6 +334,7 @@ openapi/enum_const_nullable.yaml	yaml_fast_constructor/parity.txt
 openapi/enum_const_positions.yaml	yaml_fast_constructor/parity.txt
 openapi/enum_const_unsatisfiable.yaml	yaml_fast_constructor/parity.txt
 openapi/enum_models.yaml	yaml_fast_constructor/parity.txt
+openapi/equals_enum.yaml	yaml_fast_constructor/parity.txt
 openapi/escaped_ref_pointers.yaml	yaml_fast_constructor/parity.txt
 openapi/exact_imports_ancestor_package.yaml	yaml_fast_constructor/parity.txt
 openapi/example.yaml	yaml_fast_constructor/parity.txt

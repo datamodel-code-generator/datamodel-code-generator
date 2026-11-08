@@ -1650,6 +1650,7 @@ openapi/enum_models.yaml::components.schemas.animal	payloads/native_numeric_empt
 openapi/enum_models.yaml::components.schemas.nestedNullableEnum	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/enum_models.yaml::components.schemas.singleEnum	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/enum_models.yaml::components.schemas.version	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/equals_enum.yaml::components.schemas.Clause	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/escaped_ref_pointers.yaml::components.schemas.50%	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/escaped_ref_pointers.yaml::components.schemas.Line Item	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/escaped_ref_pointers.yaml::components.schemas.tax/rate	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
@@ -3729,6 +3730,7 @@ openapi/enum_models.yaml::components.schemas.animal	payloads/native_numeric_empt
 openapi/enum_models.yaml::components.schemas.nestedNullableEnum	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/enum_models.yaml::components.schemas.singleEnum	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/enum_models.yaml::components.schemas.version	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
+openapi/equals_enum.yaml::components.schemas.Clause	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/escaped_ref_pointers.yaml::components.schemas.50%	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/escaped_ref_pointers.yaml::components.schemas.Line Item	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt
 openapi/escaped_ref_pointers.yaml::components.schemas.tax/rate	payloads/native_numeric_empty_errors.txt	= main/jsonschema/nested_resources/no_warnings.txt

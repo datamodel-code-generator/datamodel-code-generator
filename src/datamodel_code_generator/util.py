@@ -73,6 +73,7 @@ def record_watch_dependency(path: Path) -> None:
 
 
 _YAML_1_2_BOOL_PATTERN = re.compile(r"^(?:true|false|True|False|TRUE|FALSE)$")
+_YAML_1_1_RESOLVER_TAGS = frozenset({"tag:yaml.org,2002:bool", "tag:yaml.org,2002:value"})
 _YAML_DEPRECATED_BOOL_VALUES = ("True", "False", "TRUE", "FALSE")
 _YAML_DEPRECATED_BOOL_LINE_PATTERN = re.compile(r"(?m)(?::|-\s*)\s*(True|False|TRUE|FALSE)(?:\s*(?:#.*)?)$")
 _YAML_DEPRECATED_BOOL_WARNING_MESSAGE = "YAML bool "
@@ -294,7 +295,10 @@ def _fast_construct_document(loader: Any, root: Any) -> Any:  # noqa: PLR0914, P
 
 
 def _custom_safe_loader(base: Any) -> type:
-    """Return ``base`` with YAML 1.2 bool handling, timestamps as strings and exponents without a point."""
+    """Return ``base`` with YAML 1.2 bool handling, timestamps as strings and exponents without a point.
+
+    A plain ``=`` is a string, as in YAML 1.2: the YAML 1.1 ``value`` type it would resolve to has no constructor.
+    """
 
     class CustomSafeLoader(base):
         """SafeLoader with YAML 1.2 bool handling and timestamp-as-string."""
@@ -303,7 +307,7 @@ def _custom_safe_loader(base: Any) -> type:
         yaml_implicit_resolvers = {  # noqa: RUF012
             k: v
             for k, v in (
-                (k, [(tag, pat) for tag, pat in v if tag != "tag:yaml.org,2002:bool"])
+                (k, [(tag, pat) for tag, pat in v if tag not in _YAML_1_1_RESOLVER_TAGS])
                 for k, v in base.yaml_implicit_resolvers.items()
             )
             if v
