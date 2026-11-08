@@ -1,0 +1,8 @@
+{
+  "root_class": null,
+  "models_by_source_ref": {
+    "#/components/schemas/User": "User",
+    "#/components/schemas/Address": "Address",
+    "#/components/schemas/Product": "Product"
+  }
+}

@@ -96,6 +96,7 @@ _PUBLIC_MODULE_EXPORTS: dict[str, frozenset[str]] = {
         "DefaultValueTypeWarning",
         "DefaultPutDict",
         "DocumentationAnnotationWarning",
+        "DynamicModule",
         "LeftoverFilesWarning",
         "NamingHintWarning",
         "Error",
@@ -138,6 +139,7 @@ _PUBLIC_MODULE_EXPORTS: dict[str, frozenset[str]] = {
         "enable_parsed_source_cache",
         "generate",
         "generate_dynamic_models",
+        "generate_dynamic_module",
     }),
     "datamodel_code_generator._types": frozenset({
         "AsyncAPIParserConfigDict",

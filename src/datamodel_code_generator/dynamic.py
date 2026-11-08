@@ -14,27 +14,57 @@ import json
 import sys
 import threading
 import types
+from dataclasses import dataclass
 from enum import Enum
 from importlib import import_module
 from importlib.util import find_spec
-from pathlib import PurePath
-from typing import TYPE_CHECKING, Any
+from pathlib import Path, PurePath
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import pydantic
 from pydantic import BaseModel
 
-from datamodel_code_generator import Error, generate, is_asyncapi, is_openapi
+from datamodel_code_generator import (
+    Error,
+    _prepare_generate_facade_config,
+    _run_generation_with_metadata,
+    generate,
+    is_asyncapi,
+    is_openapi,
+)
 from datamodel_code_generator._graph import stable_toposort
 from datamodel_code_generator._module_paths import dotted_module, is_package_init, module_parts
-from datamodel_code_generator._process_state import ABSENT, restore_entry
+from datamodel_code_generator._process_state import ABSENT, PROCESS_STATE_LOCK, restore_entry
 from datamodel_code_generator.config import GenerateConfig, _rebuild_generate_config
 from datamodel_code_generator.enums import DataModelType, InputFileType
 from datamodel_code_generator.python_literal import stable_repr
+from datamodel_code_generator.reference import _is_special_path
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Callable, Iterable, Mapping, Sequence
 
-_dynamic_models_cache: dict[str, dict[str, type]] = {}
+    from datamodel_code_generator import GeneratedModules
+    from datamodel_code_generator.model_metadata import ModelMetadata
+
+
+@dataclass(frozen=True, eq=False, slots=True, kw_only=True)
+class DynamicModule:
+    """The classes generated from one schema, the schema location each comes from, and the module they live in."""
+
+    models: dict[str, type]
+    """Class names mapped to the classes, like the dictionary generate_dynamic_models() returns, in a cache entry of
+    its own."""
+    root_class: type | None
+    """The class generated for the document itself (location ``#``), or None."""
+    models_by_source_ref: Mapping[str, type]
+    """A read-only map from a schema location (the ``source_ref`` of ``--emit-model-metadata``) to its class."""
+    module_name: str | None
+    """The module (the package for split output) the classes were executed in; None for an unnamed single module."""
+
+
+_CachedT = TypeVar("_CachedT", dict[str, type], DynamicModule)
+
+_dynamic_models_cache: dict[str, dict[str, type] | DynamicModule] = {}
 _dynamic_models_lock = threading.Lock()
 _dynamic_module_counter = itertools.count(1)
 
@@ -42,6 +72,22 @@ _dynamic_module_counter = itertools.count(1)
 def _evict_dynamic_models_cache_entries(count: int) -> None:
     for _ in range(count):
         del _dynamic_models_cache[next(iter(_dynamic_models_cache))]
+
+
+def _cached(cache_key: str | None, cache_size: int, build: Callable[[], _CachedT]) -> _CachedT:
+    """Return the entry cached under ``cache_key``, or build one and cache it, keeping at most ``cache_size`` entries.
+
+    The oldest entries go first. The caller holds ``_dynamic_models_lock``.
+    """
+    if cache_size <= 0 or cache_key is None:
+        return build()
+    if (cached := _dynamic_models_cache.get(cache_key)) is not None:
+        _evict_dynamic_models_cache_entries(len(_dynamic_models_cache) - cache_size)
+        return cast("_CachedT", cached)
+    result = build()
+    _evict_dynamic_models_cache_entries(len(_dynamic_models_cache) - cache_size + 1)
+    _dynamic_models_cache[cache_key] = result
+    return result
 
 
 def _execute_single_module(
@@ -144,14 +190,23 @@ def _build_module_edges(modules: dict[tuple[str, ...], str]) -> dict[tuple[str, 
     return edges
 
 
+def _dynamic_package_name(module_name: str | None) -> str:
+    """Return the package to execute split output in: ``module_name``, or a new name of this process."""
+    return module_name or f"_dcg_dynamic_{next(_dynamic_module_counter)}"
+
+
 def _execute_multi_module(
     modules: dict[tuple[str, ...], str],
     *,
     include_private_models: bool = False,
     module_name: str | None = None,
+    models_by_module: dict[str, dict[str, type]] | None = None,
 ) -> dict[str, type]:
-    """Execute multiple modules and extract models."""
-    package_name = module_name or f"_dcg_dynamic_{next(_dynamic_module_counter)}"
+    """Execute multiple modules and extract models.
+
+    ``models_by_module`` receives the models of each module, by its dotted name below the package.
+    """
+    package_name = _dynamic_package_name(module_name)
 
     created_modules: list[str] = []
     previous_modules: dict[str, types.ModuleType | object] = {}
@@ -193,7 +248,10 @@ def _execute_multi_module(
         combined_namespace: dict[str, Any] = {}
         for path_tuple, ns in zip(sorted_paths, all_namespaces.values(), strict=True):
             combined_namespace.update(ns)
-            models.update(_extract_models(ns, code=modules[path_tuple], include_private=include_private_models))
+            module_models = _extract_models(ns, code=modules[path_tuple], include_private=include_private_models)
+            models.update(module_models)
+            if models_by_module is not None:
+                models_by_module[dotted_module(path_tuple)] = module_models
 
         for obj in models.values():
             if issubclass(obj, BaseModel):
@@ -246,11 +304,18 @@ def _extract_models(namespace: dict[str, Any], *, code: str = "", include_privat
 def _make_cache_key(schema: Mapping[str, Any], config: GenerateConfig, module_name: str | None = None) -> str | None:
     """Create cache key from schema and config.
 
-    Returns None if the schema is not JSON-serializable.
+    The values of set-valued settings are sorted, because a set has no order, so the key does not depend on the hash
+    seed. Returns None if the schema or the config is not JSON-serializable.
     """
     try:
         schema_json = json.dumps(dict(schema), separators=(",", ":"))
-        config_json = config.model_dump_json(exclude_defaults=True)
+        config_json = json.dumps(
+            {
+                name: sorted(value) if isinstance(getattr(config, name), (set, frozenset)) else value
+                for name, value in config.model_dump(mode="json", exclude_defaults=True).items()
+            },
+            separators=(",", ":"),
+        )
         module_name_json = (
             json.dumps({"module_name": module_name}, sort_keys=True, separators=(",", ":"))
             if module_name is not None
@@ -265,6 +330,104 @@ def _make_cache_key(schema: Mapping[str, Any], config: GenerateConfig, module_na
         return cache_key
     module_name_digest = hashlib.sha256(module_name_json.encode()).hexdigest()
     return f"{cache_key}:{module_name_digest}:{len(module_name_json)}"
+
+
+def _generate_code(
+    input_: Mapping[str, Any], config: GenerateConfig, *, collect_model_metadata: bool
+) -> tuple[str | GeneratedModules | None, ModelMetadata | None, tuple[str, ...]]:
+    """Return the code generate() writes for ``config``, beside the model metadata and identity paths of the run.
+
+    The metadata are collected only with ``collect_model_metadata``; otherwise they are None and empty.
+    """
+    if not collect_model_metadata:
+        return generate(input_=input_, config=config), None, ()
+    config = _prepare_generate_facade_config(config)
+    with PROCESS_STATE_LOCK:
+        caller_cwd = Path.cwd()
+    return _run_generation_with_metadata(input_, config, caller_cwd, use_output_cwd=False, collect_model_metadata=True)
+
+
+def _models_by_source_ref(entries: Iterable[tuple[str, str, type | None]]) -> dict[str, type]:
+    """Map each schema location to the class generated from it.
+
+    ``entries`` are ``(source_ref, identity, class)`` for every generated model: its location, the reference path it
+    was parsed under, and its class, or None when it is no class at runtime (a type alias, or one left out of
+    ``models``). A location gets the one model at it, or else the one model among them parsed under the location
+    itself, which is the model a ``$ref`` to it names; it gets no key when there is no such model or the model has no
+    class, so a helper class never stands in for it. Paths that name a place inside a generated model, not in a
+    document, are no locations.
+    """
+    models_at: dict[str, list[tuple[str, type | None]]] = {}
+    for source_ref, identity, cls in entries:
+        if not _is_special_path(source_ref):
+            models_at.setdefault(source_ref, []).append((identity, cls))
+    models: dict[str, type] = {}
+    for source_ref, at in models_at.items():
+        chosen = at if len(at) == 1 else [entry for entry in at if entry[0] == source_ref]
+        if len(chosen) == 1 and (cls := chosen[0][1]) is not None:
+            models[source_ref] = cls
+    return models
+
+
+def _build_dynamic_module(
+    input_: Mapping[str, Any], config: GenerateConfig, *, module_name: str | None, collect_model_metadata: bool
+) -> DynamicModule:
+    """Generate the code of ``config``, execute it, and return its classes; with ``collect_model_metadata`` by location.
+
+    Without ``collect_model_metadata``, ``models_by_source_ref`` is empty and ``root_class`` None.
+    """
+    result, metadata, identities = _generate_code(input_, config, collect_model_metadata=collect_model_metadata)
+    if result is None:  # pragma: no cover
+        msg = "generate() returned None"
+        raise Error(msg)
+    include_private_models = config.allow_leading_underscore_class_name
+    if isinstance(result, str):
+        models = _execute_single_module(result, include_private_models=include_private_models, module_name=module_name)
+        models_by_module = {"": models}
+    else:
+        module_name = _dynamic_package_name(module_name)
+        models_by_module = {}
+        models = _execute_multi_module(
+            result,
+            include_private_models=include_private_models,
+            module_name=module_name,
+            models_by_module=models_by_module,
+        )
+    models_by_source_ref = (
+        {}
+        if metadata is None
+        else _models_by_source_ref(
+            (model["source_ref"], identity, models_by_module.get(model["module"], {}).get(model["class_name"]))
+            for model, identity in zip(metadata["models"], identities, strict=True)
+        )
+    )
+    return DynamicModule(
+        models=models,
+        root_class=models_by_source_ref.get("#"),
+        models_by_source_ref=types.MappingProxyType(models_by_source_ref),
+        module_name=module_name,
+    )
+
+
+def _dynamic_generate_config(input_: Mapping[str, Any], config: GenerateConfig | None) -> GenerateConfig:
+    """Return the config of a dynamic call, with the input type detected where ``config`` leaves it to detection.
+
+    Without ``config``, the defaults with Pydantic v2 models.
+    """
+    if pydantic.VERSION < "2.0.0":  # pragma: no cover
+        msg = f"generate_dynamic_models requires Pydantic v2, found v{pydantic.VERSION}"
+        raise Error(msg)
+
+    _rebuild_generate_config()
+
+    if config is None:
+        return GenerateConfig(
+            input_file_type=_detect_schema_input_file_type(input_),
+            output_model_type=DataModelType.PydanticV2BaseModel,
+        )
+    if config.input_file_type == InputFileType.Auto:
+        return config.model_copy(update={"input_file_type": _detect_schema_input_file_type(input_)})
+    return config
 
 
 def _detect_schema_input_file_type(input_: Mapping[str, Any]) -> InputFileType:
@@ -344,6 +507,7 @@ def generate_dynamic_models(
         - Not pickle-able (use model_dump() to serialize instances)
         - Cached by schema + config + module_name hash with FIFO eviction when cache_size is exceeded
         - Supports both single-module and multi-module output
+        - generate_dynamic_module() also gives the root class and the class of each schema location
 
     Example:
         >>> schema = {
@@ -357,49 +521,63 @@ def generate_dynamic_models(
         >>> user.model_dump()
         {'name': 'John', 'age': 30}
     """
-    if pydantic.VERSION < "2.0.0":  # pragma: no cover
-        msg = f"generate_dynamic_models requires Pydantic v2, found v{pydantic.VERSION}"
-        raise Error(msg)
-
-    _rebuild_generate_config()
-
-    if config is None:
-        config = GenerateConfig(
-            input_file_type=_detect_schema_input_file_type(input_),
-            output_model_type=DataModelType.PydanticV2BaseModel,
-        )
-    elif config.input_file_type == InputFileType.Auto:
-        config = config.model_copy(update={"input_file_type": _detect_schema_input_file_type(input_)})
-
+    config = _dynamic_generate_config(input_, config)
     normalized_target_model_names = _normalize_target_model_names(target_model_names)
     cache_key = _make_cache_key(input_, config, module_name)
-    use_cache = cache_size > 0 and cache_key is not None
 
     with _dynamic_models_lock:
-        if use_cache:
-            assert cache_key is not None
-            if (cached_models := _dynamic_models_cache.get(cache_key)) is not None:
-                if (excess := len(_dynamic_models_cache) - cache_size) > 0:
-                    _evict_dynamic_models_cache_entries(excess)
-                return _filter_target_models(cached_models, normalized_target_model_names)
-
-        result = generate(input_=input_, config=config)
-        if result is None:  # pragma: no cover
-            msg = "generate() returned None"
-            raise Error(msg)
-        include_private_models = config.allow_leading_underscore_class_name
-        models = (
-            _execute_single_module(result, include_private_models=include_private_models, module_name=module_name)
-            if isinstance(result, str)
-            else _execute_multi_module(result, include_private_models=include_private_models, module_name=module_name)
+        models = _cached(
+            cache_key,
+            cache_size,
+            lambda: _build_dynamic_module(input_, config, module_name=module_name, collect_model_metadata=False).models,
         )
-
-        if use_cache:
-            if (excess := len(_dynamic_models_cache) - cache_size + 1) > 0:
-                _evict_dynamic_models_cache_entries(excess)
-            _dynamic_models_cache[cache_key] = models
-
         return _filter_target_models(models, normalized_target_model_names)
+
+
+def generate_dynamic_module(
+    input_: Mapping[str, Any],
+    *,
+    config: GenerateConfig | None = None,
+    cache_size: int = 128,
+    module_name: str | None = None,
+) -> DynamicModule:
+    """Generate model classes from a schema at runtime, with the root class and the class of each schema location.
+
+    Generation, execution and options are those of generate_dynamic_models(); the result also tells which class
+    the document itself became and which class each schema location became.
+
+    Args:
+        input_: JSON Schema or OpenAPI schema as dict.
+        config: A GenerateConfig object with generation options. If None, uses defaults.
+        cache_size: Maximum number of schemas to cache. Set to 0 to disable caching.
+        module_name: Optional module/package name to assign to generated classes.
+
+    Returns:
+        A DynamicModule with the classes by name, the root class, the classes by schema location and the module name.
+
+    Note:
+        - Cached like generate_dynamic_models(), in entries of its own: ``models`` is not the dictionary that
+          generate_dynamic_models() returns for the same arguments, and its classes are other classes
+        - A location is the ``source_ref`` that ``--emit-model-metadata`` writes, such as ``#``, ``#/$defs/User`` or
+          ``sub/other.json#/$defs/X``; a location that dcg merged into another class or that several helper classes
+          share has no key
+
+    Example:
+        >>> schema = {"title": "Root", "type": "object", "properties": {"child": {"$ref": "#/$defs/Root"}}}
+        >>> schema["$defs"] = {"Root": {"type": "object", "properties": {"name": {"type": "string"}}}}
+        >>> module = generate_dynamic_module(schema)
+        >>> module.root_class.__name__, module.models_by_source_ref["#/$defs/Root"].__name__
+        ('RootModel', 'Root')
+    """
+    config = _dynamic_generate_config(input_, config)
+    cache_key = _make_cache_key(input_, config, module_name)
+
+    with _dynamic_models_lock:
+        return _cached(
+            None if cache_key is None else f"module:{cache_key}",
+            cache_size,
+            lambda: _build_dynamic_module(input_, config, module_name=module_name, collect_model_metadata=True),
+        )
 
 
 def clear_dynamic_models_cache() -> int:
