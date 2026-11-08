@@ -39,6 +39,7 @@ from datamodel_code_generator._json_pointer import reference_tokens
 from datamodel_code_generator._module_paths import written_path
 from datamodel_code_generator._mro import collect_members, linearize
 from datamodel_code_generator._openapi_paths import inherited_security
+from datamodel_code_generator._paths import file_uri
 from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalized
 from datamodel_code_generator._site_facts import ANNOTATION_KEYWORDS
@@ -3928,7 +3929,7 @@ def _unnamed(parser: TargetApiOpenAPIParser) -> str:
 
     Its references resolve against the parser's base path, as the models' do.
     """
-    return f"{Path(parser.base_path).resolve().as_uri()}/"
+    return f"{file_uri(Path(parser.base_path).resolve())}/"
 
 
 if TYPE_CHECKING:

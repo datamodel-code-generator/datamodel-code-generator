@@ -22,6 +22,7 @@ from datamodel_code_generator._free_names import first_free
 from datamodel_code_generator._json_pointer import join_pointer, reference_tokens
 from datamodel_code_generator._json_schema import INSTANCE_DATA_KEYWORDS, NAMED_SCHEMA_MAPS, subschema_entries
 from datamodel_code_generator._openapi_objects import COMPONENT_KINDS, COMPONENT_ROLES, OBJECT_MEMBERS, object_members
+from datamodel_code_generator._paths import file_uri
 from datamodel_code_generator._url_redaction import redact_reference
 from datamodel_code_generator.enums import OpenAPIVersion
 
@@ -409,4 +410,4 @@ def _uri(location: str) -> str:
     """
     if _URL.match(location) or not (path := Path(location)).is_absolute():
         return location.replace("\\", "/")
-    return path.as_uri()
+    return file_uri(path)

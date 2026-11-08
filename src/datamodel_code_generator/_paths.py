@@ -18,7 +18,8 @@ Two paths relate as written, without the filesystem: one lies inside the other w
 they reach one inode; the callers decide which forms they compare and what an error of the filesystem means.
 
 A ``file`` URI names one local path on every Python version (``file_uri_path``): the generator splits the URI itself
-and hands only its path to ``url2pathname``, whose reading of a host and a query differs between Python versions.
+and hands only its path to ``url2pathname``, whose reading of a host and a query differs between Python versions. A
+local path is written as the URI ``Path.as_uri`` writes for it (``file_uri``).
 
 An output path names a directory, a package of modules, when it has no suffix. The files a generation stages or
 copies are the files below that directory, listed in path order. The files of a directory input are listed by file
@@ -38,6 +39,7 @@ import os
 from operator import attrgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, Literal
+from urllib.parse import quote_from_bytes
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -142,6 +144,17 @@ def file_uri_path(uri: str) -> Path:
     parts = urlsplit(uri)
     path = url2pathname(parts.path)
     return Path(path if parts.netloc.lower() in {"", "localhost"} else f"//{parts.netloc}{path}")
+
+
+def file_uri(path: Path) -> str:
+    """Return the ``file`` URI ``Path.as_uri`` writes for ``path``.
+
+    Every supported Python writes an absolute POSIX path as ``file://`` and its file system bytes percent-encoded, which
+    this writes without the import of ``urllib.request`` (and ``http.client`` and ``ssl``) that ``Path.as_uri`` makes
+    since Python 3.14. A Windows path, which has a drive when it is absolute, and a relative path, which ``Path.as_uri``
+    refuses, keep ``Path.as_uri``.
+    """
+    return path.as_uri() if path.drive or not path.is_absolute() else f"file://{quote_from_bytes(os.fsencode(path))}"
 
 
 def names_directory(path: Path) -> bool:

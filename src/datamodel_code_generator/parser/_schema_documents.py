@@ -39,7 +39,7 @@ from datamodel_code_generator._document_reader import member_key
 from datamodel_code_generator._json_pointer import escape_token, is_pointer_fragment
 from datamodel_code_generator._json_schema import DEFINITION_KEYS, NAMESPACE_DEFINITION_KEYS, subschema_entries
 from datamodel_code_generator._openapi_objects import held_schemas
-from datamodel_code_generator._paths import file_uri_path, files_under
+from datamodel_code_generator._paths import file_uri, file_uri_path, files_under
 from datamodel_code_generator._source import _load_parser_source_data_from_path_bytes, load_data
 from datamodel_code_generator._url_redaction import redact_url
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
@@ -877,7 +877,7 @@ def prepare_schema_resources(parser: SchemaDocumentsHost, raw: dict[str, Any], p
     registry.forget(document)
     parser._lenient_documents.pop(document, None)  # noqa: SLF001
     parser._implicit_documents.discard(document)  # noqa: SLF001
-    base = document if is_url(document) else Path(document).as_uri() if document else f"{parser.base_path.as_uri()}/"
+    base = document if is_url(document) else file_uri(Path(document)) if document else f"{file_uri(parser.base_path)}/"
     id_field = (
         parser.schema_features.id_field
         if getattr(parser.config, "jsonschema_version", None) not in {None, JsonSchemaVersion.Auto}

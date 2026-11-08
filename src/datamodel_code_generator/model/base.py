@@ -4062,9 +4062,15 @@ _rebuild_namespace = _model_rebuild_namespace(DataType, BaseClassDataType, DataM
 
 
 def _rebuild_model_with_datamodel_namespace(model: type[Any]) -> None:
+    """Complete ``model`` with the names of its own module over those of the data type and data model modules.
+
+    The schema of a model whose fields hold a complete model takes that model's schema as it is, so ``Reference`` is
+    completed first, once: each data type class would otherwise build a copy of it into its own schema.
+    """
     model.model_rebuild(_types_namespace={**_rebuild_namespace, **vars(sys.modules[model.__module__])})
 
 
+_rebuild_model_with_datamodel_namespace(Reference)
 _rebuild_model_with_datamodel_namespace(DataType)
 _rebuild_model_with_datamodel_namespace(BaseClassDataType)
 _rebuild_model_with_datamodel_namespace(DataModelFieldBase)
