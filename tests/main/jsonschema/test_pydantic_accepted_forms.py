@@ -258,6 +258,31 @@ def test_patterns_no_engine_compiles_as_written(
     assert_output(outcomes, name="outcomes")
 
 
+def test_encoded_str_roots_build_their_pattern_with_the_python_engine(output_file: Path) -> None:
+    """Write a base64 root model whose pattern needs ``python-re`` with only the decoded type in its base (#6603).
+
+    Under ``--use-encoded-str-for-constrained-base64`` the base ``RootModel[...]`` once wrote the pattern, which
+    Pydantic built with the default engine before the class's config selected ``python-re``, and the module failed at
+    import. Each valid payload keeps its decoded value and each invalid one fails.
+    """
+    run_main_and_assert(
+        input_path=JSON_SCHEMA_DATA_PATH / "encoded_str_python_regex_engine.json",
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            *("--output-model-type", "pydantic_v2.BaseModel", "--use-annotated"),
+            *("--use-encoded-str-for-constrained-base64", "--formatters", "builtin", "--disable-timestamp"),
+        ],
+        force_exec_validation=True,
+    )
+    outcomes = ""
+    for name, payloads in {"LookaroundBlob": ("QUJDRA==", "-QUJD"), "LongBlob": ("QUJDRA==", "")}.items():
+        with _generated_model(output_file, "encoded_str_python_regex_engine", name) as model:
+            outcomes += _outcomes(model, {f"{name} {payload!r}": payload for payload in payloads})
+            outcomes += f"{name} value: {_model_json_validator(model)(json.dumps(payloads[0])).root!r}\n"
+    assert_output(outcomes, name="payloads")
+
+
 def test_verbose_pattern_properties_select_the_python_engine_alike(output_file: Path) -> None:
     """Select ``python-re`` for a verbose backreference in the model and in the adapter of ``patternProperties``.
 

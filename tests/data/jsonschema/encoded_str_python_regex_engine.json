@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "LookaroundBlob": {
+      "type": "string",
+      "format": "byte",
+      "pattern": "^(?!-)[A-Za-z0-9+/=]{4,}$"
+    },
+    "LongBlob": {
+      "type": "string",
+      "format": "byte",
+      "maxLength": 20000,
+      "pattern": "^.{1,20000}$"
+    }
+  }
+}

@@ -758,6 +758,12 @@ class EncodedTextDataType(_RuntimeAnnotatedDataType):
         )
 
     @property
+    @override
+    def base_type_hint(self) -> str:
+        """The decoded type alone, so a ``RootModel`` base never builds the pattern before the config's engine."""
+        return self._decoded_base
+
+    @property
     def _decoded_base(self) -> str:
         """The type the decoding writes."""
         return self.encoded_base
