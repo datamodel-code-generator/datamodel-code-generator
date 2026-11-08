@@ -1,0 +1,5 @@
+The pattern '^(?-u:\\w){1,300}$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/AsciiWordsWithinTheSizeLimit is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '^[\\w- ]*$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/ClassEscapeRange is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '^[^\\p\\{C\\}]*$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/ControlFreeJava is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '^\\p{Print}+$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/JavaPrintable is left out: no regex engine of the output compiles it, so the generated code does not check it.
+The pattern '^\\p{L}+$' of the schema at rust_unsupported_sizes_and_dialects.json#/definitions/Letters is left out: no regex engine of the output compiles it, so the generated code does not check it.

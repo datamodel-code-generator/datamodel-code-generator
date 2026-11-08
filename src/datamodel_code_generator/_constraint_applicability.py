@@ -384,6 +384,8 @@ class OutputKeywords:
     a class built for one zero bound to the keyword it enforces itself (row ``legacy-consumed-at-object-property``),
     ``writes_constrained_types`` tells that the type manager writes scalar constraints into ``con*`` types, and
     ``mapping_classes`` are the classes whose length counts their keys and on which the output checks one.
+    ``regex_engines`` are the engines the models compile a ``pattern`` on (``_regex_syntax.read_pattern``): none for
+    the standard-library outputs, Python's ``re`` for msgspec, and Rust beside it for Pydantic.
 
     The number rows say which values the output writes: ``int_values`` is the range of the ints it takes as a number
     constraint, an ``Enum`` or ``Literal`` value or a tag (None when it takes every int), and
@@ -403,6 +405,7 @@ class OutputKeywords:
     int_values: range | None
     drops_non_finite_bounds: bool
     refused_literal_types: tuple[type, ...]
+    regex_engines: frozenset[str] = frozenset()
 
 
 BASE_OUTPUT: Final = OutputKeywords(
@@ -429,6 +432,7 @@ PYDANTIC_OUTPUT: Final = replace(
     }),
     zero_bound_classes=_ZERO_BOUND_CLASSES,
     writes_constrained_types=True,
+    regex_engines=frozenset({"rust", "python"}),
 )
 """The rows of the Pydantic type manager: its constrained and strict types, and ``multipleOf`` on a ``timedelta``."""
 MSGSPEC_OUTPUT: Final = replace(
@@ -441,6 +445,7 @@ MSGSPEC_OUTPUT: Final = replace(
     int_values=range(-(2**63), 2**63),
     drops_non_finite_bounds=True,
     refused_literal_types=(float, bytes),
+    regex_engines=frozenset({"python"}),
 )
 """The rows of the msgspec type manager, as the msgspec type table lists what ``msgspec.Meta`` checks."""
 

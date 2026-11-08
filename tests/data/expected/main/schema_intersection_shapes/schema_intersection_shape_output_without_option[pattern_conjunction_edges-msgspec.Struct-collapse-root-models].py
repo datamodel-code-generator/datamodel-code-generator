@@ -59,8 +59,8 @@ class NanSibling(Enum):
 
 
 class Model(Struct):
-    rust_escape: str | UnsetType = UNSET
-    braced_escape: str | UnsetType = UNSET
+    rust_escape: Annotated[str, Meta(pattern='a')] | UnsetType = UNSET
+    braced_escape: Annotated[str, Meta(pattern='a')] | UnsetType = UNSET
     repeated_name: str | UnsetType = UNSET
     global_flags: str | UnsetType = UNSET
     python_rejects: str | UnsetType = UNSET
@@ -102,7 +102,7 @@ class Mixed(Enum):
 BadRange: TypeAlias = Annotated[str, Meta(pattern='[z-a]')]
 
 
-Letter: TypeAlias = Annotated[str, Meta(pattern='^\\p{L}')]
+Letter: TypeAlias = str
 
 
 Lookahead: TypeAlias = Annotated[str, Meta(pattern='(?=a)')]

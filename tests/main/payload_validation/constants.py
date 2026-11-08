@@ -145,6 +145,10 @@ EXCLUDED_FILES: dict[str, str] = {
     "jsonschema/rust_unsupported_python_rejected.json": (
         "patterns both regex engines reject fail to import under either engine"
     ),
+    "jsonschema/rust_unsupported_sizes_and_dialects.json": (
+        "patterns past Rust's size limit, ones no engine compiles and a class Python's re warns about; "
+        "test_patterns_no_engine_compiles_as_written validates the generated models"
+    ),
     "jsonschema/serialized_decimal_default_alias.json": SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON,
     "jsonschema/serialized_decimal_default_alias_from_import.json": SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON,
     "jsonschema/serialized_decimal_default_alias_from_type.json": SERIALIZED_DECIMAL_DEFAULT_PAYLOAD_EXCLUSION_REASON,

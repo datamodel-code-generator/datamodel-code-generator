@@ -1,0 +1,7 @@
+exception=True
+warnings=True
+value=True
+error=ScannerError: while scanning a plain scalar
+  in "<unicode string>", line 2, column 6
+found a tab character that violates indentation
+  in "<unicode string>", line 3, column 3

@@ -27053,21 +27053,23 @@ def test_main_rust_unsupported_typed_extra_target_python(
 
 
 def test_main_rust_unsupported_python_rejected(output_file: Path) -> None:
-    """Rust-rejected syntax selects Python's regex engine even when Python's ``re`` rejects the pattern too.
+    r"""Rust-rejected syntax selects Python's regex engine even when Python's ``re`` rejects the pattern too.
 
     Such a model fails at import with either engine, and the decision never depends on the Python running the
     generator: unknown character names, global flags after the start, non-ASCII conditional references,
     overflowing repetitions, and deeply nested groups are switched without compiling the pattern, and so is a verbose
-    pattern that starts with ``(?x)``, whose whitespace and comments the scan reads.
+    pattern that starts with ``(?x)``, whose whitespace and comments the scan reads. A pattern the static rules show
+    neither engine compiles, a backreference beside ``\\p{L}``, is left out with a warning (#6593).
     """
-    run_main_and_assert(
-        input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_python_rejected.json",
-        output_path=output_file,
-        input_file_type="jsonschema",
-        assert_func=assert_file_content,
-        expected_file="rust_unsupported_python_rejected_pydantic_v2.py",
-        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin"],
-    )
+    with pytest.warns(UserWarning, match=r"is left out: no regex engine of the output compiles it"):
+        run_main_and_assert(
+            input_path=JSON_SCHEMA_DATA_PATH / "rust_unsupported_python_rejected.json",
+            output_path=output_file,
+            input_file_type="jsonschema",
+            assert_func=assert_file_content,
+            expected_file="rust_unsupported_python_rejected_pydantic_v2.py",
+            extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", "builtin"],
+        )
 
 
 @pytest.mark.benchmark

@@ -729,8 +729,9 @@ def _parameter(
     value = _encoded(_schema_use(planner, declaration.schemas, source)).value
     shape, kind, fields, additional = _shape(value, single=written)
     style, explode = _style_of(declaration, location)
+    item_name = None
     if planner.brackets and style == "deepObject" and location == "query" and shape in {"array", "scalar"}:
-        style, explode, name = _bracketed(name, shape)
+        style, explode, name, item_name = _bracketed(name, shape, single=value.single)
     version = planner.versions.declared(declaration)
     if style == "cookie" and version != OpenAPIVersion.V32:
         raise _PlanError(source, "Cookie style requires OpenAPI 3.2", "cookie_style")
@@ -748,6 +749,7 @@ def _parameter(
             additional=additional,
             reserved_names=tuple(sorted(other for kind_, other in names if kind_ == location and other != name)),
             single=value.single,
+            item_name=item_name,
         )
     except ParameterShapeError as error:
         raise _PlanError(source, str(error), _style_feature(style, shape, single=value.single)) from None
@@ -755,13 +757,14 @@ def _parameter(
         raise _PlanError(source, str(error)) from None
 
 
-def _bracketed(name: str, shape: ValueShape) -> tuple[str, bool, str]:
-    """Return the style, explode and name that write a deepObject value that is no object in brackets.
+def _bracketed(name: str, shape: ValueShape, *, single: bool) -> tuple[str, bool, str, str | None]:
+    """Return the style, explode, name and item name that write a deepObject value that is no object in brackets.
 
     OpenAPI defines deepObject for objects alone; the bracket form Stripe documents writes an array as `name[]=value`
-    for each item, an exploded form array named `name[]`, and a scalar as `name=value`, a form scalar.
+    for each item, an exploded form array named `name[]`, and a scalar as `name=value`, a form scalar. A value that is
+    one item or an array of them (`single`) writes an item alone as that scalar, under the name without brackets.
     """
-    return "form", True, f"{name}[]" if shape == "array" else name
+    return "form", True, f"{name}[]" if shape == "array" else name, name if single else None
 
 
 def _style_feature(style: object, shape: ValueShape | None, *, single: bool = False) -> ClientFeature | None:

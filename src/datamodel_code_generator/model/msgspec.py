@@ -2295,6 +2295,7 @@ class DataTypeManager(_DataTypeManager):
     LITERALS_TAKE_CONSTRAINTS: ClassVar[bool] = _applicability.MSGSPEC_OUTPUT.literals_take
     REFUSED_LITERAL_TYPES: ClassVar[tuple[type, ...]] = _applicability.MSGSPEC_OUTPUT.refused_literal_types
     MAPPING_CLASS_PATHS: ClassVar[frozenset[str]] = _applicability.MSGSPEC_OUTPUT.mapping_classes
+    REGEX_ENGINES: ClassVar[frozenset[str]] = _applicability.MSGSPEC_OUTPUT.regex_engines
 
     @property
     @override

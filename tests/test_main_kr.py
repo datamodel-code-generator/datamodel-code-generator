@@ -3242,7 +3242,7 @@ def test_pyproject_jobs_publish_more_files_than_the_open_file_limit(tmp_path: Pa
 
     The hard limit is lowered too, so that the command line cannot raise the soft one.
     """
-    resource = pytest.importorskip("resource")
+    pytest.importorskip("resource")
     schemas = tmp_path / "schemas"
     schemas.mkdir()
     for index in range(160):
@@ -3263,16 +3263,18 @@ output = "models"
         encoding="utf-8",
     )
 
-    def limit_open_files() -> None:
-        resource.setrlimit(resource.RLIMIT_NOFILE, (64, 64))
-
+    launcher = (
+        "import resource, runpy, sys\n"
+        "resource.setrlimit(resource.RLIMIT_NOFILE, (64, 64))\n"
+        "sys.argv = ['datamodel-codegen', '--all-jobs', '--formatters', 'builtin']\n"
+        "runpy.run_module('datamodel_code_generator', run_name='__main__')\n"
+    )
     result = subprocess.run(
-        [sys.executable, "-m", "datamodel_code_generator", "--all-jobs", "--formatters", "builtin"],
+        [sys.executable, "-c", launcher],
         check=False,
         capture_output=True,
         text=True,
         cwd=tmp_path,
-        preexec_fn=limit_open_files,
     )
 
     assert (result.returncode, len(list((tmp_path / "models").glob("*.py")))) == (0, 161), result.stderr

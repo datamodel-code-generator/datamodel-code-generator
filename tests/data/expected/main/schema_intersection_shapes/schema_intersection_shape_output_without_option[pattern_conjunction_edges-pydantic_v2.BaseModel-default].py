@@ -9,17 +9,11 @@ from pydantic import BaseModel, ConfigDict, RootModel, constr
 
 
 class RustEscape(RootModel[str]):
-    model_config = ConfigDict(
-        regex_engine="python-re",
-    )
-    root: constr(pattern=r'(?=\p{L})(?=a)')
+    root: str
 
 
 class BracedEscape(RootModel[str]):
-    model_config = ConfigDict(
-        regex_engine="python-re",
-    )
-    root: constr(pattern=r'(?=a)(?=\x{62})')
+    root: str
 
 
 class RepeatedName(RootModel[str]):

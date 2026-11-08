@@ -1949,6 +1949,8 @@ class DataTypeManager(ABC):
     REFUSED_LITERAL_TYPES: ClassVar[tuple[type, ...]] = _applicability.BASE_OUTPUT.refused_literal_types
     MAPPING_CLASS_PATHS: ClassVar[frozenset[str]] = _applicability.BASE_OUTPUT.mapping_classes
     """The classes, by their classifying path, whose length counts their keys and on which the output checks one."""
+    REGEX_ENGINES: ClassVar[frozenset[str]] = _applicability.BASE_OUTPUT.regex_engines
+    """The regex engines the models compile a schema's ``pattern`` on (``_regex_syntax.read_pattern``)."""
     _WRITES_CONSTRAINED_TYPES: ClassVar[bool] = _applicability.BASE_OUTPUT.writes_constrained_types
     """Whether the type manager writes scalar constraints into ``con*`` types (``OutputKeywords``)."""
 

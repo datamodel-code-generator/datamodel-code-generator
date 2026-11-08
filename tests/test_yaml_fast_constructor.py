@@ -450,12 +450,11 @@ def test_fast_constructor_matches_schema_fixtures(path: Path) -> None:
 )
 def test_pure_loader_reads_tabs_as_libyaml(text: str) -> None:
     """PyYAML's own scanner reads tabs as libyaml does, so an install without libyaml reads the same data (#6592)."""
+    pure = _construct(text, get_pure_safe_loader(), standard=False)
+    data, error, _ = pure
     assert_output(
-        _parity_report(
-            _construct(text, get_safe_loader(), standard=False),
-            _construct(text, get_pure_safe_loader(), standard=False),
-        ),
-        _PARITY_OUTPUT,
+        _parity_report(_construct(text, get_safe_loader(), standard=False), pure)
+        + (f"error={error}\n" if error is not None else f"data={data!r}\n")
     )
 
 

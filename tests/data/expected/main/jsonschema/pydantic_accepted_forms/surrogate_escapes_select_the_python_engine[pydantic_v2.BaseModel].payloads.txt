@@ -1,0 +1,6 @@
+SurrogateRanges 'tab\tand text': valid
+SurrogateRanges 'bell\x07': string_pattern_mismatch
+SurrogateOutsideClass 'a': valid
+SurrogateOutsideClass 'b': string_pattern_mismatch
+BracedCode 'AA': valid
+BracedCode 'B': string_pattern_mismatch
