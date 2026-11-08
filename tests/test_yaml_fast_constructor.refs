@@ -640,6 +640,7 @@ openapi/strip_default_none_constructor_order.yaml	yaml_fast_constructor/parity.t
 openapi/strip_default_none_nullable_reference.yaml	yaml_fast_constructor/parity.txt
 openapi/strip_default_none_pydantic_v2.yaml	yaml_fast_constructor/parity.txt
 openapi/strip_default_none_semantic.yaml	yaml_fast_constructor/parity.txt
+openapi/tab_characters.yaml	yaml_fast_constructor/parity.txt
 openapi/type_alias.yaml	yaml_fast_constructor/parity.txt
 openapi/type_alias_cross_module_collision/a.yaml	yaml_fast_constructor/parity.txt
 openapi/type_alias_cross_module_collision/b.yaml	yaml_fast_constructor/parity.txt
@@ -775,6 +776,24 @@ return-map-seq	yaml_fast_constructor/custom_return_map_seq.txt
 return-seq	yaml_fast_constructor/custom_return_seq.txt
 [test_load_yaml_uses_fast_constructor]
 	yaml_fast_constructor/parity.txt
+[test_pure_loader_reads_tabs_as_libyaml]
+anchor_alias	yaml_fast_constructor/parity.txt
+blank_line	yaml_fast_constructor/parity.txt
+byte_order_mark	yaml_fast_constructor/parity.txt
+continuation	yaml_fast_constructor/parity.txt
+continuation_left_of_text	yaml_fast_constructor/parity.txt
+document_end	yaml_fast_constructor/parity.txt
+document_start_after_blank_line	yaml_fast_constructor/parity.txt
+explicit_key	yaml_fast_constructor/parity.txt
+flow	yaml_fast_constructor/parity.txt
+paragraph_separator	yaml_fast_constructor/parity.txt
+plain_comment	yaml_fast_constructor/parity.txt
+plain_trailing	yaml_fast_constructor/parity.txt
+plain_words	yaml_fast_constructor/parity.txt
+quoted_trailing	yaml_fast_constructor/parity.txt
+sequence	yaml_fast_constructor/parity.txt
+tab_left_of_indentation	yaml_fast_constructor/parity.txt
+value_separator	yaml_fast_constructor/parity.txt
 [test_strict_equal_handles_non_equivalent_values]
 	yaml_fast_constructor/strict_equal.txt
 [test_yaml_loader_rejects_unknown_implementation]

@@ -18,3 +18,6 @@ block	main/main_yaml/sample_data_auto_detection[block].py
 flow	main/main_yaml/sample_data_auto_detection[flow].py	= main/main_yaml/sample_data_auto_detection[block].py
 [test_main_yaml_scientific_notation]
 	main/yaml/scientific_notation.py
+[test_main_yaml_tabs_read_alike]
+libyaml-pyyaml	main/main_yaml/tabs_read_alike[libyaml-pyyaml].py
+pure-pyyaml	main/main_yaml/tabs_read_alike[pure-pyyaml].py	= main/main_yaml/tabs_read_alike[libyaml-pyyaml].py
