@@ -2945,6 +2945,7 @@ def _watch_in_steps(
     dependencies: WatchDependencies,
     observed_path: Path,
     steps: list[Callable[[], None]],
+    watch_delay: float = 0.05,
 ) -> list[bool]:
     """Watch with real watchfiles as on ``platform`` and return, per generation, whether ``observed_path`` existed.
 
@@ -2968,7 +2969,7 @@ def _watch_in_steps(
 
     watcher = threading.Thread(
         target=watch_module.watch_and_regenerate,
-        args=(Config(input=observed_path, watch_delay=0.05),),
+        args=(Config(input=observed_path, watch_delay=watch_delay),),
         kwargs={"dependencies": dependencies, "regenerate": regenerate},
         name="watch-in-steps",
         daemon=True,
@@ -3068,6 +3069,49 @@ def test_watch_polling_keeps_running_without_an_existing_dependency(
 
     assert not dependencies.watch_roots()
     assert _watch_in_steps(monkeypatch, "darwin", dependencies, input_file, []) == [True]
+
+
+@pytest.mark.allow_direct_assert("a watch run is checked by the generations it made, which no output file records")
+def test_watch_polling_notices_a_missing_dependency_beside_a_vanished_former_root(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A former dependency removed under a polling watcher does not hide a missing dependency appearing.
+
+    The watcher still scans the removed root and reports its removal on every poll, which at the default delay leaves
+    no poll without events.
+    """
+    from datamodel_code_generator.__main__ import Config
+    from datamodel_code_generator.watch_dependencies import WatchDependencies
+
+    input_file = tmp_path / "schema.json"
+    former_file = tmp_path / "former.json"
+    lock_file = tmp_path / "datamodel-codegen.lock"
+    input_file.write_text(WATCH_SCHEMA_INITIAL, encoding="utf-8")
+    former_file.write_text("{}", encoding="utf-8")
+    dependencies = WatchDependencies()
+    dependencies.add_file(input_file)
+    dependencies.record_file(former_file)
+    dependencies.enable_polling_fingerprints()
+    _write_atomically(input_file, WATCH_SCHEMA_CHANGED)
+
+    restoration = threading.Timer(WATCH_CLI_READY_DELAY_SECONDS * 2, lock_file.write_text, ["{}"])
+
+    def remove_former_and_restore_lock() -> None:
+        former_file.unlink()
+        dependencies.record_file(lock_file)
+        restoration.start()
+
+    generations = _watch_in_steps(
+        monkeypatch,
+        "darwin",
+        dependencies,
+        lock_file,
+        [remove_former_and_restore_lock],
+        Config.model_fields["watch_delay"].default,
+    )
+    restoration.join()
+
+    assert generations == [False, True]
 
 
 @pytest.mark.parametrize("platform", ["darwin", "linux"])
