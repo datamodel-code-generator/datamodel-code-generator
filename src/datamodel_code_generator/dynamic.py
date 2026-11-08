@@ -55,7 +55,10 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, eq=False, slots=True, kw_only=True)
 class DynamicModule:
-    """The classes generated from one schema, the schema location each comes from, and the module they live in."""
+    """The classes generated from one schema, the schema location each comes from, and the module they live in.
+
+    Experimental, like generate_dynamic_module(): its attributes may change.
+    """
 
     models: dict[str, type]
     """Class names mapped to the classes, like the dictionary generate_dynamic_models() returns, in a cache entry of
@@ -758,6 +761,7 @@ def generate_dynamic_module(
             be serialized as JSON.
 
     Note:
+        - Experimental: the parameters, the DynamicModule attributes and the registration rules may change
         - Cached like generate_dynamic_models(), in entries of its own: ``models`` is not the dictionary that
           generate_dynamic_models() returns for the same arguments, and its classes are other classes
         - A location is the ``source_ref`` that ``--emit-model-metadata`` writes, such as ``#``, ``#/$defs/User`` or

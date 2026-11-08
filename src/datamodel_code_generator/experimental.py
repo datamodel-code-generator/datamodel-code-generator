@@ -38,6 +38,7 @@ ExperimentalFeatureId = Literal[
     "input-format.mcp-tools",
     "input-format.protobuf",
     "input-format.xmlschema",
+    "python-api.generate-dynamic-module",
     "formatter.builtin",
 ]
 
@@ -320,6 +321,24 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         message="XML Schema input support is experimental and may change as real-world usage is validated.",
         since_version="0.59.0",
         note="The parser focuses on model generation from XSD documents, not full XML instance validation.",
+    ),
+    "python-api.generate-dynamic-module": ExperimentalFeature(
+        id="python-api.generate-dynamic-module",
+        kind="python-api",
+        target="generate_dynamic_module(), DynamicModule, and register_module=True",
+        message=(
+            "Dynamic module generation is experimental; its parameters, the DynamicModule attributes, the schema "
+            "locations it keys classes by, and the module registration rules may change."
+        ),
+        since_version="0.91.1",
+        note=(
+            "generate_dynamic_module() generates the classes like generate_dynamic_models() and also returns the "
+            "class of the document itself, if it has one (None for an OpenAPI document or with skip_root_model), and "
+            "the class of each schema location that becomes a class (a location written as a type alias or merged "
+            "into another class has no entry). With register_module=True, it "
+            "keeps the module of the classes registered in sys.modules, so that the classes and their instances "
+            "pickle. generate_dynamic_models() is not experimental."
+        ),
     ),
     "formatter.builtin": ExperimentalFeature(
         id="formatter.builtin",

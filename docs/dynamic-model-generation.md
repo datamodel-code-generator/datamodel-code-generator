@@ -69,6 +69,12 @@ def generate_dynamic_models(
 
 ### `generate_dynamic_module()`
 
+!!! warning "Experimental"
+
+    `generate_dynamic_module()`, `DynamicModule` and `register_module=True` are experimental. Their parameters,
+    attributes and registration rules may change. See [Experimental Features](experimental.md).
+    `generate_dynamic_models()` is not experimental.
+
 ```python
 def generate_dynamic_module(
     input_: Mapping[str, Any],
@@ -276,6 +282,12 @@ tree = Node(
 
 ## Root Class and Schema Locations
 
+!!! warning "Experimental"
+
+    `generate_dynamic_module()`, `DynamicModule` and `register_module=True` are experimental. Their parameters,
+    attributes and registration rules may change. See [Experimental Features](experimental.md).
+    `generate_dynamic_models()` is not experimental.
+
 `generate_dynamic_module()` finds the class of the document itself and the class of each schema location, so you
 need not guess them from titles or class names:
 
@@ -324,6 +336,11 @@ type alias (`use_type_alias`). In split output, `models` holds one of two classe
 modules, while `models_by_source_ref` keys both.
 
 ## Picklable Models (Registered Modules)
+
+!!! warning "Experimental"
+
+    `register_module=True` is experimental. Its registration rules may change. See
+    [Experimental Features](experimental.md).
 
 Pickle stores a class, and the class of an instance, by its module and name, and loads them by importing the module.
 With `register_module=True`, `generate_dynamic_module()` keeps the module of the classes registered in `sys.modules`,
