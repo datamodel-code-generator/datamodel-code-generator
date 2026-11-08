@@ -1,0 +1,35 @@
+openapi: 3.1.0
+info:
+  title: Parameters taking one item or an array of them
+  version: "1"
+servers:
+  - url: https://api.example.com
+paths:
+  /advisories/{ids}:
+    get:
+      operationId: listAdvisories
+      parameters:
+        - name: ids
+          in: path
+          required: true
+          schema:
+            oneOf:
+              - {type: integer}
+              - {type: array, items: {type: integer}}
+        - name: cwes
+          in: query
+          schema:
+            oneOf:
+              - {type: string}
+              - {type: array, items: {type: string}}
+        - name: has
+          in: query
+          explode: false
+          schema:
+            oneOf:
+              - {type: string}
+              - type: array
+                items: {type: string, enum: [patch, deployment]}
+      responses:
+        "204":
+          description: Listed.

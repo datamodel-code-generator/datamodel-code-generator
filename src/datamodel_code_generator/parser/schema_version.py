@@ -361,8 +361,10 @@ class OpenAPISchemaFeatures(JsonSchemaFeatures):
         metadata=FeatureMetadata(
             introduced="OAS 3.1",
             doc_name="webhooks",
-            description="Top-level webhooks object for incoming events",
+            description="Top-level webhooks object for incoming events; the client generates no methods for webhook "
+            "operations, only helpers that verify and decode deliveries",
             status="supported",
+            client_status="partial",
         ),
     )
     # --- Partially supported features ---
@@ -389,8 +391,10 @@ class OpenAPISchemaFeatures(JsonSchemaFeatures):
         metadata=FeatureMetadata(
             introduced="OAS 3.2",
             doc_name="querystring",
-            description="Query string parameter object without a parameter name",
+            description="Query string parameter object without a parameter name; the client ignores the `encoding` "
+            "declarations of the members of a nameless form querystring",
             status="supported",
+            client_status="partial",
         ),
     )
     # --- Unsupported features ---
@@ -486,9 +490,10 @@ class OpenAPISchemaFeatures(JsonSchemaFeatures):
             introduced="OAS 3.0",
             doc_name="Structured style values",
             description="Parameter and form member values that are no single scalar kind, such as nested objects, "
-            "unions and `allOf`, written with a style",
+            "unions and `allOf`, written with a style; the client writes a parameter outside a header that takes one "
+            "item or an array of them only",
             status="supported",
-            client_status="not_supported",
+            client_status="partial",
         ),
     )
     binary_in_text_media: bool = field(
@@ -518,7 +523,7 @@ class OpenAPISchemaFeatures(JsonSchemaFeatures):
             introduced="OAS 3.0",
             doc_name="Encoding contentType",
             description="Media types of form-data parts; the client writes a part holding no files as JSON, or its "
-            "scalars as text in a media type other than a form's",
+            "scalars as text in a media type other than a form or multipart media type",
             status="supported",
             client_status="partial",
         ),
@@ -545,19 +550,6 @@ class OpenAPISchemaFeatures(JsonSchemaFeatures):
         if version == AsyncAPIVersion.V2:
             return cls.from_openapi_version(OpenAPIVersion.V30)
         return cls.from_openapi_version(OpenAPIVersion.V31)
-
-
-ClientFeature: TypeAlias = Literal[
-    "http_auth_schemes",
-    "mutual_tls",
-    "cookie_style",
-    "deep_object_style",
-    "structured_parameter_values",
-    "binary_in_text_media",
-    "multipart_media",
-    "part_content_type",
-]
-"""An OpenAPI feature whose use can leave an operation out of the client: a field of `OpenAPISchemaFeatures`."""
 
 
 def feature_label(feature: str) -> str:

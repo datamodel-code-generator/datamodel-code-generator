@@ -29,6 +29,7 @@ from datamodel_code_generator._client.plan import (
 )
 from datamodel_code_generator._client.polling import plan_polling
 from datamodel_code_generator._client.protocol_plan import (
+    helper_calls,
     helper_metadata,
     helper_operations,
     helper_problems,
@@ -120,21 +121,23 @@ class ClientTarget:
     def render(self, request: TargetRequest) -> TargetRender:
         """Plan the selected operations, bind their codecs, and render the package.
 
-        An operation that only its own declarations refuse, and that no helper calls, is left out with a warning that
-        names the OpenAPI features it uses that the client does not support, and the others are planned again. A
-        refusal stays an error when anything else is refused too, or nothing is left.
+        An operation that only its own declarations refuse, and that no enabled helper calls, is left out with a warning
+        that names the OpenAPI features it uses that the client does not support, and the others are planned again. A
+        refusal stays an error, with the findings of the operations skipped before it, when anything else is refused
+        too, or nothing is left.
         """
         config = request.config
         assert isinstance(config, ClientGenerationConfig)
         protocols = plan_protocols(request, config.protocols, self.protocol_base)
-        called = frozenset(() if protocols is None else (item.id for item in protocols.operations.values()))
+        called = helper_calls(protocols)
         skipped: list[tuple[OperationContract, list[Diagnostic]]] = []
-        while isinstance(rendered := _attempt(request, config, protocols), APIGenerationError):
-            if (refused := _refused(rendered, request.operations, called)) is None:
-                raise rendered
-            if len(refused) == len(request.operations):
+        selected = request.operations
+        while isinstance(rendered := _attempt(request, config, protocols, selected), APIGenerationError):
+            refused = _refused(rendered, request.operations, called)
+            if refused is None or len(refused) == len(request.operations):
                 earlier = (item for _, found in skipped for item in found)
-                raise APIGenerationError((*earlier, *rendered.diagnostics), option_prefix=OPTION_PREFIX) from None
+                diagnostics = (*earlier, *rendered.diagnostics)
+                raise APIGenerationError(diagnostics, option_prefix=rendered.option_prefix) from None
             skipped.extend(refused.values())
             request = replace(request, operations=tuple(item for item in request.operations if item.id not in refused))
         output = shown(config.output, request.shown_root).as_posix()
@@ -151,17 +154,26 @@ class ClientTarget:
 
 
 def _attempt(
-    request: TargetRequest, config: ClientGenerationConfig, protocols: Protocols | None
+    request: TargetRequest,
+    config: ClientGenerationConfig,
+    protocols: Protocols | None,
+    selected: tuple[OperationContract, ...],
 ) -> TargetRender | APIGenerationError:
-    """Render the request's operations, or return the error that refuses them."""
+    """Render the request's operations, or return the error that refuses them.
+
+    `selected` are the operations selected before any was skipped.
+    """
     try:
-        return _render(request, config, protocols)
+        return _render(request, config, protocols, selected)
     except APIGenerationError as error:
         return error
 
 
 def _render(  # ruff: ignore[too-many-locals]
-    request: TargetRequest, config: ClientGenerationConfig, protocols: Protocols | None
+    request: TargetRequest,
+    config: ClientGenerationConfig,
+    protocols: Protocols | None,
+    selected: tuple[OperationContract, ...],
 ) -> TargetRender:
     """Plan the request's operations, bind their codecs, and render the package."""
     backend = _BACKENDS[request.model_config.output_model_type]
@@ -169,7 +181,7 @@ def _render(  # ruff: ignore[too-many-locals]
     facts = ModelFacts(request.batch)
     helping = helper_operations(protocols)
     try:
-        plan = Planner(request, config, wire, facts, helping).plan()
+        plan = Planner(request, config, wire, facts, helping, selected=selected).plan()
     except PlanError as error:
         raise APIGenerationError(error.diagnostics, option_prefix=OPTION_PREFIX) from None
     events, hooked = webhook_uses(protocols, plan, request)
@@ -253,7 +265,7 @@ def _refused(
     """Return each operation an error refuses with its findings, or None when a finding refuses more than one operation.
 
     A finding refuses one operation alone when that operation's own declarations cause it: no setting does, and no
-    helper calls the operation.
+    enabled helper calls the operation.
     """
     by_pointer = {operation.id.use_site.pointer: operation for operation in operations}
     refused: dict[OperationId, tuple[OperationContract, list[Diagnostic]]] = {}
@@ -293,6 +305,7 @@ def _wire(request: TargetRequest, batch: GeneratedTypeContractBatch) -> WirePlan
         operations=frozenset(operation.id for operation in request.operations),
         forms=dict(form_uses(request)),
         styles=dict(style_uses(request)),
+        writes=True,
     )
 
 

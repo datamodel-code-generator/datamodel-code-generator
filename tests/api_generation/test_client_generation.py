@@ -191,11 +191,16 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "parts-bound-responses-reuse",
         "multipart-text-files",
         "skip-operations",
+        "skip-operations-resources",
         "skip-operations-document-errors",
         "skip-operations-every",
         "skip-operations-features",
         "skip-operations-helper",
+        "skip-operations-helper-disabled",
+        "skip-operations-helper-later",
         "multipart-media-text",
+        "parameter-item-or-array",
+        "parameter-item-or-array-errors",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:

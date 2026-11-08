@@ -81,6 +81,7 @@ class APIGenerationError(Error):
     def __init__(self, diagnostics: tuple[Diagnostic, ...], *, option_prefix: str | None = None) -> None:
         """Keep the internal findings and describe errors without diagnostic codes or stages."""
         self.diagnostics = diagnostics
+        self.option_prefix = option_prefix
         super().__init__(error_text(diagnostics, option_prefix))
 
 

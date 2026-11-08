@@ -75,7 +75,7 @@ from tests.api_generation.scenarios.client_polling import polling
 from tests.api_generation.scenarios.client_polling_resume import polling_resume
 from tests.api_generation.scenarios.client_protocol_contracts import protocol_contracts
 from tests.api_generation.scenarios.client_protocol_errors import protocol_errors
-from tests.api_generation.scenarios.client_query import query
+from tests.api_generation.scenarios.client_query import item_or_array, query
 from tests.api_generation.scenarios.client_raw import raw
 from tests.api_generation.scenarios.client_redirects import head_redirects, redirects
 from tests.api_generation.scenarios.client_regressions import (
@@ -925,6 +925,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "parameter-kinds-literal": ("parameter-kinds-literal", BACKENDS, parameter_kinds),
     "parameter-kinds-strict": ("parameter-kinds-strict", BACKENDS, parameter_kinds),
     "query": ("pets", ("pydantic_v2.BaseModel",), query),
+    "item-or-array": ("parameter-item-or-array", ("pydantic_v2.BaseModel", "msgspec.Struct"), item_or_array),
     "signatures": ("pets", BACKENDS, signatures),
     "signatures-unpack": ("pets-unpack", BACKENDS, signatures),
     "keywords": ("keywords", ("pydantic_v2.BaseModel",), keywords),

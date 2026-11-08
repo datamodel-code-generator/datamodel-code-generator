@@ -19,6 +19,7 @@ from datamodel_code_generator._runtime.model_codecs.media import (
 from datamodel_code_generator._runtime.model_codecs.parameters import (
     ParameterLocation,
     ParameterPlan,
+    ParameterShapeError,
     ValueShape,
     builtin_content,
     header_text,
@@ -71,6 +72,7 @@ from datamodel_code_generator.python_literal import stable_repr
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 
+    from datamodel_code_generator._openapi_features import ClientFeature
     from datamodel_code_generator._runtime.model_codecs.media import MediaKind
     from datamodel_code_generator._target_contract import (
         FieldSlot,
@@ -81,7 +83,6 @@ if TYPE_CHECKING:
         TypeUseBinding,
         TypeView,
     )
-    from datamodel_code_generator.parser.schema_version import ClientFeature
 
 CodecReason: TypeAlias = (
     BindingReason
@@ -136,8 +137,9 @@ class _PlanError(Exception):
 
 
 class _WirePlanner:
-    def __init__(self, batch: GeneratedTypeContractBatch) -> None:
+    def __init__(self, batch: GeneratedTypeContractBatch, *, writes: bool = False) -> None:
         self.batch = batch
+        self.writes = writes
         self.kinds = LexicalKinds(batch)
         self.diagnostics: list[CodecDiagnostic] = []
         self.versions = batch.versions
@@ -182,24 +184,26 @@ def operation_uses(operation: OperationContract) -> tuple[TypeUseId, ...]:
     return tuple(found)
 
 
-def plan_wire(
+def plan_wire(  # noqa: PLR0913
     batch: GeneratedTypeContractBatch,
     uses: Sequence[TypeUseId] | None = None,
     *,
     operations: Collection[OperationId] | None = None,
     forms: Mapping[TypeUseId, tuple[WireDeclaration, ...]] | None = None,
     styles: Mapping[TypeUseId, tuple[WireDeclaration, ...]] | None = None,
+    writes: bool = False,
 ) -> WirePlan:
     """Build the parameter plans of the requested operations and the plans of their requested encoding headers.
 
     The uses of URL-encoded bodies named in `forms` get their member plans, and each member their encoding names the
     plan of a query parameter; the form-data uses named in `styles` get the query parameter plan of each member their
     encodings give a style. A requested use that carries a raw binary string as text is refused, since the model
-    backends write bytes as different text.
+    backends write bytes as different text. An operation parameter that is an item or an array of items is planned
+    only when the operations' parameters are written (`writes`), since text read back cannot tell the two apart.
     """
     forms = forms or {}
     styles = styles or {}
-    planner = _WirePlanner(batch)
+    planner = _WirePlanner(batch, writes=writes)
     requested = None if uses is None else frozenset(uses)
     planned = [operation for operation in batch.operations if operations is None or operation.id in operations]
     parameters = tuple((operation.id, _parameters(planner, operation)) for operation in planned)
@@ -569,10 +573,15 @@ def _allow_reserved(version: OpenAPIVersion, location: ParameterLocation, declar
 
 
 def _planned(
-    planner: _WirePlanner, operation: OperationId, declaration: WireDeclaration, names: list[tuple[object, str]]
+    planner: _WirePlanner,
+    operation: OperationId,
+    declaration: WireDeclaration,
+    names: list[tuple[object, str]],
+    *,
+    written: bool = False,
 ) -> ParameterPlan | None:
     try:
-        return _parameter(planner, declaration, names)
+        return _parameter(planner, declaration, names, written=written)
     except _PlanError as error:
         _refused(planner, error, operation, type_uses(declaration))
     return None
@@ -642,7 +651,7 @@ def _parameters(planner: _WirePlanner, operation: OperationContract) -> tuple[Pa
     plans = [
         plan
         for declaration in declarations
-        if (plan := _planned(planner, operation.id, declaration, names)) is not None
+        if (plan := _planned(planner, operation.id, declaration, names, written=planner.writes)) is not None
     ]
     planner.diagnostics.extend(parameter_collisions(operation, plans, auth))
     return tuple(_reserving(plan, plans) for plan in plans)
@@ -685,14 +694,17 @@ def _style_of(declaration: WireDeclaration, location: ParameterLocation) -> tupl
     return style, explode if isinstance(explode, bool) else style in {"form", "cookie"}
 
 
-def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[tuple[object, str]]) -> ParameterPlan:
+def _parameter(
+    planner: _WirePlanner, declaration: WireDeclaration, names: list[tuple[object, str]], *, written: bool
+) -> ParameterPlan:
     source = declaration.use_site
     location, name = parameter_place(declaration)
     required = is_required(declaration)
     _finite(planner, declaration)
     if location == "querystring" or declaration.children:
         return _content_parameter(planner, declaration, location, name, required=required)
-    shape, kind, fields, additional = _shape(_encoded(_schema_use(planner, declaration.schemas, source)).value)
+    value = _encoded(_schema_use(planner, declaration.schemas, source)).value
+    shape, kind, fields, additional = _shape(value, single=written)
     style, explode = _style_of(declaration, location)
     version = planner.versions.declared(declaration)
     if style == "cookie" and version != OpenAPIVersion.V32:
@@ -710,13 +722,22 @@ def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[
             fields=fields,
             additional=additional,
             reserved_names=tuple(sorted(other for kind_, other in names if kind_ == location and other != name)),
+            single=value.single,
         )
+    except ParameterShapeError as error:
+        raise _PlanError(source, str(error), _style_feature(style, shape, single=value.single)) from None
     except ValueError as error:
-        raise _PlanError(source, str(error), _style_feature(style, shape)) from None
+        raise _PlanError(source, str(error)) from None
 
 
-def _style_feature(style: object, shape: ValueShape | None) -> ClientFeature | None:
-    """Return the feature a style refusal stems from: deepObject on a value that is no object, or None."""
+def _style_feature(style: object, shape: ValueShape | None, *, single: bool = False) -> ClientFeature | None:
+    """Return the feature a refusal of a style for the shape of its values stems from, or None.
+
+    A value that is an item or an array of them uses structured values, and deepObject on a value that is no object
+    uses that style.
+    """
+    if single:
+        return "structured_parameter_values"
     return "deep_object_style" if style == "deepObject" and shape not in {None, "object"} else None
 
 
@@ -788,15 +809,20 @@ def _kind(site: KindAt) -> LexicalKind:
     return kind
 
 
-def _shape(shape: TextShape) -> tuple[ValueShape, LexicalKind, tuple[FieldPlan, ...], FieldPlan | None]:
+def _shape(
+    shape: TextShape, *, single: bool = False
+) -> tuple[ValueShape, LexicalKind, tuple[FieldPlan, ...], FieldPlan | None]:
     """Return a value's shape, its kind, and its members' plans.
 
-    The members come first, in their order, then why the value has no builtin encoding, then any other property.
+    The members come first, in their order, then why the value has no builtin encoding, then any other property. An
+    array that takes an item alone has no one scalar kind where `single` does not let it be written.
     """
     fields = tuple(_field(member) for member in shape.members)
     if (problem := shape.problem) is not None:
         source, message = problem
         raise _PlanError(source, message)
+    if shape.single and not single:
+        raise _PlanError(cast("KindAt", shape.kind).source, NO_SCALAR_KIND, "structured_parameter_values")
     if shape.shape == "object":
         return "object", "string", fields, None if shape.additional is None else _field(shape.additional)
     return shape.shape, _kind(cast("KindAt", shape.kind)), (), None

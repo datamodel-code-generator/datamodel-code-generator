@@ -2517,6 +2517,28 @@
       ]
     ]
   },
+  "parameter-item-or-array": {
+    "input": "parameter-item-or-array.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "parameter-item-or-array-errors": {
+    "input": "parameter-item-or-array-errors.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
   "auth-shared-wire": {
     "input": "auth-shared-wire.yaml",
     "modules": [
@@ -6056,6 +6078,18 @@
   "skip-operations": {
     "input": "skip-operations.yaml"
   },
+  "skip-operations-resources": {
+    "input": "skip-operations.yaml",
+    "config": {
+      "resource_names": [
+        {
+          "tag": "owners",
+          "namespace": "owners"
+        }
+      ]
+    },
+    "modules": false
+  },
   "skip-operations-document-errors": {
     "input": "skip-operations-document-errors.yaml"
   },
@@ -6080,6 +6114,24 @@
     ],
     "config": {
       "protocols": "protocols/skip-operations-helper.json"
+    }
+  },
+  "skip-operations-helper-disabled": {
+    "input": "skip-operations-helper.yaml",
+    "references": [
+      "protocols/skip-operations-disabled.json"
+    ],
+    "config": {
+      "protocols": "protocols/skip-operations-disabled.json"
+    }
+  },
+  "skip-operations-helper-later": {
+    "input": "skip-operations-helper.yaml",
+    "references": [
+      "protocols/skip-operations-later.json"
+    ],
+    "config": {
+      "protocols": "protocols/skip-operations-later.json"
     }
   }
 }

@@ -486,7 +486,7 @@ class TextShape:
 
     A scalar or an array has the kind of its value or items; an object has the members of the model it holds, then
     any other property's, none when the model allows no others. `problem` is the location and message of why no
-    builtin encoding writes the values.
+    builtin encoding writes the values. `single` marks an array whose values may also be one item alone.
     """
 
     shape: Literal["scalar", "array", "object"]
@@ -494,6 +494,7 @@ class TextShape:
     members: tuple[MemberShape, ...] = ()
     additional: MemberShape | None = None
     problem: tuple[SourceLocation, str] | None = None
+    single: bool = False
 
 
 @dataclass(frozen=True, slots=True)

@@ -64,3 +64,26 @@ async def _async_query(package: ModuleType, lines: list[str]) -> None:
 
         await arecord(lines, "async raw query", raw_call)
     await http.aclose()
+
+
+def item_or_array(package: ModuleType, lines: list[str]) -> None:
+    """Write a parameter that takes one item or an array of them as its style writes each: an item as a scalar."""
+    exchange = Exchange(lines)
+    with exchange.client() as http, package.Client(http_client=http) as api:
+        for label, values in (
+            ("items", {"ids": 7, "cwes": "79,284", "has": "patch"}),
+            ("arrays", {"ids": [7, 8], "cwes": ["79", "284"], "has": ["patch", "deployment"]}),
+            ("one-item arrays", {"ids": [7], "cwes": ["79"], "has": ["patch"]}),
+            ("empty arrays", {"ids": [7], "cwes": [], "has": []}),
+        ):
+            arguments = {
+                name: argument(package, "listAdvisories", location, wire_name, values[wire_name])
+                for name, location, wire_name in (
+                    ("ids", "path", "ids"),
+                    ("cwes", "query", "cwes"),
+                    ("has", "query", "has"),
+                )
+            }
+            exchange.respond(raw_response(204))
+            record(lines, label, lambda arguments=arguments: api.default.list_advisories(**arguments))
+        record(lines, "empty path array", lambda: api.default.list_advisories(ids=[]))

@@ -10438,10 +10438,10 @@ Client: whether the generated Python client (`--generate-client`) supports the f
 |---------|------------|--------|--------|-------------|
 | `nullable` | OAS 3.0 | ✅ Supported | — | Uses `nullable: true` for nullable types (deprecated in 3.1) |
 | `discriminator` | OAS 3.0 | ✅ Supported | — | Polymorphism support via `discriminator` keyword |
-| `webhooks` | OAS 3.1 | ✅ Supported | — | Top-level webhooks object for incoming events |
+| `webhooks` | OAS 3.1 | ✅ Supported | ⚠️ Partial | Top-level webhooks object for incoming events; the client generates no methods for webhook operations, only helpers that verify and decode deliveries |
 | `itemSchema` | OAS 3.2 | ✅ Supported | — | Media Type Object item schema for sequential media |
 | `$self` | OAS 3.2 | ✅ Supported | — | Root document URI for relative and absolute reference resolution |
-| `querystring` | OAS 3.2 | ✅ Supported | — | Query string parameter object without a parameter name |
+| `querystring` | OAS 3.2 | ✅ Supported | ⚠️ Partial | Query string parameter object without a parameter name; the client ignores the `encoding` declarations of the members of a nameless form querystring |
 | `xml` | OAS 3.0 | ⚠️ Partial | — | XML serialization metadata (name, namespace, prefix) |
 | `externalDocs` | OAS 3.0 | ⚠️ Partial | — | Reference to external documentation |
 | `links` | OAS 3.0 | ❌ Not Supported | — | Links between operations |
@@ -10451,10 +10451,10 @@ Client: whether the generated Python client (`--generate-client`) supports the f
 | `mutualTLS` | OAS 3.1 | ❌ Not Supported | ❌ Not Supported | Mutual TLS security scheme |
 | `style: cookie` | OAS 3.2 | ✅ Supported | ✅ Supported | Cookie parameter style; earlier versions do not declare it |
 | `style: deepObject` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Query parameters written as `name[key]=value`; the client writes objects only |
-| `Structured style values` | OAS 3.0 | ✅ Supported | ❌ Not Supported | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style |
+| `Structured style values` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style; the client writes a parameter outside a header that takes one item or an array of them only |
 | `Binary strings in text media` | OAS 3.0 | ✅ Supported | ❌ Not Supported | `format: binary` strings inside a JSON, URL-encoded or text body, a parameter or a header |
 | `multipart media types` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema only, such as not `multipart/related` |
-| `Encoding contentType` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Media types of form-data parts; the client writes a part holding no files as JSON, or its scalars as text in a media type other than a form's |
+| `Encoding contentType` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Media types of form-data parts; the client writes a part holding no files as JSON, or its scalars as text in a media type other than a form or multipart media type |
 <!-- END AUTO-GENERATED SCHEMA FEATURE SUPPORT -->
 
 ## ✅ Implemented data types and features
@@ -10982,10 +10982,10 @@ Client: whether the generated Python client (`--generate-client`) supports the f
 |---------|------------|--------|--------|-------------|
 | `nullable` | OAS 3.0 | ✅ Supported | — | Uses `nullable: true` for nullable types (deprecated in 3.1) |
 | `discriminator` | OAS 3.0 | ✅ Supported | — | Polymorphism support via `discriminator` keyword |
-| `webhooks` | OAS 3.1 | ✅ Supported | — | Top-level webhooks object for incoming events |
+| `webhooks` | OAS 3.1 | ✅ Supported | ⚠️ Partial | Top-level webhooks object for incoming events; the client generates no methods for webhook operations, only helpers that verify and decode deliveries |
 | `itemSchema` | OAS 3.2 | ✅ Supported | — | Media Type Object item schema for sequential media |
 | `$self` | OAS 3.2 | ✅ Supported | — | Root document URI for relative and absolute reference resolution |
-| `querystring` | OAS 3.2 | ✅ Supported | — | Query string parameter object without a parameter name |
+| `querystring` | OAS 3.2 | ✅ Supported | ⚠️ Partial | Query string parameter object without a parameter name; the client ignores the `encoding` declarations of the members of a nameless form querystring |
 | `xml` | OAS 3.0 | ⚠️ Partial | — | XML serialization metadata (name, namespace, prefix) |
 | `externalDocs` | OAS 3.0 | ⚠️ Partial | — | Reference to external documentation |
 | `links` | OAS 3.0 | ❌ Not Supported | — | Links between operations |
@@ -10995,10 +10995,10 @@ Client: whether the generated Python client (`--generate-client`) supports the f
 | `mutualTLS` | OAS 3.1 | ❌ Not Supported | ❌ Not Supported | Mutual TLS security scheme |
 | `style: cookie` | OAS 3.2 | ✅ Supported | ✅ Supported | Cookie parameter style; earlier versions do not declare it |
 | `style: deepObject` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Query parameters written as `name[key]=value`; the client writes objects only |
-| `Structured style values` | OAS 3.0 | ✅ Supported | ❌ Not Supported | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style |
+| `Structured style values` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style; the client writes a parameter outside a header that takes one item or an array of them only |
 | `Binary strings in text media` | OAS 3.0 | ✅ Supported | ❌ Not Supported | `format: binary` strings inside a JSON, URL-encoded or text body, a parameter or a header |
 | `multipart media types` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema only, such as not `multipart/related` |
-| `Encoding contentType` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Media types of form-data parts; the client writes a part holding no files as JSON, or its scalars as text in a media type other than a form's |
+| `Encoding contentType` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Media types of form-data parts; the client writes a part holding no files as JSON, or its scalars as text in a media type other than a form or multipart media type |
 <!-- END AUTO-GENERATED SUPPORTED FEATURES -->
 
 ## Data Format Support
@@ -23252,12 +23252,13 @@ app/client: Skipping GET /pets/{petId} (operationId 'getPet'), which the client 
 /paths/~1pets~1{petId}/get: The path placeholder 'petId' of GET /pets/{petId} has no path parameter
 ```
 
-When the reason is an OpenAPI feature the client does not support, the warning names it and the version that
-introduced it, as the [supported features](supported_formats.md#supported-features-from-code) list them: the HTTP
-security schemes other than `basic` and `bearer`, `mutualTLS`, `style: deepObject` on a value that is no object,
-`style: cookie` in a document before OpenAPI 3.2, values written with a style that are no single scalar kind, binary
-strings in text media, multipart media other than `multipart/form-data` with an object schema, and an encoding
-`contentType` of a part holding no files that is a form's, or other than JSON for objects and arrays:
+When the reason is an OpenAPI feature the client does not support, the warning names it and the version that introduced
+it, as the [supported features](supported_formats.md#supported-features-from-code) list them: the HTTP security schemes
+other than `basic` and `bearer`, `mutualTLS`, `style: deepObject` on a value that is no object, `style: cookie` in a
+document before OpenAPI 3.2, values written with a style that are no single scalar kind (but for a parameter outside a
+header that takes one item or an array of them), binary strings in text media, multipart media other than
+`multipart/form-data` with an object schema, and an encoding `contentType` of a part holding no files that is a form or
+multipart media type, or other than JSON for objects and arrays:
 
 ```text
 app/client: Skipping GET /certificates (operationId 'listCertificates'), which uses mutualTLS (OAS 3.1) that the
@@ -23265,9 +23266,12 @@ client does not support: /paths/~1certificates/get: The security of GET /certifi
 'clientCertificate'
 ```
 
-The generated client has no method, type, or documentation for it. Generation still stops with `Error:` and exit
-code 2 when every operation would be left out, when an operation that a [helper](python-client-helpers.md) calls
-would be, and for any other refusal, such as a setting that cannot apply or a server URL that does not resolve.
+The generated client has no method, type, or documentation for it. The client package omits only its client code:
+the model files are generated from the whole document, so they can still hold the types the left-out operation used,
+such as the model of its request body or of a parameter's schema. Generation still stops with `Error:` and exit
+code 2 when every operation would be left out, when an operation that an enabled [helper](python-client-helpers.md)
+calls would be, and for any other refusal, such as a setting that cannot apply or a server URL that does not resolve;
+the error also names the operations left out before that refusal was found.
 
 ### Generator options
 
