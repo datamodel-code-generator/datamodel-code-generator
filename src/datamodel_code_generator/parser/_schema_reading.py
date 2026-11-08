@@ -25,7 +25,7 @@ from datamodel_code_generator._json_schema import (
 )
 from datamodel_code_generator._openapi_paths import PATH_ITEM_METHODS
 from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public annotations support get_type_hints().
-from datamodel_code_generator.parser._intersection import intersect_keywords
+from datamodel_code_generator.parser._intersection import ENUM_ENTRY_NAMES, intersect_keywords, kept_enum_entries
 from datamodel_code_generator.parser._null_facts import dump_null_sources, resolve_null_facts
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject, _type_null_sources
 from datamodel_code_generator.types import DataType, UnionIntFloat
@@ -191,6 +191,14 @@ def _intersect_parts(  # noqa: PLR0913
     return intersection
 
 
+def _declares_key_keywords(obj: JsonSchemaObject) -> bool:
+    """Return whether a schema declares the keywords of a map's keys: patternProperties or any propertyNames.
+
+    A ``propertyNames: false`` counts too; ``_schema_object._has_map_key_keywords`` leaves it out.
+    """
+    return bool(obj.patternProperties) or obj.propertyNames is not None
+
+
 def _is_object_only_type(type_: str | list[str] | None) -> bool:
     """Return whether a schema type permits only object values."""
     match type_:
@@ -216,21 +224,18 @@ def _enum_without_positions(obj: JsonSchemaObject, excluded: Collection[int]) ->
     Each entry stays with its value, matched as ``parse_enum`` matches them.
     """
     skip_null = _enum_entries_skip_null(obj)
-    entry_positions = (position for position, value in enumerate(obj.enum) if value is not None or not skip_null)
-    dropped = {index for index, position in enumerate(entry_positions) if position in excluded}
     return obj.model_copy(
         update={
             "enum": [value for position, value in enumerate(obj.enum) if position not in excluded],
             **{
-                field: [entry for index, entry in enumerate(entries) if index not in dropped]
-                for field in _ENUM_ENTRY_FIELDS
+                field: kept_enum_entries(
+                    obj.enum, entries, lambda position: position not in excluded, skips_null=skip_null, keeps_extra=True
+                )
+                for _, field in ENUM_ENTRY_NAMES
                 if (entries := getattr(obj, field))
             },
         }
     )
-
-
-_ENUM_ENTRY_FIELDS = ("x_enum_varnames", "x_enum_names", "x_enum_descriptions")
 
 
 def _enum_entries_skip_null(obj: JsonSchemaObject) -> bool:

@@ -174,8 +174,13 @@ class _SchemaTagFacts:
         return None if value is None else FieldTag(value, "referenced-schema")
 
 
-def _get_union_variant_name(name: str, literal: JsonSchemaLiteral) -> str | None:
+def _variant_prefix(name: str) -> str:
+    """Return what the branch names composed from a union's name ``name`` start with: its module, its class, ``_``."""
     module_name, separator, class_name = name.rpartition(".")
+    return f"{module_name}{separator}{class_name or name}_" if module_name else f"{class_name or name}_"
+
+
+def _get_union_variant_name(name: str, literal: JsonSchemaLiteral) -> str | None:
     if isinstance(literal, str):
         literal_text = literal
     elif isinstance(literal, bool):
@@ -185,8 +190,7 @@ def _get_union_variant_name(name: str, literal: JsonSchemaLiteral) -> str | None
     literal_name = sanitize_module_name(literal_text, treat_dot_as_module=False)
     if not literal_name:
         return None
-    variant_name = f"{class_name or name}_{literal_name}"
-    return f"{module_name}{separator}{variant_name}" if module_name else variant_name
+    return f"{_variant_prefix(name)}{literal_name}"
 
 
 def union_variant_tag(name: str, variant_name: str) -> str | None:
@@ -194,8 +198,7 @@ def union_variant_tag(name: str, variant_name: str) -> str | None:
 
     None for a name it did not compose from ``name``.
     """
-    module_name, separator, class_name = name.rpartition(".")
-    prefix = f"{module_name}{separator}{class_name or name}_" if module_name else f"{class_name or name}_"
+    prefix = _variant_prefix(name)
     return variant_name.removeprefix(prefix) if variant_name.startswith(prefix) else None
 
 

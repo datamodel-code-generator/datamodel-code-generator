@@ -18,7 +18,7 @@ from datamodel_code_generator._module_paths import dotted_module
 from datamodel_code_generator._reference_graph import EdgeKind, GraphSnapshot
 from datamodel_code_generator._user_keys import model_type_override
 from datamodel_code_generator.model.base import BaseLayoutView, _find_base_classes, linearize_data_models
-from datamodel_code_generator.parser._field_rows import uses_default_with_required
+from datamodel_code_generator.parser._field_rows import require_field
 from datamodel_code_generator.parser._graph_ids import keyed_models
 from datamodel_code_generator.parser._model_shapes import reuse_candidate_key
 from datamodel_code_generator.parser._passes._shared import (
@@ -61,6 +61,10 @@ class _Clearable(Protocol):
 
 class FlattenHost(InheritedFieldHost, GraphBuilderHost, Protocol):
     """What making a model declare the fields of its bases reads and writes of the parser."""
+
+    @property
+    def keep_defaults_of_inherited_required_fields(self) -> bool:
+        """Whether a field only a base requires keeps its default (``--keep-defaults-of-inherited-required-fields``)."""
 
 
 class PlansHost(RecursionFactsHost, FlattenHost, ReuseOptionsHost, DataModelTypeHost, TagPlanHost, Protocol):
@@ -201,14 +205,7 @@ def flatten_base_layouts(parser: FlattenHost, model: DataModel) -> None:
         if id(field) not in own_fields:
             field = parser._copy_model_field(field)  # noqa: SLF001
         if required and not field.required:
-            parser._graph_builder.require_field(  # noqa: SLF001
-                field,
-                use_default_with_required=uses_default_with_required(
-                    required=required,
-                    has_default=field.has_default,
-                    use_default=parser.apply_default_values_for_required_fields,
-                ),
-            )
+            require_field(parser, field)
         return field
 
     parser._graph_builder.adopt_base_options(model)  # noqa: SLF001

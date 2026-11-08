@@ -53,6 +53,7 @@ from datamodel_code_generator.parser._schema_reading import (
     _LIGHTWEIGHT_MAX_DEPTH,
     _LIGHTWEIGHT_MAX_UNION_ELEMENTS,
     _AllOfItemGroups,
+    _declares_key_keywords,
     _enum_without_positions,
     _intersect_parts,
     _is_object_only_type,
@@ -273,10 +274,6 @@ class AllOfValuesHost(Protocol):
         """Whether the models validate the schema rules their fields cannot express."""
 
     @property
-    def ignore_enum_constraints(self) -> bool:
-        """Whether an enum leaves its constraints out (``--ignore-enum-constraints``)."""
-
-    @property
     def target_pydantic_version(self) -> TargetPydanticVersion | None:
         """The Pydantic version the output targets, if configured."""
 
@@ -303,6 +300,10 @@ class AllOfValuesHost(Protocol):
     @property
     def _output_model_context(self) -> OutputModelContext:
         """The capabilities of the output model types."""
+
+    @property
+    def _root_validates_literals(self) -> bool:
+        """Whether the root model class validates the literal values of a root (``add_literal_validation``)."""
 
     @property
     def _schema_graph(self) -> SchemaGraphBuilder | None:
@@ -449,6 +450,9 @@ class AllOfValuesHost(Protocol):
 
     def _read_false_all_of_values(self, obj: JsonSchemaObject, *, lightweight: bool = False) -> JsonSchemaObject:
         """Return the site ``obj`` with the schema that types its values written ``false`` where it is a false allOf."""
+
+    def _reads_enum(self, obj: JsonSchemaObject) -> bool:
+        """Return whether the run reads the enum of a schema: it has one and --ignore-enum-constraints is off."""
 
     def _reads_enum_as_const(self, obj: JsonSchemaObject) -> bool:
         """Return whether --use-single-value-enum-as-const reads an enum admitting the const beside it as that const."""
@@ -764,6 +768,20 @@ def layers_on_reference(parser: AllOfValuesHost, target: JsonSchemaObject, keys:
     )
 
 
+def _site_intersection(
+    parser: AllOfValuesHost, obj: JsonSchemaObject, parts: list[JsonSchemaObject]
+) -> JsonSchemaObject:
+    """Return the intersection of the value parts of an allOf site, warned about at the site, its enum narrowed.
+
+    The enum is narrowed to the const of each part without one (``_enum_narrowed_by_part_consts``).
+    """
+    return _enum_narrowed_by_part_consts(
+        intersect_typed_value_parts(parser, parts, named_location(obj.schema_location, "allOf")),
+        parts,
+        const_support=parser._features_at(obj).const_support,  # noqa: SLF001
+    )
+
+
 def reference_site_value(
     parser: AllOfValuesHost, obj: JsonSchemaObject, *, layered: bool
 ) -> tuple[list[JsonSchemaObject], dict[str, Any]] | None:
@@ -792,11 +810,7 @@ def reference_site_value(
     satisfiable = parser._satisfiable_all_of_value_parts(obj) is not None  # noqa: SLF001
     written = parser._temporary_constraint_values(obj, parser.get_ref_data_type(refs[0])) if layered else {}  # noqa: SLF001
     target = intersect_typed_value_parts(parser, target_parts, None)
-    intersection = _enum_narrowed_by_part_consts(
-        intersect_typed_value_parts(parser, parts, named_location(obj.schema_location, "allOf")),
-        parts,
-        const_support=parser._features_at(obj).const_support,  # noqa: SLF001
-    )
+    intersection = _site_intersection(parser, obj, parts)
     target_dump = target.model_dump(exclude_unset=True, by_alias=True)
     fails = bool(written) and not (parser.collapse_root_models or layers_on_reference(parser, target, written))
     if not fails and (
@@ -964,10 +978,9 @@ def is_root_model_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> bool
         or obj.oneOf
         or obj.anyOf
         or obj.properties
-        or obj.patternProperties
-        or obj.propertyNames is not None
+        or _declares_key_keywords(obj)
         or obj.type == "object"
-    ) and (not obj.enum or parser.ignore_enum_constraints)
+    ) and not parser._reads_enum(obj)  # noqa: SLF001
 
 
 def handle_allof_root_model_with_constraints(  # noqa: PLR0911, PLR0912, PLR0915
@@ -1036,7 +1049,7 @@ def handle_allof_root_model_with_constraints(  # noqa: PLR0911, PLR0912, PLR0915
 
     has_literals = (
         parser.generate_schema_validators
-        and hasattr(parser.data_model_root_type, "add_literal_validation")
+        and parser._root_validates_literals  # noqa: SLF001
         and ("enum" in obj.model_fields_set or "const" in obj.extras)
     )
     if obj.has_constraint or obj.description or obj.format or has_literals or parser.field_constraints:
@@ -1287,8 +1300,7 @@ def is_all_of_mapping_item(parser: AllOfValuesHost, schema: JsonSchemaObject) ->
     """Return whether an allOf item is an object map, which a mapping-shaped allOf merges into one root map."""
     return not (
         schema.properties
-        or schema.patternProperties
-        or schema.propertyNames is not None
+        or _declares_key_keywords(schema)
         or not _is_object_only_type(
             _non_null_types(schema.type) if parser._null_mode.type_excludes_member_null else schema.type  # noqa: SLF001
         )
@@ -1298,10 +1310,10 @@ def is_all_of_mapping_item(parser: AllOfValuesHost, schema: JsonSchemaObject) ->
 
 def merge_all_of_root_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> JsonSchemaObject | None:  # noqa: PLR0912
     """Unwrap one value schema or merge mapping-shaped allOf items into a root schema."""
-    if obj.properties or obj.patternProperties or obj.propertyNames is not None:
+    if obj.properties or _declares_key_keywords(obj):
         return None
 
-    supports_literal_validation = hasattr(parser.data_model_root_type, "add_literal_validation")
+    supports_literal_validation = parser._root_validates_literals  # noqa: SLF001
     single_value = len(obj.allOf) == 1 and not schema_requires_model_type(parser, obj)
     mapping_schemas: list[JsonSchemaObject] = []
     sibling_types: list[str | list[str]] = []
@@ -1845,11 +1857,7 @@ def all_of_enum_site_schema(parser: AllOfValuesHost, obj: JsonSchemaObject) -> J
         )
     if not parser.config.use_site_models_for_constrained_refs:
         return None
-    intersection = _enum_narrowed_by_part_consts(
-        intersect_typed_value_parts(parser, parts, named_location(obj.schema_location, "allOf")),
-        parts,
-        const_support=parser._features_at(obj).const_support,  # noqa: SLF001
-    )
+    intersection = _site_intersection(parser, obj, parts)
     literals = intersection.enum
     if all(
         len(intersect_enum_values(target.enum, literals)) == len(target.enum)

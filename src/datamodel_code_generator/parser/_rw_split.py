@@ -28,7 +28,7 @@ from datamodel_code_generator._graph_links import drop_tree
 from datamodel_code_generator.model import DataModel
 from datamodel_code_generator.model.base import _field_source_name
 from datamodel_code_generator.model.runtime_validation import _is_internal_schema_runtime_validation
-from datamodel_code_generator.parser._field_rows import uses_default_with_required
+from datamodel_code_generator.parser._field_rows import require_field
 from datamodel_code_generator.parser._naming import rw_variant_class_name
 from datamodel_code_generator.parser._origins import with_field_origin
 from datamodel_code_generator.parser._passes._shared import (
@@ -38,7 +38,11 @@ from datamodel_code_generator.parser._passes._shared import (
 )
 from datamodel_code_generator.parser._schema_dispatch import SchemaSite, TypedChild
 from datamodel_code_generator.parser._schema_object import JsonSchemaObject
-from datamodel_code_generator.parser._schema_reading import _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY, _merges_ref_siblings
+from datamodel_code_generator.parser._schema_reading import (
+    _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY,
+    _declares_key_keywords,
+    _merges_ref_siblings,
+)
 from datamodel_code_generator.parser.base import _DEFERRED_INHERITED_CLASS_KEY, _DEFERRED_INHERITED_FIELD_KEY
 from datamodel_code_generator.python_literal import _make_referencing_type_expression
 from datamodel_code_generator.reference import (
@@ -128,9 +132,7 @@ _Site: TypeAlias = "SchemaSite[JsonSchemaObject]"
 
 def _has_map_keywords(obj: JsonSchemaObject) -> bool:
     """Return whether a schema has keywords that type the keys or values of an object map."""
-    return bool(
-        obj.patternProperties or obj.propertyNames is not None or isinstance(obj.additionalProperties, JsonSchemaObject)
-    )
+    return _declares_key_keywords(obj) or isinstance(obj.additionalProperties, JsonSchemaObject)
 
 
 def _rw_flag_facts(flags: Iterable[tuple[bool, bool]]) -> tuple[bool, bool, bool, bool]:
@@ -250,6 +252,10 @@ class RwSplitHost(Protocol):
     @property
     def generate_schema_validators(self) -> bool:
         """Whether the models validate the schema rules their fields cannot express."""
+
+    @property
+    def keep_defaults_of_inherited_required_fields(self) -> bool:
+        """Whether a field only a base requires keeps its default (``--keep-defaults-of-inherited-required-fields``)."""
 
     @property
     def keyword_only(self) -> bool:
@@ -606,14 +612,7 @@ def collect_inherited_fields_for_request_response(
         required_names = parser._get_inherited_required_names(base_classes)  # noqa: SLF001
         for field in result:
             if _field_source_name(field) in required_names:
-                parser._graph_builder.require_field(  # noqa: SLF001
-                    field,
-                    use_default_with_required=uses_default_with_required(
-                        required=True,
-                        has_default=field.has_default,
-                        use_default=parser.apply_default_values_for_required_fields,
-                    ),
-                )
+                require_field(parser, field)
     return result
 
 
@@ -814,14 +813,7 @@ def get_raw_inherited_fields(
     if not parser.force_optional_for_required_fields:
         for field in result:
             if _field_source_name(field) in required_names:
-                parser._graph_builder.require_field(  # noqa: SLF001
-                    field,
-                    use_default_with_required=uses_default_with_required(
-                        required=True,
-                        has_default=field.has_default,
-                        use_default=parser.apply_default_values_for_required_fields,
-                    ),
-                )
+                require_field(parser, field)
             parser.data_model_type.finalize_required_inherited_field(field)
 
     parser._raw_inherited_fields_cache[resolved_ref] = tuple(result)  # noqa: SLF001
@@ -1326,7 +1318,7 @@ def schema_builds_map_model(parser: RwSplitHost, schema: JsonSchemaObject, defin
         return False
     if not schema.allOf:
         return True
-    if schema.patternProperties or schema.propertyNames is not None:
+    if _declares_key_keywords(schema):
         return False
     with parser._inherited_ref_context(defining_ref):  # noqa: SLF001
         return all(

@@ -64,6 +64,7 @@ from datamodel_code_generator.parser._schema_reading import (
     _DocumentEntries,
     _fragment_value,
     _is_plain_name_fragment,
+    get_model_by_path,
 )
 from datamodel_code_generator.parser.base import title_to_class_name
 from datamodel_code_generator.parser.schema_version import JsonSchemaFeatures, _detect_declared_jsonschema_version
@@ -90,11 +91,15 @@ if TYPE_CHECKING:
 
 __all__ = [
     "SchemaDocumentsHost",
+    "SchemaPathsHost",
     "add_id_callback",
     "cache_source_ref_body",
+    "declared_location",
     "document_as_written",
     "document_id_field",
+    "document_source",
     "duplicate_name_location",
+    "first_definitions",
     "get_context_source_path_parts",
     "get_ref_body_from_local_http_path",
     "has_schema_affecting_keywords",
@@ -200,6 +205,28 @@ def _document_location(location: str, document: str) -> str:
     """Return a registry location as a reference from a document, local when it lies in the document."""
     target_document, _, pointer = location.partition("#")
     return f"#{pointer}" if target_document == document else location
+
+
+class SchemaPathsHost(Protocol):
+    """What reading the definitions container of a document reads of the parser."""
+
+    def _schema_paths_at(self, at: SchemaLocation | None) -> list[tuple[str, list[str]]]:
+        """Return the schema paths for definitions and defs of the document a location is in, None: the parsed one."""
+
+
+def first_definitions(
+    parser: SchemaPathsHost, raw: dict[str, YamlValue], location: SchemaLocation | None
+) -> tuple[str, dict[str, YamlValue]]:
+    """Return the schema path and the value of the first definitions container of a document that holds an entry.
+
+    The containers are those of the schema paths of the document at ``location`` (None: the document being parsed,
+    ``_schema_paths_at``); ``""`` and the last value read, an empty one, when none holds an entry.
+    """
+    definitions: dict[str, YamlValue] = {}
+    for schema_path, split_schema_path in parser._schema_paths_at(location):  # noqa: SLF001
+        if definitions := cast("dict[str, YamlValue]", get_model_by_path(raw, split_schema_path)):
+            return schema_path, definitions
+    return "", definitions
 
 
 class SchemaDocumentsHost(Protocol):
@@ -342,7 +369,7 @@ class SchemaDocumentsHost(Protocol):
         """Resolve registered resources before considering a physical document fetch."""
 
     def _ignores_ref_siblings_at(self, location: SchemaLocation | None) -> bool:
-        """Return whether the schema version of a location ignores the keywords beside a ``$ref``."""
+        """Return whether a ``$ref`` at a location is read alone (--ignore-ref-siblings-by-schema-version)."""
 
     def _read_dialect(self, raw: dict[str, Any], *, inherited: DocumentDialect | None = None) -> DocumentDialect:
         """Return the dialect a document of the parser's kind is read by (``parser/jsonschema.py``)."""
@@ -564,10 +591,8 @@ def schema_resource_identifier(
     if "$schema" in schema and getattr(parser.config, "jsonschema_version", None) in {None, JsonSchemaVersion.Auto}:
         version = _detect_declared_jsonschema_version(schema)
         id_field = JsonSchemaFeatures.from_version(version).id_field if version is not None else None
-    if (
-        parser.config.ignore_ref_siblings_by_schema_version
-        and isinstance(schema.get("$ref"), str)
-        and parser._ignores_ref_siblings_at(SchemaLocation(document, ()))  # noqa: SLF001
+    if isinstance(schema.get("$ref"), str) and parser._ignores_ref_siblings_at(  # noqa: SLF001
+        SchemaLocation(document, ())
     ):
         return id_field, None
     identifier = schema.get(id_field or document_id_field(parser, document))
@@ -631,7 +656,7 @@ def duplicate_name_location(parser: SchemaDocumentsHost, uri: str) -> str | None
     ) is None:
         return None
     name = uri.partition("#")[2]
-    source = redact_url("/".join(parser._schema_resource_path_parts[document])) or parser._source_path_for_diagnostics()  # noqa: SLF001
+    source = document_source(parser, document)
     declarations = ", ".join(stable_repr(redact_url(_document_location(location, document))) for location in locations)
     first = parser.config.read_dynamic_anchors_in_document_order
     parser._resource_ref_warnings.add(  # noqa: SLF001
@@ -642,6 +667,20 @@ def duplicate_name_location(parser: SchemaDocumentsHost, uri: str) -> str | None
     return locations[0] if first else None
 
 
+def document_source(parser: SchemaDocumentsHost, document: str) -> str:
+    """Return how diagnostics name a registered document: its redacted path, else the input's diagnostics path."""
+    return redact_url("/".join(parser._schema_resource_path_parts[document]) or parser._source_path_for_diagnostics())  # noqa: SLF001
+
+
+def declared_location(parser: SchemaDocumentsHost, absolute: str) -> str | None:
+    """Return the location of the schema an absolute reference names in a registered schema resource, if any.
+
+    A plain name several schemas of a document declare names the first under --read-dynamic-anchors-in-document-order
+    (``duplicate_name_location``).
+    """
+    return duplicate_name_location(parser, absolute) or parser._schema_resource_registry.location(absolute)  # noqa: SLF001
+
+
 def resolve_schema_resource_ref(
     parser: SchemaDocumentsHost, reference: str, base: str, document: str, *, nested_scope: bool
 ) -> str:
@@ -650,9 +689,7 @@ def resolve_schema_resource_ref(
         return resolve_lenient_resource_ref(parser, reference, base, document)
     absolute = urljoin(base, reference)
     resource, _, fragment = absolute.partition("#")
-    if (
-        location := duplicate_name_location(parser, absolute) or parser._schema_resource_registry.location(absolute)  # noqa: SLF001
-    ) is not None:
+    if (location := declared_location(parser, absolute)) is not None:
         return _document_location(location, document)
     if (
         not is_pointer_fragment(fragment)
@@ -674,15 +711,13 @@ def resolve_lenient_resource_ref(parser: SchemaDocumentsHost, reference: str, ba
     resolves elsewhere warns, so the schema can be fixed to mean the same under both.
     """
     if _is_plain_name_fragment(reference):
-        absolute = urljoin(base, reference)
-        locations = parser._schema_resource_registry.locations  # noqa: SLF001
-        location = duplicate_name_location(parser, absolute) or locations.get(absolute)
+        location = declared_location(parser, urljoin(base, reference))
         return reference if location is None else _document_location(location, document)
     if (location := parser._schema_resource_registry.location(urljoin(base, reference))) is None:  # noqa: SLF001
         return reference
     if (target := _document_location(location, document)) == reference or not target.startswith("#"):
         return reference
-    source = redact_url("/".join(parser._schema_resource_path_parts[document]) or parser._source_path_for_diagnostics())  # noqa: SLF001
+    source = document_source(parser, document)
     if reference.startswith("#"):
         if not lenient_pointer_exists(parser, document, reference):
             return target if lenient_pointer_exists(parser, document, target) else reference
@@ -892,8 +927,11 @@ def index_document(parser: SchemaDocumentsHost, raw: dict[str, Any], path_parts:
     return indexed
 
 
-def document_root(parser: SchemaDocumentsHost, path_parts: list[str]) -> SchemaLocation:
-    """Return the location of the root of the document read at ``path_parts``, named as reference paths name it."""
+def document_root(parser: SchemaDocumentsHost, path_parts: Sequence[str]) -> SchemaLocation:
+    """Return the location of the root of the document read at ``path_parts``, named as reference paths name it.
+
+    The document whose schemas are being parsed is read at ``model_resolver.current_root``.
+    """
     return SchemaLocation(parser.model_resolver.join_path(tuple(path_parts)).partition("#")[0], ())
 
 

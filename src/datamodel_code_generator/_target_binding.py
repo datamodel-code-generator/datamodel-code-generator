@@ -428,7 +428,7 @@ class TargetApiOpenAPIParser(ApiOpenAPIParser):
         They do in every version, unless --ignore-ref-siblings-by-schema-version reads the ``$ref`` alone where the
         version of the location ignores them (``reads_ref_alone``).
         """
-        return not (self.config.ignore_ref_siblings_by_schema_version and self._ignores_ref_siblings_at(location))
+        return not self._ignores_ref_siblings_at(location)
 
     def _resolve_local_ref_path(self, path: Path, ref: str) -> Path:
         """Refuse a local file that a served source document would publish, before reading it.
