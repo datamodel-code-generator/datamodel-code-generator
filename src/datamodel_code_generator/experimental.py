@@ -347,7 +347,7 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
             "Dynamic module generation is experimental; its parameters, the DynamicModule attributes, the schema "
             "locations it keys classes by, and the module registration rules may change."
         ),
-        since_version="0.91.1",
+        since_version="0.92.0",
         note=(
             "generate_dynamic_module() generates the classes like generate_dynamic_models() and also returns the "
             "class of the document itself, if it has one (None for an OpenAPI document or with skip_root_model), and "
