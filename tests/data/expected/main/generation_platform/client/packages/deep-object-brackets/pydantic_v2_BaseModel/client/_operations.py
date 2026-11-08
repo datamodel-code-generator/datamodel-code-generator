@@ -21,6 +21,7 @@ from ._runtime.model_codecs.media import FieldPlan
 from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.charges import GetChargesChargeResponse
 from .types.customers import GetCustomersResponse, PostCustomersResponse
+from .types.subscriptions import PostSubscriptionsResponse
 
 _SERVERS_0: Final = (ServerPlan(url='https://api.example.com'),)
 
@@ -30,7 +31,7 @@ OPERATION_0: Final[OperationPlan[GetChargesChargeResponse]] = OperationPlan(
     path='/v1/charges/{charge}',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='charge', style='simple', required=True), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='expand[]', style='form', explode=True, shape='array', reserved_names=('created', 'expand', 'limit')), codec=model_bindings.codec_1), ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='form', explode=True, kind='integer', reserved_names=('created', 'expand')), codec=model_bindings.codec_2), ParameterSpec(plan=ParameterPlan(location='query', name='created', style='deepObject', explode=True, shape='object', fields=(FieldPlan('gt', 'integer'),), additional=FieldPlan('', 'string'), reserved_names=('expand', 'limit')), codec=model_bindings.codec_3)),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='charge', style='simple', required=True), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='expand', style='deepObject', explode=True, shape='array', reserved_names=('created', 'limit'), brackets=True), codec=model_bindings.codec_1), ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='deepObject', explode=True, kind='integer', reserved_names=('created', 'expand'), brackets=True), codec=model_bindings.codec_2), ParameterSpec(plan=ParameterPlan(location='query', name='created', style='deepObject', explode=True, shape='object', kind='integer', fields=(FieldPlan('gt', 'integer'), FieldPlan('gte', 'integer'), FieldPlan('lt', 'integer'), FieldPlan('lte', 'integer')), additional=FieldPlan('', 'string'), reserved_names=('expand', 'limit'), brackets=True), codec=model_bindings.codec_3)),
 )
 
 OPERATION_1: Final[OperationPlan[GetCustomersResponse]] = OperationPlan(
@@ -39,7 +40,7 @@ OPERATION_1: Final[OperationPlan[GetCustomersResponse]] = OperationPlan(
     path='/v1/customers',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='expand[]', style='form', explode=True, shape='array', reserved_names=('expand', 'ids')), codec=model_bindings.codec_4), ParameterSpec(plan=ParameterPlan(location='query', name='ids[]', style='form', explode=True, shape='array', reserved_names=('expand', 'ids'), single=True, item_name='ids'), codec=model_bindings.codec_5)),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='expand', style='deepObject', explode=True, shape='array', reserved_names=('ids',), brackets=True), codec=model_bindings.codec_4), ParameterSpec(plan=ParameterPlan(location='query', name='ids', style='deepObject', explode=True, shape='array', reserved_names=('expand',), brackets=True), codec=model_bindings.codec_5)),
 )
 
 OPERATION_2: Final[OperationPlan[PostCustomersResponse]] = OperationPlan(
@@ -48,5 +49,14 @@ OPERATION_2: Final[OperationPlan[PostCustomersResponse]] = OperationPlan(
     path='/v1/customers',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    body=RequestBody(media=(BodyMedia(media_type='application/x-www-form-urlencoded', kind='form', codec=model_bindings.codec_6, fields=(FieldPlan('email', 'string'),), additional=FieldPlan('', 'string'), encoded=(ParameterPlan(location='query', name='balance', style='form', explode=True, kind='integer', reserved_names=('email', 'expand', 'metadata', 'tax_rates')), ParameterPlan(location='query', name='expand[]', style='form', explode=True, shape='array', reserved_names=('balance', 'email', 'metadata', 'tax_rates'), item_name='expand'), ParameterPlan(location='query', name='metadata', style='deepObject', explode=True, shape='object', additional=FieldPlan('', 'string'), reserved_names=('balance', 'email', 'expand', 'tax_rates')), ParameterPlan(location='query', name='tax_rates[]', style='form', explode=True, shape='array', reserved_names=('balance', 'email', 'expand', 'metadata'), single=True, item_name='tax_rates'))),), default='application/x-www-form-urlencoded'),
+    body=RequestBody(media=(BodyMedia(media_type='application/x-www-form-urlencoded', kind='form', codec=model_bindings.codec_6, fields=(FieldPlan('email', 'string'),), additional=FieldPlan('', 'string'), encoded=(ParameterPlan(location='query', name='balance', style='deepObject', explode=True, kind='integer', reserved_names=('email', 'expand', 'metadata', 'tax_rates'), brackets=True), ParameterPlan(location='query', name='expand', style='deepObject', explode=True, shape='array', reserved_names=('balance', 'email', 'metadata', 'tax_rates'), brackets=True), ParameterPlan(location='query', name='metadata', style='deepObject', explode=True, shape='object', additional=FieldPlan('', 'string'), reserved_names=('balance', 'email', 'expand', 'tax_rates'), brackets=True), ParameterPlan(location='query', name='tax_rates', style='deepObject', explode=True, shape='array', reserved_names=('balance', 'email', 'expand', 'metadata'), brackets=True))),), default='application/x-www-form-urlencoded'),
+)
+
+OPERATION_3: Final[OperationPlan[PostSubscriptionsResponse]] = OperationPlan(
+    operation_id='PostSubscriptions',
+    method='POST',
+    path='/v1/subscriptions',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder((empty_branch('204'),), ()),
+    body=RequestBody(media=(BodyMedia(media_type='application/x-www-form-urlencoded', kind='form', codec=model_bindings.codec_7, fields=(FieldPlan('customer', 'string'),), additional=FieldPlan('', 'string'), encoded=(ParameterPlan(location='query', name='discounts', style='deepObject', explode=True, shape='array', fields=(FieldPlan('coupon', 'string'),), additional=FieldPlan('', 'string'), reserved_names=('customer', 'items', 'metadata', 'off_session', 'payment_settings'), brackets=True), ParameterPlan(location='query', name='items', style='deepObject', explode=True, shape='array', fields=(FieldPlan('price', 'string'), FieldPlan('quantity', 'integer'), FieldPlan('metadata', 'string', additional=FieldPlan('', 'string'))), additional=FieldPlan('', 'string'), reserved_names=('customer', 'discounts', 'metadata', 'off_session', 'payment_settings'), brackets=True), ParameterPlan(location='query', name='metadata', style='deepObject', explode=True, shape='object', additional=FieldPlan('', 'string'), reserved_names=('customer', 'discounts', 'items', 'off_session', 'payment_settings'), brackets=True), ParameterPlan(location='query', name='off_session', style='deepObject', explode=True, kind='boolean', reserved_names=('customer', 'discounts', 'items', 'metadata', 'payment_settings'), brackets=True), ParameterPlan(location='query', name='payment_settings', style='deepObject', explode=True, shape='object', fields=(FieldPlan('payment_method_options', 'string', fields=(FieldPlan('card', 'string', fields=(FieldPlan('request_three_d_secure', 'string'),), additional=FieldPlan('', 'string')),), additional=FieldPlan('', 'string')), FieldPlan('payment_method_types', 'string'), FieldPlan('save_default_payment_method', 'string')), additional=FieldPlan('', 'string'), reserved_names=('customer', 'discounts', 'items', 'metadata', 'off_session'), brackets=True))),), default='application/x-www-form-urlencoded'),
 )

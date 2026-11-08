@@ -2583,6 +2583,13 @@
       ]
     ]
   },
+  "deep-object-brackets-errors": {
+    "input": "deep-object-brackets-errors.yaml",
+    "config": {
+      "deep_object_brackets": true
+    },
+    "modules": false
+  },
   "deep-object-brackets": {
     "input": "deep-object-brackets.yaml",
     "backends": [

@@ -2097,9 +2097,10 @@ target_options.add_argument(
 _toggle(
     target_options,
     "--client-deep-object-brackets",
-    help="Write a deepObject query parameter or URL-encoded form member whose value is an array as name[]=value for "
-    "each item, and one whose value is a scalar as name=value, as Stripe documents them, instead of leaving its "
-    "operation out (experimental).",
+    help="Write a deepObject query parameter or URL-encoded form member in the bracket form Stripe documents: an "
+    "array as name[]=value for each item, a scalar as name=value, nested objects as name[key][key]=value, an array of "
+    "objects as name[index][key]=value, and a value that may be a scalar or an object as the one a call gives, "
+    "instead of leaving its operation out (experimental).",
 )
 target_options.add_argument(
     "--client-protocols",

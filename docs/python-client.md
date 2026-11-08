@@ -1598,12 +1598,26 @@ them from its first operation, moved or not, as the server's groups do. An expli
 that names it: a tag mapped to `default`, or an operation whose `resource` is `default`, joins the resource of that
 name.
 
-OpenAPI defines `style: deepObject` for objects alone, which the client writes as `name[key]=value` pairs; an
-operation whose deepObject query parameter, or `application/x-www-form-urlencoded` body member, takes an array or a
-scalar is left out. `--client-deep-object-brackets` writes such a parameter or member in the bracket form some APIs,
-such as Stripe, document instead: an array as `name[]=value` for each item, such as `expand[]=a&expand[]=b`, and a
-scalar as `name=value`. The brackets are percent-encoded in the query or the form, as those of an object's pairs are
-(`expand%5B%5D=a`), which servers decode to the same names. The setting changes only how the client writes these
+OpenAPI defines `style: deepObject` for objects of scalars alone, which the client writes as `name[key]=value` pairs;
+an operation whose deepObject query parameter, or `application/x-www-form-urlencoded` body member, takes an array, a
+scalar, a nested object or a union of a scalar and an object is left out. `--client-deep-object-brackets` writes such a
+parameter or member in the bracket form some APIs, such as Stripe, document instead:
+
+- an array of scalars as `name[]=value` for each item, such as `expand[]=a&expand[]=b`, inside an object too
+  (`payment_settings[payment_method_types][]=card`);
+- a scalar as `name=value`;
+- the members of an object as `name[key]=value` at any depth, such as `shipping[address][city]=Paris`, its other
+  properties keyed the same way;
+- an array of objects by index, such as `items[0][price]=p_1&items[1][price]=p_2`;
+- a value that may be a scalar, or the empty string, and an object or an array, as the one a call gives: `created=5` or
+  `created[gt]=5`, and `metadata=`, with which Stripe clears a value, or `metadata[plan]=pro`.
+
+Scalars are written as the other parameters are, booleans as `true` and `false`. A member of None is left out, as an
+unset one is, and so is an empty array or object. The brackets are percent-encoded in the query or the form, as those of
+an object's pairs are (`expand%5B%5D=a`), which servers decode to the same names. A value the bracket form cannot write
+by what it is stays left out with the warning: an array of arrays, a recursive value, and a union whose members a value
+does not tell apart, such as scalars of two kinds, two objects beside a scalar, an object beside an array of objects,
+or objects that both declare a member with such values. The setting changes only how the client writes these
 parameters and members; `--no-client-deep-object-brackets` turns off one that a `pyproject.toml` key sets.
 
 `--generate-client` requires `--client-output`, `--client-package`, and `--client-model-package`, and a `--client-*`

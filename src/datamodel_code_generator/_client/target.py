@@ -297,7 +297,7 @@ def _backend_dependencies(backend: CodecBackend, model_imports: frozenset[str]) 
 def _wire(request: TargetRequest, batch: GeneratedTypeContractBatch, *, brackets: bool) -> WirePlan:
     """Plan the parameters and headers of the selected operations, with the member plans of their forms.
 
-    With `brackets`, a deepObject query parameter whose value is an array or a scalar is written in brackets.
+    With `brackets`, a deepObject query parameter or URL-encoded form member is written in the bracket form.
     """
     return plan_wire(
         batch,

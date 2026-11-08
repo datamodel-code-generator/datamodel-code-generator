@@ -111,7 +111,9 @@ def bracketed(package: ModuleType, lines: list[str]) -> None:
     """Write deepObject arrays as `name[]=value` for each item and scalars as `name=value`, objects as `name[key]`.
 
     A value that is one item or an array of them is written as either, by the value a call gives. The members of a
-    URL-encoded form body are written as the query parameters are, such as an empty item that clears a list.
+    URL-encoded form body are written as the query parameters are, such as an empty item that clears a list. Nested
+    objects are written as `name[key][key]`, arrays of objects as `name[index][key]`, and a value that is a scalar or
+    an object, such as a range or an empty string that clears metadata, by the value a call gives.
     """
     exchange = Exchange(lines)
     with exchange.client() as http, package.Client(http_client=http) as api:
@@ -129,15 +131,41 @@ def bracketed(package: ModuleType, lines: list[str]) -> None:
             },
         )
         cleared = request_body(package, "PostCustomers", None, {"tax_rates": ""})
-        exchange.respond(*(raw_response(204) for _ in range(7)))
+        subscription = request_body(
+            package,
+            "PostSubscriptions",
+            None,
+            {
+                "customer": "cus_1",
+                "discounts": [{"coupon": "co_1"}],
+                "items": [{"price": "price_1", "quantity": 2, "metadata": {"seat": "a"}}, {"price": "price_2"}],
+                "metadata": {"order": "o_1"},
+                "off_session": True,
+                "payment_settings": {
+                    "payment_method_options": {"card": {"request_three_d_secure": "any"}},
+                    "payment_method_types": ["card", "sepa_debit"],
+                    "save_default_payment_method": "on_subscription",
+                },
+            },
+        )
+        unset = request_body(
+            package,
+            "PostSubscriptions",
+            None,
+            {"customer": "cus_1", "discounts": "", "metadata": "", "payment_settings": {"payment_method_types": ""}},
+        )
+        exchange.respond(*(raw_response(204) for _ in range(10)))
         record(
             lines,
             "charge",
             lambda: api.charges.get_charges_charge(charge="ch_1", expand=["a", "b"], limit=3, created=created),
         )
+        record(lines, "created at", lambda: api.charges.get_charges_charge(charge="ch_1", created=5))
         record(lines, "one item", lambda: api.customers.get_customers(expand=["data.source"]))
         record(lines, "no items", lambda: api.customers.get_customers(expand=[]))
         record(lines, "one id", lambda: api.customers.get_customers(ids="cus_1"))
         record(lines, "ids", lambda: api.customers.get_customers(ids=["cus_1", "cus_2"]))
         record(lines, "form", lambda: api.customers.post_customers(body=customer))
         record(lines, "cleared", lambda: api.customers.post_customers(body=cleared))
+        record(lines, "nested", lambda: api.subscriptions.post_subscriptions(body=subscription))
+        record(lines, "unset", lambda: api.subscriptions.post_subscriptions(body=unset))

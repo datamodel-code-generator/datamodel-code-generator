@@ -1533,15 +1533,18 @@ against the document's URL when it is read from one.""",
             id="client-deep-object-brackets",
             marks=pytest.mark.cli_doc(
                 options=["--client-deep-object-brackets"],
-                option_description="""Write deepObject arrays as name[]=v per item, scalars as name=v (experimental).
+                option_description="""Write deepObject values in brackets: a[]=v, a=v, a[k][k]=v (experimental).
 
-OpenAPI defines `style: deepObject` for objects alone, so an operation whose deepObject query parameter, or member of
-an `application/x-www-form-urlencoded` body, takes an array or a scalar is left out with a warning. With this option
-the client writes an array as `name[]=value` for each item, such as `expand[]=a&expand[]=b`, and a scalar as
-`name=value`, with the brackets percent-encoded as those of an object's `name[key]` pairs are. A parameter that takes
-one item or an array of them is written by the value a call gives: an item alone as `name=value`, an array as
-`name[]=value` for each item. `--no-client-deep-object-brackets` turns off the `client-deep-object-brackets` key of
-pyproject.toml.""",
+OpenAPI defines `style: deepObject` for objects of scalars alone, so an operation whose deepObject query parameter, or
+member of an `application/x-www-form-urlencoded` body, takes an array, a scalar, a nested object or a union of a
+scalar and an object is left out with a warning. With this option the client writes such values in the bracket form:
+an array of scalars as `name[]=value` for each item, such as `expand[]=a&expand[]=b`, a scalar as `name=value`, the
+members of objects as `name[key]=value` at any depth, such as `shipping[address][city]=Paris`, and an array of objects
+by index, such as `items[0][price]=p_1`, with the brackets percent-encoded as those of an object's `name[key]` pairs
+are. A value that may be a scalar or an object or array is written as the one a call gives: `created=5` or
+`created[gt]=5`, and an empty string as `metadata=`. Arrays of arrays, recursive values, and unions whose members a
+value does not tell apart stay left out. `--no-client-deep-object-brackets` turns off the
+`client-deep-object-brackets` key of pyproject.toml.""",
                 input_schema="generation_platform/client/cli/options-deep-object.yaml",
                 cli_args=[*DOC_OPTIONS, "--client-deep-object-brackets"],
                 golden_output=f"{DOC_OUTPUT}/deep-object-brackets/_operations.py",

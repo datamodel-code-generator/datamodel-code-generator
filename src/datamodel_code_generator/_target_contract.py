@@ -473,12 +473,14 @@ class KindAt:
 class MemberShape:
     """One member of an object written as text: its name, its kind, and whether it repeats.
 
-    A member without a kind is any string.
+    A member without a kind is any string. `value` is the shape of a member's values that have no one kind, such as an
+    object or a union of a scalar and an object, which only the bracket form writes.
     """
 
     name: str
     kind: KindAt | None = None
     repeated: bool = False
+    value: TextShape | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -487,7 +489,9 @@ class TextShape:
 
     A scalar or an array has the kind of its value or items; an object has the members of the model it holds, then
     any other property's, none when the model allows no others. `problem` is the location and message of why no
-    builtin encoding writes the values. `single` marks an array whose values may also be one item alone.
+    builtin encoding writes the values. `single` marks an array whose values may also be one item alone. For the
+    bracket form, `items` is the shape of an array's items that have no one kind, and `choices` the shapes of the
+    members of a union laid out unlike each other, such as a scalar and an object, of which a value is one.
     """
 
     shape: Literal["scalar", "array", "object"]
@@ -496,6 +500,8 @@ class TextShape:
     additional: MemberShape | None = None
     problem: tuple[SourceLocation, str] | None = None
     single: bool = False
+    items: TextShape | None = None
+    choices: tuple[TextShape, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

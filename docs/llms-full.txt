@@ -10450,8 +10450,8 @@ Client: whether the generated Python client (`--generate-client`) supports the f
 | `http security schemes` | OAS 3.0 | ❌ Not Supported | ⚠️ Partial | HTTP authentication schemes; the client sends `basic` and `bearer` only |
 | `mutualTLS` | OAS 3.1 | ❌ Not Supported | ❌ Not Supported | Mutual TLS security scheme |
 | `style: cookie` | OAS 3.2 | ✅ Supported | ✅ Supported | Cookie parameter style; earlier versions do not declare it |
-| `style: deepObject` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Query parameters written as `name[key]=value`; the client writes objects, and arrays and scalars, which OpenAPI leaves undefined, of query parameters and URL-encoded form members as `name[]=value` and `name=value` only with `--client-deep-object-brackets` |
-| `Structured style values` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style; the client writes only a parameter outside a header, or a URL-encoded form member, that takes one item or an array of them |
+| `style: deepObject` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Query parameters written as `name[key]=value`; the client writes objects of scalars, and arrays, scalars, nested objects and arrays of objects, which OpenAPI leaves undefined, of query parameters and URL-encoded form members as `name[]=value`, `name=value`, `name[key][key]=value` and `name[0][key]=value` only with `--client-deep-object-brackets` |
+| `Structured style values` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style; the client writes only a parameter outside a header, or a URL-encoded form member, that takes one item or an array of them, and with `--client-deep-object-brackets` deepObject values, as `style: deepObject` describes |
 | `Binary strings in text media` | OAS 3.0 | ✅ Supported | ❌ Not Supported | `format: binary` strings inside a JSON, URL-encoded or text body, a parameter or a header |
 | `multipart media types` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema, or a union of objects that agree on the parts of each property, only, such as not `multipart/related` |
 | `Encoding contentType` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Media types of form-data parts; the client writes a part holding no files as JSON, or its scalars as text in a media type other than a form or multipart media type |
@@ -10994,8 +10994,8 @@ Client: whether the generated Python client (`--generate-client`) supports the f
 | `http security schemes` | OAS 3.0 | ❌ Not Supported | ⚠️ Partial | HTTP authentication schemes; the client sends `basic` and `bearer` only |
 | `mutualTLS` | OAS 3.1 | ❌ Not Supported | ❌ Not Supported | Mutual TLS security scheme |
 | `style: cookie` | OAS 3.2 | ✅ Supported | ✅ Supported | Cookie parameter style; earlier versions do not declare it |
-| `style: deepObject` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Query parameters written as `name[key]=value`; the client writes objects, and arrays and scalars, which OpenAPI leaves undefined, of query parameters and URL-encoded form members as `name[]=value` and `name=value` only with `--client-deep-object-brackets` |
-| `Structured style values` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style; the client writes only a parameter outside a header, or a URL-encoded form member, that takes one item or an array of them |
+| `style: deepObject` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Query parameters written as `name[key]=value`; the client writes objects of scalars, and arrays, scalars, nested objects and arrays of objects, which OpenAPI leaves undefined, of query parameters and URL-encoded form members as `name[]=value`, `name=value`, `name[key][key]=value` and `name[0][key]=value` only with `--client-deep-object-brackets` |
+| `Structured style values` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style; the client writes only a parameter outside a header, or a URL-encoded form member, that takes one item or an array of them, and with `--client-deep-object-brackets` deepObject values, as `style: deepObject` describes |
 | `Binary strings in text media` | OAS 3.0 | ✅ Supported | ❌ Not Supported | `format: binary` strings inside a JSON, URL-encoded or text body, a parameter or a header |
 | `multipart media types` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema, or a union of objects that agree on the parts of each property, only, such as not `multipart/related` |
 | `Encoding contentType` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Media types of form-data parts; the client writes a part holding no files as JSON, or its scalars as text in a media type other than a form or multipart media type |
@@ -23342,12 +23342,26 @@ them from its first operation, moved or not, as the server's groups do. An expli
 that names it: a tag mapped to `default`, or an operation whose `resource` is `default`, joins the resource of that
 name.
 
-OpenAPI defines `style: deepObject` for objects alone, which the client writes as `name[key]=value` pairs; an
-operation whose deepObject query parameter, or `application/x-www-form-urlencoded` body member, takes an array or a
-scalar is left out. `--client-deep-object-brackets` writes such a parameter or member in the bracket form some APIs,
-such as Stripe, document instead: an array as `name[]=value` for each item, such as `expand[]=a&expand[]=b`, and a
-scalar as `name=value`. The brackets are percent-encoded in the query or the form, as those of an object's pairs are
-(`expand%5B%5D=a`), which servers decode to the same names. The setting changes only how the client writes these
+OpenAPI defines `style: deepObject` for objects of scalars alone, which the client writes as `name[key]=value` pairs;
+an operation whose deepObject query parameter, or `application/x-www-form-urlencoded` body member, takes an array, a
+scalar, a nested object or a union of a scalar and an object is left out. `--client-deep-object-brackets` writes such a
+parameter or member in the bracket form some APIs, such as Stripe, document instead:
+
+- an array of scalars as `name[]=value` for each item, such as `expand[]=a&expand[]=b`, inside an object too
+  (`payment_settings[payment_method_types][]=card`);
+- a scalar as `name=value`;
+- the members of an object as `name[key]=value` at any depth, such as `shipping[address][city]=Paris`, its other
+  properties keyed the same way;
+- an array of objects by index, such as `items[0][price]=p_1&items[1][price]=p_2`;
+- a value that may be a scalar, or the empty string, and an object or an array, as the one a call gives: `created=5` or
+  `created[gt]=5`, and `metadata=`, with which Stripe clears a value, or `metadata[plan]=pro`.
+
+Scalars are written as the other parameters are, booleans as `true` and `false`. A member of None is left out, as an
+unset one is, and so is an empty array or object. The brackets are percent-encoded in the query or the form, as those of
+an object's pairs are (`expand%5B%5D=a`), which servers decode to the same names. A value the bracket form cannot write
+by what it is stays left out with the warning: an array of arrays, a recursive value, and a union whose members a value
+does not tell apart, such as scalars of two kinds, two objects beside a scalar, an object beside an array of objects,
+or objects that both declare a member with such values. The setting changes only how the client writes these
 parameters and members; `--no-client-deep-object-brackets` turns off one that a `pyproject.toml` key sets.
 
 `--generate-client` requires `--client-output`, `--client-package`, and `--client-model-package`, and a `--client-*`
@@ -69992,7 +70006,7 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/target-gener
 | Option | Description |
 |--------|-------------|
 | [`--client-body-arguments`](#client-body-arguments) | Choose how operation methods take request bodies (experiment... |
-| [`--client-deep-object-brackets`](#client-deep-object-brackets) | Write deepObject arrays as name[]=v per item, scalars as nam... |
+| [`--client-deep-object-brackets`](#client-deep-object-brackets) | Write deepObject values in brackets: a[]=v, a=v, a[k][k]=v (... |
 | [`--client-default-base-url`](#client-default-base-url) | Set the server URL of operations that declare no servers (ex... |
 | [`--client-model-package`](#client-model-package) | Name the import path of the models the client package import... |
 | [`--client-operations`](#client-operations) | Set the client settings of single operations (experimental). |
@@ -70440,15 +70454,18 @@ overrides it for that operation.
 
 ## `--client-deep-object-brackets` {#client-deep-object-brackets}
 
-Write deepObject arrays as name[]=v per item, scalars as name=v (experimental).
+Write deepObject values in brackets: a[]=v, a=v, a[k][k]=v (experimental).
 
-OpenAPI defines `style: deepObject` for objects alone, so an operation whose deepObject query parameter, or member of
-an `application/x-www-form-urlencoded` body, takes an array or a scalar is left out with a warning. With this option
-the client writes an array as `name[]=value` for each item, such as `expand[]=a&expand[]=b`, and a scalar as
-`name=value`, with the brackets percent-encoded as those of an object's `name[key]` pairs are. A parameter that takes
-one item or an array of them is written by the value a call gives: an item alone as `name=value`, an array as
-`name[]=value` for each item. `--no-client-deep-object-brackets` turns off the `client-deep-object-brackets` key of
-pyproject.toml.
+OpenAPI defines `style: deepObject` for objects of scalars alone, so an operation whose deepObject query parameter, or
+member of an `application/x-www-form-urlencoded` body, takes an array, a scalar, a nested object or a union of a
+scalar and an object is left out with a warning. With this option the client writes such values in the bracket form:
+an array of scalars as `name[]=value` for each item, such as `expand[]=a&expand[]=b`, a scalar as `name=value`, the
+members of objects as `name[key]=value` at any depth, such as `shipping[address][city]=Paris`, and an array of objects
+by index, such as `items[0][price]=p_1`, with the brackets percent-encoded as those of an object's `name[key]` pairs
+are. A value that may be a scalar or an object or array is written as the one a call gives: `created=5` or
+`created[gt]=5`, and an empty string as `metadata=`. Arrays of arrays, recursive values, and unions whose members a
+value does not tell apart stay left out. `--no-client-deep-object-brackets` turns off the
+`client-deep-object-brackets` key of pyproject.toml.
 
 **Option relationships:**
 
@@ -70539,7 +70556,7 @@ pyproject.toml.
         path='/v1/charges/{charge}',
         servers=_SERVERS_0,
         responses=ResponseDecoder((empty_branch('204'),), ()),
-        parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='charge', style='simple', required=True), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='expand[]', style='form', explode=True, shape='array', reserved_names=('created', 'expand', 'limit')), codec=model_bindings.codec_1), ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='form', explode=True, kind='integer', reserved_names=('created', 'expand')), codec=model_bindings.codec_2), ParameterSpec(plan=ParameterPlan(location='query', name='created', style='deepObject', explode=True, shape='object', fields=(FieldPlan('gt', 'integer'),), additional=FieldPlan('', 'string'), reserved_names=('expand', 'limit')), codec=model_bindings.codec_3)),
+        parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='charge', style='simple', required=True), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='expand', style='deepObject', explode=True, shape='array', reserved_names=('created', 'limit'), brackets=True), codec=model_bindings.codec_1), ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='deepObject', explode=True, kind='integer', reserved_names=('created', 'expand'), brackets=True), codec=model_bindings.codec_2), ParameterSpec(plan=ParameterPlan(location='query', name='created', style='deepObject', explode=True, shape='object', fields=(FieldPlan('gt', 'integer'),), additional=FieldPlan('', 'string'), reserved_names=('expand', 'limit'), brackets=True), codec=model_bindings.codec_3)),
     )
     ```
 
@@ -76674,7 +76691,7 @@ datamodel-codegen [OPTIONS]
 | Option | Description |
 |--------|-------------|
 | [`--client-body-arguments`](target-generation-options.md#client-body-arguments) | Choose how operation methods take request bodies (experimental). |
-| [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) | Write deepObject arrays as name[]=v per item, scalars as name=v (experimental). |
+| [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) | Write deepObject values in brackets: a[]=v, a=v, a[k][k]=v (experimental). |
 | [`--client-default-base-url`](target-generation-options.md#client-default-base-url) | Set the server URL of operations that declare no servers (experimental). |
 | [`--client-model-package`](target-generation-options.md#client-model-package) | Name the import path of the models the client package imports (experimental). |
 | [`--client-operations`](target-generation-options.md#client-operations) | Set the client settings of single operations (experimental). |
@@ -76752,7 +76769,7 @@ All options sorted alphabetically:
 - [`--class-name-prefix`](model-customization.md#class-name-prefix) - Add a prefix to all generated class names.
 - [`--class-name-suffix`](model-customization.md#class-name-suffix) - Add a suffix to all generated class names.
 - [`--client-body-arguments`](target-generation-options.md#client-body-arguments) - Choose how operation methods take request bodies (experiment...
-- [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) - Write deepObject arrays as name[]=v per item, scalars as nam...
+- [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) - Write deepObject values in brackets: a[]=v, a=v, a[k][k]=v (...
 - [`--client-default-base-url`](target-generation-options.md#client-default-base-url) - Set the server URL of operations that declare no servers (ex...
 - [`--client-model-package`](target-generation-options.md#client-model-package) - Name the import path of the models the client package import...
 - [`--client-operations`](target-generation-options.md#client-operations) - Set the client settings of single operations (experimental).

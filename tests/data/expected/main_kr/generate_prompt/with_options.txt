@@ -377,7 +377,7 @@ What other options should I use?
 
 ### Target Generation Options
 - `--client-body-arguments`: Choose how operation methods take request bodies (experimental).
-- `--client-deep-object-brackets`: Write deepObject arrays as name[]=v per item, scalars as name=v (experimental).
+- `--client-deep-object-brackets`: Write deepObject values in brackets: a[]=v, a=v, a[k][k]=v (experimental).
 - `--client-default-base-url`: Set the server URL of operations that declare no servers (experimental).
 - `--client-model-package`: Name the import path of the models the client package imports (experimental).
 - `--client-operations`: Set the client settings of single operations (experimental).
@@ -1820,10 +1820,12 @@ For detailed usage, see: https://datamodel-code-generator.koxudaxi.dev
                         also as field arguments (experimental).
   --client-deep-object-brackets, --no-client-deep-object-brackets
                         Write a deepObject query parameter or URL-encoded form
-                        member whose value is an array as name[]=value for
-                        each item, and one whose value is a scalar as
-                        name=value, as Stripe documents them, instead of
-                        leaving its operation out (experimental).
+                        member in the bracket form Stripe documents: an array
+                        as name[]=value for each item, a scalar as name=value,
+                        nested objects as name[key][key]=value, an array of
+                        objects as name[index][key]=value, and a value that
+                        may be a scalar or an object as the one a call gives,
+                        instead of leaving its operation out (experimental).
   --client-default-base-url CLIENT_DEFAULT_BASE_URL
                         Server URL of the operations that declare no servers
                         (experimental).

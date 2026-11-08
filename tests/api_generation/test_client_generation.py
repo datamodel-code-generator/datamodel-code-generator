@@ -207,6 +207,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "multipart-union-parts-errors",
         "query-free-objects",
         "deep-object-brackets",
+        "deep-object-brackets-errors",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:

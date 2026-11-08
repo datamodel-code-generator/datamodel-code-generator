@@ -74,10 +74,10 @@ class ParameterShapeError(ValueError):
 class ParameterPlan:
     """Describe one effective parameter: location, style or content media, and lexical kinds.
 
-    An array plan that is `single` also takes one item alone, which its style writes as it writes a scalar, under
-    `item_name` when one is given; a form member's plan whose `name` writes it in brackets, such as `expand[]`, is
-    the plan of the member named `item_name`. A `credential` plan writes its value where an apiKey credential of its
-    operation goes; a call whose request carries a value there sends no credential at that position.
+    An array plan that is `single` also takes one item alone, which its style writes as it writes a scalar. A
+    deepObject plan in the bracket form (`brackets`) writes each value by what it is (`_bracketed`). A `credential`
+    plan writes its value where an apiKey credential of its operation goes; a call whose request carries a value
+    there sends no credential at that position.
     """
 
     location: ParameterLocation
@@ -93,7 +93,7 @@ class ParameterPlan:
     additional: FieldPlan | None = None
     reserved_names: tuple[str, ...] = ()
     single: bool = False
-    item_name: str | None = None
+    brackets: bool = False
     credential: bool = False
 
     def __post_init__(self) -> None:
@@ -150,7 +150,7 @@ def _reversible(plan: ParameterPlan, shape: ValueShape | None = None) -> bool:
         case "spaceDelimited" | "pipeDelimited", _, _:
             return values != "scalar" and not plan.explode
         case "deepObject", _, _:
-            return values == "object" and plan.explode
+            return (values == "object" or plan.brackets) and plan.explode
         case _, "array" | "object", False:
             return plan.location != "cookie"
         case _:
@@ -158,8 +158,8 @@ def _reversible(plan: ParameterPlan, shape: ValueShape | None = None) -> bool:
 
 
 def _item(plan: ParameterPlan) -> ParameterPlan:
-    """Return the plan that writes one item of a single plan alone: the plan of a scalar of its kind, by its name."""
-    return replace(plan, name=plan.item_name or plan.name, shape="scalar", single=False, item_name=None)
+    """Return the plan that writes one item of a single plan alone: the plan of a scalar of its kind."""
+    return replace(plan, shape="scalar", single=False)
 
 
 def _written(plan: ParameterPlan, value: JSONValue) -> ParameterPlan:
@@ -185,6 +185,36 @@ def _entries(plan: ParameterPlan, value: JSONValue) -> list[_Entry]:
             pass
     msg = "The value does not have the parameter's declared shape"
     raise ParameterEncodingError(msg)
+
+
+def _bracketed(name: str, value: JSONValue, plan: ParameterPlan | FieldPlan) -> list[_Entry]:
+    """Return the names and texts of a value in the bracket form, by what the value is, under its name.
+
+    An object writes each member as `name[key]`, by the plan of the member, and an array each object as
+    `name[index]` and each scalar as `name[]`; a scalar is written as `name`, in the plan's kind. A member of None is
+    left out, as an unset one is.
+    """
+    match value:
+        case Mapping():
+            plans = {field.name: field for field in plan.fields}
+            return [
+                entry
+                for key, item in value.items()
+                if item is not None
+                for entry in _bracketed(f"{name}[{key}]", item, plans.get(key, plan.additional) or FieldPlan(key))
+            ]
+        case list():
+            return [
+                entry
+                for index, item in enumerate(value)
+                for entry in (
+                    _bracketed(f"{name}[{index}]", item, plan)
+                    if isinstance(item, Mapping)
+                    else [(f"{name}[]", lexical(item, plan.kind))]
+                )
+            ]
+        case _:
+            return [(name, lexical(value, plan.kind))]
 
 
 def percent_encoded(text: str, safe: str) -> str:
@@ -249,6 +279,8 @@ def _encode_query(plan: ParameterPlan, entries: list[_Entry], *, raw: bool = Fal
     encoded = entries if raw else _encoded(entries, encode)
     name = encode(plan.name)
     match plan.style, plan.shape, plan.explode:
+        case _ if plan.brackets:
+            return encoded
         case "form", "scalar", _:
             return [(name, encoded[0][1])]
         case "form", _, True:
@@ -356,7 +388,7 @@ def _style_pairs(plan: ParameterPlan, value: JSONValue) -> list[_Entry]:
     A style cannot write null, so an object member of None is left out as an unset one is. A path segment cannot be
     omitted, so a path parameter refuses an empty array or object.
     """
-    if not (entries := _entries(plan, value)):
+    if not (entries := _bracketed(plan.name, value, plan) if plan.brackets else _entries(plan, value)):
         if plan.location == "path":
             msg = "An empty array or object cannot fill a path segment"
             raise ParameterEncodingError(msg)

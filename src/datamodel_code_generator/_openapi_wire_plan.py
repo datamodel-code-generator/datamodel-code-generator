@@ -207,8 +207,7 @@ def plan_wire(  # noqa: PLR0913
     encodings give a style. A requested use that carries a raw binary string as text is refused, since the model
     backends write bytes as different text. An operation parameter that is an item or an array of items is planned
     only when the operations' parameters are written (`writes`), since text read back cannot tell the two apart.
-    With `brackets`, a written deepObject query parameter whose value is an array or a scalar is written in brackets
-    (`_bracketed`).
+    With `brackets`, a written deepObject query parameter is written in the bracket form (`_brackets`).
     """
     forms = forms or {}
     styles = styles or {}
@@ -536,9 +535,8 @@ def _encoding(  # noqa: PLR0914
     """Return the query parameter plan of a form member: its style, or its content when only that is named.
 
     A style, explode, or allowReserved takes precedence over contentType, as the Encoding Object prescribes. A member
-    whose value is one item or an array of them is written as a query parameter is (`writes`). With `brackets`, a
-    deepObject member whose value is an array or a scalar is written in brackets (`_bracketed`), and the plan of an
-    array, named `name[]`, keeps the member's own name as its `item_name`.
+    whose value is one item or an array of them is written as a query parameter is (`writes`), and with `brackets` a
+    deepObject member in the bracket form (`_valued`).
     """
     name, source = encoding.name or "", encoding.use_site
     member = members[name]
@@ -554,18 +552,14 @@ def _encoding(  # noqa: PLR0914
                 raise _PlanError(source, "The member content has no builtin encoding")
             return ParameterPlan(location="query", name=name, content_media_type=media)
         value = _member_shape(form, name, member)
-        single = value.single
-        shape, kind, fields, additional = _shape(value, single=writes)
         chosen, exploded = _style_of(encoding, "query")
-        written, item_name = name, None
-        if _bracketing(chosen, shape, brackets=brackets):
-            chosen, exploded, written, _ = _bracketed(name, shape, single=single)
-            item_name = None if written == name else name
+        bracketed, shape, kind, fields, additional = _valued(value, chosen, single=writes, brackets=brackets)
+        single = value.single and not bracketed
         return ParameterPlan(
             location="query",
-            name=written,
+            name=name,
             style=chosen,
-            explode=exploded,
+            explode=exploded or bracketed,
             allow_reserved=reserved is True,
             shape=shape,
             kind=kind,
@@ -573,7 +567,7 @@ def _encoding(  # noqa: PLR0914
             additional=additional,
             reserved_names=tuple(sorted(other for other in members if other != name)),
             single=single,
-            item_name=item_name,
+            brackets=bracketed,
         )
     except ValueError as error:
         raise _PlanError(source, str(error), _style_feature(style, shape, single=single)) from None
@@ -776,11 +770,10 @@ def _parameter(
     if location == "querystring" or declaration.children:
         return _content_parameter(planner, declaration, location, name, required=required)
     value = _encoded(_schema_use(planner, declaration.schemas, source)).value
-    shape, kind, fields, additional = _shape(value, single=written)
     style, explode = _style_of(declaration, location)
-    item_name = None
-    if location == "query" and _bracketing(style, shape, brackets=planner.brackets):
-        style, explode, name, item_name = _bracketed(name, shape, single=value.single)
+    brackets = planner.brackets and location == "query"
+    bracketed, shape, kind, fields, additional = _valued(value, style, single=written, brackets=brackets)
+    single = value.single and not bracketed
     version = planner.versions.declared(declaration)
     if style == "cookie" and version != OpenAPIVersion.V32:
         raise _PlanError(source, "Cookie style requires OpenAPI 3.2", "cookie_style")
@@ -789,7 +782,7 @@ def _parameter(
             location=location,
             name=name,
             style=style,
-            explode=explode,
+            explode=explode or bracketed,
             required=required,
             allow_reserved=_allow_reserved(version, location, declaration),
             shape=shape,
@@ -797,28 +790,65 @@ def _parameter(
             fields=fields,
             additional=additional,
             reserved_names=tuple(sorted(other for kind_, other in names if kind_ == location and other != name)),
-            single=value.single,
-            item_name=item_name,
+            single=single,
+            brackets=bracketed,
         )
     except ParameterShapeError as error:
-        raise _PlanError(source, str(error), _style_feature(style, shape, single=value.single)) from None
+        raise _PlanError(source, str(error), _style_feature(style, shape, single=single)) from None
     except ValueError as error:
         raise _PlanError(source, str(error)) from None
 
 
-def _bracketing(style: str, shape: ValueShape, *, brackets: bool) -> bool:
-    """Return whether `brackets` writes a value of a style and shape in brackets: a deepObject array or scalar."""
-    return brackets and style == "deepObject" and shape in {"array", "scalar"}
+def _valued(
+    value: TextShape, style: str, *, single: bool, brackets: bool
+) -> tuple[bool, ValueShape, LexicalKind, tuple[FieldPlan, ...], FieldPlan | None]:
+    """Return whether a value of a style is written in the bracket form, then its shape, kind and members' plans.
 
-
-def _bracketed(name: str, shape: ValueShape, *, single: bool) -> tuple[str, bool, str, str | None]:
-    """Return the style, explode, name and item name that write a deepObject value that is no object in brackets.
-
-    OpenAPI defines deepObject for objects alone; the bracket form Stripe documents writes an array as `name[]=value`
-    for each item, an exploded form array named `name[]`, and a scalar as `name=value`, a form scalar. A value that is
-    one item or an array of them (`single`) writes an item alone as that scalar, under the name without brackets.
+    With `brackets`, a deepObject value is (`_brackets`); any other value has the shape `_shape` gives it.
     """
-    return "form", True, f"{name}[]" if shape == "array" else name, name if single else None
+    if brackets and style == "deepObject":
+        return True, *_brackets(value)
+    return False, *_shape(value, single=single)
+
+
+def _brackets(value: TextShape) -> tuple[ValueShape, LexicalKind, tuple[FieldPlan, ...], FieldPlan | None]:
+    """Return the shape, scalar kind and members' plans of a value the bracket form writes, by the value a call gives.
+
+    OpenAPI defines deepObject for objects of scalars alone; the bracket form Stripe documents writes an object's
+    members as `name[key]` at any depth, an array's scalars as `name[]` and its objects as `name[index]`, and a
+    scalar as `name`. A value that is one of a union's members laid out unlike each other, such as a scalar and an
+    object, is written as the one it is. The kind is that of the value's scalars, its own or its array's items', and
+    the members those of its objects, its own or its array's items'. An array of arrays, and a union with two members
+    of one layout, scalars of two kinds, or an object beside an array of objects, have no bracket form.
+    """
+    alternatives = value.choices or (value,)
+    kinds: set[LexicalKind] = set()
+    objects: list[TextShape] = []
+    for alternative in alternatives:
+        held = alternative.items or alternative
+        if held.problem is not None:
+            raise _PlanError(*held.problem)
+        if held.shape == "object":
+            objects.append(held)
+        elif held is alternative:
+            kinds.add(_kind(cast("KindAt", alternative.kind)))
+        else:
+            raise _PlanError(cast("KindAt", alternative.kind).source, NO_SCALAR_KIND, "structured_parameter_values")
+    layouts = [alternative.shape for alternative in alternatives]
+    if len(set(layouts)) < len(layouts) or len(kinds) > 1 or len(objects) > 1:
+        raise _PlanError(cast("KindAt", value.kind).source, NO_SCALAR_KIND, "structured_parameter_values")
+    shape: ValueShape = "object" if "object" in layouts else "array" if "array" in layouts else "scalar"
+    members, other = (objects[0].members, objects[0].additional) if objects else ((), None)
+    fields = tuple(_member(member) for member in members)
+    return shape, next(iter(kinds), "string"), fields, None if other is None else _member(other)
+
+
+def _member(member: MemberShape) -> FieldPlan:
+    """Return the plan of an object's member the bracket form writes: its kind, and its own members (`_brackets`)."""
+    if member.value is None:
+        return _field(member)
+    _, kind, fields, additional = _brackets(member.value)
+    return FieldPlan(member.name, kind, fields=fields, additional=additional)
 
 
 def _style_feature(style: object, shape: ValueShape | None, *, single: bool = False) -> ClientFeature | None:

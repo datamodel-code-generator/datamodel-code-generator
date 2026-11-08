@@ -32,7 +32,7 @@ OPTION_DESCRIPTIONS: dict[str, str] = {
     "--class-name-prefix": "Add a prefix to all generated class names.",
     "--class-name-suffix": "Add a suffix to all generated class names.",
     "--client-body-arguments": "Choose how operation methods take request bodies (experimental).",
-    "--client-deep-object-brackets": "Write deepObject arrays as name[]=v per item, scalars as name=v (experimental).",
+    "--client-deep-object-brackets": "Write deepObject values in brackets: a[]=v, a=v, a[k][k]=v (experimental).",
     "--client-default-base-url": "Set the server URL of operations that declare no servers (experimental).",
     "--client-model-package": "Name the import path of the models the client package imports (experimental).",
     "--client-operations": "Set the client settings of single operations (experimental).",

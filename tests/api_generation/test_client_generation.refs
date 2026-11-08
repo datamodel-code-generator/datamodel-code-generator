@@ -162,6 +162,7 @@ credential-name-errors	main/generation_platform/client/packages/credential-name-
 deep-object-brackets	main/generation_platform/client/deep-object-brackets.txt
 deep-object-brackets	main/generation_platform/client/packages/deep-object-brackets/msgspec_Struct//*.py	= main/generation_platform/client/packages/deep-object-brackets/pydantic_v2_BaseModel//*.py
 deep-object-brackets	main/generation_platform/client/packages/deep-object-brackets/pydantic_v2_BaseModel//*.py
+deep-object-brackets-errors	main/generation_platform/client/deep-object-brackets-errors.txt
 default-server	main/generation_platform/client/default-server.txt
 default-server	main/generation_platform/client/packages/default-server/pydantic_v2_BaseModel//*.py
 default-server-template	main/generation_platform/client/default-server-template.txt
