@@ -49,7 +49,7 @@ from datamodel_code_generator.parser._passes._shared import (
 )
 from datamodel_code_generator.parser._passes._state import Forwarder, _ModuleNames
 from datamodel_code_generator.parser._tag_plan import TagPlanHost, declared_union_tags
-from datamodel_code_generator.reference import schema_path_of
+from datamodel_code_generator.reference import _module_prefix_and_class, schema_path_of
 from datamodel_code_generator.util import camel_to_snake
 
 if TYPE_CHECKING:
@@ -443,7 +443,7 @@ def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataMod
             if base_class.reference is not None
             and (import_ := stand_ins.get(model_key_of(base_class.reference))) is not None
         )
-    module, dot, _ = models[0].reference.name.rpartition(".") if models else ("", "", "")
+    module = _module_prefix_and_class(models[0].reference.name)[0] if models else ""
     config = parser.config
     scoped_model_resolver = scheme_resolver(
         "module",
@@ -453,7 +453,7 @@ def replace_duplicate_name_in_module(parser: StructureHost, models: list[DataMod
             config.duplicate_name_suffix if config.use_duplicate_name_suffix_for_every_collision else None
         ),
         target_python_version=parser.target_python_version,
-        reserved_names=parser.model_resolver.reserved_names_in_module(f"{module}{dot}"),
+        reserved_names=parser.model_resolver.reserved_names_in_module(module),
     )
 
     model_names: dict[str, DataModel] = {}

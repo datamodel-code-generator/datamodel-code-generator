@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from typing_extensions import Protocol
 
+from datamodel_code_generator._free_names import numbered_class
 from datamodel_code_generator._model_keys import model_key_of
 from datamodel_code_generator.parser._naming import (
     AllOfPart,
@@ -25,9 +26,16 @@ from datamodel_code_generator.parser._naming import (
     build_record_of,
     composed_name,
     plan_names,
-    rw_variant_name,
+    rw_variant_class_name,
 )
-from datamodel_code_generator.reference import NAME_REQUEST_KEY, NameRequest, location_of, snake_to_upper_camel
+from datamodel_code_generator.reference import (
+    NAME_REQUEST_KEY,
+    NameRequest,
+    _is_root_path,
+    _module_prefix_and_class,
+    location_of,
+    snake_to_upper_camel,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -117,7 +125,7 @@ def _claims(references: Sequence[Any], resolver: ModelResolver) -> list[NameClai
                 position, branches = claim.position, tuple(map(model_key_of, claim.branches))
         location = location_of(reference)
         request: NameRequest | None = reference.__dict__.get(NAME_REQUEST_KEY)
-        module, dot, cls = reference.name.rpartition(".")
+        module, cls = _module_prefix_and_class(reference.name)
         claims.append(
             NameClaim(
                 key=model_key_of(reference),
@@ -131,9 +139,9 @@ def _claims(references: Sequence[Any], resolver: ModelResolver) -> list[NameClai
                 branches=branches,
                 document=documents.setdefault(None if location is None else location.document, len(documents)),
                 order=len(claims),
-                module=f"{module}{dot}",
+                module=module,
                 cls=cls,
-                base=(reference.duplicate_name or "").rpartition(".")[2] or cls,
+                base=numbered_class(reference.duplicate_name) or cls,
                 kind="model" if request is None else request.model_type,
                 keyed=resolver._named_by_model_name_map(reference.path),  # noqa: SLF001
             )
@@ -171,13 +179,8 @@ class _ResolverNamer:
     def composed(self, claim: NameClaim, base: str, *, affixed: bool = True) -> tuple[str, str]:
         resolver = self._resolver
         if claim.word in {"Request", "Response"}:
-            return _split(
-                resolver.get_class_name(
-                    rw_variant_name(base, claim.word, resolver.class_name_suffix if affixed else ""),
-                    unique=False,
-                    skip_affix=True,
-                    preserve_name=True,
-                ).name
+            return _module_prefix_and_class(
+                rw_variant_class_name(resolver, base, claim.word, affixed=affixed, unique=False)
             )
         role: ComposedRole = cast("ComposedRole", claim.word)
         return self._class_name(claim, composed_name(base, role), affixed=affixed)
@@ -186,11 +189,8 @@ class _ResolverNamer:
         return self._class_name(claim, self._requests[claim.key].original_name, affixed=False)
 
     def prefixed(self, claim: NameClaim, owner: str) -> str:
-        local = snake_to_upper_camel(
-            claim.local or self._requests[claim.key].original_name,
-            target_python_version=self._resolver.target_python_version,
-        )
-        return self._class_name(claim, f"{owner}{local}", affixed=False)[1]
+        name = self._resolver._camel_prefixed(owner, claim.local or self._requests[claim.key].original_name)  # noqa: SLF001
+        return self._class_name(claim, name, affixed=False)[1]
 
     def camel(self, text: str) -> str:
         return snake_to_upper_camel(text, target_python_version=self._resolver.target_python_version)
@@ -202,10 +202,7 @@ class _ResolverNamer:
         return self._class_name(claim, resolver._prefixed_by(owner, request.original_name), affixed=True)  # noqa: SLF001
 
     def affixed(self, claim: NameClaim, cls: str) -> str:
-        path = claim.path
-        return self._resolver._apply_class_name_affix(  # noqa: SLF001
-            cls, model_type=claim.kind, is_root=path == "#" or (path.endswith("#") and "/" not in path.split("#")[-1])
-        )
+        return self._resolver._apply_class_name_affix(cls, model_type=claim.kind, is_root=_is_root_path(claim.path))  # noqa: SLF001
 
     def stem(self, claim: NameClaim, cls: str) -> str:
         if claim.keyed:
@@ -217,7 +214,7 @@ class _ResolverNamer:
     def _class_name(self, claim: NameClaim, name: str, *, affixed: bool) -> tuple[str, str]:
         """Return the module and class L1 makes of ``name`` for the model of ``claim``, as it asked for its own."""
         request = self._requests[claim.key]
-        return _split(
+        return _module_prefix_and_class(
             self._resolver.get_class_name(
                 name,
                 unique=False,
@@ -228,12 +225,6 @@ class _ResolverNamer:
                 preserve_name=request.preserve_class_name,
             ).name
         )
-
-
-def _split(name: str) -> tuple[str, str]:
-    """Return the module, with its dot, and the class of a dotted name."""
-    module, dot, cls = name.rpartition(".")
-    return f"{module}{dot}", cls
 
 
 def name_models(parser: NamingHost, _run: SettleRun[Any]) -> None:
@@ -263,12 +254,12 @@ def name_models(parser: NamingHost, _run: SettleRun[Any]) -> None:
         name
         for reference in references
         if (planned := plan.names.get(model_key_of(reference))) is not None
-        and (planned_name := f"{planned.module}{planned.cls}") != reference.name
+        and (planned_name := planned.name) != reference.name
         for name in (reference.name, reference.name.rpartition(".")[2], planned_name, planned.cls)
     }
     for model in results:
         if (planned := plan.names.get(model_key_of(model.reference))) is not None and (
-            name := f"{planned.module}{planned.cls}"
+            name := planned.name
         ) != model.reference.name:
             renamed.add(model.class_name)
             parser._graph_builder.rename_model(model, reference_name=name, scheme="plan")  # noqa: SLF001
@@ -287,7 +278,7 @@ def name_models(parser: NamingHost, _run: SettleRun[Any]) -> None:
 def _record_planned_names(record: ModelNameRecord, plan: NamingPlan, resolver: ModelResolver) -> None:
     """Record the planned name of each reference the plan names as the name it was given and had at the settle."""
     names = {
-        path: f"{planned.module}{planned.cls}"
+        path: planned.name
         for path, reference in resolver.references.items()
         if (planned := plan.names.get(model_key_of(reference))) is not None
     }
@@ -305,4 +296,4 @@ def _assigned_name(plan: NamingPlan, reference: Any) -> tuple[str, str | None]:
     """
     if (planned := plan.names.get(model_key_of(reference))) is None:
         return reference.name, reference.duplicate_name
-    return f"{planned.module}{planned.cls}", None if planned.base == planned.cls else planned.base
+    return planned.name, None if planned.base == planned.cls else planned.base
