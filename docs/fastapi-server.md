@@ -1431,8 +1431,14 @@ mode reads it.
 A form body whose schema is a union of one schema and `null` alone, such as
 `anyOf: [{$ref: "#/components/schemas/Search"}, {type: "null"}]`, is read as the form of that schema, its members and
 other properties by the rules above, and the model that holds it receives the object. A multipart body whose schema
-is a union of several schemas declares no members its parts could be read by: generation stops with
-`needs body_mode='request'`, as the generated client stops with `needs an object schema to be sent as parts`.
+is a union of several objects, such as `oneOf` two schemas with properties, also through a nested union, is read by
+the properties of its objects merged by name, since its value is one of them and their properties are its parts: a
+property that several objects declare reads the union of their types, as long as they agree on its parts (each holds
+files, repeats and has structured values alike, and its text has one kind), and the union model receives the object.
+Other parts are refused only when every object allows no other properties. A multipart body whose schema is a union
+that is not such, such as one of a string and an object, or of objects that disagree on a property, declares no
+members its parts could be read by: generation stops with `needs body_mode='request'`, as the generated client stops
+with `needs an object schema, or objects that agree on the parts of each property, to be sent as parts`.
 
 An adapter reads a form member whose `encoding` names a `style`, `explode`, or `allowReserved` as the generated
 client writes it: as the query parameter that encoding describes, the way a query reads one. OpenAPI 3.0 applies these

@@ -10453,7 +10453,7 @@ Client: whether the generated Python client (`--generate-client`) supports the f
 | `style: deepObject` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Query parameters written as `name[key]=value`; the client writes objects only |
 | `Structured style values` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style; the client writes a parameter outside a header that takes one item or an array of them only |
 | `Binary strings in text media` | OAS 3.0 | ✅ Supported | ❌ Not Supported | `format: binary` strings inside a JSON, URL-encoded or text body, a parameter or a header |
-| `multipart media types` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema only, such as not `multipart/related` |
+| `multipart media types` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema, or a union of objects that agree on the parts of each property, only, such as not `multipart/related` |
 | `Encoding contentType` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Media types of form-data parts; the client writes a part holding no files as JSON, or its scalars as text in a media type other than a form or multipart media type |
 <!-- END AUTO-GENERATED SCHEMA FEATURE SUPPORT -->
 
@@ -10997,7 +10997,7 @@ Client: whether the generated Python client (`--generate-client`) supports the f
 | `style: deepObject` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Query parameters written as `name[key]=value`; the client writes objects only |
 | `Structured style values` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style; the client writes a parameter outside a header that takes one item or an array of them only |
 | `Binary strings in text media` | OAS 3.0 | ✅ Supported | ❌ Not Supported | `format: binary` strings inside a JSON, URL-encoded or text body, a parameter or a header |
-| `multipart media types` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema only, such as not `multipart/related` |
+| `multipart media types` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema, or a union of objects that agree on the parts of each property, only, such as not `multipart/related` |
 | `Encoding contentType` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Media types of form-data parts; the client writes a part holding no files as JSON, or its scalars as text in a media type other than a form or multipart media type |
 <!-- END AUTO-GENERATED SUPPORTED FEATURES -->
 
@@ -21358,8 +21358,14 @@ mode reads it.
 A form body whose schema is a union of one schema and `null` alone, such as
 `anyOf: [{$ref: "#/components/schemas/Search"}, {type: "null"}]`, is read as the form of that schema, its members and
 other properties by the rules above, and the model that holds it receives the object. A multipart body whose schema
-is a union of several schemas declares no members its parts could be read by: generation stops with
-`needs body_mode='request'`, as the generated client stops with `needs an object schema to be sent as parts`.
+is a union of several objects, such as `oneOf` two schemas with properties, also through a nested union, is read by
+the properties of its objects merged by name, since its value is one of them and their properties are its parts: a
+property that several objects declare reads the union of their types, as long as they agree on its parts (each holds
+files, repeats and has structured values alike, and its text has one kind), and the union model receives the object.
+Other parts are refused only when every object allows no other properties. A multipart body whose schema is a union
+that is not such, such as one of a string and an object, or of objects that disagree on a property, declares no
+members its parts could be read by: generation stops with `needs body_mode='request'`, as the generated client stops
+with `needs an object schema, or objects that agree on the parts of each property, to be sent as parts`.
 
 An adapter reads a form member whose `encoding` names a `style`, `explode`, or `allowReserved` as the generated
 client writes it: as the query parameter that encoding describes, the way a query reads one. OpenAPI 3.0 applies these
@@ -23259,8 +23265,9 @@ it, as the [supported features](supported_formats.md#supported-features-from-cod
 other than `basic` and `bearer`, `mutualTLS`, `style: deepObject` on a value that is no object, `style: cookie` in a
 document before OpenAPI 3.2, values written with a style that are no single scalar kind (but for a parameter outside a
 header that takes one item or an array of them), binary strings in text media, multipart media other than
-`multipart/form-data` with an object schema, and an encoding `contentType` of a part holding no files that is a form or
-multipart media type, or other than JSON for objects and arrays:
+`multipart/form-data` with an object schema or a union of objects that agree on the parts of each property, and an
+encoding `contentType` of a part holding no files that is a form or multipart media type, or other than JSON for
+objects and arrays:
 
 ```text
 app/client: Skipping GET /certificates (operationId 'listCertificates'), which uses mutualTLS (OAS 3.1) that the
@@ -26629,6 +26636,13 @@ type, whose schema is `{}`, takes any value, and that value is one `application/
 array included; an array whose items have no type has one such part for each item. A media type that the member's
 `encoding` declares takes precedence. A multipart response is read by the same rule, and a part that names a JSON
 media type is read as JSON; a part of a member without a type that names none is read as text.
+
+A form-data body whose schema is a union of objects, such as `oneOf` two schemas with properties, also through a
+nested union, has the parts of its objects merged by name, since its value is one of them and their properties are its
+parts: a member that several objects declare takes the union of their types, as long as they agree on its parts (each
+holds files, repeats and has structured values alike, and its text has one kind), and other parts are refused only
+when every object allows no other properties. Generation leaves out an operation whose union is not such, such as one
+of a string and an object, or of objects that disagree on a member.
 
 The client sends a JSON part as a field, without a filename, and Starlette, which the generated server and FastAPI
 use, answers `400` for a field part of more than 1 MiB. Send such a value as a `FilePart` with a filename, which

@@ -2539,6 +2539,22 @@
       ]
     ]
   },
+  "multipart-union-parts": {
+    "input": "multipart-union-parts.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "multipart-union-parts-errors": {
+    "input": "multipart-union-parts-errors.yaml"
+  },
   "binary-json-bodies": {
     "input": "binary-json-bodies.yaml",
     "backends": [

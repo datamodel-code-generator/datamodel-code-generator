@@ -202,6 +202,8 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "parameter-item-or-array",
         "parameter-item-or-array-errors",
         "binary-json-bodies",
+        "multipart-union-parts",
+        "multipart-union-parts-errors",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:

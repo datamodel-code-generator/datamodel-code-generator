@@ -862,6 +862,13 @@ array included; an array whose items have no type has one such part for each ite
 `encoding` declares takes precedence. A multipart response is read by the same rule, and a part that names a JSON
 media type is read as JSON; a part of a member without a type that names none is read as text.
 
+A form-data body whose schema is a union of objects, such as `oneOf` two schemas with properties, also through a
+nested union, has the parts of its objects merged by name, since its value is one of them and their properties are its
+parts: a member that several objects declare takes the union of their types, as long as they agree on its parts (each
+holds files, repeats and has structured values alike, and its text has one kind), and other parts are refused only
+when every object allows no other properties. Generation leaves out an operation whose union is not such, such as one
+of a string and an object, or of objects that disagree on a member.
+
 The client sends a JSON part as a field, without a filename, and Starlette, which the generated server and FastAPI
 use, answers `400` for a field part of more than 1 MiB. Send such a value as a `FilePart` with a filename, which
 Starlette does not limit by size, or read the form in your own server code with a larger `max_part_size`.

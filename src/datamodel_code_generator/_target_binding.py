@@ -109,6 +109,7 @@ from datamodel_code_generator._target_types import (
     is_none,
     kept_values,
     lexical_kind,
+    member_kind,
     present,
     sole_present,
     untyped,
@@ -830,6 +831,15 @@ class _SchemaRecord:
 
 def _media_kind(media: str) -> MediaKind | None:
     return None if (found := normalized(media)) is None else media_kind(found)
+
+
+def _joined(types: tuple[TypeView, ...]) -> TypeView | None:
+    """Return the union of types without repeats, in their order, which a target spells from its members, or the one.
+
+    No types join to None.
+    """
+    unique = tuple(dict.fromkeys(types))
+    return UnionType(unique, preserve_order=True) if len(unique) > 1 else next(iter(unique), None)
 
 
 def _multipart(media: str) -> bool:
@@ -2575,6 +2585,55 @@ class _SchemaUses(_Models):
         )
         return symbol if root is None or symbol is None else self.held(root, seen | {symbol})
 
+    def union_members(self, value: TypeView | None, direction: Direction) -> tuple[FieldUseBinding, ...]:
+        """Return the properties of a union of models merged by name, the members a multipart body's parts are read by.
+
+        The value of such a union is one of its objects, whose properties are its parts; an alternative that is a union
+        of models itself gives its objects (``union_objects``). A name takes the member of the first object that
+        declares it in the body's direction, typed as the union of the types its objects give it and required when each
+        object requires it; a name every object leaves out of the direction is left out. An alternative that is no
+        model declares none; whether the parts of a name agree is the body's to tell (``_Octets._union_parts``).
+        """
+        if not isinstance(unwrapped(value, self.symbol_table, self.members), UnionType):
+            return ()
+        objects = [self.members_at(symbol, None, direction) for symbol in self.union_objects(value, frozenset()) or ()]
+        declared = [{name: member for name, _, member in property_members(members)} for members in objects]
+        merged: dict[str, FieldUseBinding] = {}
+        for name in dict.fromkeys(name for found in declared for name in found):
+            alike = sorted(
+                (found[name] for found in declared if name in found), key=lambda item: item.exclusion is not None
+            )
+            facts = [item for member in alike if (item := member.model_facts) is not None]
+            merged[name] = (
+                alike[0]
+                if (first := alike[0].model_facts) is None
+                else replace(
+                    alike[0],
+                    model_facts=replace(
+                        first,
+                        type=_joined(tuple(item.type for item in facts)) or first.type,
+                        required=len(facts) == len(declared) and all(item.required for item in facts),
+                    ),
+                )
+            )
+        return tuple(merged.values())
+
+    def union_objects(self, value: TypeView | None, seen: frozenset[TypeView]) -> list[SymbolId] | None:
+        """Return the models a type is one of: the model it holds (``held``), or those of each member of its union.
+
+        None is for a type that is, or has a member that is, neither, and for a union that holds itself.
+        """
+        if (symbol := self.held(value)) is not None:
+            return [symbol]
+        if not isinstance(found := unwrapped(value, self.symbol_table, self.members), UnionType) or found in seen:
+            return None
+        objects: list[SymbolId] = []
+        for item in present(found):
+            if (held := self.union_objects(item, seen | {found})) is None:
+                return None
+            objects.extend(symbol for symbol in held if symbol not in objects)
+        return objects
+
     def members_at(
         self, symbol: SymbolId, schema: SchemaLocation | None, direction: Direction
     ) -> tuple[FieldUseBinding, ...]:
@@ -2670,7 +2729,13 @@ class _SchemaUses(_Models):
             if isinstance(projected.value, GeneratedSymbolType)
             else None
         )
-        members = () if held is None else self.members_at(held, schema, direction)
+        members = (
+            self.members_at(held, schema, direction)
+            if held is not None
+            else self.union_members(projected.value, direction)
+            if media is not None and _multipart(media)
+            else ()
+        )
         argument = (
             self.projection(schema, projection, direction, inline=True, nullable=nullable).value
             if role == "parameter" and projected.value is not None
@@ -3074,7 +3139,7 @@ class _UseFacts(_SchemaUses):
     def takes_object(self, value: TypeView | None) -> bool:
         """Return whether a multipart body's type is one object, takes any value, or is no type the use binds.
 
-        A union of several objects declares no members its parts could be read by.
+        A union of several objects declares no members of its own (``_union_parts`` merges those of its objects).
         """
         return (
             value is None
@@ -3265,27 +3330,16 @@ class _Octets(_UseFacts):
 
         It is an object as its type is (``takes_object``), each property member's parts are its field's
         (``part``), and the other parts are none when the model allows no other properties, those of their typed
-        values when it types them (``others``), and any value otherwise. Also return where the first raw binary
-        string sits in a part holding no files, which carries it as text (``first``); a member the body's direction
-        leaves out is never sent.
+        values when it types them (``others``), and any value otherwise; a union of models whose properties its use
+        merges has the parts of its objects (``_union_parts``). Also return where the first raw binary string sits in a
+        part holding no files, which carries it as text (``_text_binary``).
         """
+        if (union := self._union_alternatives(use)) is not None:
+            return self._union_parts(use, union, schema)
         direction = use.id.direction
         members = [(name, member, self.part(member)) for name, _, member in property_members(use.members)]
-        refused = next(
-            (
-                found
-                for _, member, part in members
-                if not part.file
-                and member.exclusion is None
-                and (
-                    found := self.first(
-                        (field := self.field_of(member)).data_type, direction, self.origin(field, schema)
-                    )
-                )
-                is not None
-            ),
-            None,
-        )
+        refused = self._text_binary(members, schema)
+        named = tuple((name, part) for name, _, part in members)
         extra: PartSchema | Literal["closed"] | None = None
         if (others := self.use_others(use)) is not None:
             if others.said == "closed":
@@ -3296,8 +3350,77 @@ class _Octets(_UseFacts):
                     extra = self.part_of(values, typed, direction)
                     if refused is None and not extra.file and values is not None:
                         refused = self.first(values, direction, others.free or schema)
-        named = tuple((name, part) for name, _, part in members)
         return PartFacts(self.takes_object(use.type), named, extra), refused
+
+    def _text_binary(
+        self, members: Iterable[tuple[str, FieldUseBinding, PartSchema]], schema: SchemaLocation
+    ) -> SourceLocation | None:
+        """Return where the first raw binary string sits in a member's part holding no files (``first``), or None.
+
+        A member the body's direction leaves out is never sent.
+        """
+        return next(
+            (
+                found
+                for _, member, part in members
+                if not part.file
+                and member.exclusion is None
+                and (
+                    found := self.first(
+                        (field := self.field_of(member)).data_type, member.direction, self.origin(field, schema)
+                    )
+                )
+                is not None
+            ),
+            None,
+        )
+
+    def _union_parts(
+        self, use: TypeUseBinding, union: list[SymbolId], schema: SchemaLocation
+    ) -> tuple[PartFacts, SourceLocation | None]:
+        """Return the parts of a multipart use whose type is a union of models, by the members it merges.
+
+        The objects that declare a name agree on its parts: each holds files, repeats and is structured alike, and its
+        values have one lexical kind (``member_kind``); the part reads the union of their values. A body whose objects
+        disagree on a name has no object its parts could be read by. It allows no other parts only when each of its
+        objects allows no other properties, and any value otherwise.
+        """
+        direction = use.id.direction
+        declared = [self.members_at(symbol, None, direction) for symbol in union]
+        found = [{name: self.part(member) for name, _, member in property_members(items)} for items in declared]
+        refused = self._text_binary(
+            (
+                (name, member, item[name])
+                for items, item in zip(declared, found, strict=True)
+                for name, _, member in property_members(items)
+            ),
+            schema,
+        )
+        named: list[tuple[str, PartSchema]] = []
+        for name, _, _ in property_members(use.members):
+            parts = [item[name] for item in found if name in item]
+            shapes = {(part.file, part.repeated, part.structured, part.text) for part in parts}
+            kinds = {member_kind(value, self.symbol_table, self.members)[0] for part in parts if (value := part.value)}
+            if len(shapes) > 1 or len(kinds) > 1:
+                return PartFacts(object=False, members=(), extra=None), None
+            named.append((name, replace(parts[0], value=_joined(tuple(part.value for part in parts if part.value)))))
+        closed = all(
+            self.others(
+                item := GeneratedSymbolType(symbol),
+                members,
+                self.holder(item, use.schema or use.id.schema_site),
+                direction,
+            ).said
+            == "closed"
+            for symbol, members in zip(union, declared, strict=True)
+        )
+        return PartFacts(object=True, members=tuple(named), extra="closed" if closed else None), refused
+
+    def _union_alternatives(self, use: TypeUseBinding) -> list[SymbolId] | None:
+        """Return the models of a multipart use whose type is a union of models it merges the members of, or None."""
+        if self.takes_object(use.type) or not use.members:
+            return None
+        return self.union_objects(use.type, frozenset())
 
     @staticmethod
     def origin(field: DataModelFieldBase, fallback: SchemaLocation) -> SchemaLocation:

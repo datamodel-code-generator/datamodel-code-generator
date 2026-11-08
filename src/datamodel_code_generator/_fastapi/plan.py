@@ -1213,7 +1213,8 @@ class Planner:  # noqa: PLR0904
     def form_body(self, operation: OperationContract, spec: BodySpec, media: MediaSpec) -> BodySpec:
         """Read a URL-encoded BaseModel natively as a FastAPI form model; adapt other forms to the model.
 
-        A multipart body of a union of several schemas declares no members its parts could be read by.
+        A multipart body of a union of several schemas declares no members its parts could be read by, unless they are
+        objects that agree on the parts of each property (`PartFacts.object`).
         """
         if (
             (use := media.use) is None
