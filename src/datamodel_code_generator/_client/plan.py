@@ -660,7 +660,7 @@ class Planner:
                     use=use,
                     plan=plan,
                     argument=argument,
-                    default=None if required else _default(use, argument),
+                    default=None if required or plan.credential else _default(use, argument),
                     converts=use is not None
                     and use.type is not None
                     and argument != self.facts.argument(use.type, ALIASES),

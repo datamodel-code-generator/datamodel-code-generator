@@ -35,6 +35,7 @@ paths:
           in: query
           schema:
             type: string
+            default: DEMO_KEY
   /cookie:
     get:
       operationId: cookie

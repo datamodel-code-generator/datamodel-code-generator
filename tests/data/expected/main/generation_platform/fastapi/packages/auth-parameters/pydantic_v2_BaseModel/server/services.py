@@ -35,7 +35,7 @@ class AuthService(Protocol[PrincipalT_contra]):
         self,
         *,
         principal: PrincipalT_contra,
-        key: str | None,
+        key: str,
     ) -> None | HTTPResult[None] | Response:
         """
         Handle GET /query.

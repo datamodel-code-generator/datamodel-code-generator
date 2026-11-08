@@ -492,8 +492,8 @@ class OpenAPISchemaFeatures(JsonSchemaFeatures):
             introduced="OAS 3.0",
             doc_name="Structured style values",
             description="Parameter and form member values that are no single scalar kind, such as nested objects, "
-            "unions and `allOf`, written with a style; the client writes a parameter outside a header that takes one "
-            "item or an array of them only",
+            "unions and `allOf`, written with a style; the client writes only a parameter outside a header, or a "
+            "URL-encoded form member, that takes one item or an array of them",
             status="supported",
             client_status="partial",
         ),
