@@ -250,7 +250,7 @@ Client: whether the generated Python client (`--generate-client`) supports the f
 | `Structured style values` | OAS 3.0 | ✅ Supported | ❌ Not Supported | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style |
 | `Binary strings in text media` | OAS 3.0 | ✅ Supported | ❌ Not Supported | `format: binary` strings inside a JSON, URL-encoded or text body, a parameter or a header |
 | `multipart media types` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema only, such as not `multipart/related` |
-| `Encoding contentType` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Media types of form-data parts; the client writes a part holding no files as JSON or text only |
+| `Encoding contentType` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Media types of form-data parts; the client writes a part holding no files as JSON, or its scalars as text in a media type other than a form's |
 <!-- END AUTO-GENERATED SCHEMA FEATURE SUPPORT -->
 
 ## ✅ Implemented data types and features
