@@ -12,6 +12,7 @@ from datamodel_code_generator._runtime.model_codecs.media import (
     FieldPlan,
     LexicalKind,
     media_kind,
+    media_range,
     normalize_media_type,
     normalized,
 )
@@ -48,6 +49,7 @@ from datamodel_code_generator._target_contract import (
     operation_schemes,
     parameter_location,
     parameter_place,
+    property_members,
     request_media,
     scheme_catalogues,
     security_requirements,
@@ -56,7 +58,7 @@ from datamodel_code_generator._target_contract import (
     uses_by_id,
 )
 from datamodel_code_generator._target_types import (
-    contained,
+    kept_values,
     lexical_kind,
     member_kind,
     takes_null,
@@ -296,7 +298,7 @@ def _form(
         }
         fields = tuple(_text(member) for member in form_members(planner.kinds, bound) if member.name not in styled)
         additional = _additional(planner, bound)
-        members = {name: schema for name, schema, _ in property_members(use)}
+        members = {name: schema for name, schema, _ in property_members(use.members)}
         encoded = tuple(_encoding(bound, members, declaration) for declaration in styled.values())
         encoded = _distinct(planner, bound, [field.name for field in fields], encoded)
     except _PlanError as error:
@@ -315,7 +317,7 @@ def _styles(
     """
     try:
         bound = _schema_use(planner, (use.id,), use.id.use_site)
-        members = {name: schema for name, schema, _ in property_members(use)}
+        members = {name: schema for name, schema, _ in property_members(use.members)}
         encoded = tuple(_encoding(bound, members, declaration) for declaration in member_encodings(use, encodings))
         styled = {plan.name for plan in encoded}
         names = [member.name for member in form_members(planner.kinds, bound) if member.name not in styled]
@@ -351,7 +353,7 @@ def form_members(kinds: LexicalKinds, use: TypeUseBinding) -> Iterator[FormMembe
         for shape in (() if encoding is None else encoding.form.members)
         if shape.kind is not None
     }
-    for name, schema, member in property_members(use):
+    for name, schema, member in property_members(use.members):
         if (facts := member.model_facts) is not None:
             yield FormMember(name, facts.type, *kinds.member(facts.type), shaped.get(name, schema), member)
 
@@ -396,13 +398,6 @@ def _text(member: FormMember) -> FieldPlan:
     return FieldPlan(member.name, member.kind, repeated=member.repeated)
 
 
-def property_members(use: TypeUseBinding) -> Iterator[tuple[str, SourceLocation, FieldUseBinding]]:
-    """Yield each property a use's model declares, its allOf branches' included, with its wire name and schema."""
-    for member in use.members:
-        if member.member_kind == "property" and member.wire_name is not None and member.schema is not None:
-            yield member.wire_name, member.schema, member
-
-
 def member_encodings(use: TypeUseBinding | None, encodings: Iterable[WireDeclaration]) -> Iterator[WireDeclaration]:
     """Yield the encodings of a form that name a member its model has in the form's direction.
 
@@ -414,11 +409,19 @@ def member_encodings(use: TypeUseBinding | None, encodings: Iterable[WireDeclara
         if use is None
         else {
             name
-            for name, _, member in property_members(use)
+            for name, _, member in property_members(use.members)
             if member.exclusion is None and member.model_facts is not None
         }
     )
     return (encoding for encoding in encodings if (encoding.name or "") in names)
+
+
+def media_encodings(use: TypeUseBinding | None, media: WireDeclaration) -> Iterator[WireDeclaration]:
+    """Yield the encodings a form media declares that name a member its model has in the form's direction.
+
+    They are the media's encodings that apply to a member (``member_encodings``).
+    """
+    return member_encodings(use, children_of(media, "encoding"))
 
 
 def part_json(
@@ -490,6 +493,13 @@ def content_types(encoding: WireDeclaration) -> tuple[str, ...] | None:
         return tuple(normalize_media_type(item.strip()) for item in str(declared).split(","))
     except ValueError:
         return None
+
+
+def single_media(encoding: WireDeclaration) -> str | None:
+    """Return the one contentType of an encoding, or None when it names none, several media types or a range."""
+    if (found := content_types(encoding)) is None or len(found) != 1 or media_range(found[0]):
+        return None
+    return found[0]
 
 
 def _encoding(form: TypeUseBinding, members: Mapping[str, SourceLocation], encoding: WireDeclaration) -> ParameterPlan:
@@ -730,9 +740,7 @@ def _finite(planner: _WirePlanner, declaration: WireDeclaration) -> None:
     for use in (planner.uses[item] for item in type_uses(declaration) if item in planner.uses):
         if isinstance(value := getattr(use.default, "value", None), float) and not isfinite(value):
             location = _located(use)
-            raise _PlanError(
-                replace(location, pointer=f"{location.pointer}/default"), "A schema value must be a finite JSON number"
-            )
+            raise _PlanError(location.child("default"), "A schema value must be a finite JSON number")
 
 
 def _schema_use(planner: _WirePlanner, uses: tuple[TypeUseId, ...], source: SourceLocation) -> TypeUseBinding:
@@ -820,11 +828,8 @@ class LexicalKinds:
         return next(
             (
                 (value, self._extras.get(member.slot, schema))
-                for member in use.members
-                if member.member_kind == "additional_properties"
-                and (facts := member.model_facts) is not None
-                and (schema := member.schema) is not None
-                and (value := contained(facts.type, "values", self._symbols, self._members)) is not None
+                for member, value in kept_values(use.members, self._symbols, self._members)
+                if (schema := member.schema) is not None
             ),
             None,
         )

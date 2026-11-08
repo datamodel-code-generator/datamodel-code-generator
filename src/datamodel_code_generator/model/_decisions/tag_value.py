@@ -75,6 +75,7 @@ if TYPE_CHECKING:
 
 
 __all__ = [
+    "PYDANTIC_SCALAR_KINDS",
     "SCALAR_TAG_TYPES",
     "EnumTagMembers",
     "EnumTagRule",
@@ -252,25 +253,20 @@ MappingPathKey: TypeAlias = tuple[Literal["name", "schema", "file", "relative", 
 ScalarTagKind: TypeAlias = Literal["integer", "number", "boolean"]
 """The JSON type of a tag property's scalar type, which a mapping key is read as (``mapping_key_tag``)."""
 
+PYDANTIC_SCALAR_KINDS: Final[Mapping[str, ScalarTagKind]] = MappingProxyType({
+    **dict.fromkeys(("StrictInt", "PositiveInt", "NegativeInt", "NonNegativeInt", "NonPositiveInt"), "integer"),
+    **dict.fromkeys(
+        ("StrictFloat", "PositiveFloat", "NegativeFloat", "NonNegativeFloat", "NonPositiveFloat"), "number"
+    ),
+    "StrictBool": "boolean",
+})
+"""The kind of each strict or constrained Pydantic scalar type, by its name in ``pydantic``: a bool's, a float's or an
+int's, as its text and its JSON value both read."""
 SCALAR_TAG_TYPES: Final[Mapping[str, ScalarTagKind]] = MappingProxyType({
-    **dict.fromkeys(
-        ("int", "conint", "StrictInt", "PositiveInt", "NegativeInt", "NonNegativeInt", "NonPositiveInt"), "integer"
-    ),
-    **dict.fromkeys(
-        (
-            "float",
-            "confloat",
-            "StrictFloat",
-            "PositiveFloat",
-            "NegativeFloat",
-            "NonNegativeFloat",
-            "NonPositiveFloat",
-            "Decimal",
-            "condecimal",
-        ),
-        "number",
-    ),
-    **dict.fromkeys(("bool", "StrictBool"), "boolean"),
+    **dict.fromkeys(("int", "conint"), "integer"),
+    **dict.fromkeys(("float", "confloat", "Decimal", "condecimal"), "number"),
+    "bool": "boolean",
+    **PYDANTIC_SCALAR_KINDS,
 })
 """The kind of each type the builtin type managers write for an integer, a number and a boolean schema."""
 

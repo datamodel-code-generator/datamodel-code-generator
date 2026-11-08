@@ -18,6 +18,7 @@ from datamodel_code_generator._client.pagination import (
     _problem,
     _relation,
     _target_key,
+    _value_types_problem,
 )
 from datamodel_code_generator._client.polling import _Polls, _Source
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
@@ -161,11 +162,7 @@ class _Uploads:
             return
         allowed = {wanted, *(("string",) if read["from"] == "header" else ())}
         if types is not None and (others := sorted(types - allowed)):
-            message = (
-                f"The {what} of {stable_repr(helper.name)} reads {', '.join(others)} values, where only {wanted} "
-                "values fit"
-            )
-            yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
+            yield _value_types_problem(helper, spec, what, others, f"{wanted} values fit", at, joined=", ".join)
 
     def expiry(self, helper: Helper, created: list[_Source]) -> Iterator[Diagnostic]:
         """Check that a server expiry reads strings from every create response."""

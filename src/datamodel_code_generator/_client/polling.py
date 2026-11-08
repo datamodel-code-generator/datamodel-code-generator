@@ -19,9 +19,9 @@ from datamodel_code_generator._client.pagination import (
     _page_use,
     _Pages,
     _problem,
+    _value_types_problem,
 )
 from datamodel_code_generator._client.plan import success_response
-from datamodel_code_generator._message_text import english_list
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._target_module import TargetModule, TypeNames
 from datamodel_code_generator._target_types import without_none
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._client.model_facts import ItemStep, ModelFacts
-    from datamodel_code_generator._client.pagination import _Types
+    from datamodel_code_generator._client.pagination import _Reached, _Types
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec, ResponseSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
@@ -84,6 +84,16 @@ class _Result:
     steps: tuple[ItemStep, ...] = ()
     fetch: OperationSpec | None = None
     fetch_use: TypeUseBinding | None = None
+
+
+def _declared(reached: _Reached) -> tuple[TypeView, tuple[ItemStep, ...]] | None:
+    """Return the type and accessor steps of the property a pointer ends at, when it has a schema and model facts."""
+    member = reached.member
+    return (
+        None
+        if member is None or member.schema is None or member.model_facts is None
+        else (member.model_facts.type, reached.steps)
+    )
 
 
 class _Polls:
@@ -143,13 +153,8 @@ class _Polls:
         if isinstance(types := self.read(helper, created, read, at, "expiry"), Diagnostic):
             yield types
         elif not _fits("string", types):
-            spec = created[0].spec
-            message = (
-                f"The expiry of {stable_repr(helper.name)} reads "
-                f"{english_list(sorted(cast('frozenset[str]', types)), 'or', 'serial')} values, where only a string "
-                "gives a date and time"
-            )
-            yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
+            others = sorted(cast("frozenset[str]", types))
+            yield _value_types_problem(helper, created[0].spec, "expiry", others, "a string gives a date and time", at)
 
     def cancel(
         self, helper: Helper, sources: Mapping[str, list[_Source]], problems: list[Diagnostic]
@@ -318,28 +323,13 @@ class _Polls:
             )
             return _problem("E_CONFIG_VALUE", "config", f"{at}.selector", message, spec)
         assert source.body is not None
-        pointer = selector["pointer"]
-        if (reached := self.pages.walk(source.body, pointer)) == "unsupported":
-            message = (
-                f"The {what} pointer {stable_repr(pointer)} of {stable_repr(name)} reads through a union or map, which "
-                "is not supported yet"
-            )
-            return _problem("E_CLIENT_UNSUPPORTED", "target", f"{at}.selector", message, spec)
-        if (
-            isinstance(reached, str)
-            or (member := reached.member) is None
-            or member.schema is None
-            or member.model_facts is None
-        ):
-            message = (
-                f"The {what} pointer {stable_repr(pointer)} of {stable_repr(name)} names no property of the "
-                f"{_label(spec)} response"
-            )
-            return _problem("E_CONFIG_VALUE", "config", f"{at}.selector", message, spec)
-        value, noun, mismatch = member.model_facts.type, f"{what} schema", "the schema its pointer reads"
+        hit = self.pages.reached(helper, spec, source.body, selector["pointer"], f"{at}.selector", what, _declared)
+        if isinstance(hit, Diagnostic):
+            return hit
+        (value, steps), noun, mismatch = hit, f"{what} schema", "the schema its pointer reads"
         if found := self.pages.schema(helper, spec, reference, value, "response", f"{at}.schema", noun, mismatch):
             return found
-        return _Result(value=without_none(value), steps=reached.steps)
+        return _Result(value=without_none(value), steps=steps)
 
     def result(
         self, helper: Helper, polled: _Source, created: list[_Source], problems: list[Diagnostic]

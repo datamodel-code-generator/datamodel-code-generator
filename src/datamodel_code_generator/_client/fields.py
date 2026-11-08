@@ -91,6 +91,10 @@ class _Fields:
             is not None
         }
         shared = {wire_name: given for (_, wire_name), given in reversed(explicit.items())}
+
+        def named(media_type: str, wire_name: str) -> str | None:
+            return explicit.get((media_type, wire_name)) or shared.get(wire_name)
+
         self.problems.extend(
             CLIENT.problem(
                 "E_CONFIG_VALUE",
@@ -104,11 +108,7 @@ class _Fields:
         helpers = HELPER_ARGUMENTS if spec.contract.id in self.helpers else ()
         scope = NameScope((*RESERVED_ARGUMENTS, *helpers, *(parameter.python_name for parameter in spec.parameters)))
         for media_type, fields in declared:
-            given = [
-                name
-                for item in fields
-                if (name := explicit.get((media_type, item.wire_name)) or shared.get(item.wire_name)) is not None
-            ]
+            given = [name for item in fields if (name := named(media_type, item.wire_name)) is not None]
             counts = Counter(given)
             if taken := sorted({name for name in given if name in scope or counts[name] > 1}):
                 self.problems.append(
@@ -138,9 +138,7 @@ class _Fields:
                 media_type=media_type,
                 fields=tuple(
                     FieldArgument(
-                        python_name=explicit.get((media_type, item.wire_name))
-                        or shared.get(item.wire_name)
-                        or derived[item.wire_name],
+                        python_name=named(media_type, item.wire_name) or derived[item.wire_name],
                         wire_name=item.wire_name,
                         required=item.required,
                         type=item.type,

@@ -32,10 +32,11 @@ from datamodel_code_generator._openapi_wire_plan import (
     form_extras,
     form_members,
     form_styled,
-    member_encodings,
+    media_encodings,
     parameter_plans,
     part_json,
     plan_wire,
+    single_media,
 )
 from datamodel_code_generator._runtime.model_codecs.media import (
     JSON_MEDIA_TYPE,
@@ -46,10 +47,10 @@ from datamodel_code_generator._runtime.model_codecs.media import (
     declaring,
     essence,
     media_kind,
-    media_range,
     normalized,
 )
 from datamodel_code_generator._target_contract import (
+    OAUTH_SCHEMES,
     WRAPPER_KINDS,
     BuiltinType,
     ConstructorType,
@@ -195,7 +196,6 @@ _CONSTRUCTORS: Final[dict[tuple[str | None, str], tuple[str, BuiltinType | None]
 _PLAIN_KEYWORDS: Final = _CONSTRAINTS | _DOCUMENTATION | {"default_factory"}
 _CONSTRAINED: Final = frozenset({"conbytes", "condecimal", "confloat", "conint", "constr"})
 _HTTP_SCHEMES: Final[dict[str, SchemeKind]] = {"basic": "basic", "bearer": "bearer", "digest": "digest"}
-_FLOWS: Final[dict[object, SchemeKind]] = {"oauth2": "oauth2", "openIdConnect": "openid"}
 _INFO: Final = (
     ("info", "title", "title", "text"),
     ("info", "summary", "summary", "text"),
@@ -493,16 +493,9 @@ def invalid_links(operations: Iterable[OperationContract]) -> tuple[Diagnostic, 
     return tuple(problems)
 
 
-def _single_media(encoding: WireDeclaration) -> str | None:
-    """Return the one contentType of an encoding, or None when it names several media types or a range."""
-    if (found := content_types(encoding)) is None or len(found) != 1 or media_range(found[0]):
-        return None
-    return found[0]
-
-
 def _json_type(encoding: WireDeclaration) -> bool:
     """Return whether an encoding's contentType names one JSON media type, rather than several or a range."""
-    return (single := _single_media(encoding)) is not None and media_kind(single) == "json"
+    return (single := single_media(encoding)) is not None and media_kind(single) == "json"
 
 
 def _part_text(encoding: WireDeclaration) -> bool:
@@ -511,7 +504,7 @@ def _part_text(encoding: WireDeclaration) -> bool:
     Starlette reads a field part as UTF-8, whatever media type the part names.
     """
     return (
-        (single := _single_media(encoding)) is not None
+        (single := single_media(encoding)) is not None
         and media_kind(single) == "text"
         and charset(single, as_written=True).lower() in _PART_CHARSETS
     )
@@ -519,7 +512,7 @@ def _part_text(encoding: WireDeclaration) -> bool:
 
 def _encodings(media: MediaSpec) -> Iterator[WireDeclaration]:
     """Return the encodings a media declares for the members its model has in the request (`member_encodings`)."""
-    return member_encodings(media.use, children_of(media.declaration, "encoding"))
+    return media_encodings(media.use, media.declaration)
 
 
 def _files(media: MediaSpec) -> frozenset[str]:
@@ -1546,8 +1539,8 @@ def _scheme(name: str, declaration: WireDeclaration) -> SchemeSpec | None:
             return SchemeSpec(name=name, kind=_HTTP_SCHEMES.get(scheme, "custom"), declaration=declaration)
         case "mutualTLS", _:
             return SchemeSpec(name=name, kind="custom", declaration=declaration)
-        case kind, _ if kind in _FLOWS:
-            return SchemeSpec(name=name, kind=_FLOWS[kind], declaration=declaration)
+        case kind, _ if kind in OAUTH_SCHEMES:
+            return SchemeSpec(name=name, kind=OAUTH_SCHEMES[kind], declaration=declaration)
         case _:
             pass
     return None

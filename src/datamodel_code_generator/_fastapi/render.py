@@ -95,11 +95,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._openapi_codec_plan import PydanticBackend
     from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._target_contract import (
-        GeneratedTypeContractBatch,
-        Requirement,
-        TypeView,
-    )
+    from datamodel_code_generator._target_contract import GeneratedTypeContractBatch, TypeView
     from datamodel_code_generator._target_module import TypeNames
     from datamodel_code_generator._target_templates import Role, Templated, TemplateOverlay
 
@@ -915,7 +911,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             module.local("_runtime.server.application", "checked"),
             spec.python_name,
             stable_repr(label),
-            tuple_display(stable_repr(argument.name) for argument in spec.arguments),
+            stable_repr(tuple(argument.name for argument in spec.arguments)),
             asynchronous,
         )
         parameters = [
@@ -984,7 +980,7 @@ class ServerRenderer:  # ruff: ignore[too-many-public-methods]
             authorize=authorize,
             authenticate=authenticate,
             parameters=tuple(parameters),
-            requirements=tuple_display(_requirement(item) for item in requirements),
+            requirements=stable_repr(requirements),
             credentials=dict_display((stable_repr(scheme), names[scheme]) for scheme in scopes),
             challenge=stable_repr(challenge),
         )
@@ -1559,7 +1555,3 @@ def _scheme(module: Module, scheme: SchemeSpec, name: str) -> Scheme:
     )
     keywords.extend((Keyword("scheme_name", stable_repr(scheme.name)), Keyword("auto_error", "False")))
     return Scheme(name, scheme.name, cls, tuple(keywords))
-
-
-def _requirement(requirement: Requirement) -> str:
-    return tuple_display(f"({stable_repr(name)}, {stable_repr(scopes)})" for name, scopes in requirement)

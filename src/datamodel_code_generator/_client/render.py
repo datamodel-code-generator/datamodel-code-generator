@@ -1298,7 +1298,7 @@ class _Resources(_Typing):
             arguments.append(Keyword("security_schemes", f"{module.local('_generated', 'security')}.ROOT_SCHEMES"))
         name = module.local("_runtime.client.client", "ClientDefaults")
         if helpers := (*self.helpers, *self.streams, *self.sockets):
-            value = tuple_display(stable_repr((spec.helper.name, spec.helper.kind)) for spec in helpers)
+            value = stable_repr(tuple((spec.helper.name, spec.helper.kind) for spec in helpers))
             arguments.append(Keyword("helpers", value))
         if compresses(self.plan):
             arguments.append(Keyword("request_coding", module.local("_runtime.client.compression", "GZIP")))
@@ -1909,10 +1909,8 @@ class _Records:
                 keywords,
                 (
                     Keyword("", stable_repr(method)),
-                    Keyword("", tuple_display(stable_repr(argument.name) for argument in arguments)),
-                    Keyword(
-                        "", tuple_display(stable_repr(item.name) for item in arguments if item.default == "required")
-                    ),
+                    Keyword("", stable_repr(tuple(argument.name for argument in arguments))),
+                    Keyword("", stable_repr(tuple(item.name for item in arguments if item.default == "required"))),
                 ),
             )
             for index, method, arguments in self.keywords
@@ -2160,7 +2158,7 @@ class _Registry(_Typing):
         if spec.accepted_content_encodings:
             entries.append((
                 "accepted_content_encodings",
-                tuple_display(map(stable_repr, spec.accepted_content_encodings)),
+                stable_repr(tuple(spec.accepted_content_encodings)),
             ))
         if spec.fields:
             entries.append(("fields", self.field_arguments(module, spec)))
@@ -2244,11 +2242,7 @@ class _Registry(_Typing):
                 *((("repeated", "True"),) if plan.repeated else ()),
                 *((("text", "True"),) if plan.text else ()),
                 *((("codec", self.codec(module, part.use)),) if part.use is not None else ()),
-                *(
-                    (("content_types", tuple_display(map(stable_repr, plan.content_types))),)
-                    if plan.content_types
-                    else ()
-                ),
+                *((("content_types", stable_repr(tuple(plan.content_types))),) if plan.content_types else ()),
                 *((("style", parameter_plan(module.local, plan.style)),) if plan.style is not None else ()),
             ),
         )
@@ -2274,7 +2268,7 @@ class _Registry(_Typing):
         if media.additional_part is not None:
             entries.append(("additional", member_plan(module.local, media.additional_part)))
         if media.content_types:
-            entries.append(("content_types", tuple_display(stable_repr(pair) for pair in media.content_types)))
+            entries.append(("content_types", stable_repr(tuple(media.content_types))))
         if media.encoded:
             entries.append(("encoded", tuple_display(parameter_plan(module.local, item) for item in media.encoded)))
         return entries
@@ -2477,9 +2471,9 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             ("fingerprint", stable_repr(self.fingerprints[helper.name])),
         ]
         if (statuses := tuple(tree["statuses"])) != CACHED_STATUSES:
-            entries.append(("statuses", f"frozenset({tuple_display(map(stable_repr, statuses))})"))
+            entries.append(("statuses", f"frozenset({stable_repr(statuses)})"))
         if names := sorted({name.lower() for name in tree["vary_allowlist"]}):
-            entries.append(("vary_allowlist", f"frozenset({tuple_display(map(stable_repr, names))})"))
+            entries.append(("vary_allowlist", f"frozenset({stable_repr(tuple(names))})"))
         annotation = subscript_text(
             module.name("typing", "Final"), (subscript_text(plan, (_response_type(module, spec.operation),)),)
         )
@@ -2635,14 +2629,10 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         entries = [
             ("helper_id", stable_repr(name)),
             *self.linked(module, operations, spec.operation, ("operation", "create")),
-            ("accepted", tuple_display(map(stable_repr, tree["accepted_statuses"]))),
+            ("accepted", stable_repr(tuple(tree["accepted_statuses"]))),
             *self.linked(module, operations, spec.poll, ("poll_operation", "poll")),
             ("state", self.selector(module, tree["state"])),
-            *(
-                (state, tuple_display(stable_repr(_wire(value)) for value in values))
-                for state in STATES
-                if (values := tree[state])
-            ),
+            *((state, stable_repr(tuple(map(_wire, values)))) for state in STATES if (values := tree[state])),
         ]
         if bindings := tree["bindings"]:
             entries.append(("bindings", self.bindings(module, bindings)))
@@ -2667,7 +2657,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             )
             entries.extend((
                 ("immediate", numbered("_immediate", index)),
-                ("immediate_statuses", tuple_display(map(stable_repr, immediate["statuses"]))),
+                ("immediate_statuses", stable_repr(tuple(immediate["statuses"]))),
                 ("immediate_selector", self.selector(module, immediate["selector"])),
             ))
         interval = tree["interval"]
@@ -3072,7 +3062,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         if bindings := resume["bindings"]:
             entries.append(("bindings", self.bindings(module, bindings)))
         if (reasons := tuple(resume["reconnect_on"])) != ("transport_interruption",):
-            entries.append(("reconnect_on", tuple_display(map(stable_repr, reasons))))
+            entries.append(("reconnect_on", stable_repr(reasons)))
         if (expires_at := resume.get("expires_at")) is not None:
             entries.append(("expires_at", self.selector(module, expires_at)))
         return _call(module.local(_STREAMS, "StreamResumePlan"), entries)
@@ -3152,7 +3142,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             if use is not None:
                 entries.append(("encoder" if direction == "send" else "decoder", self.resources.codec(module, use)))
         if subprotocols := tree["subprotocols"]:
-            entries.append(("subprotocols", tuple_display(map(stable_repr, subprotocols))))
+            entries.append(("subprotocols", stable_repr(tuple(subprotocols))))
         sent, received = self.message_types(module, spec)
         annotation = subscript_text(module.name("typing", "Final"), (subscript_text(plan, (sent, received)),))
         return Plan(numbered("SOCKET", index), annotation, plan, _arguments(entries))

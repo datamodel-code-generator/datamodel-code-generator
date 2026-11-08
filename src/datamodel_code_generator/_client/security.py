@@ -15,6 +15,7 @@ from datamodel_code_generator._runtime.client.security import (
 )
 from datamodel_code_generator._runtime.model_codecs.parameters import parameter_key
 from datamodel_code_generator._target_contract import (
+    OAUTH_SCHEMES,
     LiteralScalar,
     api_key_place,
     fact,
@@ -121,7 +122,7 @@ def _scheme(declaration: WireDeclaration) -> SecuritySchemeEntry:
         return SecurityScheme(
             name=name, kind="basic" if scheme == "basic" else "bearer", location="header", wire_name="Authorization"
         )
-    if fact(declaration, "type") in {"oauth2", "openIdConnect"}:
+    if fact(declaration, "type") in OAUTH_SCHEMES:
         return SecurityScheme(name=name, kind="bearer", location="header", wire_name="Authorization")
     return unavailable
 

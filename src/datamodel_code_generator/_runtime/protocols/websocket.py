@@ -40,7 +40,7 @@ from ..client.errors import (
     request_failure,
 )
 from ..client.operations import codec_condition, request_errors
-from ..client.raw import afinished, finished
+from ..client.raw import Closing, afinished, finished
 from ..client.timing import Budget, earliest
 from .errors import (
     HELPER_ERRORS,
@@ -54,7 +54,6 @@ from .records import SessionState
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable, Mapping
-    from types import TracebackType
 
     import httpx2
     from httpcore2 import NetworkStream
@@ -527,7 +526,7 @@ class _Stream:
 
 
 @final
-class WebSocketSession(_Sockets[SendT, RecvT]):
+class WebSocketSession(_Sockets[SendT, RecvT], Closing):
     """A synchronous WebSocket session: send typed messages, and receive them or iterate over them.
 
     The session owns its connection until it closes or fails; the connection belongs to the HTTP client's pool, which
@@ -666,16 +665,6 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
             if self._closed_here():
                 raise StopIteration from None
             raise
-
-    def __enter__(self) -> Self:
-        """Return this session, which leaving the block closes."""
-        return self
-
-    def __exit__(
-        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
-    ) -> None:
-        """Close the session."""
-        self.close()
 
 
 @final

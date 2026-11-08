@@ -62,6 +62,10 @@ class SourceLocation:
     pointer: str
     role: Literal["declaration", "use", "schema"]
 
+    def child(self, token: str) -> SourceLocation:
+        """Return the location of a keyword's value below this one."""
+        return dataclasses.replace(self, pointer=f"{self.pointer}/{token}")
+
 
 @dataclass(frozen=True, slots=True)
 class DeclarationId:
@@ -673,9 +677,11 @@ RequirementEntry: TypeAlias = tuple[object, tuple[str, ...] | None]
 
 _STATUS_KEY: Final = re.compile(r"[1-5][0-9]{2}")
 _SCOPE_TOKEN: Final = re.compile(r"[\x21\x23-\x5b\x5d-\x7e]+")
-_SCOPE_SCHEMES: Final = frozenset({"oauth2", "openIdConnect"})
 _RANGE_KEY: Final = re.compile(r"([1-5])[xX]{2}")
 
+OAUTH_SCHEMES: Final[dict[object, Literal["oauth2", "openid"]]] = {"oauth2": "oauth2", "openIdConnect": "openid"}
+"""The security scheme types of OAuth 2.0, by the kind a target names each: a requirement of one lists scope tokens,
+and its credential is a bearer token."""
 LOCATIONS: Final[dict[object, ParameterLocation]] = {location: location for location in get_args(ParameterLocation)}
 API_KEY_LOCATIONS: Final[dict[object, ApiKeyLocation]] = {location: location for location in get_args(ApiKeyLocation)}
 
@@ -810,7 +816,7 @@ def scope_problem(
     """
     if scopes is None:
         return f"must list its scopes as an array of strings for scheme {stable_repr(name)}"
-    tokens = fact(declaration, "type") in _SCOPE_SCHEMES
+    tokens = fact(declaration, "type") in OAUTH_SCHEMES
     if tokens and not all(map(_SCOPE_TOKEN.fullmatch, scopes)):
         return f"requires valid scope tokens for scheme {stable_repr(name)}"
     if scopes and not tokens and openapi == OpenAPIVersion.V30:
@@ -890,6 +896,13 @@ def members_by_consumer(batch: GeneratedTypeContractBatch) -> dict[SymbolId, lis
     for member in batch.fields:
         members.setdefault(member.consumer, []).append(member)
     return members
+
+
+def property_members(members: Iterable[FieldUseBinding]) -> Iterator[tuple[str, SourceLocation, FieldUseBinding]]:
+    """Yield each property member of a model, its allOf branches' included, with its wire name and schema."""
+    for member in members:
+        if member.member_kind == "property" and member.wire_name is not None and member.schema is not None:
+            yield member.wire_name, member.schema, member
 
 
 def wrapped_facts(members: Mapping[SymbolId, Sequence[FieldUseBinding]], symbol: SymbolId) -> ModelFieldFacts | None:
