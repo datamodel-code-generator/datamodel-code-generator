@@ -419,27 +419,29 @@ The following features are tracked in the codebase with their implementation sta
 
 #### OpenAPI-Specific Features
 
-| Feature | Introduced | Status | Description |
-|---------|------------|--------|-------------|
-| `nullable` | OAS 3.0 | ✅ Supported | Uses `nullable: true` for nullable types (deprecated in 3.1) |
-| `discriminator` | OAS 3.0 | ✅ Supported | Polymorphism support via `discriminator` keyword |
-| `webhooks` | OAS 3.1 | ✅ Supported | Top-level webhooks object for incoming events |
-| `itemSchema` | OAS 3.2 | ✅ Supported | Media Type Object item schema for sequential media |
-| `$self` | OAS 3.2 | ✅ Supported | Root document URI for relative and absolute reference resolution |
-| `querystring` | OAS 3.2 | ✅ Supported | Query string parameter object without a parameter name |
-| `xml` | OAS 3.0 | ⚠️ Partial | XML serialization metadata (name, namespace, prefix) |
-| `externalDocs` | OAS 3.0 | ⚠️ Partial | Reference to external documentation |
-| `links` | OAS 3.0 | ❌ Not Supported | Links between operations |
-| `callbacks` | OAS 3.0 | ❌ Not Supported | Callback definitions for webhooks |
-| `securitySchemes` | OAS 3.0 | ❌ Not Supported | API security mechanism definitions |
-| `http security schemes` | OAS 3.0 | ❌ Not Supported | HTTP authentication schemes; the client sends `basic` and `bearer` only |
-| `mutualTLS` | OAS 3.1 | ❌ Not Supported | Mutual TLS security scheme |
-| `style: cookie` | OAS 3.2 | ✅ Supported | Cookie parameter style; earlier versions do not declare it |
-| `style: deepObject` | OAS 3.0 | ✅ Supported | Query parameters written as `name[key]=value`; the client writes objects only |
-| `Structured style values` | OAS 3.0 | ✅ Supported | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style |
-| `Binary strings in text media` | OAS 3.0 | ✅ Supported | `format: binary` strings inside a JSON, URL-encoded or text body, a parameter or a header |
-| `multipart media types` | OAS 3.0 | ✅ Supported | Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema only, such as not `multipart/related` |
-| `Encoding contentType` | OAS 3.0 | ✅ Supported | Media types of form-data parts; the client writes a part holding no files as JSON or text only |
+Client: whether the generated Python client (`--generate-client`) supports the feature; an operation that uses an unsupported one is skipped with a warning. A dash means the client follows the models.
+
+| Feature | Introduced | Status | Client | Description |
+|---------|------------|--------|--------|-------------|
+| `nullable` | OAS 3.0 | ✅ Supported | — | Uses `nullable: true` for nullable types (deprecated in 3.1) |
+| `discriminator` | OAS 3.0 | ✅ Supported | — | Polymorphism support via `discriminator` keyword |
+| `webhooks` | OAS 3.1 | ✅ Supported | — | Top-level webhooks object for incoming events |
+| `itemSchema` | OAS 3.2 | ✅ Supported | — | Media Type Object item schema for sequential media |
+| `$self` | OAS 3.2 | ✅ Supported | — | Root document URI for relative and absolute reference resolution |
+| `querystring` | OAS 3.2 | ✅ Supported | — | Query string parameter object without a parameter name |
+| `xml` | OAS 3.0 | ⚠️ Partial | — | XML serialization metadata (name, namespace, prefix) |
+| `externalDocs` | OAS 3.0 | ⚠️ Partial | — | Reference to external documentation |
+| `links` | OAS 3.0 | ❌ Not Supported | — | Links between operations |
+| `callbacks` | OAS 3.0 | ❌ Not Supported | — | Callback definitions for webhooks |
+| `securitySchemes` | OAS 3.0 | ❌ Not Supported | — | API security mechanism definitions |
+| `http security schemes` | OAS 3.0 | ❌ Not Supported | ⚠️ Partial | HTTP authentication schemes; the client sends `basic` and `bearer` only |
+| `mutualTLS` | OAS 3.1 | ❌ Not Supported | ❌ Not Supported | Mutual TLS security scheme |
+| `style: cookie` | OAS 3.2 | ✅ Supported | ✅ Supported | Cookie parameter style; earlier versions do not declare it |
+| `style: deepObject` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Query parameters written as `name[key]=value`; the client writes objects only |
+| `Structured style values` | OAS 3.0 | ✅ Supported | ❌ Not Supported | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style |
+| `Binary strings in text media` | OAS 3.0 | ✅ Supported | ❌ Not Supported | `format: binary` strings inside a JSON, URL-encoded or text body, a parameter or a header |
+| `multipart media types` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema only, such as not `multipart/related` |
+| `Encoding contentType` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Media types of form-data parts; the client writes a part holding no files as JSON or text only |
 <!-- END AUTO-GENERATED SUPPORTED FEATURES -->
 
 ## Data Format Support
