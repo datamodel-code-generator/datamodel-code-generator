@@ -122,8 +122,6 @@ def _watch_changes(
     force_polling = _force_polling()
     debounce_ms = max(1, int(context.effective_watch_delay * 1000))
     poll_delay_ms = min(300, debounce_ms)
-    if force_polling:
-        context.dependencies.enable_polling_fingerprints()
     pending_polling_fallback = False
     try:
         for changes in context.watchfiles.watch(
@@ -151,7 +149,7 @@ def _watch_changes(
             if (
                 changes
                 and force_polling
-                and all(Path(path).is_dir() for _change, path in changes)
+                and all(Path(path).is_dir() or Path(path) in watch_roots for _change, path in changes)
                 and not context.dependencies._polling_dependencies_changed()  # noqa: SLF001
             ):
                 continue
@@ -180,12 +178,29 @@ def _wait_for_changes(condition: threading.Condition, state: _WatcherState) -> s
         return state.take_changes()
 
 
+def _misses_a_root(dependencies: WatchDependencies, watch_roots: tuple[Path, ...]) -> bool:
+    """Return whether the watcher running on ``watch_roots`` misses a root of the current dependency graph.
+
+    A polling watcher keeps rescanning a root that vanished, so only a new root restarts it; native events stop at a
+    vanished root, so any change does.
+    """
+    current_roots = dependencies.watch_roots()
+    if not _force_polling():
+        return current_roots != watch_roots
+    return any(not any(root.is_relative_to(running) for running in watch_roots) for root in current_roots)
+
+
 def _watch_once(
     context: _WatchContext,
     watch_roots: tuple[Path, ...],
     *,
     catch_up: bool,
 ) -> bool:
+    """Run one watcher on ``watch_roots`` and return whether to restart it on the current roots.
+
+    watchfiles raises ``FileNotFoundError`` only while it creates the watcher, for a root that vanished after the
+    dependency graph was published: the roots are computed again and the watcher restarts.
+    """
     stop_event = threading.Event()
     condition = threading.Condition()
     state = _WatcherState(set())
@@ -199,15 +214,18 @@ def _watch_once(
     try:
         if catch_up:
             _regenerate_after_change(None, context.regenerate)
-            if context.dependencies.watch_roots() != watch_roots:
+            if _misses_a_root(context.dependencies, watch_roots):
                 return True
 
         while (changes := _wait_for_changes(condition, state)) is not None:
             if not changes and not context.dependencies._polling_dependencies_changed():  # noqa: SLF001
                 continue
             _regenerate_after_change(changes, context.regenerate)
-            if context.dependencies.watch_roots() != watch_roots:
+            if _misses_a_root(context.dependencies, watch_roots):
                 return True
+    except FileNotFoundError:
+        context.dependencies.refresh_watch_roots()
+        return True
     finally:
         stop_event.set()
         watcher.join()
@@ -236,6 +254,8 @@ def watch_and_regenerate(
     if dependencies is None:
         dependencies = WatchDependencies()
         dependencies.configure(config, config_values={})
+    if force_polling := _force_polling():
+        dependencies.enable_polling_fingerprints()
 
     print(f"Watching {watch_path} for changes... (Ctrl+C to stop)")  # noqa: T201
 
@@ -248,7 +268,9 @@ def watch_and_regenerate(
     )
     catch_up = False
     try:
-        while watch_roots := dependencies.watch_roots():
+        while (watch_roots := dependencies.watch_roots()) or (
+            force_polling and (dependencies.files or dependencies.directories)
+        ):
             restart = _watch_once(
                 watch_context,
                 watch_roots,

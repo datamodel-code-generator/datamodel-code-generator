@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from contextlib import contextmanager, suppress
 from contextvars import ContextVar
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from importlib.util import source_from_cache
 from pathlib import Path
 from stat import S_ISDIR
@@ -162,16 +162,25 @@ def _holds_output(directory: Path, outputs: Iterable[Path]) -> bool:
 
 
 def _watch_roots(
-    files: frozenset[Path], directories: frozenset[Path], event_paths: frozenset[Path]
+    files: frozenset[Path], directories: frozenset[Path], event_paths: frozenset[Path], *, polling: bool
 ) -> tuple[Path, ...]:
-    """Return minimal existing roots covering every dependency and recovery event."""
-    roots = {_nearest_existing_directory(path.parent) for path in files}
-    # Keep configured directory roots stable when the directory itself is
-    # removed and recreated. Its parent still receives the relevant event.
-    roots.update(_nearest_existing_directory(path.parent) for path in directories)
-    roots.update(_nearest_existing_directory(path) for path in event_paths)
+    """Return minimal existing roots covering every dependency and recovery event.
+
+    A polling watcher rescans each root by its path, so its roots are the existing dependencies themselves: it keeps
+    scanning a root that vanished, and the dependency fingerprints notice a missing one appearing. Native events stop at
+    a vanished root, so they watch the parents, where creation, removal and recreation are reported.
+    """
+    if polling:
+        roots = {resolved(path) for path in files | directories if path.exists()}
+    else:
+        roots = {_nearest_existing_directory(path.parent) for path in files}
+        # Keep configured directory roots stable when the directory itself is
+        # removed and recreated. Its parent still receives the relevant event.
+        roots.update(_nearest_existing_directory(path.parent) for path in directories)
+        roots.update(_nearest_existing_directory(path) for path in event_paths)
+        roots = {path for path in roots if path.is_dir()}
     watch_roots: list[Path] = []
-    for root in sorted((path for path in roots if path.is_dir()), key=lambda path: (len(path.parts), path.as_posix())):
+    for root in sorted(roots, key=lambda path: (len(path.parts), path.as_posix())):
         if not any(root.is_relative_to(ancestor) for ancestor in watch_roots):
             watch_roots.append(root)
     return tuple(watch_roots)
@@ -215,7 +224,7 @@ class WatchDependencies(_Weakrefable):
         event_paths = frozenset(
             files | static_symlink_events | self._generation_symlink_events | failed_generation_symlink_events
         )
-        watch_roots = _watch_roots(files, directories, event_paths)
+        watch_roots = _watch_roots(files, directories, event_paths, polling=self._polling_fingerprints_enabled)
         outputs = self._outputs.copy()
         if candidate is not None:
             outputs.update(candidate.outputs)
@@ -497,6 +506,20 @@ class WatchDependencies(_Weakrefable):
     def watch_roots(self) -> tuple[Path, ...]:
         """Return existing roots cached when the dependency graph was published."""
         return self._snapshot.watch_roots
+
+    def refresh_watch_roots(self) -> None:
+        """Recompute the cached roots after one vanished before a watcher could start on it."""
+        with self._lock:
+            snapshot = self._snapshot
+            self._snapshot = replace(
+                snapshot,
+                watch_roots=_watch_roots(
+                    snapshot.files,
+                    snapshot.directories,
+                    snapshot.event_paths,
+                    polling=self._polling_fingerprints_enabled,
+                ),
+            )
 
     @staticmethod
     def _includes_snapshot(snapshot: _DependencySnapshot, path_variants: frozenset[Path]) -> bool:
