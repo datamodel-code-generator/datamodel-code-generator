@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import errno
 import json
 import os
 import shlex
 import shutil
 import stat
+import subprocess
 import sys
 from argparse import Namespace
 from pathlib import Path
@@ -3209,6 +3211,67 @@ def test_pyproject_jobs_publish_reports_failed_rollback(tmp_path: Path, monkeypa
         _publish_staged_files([(staged_file, target)])
 
     assert target.read_text(encoding="utf-8") == "stale\n"
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="batch publication anchors use directory descriptors on POSIX")
+@pytest.mark.abnormal_path("the open-file limit runs out only when the process holds every descriptor it may open")
+@pytest.mark.allow_direct_assert("checks that the stale target is rolled back after the publication error")
+def test_pyproject_jobs_publish_reports_open_file_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Name the open-file limit, not a changed destination, when the check after a replacement cannot open (#6591)."""
+    staged_file = tmp_path / "generated.py"
+    target = tmp_path / "target.py"
+    staged_file.write_text("generated\n", encoding="utf-8")
+    target.write_text("stale\n", encoding="utf-8")
+
+    def exhausted(_path: Path) -> int:
+        raise OSError(errno.EMFILE, os.strerror(errno.EMFILE))
+
+    monkeypatch.setattr(publication_module, "_open_target_directory", exhausted)
+
+    with pytest.raises(OSError, match=os.strerror(errno.EMFILE)):
+        _publish_staged_files([(staged_file, target)])
+
+    assert target.read_text(encoding="utf-8") == "stale\n"
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the open-file limit is a POSIX resource limit")
+@pytest.mark.allow_direct_assert("checks the exit code and modules of a run with a lowered open-file limit")
+def test_pyproject_jobs_publish_more_files_than_the_open_file_limit(tmp_path: Path) -> None:
+    """Publish more modules than the process may open files, as one descriptor serves each directory (#6591)."""
+    resource = pytest.importorskip("resource")
+    schemas = tmp_path / "schemas"
+    schemas.mkdir()
+    for index in range(160):
+        (schemas / f"item{index}.json").write_text(
+            json.dumps({"title": f"Item{index}", "type": "object", "properties": {"name": {"type": "string"}}}),
+            encoding="utf-8",
+        )
+    (tmp_path / "pyproject.toml").write_text(
+        """
+[tool.datamodel-codegen]
+disable-timestamp = true
+input-file-type = "jsonschema"
+
+[tool.datamodel-codegen.jobs.models]
+input = "schemas"
+output = "models"
+""",
+        encoding="utf-8",
+    )
+
+    def limit_open_files() -> None:
+        resource.setrlimit(resource.RLIMIT_NOFILE, (64, resource.getrlimit(resource.RLIMIT_NOFILE)[1]))
+
+    result = subprocess.run(
+        [sys.executable, "-m", "datamodel_code_generator", "--all-jobs", "--formatters", "builtin"],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=tmp_path,
+        preexec_fn=limit_open_files,
+    )
+
+    assert (result.returncode, len(list((tmp_path / "models").glob("*.py")))) == (0, 161), result.stderr
 
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX permission modes are unsupported on Windows")
