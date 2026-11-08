@@ -16,7 +16,7 @@ This documentation is auto-generated from test cases.
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
 | ⚙️ [General Options](general-options.md) | 25 | Utilities and meta options |
-| 🚀 [Target Generation Options](target-generation-options.md) | 25 | Server and client generation with the models (experimental) |
+| 🚀 [Target Generation Options](target-generation-options.md) | 26 | Server and client generation with the models (experimental) |
 | 📝 [Utility Options](utility-options.md) | 15 | Help, version, debug options |
 
 ## 🎯 Focused Topics
@@ -66,6 +66,7 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--locked`](general-options.md#locked) | Conflicts | Always | [`--update-lock`](general-options.md#update-lock) | - |
 | [`--update-lock`](general-options.md#update-lock) | Conflicts | Always | [`--locked`](general-options.md#locked) | - |
 | [`--client-body-arguments`](target-generation-options.md#client-body-arguments) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-body-arguments` requires `--generate-client httpx2`. |
+| [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-deep-object-brackets` requires `--generate-client httpx2`. |
 | [`--client-default-base-url`](target-generation-options.md#client-default-base-url) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-default-base-url` requires `--generate-client httpx2`. |
 | [`--client-model-package`](target-generation-options.md#client-model-package) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-model-package` requires `--generate-client httpx2`. |
 | [`--client-operations`](target-generation-options.md#client-operations) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-operations` requires `--generate-client httpx2`. |
@@ -138,6 +139,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--class-name-prefix`](model-customization.md#class-name-prefix)
 - [`--class-name-suffix`](model-customization.md#class-name-suffix)
 - [`--client-body-arguments`](target-generation-options.md#client-body-arguments)
+- [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets)
 - [`--client-default-base-url`](target-generation-options.md#client-default-base-url)
 - [`--client-model-package`](target-generation-options.md#client-model-package)
 - [`--client-operations`](target-generation-options.md#client-operations)

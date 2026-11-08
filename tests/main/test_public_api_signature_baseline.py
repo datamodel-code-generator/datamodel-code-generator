@@ -564,6 +564,7 @@ def _baseline_generate(
     client_operations: Mapping[str, Mapping[str, Any]] | None = None,
     client_default_base_url: str | None = None,
     client_server_base_url: str | None = None,
+    client_deep_object_brackets: bool | None = None,
     client_protocols: Mapping[str, Any] | None = None,
 ) -> str | object | None:
     raise NotImplementedError

@@ -371,6 +371,7 @@
 
 ### Target Generation Options
 - `--client-body-arguments`: Choose how operation methods take request bodies (experimental).
+- `--client-deep-object-brackets`: Write deepObject arrays and scalars in brackets, as Stripe does (experimental).
 - `--client-default-base-url`: Set the server URL of operations that declare no servers (experimental).
 - `--client-model-package`: Name the import path of the models the client package imports (experimental).
 - `--client-operations`: Set the client settings of single operations (experimental).
@@ -382,6 +383,7 @@
 - `--client-signature-style`: Declare the arguments of the operation methods (experimental).
 - `--generate-client`: Generate an HTTPX2 client package for the models (experimental).
 - `--generate-server`: Generate a FastAPI server package for the models (experimental).
+- `--no-client-deep-object-brackets`
 - `--no-server-include-request`
 - `--server-body-mode`: Choose how service methods receive request bodies (experimental).
 - `--server-body-modes`: Set the body mode of single operations (experimental).

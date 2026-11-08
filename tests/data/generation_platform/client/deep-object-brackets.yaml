@@ -1,0 +1,51 @@
+openapi: 3.0.3
+info:
+  title: Charges in brackets
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /v1/charges/{charge}:
+    get:
+      operationId: GetChargesCharge
+      tags: [charges]
+      parameters:
+        - {name: charge, in: path, required: true, schema: {type: string}}
+        - name: expand
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            type: array
+            items: {type: string}
+        - name: limit
+          in: query
+          style: deepObject
+          explode: true
+          schema: {type: integer}
+        - name: created
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            type: object
+            properties:
+              gt: {type: integer}
+      responses:
+        '204':
+          description: The charge.
+  /v1/customers:
+    get:
+      operationId: GetCustomers
+      tags: [customers]
+      parameters:
+        - name: expand
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            type: array
+            items: {type: string}
+      responses:
+        '204':
+          description: The customers.

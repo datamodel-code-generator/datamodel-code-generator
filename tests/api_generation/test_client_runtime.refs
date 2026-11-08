@@ -35,6 +35,7 @@ deadline-cleanup	main/generation_platform/client/runtime/deadline-cleanup.txt
 deadline-options	main/generation_platform/client/runtime/deadline-options.txt
 deadline-races	main/generation_platform/client/runtime/deadline-races.txt
 deadline-streams	main/generation_platform/client/runtime/deadline-streams.txt
+deep-object-brackets	main/generation_platform/client/runtime/deep-object-brackets.txt
 default-server	main/generation_platform/client/runtime/default-server.txt
 discriminator-copies	main/generation_platform/client/runtime/discriminator-copies.txt
 discriminator-reuse	main/generation_platform/client/runtime/discriminator-reuse.txt

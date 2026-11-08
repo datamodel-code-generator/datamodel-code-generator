@@ -36,7 +36,13 @@ _OPERATION_SETTINGS: Final = (
     "server_operation_names",
     "server_parameter_names",
 )
-_CLIENT_CHOICES: Final = ("signature_style", "body_arguments", "default_base_url", "server_base_url")
+_CLIENT_CHOICES: Final = (
+    "signature_style",
+    "body_arguments",
+    "default_base_url",
+    "server_base_url",
+    "deep_object_brackets",
+)
 _INDEXED: Final = re.compile(r"(operations|resource_names)\[(\d+)\](?:\.(parameter_names|body_field_names)\[(\d+)\])?")
 
 

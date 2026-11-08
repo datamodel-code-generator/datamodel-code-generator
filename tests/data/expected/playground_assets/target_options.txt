@@ -3,6 +3,10 @@
     "browser_supported": false,
     "unsupported_reason": "Server and client packages are not generated in the browser playground."
   },
+  "client_deep_object_brackets": {
+    "browser_supported": false,
+    "unsupported_reason": "Server and client packages are not generated in the browser playground."
+  },
   "client_default_base_url": {
     "browser_supported": false,
     "unsupported_reason": "Server and client packages are not generated in the browser playground."

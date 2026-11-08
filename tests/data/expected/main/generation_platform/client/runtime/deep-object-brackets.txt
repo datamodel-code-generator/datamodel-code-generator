@@ -1,0 +1,10 @@
+# deep-object-brackets pydantic_v2.BaseModel, msgspec.Struct
+  > GET https://api.example.com/v1/charges/ch_1?expand%5B%5D=a&expand%5B%5D=b&limit=3&created%5Bgt%5D=5
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  charge = None
+  > GET https://api.example.com/v1/customers?expand%5B%5D=data.source
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  one item = None
+  > GET https://api.example.com/v1/customers
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  no items = None
