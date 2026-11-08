@@ -201,6 +201,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "multipart-media-text",
         "parameter-item-or-array",
         "parameter-item-or-array-errors",
+        "binary-json-bodies",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:

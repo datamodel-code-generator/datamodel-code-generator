@@ -1585,12 +1585,16 @@ def _member(source: object, key: str) -> JSONValue | None:
 def _primary(
     operation: OperationContract, status: int, response: ResponseSpec, media: MediaSpec | None, *, null: bool
 ) -> PrimarySpec:
-    """Return the primary response, deciding whether a bare value goes to FastAPI's response_model or the codecs."""
+    """Return the primary response, deciding whether a bare value goes to FastAPI's response_model or the codecs.
+
+    A JSON media whose body is its raw octets (`body_kind`) is sent by the codecs, as the bytes they are.
+    """
     bodyless = response_bodyless(operation, str(status))
     native = (
         not bodyless
         and media is not None
         and media.media_type == JSON_MEDIA_TYPE
+        and media.kind == "json"
         and (use := media.use) is not None
         and use.type is not None
     )

@@ -180,7 +180,7 @@ _BUILTINS: Final[dict[str, BuiltinType]] = {name: BuiltinType(name) for name in 
 _FILE_TYPES: Final = frozenset({"bytes", "str"})
 _FORMS: Final = frozenset({"form", "multipart"})
 _TEXT_MEDIA: Final = frozenset({"json", "form", "text"})
-_RAW_MEDIA: Final = frozenset({"text", "binary"})
+_RAW_MEDIA: Final = frozenset({"json", "text", "binary"})
 _HEADER_ROLES: Final[frozenset[TypeUseRole]] = frozenset({
     "response_header",
     "request_encoding_header",
@@ -3389,9 +3389,11 @@ class _Octets(_UseFacts):
     ) -> tuple[bool, bool, bool, bool]:
         """Return how a body travels by the models' types of its whole value (``alternatives``).
 
-        A text or binary media carries it as the raw body when the models hold every alternative as raw octets
-        (``octet``), checked by the model when they constrain those bytes, in a type or in a model it is read through.
-        Any other body that holds them in part carries them as text, which is refused. A binary media whose
+        A JSON, text or binary media carries it as the raw body when the models hold every alternative as raw octets
+        (``octet``), checked by the model when they constrain those bytes, in a type or in a model it is read through:
+        raw binary is a whole body (OpenAPI 3.1.1 "Working with Binary Data"), and a whole body written as a binary
+        string is the raw octets of its media type (`contentMediaType` set to it). Any other body that holds them in
+        part carries them as text, which is refused. A binary media whose
         alternatives are all enums or literals of strings carries text read by the model.
         """
         leaves = [] if node is None else list(self.alternatives(node, direction))

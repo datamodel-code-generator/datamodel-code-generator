@@ -678,9 +678,10 @@ component's constraints refuse before sending: a call raises a `DecodeError` wit
 the server answering 422.
 
 A `format: binary` string is raw bytes, which only a whole body, such as `application/octet-stream`, `image/png` or
-`text/csv`, or a file part of a multipart form can carry; a `text/*` body whose model types its whole value as one
-binary string travels as its raw bytes, without a charset decoding or base64, as an `application/octet-stream` one
-does; the method takes such a body or part as `bytes`. The model type decides: the schema is such a string, or reaches
+`text/csv`, or a file part of a multipart form can carry; a `text/*` or JSON body whose model types its whole value as
+one binary string travels as its raw bytes, without a charset decoding, JSON or base64, as an `application/octet-stream`
+one does, since a whole body written as a binary string is the raw octets of its media type (OpenAPI 3.1 writes it as
+`contentMediaType` set to that type); the method takes such a body or part as `bytes`. The model type decides: the schema is such a string, or reaches
 one through a `$ref`, a single `allOf`, `anyOf` or `oneOf` branch, or `allOf` branches that merge into one, such as
 `allOf: [{type: string}, {format: binary}]`, also beside a `null`, a length limit or other binary strings. When the models
 constrain those bytes, such as `maxLength: 16` as Pydantic's `conbytes(max_length=16)`, the client checks them by the
@@ -691,7 +692,7 @@ unconstrained bytes pass without a model call. An `enum` or a `const` of binary 
 `type: string`, is text in the models, so the method takes a body of one, also an `application/octet-stream` one, as
 its model, such as an `Enum`, and sends its text. Generation [leaves the operation out](#operations-the-client-leaves-out) when
 a binary string, at any depth of its schema and through references, `$dynamicRef` and `allOf`, would be sent as text:
-inside a JSON or URL-encoded body or response, also one whose model types its whole value as bytes, a `text/*` body
+inside a JSON or URL-encoded body or response, a URL-encoded body whose model types its whole value as bytes, a `text/*` body
 whose schema is an object, an array, or an `anyOf` or `oneOf` with a branch that is not a binary string, a binary body,
 such as `application/octet-stream`, whose model types its whole value as bytes only in part, such as
 `type: [string, integer]` or an `anyOf` of a binary string and an integer (`bytes | int`), a multipart part that is

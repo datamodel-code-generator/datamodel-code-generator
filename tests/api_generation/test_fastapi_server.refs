@@ -165,6 +165,7 @@ variants-reuse	main/generation_platform/fastapi/servers/variants-reuse.txt
 [test_fastapi_upstream]
 	main/generation_platform/fastapi/servers/uploads.txt
 [test_generated_client]
+binary_json	main/generation_platform/cross/binary_json.txt
 bodies	main/generation_platform/cross/bodies.txt
 bound_parts	main/generation_platform/cross/bound_parts.txt
 bound_parts_variants	main/generation_platform/cross/bound_parts_variants.txt

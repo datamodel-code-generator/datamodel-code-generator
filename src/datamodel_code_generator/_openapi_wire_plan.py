@@ -160,13 +160,13 @@ def declared_media(name: str) -> tuple[str, str | None]:
 def body_kind(media_type: str, use: TypeUseBinding | None) -> MediaKind:
     """Return how a body of a normalized media type is carried, as its models decide.
 
-    A text body the models type as raw bytes is carried as the raw body, and a binary body written as a binary string
-    they type as text, such as an enum of strings, as text.
+    A JSON or text body the models type as raw bytes is carried as the raw body, and a binary body written as a binary
+    string they type as text, such as an enum of strings, as text.
     """
     kind = media_kind(media_type)
     if use is None:
         return kind
-    if kind == "text" and use.octets:
+    if use.octets:
         return "binary"
     return "text" if use.text else kind
 
