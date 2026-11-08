@@ -254,6 +254,7 @@ from datamodel_code_generator.reference import (
     ModelResolver,
     ModelType,
     Reference,
+    SchemaLocation,
     _rw_suffix,
     _rw_variant_of,
     location_of,
@@ -1347,7 +1348,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         self.class_name: str | None = config.class_name
         self.allow_leading_underscore_class_name: bool = config.allow_leading_underscore_class_name
         self.wrap_string_literal: bool | None = config.wrap_string_literal
-        self.allow_remote_refs: bool | None = self._source_context.allow_remote_refs
+        self.untrusted_input: bool = self._source_context.untrusted_input
+        self.allow_remote_refs: bool | None = False if self.untrusted_input else self._source_context.allow_remote_refs
         self.strict_refs: bool = self._source_context.strict_refs
         self.allow_private_network: bool = self._source_context.allow_private_network
         self.http_backend = self._source_context.http_backend
@@ -1739,10 +1741,30 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         if custom_base_path:
             from datamodel_code_generator.validators import _validate_schema_python_import_path  # noqa: PLC0415
 
+            self._refuse_untrusted_code("customBasePath", custom_base_path)
             for path in custom_base_path if isinstance(custom_base_path, list) else (custom_base_path,):
                 _validate_schema_python_import_path(path, "customBasePath", self.target_python_version)
             return normalize(custom_base_path)
         return self.base_class or None
+
+    def _refuse_untrusted_code(self, keyword: str, value: object, location: SchemaLocation | None = None) -> None:
+        """Refuse, under --untrusted-input, a schema keyword whose value the generated module imports or evaluates.
+
+        A keyword at ``location`` of a document converted from another format as a whole, such as an XML Schema input,
+        is written by its converter, not taken from the input, and stays. A schema converted inside a document, such as
+        the merged headers of an AsyncAPI message or an embedded XML Schema, holds schema text and does not.
+        """
+        if not self.untrusted_input or (
+            location is not None
+            and cast("SchemaGraphBuilder", self._schema_graph).is_converted(SchemaLocation(location.document, ()))
+        ):
+            return
+        msg = (
+            f"{keyword} {stable_repr(value)} is refused under --untrusted-input: the generated module would import or "
+            "evaluate it as Python code. Remove the keyword from the schema, or generate without --untrusted-input "
+            "when the schema is trusted."
+        )
+        raise Error(msg)
 
     def _get_text_from_url(self, url: str) -> str:
         def fetch(remote_url: str) -> str:

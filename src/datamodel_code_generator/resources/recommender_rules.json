@@ -1363,6 +1363,10 @@
       "not_recommended": "runtime-behaviour",
       "reason": "pydantic union validation mode; changes validation."
     },
+    "untrusted_input": {
+      "not_recommended": "io",
+      "reason": "Whether the input comes from an untrusted source; a security decision of the project."
+    },
     "update_lock": {
       "not_recommended": "io",
       "reason": "Writes the remote reference lock."

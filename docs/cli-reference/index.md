@@ -15,7 +15,7 @@ This documentation is auto-generated from test cases.
 | 🎨 [Template Customization](template-customization.md) | 30 | Output formatting and custom rendering |
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
-| ⚙️ [General Options](general-options.md) | 25 | Utilities and meta options |
+| ⚙️ [General Options](general-options.md) | 26 | Utilities and meta options |
 | 🚀 [Target Generation Options](target-generation-options.md) | 26 | Server and client generation with the models (experimental) |
 | 📝 [Utility Options](utility-options.md) | 15 | Help, version, debug options |
 
@@ -64,6 +64,7 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--diff-against`](general-options.md#diff-against) | Conflicts | Always | `--job` | `--diff-against` compares one profile or input and cannot run named jobs. |
 | [`--diff-against`](general-options.md#diff-against) | Conflicts | Always | `--all-jobs` | `--diff-against` compares one profile or input and cannot run named jobs. |
 | [`--locked`](general-options.md#locked) | Conflicts | Always | [`--update-lock`](general-options.md#update-lock) | - |
+| [`--untrusted-input`](general-options.md#untrusted-input) | Implies | Always | [`--allow-remote-refs`](general-options.md#allow-remote-refs) disabled | - |
 | [`--update-lock`](general-options.md#update-lock) | Conflicts | Always | [`--locked`](general-options.md#locked) | - |
 | [`--client-body-arguments`](target-generation-options.md#client-body-arguments) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-body-arguments` requires `--generate-client httpx2`. |
 | [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-deep-object-brackets` requires `--generate-client httpx2`. |
@@ -388,6 +389,7 @@ These links are generated from CLI option metadata and summarize options that im
 ### U {#u}
 
 - [`--union-mode`](model-customization.md#union-mode)
+- [`--untrusted-input`](general-options.md#untrusted-input)
 - [`--update-lock`](general-options.md#update-lock)
 - [`--url`](base-options.md#url)
 - [`--use-annotated`](typing-customization.md#use-annotated)

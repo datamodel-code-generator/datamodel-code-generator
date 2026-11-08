@@ -296,6 +296,7 @@ def _convert_protobuf_schema_data(  # noqa: PLR0913
     schema_version_mode: VersionMode | None = None,
     encoding: str = "utf-8",
     source_safe_non_finite: bool,
+    untrusted_input: bool = False,
 ) -> dict[str, Any]:
     """Convert Protocol Buffers data for a parser that may need source-safe float values."""
     if not isinstance(raw_schema, str):
@@ -307,6 +308,7 @@ def _convert_protobuf_schema_data(  # noqa: PLR0913
         protobuf_version=protobuf_version,
         schema_version_mode=schema_version_mode,
         encoding=encoding,
+        untrusted_input=untrusted_input,
     )
     return parser._convert_to_json_schema_data(source_safe_non_finite=source_safe_non_finite)  # noqa: SLF001
 
@@ -732,6 +734,12 @@ class ProtobufParser(JsonSchemaParser):
         super().__init__(source=source, config=config, **options)
 
     def _compile_descriptor_set(self) -> tuple[Any, frozenset[str]]:
+        if self.untrusted_input:
+            msg = (
+                "Protocol Buffers input is refused under --untrusted-input: protoc reads the files its imports name "
+                "from the include paths by itself, so the input cannot be kept to the given document."
+            )
+            raise Error(msg)
         protoc, well_known_include = _load_grpc_tools()
         descriptor_pb2 = _load_descriptor_pb2()
         with _ProtoInputPreparer(self) as (input_files, include_paths, input_file_names):

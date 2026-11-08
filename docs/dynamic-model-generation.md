@@ -469,6 +469,36 @@ class docstring, and without a formatter they stay. Class docstrings come from s
 spaces at the end of a line), gives another `__doc__`, and another `description` in `model_json_schema()`, which
 Pydantic takes from the docstring.
 
+## Untrusted Input
+
+!!! warning "Experimental"
+    The references and schema keywords that `untrusted_input` refuses may grow as new ways for a schema to read
+    files or write code are found.
+
+A schema that comes from a source you do not control, such as an HTTP request or the tool schema of an LLM, can make
+dcg read files and fetch URLs through `$ref`, and make the generated module import other modules through keywords such
+as `x-python-import`. Executing that module runs those imports. Set `untrusted_input` (`--untrusted-input` on the
+command line, `generate(..., untrusted_input=True)`) to keep such a schema to data:
+
+```python
+from datamodel_code_generator import GenerateConfig, generate_dynamic_models
+
+models = generate_dynamic_models(schema, config=GenerateConfig(untrusted_input=True, formatters=[]))
+```
+
+- dcg reads no file or URL but the input: a `$ref` must name a location in the input (a JSON pointer, an anchor, an
+  embedded `$id` resource, or another file of a directory or file-list input), not another file or a URL; an XML
+  Schema includes or imports only files of the input. A reference that would read another document stops generation
+  with an error that names it.
+- The keywords whose values the generated module imports or evaluates as Python code, `x-python-type`,
+  `x-python-import`, `customTypePath` and `customBasePath`, stop generation with an error that names the keyword.
+- Protocol Buffers input, whose imports `protoc` reads by itself, and `--validation` are refused.
+- It implies `allow_remote_refs=False`. A schema that does none of this generates the same classes.
+
+Descriptions, titles, defaults, examples, enum values and property names are written as escaped literals, comments or
+sanitized names, never as code. The switch does not sandbox the generated code, and options you pass yourself, such as
+`custom_template_dir`, `extra_template_data`, `additional_imports` or `custom_formatters`, are trusted.
+
 ## Thread Safety
 
 `generate_dynamic_models()` is thread-safe. Multiple threads can safely call it concurrently:

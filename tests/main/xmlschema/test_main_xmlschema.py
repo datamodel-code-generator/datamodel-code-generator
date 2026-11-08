@@ -126,6 +126,7 @@ def test_load_xml_schema_data_from_path_evicts_lru_entries(tmp_path: Path, monke
         "schema_version_mode": None,
         "use_xmlschema_datetime_default": False,
         "source_safe_non_finite": True,
+        "input_files": None,
     }
 
     def load_schema_data(path: Path, encoding: str) -> object:  # noqa: ARG001

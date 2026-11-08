@@ -179,6 +179,7 @@ class BaseGenerateConfig(TypedDict):
     allof_class_hierarchy: NotRequired[AllOfClassHierarchy]
     allow_remote_refs: NotRequired[bool | None]
     strict_refs: NotRequired[bool]
+    untrusted_input: NotRequired[bool]
     allow_private_network: NotRequired[bool]
     http_backend: NotRequired[HTTPBackend]
     http_headers: NotRequired[Sequence[tuple[str, str]] | None]

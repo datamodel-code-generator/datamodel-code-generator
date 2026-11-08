@@ -211,6 +211,17 @@ Options:
                         warn on features outside declared/detected version.
   --strict-refs         Treat unresolved local $ref JSON pointers as errors
                         instead of generating fallback Any models.
+  --untrusted-input, --no-untrusted-input
+                        Treat the input as a schema from an untrusted source
+                        (experimental): read no file or URL but the input, so
+                        every $ref and XML Schema include must name a location
+                        in the input; refuse the schema keywords whose values
+                        the generated module imports or evaluates as Python
+                        code (x-python-type, x-python-import, customTypePath,
+                        customBasePath), Protocol Buffers input and
+                        --validation. Implies --no-allow-remote-refs. Pass
+                        --no-untrusted-input to override a configuration file
+                        that enables it.
   --update-lock         Create or atomically update the selected remote lock
                         after generation (experimental).
   --url URL             Input file URL. `--input` is ignored when `--url` is

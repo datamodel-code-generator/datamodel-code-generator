@@ -27,6 +27,7 @@ class ParserSourceContext:
     remote_text_cache: DefaultPutDict[str, str] | None = None
     allow_remote_refs: bool | None = None
     strict_refs: bool = False
+    untrusted_input: bool = False
     allow_private_network: bool = False
     http_backend: HTTPBackend = HTTPBackend.AUTO
     http_headers: Sequence[tuple[str, str]] | None = None
@@ -64,6 +65,7 @@ _SOURCE_OPTION_NAMES = (
     "remote_text_cache",
     "allow_remote_refs",
     "strict_refs",
+    "untrusted_input",
     "allow_private_network",
     "http_backend",
     "http_headers",

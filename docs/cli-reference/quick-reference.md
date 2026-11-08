@@ -303,6 +303,7 @@ datamodel-codegen [OPTIONS]
 | [`--recommend-options`](general-options.md#recommend-options) | Recommend options for the input schema on top of the latest dated preset (experi... |
 | [`--shared-module-name`](general-options.md#shared-module-name) | Customize the name of the shared module for deduplicated models. |
 | [`--strict-refs`](general-options.md#strict-refs) | Treat unresolved local `$ref` JSON pointers as errors. |
+| [`--untrusted-input`](general-options.md#untrusted-input) | Treat the input as a schema from an untrusted source. |
 | [`--update-lock`](general-options.md#update-lock) | Create or atomically update the selected remote lock after generation (experimen... |
 | [`--watch`](general-options.md#watch) | Watch input file(s) for changes and regenerate output automatically. |
 | [`--watch-delay`](general-options.md#watch-delay) | Set debounce delay in seconds for watch mode. |
@@ -588,6 +589,7 @@ All options sorted alphabetically:
 - [`--type-overrides`](typing-customization.md#type-overrides) - Replace schema model types with custom Python types via JSON...
 - [`--type-overrides-replace-whole-type`](typing-customization.md#type-overrides-replace-whole-type) - Make every `--type-overrides` value of a field replace the f...
 - [`--union-mode`](model-customization.md#union-mode) - Union mode for combining anyOf/oneOf schemas (smart or left_...
+- [`--untrusted-input`](general-options.md#untrusted-input) - Treat the input as a schema from an untrusted source.
 - [`--update-lock`](general-options.md#update-lock) - Create or atomically update the selected remote lock after g...
 - [`--url`](base-options.md#url) - Fetch a schema from a URL with custom HTTP headers.
 - [`--use-annotated`](typing-customization.md#use-annotated) - Use typing.Annotated for Field() with constraints.

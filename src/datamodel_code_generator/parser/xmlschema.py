@@ -84,8 +84,12 @@ QNameKey = tuple[str | None, str]
 DefinitionKey = tuple[str, str | None, str]
 PYTHON_NAME_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _XML_SCHEMA_DATA_CACHE_MAX_SIZE = 128
-_XMLSchemaDataCacheKey = tuple[Path, Path, str, str, XMLSchemaVersion | None, VersionMode | None, bool, bool]
-_XMLSchemaDataSeenKey = tuple[Path, Path, str, XMLSchemaVersion | None, VersionMode | None, bool, bool]
+_XMLSchemaDataCacheKey = tuple[
+    Path, Path, str, str, XMLSchemaVersion | None, VersionMode | None, bool, bool, frozenset[Path] | None
+]
+_XMLSchemaDataSeenKey = tuple[
+    Path, Path, str, XMLSchemaVersion | None, VersionMode | None, bool, bool, frozenset[Path] | None
+]
 
 
 class _XMLSchemaDataCacheEntry(NamedTuple):
@@ -306,10 +310,17 @@ def _load_xml_schema_data_from_path(  # noqa: PLR0913
     schema_version_mode: VersionMode | None,
     use_xmlschema_datetime_default: bool,
     source_safe_non_finite: bool,
+    input_files: frozenset[Path] | None,
 ) -> dict[str, YamlValue]:
     resolved_path = path.resolve()
     resolved_base_path = base_path.resolve()
-    options = (xmlschema_version, schema_version_mode, use_xmlschema_datetime_default, source_safe_non_finite)
+    options = (
+        xmlschema_version,
+        schema_version_mode,
+        use_xmlschema_datetime_default,
+        source_safe_non_finite,
+        input_files,
+    )
     seen_key = (resolved_path, resolved_base_path, encoding, *options)
     with _xml_schema_data_cache_lock:
         use_cache = _xml_schema_data_seen_keys.mark(seen_key, _XML_SCHEMA_DATA_CACHE_MAX_SIZE)
@@ -321,6 +332,7 @@ def _load_xml_schema_data_from_path(  # noqa: PLR0913
         schema_version_mode=schema_version_mode,
         use_xmlschema_datetime_default=use_xmlschema_datetime_default,
         source_safe_non_finite=source_safe_non_finite,
+        input_files=input_files,
     )
     if not use_cache:
         return converter.convert(Source(path=path.relative_to(base_path), text=_read_xml_text(path, encoding)))
@@ -384,10 +396,12 @@ def _convert_xml_schema_data(  # noqa: PLR0913
     encoding: str = "utf-8",
     source_safe_non_finite: bool,
     placeholder_title: bool = True,
+    input_files: frozenset[Path] | None = None,
 ) -> dict[str, YamlValue]:
     """Convert XML Schema data for a parser that may need source-safe float values.
 
-    A root that holds several global elements takes the title ``Model``, unless ``placeholder_title`` is False.
+    A root that holds several global elements takes the title ``Model``, unless ``placeholder_title`` is False. With
+    ``input_files``, the schema includes or imports no other file (``_XMLSchemaConverter``).
     """
     if not isinstance(raw_schema, str):
         msg = "XML Schema schemaFormat requires an XSD schema string"
@@ -398,6 +412,7 @@ def _convert_xml_schema_data(  # noqa: PLR0913
         xmlschema_version=xmlschema_version,
         schema_version_mode=schema_version_mode,
         source_safe_non_finite=source_safe_non_finite,
+        input_files=input_files,
     ).convert(Source(path=Path("__asyncapi_schema__.xsd"), text=raw_schema), placeholder_title=placeholder_title)
 
 
@@ -411,13 +426,19 @@ class _XMLSchemaConverter:
         schema_version_mode: VersionMode | None = None,
         use_xmlschema_datetime_default: bool = False,
         source_safe_non_finite: bool = False,
+        input_files: frozenset[Path] | None = None,
     ) -> None:
+        """Convert XML Schema sources read from ``base_path``.
+
+        With ``input_files`` (under --untrusted-input), an include, import, redefine or override reads only those files.
+        """
         self.base_path = base_path
         self.encoding = encoding
         self.xmlschema_version = xmlschema_version
         self.schema_version_mode = schema_version_mode or VersionMode.Lenient
         self.use_xmlschema_datetime_default = use_xmlschema_datetime_default
         self.source_safe_non_finite = source_safe_non_finite
+        self.input_files = input_files
         self.namespaces: dict[str, str] = {}
         self.simple_types: dict[QNameKey, ET.Element] = {}
         self.complex_types: dict[QNameKey, ET.Element] = {}
@@ -534,6 +555,13 @@ class _XMLSchemaConverter:
             location = self._resolve_schema_location(source_dir, schema_location)
             if (seen is not None and location in seen) or not location.is_file():
                 continue
+            if self.input_files is not None and location not in self.input_files:
+                msg = (
+                    f"Reading the XML Schema {_local_name(child.tag)} schemaLocation {schema_location} is refused "
+                    "under --untrusted-input.\nReason: --untrusted-input reads only the input, so a schema can include "
+                    "or import only a file of the input."
+                )
+                raise Error(msg)
             self.loaded_source_paths.add(location)
             if seen is not None:
                 seen.add(location)
@@ -1478,6 +1506,7 @@ class XMLSchemaParser(JsonSchemaParser):
             "schema_version_mode": config.schema_version_mode,
             "use_xmlschema_datetime_default": self.use_xmlschema_datetime_default,
             "source_safe_non_finite": True,
+            "input_files": self._input_files if self.untrusted_input else None,
         }
 
     def _source_from_xml_path(self, path: Path) -> Source:

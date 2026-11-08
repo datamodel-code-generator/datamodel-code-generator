@@ -1428,6 +1428,12 @@ class OpenAPIParser(JsonSchemaParser):
         with self._parsing_session(self._resolve_specification_targets):
             for source, path_parts in _schema_documents.get_context_source_path_parts(self):
                 if self.validation:
+                    if self.untrusted_input:
+                        msg = (
+                            "--validation is refused under --untrusted-input: its validator resolves the $ref of the "
+                            "document by itself, reading files and URLs that --untrusted-input does not read."
+                        )
+                        raise Error(msg)
                     warn_deprecated("cli.validation", stacklevel=2)
 
                     if source.raw_data is not None and not source.text:
