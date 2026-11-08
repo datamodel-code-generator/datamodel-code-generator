@@ -1,3 +1,5 @@
 # target-unsupported
 render pydantic_v2.BaseModel default
-  diagnostic Error: /paths/~1items~1{missing}/get: The path placeholder 'missing' of GET /items/{missing} has no path parameter
+  warning UserWarning: client: Skipping GET /items/{missing}, which the client cannot generate: /paths/~1items~1{missing}/get: The path placeholder 'missing' of GET /items/{missing} has no path parameter
+  models.py
+  model_bindings.py pydantic_v2_BaseModel/default

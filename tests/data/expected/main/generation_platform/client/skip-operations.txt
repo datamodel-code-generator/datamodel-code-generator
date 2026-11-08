@@ -1,0 +1,28 @@
+# skip-operations
+render pydantic_v2.BaseModel
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /pets/{petId} (operationId 'getPet'), which the client cannot generate: /paths/~1pets~1{petId}/get: The path placeholder 'petId' of GET /pets/{petId} has no path parameter
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /owners, which the client cannot generate: /paths/~1owners/get: The security of GET /owners has overlapping header ownership in one AND alternative
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /tokens (operationId 'listTokens'), which the client cannot generate: /paths/~1tokens/get: The security of GET /tokens requires the unavailable scheme 'UserToken'
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping PUT /photos (operationId 'uploadPhoto'), which the client cannot generate: /paths/~1photos/put/requestBody/content/file: The media type 'file' of PUT /photos is not a media type
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /search (operationId 'searchPets'), which the client cannot generate: /paths/~1search/get/parameters/0/schema: A parameter value needs one unambiguous scalar kind
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated/security.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/options.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/default/__init__.py
+  client/resources/default/_async.py
+  client/resources/default/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/default/__init__.py
+  client/types/default/_operations.py
+  models.py

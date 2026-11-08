@@ -688,12 +688,12 @@ class Planner:
         bare = essence(media_type)
         if (reason := _unsupported(kind, bare, use, request=request)) is not None:
             message = f"The {media_type} media of {label(operation)} {reason}"
-            self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, declaration.use_site))
+            self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, declaration.use_site, operation=operation))
         if kind == "multipart" and not request and (encoding := _encoded(declaration)) is not None:
             message = (
                 f"The {encoding.name} encoding of the {media_type} media of {label(operation)} is not supported yet"
             )
-            self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, encoding.use_site))
+            self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, encoding.use_site, operation=operation))
         fields, additional, encoded = (
             self.forms.get(use.id, ((), None, ())) if kind == "form" and use is not None else ((), None, ())
         )
@@ -720,6 +720,7 @@ class Planner:
                         f"The {encoding.name} encoding of the {media_type} media of {label(operation)} requires a "
                         "header only a body sent as parts carries",
                         encoding.use_site,
+                        operation=operation,
                     )
                     for encoding in declaration.children
                     if any(
@@ -768,12 +769,19 @@ class Planner:
             match content_types(encoding):
                 case _ if styled and members[name].file:
                     message = f"{subject} gives a style to a member holding files"
-                    self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, encoding.use_site))
+                    self.problems.append(
+                        _problem("E_CLIENT_UNSUPPORTED", message, encoding.use_site, operation=operation)
+                    )
                 case _ if styled:
                     pass
                 case None:
                     self.problems.append(
-                        _problem("E_METADATA_REQUIRED", f"{subject} names no media type", encoding.use_site)
+                        _problem(
+                            "E_METADATA_REQUIRED",
+                            f"{subject} names no media type",
+                            encoding.use_site,
+                            operation=operation,
+                        )
                     )
                 case ():
                     pass
@@ -785,7 +793,9 @@ class Planner:
                     media_of[name] = types
                 case _:
                     message = f"{subject} has no builtin encoding for a member holding no files"
-                    self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, encoding.use_site))
+                    self.problems.append(
+                        _problem("E_CLIENT_UNSUPPORTED", message, encoding.use_site, operation=operation)
+                    )
         return media_of, headers_of
 
     def _headers(self, declaration: WireDeclaration) -> tuple[HeaderSpec, ...]:
@@ -990,6 +1000,7 @@ class Planner:
                 "E_NAME_COLLISION",
                 f"Several media types of {label(operation)} normalize to {stable_repr(media_type)}",
                 declaration.use_site,
+                operation=operation,
             )
             for media_type, count in Counter(item.media_type for item in media).items()
             if count > 1
@@ -1007,6 +1018,7 @@ class Planner:
                 "E_NAME_COLLISION",
                 f"Several headers of the {status} response of {label(operation)} are named {stable_repr(name)}",
                 declaration.use_site,
+                operation=operation,
             )
             for name, count in Counter(header.name.lower() for header in headers).items()
             if count > 1

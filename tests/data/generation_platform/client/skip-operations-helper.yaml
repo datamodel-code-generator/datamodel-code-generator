@@ -1,0 +1,41 @@
+openapi: 3.1.0
+info:
+  title: A helper calling a refused operation
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /users:
+    get:
+      operationId: listUsers
+      security:
+        - {userAuth: [], appAuth: []}
+      parameters:
+        - {name: cursor, in: query, schema: {type: string}}
+      responses:
+        '200':
+          description: One page of users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /status:
+    get:
+      operationId: getStatus
+      responses:
+        '204': {description: Up.}
+components:
+  securitySchemes:
+    userAuth: {type: http, scheme: bearer}
+    appAuth: {type: http, scheme: bearer}
+  schemas:
+    User:
+      type: object
+      properties:
+        name: {type: string}
+    UserPage:
+      type: object
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/User'}
+        next_cursor: {type: [string, 'null']}

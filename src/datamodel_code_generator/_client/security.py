@@ -29,7 +29,7 @@ from datamodel_code_generator._target_contract import (
     unresolved_reference,
 )
 from datamodel_code_generator._target_naming import NameScope
-from datamodel_code_generator._target_operations import declared_in
+from datamodel_code_generator._target_operations import declared_in, operation_ref
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
@@ -191,6 +191,7 @@ class SecurityPlanner:
                 stage="target",
                 message=f"The security of {label(operation)} {message}",
                 source_pointer=operation.id.use_site.pointer,
+                operation=operation_ref(operation.id),
             )
         )
 

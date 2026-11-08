@@ -1,3 +1,29 @@
 # form-name-errors
 render pydantic_v2.BaseModel
-  Error: /paths/~1absorbing-form/post/requestBody/content/application~1x-www-form-urlencoded/schema: The exploded form member 'page' allows other properties and takes every name no other member writes, so the form cannot have another such member, a deepObject member, or other properties of its own; /paths/~1absorbing-extras/post/requestBody/content/application~1x-www-form-urlencoded/schema: The exploded form member 'filter' allows other properties and takes every name no other member writes, so the form cannot have another such member, a deepObject member, or other properties of its own; /paths/~1absorbing-allowed/post/requestBody/content/application~1x-www-form-urlencoded/schema: The exploded form member 'filter' allows other properties and takes every name no other member writes, so the form cannot have another such member, a deepObject member, or other properties of its own; /paths/~1absorbing-inherited/post/requestBody/content/application~1x-www-form-urlencoded/schema: The exploded form member 'filter' allows other properties and takes every name no other member writes, so the form cannot have another such member, a deepObject member, or other properties of its own; /paths/~1absorbing-parts/post/requestBody/content/multipart~1form-data/schema: The exploded form member 'labels' allows other properties and takes every name no other member writes, so the form cannot have another such member, a deepObject member, or other properties of its own; /paths/~1absorbing-extra-parts/post/requestBody/content/multipart~1form-data/schema: The exploded form member 'labels' allows other properties and takes every name no other member writes, so the form cannot have another such member, a deepObject member, or other properties of its own
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /absorbing-form (operationId 'postAbsorbingForm'), which the client cannot generate: /paths/~1absorbing-form/post/requestBody/content/application~1x-www-form-urlencoded/schema: The exploded form member 'page' allows other properties and takes every name no other member writes, so the form cannot have another such member, a deepObject member, or other properties of its own
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /absorbing-extras (operationId 'postAbsorbingExtras'), which the client cannot generate: /paths/~1absorbing-extras/post/requestBody/content/application~1x-www-form-urlencoded/schema: The exploded form member 'filter' allows other properties and takes every name no other member writes, so the form cannot have another such member, a deepObject member, or other properties of its own
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /absorbing-allowed (operationId 'postAbsorbingAllowed'), which the client cannot generate: /paths/~1absorbing-allowed/post/requestBody/content/application~1x-www-form-urlencoded/schema: The exploded form member 'filter' allows other properties and takes every name no other member writes, so the form cannot have another such member, a deepObject member, or other properties of its own
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /absorbing-inherited (operationId 'postAbsorbingInherited'), which the client cannot generate: /paths/~1absorbing-inherited/post/requestBody/content/application~1x-www-form-urlencoded/schema: The exploded form member 'filter' allows other properties and takes every name no other member writes, so the form cannot have another such member, a deepObject member, or other properties of its own
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /absorbing-parts (operationId 'postAbsorbingParts'), which the client cannot generate: /paths/~1absorbing-parts/post/requestBody/content/multipart~1form-data/schema: The exploded form member 'labels' allows other properties and takes every name no other member writes, so the form cannot have another such member, a deepObject member, or other properties of its own
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /absorbing-extra-parts (operationId 'postAbsorbingExtraParts'), which the client cannot generate: /paths/~1absorbing-extra-parts/post/requestBody/content/multipart~1form-data/schema: The exploded form member 'labels' allows other properties and takes every name no other member writes, so the form cannot have another such member, a deepObject member, or other properties of its own
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/bodies.py
+  client/errors.py
+  client/options.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/default/__init__.py
+  client/resources/default/_async.py
+  client/resources/default/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/default/__init__.py
+  client/types/default/_operations.py
+  models.py

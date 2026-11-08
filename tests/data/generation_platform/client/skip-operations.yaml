@@ -1,0 +1,80 @@
+openapi: 3.1.0
+info:
+  title: Skipped operations
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      parameters:
+        - {name: limit, in: query, schema: {type: integer}}
+      responses:
+        '200':
+          description: The pets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Pet'}
+    post:
+      operationId: createPet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Pet'}
+      responses:
+        '201': {description: Created.}
+  /pets/{petId}:
+    get:
+      operationId: getPet
+      responses:
+        '200': {description: The pet.}
+  /owners:
+    get:
+      tags: [owners]
+      security:
+        - {userAuth: [], appAuth: []}
+      responses:
+        '204': {description: No owners.}
+  /tokens:
+    get:
+      operationId: listTokens
+      tags: [owners]
+      security:
+        - {UserToken: []}
+      responses:
+        '204': {description: No tokens.}
+  /photos:
+    put:
+      operationId: uploadPhoto
+      requestBody:
+        content:
+          file:
+            schema: {type: string}
+      responses:
+        '204': {description: Uploaded.}
+  /search:
+    get:
+      operationId: searchPets
+      parameters:
+        - name: kind
+          in: query
+          schema:
+            oneOf:
+              - {type: string}
+              - {type: array, items: {type: string}}
+      responses:
+        '204': {description: Found.}
+components:
+  securitySchemes:
+    userAuth: {type: http, scheme: bearer}
+    appAuth: {type: http, scheme: bearer}
+  schemas:
+    Pet:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string}

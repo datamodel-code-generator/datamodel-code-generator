@@ -1,5 +1,73 @@
 # codec-errors
 render pydantic_v2.BaseModel
-  Error: /paths/~1forms/post/parameters/0: query parameter style 'spaceDelimited' has no builtin form for scalar values; /paths/~1enum-arrays/get/parameters/0/schema: A parameter value needs one unambiguous scalar kind; /paths/~1forms/post/requestBody/content/application~1x-www-form-urlencoded/schema: A URL-encoded value must be an object; /paths/~1xml-member/post/requestBody/content/application~1x-www-form-urlencoded/encoding/meta: The member content has no builtin encoding; /paths/~1deep-array/post/requestBody/content/application~1x-www-form-urlencoded/encoding/tags: query parameter style 'deepObject' has no builtin form for array values; /paths/~1spread-clash/post/requestBody/content/application~1x-www-form-urlencoded/schema: Expanded form member names collide; /paths/~1members/post/requestBody/content/application~1x-www-form-urlencoded/schema/properties/location: A parameter value needs one unambiguous scalar kind; /components/schemas/Base/properties/loc: A parameter value needs one unambiguous scalar kind; /paths/~1extras/post/requestBody/content/application~1x-www-form-urlencoded/schema/additionalProperties: A parameter value needs one unambiguous scalar kind; /paths/~1extra-lists/post/requestBody/content/application~1x-www-form-urlencoded/schema/additionalProperties/items: A parameter value needs one unambiguous scalar kind; /paths/~1extra-kinds/post/requestBody/content/application~1x-www-form-urlencoded/schema/additionalProperties: A parameter value needs one unambiguous scalar kind; /components/schemas/Others/additionalProperties: A parameter value needs one unambiguous scalar kind; /paths/~1extra-patterns/post/requestBody/content/application~1x-www-form-urlencoded/schema/additionalProperties: A parameter value needs one unambiguous scalar kind; /paths/~1spread-parts/post/requestBody/content/multipart~1form-data/schema: Expanded form member names collide; /paths/~1unnamed-encoding/post/requestBody/content/application~1x-www-form-urlencoded/encoding/other: The other encoding of the application/x-www-form-urlencoded media of POST /unnamed-encoding names no property of its schema; /paths/~1unnamed-part-encoding/post/requestBody/content/multipart~1form-data/encoding/other: The other encoding of the multipart/form-data media of POST /unnamed-part-encoding names no property of its schema
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /forms (operationId 'submit'), which the client cannot generate: /paths/~1forms/post/parameters/0: query parameter style 'spaceDelimited' has no builtin form for scalar values; /paths/~1forms/post/requestBody/content/application~1x-www-form-urlencoded/schema: A URL-encoded value must be an object
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /enum-arrays (operationId 'getEnumArrays'), which the client cannot generate: /paths/~1enum-arrays/get/parameters/0/schema: A parameter value needs one unambiguous scalar kind
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /xml-member (operationId 'submitXmlMember'), which the client cannot generate: /paths/~1xml-member/post/requestBody/content/application~1x-www-form-urlencoded/encoding/meta: The member content has no builtin encoding
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /deep-array (operationId 'submitDeepArray'), which the client cannot generate: /paths/~1deep-array/post/requestBody/content/application~1x-www-form-urlencoded/encoding/tags: query parameter style 'deepObject' has no builtin form for array values
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /spread-clash (operationId 'submitSpreadClash'), which the client cannot generate: /paths/~1spread-clash/post/requestBody/content/application~1x-www-form-urlencoded/schema: Expanded form member names collide
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /members (operationId 'submitMembers'), which the client cannot generate: /paths/~1members/post/requestBody/content/application~1x-www-form-urlencoded/schema/properties/location: A parameter value needs one unambiguous scalar kind
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /inherited (operationId 'submitInherited'), which the client cannot generate: /components/schemas/Base/properties/loc: A parameter value needs one unambiguous scalar kind
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /extras (operationId 'submitExtras'), which the client cannot generate: /paths/~1extras/post/requestBody/content/application~1x-www-form-urlencoded/schema/additionalProperties: A parameter value needs one unambiguous scalar kind
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /extra-lists (operationId 'submitExtraLists'), which the client cannot generate: /paths/~1extra-lists/post/requestBody/content/application~1x-www-form-urlencoded/schema/additionalProperties/items: A parameter value needs one unambiguous scalar kind
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /extra-kinds (operationId 'submitExtraKinds'), which the client cannot generate: /paths/~1extra-kinds/post/requestBody/content/application~1x-www-form-urlencoded/schema/additionalProperties: A parameter value needs one unambiguous scalar kind
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /extra-bases (operationId 'submitExtraBases'), which the client cannot generate: /components/schemas/Others/additionalProperties: A parameter value needs one unambiguous scalar kind
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /extra-patterns (operationId 'submitExtraPatterns'), which the client cannot generate: /paths/~1extra-patterns/post/requestBody/content/application~1x-www-form-urlencoded/schema/additionalProperties: A parameter value needs one unambiguous scalar kind
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /spread-parts (operationId 'submitSpreadParts'), which the client cannot generate: /paths/~1spread-parts/post/requestBody/content/multipart~1form-data/schema: Expanded form member names collide
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /unnamed-encoding (operationId 'submitUnnamedEncoding'), which the client cannot generate: /paths/~1unnamed-encoding/post/requestBody/content/application~1x-www-form-urlencoded/encoding/other: The other encoding of the application/x-www-form-urlencoded media of POST /unnamed-encoding names no property of its schema
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping POST /unnamed-part-encoding (operationId 'submitUnnamedPartEncoding'), which the client cannot generate: /paths/~1unnamed-part-encoding/post/requestBody/content/multipart~1form-data/encoding/other: The other encoding of the multipart/form-data media of POST /unnamed-part-encoding names no property of its schema
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/options.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/default/__init__.py
+  client/resources/default/_async.py
+  client/resources/default/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/default/__init__.py
+  client/types/default/_operations.py
+  models.py
 render pydantic_v2.dataclass
-  Error: /paths/~1forms/post/parameters/0: query parameter style 'spaceDelimited' has no builtin form for scalar values; /paths/~1enum-arrays/get/parameters/0/schema: A parameter value needs one unambiguous scalar kind; /paths/~1forms/post/requestBody/content/application~1x-www-form-urlencoded/schema: A URL-encoded value must be an object; /paths/~1xml-member/post/requestBody/content/application~1x-www-form-urlencoded/encoding/meta: The member content has no builtin encoding; /paths/~1deep-array/post/requestBody/content/application~1x-www-form-urlencoded/encoding/tags: query parameter style 'deepObject' has no builtin form for array values; /paths/~1spread-clash/post/requestBody/content/application~1x-www-form-urlencoded/schema: Expanded form member names collide; /paths/~1members/post/requestBody/content/application~1x-www-form-urlencoded/schema/properties/location: A parameter value needs one unambiguous scalar kind; /components/schemas/Base/properties/loc: A parameter value needs one unambiguous scalar kind; /paths/~1extras/post/requestBody/content/application~1x-www-form-urlencoded/schema/additionalProperties: A parameter value needs one unambiguous scalar kind; /paths/~1extra-lists/post/requestBody/content/application~1x-www-form-urlencoded/schema/additionalProperties/items: A parameter value needs one unambiguous scalar kind; /paths/~1extra-kinds/post/requestBody/content/application~1x-www-form-urlencoded/schema/additionalProperties: A parameter value needs one unambiguous scalar kind; /components/schemas/Others/additionalProperties: A parameter value needs one unambiguous scalar kind; /paths/~1extra-patterns/post/requestBody/content/application~1x-www-form-urlencoded/schema/additionalProperties: A parameter value needs one unambiguous scalar kind; /paths/~1spread-parts/post/requestBody/content/multipart~1form-data/schema: Expanded form member names collide; /paths/~1unnamed-encoding/post/requestBody/content/application~1x-www-form-urlencoded/encoding/other: The other encoding of the application/x-www-form-urlencoded media of POST /unnamed-encoding names no property of its schema; /paths/~1unnamed-part-encoding/post/requestBody/content/multipart~1form-data/encoding/other: The other encoding of the multipart/form-data media of POST /unnamed-part-encoding names no property of its schema
+  warning UserWarning: <root>/pydantic_v2_dataclass/client: Skipping POST /forms (operationId 'submit'), which the client cannot generate: /paths/~1forms/post/parameters/0: query parameter style 'spaceDelimited' has no builtin form for scalar values; /paths/~1forms/post/requestBody/content/application~1x-www-form-urlencoded/schema: A URL-encoded value must be an object
+  warning UserWarning: <root>/pydantic_v2_dataclass/client: Skipping GET /enum-arrays (operationId 'getEnumArrays'), which the client cannot generate: /paths/~1enum-arrays/get/parameters/0/schema: A parameter value needs one unambiguous scalar kind
+  warning UserWarning: <root>/pydantic_v2_dataclass/client: Skipping POST /xml-member (operationId 'submitXmlMember'), which the client cannot generate: /paths/~1xml-member/post/requestBody/content/application~1x-www-form-urlencoded/encoding/meta: The member content has no builtin encoding
+  warning UserWarning: <root>/pydantic_v2_dataclass/client: Skipping POST /deep-array (operationId 'submitDeepArray'), which the client cannot generate: /paths/~1deep-array/post/requestBody/content/application~1x-www-form-urlencoded/encoding/tags: query parameter style 'deepObject' has no builtin form for array values
+  warning UserWarning: <root>/pydantic_v2_dataclass/client: Skipping POST /spread-clash (operationId 'submitSpreadClash'), which the client cannot generate: /paths/~1spread-clash/post/requestBody/content/application~1x-www-form-urlencoded/schema: Expanded form member names collide
+  warning UserWarning: <root>/pydantic_v2_dataclass/client: Skipping POST /members (operationId 'submitMembers'), which the client cannot generate: /paths/~1members/post/requestBody/content/application~1x-www-form-urlencoded/schema/properties/location: A parameter value needs one unambiguous scalar kind
+  warning UserWarning: <root>/pydantic_v2_dataclass/client: Skipping POST /inherited (operationId 'submitInherited'), which the client cannot generate: /components/schemas/Base/properties/loc: A parameter value needs one unambiguous scalar kind
+  warning UserWarning: <root>/pydantic_v2_dataclass/client: Skipping POST /extras (operationId 'submitExtras'), which the client cannot generate: /paths/~1extras/post/requestBody/content/application~1x-www-form-urlencoded/schema/additionalProperties: A parameter value needs one unambiguous scalar kind
+  warning UserWarning: <root>/pydantic_v2_dataclass/client: Skipping POST /extra-lists (operationId 'submitExtraLists'), which the client cannot generate: /paths/~1extra-lists/post/requestBody/content/application~1x-www-form-urlencoded/schema/additionalProperties/items: A parameter value needs one unambiguous scalar kind
+  warning UserWarning: <root>/pydantic_v2_dataclass/client: Skipping POST /extra-kinds (operationId 'submitExtraKinds'), which the client cannot generate: /paths/~1extra-kinds/post/requestBody/content/application~1x-www-form-urlencoded/schema/additionalProperties: A parameter value needs one unambiguous scalar kind
+  warning UserWarning: <root>/pydantic_v2_dataclass/client: Skipping POST /extra-bases (operationId 'submitExtraBases'), which the client cannot generate: /components/schemas/Others/additionalProperties: A parameter value needs one unambiguous scalar kind
+  warning UserWarning: <root>/pydantic_v2_dataclass/client: Skipping POST /extra-patterns (operationId 'submitExtraPatterns'), which the client cannot generate: /paths/~1extra-patterns/post/requestBody/content/application~1x-www-form-urlencoded/schema/additionalProperties: A parameter value needs one unambiguous scalar kind
+  warning UserWarning: <root>/pydantic_v2_dataclass/client: Skipping POST /spread-parts (operationId 'submitSpreadParts'), which the client cannot generate: /paths/~1spread-parts/post/requestBody/content/multipart~1form-data/schema: Expanded form member names collide
+  warning UserWarning: <root>/pydantic_v2_dataclass/client: Skipping POST /unnamed-encoding (operationId 'submitUnnamedEncoding'), which the client cannot generate: /paths/~1unnamed-encoding/post/requestBody/content/application~1x-www-form-urlencoded/encoding/other: The other encoding of the application/x-www-form-urlencoded media of POST /unnamed-encoding names no property of its schema
+  warning UserWarning: <root>/pydantic_v2_dataclass/client: Skipping POST /unnamed-part-encoding (operationId 'submitUnnamedPartEncoding'), which the client cannot generate: /paths/~1unnamed-part-encoding/post/requestBody/content/multipart~1form-data/encoding/other: The other encoding of the multipart/form-data media of POST /unnamed-part-encoding names no property of its schema
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/options.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/default/__init__.py
+  client/resources/default/_async.py
+  client/resources/default/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/default/__init__.py
+  client/types/default/_operations.py
+  models.py
