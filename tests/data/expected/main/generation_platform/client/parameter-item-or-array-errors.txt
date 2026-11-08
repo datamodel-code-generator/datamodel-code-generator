@@ -1,3 +1,26 @@
 # parameter-item-or-array-errors
 render pydantic_v2.BaseModel
-  Error: /paths/~1delimited/get/parameters/0: query parameter style 'pipeDelimited' has no builtin form for one item or an array of values; /paths/~1kinds/get/parameters/0/schema: A parameter value needs one unambiguous scalar kind; /paths/~1read/get/responses/204/headers/X-Tags/schema: A parameter value needs one unambiguous scalar kind
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /delimited (operationId 'delimited'), which uses Structured style values (OAS 3.0) that the client does not support: /paths/~1delimited/get/parameters/0: query parameter style 'pipeDelimited' has no builtin form for one item or an array of values
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /kinds (operationId 'kinds'), which uses Structured style values (OAS 3.0) that the client does not support: /paths/~1kinds/get/parameters/0/schema: A parameter value needs one unambiguous scalar kind
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /headers (operationId 'headers'), which uses Structured style values (OAS 3.0) that the client does not support: /paths/~1headers/get/parameters/0: header parameter style 'simple' has no builtin form for one item or an array of values
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /read (operationId 'read'), which uses Structured style values (OAS 3.0) that the client does not support: /paths/~1read/get/responses/204/headers/X-Tags/schema: A parameter value needs one unambiguous scalar kind
+  client/README.md
+  client/__init__.py
+  client/_async_client.py
+  client/_client.py
+  client/_generated/__init__.py
+  client/_generated/model_bindings.py
+  client/_generated_docs/runtime.md
+  client/_operations.py
+  client/errors.py
+  client/options.py
+  client/py.typed
+  client/resources/__init__.py
+  client/resources/default/__init__.py
+  client/resources/default/_async.py
+  client/resources/default/_sync.py
+  client/responses.py
+  client/types/__init__.py
+  client/types/default/__init__.py
+  client/types/default/_operations.py
+  models.py

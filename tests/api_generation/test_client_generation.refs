@@ -285,6 +285,7 @@ parameter-content-defaults-31	main/generation_platform/client/parameter-content-
 parameter-item-or-array	main/generation_platform/client/packages/parameter-item-or-array/msgspec_Struct//*.py	= main/generation_platform/client/packages/parameter-item-or-array/pydantic_v2_BaseModel//*.py
 parameter-item-or-array	main/generation_platform/client/packages/parameter-item-or-array/pydantic_v2_BaseModel//*.py
 parameter-item-or-array	main/generation_platform/client/parameter-item-or-array.txt
+parameter-item-or-array-errors	main/generation_platform/client/packages/parameter-item-or-array-errors/pydantic_v2_BaseModel//*.py
 parameter-item-or-array-errors	main/generation_platform/client/parameter-item-or-array-errors.txt
 parameter-ref-loop-30	main/generation_platform/client/packages/parameter-ref-loop-30/pydantic_v2_BaseModel//*.py
 parameter-ref-loop-30	main/generation_platform/client/parameter-ref-loop-30.txt
@@ -353,6 +354,7 @@ skip-operations-every	main/generation_platform/client/skip-operations-every.txt
 skip-operations-features	main/generation_platform/client/packages/skip-operations-features/pydantic_v2_BaseModel//*.py
 skip-operations-features	main/generation_platform/client/skip-operations-features.txt
 skip-operations-helper	main/generation_platform/client/skip-operations-helper.txt
+skip-operations-resources	main/generation_platform/client/skip-operations-resources.txt
 sockets	main/generation_platform/client/packages/sockets/pydantic_v2_BaseModel//*.py
 sockets	main/generation_platform/client/sockets.txt
 stream-resume	main/generation_platform/client/packages/stream-resume/pydantic_v2_BaseModel//*.py

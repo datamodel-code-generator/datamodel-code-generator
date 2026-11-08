@@ -93,7 +93,7 @@ from datamodel_code_generator.python_literal import stable_repr
 from datamodel_code_generator.reference import _rw_variant_flag
 
 if TYPE_CHECKING:
-    from collections.abc import Container, Iterator, Mapping
+    from collections.abc import Container, Iterable, Iterator, Mapping
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import Diagnostic
@@ -365,17 +365,20 @@ def _strings(value: object) -> TypeIs[tuple[str, ...]]:
 class Planner:
     """Plan every selected operation of one client target from the accepted batch and its wire plan."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         request: TargetRequest,
         config: ClientGenerationConfig,
         wire: WirePlan,
         facts: ModelFacts,
         helpers: Container[OperationId] = (),
+        *,
+        selected: Iterable[OperationContract],
     ) -> None:
         """Index the batch and the wire plan, and resolve the per-operation settings to operation keys.
 
         `helpers` are the operations a sending helper calls, whose methods also take the helper's own arguments.
+        `selected` are the operations selected before any was skipped, which the resource names must tag.
         """
         assert request.batch.names is not None
         self.names = request.batch.names
@@ -394,7 +397,7 @@ class Planner:
         self.problems: list[Diagnostic] = []
         self.security = SecurityPlanner(request.batch, self.problems)
         self.settings = self.resolved()
-        tags = {group_tag(operation) for operation in request.operations}
+        tags = {group_tag(operation) for operation in selected}
         self.problems.extend(
             _problem(
                 "E_CONFIG_VALUE",
@@ -760,8 +763,8 @@ class Planner:
     ) -> tuple[dict[str, tuple[str, ...]], dict[str, tuple[HeaderSpec, ...]]]:
         """Return the media types and headers each form-data member's encoding names, reporting those not sent yet.
 
-        A member holding no files takes one JSON media type, or one other than a form's when its values are scalars,
-        which are written as text in it; a file member takes any media types and ranges.
+        A member holding no files takes one JSON media type, or one other than a form or multipart media type when its
+        values are scalars, which are written as text in it; a file member takes any media types and ranges.
         A style, explode, or allowReserved leaves the contentType ignored, and only a member holding no files takes it.
         Only a declared header with a schema is returned; a body sent whole cannot carry a required one. The encoding
         of a property the request leaves out applies to no part (`member_encodings`).

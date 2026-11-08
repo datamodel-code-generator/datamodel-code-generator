@@ -1,12 +1,12 @@
 # parameter-item-or-array pydantic_v2.BaseModel, msgspec.Struct
   > GET https://api.example.com/advisories/7?cwes=79%2C284&has=patch
-    [host: api.example.com, accept-encoding: gzip, deflate, x-tags: a] b''
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
   items = None
   > GET https://api.example.com/advisories/7,8?cwes=79&cwes=284&has=patch,deployment
-    [host: api.example.com, accept-encoding: gzip, deflate, x-tags: a,b] b''
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
   arrays = None
   > GET https://api.example.com/advisories/7?cwes=79&has=patch
-    [host: api.example.com, accept-encoding: gzip, deflate, x-tags: a] b''
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
   one-item arrays = None
   > GET https://api.example.com/advisories/7
     [host: api.example.com, accept-encoding: gzip, deflate] b''

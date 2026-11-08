@@ -71,10 +71,10 @@ def item_or_array(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     with exchange.client() as http, package.Client(http_client=http) as api:
         for label, values in (
-            ("items", {"ids": 7, "cwes": "79,284", "has": "patch", "X-Tags": "a"}),
-            ("arrays", {"ids": [7, 8], "cwes": ["79", "284"], "has": ["patch", "deployment"], "X-Tags": ["a", "b"]}),
-            ("one-item arrays", {"ids": [7], "cwes": ["79"], "has": ["patch"], "X-Tags": ["a"]}),
-            ("empty arrays", {"ids": [7], "cwes": [], "has": [], "X-Tags": []}),
+            ("items", {"ids": 7, "cwes": "79,284", "has": "patch"}),
+            ("arrays", {"ids": [7, 8], "cwes": ["79", "284"], "has": ["patch", "deployment"]}),
+            ("one-item arrays", {"ids": [7], "cwes": ["79"], "has": ["patch"]}),
+            ("empty arrays", {"ids": [7], "cwes": [], "has": []}),
         ):
             arguments = {
                 name: argument(package, "listAdvisories", location, wire_name, values[wire_name])
@@ -82,7 +82,6 @@ def item_or_array(package: ModuleType, lines: list[str]) -> None:
                     ("ids", "path", "ids"),
                     ("cwes", "query", "cwes"),
                     ("has", "query", "has"),
-                    ("X_Tags", "header", "X-Tags"),
                 )
             }
             exchange.respond(raw_response(204))

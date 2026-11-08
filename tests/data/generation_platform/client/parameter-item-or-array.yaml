@@ -30,12 +30,6 @@ paths:
               - {type: string}
               - type: array
                 items: {type: string, enum: [patch, deployment]}
-        - name: X-Tags
-          in: header
-          schema:
-            anyOf:
-              - {type: string}
-              - {type: array, items: {type: string}}
       responses:
         "204":
           description: Listed.

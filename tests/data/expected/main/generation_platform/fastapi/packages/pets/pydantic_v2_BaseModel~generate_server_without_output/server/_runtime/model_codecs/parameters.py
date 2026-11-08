@@ -31,6 +31,7 @@ __all__ = (
     "PLACEHOLDER",
     "ParameterLocation",
     "ParameterPlan",
+    "ParameterShapeError",
     "ValueShape",
     "builtin_content",
     "cookie_octets",
@@ -68,6 +69,10 @@ OWS: Final = " \t"
 _UNENCODABLE: Final = "A parameter value is text that UTF-8 cannot encode, such as a lone surrogate"
 
 
+class ParameterShapeError(ValueError):
+    """Report a parameter plan whose style or content has no reversible builtin form for the shape of its values."""
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ParameterPlan:
     """Describe one effective parameter: location, style or content media, and lexical kinds.
@@ -92,14 +97,18 @@ class ParameterPlan:
     def __post_init__(self) -> None:
         """Reject style, content, and shape combinations without a reversible builtin form.
 
-        A single plan needs a form for its items alone as well as for its arrays. A header needs a name that is a
-        token, and so does a cookie sent as it is, a single value or one of the cookie style.
+        A single plan needs a form for its items alone as well as for its arrays, and one that tells an item holding
+        the delimiter of an array from that array, which a header, whose values are not percent-encoded, has not; these
+        refusals raise ParameterShapeError. A header needs a name that is a token, and so does a cookie sent as it is,
+        a single value or one of the cookie style.
         """
-        if not _reversible(self) or (self.single and (self.shape != "array" or not _reversible(self, "scalar"))):
+        if not _reversible(self) or (
+            self.single and (self.shape != "array" or self.location == "header" or not _reversible(self, "scalar"))
+        ):
             content = "" if self.content_media_type is None else f" with content {self.content_media_type!r}"
             shape = "one item or an array of" if self.single else self.shape
             msg = f"{self.location} parameter style {self.style!r}{content} has no builtin form for {shape} values"
-            raise ValueError(msg)
+            raise ParameterShapeError(msg)
         if self.location == "header" and not is_token(self.name):
             msg = f"header name {self.name!r} is not a token, which every header field name must be"
             raise ValueError(msg)
@@ -134,15 +143,15 @@ def _reversible(plan: ParameterPlan, shape: ValueShape | None = None) -> bool:
         return plan.style is None and builtin_content(plan.location, plan.content_media_type)
     if plan.style is None or plan.style not in _STYLES.get(plan.location, ()):
         return False
-    match plan.style, plan.shape if shape is None else shape, plan.explode:
-        case "spaceDelimited" | "pipeDelimited", shape, explode:
-            return shape != "scalar" and not explode
-        case "deepObject", shape, explode:
-            return shape == "object" and explode
+    values = plan.shape if shape is None else shape
+    match plan.style, values, plan.explode:
+        case "spaceDelimited" | "pipeDelimited", _, _:
+            return values != "scalar" and not plan.explode
+        case "deepObject", _, _:
+            return values == "object" and plan.explode
         case _, "array" | "object", False:
             return plan.location != "cookie"
-        case _:
-            return True
+    return True
 
 
 def _item(plan: ParameterPlan) -> ParameterPlan:

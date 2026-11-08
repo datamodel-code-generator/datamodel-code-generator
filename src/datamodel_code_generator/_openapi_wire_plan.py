@@ -19,6 +19,7 @@ from datamodel_code_generator._runtime.model_codecs.media import (
 from datamodel_code_generator._runtime.model_codecs.parameters import (
     ParameterLocation,
     ParameterPlan,
+    ParameterShapeError,
     ValueShape,
     builtin_content,
     header_text,
@@ -71,6 +72,7 @@ from datamodel_code_generator.python_literal import stable_repr
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 
+    from datamodel_code_generator._openapi_features import ClientFeature
     from datamodel_code_generator._runtime.model_codecs.media import MediaKind
     from datamodel_code_generator._target_contract import (
         FieldSlot,
@@ -81,7 +83,6 @@ if TYPE_CHECKING:
         TypeUseBinding,
         TypeView,
     )
-    from datamodel_code_generator.parser.schema_version import ClientFeature
 
 CodecReason: TypeAlias = (
     BindingReason
@@ -723,12 +724,14 @@ def _parameter(
             reserved_names=tuple(sorted(other for kind_, other in names if kind_ == location and other != name)),
             single=value.single,
         )
-    except ValueError as error:
+    except ParameterShapeError as error:
         raise _PlanError(source, str(error), _style_feature(style, shape, single=value.single)) from None
+    except ValueError as error:
+        raise _PlanError(source, str(error)) from None
 
 
 def _style_feature(style: object, shape: ValueShape | None, *, single: bool = False) -> ClientFeature | None:
-    """Return the feature a style refusal stems from, or None.
+    """Return the feature a refusal of a style for the shape of its values stems from, or None.
 
     A value that is an item or an array of them uses structured values, and deepObject on a value that is no object
     uses that style.

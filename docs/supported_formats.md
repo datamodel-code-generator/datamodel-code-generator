@@ -425,10 +425,10 @@ Client: whether the generated Python client (`--generate-client`) supports the f
 |---------|------------|--------|--------|-------------|
 | `nullable` | OAS 3.0 | ✅ Supported | — | Uses `nullable: true` for nullable types (deprecated in 3.1) |
 | `discriminator` | OAS 3.0 | ✅ Supported | — | Polymorphism support via `discriminator` keyword |
-| `webhooks` | OAS 3.1 | ✅ Supported | — | Top-level webhooks object for incoming events |
+| `webhooks` | OAS 3.1 | ✅ Supported | ⚠️ Partial | Top-level webhooks object for incoming events; the client generates no methods for webhook operations, only helpers that verify and decode deliveries |
 | `itemSchema` | OAS 3.2 | ✅ Supported | — | Media Type Object item schema for sequential media |
 | `$self` | OAS 3.2 | ✅ Supported | — | Root document URI for relative and absolute reference resolution |
-| `querystring` | OAS 3.2 | ✅ Supported | — | Query string parameter object without a parameter name |
+| `querystring` | OAS 3.2 | ✅ Supported | ⚠️ Partial | Query string parameter object without a parameter name; the client ignores the `encoding` declarations of the members of a nameless form querystring |
 | `xml` | OAS 3.0 | ⚠️ Partial | — | XML serialization metadata (name, namespace, prefix) |
 | `externalDocs` | OAS 3.0 | ⚠️ Partial | — | Reference to external documentation |
 | `links` | OAS 3.0 | ❌ Not Supported | — | Links between operations |
@@ -438,10 +438,10 @@ Client: whether the generated Python client (`--generate-client`) supports the f
 | `mutualTLS` | OAS 3.1 | ❌ Not Supported | ❌ Not Supported | Mutual TLS security scheme |
 | `style: cookie` | OAS 3.2 | ✅ Supported | ✅ Supported | Cookie parameter style; earlier versions do not declare it |
 | `style: deepObject` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Query parameters written as `name[key]=value`; the client writes objects only |
-| `Structured style values` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style; the client writes a parameter that takes one item or an array of them only |
+| `Structured style values` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style; the client writes a parameter outside a header that takes one item or an array of them only |
 | `Binary strings in text media` | OAS 3.0 | ✅ Supported | ❌ Not Supported | `format: binary` strings inside a JSON, URL-encoded or text body, a parameter or a header |
 | `multipart media types` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema only, such as not `multipart/related` |
-| `Encoding contentType` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Media types of form-data parts; the client writes a part holding no files as JSON, or its scalars as text in a media type other than a form's |
+| `Encoding contentType` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Media types of form-data parts; the client writes a part holding no files as JSON, or its scalars as text in a media type other than a form or multipart media type |
 <!-- END AUTO-GENERATED SUPPORTED FEATURES -->
 
 ## Data Format Support

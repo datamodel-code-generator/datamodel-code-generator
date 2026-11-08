@@ -33,6 +33,32 @@ paths:
       responses:
         "204":
           description: Listed.
+  /headers:
+    get:
+      operationId: headers
+      parameters:
+        - name: X-Tags
+          in: header
+          schema:
+            anyOf:
+              - {type: string}
+              - {type: array, items: {type: string}}
+      responses:
+        "204":
+          description: Listed.
+  /search:
+    get:
+      operationId: search
+      parameters:
+        - name: tags
+          in: query
+          schema:
+            anyOf:
+              - {type: string}
+              - {type: array, items: {type: string}}
+      responses:
+        "204":
+          description: Listed.
   /read:
     get:
       operationId: read

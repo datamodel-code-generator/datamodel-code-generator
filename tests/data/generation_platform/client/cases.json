@@ -2531,7 +2531,13 @@
     ]
   },
   "parameter-item-or-array-errors": {
-    "input": "parameter-item-or-array-errors.yaml"
+    "input": "parameter-item-or-array-errors.yaml",
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
   },
   "auth-shared-wire": {
     "input": "auth-shared-wire.yaml",
@@ -6071,6 +6077,18 @@
   },
   "skip-operations": {
     "input": "skip-operations.yaml"
+  },
+  "skip-operations-resources": {
+    "input": "skip-operations.yaml",
+    "config": {
+      "resource_names": [
+        {
+          "tag": "owners",
+          "namespace": "owners"
+        }
+      ]
+    },
+    "modules": false
   },
   "skip-operations-document-errors": {
     "input": "skip-operations-document-errors.yaml"
