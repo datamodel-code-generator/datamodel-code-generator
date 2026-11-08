@@ -37,6 +37,8 @@ x_python_type	main/untrusted_input/refuses[x_python_type].py
 x_python_type	main/untrusted_input/refuses[x_python_type].refused.txt
 xml_schema_include	main/untrusted_input/refuses[xml_schema_include].py
 xml_schema_include	main/untrusted_input/refuses[xml_schema_include].refused.txt
+xml_schema_missing_include	main/untrusted_input/refuses[xml_schema_missing_include].py
+xml_schema_missing_include	main/untrusted_input/refuses[xml_schema_missing_include].refused.txt
 [test_untrusted_input_refuses_merged_trait_headers]
 	main/untrusted_input/refuses_merged_trait_headers.models.txt
 	main/untrusted_input/refuses_merged_trait_headers.refused.txt

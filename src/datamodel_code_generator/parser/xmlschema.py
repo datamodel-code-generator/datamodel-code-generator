@@ -553,8 +553,8 @@ class _XMLSchemaConverter:
             if not (schema_location := child.get("schemaLocation")):
                 continue
             location = self._resolve_schema_location(source_dir, schema_location)
-            if (seen is not None and location in seen) or not location.is_file():
-                continue
+            # Refused before the existence check, so that the outcome tells nothing about files outside the input; a
+            # location already seen was read, so it is a file of the input.
             if self.input_files is not None and location not in self.input_files:
                 msg = (
                     f"Reading the XML Schema {_local_name(child.tag)} schemaLocation {schema_location} is refused "
@@ -562,6 +562,8 @@ class _XMLSchemaConverter:
                     "or import only a file of the input."
                 )
                 raise Error(msg)
+            if (seen is not None and location in seen) or not location.is_file():
+                continue
             self.loaded_source_paths.add(location)
             if seen is not None:
                 seen.add(location)
