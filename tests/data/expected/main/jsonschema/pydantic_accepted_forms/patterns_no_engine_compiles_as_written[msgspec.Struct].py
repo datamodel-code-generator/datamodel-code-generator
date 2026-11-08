@@ -57,3 +57,12 @@ AsciiWordsWithinTheSizeLimit: TypeAlias = str
 
 
 AtLeastTwoLetters: TypeAlias = Annotated[str, Meta(pattern='^[a-z]{2,}$')]
+
+
+AtLeastWordsBeyondTheSizeLimit: TypeAlias = Annotated[str, Meta(pattern='^\\w{300,}$')]
+
+
+LettersBeyondTheSizeLimit: TypeAlias = Annotated[str, Meta(pattern='^b{0,400000}$')]
+
+
+WordWithinBoundaries: TypeAlias = Annotated[str, Meta(pattern='^\\b\\w{1,200}\\b$')]

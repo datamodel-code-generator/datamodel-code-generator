@@ -709,7 +709,9 @@ class Planner:
             self.forms.get(use.id, ((), None, ())) if kind == "form" and use is not None else ((), None, ())
         )
         media_of, headers_of = (
-            self.part_media(operation, declaration, media_type, use) if kind == "multipart" and request else ({}, {})
+            self.part_media(operation, declaration, media_type, use)
+            if kind == "multipart" and request and reason is None
+            else ({}, {})
         )
         styles_of = self.styles.get(use.id, {}) if request and use is not None else {}
         members: tuple[PartSpec, ...] | None = None

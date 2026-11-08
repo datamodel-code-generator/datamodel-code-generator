@@ -283,8 +283,9 @@ field (`--use-missing-sentinel`), so such a pattern fails at import there too. A
 beside `bytes`, such as `str | bytes`, follows the string rules for every target. With a target older than `2.14`
 the generation warns about every `bytes` pattern it writes (see
 [Targeting a Pydantic version](output-model-types.md#targeting-a-pydantic-version)).
-msgspec output validates with Python's `re` alone, so it leaves out, with the same warning, a `pattern` that Python's
-`re` rejects, such as `\p{L}`; standard-library outputs write no pattern.
+msgspec output validates with Python's `re` alone, so it leaves out, with the same warning, a `pattern` that the
+static check shows Python's `re` rejects, such as `\p{L}`; a pattern it does not recognize as invalid, such as the
+reversed range `[z-a]`, stays and fails when a payload is first decoded. Standard-library outputs write no pattern.
 Because `regex_engine` is a model setting, every pattern in that model then uses Python's `re` semantics, for
 example `$` also matches before a trailing newline. Python's `re` is a backtracking engine without the Rust engine's
 linear-time guarantee: review such patterns, and bound input length (for example with `maxLength`) when they

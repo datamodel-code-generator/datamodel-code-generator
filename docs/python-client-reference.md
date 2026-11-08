@@ -870,7 +870,8 @@ nested union, has the parts of its objects merged by name, since its value is on
 parts: a member that several objects declare takes the union of their types, as long as they agree on its parts (each
 holds files, repeats and has structured values alike, and its text has one kind), and other parts are refused only
 when every object allows no other properties. Generation leaves out an operation whose union is not such, such as one
-of a string and an object, or of objects that disagree on a member.
+of a string or an enum and an object, or of objects that disagree on a member, with a warning that its media `needs an
+object schema, or objects that agree on the parts of each property, to be sent as parts`.
 
 The client sends a JSON part as a field, without a filename, and Starlette, which the generated server and FastAPI
 use, answers `400` for a field part of more than 1 MiB. Send such a value as a `FilePart` with a filename, which
@@ -894,9 +895,10 @@ same message at the same place. Both also refuse a URL-encoded body whose schema
 (`Pattern properties have no builtin parameter encoding`) or is not an object, such as an array, a string, or
 `properties` without `type: object` (`A URL-encoded value must be an object`); the server reads such a body only in the
 request body mode. A form body whose schema is a union of one schema and `null` alone is written as the form of that
-schema, by its members and other properties; a multipart body whose schema is a union of several schemas has no members
-to write parts by, and generation stops with `needs an object schema to be sent as parts`, as the server's generation
-stops for it.
+schema, by its members and other properties; a multipart body whose schema is a union of several schemas is sent by
+the parts of its objects only when they are objects that agree on the parts of each property, as described above, and
+generation leaves out an operation with any other such union with that warning, as the server's generation refuses it
+outside the request body mode.
 
 A multipart response is read only when the operation declares one, with the standard library's MIME parser: a part's
 bytes are kept as they arrived unless it names a transfer encoding, and a broken body, or a part that is itself a

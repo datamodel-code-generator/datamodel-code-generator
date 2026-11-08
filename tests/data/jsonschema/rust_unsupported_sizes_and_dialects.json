@@ -52,6 +52,18 @@
     "AtLeastTwoLetters": {
       "type": "string",
       "pattern": "^[a-z]{2,}$"
+    },
+    "AtLeastWordsBeyondTheSizeLimit": {
+      "type": "string",
+      "pattern": "^\\w{300,}$"
+    },
+    "LettersBeyondTheSizeLimit": {
+      "type": "string",
+      "pattern": "^b{0,400000}$"
+    },
+    "WordWithinBoundaries": {
+      "type": "string",
+      "pattern": "^\\b\\w{1,200}\\b$"
     }
   }
 }

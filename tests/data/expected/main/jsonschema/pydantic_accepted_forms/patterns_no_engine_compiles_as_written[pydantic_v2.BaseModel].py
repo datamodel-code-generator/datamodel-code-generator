@@ -77,3 +77,21 @@ class AsciiWordsWithinTheSizeLimit(RootModel[constr(pattern=r'^(?-u:\w){1,300}$'
 
 class AtLeastTwoLetters(RootModel[constr(pattern=r'^[a-z]{2,}$')]):
     root: constr(pattern=r'^[a-z]{2,}$')
+
+
+class AtLeastWordsBeyondTheSizeLimit(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: constr(pattern=r'^\w{300,}$')
+
+
+class LettersBeyondTheSizeLimit(RootModel[str]):
+    model_config = ConfigDict(
+        regex_engine="python-re",
+    )
+    root: constr(pattern=r'^b{0,400000}$')
+
+
+class WordWithinBoundaries(RootModel[constr(pattern=r'^\b\w{1,200}\b$')]):
+    root: constr(pattern=r'^\b\w{1,200}\b$')

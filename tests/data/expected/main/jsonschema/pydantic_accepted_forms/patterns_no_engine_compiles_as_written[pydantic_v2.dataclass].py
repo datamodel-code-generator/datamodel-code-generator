@@ -71,3 +71,19 @@ AsciiWordsWithinTheSizeLimit = TypeAliasType(
 AtLeastTwoLetters = TypeAliasType(
     "AtLeastTwoLetters", Annotated[str, Field(pattern=r'^[a-z]{2,}$')]
 )
+
+
+AtLeastWordsBeyondTheSizeLimit = TypeAliasType(
+    "AtLeastWordsBeyondTheSizeLimit",
+    Annotated[str, Field(pattern=compile('^\\w{300,}$'))],
+)
+
+
+LettersBeyondTheSizeLimit = TypeAliasType(
+    "LettersBeyondTheSizeLimit", Annotated[str, Field(pattern=compile('^b{0,400000}$'))]
+)
+
+
+WordWithinBoundaries = TypeAliasType(
+    "WordWithinBoundaries", Annotated[str, Field(pattern=r'^\b\w{1,200}\b$')]
+)

@@ -2619,12 +2619,13 @@ class _SchemaUses(_Models):
         return tuple(merged.values())
 
     def union_objects(self, value: TypeView | None, seen: frozenset[TypeView]) -> list[SymbolId] | None:
-        """Return the models a type is one of: the model it holds (``held``), or those of each member of its union.
+        """Return the models a type is one of: the object it holds (``held``), or those of each member of its union.
 
-        None is for a type that is, or has a member that is, neither, and for a union that holds itself.
+        None is for a type that is, or has a member that is, neither, such as an enum, and for a union that holds
+        itself.
         """
         if (symbol := self.held(value)) is not None:
-            return [symbol]
+            return None if self.symbol_table[symbol].kind in _SCALAR_SYMBOLS else [symbol]
         if not isinstance(found := unwrapped(value, self.symbol_table, self.members), UnionType) or found in seen:
             return None
         objects: list[SymbolId] = []

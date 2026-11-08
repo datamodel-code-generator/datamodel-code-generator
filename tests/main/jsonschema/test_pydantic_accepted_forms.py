@@ -56,6 +56,9 @@ SIZE_AND_DIALECT_PAYLOADS = {
     "NoSpacesBeyondTheSizeLimit": ("abc", "a b"),
     "AsciiWordsWithinTheSizeLimit": ("abc_1", "Déjà"),
     "AtLeastTwoLetters": ("ab", "a"),
+    "AtLeastWordsBeyondTheSizeLimit": ("a" * 300, "a" * 299),
+    "LettersBeyondTheSizeLimit": ("bbb", "bc"),
+    "WordWithinBoundaries": ("abc", "a b"),
 }
 
 

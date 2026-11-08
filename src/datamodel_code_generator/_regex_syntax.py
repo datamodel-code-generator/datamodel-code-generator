@@ -209,8 +209,12 @@ _SIZE_QUANTIFIER: Final = r"\{\s*(?P<lower>[0-9]+)\s*(?:(?P<comma>,)\s*(?P<upper
 _ASCII_FLAG_GROUP: Final = r"\(\?[A-Za-z]*-[A-Za-z]*u"
 _VERBOSE_FLAG_GROUP: Final = r"\(\?[A-Za-z-]*x"
 _PYTHON_REJECTED_FLAGS: Final = r"\(\?[A-Za-z]*-[A-Za-z]*[auL]"
-_ZERO_WIDTH: Final = frozenset("bBAzZ<>^$")
-"""The escape letters and characters of an atom that matches no character, which Rust compiles to no copy of one."""
+_SIZE_ESCAPE: Final = rf"{_ESCAPE}|\\"
+"""An escape (``_ESCAPE``), or the backslash that ends a pattern alone."""
+_ZERO_WIDTH_ESCAPES: Final = frozenset("bBAzZ<>")
+"""The letters after a backslash of an atom that matches no character, which Rust compiles to no copy of one."""
+_ZERO_WIDTH: Final = frozenset("^$")
+"""The characters of an atom that matches no character outside an escape; any other one consumes a character."""
 _GROUP_PREFIX: Final = r"\((?:\?(?:<?[=!]|P?<[^>]*>|[A-Za-z-]*:|>))?"
 
 
@@ -303,7 +307,10 @@ class _SizeScan:
         return kinds, repetitions
 
     def _quantifier(self) -> tuple[int, bool]:
-        """Return how many copies of the atom Rust compiles, and whether a counted repetition with a maximum asks."""
+        """Return how many copies of the atom Rust compiles, and whether a counted repetition asks for them.
+
+        An open-ended repetition (``a{N,}``) compiles at least its ``N`` mandatory copies.
+        """
         if (match := _compiled(_SIZE_QUANTIFIER).match(self.pattern, self.position)) is None:
             return 1, False
         self.position = match.end()
@@ -313,7 +320,7 @@ class _SizeScan:
             return int(match["lower"]), True
         if match["upper"]:
             return int(match["upper"]), True
-        return max(int(match["lower"]), 1), False
+        return max(int(match["lower"]), 1), True
 
     def _atom(self) -> tuple[set[str], list[tuple[int, int]]]:
         """Return the kinds of one atom, none for one that matches no character, and the repetitions it holds."""
@@ -326,14 +333,16 @@ class _SizeScan:
             self.position = end
             return {_class_kind(body)}, []
         if character == "\\":
-            escape = next(_escapes(self.pattern[self.position :]), "\\")
+            escape = cast("re.Match[str]", _compiled(_SIZE_ESCAPE).match(self.pattern, self.position)).group()
             self.position += len(escape)
-            character = escape[1:2]
-            kind = character if character in _CLASS_ESCAPES else "literal"
-        else:
-            self.position += 1
-            kind = "dot" if character == "." else "literal"
-        return (set() if character in _ZERO_WIDTH else {kind}), []
+            letter = escape[1:2]
+            if letter in _ZERO_WIDTH_ESCAPES:
+                return set(), []
+            return {letter if letter in _CLASS_ESCAPES else "literal"}, []
+        self.position += 1
+        if character in _ZERO_WIDTH:
+            return set(), []
+        return {"dot" if character == "." else "literal"}, []
 
     def _group(self) -> tuple[set[str], list[tuple[int, int]]]:
         """Return the kinds and repetitions of a group; a group that only sets flags holds none."""
