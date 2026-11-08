@@ -2504,6 +2504,19 @@
   "auth-wire-conflicts": {
     "input": "auth-wire-conflicts.yaml"
   },
+  "multipart-media-text": {
+    "input": "multipart-media-text.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
   "auth-shared-wire": {
     "input": "auth-shared-wire.yaml",
     "modules": [

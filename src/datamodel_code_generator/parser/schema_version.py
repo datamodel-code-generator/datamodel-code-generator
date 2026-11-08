@@ -517,8 +517,8 @@ class OpenAPISchemaFeatures(JsonSchemaFeatures):
         metadata=FeatureMetadata(
             introduced="OAS 3.0",
             doc_name="Encoding contentType",
-            description="Media types of form-data parts; the client writes a part holding no files as JSON or text "
-            "only",
+            description="Media types of form-data parts; the client writes a part holding no files as JSON, or its "
+            "scalars as text in a media type other than a form's",
             status="supported",
             client_status="partial",
         ),

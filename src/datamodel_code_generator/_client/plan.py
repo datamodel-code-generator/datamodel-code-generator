@@ -760,7 +760,8 @@ class Planner:
     ) -> tuple[dict[str, tuple[str, ...]], dict[str, tuple[HeaderSpec, ...]]]:
         """Return the media types and headers each form-data member's encoding names, reporting those not sent yet.
 
-        A member holding no files takes one JSON or text media type; a file member takes any media types and ranges.
+        A member holding no files takes one JSON media type, or one other than a form's when its values are scalars,
+        which are written as text in it; a file member takes any media types and ranges.
         A style, explode, or allowReserved leaves the contentType ignored, and only a member holding no files takes it.
         Only a declared header with a schema is returned; a body sent whole cannot carry a required one. The encoding
         of a property the request leaves out applies to no part (`member_encodings`).
@@ -794,7 +795,8 @@ class Planner:
                 case ():
                     pass
                 case _ if (single := single_media(encoding)) is not None and (
-                    media_kind(single) == "json" or (media_kind(single) == "text" and not members[name].structured)
+                    (written := media_kind(single)) == "json"
+                    or (written in {"text", "binary"} and not members[name].structured)
                 ):
                     media_of[name] = (single,)
                 case types if members[name].file:

@@ -57,6 +57,7 @@ mock-transport	main/generation_platform/client/runtime/mock-transport.txt
 modelless-bodies	main/generation_platform/client/runtime/modelless-bodies.txt
 multipart	main/generation_platform/client/runtime/multipart.txt
 multipart-kinds	main/generation_platform/client/runtime/multipart-kinds.txt
+multipart-media-text	main/generation_platform/client/runtime/multipart-media-text.txt
 multipart-replay	main/generation_platform/client/runtime/multipart-replay.txt
 multipart-split	main/generation_platform/client/runtime/multipart-split.txt
 multipart-split-all	main/generation_platform/client/runtime/multipart-split-all.txt
