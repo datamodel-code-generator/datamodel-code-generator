@@ -4,7 +4,7 @@ render pydantic_v2.BaseModel
   warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /owners, which the client cannot generate: /paths/~1owners/get: The security of GET /owners has overlapping header ownership in one AND alternative
   warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /tokens (operationId 'listTokens'), which the client cannot generate: /paths/~1tokens/get: The security of GET /tokens requires the unavailable scheme 'UserToken'
   warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping PUT /photos (operationId 'uploadPhoto'), which the client cannot generate: /paths/~1photos/put/requestBody/content/file: The media type 'file' of PUT /photos is not a media type
-  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /search (operationId 'searchPets'), which the client cannot generate: /paths/~1search/get/parameters/0/schema: A parameter value needs one unambiguous scalar kind
+  warning UserWarning: <root>/pydantic_v2_BaseModel/client: Skipping GET /search (operationId 'searchPets'), which uses Structured style values (OAS 3.0) that the client does not support: /paths/~1search/get/parameters/0/schema: A parameter value needs one unambiguous scalar kind
   client/README.md
   client/__init__.py
   client/_async_client.py

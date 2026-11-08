@@ -688,7 +688,15 @@ class Planner:
         bare = essence(media_type)
         if (reason := _unsupported(kind, bare, use, request=request)) is not None:
             message = f"The {media_type} media of {label(operation)} {reason}"
-            self.problems.append(_problem("E_CLIENT_UNSUPPORTED", message, declaration.use_site, operation=operation))
+            self.problems.append(
+                _problem(
+                    "E_CLIENT_UNSUPPORTED",
+                    message,
+                    declaration.use_site,
+                    operation=operation,
+                    feature="multipart_media",
+                )
+            )
         if kind == "multipart" and not request and (encoding := _encoded(declaration)) is not None:
             message = (
                 f"The {encoding.name} encoding of the {media_type} media of {label(operation)} is not supported yet"
@@ -794,7 +802,13 @@ class Planner:
                 case _:
                     message = f"{subject} has no builtin encoding for a member holding no files"
                     self.problems.append(
-                        _problem("E_CLIENT_UNSUPPORTED", message, encoding.use_site, operation=operation)
+                        _problem(
+                            "E_CLIENT_UNSUPPORTED",
+                            message,
+                            encoding.use_site,
+                            operation=operation,
+                            feature="part_content_type",
+                        )
                     )
         return media_of, headers_of
 

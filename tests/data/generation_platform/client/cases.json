@@ -6035,6 +6035,17 @@
   "skip-operations-every": {
     "input": "skip-operations-every.yaml"
   },
+  "skip-operations-features": {
+    "input": "skip-operations-features.yaml",
+    "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
   "skip-operations-helper": {
     "input": "skip-operations-helper.yaml",
     "references": [
