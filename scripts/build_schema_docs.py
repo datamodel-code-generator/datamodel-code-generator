@@ -205,37 +205,48 @@ def get_feature_metadata(cls: type) -> list[tuple[str, FeatureMetadata]]:
                 description=f.metadata.get("description", ""),
                 status=f.metadata.get("status", "supported"),
             )
+            if client_status := f.metadata.get("client_status"):
+                meta["client_status"] = client_status
             result.append((f.name, meta))
     return result
+
+
+def _status_label(status: str | None) -> str:
+    """Return a status with its emoji, or a dash for a feature without one."""
+    if status is None:
+        return "—"
+    return f"{STATUS_EMOJI.get(status, '')} {status.replace('_', ' ').title()}"
 
 
 def generate_feature_table(
     features: list[tuple[str, FeatureMetadata]],
     *,
-    include_status: bool = True,
+    include_client: bool = False,
 ) -> str:
     """Generate a Markdown table from feature metadata.
 
     Args:
         features: List of (field_name, metadata) tuples.
-        include_status: Whether to include the Status column.
+        include_client: Whether to include the Client column (the Python client's support, a dash where the
+            client does not plan the feature itself).
 
     Returns:
         Markdown table string.
     """
-    if include_status:
-        lines = ["| Feature | Introduced | Status | Description |"]
-        lines.append("|---------|------------|--------|-------------|")
-        for _name, meta in features:
-            emoji = STATUS_EMOJI.get(meta["status"], "")
-            status_text = f"{emoji} {meta['status'].replace('_', ' ').title()}"
-            lines.append(f"| `{meta['doc_name']}` | {meta['introduced']} | {status_text} | {meta['description']} |")
-    else:
-        lines = ["| Feature | Introduced | Description |"]
-        lines.append("|---------|------------|-------------|")
-        for _name, meta in features:
-            lines.append(f"| `{meta['doc_name']}` | {meta['introduced']} | {meta['description']} |")
-
+    client_header = ("Client",) if include_client else ()
+    rows = (
+        (
+            f"`{meta['doc_name']}`",
+            meta["introduced"],
+            _status_label(meta["status"]),
+            *((_status_label(meta.get("client_status")),) if include_client else ()),
+            meta["description"],
+        )
+        for _name, meta in features
+    )
+    headers = ("Feature", "Introduced", "Status", *client_header, "Description")
+    lines = [f"| {' | '.join(headers)} |", f"|{'|'.join('-' * (len(header) + 2) for header in headers)}|"]
+    lines.extend(f"| {' | '.join(row)} |" for row in rows)
     return "\n".join(lines)
 
 
@@ -790,7 +801,15 @@ def generate_supported_features_content(
         heading(heading_level + 1, "OpenAPI-Specific Features"),
         "",
     ]
-    lines.extend((generate_feature_table(get_openapi_specific_feature_metadata()), ""))
+    lines.extend((
+        (
+            "Client: whether the generated Python client (`--generate-client`) supports the feature; an operation "
+            "that uses an unsupported one is skipped with a warning. A dash means the client follows the models."
+        ),
+        "",
+        generate_feature_table(get_openapi_specific_feature_metadata(), include_client=True),
+        "",
+    ))
 
     return "\n".join(lines)
 
