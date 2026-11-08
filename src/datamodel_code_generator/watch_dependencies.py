@@ -152,6 +152,15 @@ def _nearest_existing_directory(path: Path) -> Path:
     return existing_ancestor(path)
 
 
+def _holds_output(directory: Path, outputs: Iterable[Path]) -> bool:
+    """Return whether writing an output can change a dependency directory's own fingerprint."""
+    return any(
+        output.is_relative_to(variant) or variant.is_relative_to(output)
+        for variant in _path_variants(directory)
+        for output in outputs
+    )
+
+
 def _watch_roots(
     files: frozenset[Path], directories: frozenset[Path], event_paths: frozenset[Path]
 ) -> tuple[Path, ...]:
@@ -375,7 +384,11 @@ class WatchDependencies(_Weakrefable):
         collected = _CollectedGeneration(self)
         # A completed generation must acknowledge the inputs it observed, not later edits.
         if self._polling_fingerprints_enabled:
-            collected.polling_fingerprints = {path: _path_fingerprint(path) for path in self._snapshot.files}
+            snapshot = self._snapshot
+            observed = snapshot.files | {
+                directory for directory in snapshot.directories if not _holds_output(directory, snapshot.outputs)
+            }
+            collected.polling_fingerprints = {path: _path_fingerprint(path) for path in observed}
         with context_values({_current_collector: collected}):
             try:
                 yield collected

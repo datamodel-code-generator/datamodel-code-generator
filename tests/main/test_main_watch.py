@@ -2281,7 +2281,10 @@ def test_watch_dependencies_rejects_polling_directory_events_containing_output(t
 
 @pytest.mark.allow_direct_assert
 def test_watch_dependencies_accepts_polling_parent_events_for_changed_inputs(tmp_path: Path) -> None:
-    """A polling parent event is kept when an atomic input replacement changed its fingerprint."""
+    """A polling parent event is kept when an atomic input replacement changed its fingerprint.
+
+    A configured directory removed during a generation still differs from what that generation read.
+    """
     from datamodel_code_generator.__main__ import Config
     from datamodel_code_generator.watch_dependencies import WatchDependencies, _path_fingerprint
 
@@ -2334,6 +2337,18 @@ def test_watch_dependencies_accepts_polling_parent_events_for_changed_inputs(tmp
     child_file.write_text(WATCH_SCHEMA_INITIAL, encoding="utf-8")
     assert dependencies._polling_dependencies_changed()
     assert dependencies.accepts_event(project_directory, accept_directory_events=True)
+
+    template_directory = tmp_path / "templates"
+    template_directory.mkdir()
+    dependencies.configure(
+        Config(input=input_file, output=output_file, custom_template_dir=template_directory), config_values={}
+    )
+    with dependencies.generation():
+        pass
+    assert not dependencies._polling_dependencies_changed()
+    with dependencies.generation():
+        template_directory.rmdir()
+    assert dependencies._polling_dependencies_changed()
 
 
 @pytest.mark.allow_direct_assert
