@@ -7,11 +7,12 @@ from dataclasses import replace
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, cast
+from warnings import warn
 
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._api_generation import TargetRender
-from datamodel_code_generator._api_types import APIGenerationError, NextSteps
+from datamodel_code_generator._api_types import APIGenerationError, NextSteps, error_text
 from datamodel_code_generator._client.caching import plan_caches
 from datamodel_code_generator._client.codec_plan import plan_client_codecs
 from datamodel_code_generator._client.config import OPTION_PREFIX, ClientGenerationConfig, _is_sequence
@@ -54,8 +55,9 @@ from datamodel_code_generator._target_contract import (
     GeneratedSymbolType,
     GenericType,
     UnionType,
+    label,
 )
-from datamodel_code_generator._target_documents import canonical_bytes, sha256
+from datamodel_code_generator._target_documents import canonical_bytes, sha256, shown
 from datamodel_code_generator._target_module import TargetModule, TypeNames
 from datamodel_code_generator._target_operations import PlanError, raise_selected
 from datamodel_code_generator._target_render import (
@@ -69,11 +71,12 @@ from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
-    from datamodel_code_generator._api_types import TargetKind
+    from datamodel_code_generator._api_types import Diagnostic, TargetKind
     from datamodel_code_generator._client.caching import CacheSpec
     from datamodel_code_generator._client.codec_plan import CodecBackend
     from datamodel_code_generator._client.pagination import PaginationSpec
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
+    from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
@@ -82,6 +85,8 @@ if TYPE_CHECKING:
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
         ModelFieldFacts,
+        OperationContract,
+        OperationId,
         SymbolId,
         TypeUseBinding,
         TypeView,
@@ -111,92 +116,150 @@ class ClientTarget:
         """Resolve the documents that the helper JSON object names against protocol_base."""
         self.protocol_base = protocol_base
 
-    def render(self, request: TargetRequest) -> TargetRender:  # ruff: ignore[too-many-locals]
-        """Plan the selected operations, bind their codecs, and render the package."""
+    def render(self, request: TargetRequest) -> TargetRender:
+        """Plan the selected operations, bind their codecs, and render the package.
+
+        An operation that only its own declarations refuse, and that no helper calls, is left out with a warning, and
+        the others are planned again. A refusal stays an error when anything else is refused too, or nothing is left.
+        """
         config = request.config
         assert isinstance(config, ClientGenerationConfig)
-        backend = _BACKENDS[request.model_config.output_model_type]
         protocols = plan_protocols(request, config.protocols, self.protocol_base)
-        wire = _wire(request, request.batch)
-        facts = ModelFacts(request.batch)
-        helping = helper_operations(protocols)
-        try:
-            plan = Planner(request, config, wire, facts, helping).plan()
-        except PlanError as error:
-            raise APIGenerationError(error.diagnostics, option_prefix=OPTION_PREFIX) from None
-        events, hooked = webhook_uses(protocols, plan, request)
-        received = frozenset(event.use.id for spec in events for event in spec.events)
-        streamed, stream_events, stream_problems = stream_uses(protocols, plan, request)
-        opened, messages, socket_problems = socket_uses(protocols, plan, request)
-        uses = frozenset(plan_uses(plan)) | received | frozenset(use.id for use in (*stream_events, *messages))
-        batch = request.batch
-        if parts := (*part_uses(plan), *stream_events, *messages):
-            batch = replace(batch, type_uses=(*batch.type_uses, *parts))
-        types = TypeNames.of(batch, request.model_config)
-        codecs = plan_client_codecs(batch, wire, backend, uses, facts, names=types)
-        raise_selected(codecs.diagnostics, (spec.contract.id for spec in plan.operations))
-        coded = frozenset(item.use for item in codecs.uses)
-        assert batch.names is not None
-        plan, named = plan_fields(plan, facts, coded, batch.names, helping)
-        pages, checked = plan_pagination(protocols, plan, facts, coded, request)
-        polls, polled = plan_polling(protocols, plan, facts, coded, request)
-        caches, cached = plan_caches(protocols, plan, facts, coded, request)
-        uploads, uploaded = plan_uploads(protocols, plan, facts, coded, request)
-        order = {} if protocols is None else {helper.name: index for index, helper in enumerate(protocols.helpers)}
-        helpers = tuple(sorted((*pages, *polls, *caches, *uploads), key=lambda spec: order[spec.helper.name]))
-        streams = plan_streams(streamed, protocols, plan, facts, coded, request, stream_problems)
-        sockets = plan_sockets(opened, socket_problems)
-        webhooks = plan_webhooks(events, codecs, hooked)
-        if refused := (
-            *named,
-            *helper_problems(
-                protocols,
-                plan,
-                {
-                    **checked,
-                    **polled,
-                    **cached,
-                    **uploaded,
-                    **hooked,
-                    **stream_problems,
-                    **socket_problems,
-                },
-            ),
-        ):
-            raise APIGenerationError(refused, option_prefix=OPTION_PREFIX)
-        data = _HelperDigests(request, types, facts)
-        metadata = helper_metadata(protocols, request)
-        fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in pages}
-        fingerprints.update((spec.helper.name, data.cache(spec, metadata[spec.helper.name])) for spec in caches)
-        fingerprints.update((spec.helper.name, data.webhook(spec, metadata[spec.helper.name])) for spec in webhooks)
-        fingerprints.update((spec.helper.name, data.socket(spec, metadata[spec.helper.name])) for spec in sockets)
-        dependencies = (
-            WEBSOCKETS if sockets else HTTPX2,
-            TYPING_EXTENSIONS,
-            *_backend_dependencies(backend, request.model_imports),
-            *webhook_dependencies(webhooks),
-            *model_dependencies(request.model_imports),
-        )
-        renderer = ClientRenderer(
-            config=config,
-            plan=plan,
-            batch=batch,
-            wire=wire,
-            codecs=codecs,
-            helpers=helpers,
-            streams=streams,
-            sockets=sockets,
-            fingerprints=fingerprints,
-            webhooks=partial(webhook_files, webhooks, types),
-            signatures=frozenset(spec.helper.tree["signature"]["kind"] for spec in webhooks),
-            backend=backend,
-            types=types,
-            dependencies=dependencies,
-            templates=ClientTemplates.custom(request.model_config, request.cwd),
-            use_schema_description=request.model_config.use_schema_description,
-            use_single_line_docstring=request.model_config.use_single_line_docstring,
-        )
-        return TargetRender(files=renderer.files(), dependencies=dependencies, next_steps=_next_steps(config, plan))
+        called = frozenset(() if protocols is None else (item.id for item in protocols.operations.values()))
+        skipped: list[tuple[OperationContract, list[Diagnostic]]] = []
+        while isinstance(rendered := _attempt(request, config, protocols), APIGenerationError):
+            if (refused := _refused(rendered, request.operations, called)) is None:
+                raise rendered
+            if len(refused) == len(request.operations):
+                earlier = (item for _, found in skipped for item in found)
+                raise APIGenerationError((*earlier, *rendered.diagnostics), option_prefix=OPTION_PREFIX) from None
+            skipped.extend(refused.values())
+            request = replace(request, operations=tuple(item for item in request.operations if item.id not in refused))
+        output = shown(config.output, request.shown_root).as_posix()
+        for operation, found in skipped:
+            named = "" if operation.operation_id is None else f" (operationId {stable_repr(operation.operation_id)})"
+            warn(
+                f"{output}: Skipping {label(operation)}{named}, which the client cannot generate: {error_text(found)}",
+                stacklevel=2,
+            )
+        return rendered
+
+
+def _attempt(
+    request: TargetRequest, config: ClientGenerationConfig, protocols: Protocols | None
+) -> TargetRender | APIGenerationError:
+    """Render the request's operations, or return the error that refuses them."""
+    try:
+        return _render(request, config, protocols)
+    except APIGenerationError as error:
+        return error
+
+
+def _render(  # ruff: ignore[too-many-locals]
+    request: TargetRequest, config: ClientGenerationConfig, protocols: Protocols | None
+) -> TargetRender:
+    """Plan the request's operations, bind their codecs, and render the package."""
+    backend = _BACKENDS[request.model_config.output_model_type]
+    wire = _wire(request, request.batch)
+    facts = ModelFacts(request.batch)
+    helping = helper_operations(protocols)
+    try:
+        plan = Planner(request, config, wire, facts, helping).plan()
+    except PlanError as error:
+        raise APIGenerationError(error.diagnostics, option_prefix=OPTION_PREFIX) from None
+    events, hooked = webhook_uses(protocols, plan, request)
+    received = frozenset(event.use.id for spec in events for event in spec.events)
+    streamed, stream_events, stream_problems = stream_uses(protocols, plan, request)
+    opened, messages, socket_problems = socket_uses(protocols, plan, request)
+    uses = frozenset(plan_uses(plan)) | received | frozenset(use.id for use in (*stream_events, *messages))
+    batch = request.batch
+    if parts := (*part_uses(plan), *stream_events, *messages):
+        batch = replace(batch, type_uses=(*batch.type_uses, *parts))
+    types = TypeNames.of(batch, request.model_config)
+    codecs = plan_client_codecs(batch, wire, backend, uses, facts, names=types)
+    raise_selected(codecs.diagnostics, (spec.contract.id for spec in plan.operations))
+    coded = frozenset(item.use for item in codecs.uses)
+    assert batch.names is not None
+    plan, named = plan_fields(plan, facts, coded, batch.names, helping)
+    pages, checked = plan_pagination(protocols, plan, facts, coded, request)
+    polls, polled = plan_polling(protocols, plan, facts, coded, request)
+    caches, cached = plan_caches(protocols, plan, facts, coded, request)
+    uploads, uploaded = plan_uploads(protocols, plan, facts, coded, request)
+    order = {} if protocols is None else {helper.name: index for index, helper in enumerate(protocols.helpers)}
+    helpers = tuple(sorted((*pages, *polls, *caches, *uploads), key=lambda spec: order[spec.helper.name]))
+    streams = plan_streams(streamed, protocols, plan, facts, coded, request, stream_problems)
+    sockets = plan_sockets(opened, socket_problems)
+    webhooks = plan_webhooks(events, codecs, hooked)
+    if refused := (
+        *named,
+        *helper_problems(
+            protocols,
+            plan,
+            {
+                **checked,
+                **polled,
+                **cached,
+                **uploaded,
+                **hooked,
+                **stream_problems,
+                **socket_problems,
+            },
+        ),
+    ):
+        raise APIGenerationError(refused, option_prefix=OPTION_PREFIX)
+    data = _HelperDigests(request, types, facts)
+    metadata = helper_metadata(protocols, request)
+    fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in pages}
+    fingerprints.update((spec.helper.name, data.cache(spec, metadata[spec.helper.name])) for spec in caches)
+    fingerprints.update((spec.helper.name, data.webhook(spec, metadata[spec.helper.name])) for spec in webhooks)
+    fingerprints.update((spec.helper.name, data.socket(spec, metadata[spec.helper.name])) for spec in sockets)
+    dependencies = (
+        WEBSOCKETS if sockets else HTTPX2,
+        TYPING_EXTENSIONS,
+        *_backend_dependencies(backend, request.model_imports),
+        *webhook_dependencies(webhooks),
+        *model_dependencies(request.model_imports),
+    )
+    renderer = ClientRenderer(
+        config=config,
+        plan=plan,
+        batch=batch,
+        wire=wire,
+        codecs=codecs,
+        helpers=helpers,
+        streams=streams,
+        sockets=sockets,
+        fingerprints=fingerprints,
+        webhooks=partial(webhook_files, webhooks, types),
+        signatures=frozenset(spec.helper.tree["signature"]["kind"] for spec in webhooks),
+        backend=backend,
+        types=types,
+        dependencies=dependencies,
+        templates=ClientTemplates.custom(request.model_config, request.cwd),
+        use_schema_description=request.model_config.use_schema_description,
+        use_single_line_docstring=request.model_config.use_single_line_docstring,
+    )
+    return TargetRender(files=renderer.files(), dependencies=dependencies, next_steps=_next_steps(config, plan))
+
+
+def _refused(
+    error: APIGenerationError, operations: tuple[OperationContract, ...], called: frozenset[OperationId]
+) -> dict[OperationId, tuple[OperationContract, list[Diagnostic]]] | None:
+    """Return each operation an error refuses with its findings, or None when a finding refuses more than one operation.
+
+    A finding refuses one operation alone when that operation's own declarations cause it: no setting does, and no
+    helper calls the operation.
+    """
+    by_pointer = {operation.id.use_site.pointer: operation for operation in operations}
+    refused: dict[OperationId, tuple[OperationContract, list[Diagnostic]]] = {}
+    for item in error.diagnostics:
+        if item.operation is None or item.option_path is not None:
+            return None
+        operation = by_pointer[item.operation.pointer]
+        if operation.id in called:
+            return None
+        refused.setdefault(operation.id, (operation, []))[1].append(item)
+    return refused
 
 
 def _next_steps(config: ClientGenerationConfig, plan: ClientPlan) -> NextSteps:

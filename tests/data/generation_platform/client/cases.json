@@ -842,7 +842,8 @@
     "input": "media-errors.yaml"
   },
   "form-name-errors": {
-    "input": "form-name-errors.yaml"
+    "input": "form-name-errors.yaml",
+    "modules": false
   },
   "form-name-kept": {
     "input": "form-name-errors.yaml",
@@ -867,7 +868,8 @@
     "backends": [
       "pydantic_v2.BaseModel",
       "pydantic_v2.dataclass"
-    ]
+    ],
+    "modules": false
   },
   "binary-text": {
     "input": "binary-text.yaml",
@@ -2481,7 +2483,8 @@
     ]
   },
   "auth-roles-30": {
-    "input": "auth-roles-30.yaml"
+    "input": "auth-roles-30.yaml",
+    "modules": false
   },
   "version-per-document": {
     "input": "version-per-document.yaml",
@@ -6022,5 +6025,23 @@
         "_operations.py"
       ]
     ]
+  },
+  "skip-operations": {
+    "input": "skip-operations.yaml"
+  },
+  "skip-operations-document-errors": {
+    "input": "skip-operations-document-errors.yaml"
+  },
+  "skip-operations-every": {
+    "input": "skip-operations-every.yaml"
+  },
+  "skip-operations-helper": {
+    "input": "skip-operations-helper.yaml",
+    "references": [
+      "protocols/skip-operations-helper.json"
+    ],
+    "config": {
+      "protocols": "protocols/skip-operations-helper.json"
+    }
   }
 }

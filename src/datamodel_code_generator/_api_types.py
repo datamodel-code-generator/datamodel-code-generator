@@ -8,9 +8,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path  # ruff: ignore[typing-only-standard-library-import] - Public annotations support get_type_hints().
-from typing import Literal, TypeAlias
+from typing import TYPE_CHECKING, Literal, TypeAlias
 
 from datamodel_code_generator import DocumentationAnnotationWarning, Error
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 __all__ = [
     "APIGenerationError",
@@ -76,7 +79,12 @@ class APIGenerationError(Error):
     def __init__(self, diagnostics: tuple[Diagnostic, ...], *, option_prefix: str | None = None) -> None:
         """Keep the internal findings and describe errors without diagnostic codes or stages."""
         self.diagnostics = diagnostics
-        super().__init__("; ".join(_error_message(item, option_prefix) for item in diagnostics))
+        super().__init__(error_text(diagnostics, option_prefix))
+
+
+def error_text(diagnostics: Iterable[Diagnostic], option_prefix: str | None = None) -> str:
+    """Describe findings as an error describes them: each at its location or option, without codes or stages."""
+    return "; ".join(_error_message(item, option_prefix) for item in diagnostics)
 
 
 def _error_message(item: Diagnostic, option_prefix: str | None) -> str:

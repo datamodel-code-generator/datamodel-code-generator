@@ -189,6 +189,10 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "parts-bound-responses",
         "parts-bound-responses-reuse",
         "multipart-text-files",
+        "skip-operations",
+        "skip-operations-document-errors",
+        "skip-operations-every",
+        "skip-operations-helper",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:

@@ -337,6 +337,11 @@ servers	main/generation_platform/client/servers.txt
 servers-single-value-enum	main/generation_platform/client/packages/servers-single-value-enum/pydantic_v2_BaseModel//*.py
 servers-single-value-enum	main/generation_platform/client/servers-single-value-enum.txt
 setting-errors	main/generation_platform/client/setting-errors.txt
+skip-operations	main/generation_platform/client/packages/skip-operations/pydantic_v2_BaseModel//*.py
+skip-operations	main/generation_platform/client/skip-operations.txt
+skip-operations-document-errors	main/generation_platform/client/skip-operations-document-errors.txt
+skip-operations-every	main/generation_platform/client/skip-operations-every.txt
+skip-operations-helper	main/generation_platform/client/skip-operations-helper.txt
 sockets	main/generation_platform/client/packages/sockets/pydantic_v2_BaseModel//*.py
 sockets	main/generation_platform/client/sockets.txt
 stream-resume	main/generation_platform/client/packages/stream-resume/pydantic_v2_BaseModel//*.py

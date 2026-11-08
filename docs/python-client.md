@@ -689,20 +689,20 @@ and a response body it refuses one with the reason `invalid_value`; a file, a pa
 for the server to check. Models that keep no such constraint, such as dataclasses and TypedDicts, check nothing, and
 unconstrained bytes pass without a model call. An `enum` or a `const` of binary strings, also one that leaves out
 `type: string`, is text in the models, so the method takes a body of one, also an `application/octet-stream` one, as
-its model, such as an `Enum`, and sends its text. Generation stops with an error when
+its model, such as an `Enum`, and sends its text. Generation [leaves the operation out](#operations-the-client-leaves-out) when
 a binary string, at any depth of its schema and through references, `$dynamicRef` and `allOf`, would be sent as text:
 inside a JSON or URL-encoded body or response, also one whose model types its whole value as bytes, a `text/*` body
 whose schema is an object, an array, or an `anyOf` or `oneOf` with a branch that is not a binary string, a binary body,
 such as `application/octet-stream`, whose model types its whole value as bytes only in part, such as
 `type: [string, integer]` or an `anyOf` of a binary string and an integer (`bytes | int`), a multipart part that is
 not a file, an item of a streamed response, or a parameter or header. The model backends write `bytes` in JSON differently, Pydantic as raw UTF-8 text and the
-others as base64, so such a value would not reach a server, such as a generated FastAPI one, intact. The error names the
-operation, the media or parameter, and where the schema declares the string:
+others as base64, so such a value would not reach a server, such as a generated FastAPI one, intact. The reason names
+the operation, the media or parameter, and where the schema declares the string:
 
 ```text
-Error: /components/schemas/Blob/properties/data: The application/json request body of POST /blobs carries a binary
-string as text; declare it with format: byte for base64 text, optionally with --type-mappings string+byte=binary to
-keep bytes, or send it as a whole binary body or a file part
+/components/schemas/Blob/properties/data: The application/json request body of POST /blobs carries a binary string as
+text; declare it with format: byte for base64 text, optionally with --type-mappings string+byte=binary to keep bytes,
+or send it as a whole binary body or a file part
 ```
 
 Declare such a value `format: byte`, which every backend sends as the same base64 text: Pydantic models hold it as a
@@ -1506,6 +1506,23 @@ client target needs --use-msgspec-nullable-enum-alias for 'msgspec.Struct' model
 can be decoded`, and the Python API raises `datamodel_code_generator.Error`. A union of structs that has no
 discriminator, or that the option still leaves untagged (with a warning that names the reason), cannot be decoded: a
 call that receives it fails with an `APIConnectionError` whose cause is msgspec's `TypeError`.
+
+### Operations the client leaves out
+
+An operation whose own declarations the client cannot support is left out, and the others are generated. Such an
+operation is one that declares a path placeholder without a path parameter, security the client cannot send (an
+unavailable scheme, or two schemes that own the same header in one requirement), a media key that is no media type,
+a body or parameter no builtin encoding writes, or expanded parameter names that collide. Each left-out operation is
+named in one `UserWarning` with its method, path and operationId, and the reasons it would be refused for:
+
+```text
+app/client: Skipping GET /pets/{petId} (operationId 'getPet'), which the client cannot generate:
+/paths/~1pets~1{petId}/get: The path placeholder 'petId' of GET /pets/{petId} has no path parameter
+```
+
+The generated client has no method, type, or documentation for it. Generation still stops with `Error:` and exit
+code 2 when every operation would be left out, when an operation that a [helper](python-client-helpers.md) calls
+would be, and for any other refusal, such as a setting that cannot apply or a server URL that does not resolve.
 
 ### Generator options
 
