@@ -263,7 +263,11 @@ class BodyMedia:
                     raise ParameterEncodingError(msg)
                 return encode_text(text, sent)
             case "form" if self.codec is not None:
-                styled = {plan.name: partial(query_pairs, plan) for plan in self.encoded} if self.encoded else None
+                styled = (
+                    {plan.item_name or plan.name: partial(query_pairs, plan) for plan in self.encoded}
+                    if self.encoded
+                    else None
+                )
                 return encode_form(self.dump(value), self.fields, self.additional, styled)
             case "form":
                 return _form_data(value)

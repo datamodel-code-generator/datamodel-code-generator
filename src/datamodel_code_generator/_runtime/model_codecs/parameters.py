@@ -75,8 +75,9 @@ class ParameterPlan:
     """Describe one effective parameter: location, style or content media, and lexical kinds.
 
     An array plan that is `single` also takes one item alone, which its style writes as it writes a scalar, under
-    `item_name` when one is given. A `credential` plan writes its value where an apiKey credential of its operation
-    goes; a call whose request carries a value there sends no credential at that position.
+    `item_name` when one is given; a form member's plan whose `name` writes it in brackets, such as `expand[]`, is
+    the plan of the member named `item_name`. A `credential` plan writes its value where an apiKey credential of its
+    operation goes; a call whose request carries a value there sends no credential at that position.
     """
 
     location: ParameterLocation

@@ -12,6 +12,7 @@ from tests.api_generation.support.client_runtime import (
     json_response,
     raw_response,
     record,
+    request_body,
     run,
 )
 
@@ -109,12 +110,26 @@ def free_objects(package: ModuleType, lines: list[str]) -> None:
 def bracketed(package: ModuleType, lines: list[str]) -> None:
     """Write deepObject arrays as `name[]=value` for each item and scalars as `name=value`, objects as `name[key]`.
 
-    A value that is one item or an array of them is written as either, by the value a call gives.
+    A value that is one item or an array of them is written as either, by the value a call gives. The members of a
+    URL-encoded form body are written as the query parameters are, such as an empty item that clears a list.
     """
     exchange = Exchange(lines)
     with exchange.client() as http, package.Client(http_client=http) as api:
         created = argument(package, "GetChargesCharge", "query", "created", {"gt": 5})
-        exchange.respond(*(raw_response(204) for _ in range(5)))
+        customer = request_body(
+            package,
+            "PostCustomers",
+            None,
+            {
+                "balance": 5,
+                "email": "a@b.c",
+                "expand": ["data.source", "tax"],
+                "metadata": {"plan": "pro"},
+                "tax_rates": ["txr_1", "txr_2"],
+            },
+        )
+        cleared = request_body(package, "PostCustomers", None, {"tax_rates": ""})
+        exchange.respond(*(raw_response(204) for _ in range(7)))
         record(
             lines,
             "charge",
@@ -124,3 +139,5 @@ def bracketed(package: ModuleType, lines: list[str]) -> None:
         record(lines, "no items", lambda: api.customers.get_customers(expand=[]))
         record(lines, "one id", lambda: api.customers.get_customers(ids="cus_1"))
         record(lines, "ids", lambda: api.customers.get_customers(ids=["cus_1", "cus_2"]))
+        record(lines, "form", lambda: api.customers.post_customers(body=customer))
+        record(lines, "cleared", lambda: api.customers.post_customers(body=cleared))

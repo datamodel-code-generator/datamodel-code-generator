@@ -1593,12 +1593,12 @@ that names it: a tag mapped to `default`, or an operation whose `resource` is `d
 name.
 
 OpenAPI defines `style: deepObject` for objects alone, which the client writes as `name[key]=value` pairs; an
-operation whose deepObject query parameter takes an array or a scalar is left out. `--client-deep-object-brackets`
-writes such a parameter in the bracket form some APIs, such as Stripe, document instead: an array as `name[]=value`
-for each item, such as `expand[]=a&expand[]=b`, and a scalar as `name=value`. The brackets are percent-encoded in the
-query, as those of an object's pairs are (`expand%5B%5D=a`), which servers decode to the same names. The setting
-changes only how the client writes these parameters; `--no-client-deep-object-brackets` turns off one that a
-`pyproject.toml` key sets.
+operation whose deepObject query parameter, or `application/x-www-form-urlencoded` body member, takes an array or a
+scalar is left out. `--client-deep-object-brackets` writes such a parameter or member in the bracket form some APIs,
+such as Stripe, document instead: an array as `name[]=value` for each item, such as `expand[]=a&expand[]=b`, and a
+scalar as `name=value`. The brackets are percent-encoded in the query or the form, as those of an object's pairs are
+(`expand%5B%5D=a`), which servers decode to the same names. The setting changes only how the client writes these
+parameters and members; `--no-client-deep-object-brackets` turns off one that a `pyproject.toml` key sets.
 
 `--generate-client` requires `--client-output`, `--client-package`, and `--client-model-package`, and a `--client-*`
 option given on the command line requires `--generate-client`; both stop with `Error:` and exit code 2.

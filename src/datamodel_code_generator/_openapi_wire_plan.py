@@ -318,7 +318,10 @@ def _form(
         fields = tuple(_text(member) for member in form_members(planner.kinds, bound) if member.name not in styled)
         additional = _additional(planner, bound)
         members = {name: schema for name, schema, _ in property_members(use.members)}
-        encoded = tuple(_encoding(bound, members, declaration) for declaration in styled.values())
+        encoded = tuple(
+            _encoding(bound, members, declaration, writes=planner.writes, brackets=planner.brackets)
+            for declaration in styled.values()
+        )
         encoded = _distinct(planner, bound, [field.name for field in fields], encoded)
     except _PlanError as error:
         _refused(planner, error, use.id.owner, (use.id,))
@@ -521,10 +524,20 @@ def single_media(encoding: WireDeclaration) -> str | None:
     return found[0]
 
 
-def _encoding(form: TypeUseBinding, members: Mapping[str, SourceLocation], encoding: WireDeclaration) -> ParameterPlan:
+def _encoding(  # noqa: PLR0914
+    form: TypeUseBinding,
+    members: Mapping[str, SourceLocation],
+    encoding: WireDeclaration,
+    *,
+    writes: bool = False,
+    brackets: bool = False,
+) -> ParameterPlan:
     """Return the query parameter plan of a form member: its style, or its content when only that is named.
 
-    A style, explode, or allowReserved takes precedence over contentType, as the Encoding Object prescribes.
+    A style, explode, or allowReserved takes precedence over contentType, as the Encoding Object prescribes. A member
+    whose value is one item or an array of them is written as a query parameter is (`writes`). With `brackets`, a
+    deepObject member whose value is an array or a scalar is written in brackets (`_bracketed`), and the plan of an
+    array, named `name[]`, keeps the member's own name as its `item_name`.
     """
     name, source = encoding.name or "", encoding.use_site
     member = members[name]
@@ -532,17 +545,24 @@ def _encoding(form: TypeUseBinding, members: Mapping[str, SourceLocation], encod
         fact(encoding, key) for key in ("style", "explode", "allowReserved", "contentType")
     )
     shape: ValueShape | None = None
+    single = False
     try:
         if style is None and explode is None and reserved is None:
             media = normalize_media_type(str(content))
             if not builtin_content("query", media):
                 raise _PlanError(source, "The member content has no builtin encoding")
             return ParameterPlan(location="query", name=name, content_media_type=media)
-        shape, kind, fields, additional = _shape(_member_shape(form, name, member))
+        value = _member_shape(form, name, member)
+        single = value.single
+        shape, kind, fields, additional = _shape(value, single=writes)
         chosen, exploded = _style_of(encoding, "query")
+        written, item_name = name, None
+        if _bracketing(chosen, shape, brackets=brackets):
+            chosen, exploded, written, _ = _bracketed(name, shape, single=single)
+            item_name = None if written == name else name
         return ParameterPlan(
             location="query",
-            name=name,
+            name=written,
             style=chosen,
             explode=exploded,
             allow_reserved=reserved is True,
@@ -551,9 +571,11 @@ def _encoding(form: TypeUseBinding, members: Mapping[str, SourceLocation], encod
             fields=fields,
             additional=additional,
             reserved_names=tuple(sorted(other for other in members if other != name)),
+            single=single,
+            item_name=item_name,
         )
     except ValueError as error:
-        raise _PlanError(source, str(error), _style_feature(style, shape)) from None
+        raise _PlanError(source, str(error), _style_feature(style, shape, single=single)) from None
 
 
 def parameter_plans(wire: WirePlan) -> dict[OperationId, dict[tuple[ParameterLocation, str], ParameterPlan]]:
@@ -756,7 +778,7 @@ def _parameter(
     shape, kind, fields, additional = _shape(value, single=written)
     style, explode = _style_of(declaration, location)
     item_name = None
-    if planner.brackets and style == "deepObject" and location == "query" and shape in {"array", "scalar"}:
+    if location == "query" and _bracketing(style, shape, brackets=planner.brackets):
         style, explode, name, item_name = _bracketed(name, shape, single=value.single)
     version = planner.versions.declared(declaration)
     if style == "cookie" and version != OpenAPIVersion.V32:
@@ -781,6 +803,11 @@ def _parameter(
         raise _PlanError(source, str(error), _style_feature(style, shape, single=value.single)) from None
     except ValueError as error:
         raise _PlanError(source, str(error)) from None
+
+
+def _bracketing(style: str, shape: ValueShape, *, brackets: bool) -> bool:
+    """Return whether `brackets` writes a value of a style and shape in brackets: a deepObject array or scalar."""
+    return brackets and style == "deepObject" and shape in {"array", "scalar"}
 
 
 def _bracketed(name: str, shape: ValueShape, *, single: bool) -> tuple[str, bool, str, str | None]:
