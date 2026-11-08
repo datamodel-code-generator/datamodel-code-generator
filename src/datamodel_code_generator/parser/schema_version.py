@@ -571,11 +571,6 @@ _KIND_READINGS: Final[dict[SchemaKind, _KindReading]] = {
 }
 
 
-def _version_config_field(kind: SchemaKind) -> str:
-    """Return the config field that fixes the version of the documents of ``kind`` (``auto`` detects it)."""
-    return _KIND_READINGS[kind].config_field
-
-
 def document_dialect(
     raw: dict[str, Any],
     kind: SchemaKind,

@@ -47,7 +47,7 @@ from datamodel_code_generator._source import YamlValue
 from datamodel_code_generator._user_keys import ClassScope, class_key
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import OpenAPIAsDefinitions, OpenAPIVersion, VersionMode
-from datamodel_code_generator.parser import _union_tags
+from datamodel_code_generator.parser import _schema_documents, _schema_refs, _union_tags
 from datamodel_code_generator.parser._naming import composed_name
 from datamodel_code_generator.parser._origins import with_subtype_ref, with_type_origin
 from datamodel_code_generator.parser._rw_split import update_field_refs_for_variant
@@ -728,7 +728,7 @@ class OpenAPIParser(JsonSchemaParser):
     def _discriminator_mapping_ref(self, name: str, value: str, mapping: SchemaLocation | None) -> str:
         """Return a discriminator mapping value as a reference, with the edge of the mapping located at ``mapping``."""
         normalized = discriminator_mapping_ref(value)
-        return self._derived_ref(normalized, mapping, name, normalized)
+        return _schema_refs.derived_ref(self, normalized, mapping, name, normalized)
 
     def _get_discriminator_subtype_data_type(self, ref: str) -> DataType:
         """Resolve one subtype without recursively expanding its discriminator, recording the `$ref` it stands for."""
@@ -1385,7 +1385,7 @@ class OpenAPIParser(JsonSchemaParser):
         self._discriminator_subtypes.clear()
         self._parameter_models.clear()
         with self._parsing_session(self._resolve_specification_targets):
-            for source, path_parts in self._get_context_source_path_parts():
+            for source, path_parts in _schema_documents.get_context_source_path_parts(self):
                 if self.validation:
                     warn_deprecated("cli.validation", stacklevel=2)
 
@@ -1416,9 +1416,11 @@ class OpenAPIParser(JsonSchemaParser):
                             )
 
                 specification = self._load_source_dict(source)
-                self._cache_source_ref_body(source, specification)
+                _schema_documents.cache_source_ref_body(self, source, specification)
                 self.raw_obj = specification
-                self.raw_obj = specification = self._prepare_schema_resources(specification, path_parts)
+                self.raw_obj = specification = _schema_documents.prepare_schema_resources(
+                    self, specification, path_parts
+                )
                 self._specification_documents.add(self._schema_resource_document(path_parts))
                 with self.openapi_self_context(specification):
                     self._parse_specification(specification, path_parts)
@@ -1546,5 +1548,5 @@ class OpenAPIParser(JsonSchemaParser):
         location, root `$id` and `$self`), the key the references to the schema get; a value the schema graph does
         not locate resolves ``ref`` in the current context.
         """
-        derived = self._derived_ref(ref, self._raw_location(schema), keyword, ref)
+        derived = _schema_refs.derived_ref(self, ref, self._raw_location(schema), keyword, ref)
         return keep_resolved_ref(derived, self._ref_path(derived))

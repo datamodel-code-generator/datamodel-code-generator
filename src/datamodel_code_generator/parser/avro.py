@@ -23,6 +23,7 @@ from datamodel_code_generator._name_words import first_upper
 from datamodel_code_generator._source import YamlValue, load_yaml
 from datamodel_code_generator._user_keys import class_field_key, class_key, model_type_override
 from datamodel_code_generator.imports import Import
+from datamodel_code_generator.parser import _schema_documents
 from datamodel_code_generator.parser._convert_common import _copy_schema, _name_definitions
 from datamodel_code_generator.parser._null_facts import null_schema
 from datamodel_code_generator.parser._type_overrides import override_spells_builtin
@@ -805,7 +806,8 @@ class AvroParser(JsonSchemaParser):
     def parse_raw(self) -> None:
         """Parse all Avro schema input sources into data models."""
         self._default_converters: dict[str, _AvroSchemaConverter] | None = {} if self._type_override_imports else None
-        self._parse_converted_sources(
+        _schema_documents.parse_converted_sources(
+            self,
             lambda: _AvroSchemaConverter(
                 self._logical_default,
                 convert_logical_defaults=self.data_model_type.SUPPORTS_DESERIALIZED_DEFAULT_VALUES,
@@ -814,7 +816,7 @@ class AvroParser(JsonSchemaParser):
                 else None,
                 default_type_overrides=self._default_type_overrides if self._type_override_imports else None,
                 default_converters=self._default_converters,
-            )
+            ),
         )
         if self._has_runtime_expressions:
             from datamodel_code_generator.python_literal import (  # ruff: ignore[import-outside-top-level]
@@ -876,7 +878,7 @@ class AvroParser(JsonSchemaParser):
     def _default_type_overrides(self, name: str, schema: JsonSchema, as_root: bool) -> dict[str, Import]:  # ruff: ignore[boolean-type-hint-positional-argument]
         """Resolve default overrides with the existing model and field naming rules."""
         if as_root:
-            name, preserve_name = self._resolve_root_model_name({"title": name})
+            name, preserve_name = _schema_documents.resolve_root_model_name(self, {"title": name})
         else:
             preserve_name = False
         class_name = self.model_resolver.get_class_name(

@@ -22,6 +22,7 @@ from datamodel_code_generator._json_schema import definition_ref
 from datamodel_code_generator._message_text import install_command
 from datamodel_code_generator._paths import files_under
 from datamodel_code_generator._python_syntax import normalize_newlines
+from datamodel_code_generator.parser import _schema_documents
 from datamodel_code_generator.parser._null_facts import null_schema, with_null
 from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.python_literal import _converted_float, stable_repr
@@ -840,7 +841,7 @@ class ProtobufParser(JsonSchemaParser):
             source = next(self.iter_source)
             source.raw_data = raw_obj
             self.raw_obj = raw_obj
-            self._note_converted_document([])
+            _schema_documents.note_converted_document(self, [])
             self._parse_file(raw_obj, "Model", [])
 
 

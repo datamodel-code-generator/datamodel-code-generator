@@ -238,10 +238,8 @@ class SchemaDocumentsHost(Protocol):
     _resource_ref_warnings: set[str]
     _schema_resource_cache: dict[str, tuple[dict[str, Any], dict[str, Any]]]
     _schema_resource_document_aliases: dict[str, str]
-    _schema_resource_locations: dict[str, str]
     _schema_resource_path_parts: dict[str, list[str]]
     _schema_resource_registry: ResourceRegistry
-    _schema_resource_root_bases: dict[str, str]
     _source_context: ParserSourceContext
 
     @property
@@ -275,12 +273,6 @@ class SchemaDocumentsHost(Protocol):
     @classmethod
     def get_url_path_parts(cls, url: ParseResult) -> list[str]:
         """Split URL into scheme/host and path components."""
-
-    def _add_id_callback(self, obj: JsonSchemaObject, path: list[str]) -> None:
-        """Add $id and $anchor to model resolver."""
-
-    def _cache_source_ref_body(self, source: Source, raw_obj: dict[str, YamlValue]) -> None:
-        """Cache a local source body for later local $ref resolution."""
 
     def _get_ref_body(self, resolved_ref: str) -> dict[str, YamlValue]:
         """Get the body of a reference from URL or remote file."""
@@ -346,9 +338,6 @@ class SchemaDocumentsHost(Protocol):
     def _resolve_ref_callback(self, obj: JsonSchemaObject, path: list[str]) -> None:
         """Resolve $ref in schema object, and the targets of $dynamicRef and $recursiveRef as their data types do."""
 
-    def _resolve_root_model_name(self, raw_obj: dict[str, Any]) -> tuple[str, bool]:
-        """Return the class name of a document's root model and whether an explicit class name keeps its spelling."""
-
     def _resolve_schema_resource_ref(self, reference: str, base: str, document: str, *, nested_scope: bool) -> str:
         """Resolve registered resources before considering a physical document fetch."""
 
@@ -377,11 +366,6 @@ class SchemaDocumentsHost(Protocol):
 
     def _schema_resource_document(self, path_parts: list[str]) -> str:
         """Identify one physical schema document without changing its public reference names."""
-
-    def _schema_resource_identifier(
-        self, schema: dict[str, Any], id_field: str | None, *, is_root: bool, document: str
-    ) -> tuple[str | None, object]:
-        """Inherit draft identifiers while preserving fallbacks for roots and unknown dialects."""
 
     def _should_preserve_explicit_root_class_name(self, class_name: str) -> bool:
         """Return whether an explicit root class name with a leading underscore keeps its spelling."""
@@ -414,7 +398,7 @@ def lenient_ref(parser: SchemaDocumentsHost, ref: str) -> str:
         return ref
     return keep_resolved_ref(
         ref,
-        resolve_lenient_resource_ref(parser, ref, parser._schema_resource_root_bases[document], document),  # noqa: SLF001
+        resolve_lenient_resource_ref(parser, ref, parser._schema_resource_registry.root_bases[document], document),  # noqa: SLF001
     )
 
 
@@ -672,7 +656,7 @@ def resolve_schema_resource_ref(
         return _document_location(location, document)
     if (
         not is_pointer_fragment(fragment)
-        and (root := parser._schema_resource_locations.get(resource)) is not None  # noqa: SLF001
+        and (root := parser._schema_resource_registry.locations.get(resource)) is not None  # noqa: SLF001
         and root.split("#", 1)[1]
     ):
         msg = f"Embedded schema resource has no anchor {stable_repr(fragment)}: {stable_repr(redact_url(reference))}"
@@ -691,7 +675,7 @@ def resolve_lenient_resource_ref(parser: SchemaDocumentsHost, reference: str, ba
     """
     if _is_plain_name_fragment(reference):
         absolute = urljoin(base, reference)
-        locations = parser._schema_resource_locations  # noqa: SLF001
+        locations = parser._schema_resource_registry.locations  # noqa: SLF001
         location = duplicate_name_location(parser, absolute) or locations.get(absolute)
         return reference if location is None else _document_location(location, document)
     if (location := parser._schema_resource_registry.location(urljoin(base, reference))) is None:  # noqa: SLF001
@@ -708,7 +692,7 @@ def resolve_lenient_resource_ref(parser: SchemaDocumentsHost, reference: str, ba
             f"{stable_repr(redact_url(target))}."
         )
     else:
-        if not loads_document(parser, urljoin(parser._schema_resource_root_bases[document], reference)):  # noqa: SLF001
+        if not loads_document(parser, urljoin(parser._schema_resource_registry.root_bases[document], reference)):  # noqa: SLF001
             return target
         message = (
             f"$ref {stable_repr(redact_url(reference))} in {source} loads the referenced document for compatibility, "
@@ -752,7 +736,7 @@ def rewrite_schema_resource_refs(  # noqa: PLR0913, PLR0917
     A reference is resolved with its pointer opened by ``/`` (``pointer_ref_spelling``), which the walk of the
     schema graph writes in place of an opening ``%2F`` either way.
     """
-    id_field, identifier = parser._schema_resource_identifier(schema, id_field, is_root=is_root, document=document)  # noqa: SLF001
+    id_field, identifier = schema_resource_identifier(parser, schema, id_field, is_root=is_root, document=document)
     if isinstance(identifier, str):
         base = urljoin(base, identifier).split("#", 1)[0]
     result = schema
@@ -871,7 +855,7 @@ def prepare_schema_resources(parser: SchemaDocumentsHost, raw: dict[str, Any], p
         base=base,
         id_field=id_field,
         children=parser._iter_schema_resource_children,  # noqa: SLF001
-        identifier=partial(parser._schema_resource_identifier, document=document),  # noqa: SLF001
+        identifier=partial(schema_resource_identifier, parser, document=document),
     )
     registry.register(resources)
     if resources.implicit_resources:
@@ -960,7 +944,7 @@ def parse_ref(parser: SchemaDocumentsHost, obj: JsonSchemaObject, path: list[str
 
 def parse_id(parser: SchemaDocumentsHost, obj: JsonSchemaObject, path: list[str]) -> None:
     """Recursively parse all $id fields in a schema object."""
-    parser._traverse_schema_objects(obj, path, parser._add_id_callback)  # noqa: SLF001
+    parser._traverse_schema_objects(obj, path, partial(add_id_callback, parser))  # noqa: SLF001
 
 
 def get_context_source_path_parts(parser: SchemaDocumentsHost) -> Iterator[tuple[Source, list[str]]]:
@@ -1051,9 +1035,9 @@ def resolve_root_model_name(parser: SchemaDocumentsHost, raw_obj: dict[str, Any]
 
 def parse_source(parser: SchemaDocumentsHost, source: Source, raw_obj: dict[str, Any], path_parts: list[str]) -> None:
     """Parse the document ``raw_obj`` read from a source."""
-    parser._cache_source_ref_body(source, raw_obj)  # noqa: SLF001
+    cache_source_ref_body(parser, source, raw_obj)
     parser.raw_obj = raw_obj
-    obj_name, preserve_root_class_name = parser._resolve_root_model_name(raw_obj)  # noqa: SLF001
+    obj_name, preserve_root_class_name = resolve_root_model_name(parser, raw_obj)
     parser._parse_file(raw_obj, obj_name, path_parts, preserve_root_class_name=preserve_root_class_name)  # noqa: SLF001
 
 

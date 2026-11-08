@@ -29,6 +29,7 @@ from datamodel_code_generator._source import YamlValue  # noqa: TC001 - Public a
 from datamodel_code_generator._target_unicode import replace_non_word
 from datamodel_code_generator._types import OpenAPIParserConfigDict  # noqa: TC001 - Public annotations support get_type_hints().
 from datamodel_code_generator.config import OpenAPIParserConfig  # noqa: TC001 - Public annotations support get_type_hints().
+from datamodel_code_generator.parser import _schema_refs
 from datamodel_code_generator.parser._api_reference import (
     ApiModelResolver,
     canonical_ref,
@@ -384,7 +385,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         it. None is a schema in no loaded document.
         """
         with self._home_context(holder):
-            document, _, fragment = self._ref_key(ref).key.partition("#")
+            document, _, fragment = _schema_refs.ref_key(self, ref).key.partition("#")
         tokens = reference_tokens(fragment)
         return SchemaLocation(document, tokens) if document in self._api_documents and tokens is not None else None
 
@@ -619,7 +620,7 @@ class ApiOpenAPIParser(OpenAPIParser):
         # The existing media helper owns this fresh projection, not the source mapping.
         array_schema = _mapping(projected, path)
         item_ref = "#" + pointer_fragment(declaration.tokens)
-        array_schema["items"] = {"$ref": self._derived_ref(item_ref, declaration, "itemSchema", item_ref)}
+        array_schema["items"] = {"$ref": _schema_refs.derived_ref(self, item_ref, declaration, "itemSchema", item_ref)}
         projected_path = self._media_schema_path(path, from_item_schema=True)
         with self._schema_frame(
             name,
