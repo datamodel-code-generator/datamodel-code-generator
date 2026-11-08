@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "properties": {
+    "a": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "string"
+        }
+      }
+    },
+    "b": {
+      "type": "object",
+      "properties": {
+        "k": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

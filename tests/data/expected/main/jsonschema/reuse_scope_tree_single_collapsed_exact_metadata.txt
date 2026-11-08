@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "class_name": "SharedModel",
+      "name": "SharedModel",
+      "module": "shared",
+      "source_ref": "schema_b.json#/$defs/SharedModel",
+      "source_path": [
+        "$defs",
+        "SharedModel"
+      ],
+      "title": null,
+      "fields": [
+        {
+          "name": "id",
+          "alias": "id",
+          "original_name": "id",
+          "type": "int | None",
+          "required": false
+        },
+        {
+          "name": "name",
+          "alias": "name",
+          "original_name": "name",
+          "type": "str | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Model",
+      "name": "Model",
+      "module": "schema_b.model",
+      "source_ref": "schema_b.json#",
+      "source_path": [],
+      "title": null,
+      "fields": [
+        {
+          "name": "info",
+          "alias": "info",
+          "original_name": "info",
+          "type": "SharedModel | None",
+          "required": false
+        }
+      ]
+    },
+    {
+      "class_name": "Model",
+      "name": "Model",
+      "module": "schema_a.model",
+      "source_ref": "schema_a.json#",
+      "source_path": [],
+      "title": null,
+      "fields": [
+        {
+          "name": "data",
+          "alias": "data",
+          "original_name": "data",
+          "type": "SharedModel | None",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

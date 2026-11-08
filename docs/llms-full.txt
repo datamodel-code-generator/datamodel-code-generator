@@ -18611,14 +18611,14 @@ empty document, so its locations start with `#`; a file that a `$ref` reads is n
 by their pointer (`#/$defs/User`), not by the URI.
 
 When several classes come from one location, the location keys the class parsed under the location itself, which is
-the class a `$ref` to it names. These locations have no key:
+the class a `$ref` to it names. A duplicate that `reuse_model` writes as an empty subclass of the class it reuses keys
+that subclass. These locations have no key:
 
 - A location whose classes were all made as helpers of another schema, such as the Enum and the `RootModel` of a
   nullable enum property, or the members of a union inside `allOf`, and the `Request` and `Response` classes of
   `read_only_write_only_model_type="request-response"`. With `"all"`, the location keys the base class.
 - A location whose class dcg merged into another class: duplicates under `reuse_model` with `collapse_reuse_models`,
   and the targets of `collapse_root_models`.
-- The subclasses that `reuse_model` makes, which `--emit-model-metadata` does not list either.
 - A location whose model is a type alias (`use_type_alias`), not a class, also when helper classes of it share the
   location.
 

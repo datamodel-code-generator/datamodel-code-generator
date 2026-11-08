@@ -174,6 +174,33 @@ def test_schema_location_metadata(
     assert_output(metadata_path.read_text(encoding="utf-8"), name="metadata")
 
 
+@pytest.mark.parametrize(
+    ("input_path", "options"),
+    [
+        pytest.param(JSON_SCHEMA_DATA_PATH / "reuse_model_subclass_metadata.json", [], id="module"),
+        pytest.param(JSON_SCHEMA_DATA_PATH / "reuse_scope_tree", ["--reuse-scope", "tree"], id="tree-scope"),
+    ],
+)
+def test_reuse_model_subclass_metadata(tmp_path: Path, output_dir: Path, input_path: Path, options: list[str]) -> None:
+    """List the empty subclass ``--reuse-model`` writes for a duplicate at the duplicate's location (#6581)."""
+    metadata_path = tmp_path / "metadata.json"
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_dir,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--disable-timestamp",
+            "--formatters",
+            "builtin",
+            "--reuse-model",
+            *options,
+            "--emit-model-metadata",
+            str(metadata_path),
+        ],
+    )
+    assert_output(metadata_path.read_text(encoding="utf-8"), name="metadata")
+
+
 @pytest.mark.parametrize("update_lock", [False, True], ids=["direct", "staged"])
 def test_emit_model_metadata_expands_the_home_directory(
     update_lock: bool, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

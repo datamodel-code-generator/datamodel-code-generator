@@ -90,6 +90,30 @@
       ]
     },
     {
+      "class_name": "Outer",
+      "name": "Outer",
+      "module": "schema_1.outer",
+      "source_ref": "schema_1.json#/$defs/Outer",
+      "source_path": [
+        "$defs",
+        "Outer"
+      ],
+      "title": null,
+      "fields": []
+    },
+    {
+      "class_name": "Inner",
+      "name": "Inner",
+      "module": "schema_1.inner1",
+      "source_ref": "schema_1.json#/$defs/Inner",
+      "source_path": [
+        "$defs",
+        "Inner"
+      ],
+      "title": null,
+      "fields": []
+    },
+    {
       "class_name": "Root0",
       "name": "Root0",
       "module": "schema_0.root0",
@@ -105,6 +129,30 @@
           "required": false
         }
       ]
+    },
+    {
+      "class_name": "Outer",
+      "name": "Outer",
+      "module": "schema_0.outer",
+      "source_ref": "schema_0.json#/$defs/Outer",
+      "source_path": [
+        "$defs",
+        "Outer"
+      ],
+      "title": null,
+      "fields": []
+    },
+    {
+      "class_name": "Inner",
+      "name": "Inner",
+      "module": "schema_0.inner",
+      "source_ref": "schema_0.json#/$defs/Inner",
+      "source_path": [
+        "$defs",
+        "Inner"
+      ],
+      "title": null,
+      "fields": []
     }
   ]
 }
