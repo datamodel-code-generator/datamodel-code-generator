@@ -8,7 +8,7 @@
 | [`--allow-extra-fields`](#allow-extra-fields) | Allow extra fields in generated Pydantic models (extra='allo... |
 | [`--allow-leading-underscore-class-name`](#allow-leading-underscore-class-name) | Allow an explicitly specified root class name to start with ... |
 | [`--allow-population-by-field-name`](#allow-population-by-field-name) | Allow Pydantic model population by field name (not just alia... |
-| [`--apply-field-options-to-every-field`](#apply-field-options-to-every-field) | Give every kind of field the field options the other fields ... |
+| [`--apply-field-options-to-every-field`](#apply-field-options-to-every-field) | Give the fields that leave out some field options the ones o... |
 | [`--base-class`](#base-class) | Specify a custom base class for generated models. |
 | [`--base-class-map`](#base-class-map) | Specify different base classes for specific models via JSON ... |
 | [`--class-name`](#class-name) | Override the auto-generated class name with a custom name. |
@@ -859,14 +859,16 @@ The `--allow-population-by-field-name` flag configures the code generation behav
 
 ## `--apply-field-options-to-every-field` {#apply-field-options-to-every-field}
 
-Give every kind of field the field options the other fields take.
+Give the fields that leave out some field options the ones others take.
 
 A GraphQL field, a property whose schema is `true` or `false`, a required name that no property declares and the tag
 field a discriminator appends to a variant leave out some field options, such as `--use-default-kwarg`,
 `--use-annotated` and `--use-default-factory-for-optional-nested-models`, which the other fields of their model take,
 so one option gives different fields in one model. With this option they take them too:
 `owner_id: Annotated[Any, Field(alias='owner-id')]` beside
-`display_name: Annotated[str, Field(alias='display-name')]`.
+`display_name: Annotated[str, Field(alias='display-name')]`. The root field of a root model is not one of them: under
+`--force-optional` and `--use-default-kwarg` a discriminated union root still writes
+`root: Cat | Dog | None = Field(None, discriminator='kind')`.
 
 !!! tip "Usage"
 

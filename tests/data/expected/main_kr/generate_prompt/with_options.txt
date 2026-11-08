@@ -183,7 +183,7 @@ What other options should I use?
 - `--allow-extra-fields`: Allow extra fields in generated Pydantic models (extra='allow').
 - `--allow-leading-underscore-class-name`: Allow an explicitly specified root class name to start with an unders...
 - `--allow-population-by-field-name`: Allow Pydantic model population by field name (not just alias).
-- `--apply-field-options-to-every-field`: Give every kind of field the field options the other fields take.
+- `--apply-field-options-to-every-field`: Give the fields that leave out some field options the ones others take.
 - `--base-class`: Specify a custom base class for generated models.
 - `--base-class-map`: Specify different base classes for specific models via JSON mapping.
 - `--class-name`: Override the auto-generated class name with a custom name.
