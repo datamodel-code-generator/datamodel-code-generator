@@ -1542,6 +1542,7 @@ DYNAMIC_MODULE_SOURCE_REF_CASES: dict[str, tuple[dict[str, Any] | Path, dict[str
         OPEN_API_DATA_PATH / "read_only_write_only_mixed.yaml",
         {"read_only_write_only_model_type": ReadOnlyWriteOnlyModelType.All},
     ),
+    "reuse_model_subclass": (JSON_SCHEMA_DATA_PATH / "reuse_model_subclass_metadata.json", {"reuse_model": True}),
 }
 
 

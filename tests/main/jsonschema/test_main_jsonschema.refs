@@ -13298,10 +13298,10 @@ True-True-False-api	main/jsonschema/reuse_scope_tree_single_runtime_collapsed.tx
 True-True-False-cli	main/jsonschema/reuse_scope_tree_single_collapsed_exact//*.py
 True-True-False-cli	main/jsonschema/reuse_scope_tree_single_runtime_collapsed.txt
 True-True-True-api	main/jsonschema/reuse_scope_tree_single_collapsed_exact//*.py
-True-True-True-api	main/jsonschema/reuse_scope_tree_single_collapsed_exact_metadata.txt	= main/jsonschema/reuse_scope_tree_single_exact_metadata.txt
+True-True-True-api	main/jsonschema/reuse_scope_tree_single_collapsed_exact_metadata.txt
 True-True-True-api	main/jsonschema/reuse_scope_tree_single_runtime_collapsed.txt
 True-True-True-cli	main/jsonschema/reuse_scope_tree_single_collapsed_exact//*.py
-True-True-True-cli	main/jsonschema/reuse_scope_tree_single_collapsed_exact_metadata.txt	= main/jsonschema/reuse_scope_tree_single_exact_metadata.txt
+True-True-True-cli	main/jsonschema/reuse_scope_tree_single_collapsed_exact_metadata.txt
 True-True-True-cli	main/jsonschema/reuse_scope_tree_single_runtime_collapsed.txt
 [test_root_alias_constraints]
 False-False-False-array-api	main/jsonschema/root_alias_constraints/array_0_0_0.py

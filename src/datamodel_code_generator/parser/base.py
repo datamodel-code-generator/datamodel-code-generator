@@ -2792,13 +2792,17 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         }
 
     @classmethod
-    def _model_metadata(cls, model: DataModel, module: ModulePath, identity: str) -> GeneratedModelMetadata:
+    def _model_metadata(
+        cls, model: DataModel, source: DataModel, module: ModulePath, identity: str
+    ) -> GeneratedModelMetadata:
         """Describe a generated model by the JSON Pointer location of the schema object it is built from.
 
-        A model without a location (GraphQL input, or a schema object a custom parser built) keeps its reference path.
+        ``source`` is the model parsed from that schema object: ``model`` itself, or the duplicate that the empty
+        subclass ``--reuse-model`` writes replaces. A model without a location (GraphQL input, or a schema object a
+        custom parser built) keeps its reference path.
         """
-        title = model.extra_template_data.get("title")
-        location = location_of(model.reference)
+        title = source.extra_template_data.get("title")
+        location = location_of(source.reference)
         source_ref = named_location(location, identity)
         source_path = _source_path_from_reference_path(source_ref) if location is None else list(location.tokens)
         return {
@@ -2817,15 +2821,25 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         contexts: list[ModuleContext],
         model_identities: Mapping[DataModel, str],
     ) -> tuple[ModelMetadata, tuple[str, ...]]:
-        """Return the metadata of the emitted models and, in the same order, their redacted identity paths."""
+        """Return the metadata of the emitted models and, in the same order, their redacted identity paths.
+
+        The empty subclass that ``--reuse-model`` writes in place of a duplicate is described by the duplicate.
+        """
         from datamodel_code_generator.model_metadata import model_metadata_payload  # noqa: PLC0415
 
-        models = [(model, ctx.module) for ctx in contexts for model in ctx.models if model in model_identities]
+        replaced = {id(model.reference): model for model in model_identities}
+        models = [
+            (model, source, ctx.module)
+            for ctx in contexts
+            for model in ctx.models
+            if (source := model if (reused := model.reused_reference) is None else replaced.get(id(reused), model))
+            in model_identities
+        ]
         return (
             model_metadata_payload([
-                cls._model_metadata(model, module, model_identities[model]) for model, module in models
+                cls._model_metadata(model, source, module, model_identities[source]) for model, source, module in models
             ]),
-            tuple(redact_reference(model_identities[model]) for model, _ in models),
+            tuple(redact_reference(model_identities[source]) for _, source, _ in models),
         )
 
     def _close_http_fetch_session(self) -> None:
