@@ -8,7 +8,7 @@ from __future__ import annotations
 from abc import ABC
 from functools import cache, cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, NamedTuple, Optional, cast
 
 from pydantic import Field as _Field
 from typing_extensions import override
@@ -16,6 +16,7 @@ from typing_extensions import override
 from datamodel_code_generator import _constraint_applicability as _applicability
 from datamodel_code_generator._constraint_applicability import DROPPED_MULTIPLE_OF_KEY
 from datamodel_code_generator._python_syntax import call_text, keyword_argument, subscript_text
+from datamodel_code_generator._regex_syntax import python_rejects
 from datamodel_code_generator.imports import IMPORT_DECIMAL, _import_key
 from datamodel_code_generator.model import (
     UNDEFINED,
@@ -111,6 +112,10 @@ _NONE_TYPE = RuleId("D2.pydantic.none-type-number")
 _MULTIPLE_OF_ONE = RuleId("D2.pydantic.integer-multiple-of-one")
 _NON_FINITE_MULTIPLE_OF = RuleId("D2.pydantic.non-finite-multiple-of")
 """Pydantic takes ``multiple_of`` only as a finite number (``_non_finite_as_written``)."""
+_PYTHON_ENGINE_REJECTS = RuleId("D2.pydantic.python-engine-rejects-pattern")
+"""Python's ``re``, which ``python-re`` runs, rejects the pattern (``python_rejects``) of a model built with it."""
+PYTHON_ENGINE_BUILDS_KEY: Final = "python_engine_builds_patterns"
+"""The internal template data key of a model whose patterns a config selecting ``python-re`` builds."""
 _EXTRA = RuleId("D11.pydantic.field-extra")
 _DISCRIMINATOR = RuleId("D7.tag.discriminator")
 
@@ -222,6 +227,12 @@ class DataModelField(DataModelFieldBase):
             if overridden.reason == "override-type-does-not-take":
                 reasons.append(f"--type-overrides writes {self.data_type.type_hint} in place of {overridden.detail}")
                 count += cast("int", overridden.value)
+        if rejected := [o.value for o in omitted if o.why.rule == _PYTHON_ENGINE_REJECTS]:
+            reasons.append(
+                "Python's regex engine, which the config building it selects, does not compile "
+                + ", ".join(f"pattern={represent_python_value(value)}" for value in rejected)
+            )
+            count += len(rejected)
         if non_finite := [
             *(o.value for o in omitted if o.why.rule == _NON_FINITE_MULTIPLE_OF),
             *(
@@ -289,6 +300,19 @@ class DataModelField(DataModelFieldBase):
         needs_required_nullable_field = self.nullable and requires_value(self)
         return bool(has_field_metadata or needs_required_nullable_field or self._takes_nested_model_factory())
 
+    def _python_engine_rejects(self, pattern: object) -> bool:
+        """Return whether ``python-re`` builds a pattern of the field that Python's ``re`` rejects (#6593).
+
+        The config of the model or of a model that builds the field's patterns selects that engine for another
+        pattern, such as a lookaround (``PYTHON_ENGINE_BUILDS_KEY``), so one only the default engine reads, such as a
+        Unicode property, would fail at import.
+        """
+        return (
+            isinstance(pattern, str)
+            and bool(getattr(self.parent, "_internal_template_data", {}).get(PYTHON_ENGINE_BUILDS_KEY))
+            and python_rejects(pattern)
+        )
+
     def _normalized_constraint_arguments(
         self, omitted: list[Omitted], *, beside_models: bool = True
     ) -> dict[str, Kwarg]:
@@ -317,6 +341,17 @@ class DataModelField(DataModelFieldBase):
                 if key in untaken
             )
             dumped = {key: value for key, value in dumped.items() if key not in untaken}
+        if self._python_engine_rejects(pattern := dumped.get("pattern")):
+            omitted.append(
+                Omitted(
+                    "constraint:pattern",
+                    pattern,
+                    "backend-cannot-express",
+                    Why(_PYTHON_ENGINE_REJECTS, "pattern"),
+                    warns=True,
+                )
+            )
+            dumped = {key: value for key, value in dumped.items() if key != "pattern"}
         has_integer_constraints = bool(self._INTEGER_CONSTRAINTS & dumped.keys())
         is_float_type = has_integer_constraints and self._has_numeric_data_type("float", "Float")
         is_int_type = has_integer_constraints and not is_float_type and self._has_numeric_data_type("int", "Int")

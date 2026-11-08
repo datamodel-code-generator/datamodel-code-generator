@@ -290,6 +290,13 @@ class DataClass(_DataclassReuseMixin, _PydanticV2Model):
         """
         return self.base_classes if self._rendered_config_items() else self.base_classes[1:]
 
+    @override
+    def _builds_patterns_with_python_engine(self) -> bool:
+        """Return whether the config the dataclass applies selects ``python-re``, once it selected its engine."""
+        self._apply_lookaround_regex_engine()
+        return super()._builds_patterns_with_python_engine()
+
+    @override
     def _applied_config_items(self, visiting: frozenset[int] = frozenset()) -> dict[str, str]:
         """Return the config items Pydantic applies: the dataclass's own, else all of its first dataclass base's.
 
