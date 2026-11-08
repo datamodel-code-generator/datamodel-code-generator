@@ -387,12 +387,18 @@ def _iter_cycle_containers(
 def collect_set_item_references(models: list[DataModel]) -> list[Reference]:
     """Collect the references of all types used as set/frozenset items.
 
-    A type alias among them is read as its value too, whose models are the set's items.
+    A type alias among them is read as its value too, once, whose models are the set's items.
     """
+    read_aliases: set[int] = set()
 
     def value_types(data_type: DataType) -> Iterable[DataType]:
-        if (reference := data_type.reference) is None or not isinstance(alias := reference.source, TypeAliasBase):
+        if (
+            (reference := data_type.reference) is None
+            or not isinstance(alias := reference.source, TypeAliasBase)
+            or id(alias) in read_aliases
+        ):
             return ()
+        read_aliases.add(id(alias))
         return (nested for field in alias.fields for nested in field.data_type.all_data_types)
 
     item_types = (

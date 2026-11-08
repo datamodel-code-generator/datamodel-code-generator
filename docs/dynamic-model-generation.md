@@ -351,7 +351,8 @@ in every process that passes an equal schema and config: the keys of the schema 
 settings (the values of set-valued settings in any order). A schema with its keys in another order, a config that dumps
 otherwise after a dcg upgrade, or `Path` settings spelled otherwise give another name. To keep one name across such
 changes, pass `module_name` yourself, for example your own digest of the schema. A dotted name needs a parent package
-that can be imported, because pickle imports it.
+that can be imported, because pickle imports it. Like import, registration binds each module below a package to it,
+so `package.module` reaches the registered module.
 
 A call with the name of a registered module and the same schema and config returns the registered classes, also with
 `cache_size=0` and without `register_module`. A call without `register_module` that passes the name with another schema
@@ -368,6 +369,9 @@ import sys
 name = module.module_name
 for key in [key for key in sys.modules if key == name or key.startswith(f"{name}.")]:
     del sys.modules[key]
+parent, _, leaf = name.rpartition(".")
+if parent:
+    vars(sys.modules[parent]).pop(leaf, None)
 ```
 
 After that, the same call registers new classes; pickles of the old instances no longer load into the old classes.
@@ -378,6 +382,8 @@ After that, the same call registers new classes; pickles of the old instances no
 - the name holds classes registered for a schema or config that cannot be serialized as JSON, or this call's cannot be,
   so the two cannot be compared: keep the `DynamicModule` the registering call returned;
 - the name holds a module that `generate_dynamic_module()` did not register;
+- `sys.modules` holds modules below the name, for example the modules of split output whose package alone was
+  removed: remove the modules the message names;
 - a module of the name can be imported, which the registered module would hide;
 - the parent package of a dotted name cannot be imported;
 - no `module_name` is given and the schema or the config cannot be serialized as JSON, for example a config with
@@ -391,8 +397,9 @@ What does not work:
 - Files and URLs that `$ref`s read are not part of the derived name, and can differ between processes.
 - After a dcg upgrade that renames or changes classes, loading fails or gives instances with stale fields, as Pydantic
   does not validate pickled state. For long-lived storage, use `model_dump()` and `model_validate()`.
-- Classes from `generate_dynamic_models()` and from calls without `register_module=True` still cannot be pickled.
-  `generate_dynamic_models()` also does not look at registered modules.
+- Classes from `generate_dynamic_models()` cannot be pickled, as it does not look at registered modules. A
+  `generate_dynamic_module()` call without `register_module=True` returns the classes of a registered module of its
+  `module_name` for the same schema and config, which pickle; otherwise its classes cannot be pickled either.
 - Under `use_root_model_type_alias`, Pydantic shares one class per parametrization in the process, so an alias class
   belongs to the module that made that parametrization first.
 
@@ -477,7 +484,7 @@ assert all(r is results[0] for r in results)
 | Limitation | Details |
 |------------|---------|
 | Pydantic v2 only | Pydantic v2 is the only supported output |
-| Pickling | Only for `generate_dynamic_module()` with `register_module=True`, after the same generation in the loading process; otherwise use `model_dump()` |
+| Pickling | Only for classes of a registered module (`generate_dynamic_module()` with `register_module=True`, or a later call with its name, schema and config), after the same generation in the loading process; otherwise use `model_dump()` |
 | Dict input only | Schema must be a `dict`, not a file path or string |
 
 ## Comparison with `generate()`

@@ -1713,6 +1713,7 @@ def test_registered_split_output_stays_in_sys_modules() -> None:
     nested = module.models_by_source_ref["#/definitions/empty_parent.nested.deep.Json"]
 
     assert nested.__module__ == "runtime_registered_package.empty_parent.nested.deep"
+    assert sys.modules["runtime_registered_package"].empty_parent.nested.deep is sys.modules[nested.__module__]
     assert pickle.loads(pickle.dumps(nested)) is nested
     assert pickle.loads(pickle.dumps(module.root_class)) is module.root_class
     assert sorted(name for name in sys.modules if name.startswith("runtime_registered_package")) == [
@@ -1802,8 +1803,15 @@ def test_register_module_below_a_package(tmp_path: Path, monkeypatch: pytest.Mon
         REGISTERED_SCHEMA, module_name="runtime_registered_app.generated", register_module=True
     )
 
-    assert "runtime_registered_app" in sys.modules
+    split_schema = json.loads((JSON_SCHEMA_DATA_PATH / "nested_person.json").read_text(encoding="utf-8"))
+    split = generate_dynamic_module(split_schema, module_name="runtime_registered_app.split", register_module=True)
+    nested = split.models_by_source_ref["#/definitions/empty_parent.nested.deep.Json"]
+    app = sys.modules["runtime_registered_app"]
+
+    assert app.generated is sys.modules["runtime_registered_app.generated"]
+    assert app.split.empty_parent.nested.deep is sys.modules[nested.__module__]
     assert pickle.loads(pickle.dumps(module.root_class)) is module.root_class
+    assert pickle.loads(pickle.dumps(nested)) is nested
 
 
 REENTRANT_PACKAGE_SCRIPT = """\
@@ -1836,6 +1844,73 @@ def test_dynamic_calls_import_packages_that_generate_dynamic_models(tmp_path: Pa
     )
 
     assert result.stdout.splitlines() == ["app_module.generated", "app_models.generated"]
+
+
+LEAF_MODULE_SCRIPT = """\
+import sys
+from pathlib import Path
+
+from datamodel_code_generator import generate_dynamic_models, generate_dynamic_module
+
+schema = {'type': 'object', 'properties': {'name': {'type': 'string'}}}
+for module, call in (("app_leaf_models", "generate_dynamic_models"), ("app_leaf_module", "generate_dynamic_module")):
+    Path(sys.argv[1], f"{module}.py").write_text(
+        f"from datamodel_code_generator import {call}\\n"
+        f"GENERATED = {call}({schema!r}, module_name=__name__)\\n"
+    )
+sys.path.insert(0, sys.argv[1])
+models = generate_dynamic_models(schema, module_name="app_leaf_models")
+print(models is sys.modules["app_leaf_models"].GENERATED, models["Model"].__module__)
+module = generate_dynamic_module(schema, module_name="app_leaf_module")
+print(module is sys.modules["app_leaf_module"].GENERATED, module.root_class.__module__)
+"""
+
+
+def test_dynamic_calls_import_modules_that_generate_dynamic_models_in_themselves(tmp_path: Path) -> None:
+    """Test a call names a module not imported yet whose import generates the same models, and gets its classes."""
+    result = subprocess.run(
+        [sys.executable, "-c", LEAF_MODULE_SCRIPT, str(tmp_path)],
+        capture_output=True,
+        check=True,
+        text=True,
+        timeout=60,
+    )
+
+    assert result.stdout.splitlines() == ["True app_leaf_models", "True app_leaf_module"]
+
+
+@pytest.mark.usefixtures("forget_registered_modules")
+def test_register_module_refuses_a_name_with_modules_below_it() -> None:
+    """Test registration refuses a name with modules left below it, and registers once they go as the message says."""
+    schema = json.loads((JSON_SCHEMA_DATA_PATH / "nested_person.json").read_text(encoding="utf-8"))
+    other_schema = {**schema, "description": "Another schema"}
+    module = generate_dynamic_module(schema, module_name="runtime_registered_package", register_module=True)
+    nested = module.models_by_source_ref["#/definitions/empty_parent.nested.deep.Json"]
+    submodules = (
+        "'runtime_registered_package.empty_parent', 'runtime_registered_package.empty_parent.nested', "
+        "'runtime_registered_package.empty_parent.nested.deep', 'runtime_registered_package.nested' and "
+        "'runtime_registered_package.nested.deep'"
+    )
+
+    with pytest.raises(
+        Error, match=re.escape(f"or remove 'runtime_registered_package', {submodules} from sys.modules")
+    ):
+        generate_dynamic_module(other_schema, module_name="runtime_registered_package", register_module=True)
+    del sys.modules["runtime_registered_package"]
+    with pytest.raises(
+        Error,
+        match=re.escape(
+            "module_name 'runtime_registered_package' has modules below it in sys.modules, which a registered module "
+            f"would replace or hide; pass another module_name, or remove {submodules} from sys.modules first."
+        ),
+    ):
+        generate_dynamic_module(other_schema, module_name="runtime_registered_package", register_module=True)
+    assert sys.modules[nested.__module__].Json is nested
+    for name in [name for name in sys.modules if name.startswith("runtime_registered_package.")]:
+        del sys.modules[name]
+    other = generate_dynamic_module(other_schema, module_name="runtime_registered_package", register_module=True)
+    assert other.root_class is sys.modules["runtime_registered_package"].NestedPerson
+    assert pickle.loads(pickle.dumps(other.root_class)) is other.root_class
 
 
 @pytest.mark.usefixtures("forget_registered_modules")
