@@ -107,11 +107,14 @@ def free_objects(package: ModuleType, lines: list[str]) -> None:
 
 
 def bracketed(package: ModuleType, lines: list[str]) -> None:
-    """Write deepObject arrays as `name[]=value` for each item and scalars as `name=value`, objects as `name[key]`."""
+    """Write deepObject arrays as `name[]=value` for each item and scalars as `name=value`, objects as `name[key]`.
+
+    A value that is one item or an array of them is written as either, by the value a call gives.
+    """
     exchange = Exchange(lines)
     with exchange.client() as http, package.Client(http_client=http) as api:
         created = argument(package, "GetChargesCharge", "query", "created", {"gt": 5})
-        exchange.respond(raw_response(204), raw_response(204), raw_response(204))
+        exchange.respond(*(raw_response(204) for _ in range(5)))
         record(
             lines,
             "charge",
@@ -119,3 +122,5 @@ def bracketed(package: ModuleType, lines: list[str]) -> None:
         )
         record(lines, "one item", lambda: api.customers.get_customers(expand=["data.source"]))
         record(lines, "no items", lambda: api.customers.get_customers(expand=[]))
+        record(lines, "one id", lambda: api.customers.get_customers(ids="cus_1"))
+        record(lines, "ids", lambda: api.customers.get_customers(ids=["cus_1", "cus_2"]))

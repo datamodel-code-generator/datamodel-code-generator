@@ -62,3 +62,45 @@ paths:
       responses:
         '204':
           description: Created.
+  /rooms:
+    patch:
+      operationId: updateRooms
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              oneOf:
+                - type: object
+                  properties:
+                    params:
+                      type: object
+                      properties:
+                        room: {type: string}
+                - type: object
+                  properties:
+                    params:
+                      type: object
+                      properties:
+                        floor: {type: integer}
+      responses:
+        '204':
+          description: Updated.
+  /tags:
+    patch:
+      operationId: updateTags
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              oneOf:
+                - type: object
+                  properties:
+                    tags: {type: array, items: {type: string}}
+                - type: object
+                  properties:
+                    tags: {type: array, items: {type: string, format: date}}
+      responses:
+        '204':
+          description: Updated.

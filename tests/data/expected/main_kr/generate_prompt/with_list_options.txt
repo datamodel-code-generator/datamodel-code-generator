@@ -373,7 +373,7 @@
 
 ### Target Generation Options
 - `--client-body-arguments`: Choose how operation methods take request bodies (experimental).
-- `--client-deep-object-brackets`: Write deepObject arrays and scalars in brackets, as Stripe does (experimental).
+- `--client-deep-object-brackets`: Write deepObject arrays as name[]=v per item, scalars as name=v (experimental).
 - `--client-default-base-url`: Set the server URL of operations that declare no servers (experimental).
 - `--client-model-package`: Name the import path of the models the client package imports (experimental).
 - `--client-operations`: Set the client settings of single operations (experimental).

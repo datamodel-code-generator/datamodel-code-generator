@@ -454,12 +454,12 @@ def _load_document(path: Path) -> Any:
         return json.loads(text)
     import yaml  # ruff: ignore[import-outside-top-level] - only YAML specs need it
 
-    from datamodel_code_generator.util import get_safe_loader  # ruff: ignore[import-outside-top-level]
+    from datamodel_code_generator.util import read_yaml_text  # ruff: ignore[import-outside-top-level]
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         try:
-            return yaml.load(text, Loader=get_safe_loader())
+            return read_yaml_text(yaml.load, text)
         except yaml.YAMLError as exc:
             raise ValueError(str(exc)) from exc
 

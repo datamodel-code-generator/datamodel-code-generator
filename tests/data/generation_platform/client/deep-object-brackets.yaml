@@ -46,6 +46,15 @@ paths:
           schema:
             type: array
             items: {type: string}
+        - name: ids
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            oneOf:
+              - {type: string}
+              - type: array
+                items: {type: string}
       responses:
         '204':
           description: The customers.

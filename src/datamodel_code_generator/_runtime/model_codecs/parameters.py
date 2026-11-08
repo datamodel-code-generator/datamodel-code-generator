@@ -74,7 +74,8 @@ class ParameterShapeError(ValueError):
 class ParameterPlan:
     """Describe one effective parameter: location, style or content media, and lexical kinds.
 
-    An array plan that is `single` also takes one item alone, which its style writes as it writes a scalar.
+    An array plan that is `single` also takes one item alone, which its style writes as it writes a scalar, under
+    `item_name` when one is given.
     """
 
     location: ParameterLocation
@@ -90,6 +91,7 @@ class ParameterPlan:
     additional: FieldPlan | None = None
     reserved_names: tuple[str, ...] = ()
     single: bool = False
+    item_name: str | None = None
 
     def __post_init__(self) -> None:
         """Reject style, content, and shape combinations without a reversible builtin form.
@@ -153,8 +155,8 @@ def _reversible(plan: ParameterPlan, shape: ValueShape | None = None) -> bool:
 
 
 def _item(plan: ParameterPlan) -> ParameterPlan:
-    """Return the plan that writes one item of a single plan alone: the plan of a scalar of its kind."""
-    return replace(plan, shape="scalar", single=False)
+    """Return the plan that writes one item of a single plan alone: the plan of a scalar of its kind, by its name."""
+    return replace(plan, name=plan.item_name or plan.name, shape="scalar", single=False, item_name=None)
 
 
 def _written(plan: ParameterPlan, value: JSONValue) -> ParameterPlan:

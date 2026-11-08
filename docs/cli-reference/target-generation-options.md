@@ -5,7 +5,7 @@
 | Option | Description |
 |--------|-------------|
 | [`--client-body-arguments`](#client-body-arguments) | Choose how operation methods take request bodies (experiment... |
-| [`--client-deep-object-brackets`](#client-deep-object-brackets) | Write deepObject arrays and scalars in brackets, as Stripe d... |
+| [`--client-deep-object-brackets`](#client-deep-object-brackets) | Write deepObject arrays as name[]=v per item, scalars as nam... |
 | [`--client-default-base-url`](#client-default-base-url) | Set the server URL of operations that declare no servers (ex... |
 | [`--client-model-package`](#client-model-package) | Name the import path of the models the client package import... |
 | [`--client-operations`](#client-operations) | Set the client settings of single operations (experimental). |
@@ -453,13 +453,14 @@ overrides it for that operation.
 
 ## `--client-deep-object-brackets` {#client-deep-object-brackets}
 
-Write deepObject arrays and scalars in brackets, as Stripe does (experimental).
+Write deepObject arrays as name[]=v per item, scalars as name=v (experimental).
 
 OpenAPI defines `style: deepObject` for objects alone, so an operation whose deepObject query parameter takes an array
 or a scalar is left out with a warning. With this option the client writes an array as `name[]=value` for each item,
 such as `expand[]=a&expand[]=b`, and a scalar as `name=value`, with the brackets percent-encoded as those of an
-object's `name[key]` pairs are. `--no-client-deep-object-brackets` turns off the `client-deep-object-brackets` key of
-pyproject.toml.
+object's `name[key]` pairs are. A parameter that takes one item or an array of them is written by the value a call
+gives: an item alone as `name=value`, an array as `name[]=value` for each item. `--no-client-deep-object-brackets`
+turns off the `client-deep-object-brackets` key of pyproject.toml.
 
 **Option relationships:**
 

@@ -3380,8 +3380,9 @@ class _Octets(_UseFacts):
     ) -> tuple[PartFacts, SourceLocation | None]:
         """Return the parts of a multipart use whose type is a union of models, by the members it merges.
 
-        The objects that declare a name agree on its parts: each holds files, repeats and is structured alike, and its
-        values have one lexical kind (``member_kind``); the part reads the union of their values. A body whose objects
+        The objects that declare a name agree on its parts: each holds files, repeats and is structured alike, its
+        values have one lexical kind (``member_kind``), and a part that repeats or is structured has one type, which
+        its items or its JSON are read by; the part reads the union of their values. A body whose objects
         disagree on a name has no object its parts could be read by. It allows no other parts only when each of its
         objects allows no other properties, and any value otherwise.
         """
@@ -3401,7 +3402,8 @@ class _Octets(_UseFacts):
             parts = [item[name] for item in found if name in item]
             shapes = {(part.file, part.repeated, part.structured, part.text) for part in parts}
             kinds = {member_kind(value, self.symbol_table, self.members)[0] for part in parts if (value := part.value)}
-            if len(shapes) > 1 or len(kinds) > 1:
+            whole = {part.value for part in parts if part.repeated or part.structured}
+            if len(shapes) > 1 or len(kinds) > 1 or len(whole) > 1:
                 return PartFacts(object=False, members=(), extra=None), None
             named.append((name, replace(parts[0], value=_joined(tuple(part.value for part in parts if part.value)))))
         closed = all(

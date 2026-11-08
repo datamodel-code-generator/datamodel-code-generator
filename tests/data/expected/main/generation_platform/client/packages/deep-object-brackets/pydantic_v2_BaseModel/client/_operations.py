@@ -37,5 +37,5 @@ OPERATION_1: Final[OperationPlan[GetCustomersResponse]] = OperationPlan(
     path='/v1/customers',
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
-    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='expand[]', style='form', explode=True, shape='array', reserved_names=('expand',)), codec=model_bindings.codec_4),),
+    parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='expand[]', style='form', explode=True, shape='array', reserved_names=('expand', 'ids')), codec=model_bindings.codec_4), ParameterSpec(plan=ParameterPlan(location='query', name='ids[]', style='form', explode=True, shape='array', reserved_names=('expand', 'ids'), single=True, item_name='ids'), codec=model_bindings.codec_5)),
 )

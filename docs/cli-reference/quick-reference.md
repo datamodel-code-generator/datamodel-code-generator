@@ -312,7 +312,7 @@ datamodel-codegen [OPTIONS]
 | Option | Description |
 |--------|-------------|
 | [`--client-body-arguments`](target-generation-options.md#client-body-arguments) | Choose how operation methods take request bodies (experimental). |
-| [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) | Write deepObject arrays and scalars in brackets, as Stripe does (experimental). |
+| [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) | Write deepObject arrays as name[]=v per item, scalars as name=v (experimental). |
 | [`--client-default-base-url`](target-generation-options.md#client-default-base-url) | Set the server URL of operations that declare no servers (experimental). |
 | [`--client-model-package`](target-generation-options.md#client-model-package) | Name the import path of the models the client package imports (experimental). |
 | [`--client-operations`](target-generation-options.md#client-operations) | Set the client settings of single operations (experimental). |
@@ -390,7 +390,7 @@ All options sorted alphabetically:
 - [`--class-name-prefix`](model-customization.md#class-name-prefix) - Add a prefix to all generated class names.
 - [`--class-name-suffix`](model-customization.md#class-name-suffix) - Add a suffix to all generated class names.
 - [`--client-body-arguments`](target-generation-options.md#client-body-arguments) - Choose how operation methods take request bodies (experiment...
-- [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) - Write deepObject arrays and scalars in brackets, as Stripe d...
+- [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) - Write deepObject arrays as name[]=v per item, scalars as nam...
 - [`--client-default-base-url`](target-generation-options.md#client-default-base-url) - Set the server URL of operations that declare no servers (ex...
 - [`--client-model-package`](target-generation-options.md#client-model-package) - Name the import path of the models the client package import...
 - [`--client-operations`](target-generation-options.md#client-operations) - Set the client settings of single operations (experimental).
