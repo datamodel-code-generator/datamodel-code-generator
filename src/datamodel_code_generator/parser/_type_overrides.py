@@ -18,6 +18,7 @@ from typing_extensions import Protocol
 
 from datamodel_code_generator import Error
 from datamodel_code_generator._constraint_applicability import (
+    COUNT_KEYWORDS,
     ITEM_COUNT_KEYWORDS,
     LENGTH_KEYWORDS,
     overridden_declared_constraints,
@@ -516,9 +517,6 @@ def apply_override_to_field(parser: TypeOverridesHost, field: DataModelFieldBase
     parser._graph_builder.set_nested_data_types(field.data_type, [])  # noqa: SLF001
 
 
-_COUNT_KEYWORDS: Final[frozenset[str]] = LENGTH_KEYWORDS | ITEM_COUNT_KEYWORDS
-"""The keywords a field's constraints write the counts of a map or an array it holds under."""
-
 _WITHOUT_CONTAINER: Final[Mapping[str, Any]] = MappingProxyType({
     **dict.fromkeys(CONTAINER_FLAGS.values(), False),
     "data_types": (),
@@ -555,7 +553,7 @@ def _untaken_container_counts(
     takes the array's counts (a sequence). The lengths of any other field are not decided here (row
     ``legacy-override-keeps-string-keywords``).
     """
-    if not (lengths := [key for key in keys if key in _COUNT_KEYWORDS]) or not (
+    if not (lengths := [key for key in keys if key in COUNT_KEYWORDS]) or not (
         members := [*_value_members(field.data_type)]
     ):
         return []

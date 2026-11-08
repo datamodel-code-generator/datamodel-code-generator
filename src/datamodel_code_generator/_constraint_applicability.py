@@ -66,6 +66,7 @@ if TYPE_CHECKING:
 __all__ = [
     "ARRAY_KEYWORDS",
     "BASE_OUTPUT",
+    "COUNT_KEYWORDS",
     "ITEM_COUNT_KEYWORDS",
     "LENGTH_KEYWORDS",
     "LENGTH_KEYWORD_ORDER",
@@ -113,7 +114,6 @@ __all__ = [
     "json_number",
     "key_count_keywords",
     "keyword_kinds",
-    "kind_keywords",
     "length_keywords_by_type",
     "length_reading",
     "listed_type_keywords",
@@ -162,7 +162,11 @@ NUMBER_KEYWORDS: Final[frozenset[str]] = frozenset(NUMBER_KEYWORD_ORDER)
 NUMBER_BOUND_KEYWORDS: Final[frozenset[str]] = NUMBER_KEYWORDS - {"multipleOf"}
 LENGTH_KEYWORDS: Final[frozenset[str]] = frozenset(LENGTH_KEYWORD_ORDER)
 STRING_KEYWORDS: Final[frozenset[str]] = frozenset(STRING_KEYWORD_ORDER)
-ARRAY_KEYWORDS: Final[frozenset[str]] = frozenset({"minItems", "maxItems", "uniqueItems"})
+ITEM_COUNT_KEYWORDS: Final[frozenset[str]] = frozenset({"minItems", "maxItems"})
+"""The keywords that count the items of an array, which a type that takes them takes as the lengths of the array."""
+COUNT_KEYWORDS: Final[frozenset[str]] = LENGTH_KEYWORDS | ITEM_COUNT_KEYWORDS
+"""The keywords that count the items of a container: its lengths and its item counts."""
+ARRAY_KEYWORDS: Final[frozenset[str]] = ITEM_COUNT_KEYWORDS | {"uniqueItems"}
 SEQUENCE_KEYWORDS: Final[frozenset[str]] = ARRAY_KEYWORDS | LENGTH_KEYWORDS
 """The keywords a sequence takes: the array keywords and the lengths, which count its items."""
 PROPERTY_COUNT_KEYWORDS: Final[frozenset[str]] = frozenset({"maxProperties", "minProperties"})
@@ -190,7 +194,7 @@ _KEYWORD_KINDS: Final[tuple[tuple[frozenset[str], frozenset[str]], ...]] = (
     (frozenset({"array"}), ARRAY_KEYWORDS),
     (frozenset({"object"}), PROPERTY_COUNT_KEYWORDS),
 )
-_DECLARED_STRING_KEYWORDS: Final[frozenset[str]] = STRING_KEYWORDS | {"minItems", "maxItems"}
+_DECLARED_STRING_KEYWORDS: Final[frozenset[str]] = STRING_KEYWORDS | ITEM_COUNT_KEYWORDS
 _LENGTH_READINGS: Final[Mapping[str, str]] = MappingProxyType({"minItems": "minLength", "maxItems": "maxLength"})
 _UNTAKEN_KEYWORD_ORDER: Final[tuple[str, ...]] = (*NUMBER_KEYWORD_ORDER, *_LENGTH_READINGS, *STRING_KEYWORD_ORDER)
 
@@ -261,30 +265,29 @@ META_SCHEMA_KEYWORDS: Final[Mapping[str, str]] = MappingProxyType({
 """The ``msgspec.Meta`` arguments and the schema keyword each checks."""
 LENGTH_META_KEYWORDS: Final[frozenset[str]] = frozenset({"min_length", "max_length"})
 
-_MAPPING_CLASS_PATHS: Final[frozenset[str]] = frozenset({
-    "dict",
-    "typing.Dict",
-    "collections.abc.Mapping",
-    "collections.abc.MutableMapping",
-    "typing.Mapping",
-    "typing.MutableMapping",
+_ORDERED_AND_COUNTER: Final[frozenset[str]] = frozenset({
     "collections.OrderedDict",
     "typing.OrderedDict",
     "collections.Counter",
     "typing.Counter",
 })
+"""The ``OrderedDict`` and ``Counter`` classes, by the path that classifies them."""
+_MAPPING_CLASS_PATHS: Final[frozenset[str]] = (
+    frozenset({
+        "dict",
+        "typing.Dict",
+        "collections.abc.Mapping",
+        "collections.abc.MutableMapping",
+        "typing.Mapping",
+        "typing.MutableMapping",
+    })
+    | _ORDERED_AND_COUNTER
+)
 """The classes, by the path that classifies them, whose length counts their keys and on which Pydantic checks one:
 the classes that take the property counts of a map (``key_count_keywords``, ``OutputKeywords.mapping_classes``)."""
-_MSGSPEC_MAPPING_CLASS_PATHS: Final[frozenset[str]] = _MAPPING_CLASS_PATHS - {
-    "collections.OrderedDict",
-    "typing.OrderedDict",
-    "collections.Counter",
-    "typing.Counter",
-}
+_MSGSPEC_MAPPING_CLASS_PATHS: Final[frozenset[str]] = _MAPPING_CLASS_PATHS - _ORDERED_AND_COUNTER
 """The mapping classes msgspec decodes as a dict, on which ``msgspec.Meta`` checks the number of keys as a length;
 ``Meta`` refuses a length on an ``OrderedDict`` or a ``Counter``."""
-ITEM_COUNT_KEYWORDS: Final[frozenset[str]] = frozenset({"minItems", "maxItems"})
-"""The keywords that count the items of an array, which a type that takes them takes as the lengths of the array."""
 
 _SEQUENCE_TYPE_KEYWORDS: Final[Mapping[str, frozenset[str]]] = MappingProxyType(
     dict.fromkeys(("list", "set", "frozenset", "tuple"), SEQUENCE_KEYWORDS)
@@ -466,33 +469,25 @@ class DeclaredKinds:
     typed: bool = False
 
 
-def kind_keywords(kinds: DeclaredKinds) -> frozenset[str]:
-    """Return the type-dependent keywords of the kinds a declared schema type holds, each group of its own kind only.
-
-    The groups are those of ``keyword_kinds``: the number keywords of a number, the string keywords of a string and
-    the array keywords of an array.
-    """
+def _kind_union(kinds: DeclaredKinds, string: frozenset[str], array: frozenset[str]) -> frozenset[str]:
+    """Return the number keywords of a declared number, ``string`` of a declared string and ``array`` of an array."""
     return frozenset().union(
         NUMBER_KEYWORDS if kinds.numbers else NO_KEYWORDS,
-        STRING_KEYWORDS if kinds.string else NO_KEYWORDS,
-        ARRAY_KEYWORDS if kinds.array else NO_KEYWORDS,
+        string if kinds.string else NO_KEYWORDS,
+        array if kinds.array else NO_KEYWORDS,
     )
 
 
 def declared_keywords(kinds: DeclaredKinds, *, by_type: bool = False) -> frozenset[str]:
     """Return the type-dependent keywords whose kind a declared schema type holds.
 
-    Under ``by_type`` (``length_keywords_by_type``) each kind holds its own keywords only (``kind_keywords``). Row
-    ``legacy-length-keywords-across-kinds``: otherwise a declared string also holds ``minItems`` and ``maxItems`` and a
-    declared array ``minLength`` and ``maxLength``, which are written as their length bounds.
+    Under ``by_type`` (``length_keywords_by_type``) each kind holds its own keywords only, the groups of
+    ``keyword_kinds``. Row ``legacy-length-keywords-across-kinds``: otherwise a declared string also holds ``minItems``
+    and ``maxItems`` and a declared array ``minLength`` and ``maxLength``, which are written as their length bounds.
     """
     if by_type:
-        return kind_keywords(kinds)
-    return frozenset().union(
-        NUMBER_KEYWORDS if kinds.numbers else NO_KEYWORDS,
-        _DECLARED_STRING_KEYWORDS if kinds.string else NO_KEYWORDS,
-        SEQUENCE_KEYWORDS if kinds.array else NO_KEYWORDS,
-    )
+        return _kind_union(kinds, STRING_KEYWORDS, ARRAY_KEYWORDS)
+    return _kind_union(kinds, _DECLARED_STRING_KEYWORDS, SEQUENCE_KEYWORDS)
 
 
 def other_kind_keywords(kinds: DeclaredKinds, *, by_type: bool) -> frozenset[str]:

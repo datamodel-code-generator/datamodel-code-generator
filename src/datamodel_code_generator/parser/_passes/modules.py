@@ -22,7 +22,11 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, cast, get_args
 from typing_extensions import Protocol, Unpack
 
 from datamodel_code_generator import CollapseRootModelsNameStrategy, FieldTypeCollisionStrategy, ReuseScope
-from datamodel_code_generator._constraint_applicability import STRING_KEYWORDS, TAG_LITERAL_UNTAKEN_KEYWORD
+from datamodel_code_generator._constraint_applicability import (
+    ITEM_COUNT_KEYWORDS,
+    STRING_KEYWORDS,
+    TAG_LITERAL_UNTAKEN_KEYWORD,
+)
 from datamodel_code_generator._container_kinds import (
     BUILTIN_CONTAINERS,
     CONTAINER_FLAGS,
@@ -3050,7 +3054,7 @@ def constrain_fields_by_their_reference_sites(parser: ModulesHost, run: ModulesR
                 ) is None:
                     continue
                 takes = partial(parser.data_type_manager.constraint_keywords, value_type, version)
-                counts = _MAP_COUNTS if value_type in MAPPINGS else frozenset()
+                counts = ITEM_COUNT_KEYWORDS if value_type in MAPPINGS else frozenset()
                 taken = {key: value for key, value in site.items() if key in counts or key in takes()}
                 constraints_class = _field_constraints_class(type(field))
                 if isinstance(alias, TypeAliasBase) and not layers and (root := alias.fields[0].constraints):
@@ -3091,10 +3095,6 @@ def _reused_value(data_type: DataType) -> DataType:
     ):
         return source.base_classes[0]
     return data_type
-
-
-_MAP_COUNTS: Final = frozenset({"minItems", "maxItems"})
-"""The keys of the property counts of a map site, as a map field writes its length."""
 
 
 def _field_constraints_class(field_type: type[DataModelFieldBase]) -> type[ConstraintsBase]:
