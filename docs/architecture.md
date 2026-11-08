@@ -168,8 +168,8 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 249 | Shared generation options. |
-| `GenerateConfig` | 264 | Public `generate()` configuration. |
+| `BaseGenerateConfig` | 250 | Shared generation options. |
+| `GenerateConfig` | 265 | Public `generate()` configuration. |
 | `ParserConfig` | 206 | Base parser dependency injection and parser options. |
 | `JSONSchemaParserConfig` | 208 | JSON Schema parser options. |
 | `OpenAPIParserConfig` | 219 | OpenAPI-specific parser options. |

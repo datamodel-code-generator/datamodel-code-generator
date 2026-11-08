@@ -685,7 +685,7 @@ CLI_OPTION_META: dict[str, CLIOptionMeta] = {
         "httpx2",
         "--client-output --client-package --client-model-package --client-signature-style --client-body-arguments",
         "--client-resource-names --client-operations --client-default-base-url --client-server-base-url",
-        "--client-protocols",
+        "--client-protocols --client-deep-object-brackets --no-client-deep-object-brackets",
     ),
 }
 

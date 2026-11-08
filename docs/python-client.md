@@ -1523,12 +1523,12 @@ app/client: Skipping GET /pets/{petId} (operationId 'getPet'), which the client 
 
 When the reason is an OpenAPI feature the client does not support, the warning names it and the version that introduced
 it, as the [supported features](supported_formats.md#supported-features-from-code) list them: the HTTP security schemes
-other than `basic` and `bearer`, `mutualTLS`, `style: deepObject` on a value that is no object, `style: cookie` in a
-document before OpenAPI 3.2, values written with a style that are no single scalar kind (but for a parameter outside a
-header that takes one item or an array of them), binary strings in text media, multipart media other than
-`multipart/form-data` with an object schema or a union of objects that agree on the parts of each property, and an
-encoding `contentType` of a part holding no files that is a form or multipart media type, or other than JSON for
-objects and arrays:
+other than `basic` and `bearer`, `mutualTLS`, `style: deepObject` on a value that is no object (unless
+`--client-deep-object-brackets` writes it), `style: cookie` in a document before OpenAPI 3.2, values written with a
+style that are no single scalar kind (but for a parameter outside a header that takes one item or an array of them),
+binary strings in text media, multipart media other than `multipart/form-data` with an object schema or a union of
+objects that agree on the parts of each property, and an encoding `contentType` of a part holding no files that is a
+form or multipart media type, or other than JSON for objects and arrays:
 
 ```text
 app/client: Skipping GET /certificates (operationId 'listCertificates'), which uses mutualTLS (OAS 3.1) that the
@@ -1561,6 +1561,7 @@ Every client setting is an option, a key of `[tool.datamodel-codegen]` in `pypro
 | [`--client-default-base-url`](cli-reference/target-generation-options.md#client-default-base-url) | `client-default-base-url` | `client_default_base_url` | none; see [Base URLs and servers](#base-urls-and-servers) |
 | [`--client-server-base-url`](cli-reference/target-generation-options.md#client-server-base-url) | `client-server-base-url` | `client_server_base_url` | none; see [Base URLs and servers](#base-urls-and-servers) |
 | [`--client-protocols`](cli-reference/target-generation-options.md#client-protocols) | `client-protocols` | `client_protocols` | none; see [Protocol Helpers](python-client-helpers.md) |
+| [`--client-deep-object-brackets`](cli-reference/target-generation-options.md#client-deep-object-brackets) | `client-deep-object-brackets` | `client_deep_object_brackets` | off; see below |
 
 `--client-resource-names`, `--client-operations`, and `--client-protocols` take a JSON object, inline or as the path
 of a JSON file, as `--aliases` does; in `pyproject.toml` they are tables, or the path of a JSON file, and in
@@ -1585,6 +1586,14 @@ resource. Such a move leaves the derived names as they are: a tag, or the operat
 them from its first operation, moved or not, as the server's groups do. An explicit namespace is shared by everything
 that names it: a tag mapped to `default`, or an operation whose `resource` is `default`, joins the resource of that
 name.
+
+OpenAPI defines `style: deepObject` for objects alone, which the client writes as `name[key]=value` pairs; an
+operation whose deepObject query parameter takes an array or a scalar is left out. `--client-deep-object-brackets`
+writes such a parameter in the bracket form some APIs, such as Stripe, document instead: an array as `name[]=value`
+for each item, such as `expand[]=a&expand[]=b`, and a scalar as `name=value`. The brackets are percent-encoded in the
+query, as those of an object's pairs are (`expand%5B%5D=a`), which servers decode to the same names. The setting
+changes only how the client writes these parameters; `--no-client-deep-object-brackets` turns off one that a
+`pyproject.toml` key sets.
 
 `--generate-client` requires `--client-output`, `--client-package`, and `--client-model-package`, and a `--client-*`
 option given on the command line requires `--generate-client`; both stop with `Error:` and exit code 2.

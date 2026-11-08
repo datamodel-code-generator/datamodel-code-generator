@@ -310,6 +310,7 @@ class BaseGenerateConfig(TypedDict):
     client_operations: NotRequired[Mapping[str, Mapping[str, Any]] | None]
     client_default_base_url: NotRequired[str | None]
     client_server_base_url: NotRequired[str | None]
+    client_deep_object_brackets: NotRequired[bool | None]
     client_protocols: NotRequired[Mapping[str, Any] | None]
 
 

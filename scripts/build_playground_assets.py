@@ -105,6 +105,7 @@ BROWSER_UNAVAILABLE_OPTIONS = {
             "client_operations",
             "client_default_base_url",
             "client_server_base_url",
+            "client_deep_object_brackets",
             "client_protocols",
         ),
         "Server and client packages are not generated in the browser playground.",

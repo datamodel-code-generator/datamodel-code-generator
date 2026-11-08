@@ -122,6 +122,7 @@ class ClientGenerationConfig(TargetConfig):
     default_base_url: str | None = None
     server_base_url: str | None = None
     protocols: Mapping[str, object] | None = None
+    deep_object_brackets: bool = False
 
     def _problems(self, target_python_version: PythonVersion) -> Iterator[Diagnostic]:
         yield from TargetConfig._problems(self, target_python_version)  # noqa: SLF001

@@ -479,7 +479,9 @@ class OpenAPISchemaFeatures(JsonSchemaFeatures):
         metadata=FeatureMetadata(
             introduced="OAS 3.0",
             doc_name="style: deepObject",
-            description="Query parameters written as `name[key]=value`; the client writes objects only",
+            description="Query parameters written as `name[key]=value`; the client writes objects, and arrays and "
+            "scalars, which OpenAPI leaves undefined, as `name[]=value` and `name=value` only with "
+            "`--client-deep-object-brackets`",
             status="supported",
             client_status="partial",
         ),

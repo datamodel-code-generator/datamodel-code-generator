@@ -1408,6 +1408,12 @@ Target generation options (experimental):
   --client-body-arguments {body,both}
                         Take request bodies as one body argument (default) or
                         also as field arguments (experimental).
+  --client-deep-object-brackets, --no-client-deep-object-brackets
+                        Write a deepObject query parameter whose value is an
+                        array as name[]=value for each item, and one whose
+                        value is a scalar as name=value, as Stripe documents
+                        them, instead of leaving its operation out
+                        (experimental).
   --client-default-base-url CLIENT_DEFAULT_BASE_URL
                         Server URL of the operations that declare no servers
                         (experimental).

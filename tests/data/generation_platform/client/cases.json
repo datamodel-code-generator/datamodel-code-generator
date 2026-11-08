@@ -2568,6 +2568,22 @@
       ]
     ]
   },
+  "deep-object-brackets": {
+    "input": "deep-object-brackets.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "config": {
+      "deep_object_brackets": true
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
   "binary-json-bodies": {
     "input": "binary-json-bodies.yaml",
     "backends": [

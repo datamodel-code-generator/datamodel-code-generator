@@ -94,6 +94,8 @@ options	main/generation_platform/client/cli/options/models.py
 [test_client_cli_options]
 client-body-arguments	api_generation/client_cli/options[client-body-arguments].py	= main/generation_platform/client/cli/options/models.py
 client-body-arguments	main/generation_platform/client/cli/options/body-arguments/_sync.py
+client-deep-object-brackets	api_generation/client_cli/options[client-deep-object-brackets].py
+client-deep-object-brackets	main/generation_platform/client/cli/options/deep-object-brackets/_operations.py
 client-default-base-url	api_generation/client_cli/options[client-default-base-url].py
 client-default-base-url	main/generation_platform/client/cli/options/default-base-url/_operations.py
 client-model-package	api_generation/client_cli/options[client-model-package].py	= main/generation_platform/client/cli/options/models.py

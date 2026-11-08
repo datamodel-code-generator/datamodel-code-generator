@@ -563,6 +563,7 @@ class BaseGenerateConfig(BaseModel):
     client_operations: Mapping[str, Mapping[str, Any]] | None = None
     client_default_base_url: str | None = None
     client_server_base_url: str | None = None
+    client_deep_object_brackets: bool | None = None
     client_protocols: Mapping[str, Any] | None = None
 
     @field_validator("additional_imports")

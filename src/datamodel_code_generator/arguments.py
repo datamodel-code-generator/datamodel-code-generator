@@ -2094,6 +2094,13 @@ target_options.add_argument(
     default=None,
     help="Base URL that relative server URLs of the document resolve against (experimental).",
 )
+_toggle(
+    target_options,
+    "--client-deep-object-brackets",
+    help="Write a deepObject query parameter whose value is an array as name[]=value for each item, and one whose "
+    "value is a scalar as name=value, as Stripe documents them, instead of leaving its operation out "
+    "(experimental).",
+)
 target_options.add_argument(
     "--client-protocols",
     type=str,

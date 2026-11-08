@@ -10450,7 +10450,7 @@ Client: whether the generated Python client (`--generate-client`) supports the f
 | `http security schemes` | OAS 3.0 | ❌ Not Supported | ⚠️ Partial | HTTP authentication schemes; the client sends `basic` and `bearer` only |
 | `mutualTLS` | OAS 3.1 | ❌ Not Supported | ❌ Not Supported | Mutual TLS security scheme |
 | `style: cookie` | OAS 3.2 | ✅ Supported | ✅ Supported | Cookie parameter style; earlier versions do not declare it |
-| `style: deepObject` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Query parameters written as `name[key]=value`; the client writes objects only |
+| `style: deepObject` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Query parameters written as `name[key]=value`; the client writes objects, and arrays and scalars, which OpenAPI leaves undefined, as `name[]=value` and `name=value` only with `--client-deep-object-brackets` |
 | `Structured style values` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style; the client writes a parameter outside a header that takes one item or an array of them only |
 | `Binary strings in text media` | OAS 3.0 | ✅ Supported | ❌ Not Supported | `format: binary` strings inside a JSON, URL-encoded or text body, a parameter or a header |
 | `multipart media types` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema, or a union of objects that agree on the parts of each property, only, such as not `multipart/related` |
@@ -10994,7 +10994,7 @@ Client: whether the generated Python client (`--generate-client`) supports the f
 | `http security schemes` | OAS 3.0 | ❌ Not Supported | ⚠️ Partial | HTTP authentication schemes; the client sends `basic` and `bearer` only |
 | `mutualTLS` | OAS 3.1 | ❌ Not Supported | ❌ Not Supported | Mutual TLS security scheme |
 | `style: cookie` | OAS 3.2 | ✅ Supported | ✅ Supported | Cookie parameter style; earlier versions do not declare it |
-| `style: deepObject` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Query parameters written as `name[key]=value`; the client writes objects only |
+| `style: deepObject` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Query parameters written as `name[key]=value`; the client writes objects, and arrays and scalars, which OpenAPI leaves undefined, as `name[]=value` and `name=value` only with `--client-deep-object-brackets` |
 | `Structured style values` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style; the client writes a parameter outside a header that takes one item or an array of them only |
 | `Binary strings in text media` | OAS 3.0 | ✅ Supported | ❌ Not Supported | `format: binary` strings inside a JSON, URL-encoded or text body, a parameter or a header |
 | `multipart media types` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema, or a union of objects that agree on the parts of each property, only, such as not `multipart/related` |
@@ -23262,12 +23262,12 @@ app/client: Skipping GET /pets/{petId} (operationId 'getPet'), which the client 
 
 When the reason is an OpenAPI feature the client does not support, the warning names it and the version that introduced
 it, as the [supported features](supported_formats.md#supported-features-from-code) list them: the HTTP security schemes
-other than `basic` and `bearer`, `mutualTLS`, `style: deepObject` on a value that is no object, `style: cookie` in a
-document before OpenAPI 3.2, values written with a style that are no single scalar kind (but for a parameter outside a
-header that takes one item or an array of them), binary strings in text media, multipart media other than
-`multipart/form-data` with an object schema or a union of objects that agree on the parts of each property, and an
-encoding `contentType` of a part holding no files that is a form or multipart media type, or other than JSON for
-objects and arrays:
+other than `basic` and `bearer`, `mutualTLS`, `style: deepObject` on a value that is no object (unless
+`--client-deep-object-brackets` writes it), `style: cookie` in a document before OpenAPI 3.2, values written with a
+style that are no single scalar kind (but for a parameter outside a header that takes one item or an array of them),
+binary strings in text media, multipart media other than `multipart/form-data` with an object schema or a union of
+objects that agree on the parts of each property, and an encoding `contentType` of a part holding no files that is a
+form or multipart media type, or other than JSON for objects and arrays:
 
 ```text
 app/client: Skipping GET /certificates (operationId 'listCertificates'), which uses mutualTLS (OAS 3.1) that the
@@ -23300,6 +23300,7 @@ Every client setting is an option, a key of `[tool.datamodel-codegen]` in `pypro
 | [`--client-default-base-url`](cli-reference/target-generation-options.md#client-default-base-url) | `client-default-base-url` | `client_default_base_url` | none; see [Base URLs and servers](#base-urls-and-servers) |
 | [`--client-server-base-url`](cli-reference/target-generation-options.md#client-server-base-url) | `client-server-base-url` | `client_server_base_url` | none; see [Base URLs and servers](#base-urls-and-servers) |
 | [`--client-protocols`](cli-reference/target-generation-options.md#client-protocols) | `client-protocols` | `client_protocols` | none; see [Protocol Helpers](python-client-helpers.md) |
+| [`--client-deep-object-brackets`](cli-reference/target-generation-options.md#client-deep-object-brackets) | `client-deep-object-brackets` | `client_deep_object_brackets` | off; see below |
 
 `--client-resource-names`, `--client-operations`, and `--client-protocols` take a JSON object, inline or as the path
 of a JSON file, as `--aliases` does; in `pyproject.toml` they are tables, or the path of a JSON file, and in
@@ -23324,6 +23325,14 @@ resource. Such a move leaves the derived names as they are: a tag, or the operat
 them from its first operation, moved or not, as the server's groups do. An explicit namespace is shared by everything
 that names it: a tag mapped to `default`, or an operation whose `resource` is `default`, joins the resource of that
 name.
+
+OpenAPI defines `style: deepObject` for objects alone, which the client writes as `name[key]=value` pairs; an
+operation whose deepObject query parameter takes an array or a scalar is left out. `--client-deep-object-brackets`
+writes such a parameter in the bracket form some APIs, such as Stripe, document instead: an array as `name[]=value`
+for each item, such as `expand[]=a&expand[]=b`, and a scalar as `name=value`. The brackets are percent-encoded in the
+query, as those of an object's pairs are (`expand%5B%5D=a`), which servers decode to the same names. The setting
+changes only how the client writes these parameters; `--no-client-deep-object-brackets` turns off one that a
+`pyproject.toml` key sets.
 
 `--generate-client` requires `--client-output`, `--client-package`, and `--client-model-package`, and a `--client-*`
 option given on the command line requires `--generate-client`; both stop with `Error:` and exit code 2.
@@ -27240,7 +27249,7 @@ This documentation is auto-generated from test cases.
 | 📘 [OpenAPI-only Options](openapi-only-options.md) | 15 | OpenAPI-specific features |
 | 📋 [GraphQL-only Options](graphql-only-options.md) | 1 |  |
 | ⚙️ [General Options](general-options.md) | 25 | Utilities and meta options |
-| 🚀 [Target Generation Options](target-generation-options.md) | 25 | Server and client generation with the models (experimental) |
+| 🚀 [Target Generation Options](target-generation-options.md) | 26 | Server and client generation with the models (experimental) |
 | 📝 [Utility Options](utility-options.md) | 15 | Help, version, debug options |
 
 ## 🎯 Focused Topics
@@ -27290,6 +27299,7 @@ These links are generated from CLI option metadata and summarize options that im
 | [`--locked`](general-options.md#locked) | Conflicts | Always | [`--update-lock`](general-options.md#update-lock) | - |
 | [`--update-lock`](general-options.md#update-lock) | Conflicts | Always | [`--locked`](general-options.md#locked) | - |
 | [`--client-body-arguments`](target-generation-options.md#client-body-arguments) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-body-arguments` requires `--generate-client httpx2`. |
+| [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-deep-object-brackets` requires `--generate-client httpx2`. |
 | [`--client-default-base-url`](target-generation-options.md#client-default-base-url) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-default-base-url` requires `--generate-client httpx2`. |
 | [`--client-model-package`](target-generation-options.md#client-model-package) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-model-package` requires `--generate-client httpx2`. |
 | [`--client-operations`](target-generation-options.md#client-operations) | Requires | Always | [`--generate-client`](target-generation-options.md#generate-client) | `--client-operations` requires `--generate-client httpx2`. |
@@ -27362,6 +27372,7 @@ These links are generated from CLI option metadata and summarize options that im
 - [`--class-name-prefix`](model-customization.md#class-name-prefix)
 - [`--class-name-suffix`](model-customization.md#class-name-suffix)
 - [`--client-body-arguments`](target-generation-options.md#client-body-arguments)
+- [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets)
 - [`--client-default-base-url`](target-generation-options.md#client-default-base-url)
 - [`--client-model-package`](target-generation-options.md#client-model-package)
 - [`--client-operations`](target-generation-options.md#client-operations)
@@ -69963,6 +69974,7 @@ Source: https://datamodel-code-generator.koxudaxi.dev/cli-reference/target-gener
 | Option | Description |
 |--------|-------------|
 | [`--client-body-arguments`](#client-body-arguments) | Choose how operation methods take request bodies (experiment... |
+| [`--client-deep-object-brackets`](#client-deep-object-brackets) | Write deepObject arrays and scalars in brackets, as Stripe d... |
 | [`--client-default-base-url`](#client-default-base-url) | Set the server URL of operations that declare no servers (ex... |
 | [`--client-model-package`](#client-model-package) | Name the import path of the models the client package import... |
 | [`--client-operations`](#client-operations) | Set the client settings of single operations (experimental). |
@@ -70402,6 +70414,113 @@ overrides it for that operation.
                 options=options,
                 response_media_type=response_media_type,
             )
+    ```
+
+    <!-- fmt: on -->
+
+---
+
+## `--client-deep-object-brackets` {#client-deep-object-brackets}
+
+Write deepObject arrays and scalars in brackets, as Stripe does (experimental).
+
+OpenAPI defines `style: deepObject` for objects alone, so an operation whose deepObject query parameter takes an array
+or a scalar is left out with a warning. With this option the client writes an array as `name[]=value` for each item,
+such as `expand[]=a&expand[]=b`, and a scalar as `name=value`, with the brackets percent-encoded as those of an
+object's `name[key]` pairs are. `--no-client-deep-object-brackets` turns off the `client-deep-object-brackets` key of
+pyproject.toml.
+
+**Option relationships:**
+
+- **Requires:** [`--generate-client`](target-generation-options.md#generate-client) - `--client-deep-object-brackets` requires `--generate-client httpx2`.
+
+!!! tip "Usage"
+
+    ```bash
+    datamodel-codegen --input options-deep-object.yaml --input-file-type openapi --output models.py --target-python-version 3.11 --openapi-scopes schemas api --output-model-type pydantic_v2.BaseModel --formatters builtin --disable-timestamp --generate-client httpx2 --client-output client --client-package client --client-model-package models --client-deep-object-brackets # (1)!
+    ```
+
+    1. :material-arrow-left: `--client-deep-object-brackets` - the option documented here
+
+??? example "Examples"
+
+    **Input Schema:**
+
+    ```yaml
+    openapi: 3.0.3
+    info:
+      title: Charges
+      version: 1.0.0
+    servers:
+      - url: https://api.example.com
+    paths:
+      /v1/charges/{charge}:
+        get:
+          operationId: GetChargesCharge
+          tags: [charges]
+          parameters:
+            - {name: charge, in: path, required: true, schema: {type: string}}
+            - name: expand
+              in: query
+              style: deepObject
+              explode: true
+              schema:
+                type: array
+                items: {type: string}
+            - name: limit
+              in: query
+              style: deepObject
+              explode: true
+              schema: {type: integer}
+            - name: created
+              in: query
+              style: deepObject
+              explode: true
+              schema:
+                type: object
+                properties:
+                  gt: {type: integer}
+          responses:
+            '204':
+              description: The charge.
+    ```
+
+    **Output:**
+
+    <!-- fmt: off -->
+
+    ```python
+    # generated by datamodel-codegen:
+    #   filename:  options-deep-object.yaml
+
+    """The operation registry of this package; regenerate it instead of editing."""
+
+    from __future__ import annotations
+
+    from typing import Final
+
+    from ._generated import model_bindings
+    from ._runtime.client.operations import (
+        OperationPlan,
+        ParameterSpec,
+        ResponseDecoder,
+        ServerPlan,
+        empty_branch,
+    )
+    from ._runtime.model_codecs.media import FieldPlan
+    from ._runtime.model_codecs.parameters import ParameterPlan
+    from .types.charges import GetChargesChargeResponse
+
+    _SERVERS_0: Final = (ServerPlan(url='https://api.example.com'),)
+
+    OPERATION_0: Final[OperationPlan[GetChargesChargeResponse]] = OperationPlan(
+        operation_id='GetChargesCharge',
+        method='GET',
+        path='/v1/charges/{charge}',
+        servers=_SERVERS_0,
+        responses=ResponseDecoder((empty_branch('204'),), ()),
+        parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='charge', style='simple', required=True), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='expand[]', style='form', explode=True, shape='array', reserved_names=('created', 'expand', 'limit')), codec=model_bindings.codec_1), ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='form', explode=True, kind='integer', reserved_names=('created', 'expand')), codec=model_bindings.codec_2), ParameterSpec(plan=ParameterPlan(location='query', name='created', style='deepObject', explode=True, shape='object', fields=(FieldPlan('gt', 'integer'),), additional=FieldPlan('', 'string'), reserved_names=('expand', 'limit')), codec=model_bindings.codec_3)),
+    )
     ```
 
     <!-- fmt: on -->
@@ -76535,6 +76654,7 @@ datamodel-codegen [OPTIONS]
 | Option | Description |
 |--------|-------------|
 | [`--client-body-arguments`](target-generation-options.md#client-body-arguments) | Choose how operation methods take request bodies (experimental). |
+| [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) | Write deepObject arrays and scalars in brackets, as Stripe does (experimental). |
 | [`--client-default-base-url`](target-generation-options.md#client-default-base-url) | Set the server URL of operations that declare no servers (experimental). |
 | [`--client-model-package`](target-generation-options.md#client-model-package) | Name the import path of the models the client package imports (experimental). |
 | [`--client-operations`](target-generation-options.md#client-operations) | Set the client settings of single operations (experimental). |
@@ -76612,6 +76732,7 @@ All options sorted alphabetically:
 - [`--class-name-prefix`](model-customization.md#class-name-prefix) - Add a prefix to all generated class names.
 - [`--class-name-suffix`](model-customization.md#class-name-suffix) - Add a suffix to all generated class names.
 - [`--client-body-arguments`](target-generation-options.md#client-body-arguments) - Choose how operation methods take request bodies (experiment...
+- [`--client-deep-object-brackets`](target-generation-options.md#client-deep-object-brackets) - Write deepObject arrays and scalars in brackets, as Stripe d...
 - [`--client-default-base-url`](target-generation-options.md#client-default-base-url) - Set the server URL of operations that declare no servers (ex...
 - [`--client-model-package`](target-generation-options.md#client-model-package) - Name the import path of the models the client package import...
 - [`--client-operations`](target-generation-options.md#client-operations) - Set the client settings of single operations (experimental).
@@ -81636,8 +81757,8 @@ classDiagram
 
 | Config model | Field count | Purpose |
 | --- | ---: | --- |
-| `BaseGenerateConfig` | 249 | Shared generation options. |
-| `GenerateConfig` | 264 | Public `generate()` configuration. |
+| `BaseGenerateConfig` | 250 | Shared generation options. |
+| `GenerateConfig` | 265 | Public `generate()` configuration. |
 | `ParserConfig` | 206 | Base parser dependency injection and parser options. |
 | `JSONSchemaParserConfig` | 208 | JSON Schema parser options. |
 | `OpenAPIParserConfig` | 219 | OpenAPI-specific parser options. |

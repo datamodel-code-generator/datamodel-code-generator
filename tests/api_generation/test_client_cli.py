@@ -1526,6 +1526,26 @@ against the document's URL when it is read from one.""",
             ),
         ),
         pytest.param(
+            "options-deep-object.yaml",
+            ["--client-deep-object-brackets"],
+            "client/_operations.py",
+            "deep-object-brackets/_operations.py",
+            id="client-deep-object-brackets",
+            marks=pytest.mark.cli_doc(
+                options=["--client-deep-object-brackets"],
+                option_description="""Write deepObject arrays and scalars in brackets, as Stripe does (experimental).
+
+OpenAPI defines `style: deepObject` for objects alone, so an operation whose deepObject query parameter takes an array
+or a scalar is left out with a warning. With this option the client writes an array as `name[]=value` for each item,
+such as `expand[]=a&expand[]=b`, and a scalar as `name=value`, with the brackets percent-encoded as those of an
+object's `name[key]` pairs are. `--no-client-deep-object-brackets` turns off the `client-deep-object-brackets` key of
+pyproject.toml.""",
+                input_schema="generation_platform/client/cli/options-deep-object.yaml",
+                cli_args=[*DOC_OPTIONS, "--client-deep-object-brackets"],
+                golden_output=f"{DOC_OUTPUT}/deep-object-brackets/_operations.py",
+            ),
+        ),
+        pytest.param(
             "options.yaml",
             ["--client-protocols", "protocols.json"],
             "client/protocols/_helpers.py",

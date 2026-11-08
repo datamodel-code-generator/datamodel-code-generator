@@ -117,9 +117,13 @@ class CodecDiagnostic:
 
 @dataclass(frozen=True, slots=True)
 class WirePlan:
-    """Keep the parameter, header and form plans of the planned operations, and the bound lexical kinds."""
+    """Keep the parameter, header and form plans of the planned operations, and the bound lexical kinds.
 
-    parameters: tuple[tuple[OperationId, tuple[ParameterPlan, ...]], ...]
+    Each operation's parameter plans are kept with the location and name their declarations give them, which a plan
+    that writes the value under another name, such as `expand[]`, does not spell.
+    """
+
+    parameters: tuple[tuple[OperationId, tuple[tuple[tuple[ParameterLocation, str], ParameterPlan], ...]], ...]
     diagnostics: tuple[CodecDiagnostic, ...]
     kinds: LexicalKinds
     versions: OpenAPIVersions
@@ -137,9 +141,10 @@ class _PlanError(Exception):
 
 
 class _WirePlanner:
-    def __init__(self, batch: GeneratedTypeContractBatch, *, writes: bool = False) -> None:
+    def __init__(self, batch: GeneratedTypeContractBatch, *, writes: bool = False, brackets: bool = False) -> None:
         self.batch = batch
         self.writes = writes
+        self.brackets = brackets
         self.kinds = LexicalKinds(batch)
         self.diagnostics: list[CodecDiagnostic] = []
         self.versions = batch.versions
@@ -192,6 +197,7 @@ def plan_wire(  # noqa: PLR0913
     forms: Mapping[TypeUseId, tuple[WireDeclaration, ...]] | None = None,
     styles: Mapping[TypeUseId, tuple[WireDeclaration, ...]] | None = None,
     writes: bool = False,
+    brackets: bool = False,
 ) -> WirePlan:
     """Build the parameter plans of the requested operations and the plans of their requested encoding headers.
 
@@ -200,10 +206,12 @@ def plan_wire(  # noqa: PLR0913
     encodings give a style. A requested use that carries a raw binary string as text is refused, since the model
     backends write bytes as different text. An operation parameter that is an item or an array of items is planned
     only when the operations' parameters are written (`writes`), since text read back cannot tell the two apart.
+    With `brackets`, a written deepObject query parameter whose value is an array or a scalar is written in brackets
+    (`_bracketed`).
     """
     forms = forms or {}
     styles = styles or {}
-    planner = _WirePlanner(batch, writes=writes)
+    planner = _WirePlanner(batch, writes=writes, brackets=brackets)
     requested = None if uses is None else frozenset(uses)
     planned = [operation for operation in batch.operations if operations is None or operation.id in operations]
     parameters = tuple((operation.id, _parameters(planner, operation)) for operation in planned)
@@ -549,8 +557,8 @@ def _encoding(form: TypeUseBinding, members: Mapping[str, SourceLocation], encod
 
 
 def parameter_plans(wire: WirePlan) -> dict[OperationId, dict[tuple[ParameterLocation, str], ParameterPlan]]:
-    """Index each operation's parameter plans by location and name."""
-    return {operation: {(plan.location, plan.name): plan for plan in planned} for operation, planned in wire.parameters}
+    """Index each operation's parameter plans by the location and name their declarations give them."""
+    return {operation: dict(planned) for operation, planned in wire.parameters}
 
 
 def form_styled(encoding: WireDeclaration, versions: OpenAPIVersions, *, multipart: bool) -> bool:
@@ -644,17 +652,20 @@ def _reserving(plan: ParameterPlan, plans: list[ParameterPlan]) -> ParameterPlan
     return replace(plan, reserved_names=tuple(sorted({*plan.reserved_names, *owned}))) if owned else plan
 
 
-def _parameters(planner: _WirePlanner, operation: OperationContract) -> tuple[ParameterPlan, ...]:
+def _parameters(
+    planner: _WirePlanner, operation: OperationContract
+) -> tuple[tuple[tuple[ParameterLocation, str], ParameterPlan], ...]:
     declarations = operation.parameters
     auth = auth_names(planner.batch, operation)
     names = [*(parameter_place(item) for item in declarations), *auth]
-    plans = [
-        plan
+    planned = [
+        (parameter_place(declaration), plan)
         for declaration in declarations
         if (plan := _planned(planner, operation.id, declaration, names, written=planner.writes)) is not None
     ]
+    plans = [plan for _, plan in planned]
     planner.diagnostics.extend(parameter_collisions(operation, plans, auth, writes=planner.writes))
-    return tuple(_reserving(plan, plans) for plan in plans)
+    return tuple((place, _reserving(plan, plans)) for place, plan in planned)
 
 
 def parameter_collisions(
@@ -718,6 +729,8 @@ def _parameter(
     value = _encoded(_schema_use(planner, declaration.schemas, source)).value
     shape, kind, fields, additional = _shape(value, single=written)
     style, explode = _style_of(declaration, location)
+    if planner.brackets and style == "deepObject" and location == "query" and shape in {"array", "scalar"}:
+        style, explode, name = _bracketed(name, shape)
     version = planner.versions.declared(declaration)
     if style == "cookie" and version != OpenAPIVersion.V32:
         raise _PlanError(source, "Cookie style requires OpenAPI 3.2", "cookie_style")
@@ -740,6 +753,15 @@ def _parameter(
         raise _PlanError(source, str(error), _style_feature(style, shape, single=value.single)) from None
     except ValueError as error:
         raise _PlanError(source, str(error)) from None
+
+
+def _bracketed(name: str, shape: ValueShape) -> tuple[str, bool, str]:
+    """Return the style, explode and name that write a deepObject value that is no object in brackets.
+
+    OpenAPI defines deepObject for objects alone; the bracket form Stripe documents writes an array as `name[]=value`
+    for each item, an exploded form array named `name[]`, and a scalar as `name=value`, a form scalar.
+    """
+    return "form", True, f"{name}[]" if shape == "array" else name
 
 
 def _style_feature(style: object, shape: ValueShape | None, *, single: bool = False) -> ClientFeature | None:

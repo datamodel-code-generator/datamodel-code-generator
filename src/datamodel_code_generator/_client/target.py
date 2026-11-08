@@ -177,7 +177,7 @@ def _render(  # ruff: ignore[too-many-locals]
 ) -> TargetRender:
     """Plan the request's operations, bind their codecs, and render the package."""
     backend = _BACKENDS[request.model_config.output_model_type]
-    wire = _wire(request, request.batch)
+    wire = _wire(request, request.batch, brackets=config.deep_object_brackets)
     facts = ModelFacts(request.batch)
     helping = helper_operations(protocols)
     try:
@@ -294,8 +294,11 @@ def _backend_dependencies(backend: CodecBackend, model_imports: frozenset[str]) 
     return (MSGSPEC,) if backend == "msgspec.Struct" else ()
 
 
-def _wire(request: TargetRequest, batch: GeneratedTypeContractBatch) -> WirePlan:
-    """Plan the parameters and headers of the selected operations, with the member plans of their forms."""
+def _wire(request: TargetRequest, batch: GeneratedTypeContractBatch, *, brackets: bool) -> WirePlan:
+    """Plan the parameters and headers of the selected operations, with the member plans of their forms.
+
+    With `brackets`, a deepObject query parameter whose value is an array or a scalar is written in brackets.
+    """
     return plan_wire(
         batch,
         [
@@ -306,6 +309,7 @@ def _wire(request: TargetRequest, batch: GeneratedTypeContractBatch) -> WirePlan
         forms=dict(form_uses(request)),
         styles=dict(style_uses(request)),
         writes=True,
+        brackets=brackets,
     )
 
 

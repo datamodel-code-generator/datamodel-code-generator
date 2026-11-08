@@ -566,6 +566,10 @@
       "not_recommended": "platform",
       "reason": "Server and client generation settings; they do not change the models."
     },
+    "client_deep_object_brackets": {
+      "not_recommended": "platform",
+      "reason": "Server and client generation settings; they do not change the models."
+    },
     "client_default_base_url": {
       "not_recommended": "platform",
       "reason": "Server and client generation settings; they do not change the models."
