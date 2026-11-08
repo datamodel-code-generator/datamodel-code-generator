@@ -2005,36 +2005,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         """Mark a parser-owned expression created after the initial import scan."""
         register_runtime_expression(self)
 
-    @classmethod
-    def _collect_exports_for_init(
-        cls,
-        module: tuple[str, ...],
-        processed_models: Sequence[ModuleContext],
-        scope: AllExportsScope,
-    ) -> list[tuple[str, tuple[str, ...], str]]:
-        """Collect exports for __init__.py based on scope."""
-        return _init_exports.collect_exports_for_init(cls, module, processed_models, scope)
-
-    @classmethod
-    def _resolve_export_collisions(
-        cls,
-        exports: list[tuple[str, tuple[str, ...], str]],
-        strategy: AllExportsCollisionStrategy | None,
-        reserved: set[str] | None = None,
-        target_python_version: PythonVersion | None = None,
-    ) -> dict[str, list[tuple[str, tuple[str, ...], str]]]:
-        """Resolve name collisions in exports based on strategy, titling module names as the target does."""
-        return _init_exports.resolve_export_collisions(cls, exports, strategy, reserved, target_python_version)
-
-    @classmethod
-    def _raise_collision_error(
-        cls,
-        by_name: dict[str, list[tuple[str, tuple[str, ...], str]]],
-        colliding: set[str],
-    ) -> None:
-        """Raise an error with collision details."""
-        _init_exports.raise_collision_error(cls, by_name, colliding)
-
     @staticmethod
     def _make_prefixed_name(
         name: str,
@@ -2051,14 +2021,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 if (candidate := "".join(prefixes[-depth:]) + name) not in used:
                     return candidate
         return "".join(prefixes) + name
-
-    @classmethod
-    def _build_all_exports_code(
-        cls,
-        resolved: dict[str, list[tuple[str, tuple[str, ...], str]]],
-    ) -> Imports:
-        """Build import statements from resolved exports."""
-        return _init_exports.build_all_exports_code(cls, resolved)
 
     @classmethod
     def _collect_used_names_from_models(
@@ -2341,10 +2303,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             ),
         )
 
-    def _find_invalid_inferred_modules(self, sorted_data_models: SortedDataModels) -> set[ModulePath]:
-        """Return non-canonical module paths created by automatic dotted-name inference."""
-        return _stdout_repair.find_invalid_inferred_modules(self, sorted_data_models)
-
     @staticmethod
     def _stdout_model_fingerprint(model: DataModel) -> HashableComparable:
         """Return the final rendered definition without using the pre-processing dedup cache."""
@@ -2445,18 +2403,6 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
     ) -> None:
         """Record a narrow repair plan after every module transformation has completed."""
         _stdout_repair.inspect_invalid_dotted_stdout(self, contexts, sorted_data_models, config, results)
-
-    def _model_inventory(self, models: list[DataModel]) -> tuple[str, ...]:
-        """Return the paths of the models other than typed map values, which a retry with untyped values omits."""
-        return _stdout_repair.model_inventory(self, models)
-
-    def _flatten_invalid_modules(
-        self,
-        live_models: list[DataModel],
-        affected_models: list[DataModel],
-    ) -> bool:
-        """Flatten selected inferred modules while preserving all unaffected names."""
-        return _stdout_repair.flatten_invalid_modules(self, live_models, affected_models)
 
     def _apply_forced_invalid_dotted_stdout_repair(
         self,

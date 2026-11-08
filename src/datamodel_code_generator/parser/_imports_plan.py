@@ -24,7 +24,7 @@ Named legacy rows, imports decided where the ledger does not see them:
 
 * ``legacy.enum-member-import-bindings``: an Enum's ``imports`` keep the imports of its member declarations (pydantic's
   ``Field`` for described members), which the class never renders. The module binds their names, so class names
-  (``Parser.__replace_duplicate_name_in_module``, ``Parser._flatten_invalid_modules``) and reuse keys
+  (``Parser.__replace_duplicate_name_in_module``, ``_stdout_repair.flatten_invalid_modules``) and reuse keys
   (``DataModel._render_dedup_key``, ``Parser._stdout_model_fingerprint``) stay as in 0.86.0, and ``rendered`` leaves
   them out of the import block. It goes when an option lets the module bind only what it writes (G09's naming
   rules, #4802).
