@@ -10451,7 +10451,7 @@ Client: whether the generated Python client (`--generate-client`) supports the f
 | `mutualTLS` | OAS 3.1 | ❌ Not Supported | ❌ Not Supported | Mutual TLS security scheme |
 | `style: cookie` | OAS 3.2 | ✅ Supported | ✅ Supported | Cookie parameter style; earlier versions do not declare it |
 | `style: deepObject` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Query parameters written as `name[key]=value`; the client writes objects only |
-| `Structured style values` | OAS 3.0 | ✅ Supported | ❌ Not Supported | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style |
+| `Structured style values` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style; the client writes a parameter that takes one item or an array of them only |
 | `Binary strings in text media` | OAS 3.0 | ✅ Supported | ❌ Not Supported | `format: binary` strings inside a JSON, URL-encoded or text body, a parameter or a header |
 | `multipart media types` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema only, such as not `multipart/related` |
 | `Encoding contentType` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Media types of form-data parts; the client writes a part holding no files as JSON, or its scalars as text in a media type other than a form's |
@@ -10995,7 +10995,7 @@ Client: whether the generated Python client (`--generate-client`) supports the f
 | `mutualTLS` | OAS 3.1 | ❌ Not Supported | ❌ Not Supported | Mutual TLS security scheme |
 | `style: cookie` | OAS 3.2 | ✅ Supported | ✅ Supported | Cookie parameter style; earlier versions do not declare it |
 | `style: deepObject` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Query parameters written as `name[key]=value`; the client writes objects only |
-| `Structured style values` | OAS 3.0 | ✅ Supported | ❌ Not Supported | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style |
+| `Structured style values` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style; the client writes a parameter that takes one item or an array of them only |
 | `Binary strings in text media` | OAS 3.0 | ✅ Supported | ❌ Not Supported | `format: binary` strings inside a JSON, URL-encoded or text body, a parameter or a header |
 | `multipart media types` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema only, such as not `multipart/related` |
 | `Encoding contentType` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Media types of form-data parts; the client writes a part holding no files as JSON, or its scalars as text in a media type other than a form's |
@@ -23252,12 +23252,13 @@ app/client: Skipping GET /pets/{petId} (operationId 'getPet'), which the client 
 /paths/~1pets~1{petId}/get: The path placeholder 'petId' of GET /pets/{petId} has no path parameter
 ```
 
-When the reason is an OpenAPI feature the client does not support, the warning names it and the version that
-introduced it, as the [supported features](supported_formats.md#supported-features-from-code) list them: the HTTP
-security schemes other than `basic` and `bearer`, `mutualTLS`, `style: deepObject` on a value that is no object,
-`style: cookie` in a document before OpenAPI 3.2, values written with a style that are no single scalar kind, binary
-strings in text media, multipart media other than `multipart/form-data` with an object schema, and an encoding
-`contentType` of a part holding no files that is a form's, or other than JSON for objects and arrays:
+When the reason is an OpenAPI feature the client does not support, the warning names it and the version that introduced
+it, as the [supported features](supported_formats.md#supported-features-from-code) list them: the HTTP security schemes
+other than `basic` and `bearer`, `mutualTLS`, `style: deepObject` on a value that is no object, `style: cookie` in a
+document before OpenAPI 3.2, values written with a style that are no single scalar kind (but for a parameter that takes
+one item or an array of them), binary strings in text media, multipart media other than `multipart/form-data` with an
+object schema, and an encoding `contentType` of a part holding no files that is a form's, or other than JSON for objects
+and arrays:
 
 ```text
 app/client: Skipping GET /certificates (operationId 'listCertificates'), which uses mutualTLS (OAS 3.1) that the

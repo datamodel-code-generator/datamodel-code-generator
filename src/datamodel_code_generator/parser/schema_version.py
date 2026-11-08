@@ -486,9 +486,10 @@ class OpenAPISchemaFeatures(JsonSchemaFeatures):
             introduced="OAS 3.0",
             doc_name="Structured style values",
             description="Parameter and form member values that are no single scalar kind, such as nested objects, "
-            "unions and `allOf`, written with a style",
+            "unions and `allOf`, written with a style; the client writes a parameter that takes one item or an array "
+            "of them only",
             status="supported",
-            client_status="not_supported",
+            client_status="partial",
         ),
     )
     binary_in_text_media: bool = field(

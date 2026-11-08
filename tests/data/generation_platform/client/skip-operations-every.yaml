@@ -19,6 +19,6 @@ paths:
           schema:
             oneOf:
               - {type: string}
-              - {type: array, items: {type: string}}
+              - {type: array, items: {type: integer}}
       responses:
         '204': {description: Found.}

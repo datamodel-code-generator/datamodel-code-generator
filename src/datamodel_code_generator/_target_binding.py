@@ -2952,7 +2952,8 @@ class _UseFacts(_SchemaUses):
         """Return how a type's values are written as one parameter value, or as the members of a URL-encoded form.
 
         `source` is where the use's schema is, and `members` those of the model the type holds. An array has its
-        items' kind and a scalar its own; an object has the model's members, then its other properties
+        items' kind and a scalar its own, and a union of items and arrays of them is an array of their one kind that
+        takes an item alone (``single``); an object has the model's members, then its other properties
         (``others``): none when it allows none, those of its typed values' kind, else any string. A form that is no
         object, and an object with pattern properties, have no builtin encoding.
         """
@@ -2960,6 +2961,8 @@ class _UseFacts(_SchemaUses):
         layout = self.layout(value)
         if layout == "array" and not form:
             return TextShape("array", KindAt(holder.child("items"), self.kind(self.items(value))))
+        if not form and (kind := self.single(value)) is not None:
+            return TextShape("array", KindAt(holder, kind), single=True)
         if layout != "object":
             return (
                 TextShape("object", problem=(holder, _NOT_OBJECT))
@@ -2985,6 +2988,24 @@ class _UseFacts(_SchemaUses):
             ),
             additional=additional,
         )
+
+    def single(self, value: TypeView | None) -> LexicalKind | None:
+        """Return the one kind of a union of items and arrays of them, or None for any other type.
+
+        Its scalar members and the items of its array members are all of that kind; a member that is an object, or a
+        member or items of another kind or of none, leaves it without one.
+        """
+        if not isinstance(found := unwrapped(value, self.symbol_table, self.members), UnionType):
+            return None
+        alternatives = present(found)
+        layouts = [self.layout(member) for member in alternatives]
+        if set(layouts) != {"scalar", "array"}:
+            return None
+        kinds = {
+            self.kind(self.items(member) if layout == "array" else member)
+            for member, layout in zip(alternatives, layouts, strict=True)
+        }
+        return kinds.pop() if len(kinds) == 1 else None
 
     def union_shape(
         self, alternatives: tuple[TypeView, ...], source: SourceLocation, direction: Direction, *, form: bool

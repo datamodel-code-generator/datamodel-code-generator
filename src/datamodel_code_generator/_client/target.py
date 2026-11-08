@@ -293,6 +293,7 @@ def _wire(request: TargetRequest, batch: GeneratedTypeContractBatch) -> WirePlan
         operations=frozenset(operation.id for operation in request.operations),
         forms=dict(form_uses(request)),
         styles=dict(style_uses(request)),
+        writes=True,
     )
 
 

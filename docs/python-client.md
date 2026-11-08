@@ -1520,12 +1520,13 @@ app/client: Skipping GET /pets/{petId} (operationId 'getPet'), which the client 
 /paths/~1pets~1{petId}/get: The path placeholder 'petId' of GET /pets/{petId} has no path parameter
 ```
 
-When the reason is an OpenAPI feature the client does not support, the warning names it and the version that
-introduced it, as the [supported features](supported_formats.md#supported-features-from-code) list them: the HTTP
-security schemes other than `basic` and `bearer`, `mutualTLS`, `style: deepObject` on a value that is no object,
-`style: cookie` in a document before OpenAPI 3.2, values written with a style that are no single scalar kind, binary
-strings in text media, multipart media other than `multipart/form-data` with an object schema, and an encoding
-`contentType` of a part holding no files that is a form's, or other than JSON for objects and arrays:
+When the reason is an OpenAPI feature the client does not support, the warning names it and the version that introduced
+it, as the [supported features](supported_formats.md#supported-features-from-code) list them: the HTTP security schemes
+other than `basic` and `bearer`, `mutualTLS`, `style: deepObject` on a value that is no object, `style: cookie` in a
+document before OpenAPI 3.2, values written with a style that are no single scalar kind (but for a parameter that takes
+one item or an array of them), binary strings in text media, multipart media other than `multipart/form-data` with an
+object schema, and an encoding `contentType` of a part holding no files that is a form's, or other than JSON for objects
+and arrays:
 
 ```text
 app/client: Skipping GET /certificates (operationId 'listCertificates'), which uses mutualTLS (OAS 3.1) that the

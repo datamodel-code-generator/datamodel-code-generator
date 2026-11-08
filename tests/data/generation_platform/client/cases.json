@@ -2517,6 +2517,22 @@
       ]
     ]
   },
+  "parameter-item-or-array": {
+    "input": "parameter-item-or-array.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "parameter-item-or-array-errors": {
+    "input": "parameter-item-or-array-errors.yaml"
+  },
   "auth-shared-wire": {
     "input": "auth-shared-wire.yaml",
     "modules": [
