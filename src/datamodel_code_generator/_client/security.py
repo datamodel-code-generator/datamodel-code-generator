@@ -35,6 +35,7 @@ from datamodel_code_generator.python_literal import stable_repr
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+    from datamodel_code_generator._openapi_features import ClientFeature
     from datamodel_code_generator._runtime.client.security import SecuritySchemeEntry
     from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
@@ -107,6 +108,15 @@ def _flows(declaration: WireDeclaration) -> tuple[tuple[Flow, str | None], ...]:
         urls = (_url(entries[name], "refreshUrl", "tokenUrl") for name in _REFRESHED if name in entries)
         found.append(("refresh_token", next((url for url in urls if url is not None), None)))
     return tuple(found)
+
+
+def _feature(declaration: WireDeclaration) -> ClientFeature | None:
+    """Return the feature an unavailable scheme declaration uses that the client does not send, or None."""
+    if unresolved_reference(declaration) is not None:
+        return None
+    if fact(declaration, "type") == "mutualTLS":
+        return "mutual_tls"
+    return None if http_scheme(declaration) is None else "http_auth_schemes"
 
 
 def _scheme(declaration: WireDeclaration) -> SecuritySchemeEntry:
@@ -182,8 +192,15 @@ class SecurityPlanner:
             for (name, scheme), argument in zip(used.items(), arguments, strict=True)
         )
 
-    def problem(self, operation: OperationContract, message: str, *, conflict: bool = False) -> None:
-        """Keep a deterministic diagnostic on the operation that requires invalid security."""
+    def problem(
+        self,
+        operation: OperationContract,
+        message: str,
+        *,
+        conflict: bool = False,
+        feature: ClientFeature | None = None,
+    ) -> None:
+        """Keep a deterministic diagnostic on the operation that requires invalid security, by the feature it uses."""
         self.problems.append(
             Diagnostic(
                 code="E_CONFIG_CONFLICT" if conflict else "E_METADATA_REQUIRED",
@@ -192,6 +209,7 @@ class SecurityPlanner:
                 message=f"The security of {label(operation)} {message}",
                 source_pointer=operation.id.use_site.pointer,
                 operation=operation_ref(operation.id),
+                feature=feature,
             )
         )
 
@@ -201,6 +219,7 @@ class SecurityPlanner:
         if value is None:
             return None
         schemes = operation_schemes(self.catalogues, operation)
+        declared_schemes = operation_schemes(self.declared, operation)
         if (declared := requirement_alternatives(value)) is None:
             self.problem(operation, "must be an array of requirement objects")
             return None
@@ -213,9 +232,10 @@ class SecurityPlanner:
             owners: set[tuple[str, str]] = set()
             for name, scopes in alternative:
                 if not isinstance(name, str) or not isinstance(scheme := schemes.get(name), SecurityScheme):
-                    self.problem(operation, f"requires the unavailable scheme {stable_repr(name)}")
+                    feature = None if (found := declared_schemes.get(name)) is None else _feature(found)
+                    self.problem(operation, f"requires the unavailable scheme {stable_repr(name)}", feature=feature)
                     continue
-                declaration = operation_schemes(self.declared, operation)[name]
+                declaration = declared_schemes[name]
                 version = self.versions.of(operation.id.use_site)
                 if (invalid := scope_problem(name, declaration, scopes, version)) is not None:
                     self.problem(operation, invalid)

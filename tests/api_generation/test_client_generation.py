@@ -192,6 +192,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "skip-operations",
         "skip-operations-document-errors",
         "skip-operations-every",
+        "skip-operations-features",
         "skip-operations-helper",
     ],
 )

@@ -1520,6 +1520,19 @@ app/client: Skipping GET /pets/{petId} (operationId 'getPet'), which the client 
 /paths/~1pets~1{petId}/get: The path placeholder 'petId' of GET /pets/{petId} has no path parameter
 ```
 
+When the reason is an OpenAPI feature the client does not support, the warning names it and the version that
+introduced it, as the [supported features](supported_formats.md#supported-features-from-code) list them: the HTTP
+security schemes other than `basic` and `bearer`, `mutualTLS`, `style: deepObject` on a value that is no object,
+`style: cookie` in a document before OpenAPI 3.2, values written with a style that are no single scalar kind, binary
+strings in text media, multipart media other than `multipart/form-data` with an object schema, and an encoding
+`contentType` other than JSON or text for a part holding no files:
+
+```text
+app/client: Skipping GET /certificates (operationId 'listCertificates'), which uses mutualTLS (OAS 3.1) that the
+client does not support: /paths/~1certificates/get: The security of GET /certificates requires the unavailable scheme
+'clientCertificate'
+```
+
 The generated client has no method, type, or documentation for it. Generation still stops with `Error:` and exit
 code 2 when every operation would be left out, when an operation that a [helper](python-client-helpers.md) calls
 would be, and for any other refusal, such as a setting that cannot apply or a server URL that does not resolve.

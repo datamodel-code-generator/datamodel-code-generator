@@ -81,6 +81,7 @@ if TYPE_CHECKING:
         TypeUseBinding,
         TypeView,
     )
+    from datamodel_code_generator.parser.schema_version import ClientFeature
 
 CodecReason: TypeAlias = (
     BindingReason
@@ -110,6 +111,7 @@ class CodecDiagnostic:
     message: str
     operation: OperationId | None = None
     uses: tuple[TypeUseId, ...] = ()
+    feature: ClientFeature | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -128,9 +130,9 @@ class WirePlan:
 class _PlanError(Exception):
     """Refuse a parameter, header or form member no builtin encoding writes, as `MC_PARAMETER_ENCODING`."""
 
-    def __init__(self, source: SourceLocation, message: str) -> None:
+    def __init__(self, source: SourceLocation, message: str, feature: ClientFeature | None = None) -> None:
         super().__init__(message)
-        self.diagnostic = CodecDiagnostic("MC_PARAMETER_ENCODING", source, message)
+        self.diagnostic = CodecDiagnostic("MC_PARAMETER_ENCODING", source, message, feature=feature)
 
 
 class _WirePlanner:
@@ -235,7 +237,12 @@ def _binary_text(
     labels = {operation.id: label(operation) for operation in operations}
     yield from (
         CodecDiagnostic(
-            "MC_CODEC_UNSUPPORTED", source, f"{_carrier(use.id, labels[owner])} {_BINARY_TEXT}", owner, (use.id,)
+            "MC_CODEC_UNSUPPORTED",
+            source,
+            f"{_carrier(use.id, labels[owner])} {_BINARY_TEXT}",
+            owner,
+            (use.id,),
+            "binary_in_text_media",
         )
         for use in batch.type_uses
         if (source := use.binary) is not None and use.id.projection == "value"
@@ -394,7 +401,7 @@ def _additional(planner: _WirePlanner, use: TypeUseBinding) -> FieldPlan | None:
 def _text(member: FormMember) -> FieldPlan:
     """Return the text plan of a URL-encoded member, refusing one whose type has no one kind."""
     if member.kind is None:
-        raise _PlanError(member.source, NO_SCALAR_KIND)
+        raise _PlanError(member.source, NO_SCALAR_KIND, "structured_parameter_values")
     return FieldPlan(member.name, member.kind, repeated=member.repeated)
 
 
@@ -512,6 +519,7 @@ def _encoding(form: TypeUseBinding, members: Mapping[str, SourceLocation], encod
     style, explode, reserved, content = (
         fact(encoding, key) for key in ("style", "explode", "allowReserved", "contentType")
     )
+    shape: ValueShape | None = None
     try:
         if style is None and explode is None and reserved is None:
             media = normalize_media_type(str(content))
@@ -533,7 +541,7 @@ def _encoding(form: TypeUseBinding, members: Mapping[str, SourceLocation], encod
             reserved_names=tuple(sorted(other for other in members if other != name)),
         )
     except ValueError as error:
-        raise _PlanError(source, str(error)) from None
+        raise _PlanError(source, str(error), _style_feature(style, shape)) from None
 
 
 def parameter_plans(wire: WirePlan) -> dict[OperationId, dict[tuple[ParameterLocation, str], ParameterPlan]]:
@@ -688,7 +696,7 @@ def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[
     style, explode = _style_of(declaration, location)
     version = planner.versions.declared(declaration)
     if style == "cookie" and version != OpenAPIVersion.V32:
-        raise _PlanError(source, "Cookie style requires OpenAPI 3.2")
+        raise _PlanError(source, "Cookie style requires OpenAPI 3.2", "cookie_style")
     try:
         return ParameterPlan(
             location=location,
@@ -704,7 +712,12 @@ def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[
             reserved_names=tuple(sorted(other for kind_, other in names if kind_ == location and other != name)),
         )
     except ValueError as error:
-        raise _PlanError(source, str(error)) from None
+        raise _PlanError(source, str(error), _style_feature(style, shape)) from None
+
+
+def _style_feature(style: object, shape: ValueShape | None) -> ClientFeature | None:
+    """Return the feature a style refusal stems from: deepObject on a value that is no object, or None."""
+    return "deep_object_style" if style == "deepObject" and shape not in {None, "object"} else None
 
 
 def _content_parameter(
@@ -771,7 +784,7 @@ def _kind(site: KindAt) -> LexicalKind:
     A leaf bound to no type, to a model or a container, or to values of several kinds no text reaches, is refused.
     """
     if (kind := site.kind) is None:
-        raise _PlanError(site.source, NO_SCALAR_KIND)
+        raise _PlanError(site.source, NO_SCALAR_KIND, "structured_parameter_values")
     return kind
 
 

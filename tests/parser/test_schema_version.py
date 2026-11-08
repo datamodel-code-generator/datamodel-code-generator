@@ -290,6 +290,7 @@ def test_openapi_features_v31() -> None:
             dynamic_ref=True,
             nullable_keyword=False,
             discriminator_support=True,
+            mutual_tls=True,
         )
     )
 
@@ -313,6 +314,7 @@ def test_openapi_features_auto() -> None:
             dynamic_ref=True,
             nullable_keyword=False,
             discriminator_support=True,
+            mutual_tls=True,
         )
     )
 

@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import DiagnosticStage, OperationSelector
+    from datamodel_code_generator._openapi_features import ClientFeature
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, CodecReason
     from datamodel_code_generator._runtime.model_codecs.media import MediaKind
     from datamodel_code_generator._target_contract import (
@@ -69,7 +70,7 @@ class TargetPolicy:
     placeholder_label: bool
     media_code: str
 
-    def problem(
+    def problem(  # ruff: ignore[too-many-arguments]
         self,
         code: str,
         message: str,
@@ -77,8 +78,12 @@ class TargetPolicy:
         option_path: str | None = None,
         *,
         operation: OperationContract | None = None,
+        feature: ClientFeature | None = None,
     ) -> Diagnostic:
-        """Return one planning error at its stage, naming the `operation` whose own declarations cause it."""
+        """Return one planning error at its stage.
+
+        `operation` names the operation whose own declarations cause it, and `feature` the OpenAPI feature it uses.
+        """
         return Diagnostic(
             code=code,
             severity="error",
@@ -87,6 +92,7 @@ class TargetPolicy:
             source_pointer=None if source is None else source.pointer,
             operation=None if operation is None else operation_ref(operation.id),
             option_path=option_path,
+            feature=feature,
         )
 
 
@@ -149,11 +155,15 @@ def operation_ref(operation: OperationId) -> OperationRef:
 
 
 def binding_problem(
-    code: str, message: str, source: SourceLocation, operation: OperationId | None = None
+    code: str,
+    message: str,
+    source: SourceLocation,
+    operation: OperationId | None = None,
+    feature: ClientFeature | None = None,
 ) -> Diagnostic:
     """Return one error at the binding stage, whatever stage a target's policy reports its code at.
 
-    `operation` names the operation whose own declarations cause it.
+    `operation` names the operation whose own declarations cause it, and `feature` the OpenAPI feature it uses.
     """
     return Diagnostic(
         code=code,
@@ -162,6 +172,7 @@ def binding_problem(
         message=message,
         source_pointer=source.pointer,
         operation=None if operation is None else operation_ref(operation),
+        feature=feature,
     )
 
 
@@ -169,7 +180,7 @@ def raise_selected(diagnostics: Iterable[CodecDiagnostic], selected: Iterable[Op
     """Refuse, at the binding stage, the codec diagnostics of the whole document and of the selected operations."""
     operations = {None, *selected}
     if problems := tuple(
-        binding_problem(item.code, item.message, item.source, item.operation)
+        binding_problem(item.code, item.message, item.source, item.operation, item.feature)
         for item in diagnostics
         if item.operation in operations
     ):

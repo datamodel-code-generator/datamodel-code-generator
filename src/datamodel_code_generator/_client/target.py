@@ -48,6 +48,7 @@ from datamodel_code_generator._client.webhooks import (
     webhook_uses,
 )
 from datamodel_code_generator._graph import reach
+from datamodel_code_generator._openapi_features import feature_label
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
 from datamodel_code_generator._python_syntax import subscript_text
 from datamodel_code_generator._target_contract import (
@@ -119,8 +120,9 @@ class ClientTarget:
     def render(self, request: TargetRequest) -> TargetRender:
         """Plan the selected operations, bind their codecs, and render the package.
 
-        An operation that only its own declarations refuse, and that no helper calls, is left out with a warning, and
-        the others are planned again. A refusal stays an error when anything else is refused too, or nothing is left.
+        An operation that only its own declarations refuse, and that no helper calls, is left out with a warning that
+        names the OpenAPI features it uses that the client does not support, and the others are planned again. A
+        refusal stays an error when anything else is refused too, or nothing is left.
         """
         config = request.config
         assert isinstance(config, ClientGenerationConfig)
@@ -138,10 +140,13 @@ class ClientTarget:
         output = shown(config.output, request.shown_root).as_posix()
         for operation, found in skipped:
             named = "" if operation.operation_id is None else f" (operationId {stable_repr(operation.operation_id)})"
-            warn(
-                f"{output}: Skipping {label(operation)}{named}, which the client cannot generate: {error_text(found)}",
-                stacklevel=2,
+            features = ", ".join(dict.fromkeys(feature_label(item.feature) for item in found if item.feature))
+            why = (
+                f"which uses {features} that the client does not support"
+                if features
+                else "which the client cannot generate"
             )
+            warn(f"{output}: Skipping {label(operation)}{named}, {why}: {error_text(found)}", stacklevel=2)
         return rendered
 
 

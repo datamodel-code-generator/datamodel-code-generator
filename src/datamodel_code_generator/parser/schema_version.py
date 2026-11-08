@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, fields, replace
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias, TypeVar
 
-from typing_extensions import TypedDict
+from typing_extensions import NotRequired, TypedDict
 
 from datamodel_code_generator.enums import AsyncAPIVersion, JsonSchemaVersion, OpenAPIVersion
 
@@ -34,7 +34,13 @@ class FeatureMetadata(TypedDict):
     description: str
     """User-facing description of the feature."""
     status: Literal["supported", "partial", "not_supported"]
-    """Implementation status: supported, partial, or not_supported."""
+    """Implementation status of model generation: supported, partial, or not_supported."""
+    client_status: NotRequired[Literal["supported", "partial", "not_supported"]]
+    """Status in the Python client (`--generate-client`), for a feature the client plans itself.
+
+    An operation that uses a feature the client does not support, or a part of a partial one it does not, is left
+    out of the client with a warning that names the feature.
+    """
 
 
 _DRAFT_FLAG_CHANGES: tuple[tuple[JsonSchemaVersion, dict[str, Any]], ...] = (
@@ -433,15 +439,104 @@ class OpenAPISchemaFeatures(JsonSchemaFeatures):
             status="not_supported",
         ),
     )
+    # --- Features the Python client plans itself (client_status) ---
+    http_auth_schemes: bool = field(
+        default=True,
+        metadata=FeatureMetadata(
+            introduced="OAS 3.0",
+            doc_name="http security schemes",
+            description="HTTP authentication schemes; the client sends `basic` and `bearer` only",
+            status="not_supported",
+            client_status="partial",
+        ),
+    )
+    mutual_tls: bool = field(
+        default=False,
+        metadata=FeatureMetadata(
+            introduced="OAS 3.1",
+            doc_name="mutualTLS",
+            description="Mutual TLS security scheme",
+            status="not_supported",
+            client_status="not_supported",
+        ),
+    )
+    cookie_style: bool = field(
+        default=False,
+        metadata=FeatureMetadata(
+            introduced="OAS 3.2",
+            doc_name="style: cookie",
+            description="Cookie parameter style; earlier versions do not declare it",
+            status="supported",
+            client_status="supported",
+        ),
+    )
+    deep_object_style: bool = field(
+        default=True,
+        metadata=FeatureMetadata(
+            introduced="OAS 3.0",
+            doc_name="style: deepObject",
+            description="Query parameters written as `name[key]=value`; the client writes objects only",
+            status="supported",
+            client_status="partial",
+        ),
+    )
+    structured_parameter_values: bool = field(
+        default=True,
+        metadata=FeatureMetadata(
+            introduced="OAS 3.0",
+            doc_name="Structured style values",
+            description="Parameter and form member values that are no single scalar kind, such as nested objects, "
+            "unions and `allOf`, written with a style",
+            status="supported",
+            client_status="not_supported",
+        ),
+    )
+    binary_in_text_media: bool = field(
+        default=True,
+        metadata=FeatureMetadata(
+            introduced="OAS 3.0",
+            doc_name="Binary strings in text media",
+            description="`format: binary` strings inside a JSON, URL-encoded or text body, a parameter or a header",
+            status="supported",
+            client_status="not_supported",
+        ),
+    )
+    multipart_media: bool = field(
+        default=True,
+        metadata=FeatureMetadata(
+            introduced="OAS 3.0",
+            doc_name="multipart media types",
+            description="Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema "
+            "only, such as not `multipart/related`",
+            status="supported",
+            client_status="partial",
+        ),
+    )
+    part_content_type: bool = field(
+        default=True,
+        metadata=FeatureMetadata(
+            introduced="OAS 3.0",
+            doc_name="Encoding contentType",
+            description="Media types of form-data parts; the client writes a part holding no files as JSON or text "
+            "only",
+            status="supported",
+            client_status="partial",
+        ),
+    )
 
     @classmethod
     def from_openapi_version(cls, version: OpenAPIVersion) -> OpenAPISchemaFeatures:
         """Create OpenAPISchemaFeatures from an OpenAPI version."""
         if version == OpenAPIVersion.V30:
             return cls(definitions_key="definitions", read_only_write_only=True, nullable_keyword=True)
-        flags: dict[str, Any] = {**_draft_flags(JsonSchemaVersion.Draft202012), "webhooks": True}
+        flags: dict[str, Any] = {**_draft_flags(JsonSchemaVersion.Draft202012), "webhooks": True, "mutual_tls": True}
         if version == OpenAPIVersion.V32:
-            flags |= {"media_item_schema": True, "openapi_self": True, "querystring_parameter": True}
+            flags |= {
+                "media_item_schema": True,
+                "openapi_self": True,
+                "querystring_parameter": True,
+                "cookie_style": True,
+            }
         return cls(**flags)
 
     @classmethod
@@ -450,6 +545,25 @@ class OpenAPISchemaFeatures(JsonSchemaFeatures):
         if version == AsyncAPIVersion.V2:
             return cls.from_openapi_version(OpenAPIVersion.V30)
         return cls.from_openapi_version(OpenAPIVersion.V31)
+
+
+ClientFeature: TypeAlias = Literal[
+    "http_auth_schemes",
+    "mutual_tls",
+    "cookie_style",
+    "deep_object_style",
+    "structured_parameter_values",
+    "binary_in_text_media",
+    "multipart_media",
+    "part_content_type",
+]
+"""An OpenAPI feature whose use can leave an operation out of the client: a field of `OpenAPISchemaFeatures`."""
+
+
+def feature_label(feature: str) -> str:
+    """Return how messages name a feature: its documented name and the version that introduced it."""
+    metadata = next(item.metadata for item in fields(OpenAPISchemaFeatures) if item.name == feature)
+    return f"{metadata['doc_name']} ({metadata['introduced']})"
 
 
 SchemaFeaturesT = TypeVar("SchemaFeaturesT", bound=JsonSchemaFeatures)

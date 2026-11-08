@@ -71,6 +71,8 @@ class Diagnostic:
     operation: OperationRef | None = None
     option_path: str | None = None
     artifact_path: str | None = None
+    feature: str | None = None
+    """The field of `OpenAPISchemaFeatures` naming the OpenAPI feature that a target does not support here."""
 
 
 class APIGenerationError(Error):
