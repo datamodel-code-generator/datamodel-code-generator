@@ -1,9 +1,10 @@
 """Send and read form-data bodies whose schema is one of several objects, by the parts of their objects.
 
 The value of a union of objects is one of them, whose properties are its parts: the client writes the parts of the
-object a call gives, a voice from a sample as a file part beside its name and one from a prompt as text parts, and
-settings of one of three closed objects, one of them in a nested union. The server reads the parts back into the
-union's model, and refuses a part no object declares since each of them allows no other properties.
+object a call gives, a voice from a sample as a file part beside its name, with or without a filename, and one from a
+prompt as text parts, and settings of one of three closed objects, one of them in a nested union. The server reads the
+parts back into the union's model, a file part as its octets even without a filename, and refuses a part no object
+declares since each of them allows no other properties.
 """
 
 from __future__ import annotations
@@ -41,6 +42,12 @@ def calls(kit: Kit) -> Calls:
                     bodies.FieldPart("name", "calm"),
                     bodies.FilePart("audio_sample", b"\xff\x00", "sample.wav"),
                 ))
+            ),
+        ),
+        (
+            "create_voice sample without a filename",
+            lambda: api.create_voice(
+                body=bodies.MultipartBody((bodies.FieldPart("name", "calm"), bodies.FilePart("audio_sample", b"\xff")))
             ),
         ),
         (

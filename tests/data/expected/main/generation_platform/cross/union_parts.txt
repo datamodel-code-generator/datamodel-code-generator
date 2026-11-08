@@ -7,6 +7,11 @@ create_voice sample
   create_voice(body=VoiceRequest(root=FromSample(type=None, name='calm', audio_sample=b'\xff\x00')))
   < 204 -
   = None
+create_voice sample without a filename
+  > POST /voices [multipart/form-data; boundary=<boundary>]
+  create_voice(body=VoiceRequest(root=FromSample(type=None, name='calm', audio_sample=b'\xff')))
+  < 204 -
+  = None
 create_voice prompt
   > POST /voices [multipart/form-data; boundary=<boundary>]
   create_voice(body=VoiceRequest(root=FromPrompt(type=Type1.prompt, name='calm', prompt='low')))

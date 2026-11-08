@@ -62,6 +62,7 @@ from datamodel_code_generator._target_contract import (
     LiteralScalar,
     LiteralSequence,
     LiteralType,
+    PartSchema,
     Requirement,
     UnionType,
     api_key_place,
@@ -259,7 +260,8 @@ class MediaSpec:
     """One declared media type of a body or response, with its type use when the content has a schema.
 
     A form an adapter reads comes with the plans of its members: a member is read as text in its field's kind, or,
-    as a multipart member without one, as JSON. A URL-encoded member whose encoding gives it a style or content is
+    as a multipart member without one, as JSON, and a multipart member holding files the models keep as bytes as its
+    parts' octets. A URL-encoded member whose encoding gives it a style or content is
     read by its query parameter plan in `encoded`, and its JSON content then as a JSON part. `additional` reads the
     properties the form's schema types without declaring them, when that is not as the text they come as, which any
     other member is, and `checked` is their type when they are text that the model keeps without one, as a dataclass
@@ -273,7 +275,8 @@ class MediaSpec:
     declaration: WireDeclaration
     fields: tuple[FieldPlan, ...] = ()
     json_parts: tuple[JsonPartSpec, ...] = ()
-    additional: FieldPlan | JsonPartSpec | None = None
+    file_parts: tuple[FilePartSpec, ...] = ()
+    additional: FieldPlan | JsonPartSpec | FilePartSpec | None = None
     checked: TypeView | None = None
     encoded: tuple[ParameterPlan, ...] = ()
     extras: bool = False
@@ -310,6 +313,23 @@ class JsonPartSpec:
     repeated: bool = False
     field: tuple[GeneratedSymbolType, str] | None = None
     untyped: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class FilePartSpec:
+    """One multipart member holding files the models keep as bytes: its wire name and its repeats.
+
+    Its parts are read as their octets, whether or not they name a filename. The one that reads a form's other
+    properties has no name.
+    """
+
+    name: str
+    repeated: bool = False
+
+
+def _octets(schema: PartSchema | str | None) -> TypeIs[PartSchema]:
+    """Return whether a multipart member holds files the models keep as bytes rather than as text (`PartSchema`)."""
+    return isinstance(schema, PartSchema) and schema.file and not schema.text
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -1253,12 +1273,19 @@ class Planner:  # noqa: PLR0904
         json_members = _json_members(media, self.wire.versions)
         encodings = {encoding.name or "": encoding for encoding in _encodings(media)}
         multipart = media.kind == "multipart"
+        parts = media.use.parts if multipart else None
+        files = {
+            name: FilePartSpec(name, repeated=schema.repeated)
+            for name, schema in (() if parts is None else parts.members)
+            if _octets(schema)
+        }
         read = [
             (
                 member,
                 _content_part(member, encoded[member.name])
                 if member.name in encoded
-                else self.form_plan(
+                else files.get(member.name)
+                or self.form_plan(
                     media,
                     member,
                     json=multipart
@@ -1283,8 +1310,11 @@ class Planner:  # noqa: PLR0904
             and (name := field.slot.name) not in names
             and self.by_name(field.consumer)
         )
-        additional: FieldPlan | JsonPartSpec | None = None
-        if (extras := form_extras(self.wire.kinds, media.use)) is not None:
+        additional: FieldPlan | JsonPartSpec | FilePartSpec | None = None
+        extras = form_extras(self.wire.kinds, media.use)
+        if parts is not None and _octets(extra := parts.extra):
+            additional = FilePartSpec("", repeated=extra.repeated)
+        elif extras is not None:
             additional = self.form_plan(
                 media,
                 extras,
@@ -1300,6 +1330,7 @@ class Planner:  # noqa: PLR0904
             media,
             fields=tuple(plan for plan in plans if isinstance(plan, FieldPlan)),
             json_parts=tuple(plan for plan in plans if isinstance(plan, JsonPartSpec)),
+            file_parts=tuple(plan for plan in plans if isinstance(plan, FilePartSpec)),
             additional=None if additional == _TEXT else additional,
             checked=extras.type
             if extras is not None and isinstance(additional, FieldPlan) and self.wire.kinds.kept(media.use) is None

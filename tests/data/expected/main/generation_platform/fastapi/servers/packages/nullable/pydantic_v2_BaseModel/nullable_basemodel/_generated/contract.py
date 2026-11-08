@@ -13,7 +13,13 @@ from fastapi import params
 from pydantic import TypeAdapter
 
 from .._runtime.model_codecs.media import FieldPlan
-from .._runtime.server.requests import BodyAdapter, BodyMedia, JsonPart, field_adapter
+from .._runtime.server.requests import (
+    BodyAdapter,
+    BodyMedia,
+    FilePart,
+    JsonPart,
+    field_adapter,
+)
 from .._runtime.server.responses import Declared, OperationResponses
 
 OperationDependencies = TypedDict(
@@ -204,7 +210,7 @@ class Upload:
     """Plans of the upload operation."""
 
     BODY: Final = BodyAdapter(
-        media=(BodyMedia(media_type='multipart/form-data', kind='multipart', adapter=TypeAdapter(nullable_basemodel_models.UploadsPostRequest), fields=(FieldPlan('file', 'string'), FieldPlan('note', 'string')), json_parts=(JsonPart('meta', field_adapter(nullable_basemodel_models.UploadsPostRequest, 'meta')),), additional=JsonPart('', TypeAdapter(object), untyped=True)),),
+        media=(BodyMedia(media_type='multipart/form-data', kind='multipart', adapter=TypeAdapter(nullable_basemodel_models.UploadsPostRequest), fields=(FieldPlan('note', 'string'),), json_parts=(JsonPart('meta', field_adapter(nullable_basemodel_models.UploadsPostRequest, 'meta')),), file_parts=(FilePart('file'),), additional=JsonPart('', TypeAdapter(object), untyped=True)),),
     )
     RESPONSES: Final = OperationResponses(
         responses={'204': Declared()},

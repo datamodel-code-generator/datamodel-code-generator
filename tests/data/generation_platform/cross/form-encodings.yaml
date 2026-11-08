@@ -158,6 +158,20 @@ paths:
               labels: {explode: true}
       responses:
         "204": {description: Done.}
+  /attachments:
+    post:
+      operationId: postAttachments
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title: {type: string}
+              additionalProperties: {type: string, format: binary}
+      responses:
+        "204": {description: Done.}
 components:
   schemas:
     Point:
