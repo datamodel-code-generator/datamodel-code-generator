@@ -333,7 +333,9 @@ EXPERIMENTAL_FEATURES: dict[ExperimentalFeatureId, ExperimentalFeature] = {
         since_version="0.91.1",
         note=(
             "generate_dynamic_module() generates the classes like generate_dynamic_models() and also returns the "
-            "class of the document itself and the class of each schema location. With register_module=True, it "
+            "class of the document itself, if it has one (None for an OpenAPI document or with skip_root_model), and "
+            "the class of each schema location that becomes a class (a location written as a type alias or merged "
+            "into another class has no entry). With register_module=True, it "
             "keeps the module of the classes registered in sys.modules, so that the classes and their instances "
             "pickle. generate_dynamic_models() is not experimental."
         ),

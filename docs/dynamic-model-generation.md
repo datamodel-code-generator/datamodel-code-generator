@@ -337,6 +337,11 @@ modules, while `models_by_source_ref` keys both.
 
 ## Picklable Models (Registered Modules)
 
+!!! warning "Experimental"
+
+    `register_module=True` is experimental. Its registration rules may change. See
+    [Experimental Features](experimental.md).
+
 Pickle stores a class, and the class of an instance, by its module and name, and loads them by importing the module.
 With `register_module=True`, `generate_dynamic_module()` keeps the module of the classes registered in `sys.modules`,
 so their classes and instances pickle, for example to restore checkpoints or to send them to worker processes:
