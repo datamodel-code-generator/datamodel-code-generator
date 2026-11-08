@@ -28,9 +28,14 @@ paths:
           style: deepObject
           explode: true
           schema:
-            type: object
-            properties:
-              gt: {type: integer}
+            anyOf:
+              - type: object
+                properties:
+                  gt: {type: integer}
+                  gte: {type: integer}
+                  lt: {type: integer}
+                  lte: {type: integer}
+              - {type: integer}
       responses:
         '204':
           description: The charge.
@@ -88,3 +93,64 @@ paths:
       responses:
         '204':
           description: The customer.
+  /v1/subscriptions:
+    post:
+      operationId: PostSubscriptions
+      tags: [subscriptions]
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            encoding:
+              discounts: {style: deepObject, explode: true}
+              items: {style: deepObject, explode: true}
+              metadata: {style: deepObject, explode: true}
+              off_session: {style: deepObject, explode: true}
+              payment_settings: {style: deepObject, explode: true}
+            schema:
+              type: object
+              required: [customer]
+              properties:
+                customer: {type: string}
+                discounts:
+                  anyOf:
+                    - type: array
+                      items:
+                        type: object
+                        properties:
+                          coupon: {type: string}
+                    - {type: string, enum: ['']}
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      price: {type: string}
+                      quantity: {type: integer}
+                      metadata:
+                        type: object
+                        additionalProperties: {type: string}
+                metadata:
+                  anyOf:
+                    - type: object
+                      additionalProperties: {type: string}
+                    - {type: string, enum: ['']}
+                off_session: {type: boolean}
+                payment_settings:
+                  type: object
+                  properties:
+                    payment_method_options:
+                      type: object
+                      properties:
+                        card:
+                          type: object
+                          properties:
+                            request_three_d_secure: {type: string, enum: [any, automatic]}
+                    payment_method_types:
+                      anyOf:
+                        - type: array
+                          items: {type: string}
+                        - {type: string, enum: ['']}
+                    save_default_payment_method: {type: string, enum: ['off', on_subscription]}
+      responses:
+        '204':
+          description: The subscription.

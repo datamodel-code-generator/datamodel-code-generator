@@ -5,7 +5,7 @@
 | Option | Description |
 |--------|-------------|
 | [`--client-body-arguments`](#client-body-arguments) | Choose how operation methods take request bodies (experiment... |
-| [`--client-deep-object-brackets`](#client-deep-object-brackets) | Write deepObject arrays as name[]=v per item, scalars as nam... |
+| [`--client-deep-object-brackets`](#client-deep-object-brackets) | Write deepObject values in brackets: a[]=v, a=v, a[k][k]=v (... |
 | [`--client-default-base-url`](#client-default-base-url) | Set the server URL of operations that declare no servers (ex... |
 | [`--client-model-package`](#client-model-package) | Name the import path of the models the client package import... |
 | [`--client-operations`](#client-operations) | Set the client settings of single operations (experimental). |
@@ -453,15 +453,18 @@ overrides it for that operation.
 
 ## `--client-deep-object-brackets` {#client-deep-object-brackets}
 
-Write deepObject arrays as name[]=v per item, scalars as name=v (experimental).
+Write deepObject values in brackets: a[]=v, a=v, a[k][k]=v (experimental).
 
-OpenAPI defines `style: deepObject` for objects alone, so an operation whose deepObject query parameter, or member of
-an `application/x-www-form-urlencoded` body, takes an array or a scalar is left out with a warning. With this option
-the client writes an array as `name[]=value` for each item, such as `expand[]=a&expand[]=b`, and a scalar as
-`name=value`, with the brackets percent-encoded as those of an object's `name[key]` pairs are. A parameter that takes
-one item or an array of them is written by the value a call gives: an item alone as `name=value`, an array as
-`name[]=value` for each item. `--no-client-deep-object-brackets` turns off the `client-deep-object-brackets` key of
-pyproject.toml.
+OpenAPI defines `style: deepObject` for objects of scalars alone, so an operation whose deepObject query parameter, or
+member of an `application/x-www-form-urlencoded` body, takes an array, a scalar, a nested object or a union of a
+scalar and an object is left out with a warning. With this option the client writes such values in the bracket form:
+an array of scalars as `name[]=value` for each item, such as `expand[]=a&expand[]=b`, a scalar as `name=value`, the
+members of objects as `name[key]=value` at any depth, such as `shipping[address][city]=Paris`, and an array of objects
+by index, such as `items[0][price]=p_1`, with the brackets percent-encoded as those of an object's `name[key]` pairs
+are. A value that may be a scalar or an object or array is written as the one a call gives: `created=5` or
+`created[gt]=5`, and an empty string as `metadata=`. Arrays of arrays, recursive values, and unions whose members a
+value does not tell apart stay left out. `--no-client-deep-object-brackets` turns off the
+`client-deep-object-brackets` key of pyproject.toml.
 
 **Option relationships:**
 
@@ -552,7 +555,7 @@ pyproject.toml.
         path='/v1/charges/{charge}',
         servers=_SERVERS_0,
         responses=ResponseDecoder((empty_branch('204'),), ()),
-        parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='charge', style='simple', required=True), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='expand[]', style='form', explode=True, shape='array', reserved_names=('created', 'expand', 'limit')), codec=model_bindings.codec_1), ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='form', explode=True, kind='integer', reserved_names=('created', 'expand')), codec=model_bindings.codec_2), ParameterSpec(plan=ParameterPlan(location='query', name='created', style='deepObject', explode=True, shape='object', fields=(FieldPlan('gt', 'integer'),), additional=FieldPlan('', 'string'), reserved_names=('expand', 'limit')), codec=model_bindings.codec_3)),
+        parameters=(ParameterSpec(plan=ParameterPlan(location='path', name='charge', style='simple', required=True), codec=model_bindings.codec_0), ParameterSpec(plan=ParameterPlan(location='query', name='expand', style='deepObject', explode=True, shape='array', reserved_names=('created', 'limit'), brackets=True), codec=model_bindings.codec_1), ParameterSpec(plan=ParameterPlan(location='query', name='limit', style='deepObject', explode=True, kind='integer', reserved_names=('created', 'expand'), brackets=True), codec=model_bindings.codec_2), ParameterSpec(plan=ParameterPlan(location='query', name='created', style='deepObject', explode=True, shape='object', fields=(FieldPlan('gt', 'integer'),), additional=FieldPlan('', 'string'), reserved_names=('expand', 'limit'), brackets=True), codec=model_bindings.codec_3)),
     )
     ```
 

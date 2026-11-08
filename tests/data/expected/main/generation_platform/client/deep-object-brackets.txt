@@ -18,12 +18,17 @@ render pydantic_v2.BaseModel
   client/resources/customers/__init__.py
   client/resources/customers/_async.py
   client/resources/customers/_sync.py
+  client/resources/subscriptions/__init__.py
+  client/resources/subscriptions/_async.py
+  client/resources/subscriptions/_sync.py
   client/responses.py
   client/types/__init__.py
   client/types/charges/__init__.py
   client/types/charges/_operations.py
   client/types/customers/__init__.py
   client/types/customers/_operations.py
+  client/types/subscriptions/__init__.py
+  client/types/subscriptions/_operations.py
   models.py
 render msgspec.Struct
   client/README.md
@@ -44,10 +49,15 @@ render msgspec.Struct
   client/resources/customers/__init__.py
   client/resources/customers/_async.py
   client/resources/customers/_sync.py
+  client/resources/subscriptions/__init__.py
+  client/resources/subscriptions/_async.py
+  client/resources/subscriptions/_sync.py
   client/responses.py
   client/types/__init__.py
   client/types/charges/__init__.py
   client/types/charges/_operations.py
   client/types/customers/__init__.py
   client/types/customers/_operations.py
+  client/types/subscriptions/__init__.py
+  client/types/subscriptions/_operations.py
   models.py

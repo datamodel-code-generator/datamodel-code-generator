@@ -124,11 +124,16 @@ _JSON_ERRORS: Final = (RecursionError, TypeError, ValueError)
 
 @dataclass(frozen=True, slots=True)
 class FieldPlan:
-    """Declare one form or object member's lexical kind and whether it repeats."""
+    """Declare one form or object member's lexical kind and whether it repeats.
+
+    A member written in the bracket form also has the plans of the members of its objects, or of its items' objects.
+    """
 
     name: str
     kind: LexicalKind = "string"
     repeated: bool = False
+    fields: tuple[FieldPlan, ...] = ()
+    additional: FieldPlan | None = None
 
 
 def json_text(

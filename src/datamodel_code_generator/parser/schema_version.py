@@ -479,9 +479,10 @@ class OpenAPISchemaFeatures(JsonSchemaFeatures):
         metadata=FeatureMetadata(
             introduced="OAS 3.0",
             doc_name="style: deepObject",
-            description="Query parameters written as `name[key]=value`; the client writes objects, and arrays and "
-            "scalars, which OpenAPI leaves undefined, of query parameters and URL-encoded form members as "
-            "`name[]=value` and `name=value` only with `--client-deep-object-brackets`",
+            description="Query parameters written as `name[key]=value`; the client writes objects of scalars, and "
+            "arrays, scalars, nested objects and arrays of objects, which OpenAPI leaves undefined, of query "
+            "parameters and URL-encoded form members as `name[]=value`, `name=value`, `name[key][key]=value` and "
+            "`name[0][key]=value` only with `--client-deep-object-brackets`",
             status="supported",
             client_status="partial",
         ),
@@ -493,7 +494,8 @@ class OpenAPISchemaFeatures(JsonSchemaFeatures):
             doc_name="Structured style values",
             description="Parameter and form member values that are no single scalar kind, such as nested objects, "
             "unions and `allOf`, written with a style; the client writes only a parameter outside a header, or a "
-            "URL-encoded form member, that takes one item or an array of them",
+            "URL-encoded form member, that takes one item or an array of them, and with "
+            "`--client-deep-object-brackets` deepObject values, as `style: deepObject` describes",
             status="supported",
             client_status="partial",
         ),

@@ -2992,21 +2992,44 @@ class _UseFacts(_SchemaUses):
         source = self.documents.location(declaration, "schema")
         return _Others(said, patterns, source, values, None if kept is None else kept[0], free)
 
-    def member_shape(self, name: str, value: TypeView | None, source: SourceLocation, *, form: bool) -> MemberShape:
+    def member_shape(  # noqa: PLR0913
+        self,
+        name: str,
+        value: TypeView | None,
+        source: SourceLocation,
+        direction: Direction,
+        *,
+        form: bool,
+        seen: frozenset[SourceLocation] = frozenset(),
+    ) -> MemberShape:
         """Return how a member of a type is written as text, its kind reported where its schema is.
 
         An item container member of a form repeats, in its items' kind, reported where its items' schema is
-        (``repeated``).
+        (``repeated``). A member of a parameter value whose values have no one kind has their shape (``bracketed``).
         """
         if form and (item := self.items(value)) is not None:
             return MemberShape(name, KindAt(self.repeated(value, source), self.kind(item)), repeated=True)
-        return MemberShape(name, KindAt(source, self.kind(value)))
+        if (kind := self.kind(value)) is not None or form:
+            return MemberShape(name, KindAt(source, kind))
+        return MemberShape(name, KindAt(source, None), value=self.bracketed(value, source, direction, seen))
+
+    def bracketed(
+        self, value: TypeView | None, source: SourceLocation, direction: Direction, seen: frozenset[SourceLocation]
+    ) -> TextShape | None:
+        """Return the shape of values that have no one kind as one parameter value, which the bracket form writes.
+
+        The schemas of the values that hold them are `seen`; values of one of those, a recursive value, have none.
+        """
+        if (holder := self.holder(value, source)) in seen:
+            return None
+        members = self.held_members(value, direction)
+        return self.shape(value, source, members, direction, form=False, seen=seen | {holder})
 
     def repeated(self, value: TypeView | None, source: SourceLocation) -> SourceLocation:
         """Return where the schema of the items of a form member's values is, its own where it does not repeat."""
         return source if self.items(value) is None else self.holder(value, source).child("items")
 
-    def shape(
+    def shape(  # noqa: PLR0911, PLR0913
         self,
         value: TypeView | None,
         source: SourceLocation,
@@ -3014,6 +3037,7 @@ class _UseFacts(_SchemaUses):
         direction: Direction,
         *,
         form: bool,
+        seen: frozenset[SourceLocation] = frozenset(),
     ) -> TextShape:
         """Return how a type's values are written as one parameter value, or as the members of a URL-encoded form.
 
@@ -3021,22 +3045,32 @@ class _UseFacts(_SchemaUses):
         items' kind and a scalar its own, and a union of items and arrays of them is an array of their one kind that
         takes an item alone (``single``); an object has the model's members, then its other properties
         (``others``): none when it allows none, those of its typed values' kind, else any string. A form that is no
-        object, and an object with pattern properties, have no builtin encoding.
+        object, and an object with pattern properties, have no builtin encoding. As one parameter value, items, a
+        scalar and members without one kind have their shapes for the bracket form (``bracketed``), and a union of
+        members laid out unlike each other the shape of each.
         """
         holder = self.holder(value, source)
         layout = self.layout(value)
         if layout == "array" and not form:
-            return TextShape("array", KindAt(holder.child("items"), self.kind(self.items(value))))
+            site = holder.child("items")
+            if (kind := self.kind(items := self.items(value))) is not None:
+                return TextShape("array", KindAt(site, kind))
+            return TextShape("array", KindAt(site, None), items=self.bracketed(items, site, direction, seen))
         if not form and (kind := self.single(value)) is not None:
             return TextShape("array", KindAt(holder, kind), single=True)
+        found = unwrapped(value, self.symbol_table, self.members)
         if layout != "object":
-            return (
-                TextShape("object", problem=(holder, _NOT_OBJECT))
-                if form
-                else TextShape("scalar", KindAt(holder, self.kind(value)))
+            if form:
+                return TextShape("object", problem=(holder, _NOT_OBJECT))
+            if (kind := self.kind(value)) is not None or not isinstance(found, UnionType):
+                return TextShape("scalar", KindAt(holder, kind))
+            choices = tuple(
+                self.shape(item, holder, self.held_members(item, direction), direction, form=False, seen=seen)
+                for item in present(found)
             )
-        if isinstance(found := unwrapped(value, self.symbol_table, self.members), UnionType):
-            return self.union_shape(present(found), source, direction, form=form)
+            return TextShape("scalar", KindAt(holder, None), choices=choices)
+        if isinstance(found, UnionType):
+            return self.union_shape(present(found), source, direction, form=form, seen=seen)
         others = self.others(value, members, holder, direction)
         if others.patterns:
             return TextShape("object", problem=(holder, _PATTERNS))
@@ -3045,12 +3079,13 @@ class _UseFacts(_SchemaUses):
             if others.said == "closed"
             else MemberShape("")
             if others.source is None
-            else self.member_shape("", others.values, others.source, form=form)
+            else self.member_shape("", others.values, others.source, direction, form=form, seen=seen)
         )
         return TextShape(
             "object",
             members=tuple(
-                self.member_shape(name, facts.type, schema, form=form) for name, schema, facts in _typed(members)
+                self.member_shape(name, facts.type, schema, direction, form=form, seen=seen)
+                for name, schema, facts in _typed(members)
             ),
             additional=additional,
         )
@@ -3074,7 +3109,13 @@ class _UseFacts(_SchemaUses):
         return kinds.pop() if len(kinds) == 1 else None
 
     def union_shape(
-        self, alternatives: tuple[TypeView, ...], source: SourceLocation, direction: Direction, *, form: bool
+        self,
+        alternatives: tuple[TypeView, ...],
+        source: SourceLocation,
+        direction: Direction,
+        *,
+        form: bool,
+        seen: frozenset[SourceLocation] = frozenset(),
     ) -> TextShape:
         """Return how the values of a union of objects are written as text: the members of its objects, merged by name.
 
@@ -3084,7 +3125,8 @@ class _UseFacts(_SchemaUses):
         object with pattern properties has no members and allows any string.
         """
         shapes = [
-            self.shape(item, source, self.held_members(item, direction), direction, form=form) for item in alternatives
+            self.shape(item, source, self.held_members(item, direction), direction, form=form, seen=seen)
+            for item in alternatives
         ]
         merged: dict[str, MemberShape] = {}
         for shape in shapes:
@@ -3556,15 +3598,22 @@ class _Octets(_UseFacts):
 
 
 def _same_kind(first: MemberShape, other: MemberShape) -> bool:
-    """Return whether two members of objects are written alike: in one lexical kind, both repeated or both not."""
-    return first.repeated == other.repeated and (first.kind and first.kind.kind) == (other.kind and other.kind.kind)
+    """Return whether two members of objects are written alike: in one lexical kind, both repeated or both not.
+
+    Members whose values have no one kind (``MemberShape.value``) are not written alike.
+    """
+    return (
+        first.repeated == other.repeated
+        and (first.kind and first.kind.kind) == (other.kind and other.kind.kind)
+        and first.value is other.value is None
+    )
 
 
 def _agreed(first: MemberShape, other: MemberShape) -> MemberShape:
     """Return the member two objects declare by one name: the first when both write it alike, else with no kind."""
     if _same_kind(first, other):
         return first
-    return replace(first, kind=KindAt(cast("KindAt", first.kind).source, None))
+    return replace(first, kind=KindAt(cast("KindAt", first.kind).source, None), value=None)
 
 
 def _typed(members: tuple[FieldUseBinding, ...]) -> Iterator[tuple[str, SourceLocation, ModelFieldFacts]]:
