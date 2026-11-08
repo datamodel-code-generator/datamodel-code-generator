@@ -57,7 +57,7 @@ from datamodel_code_generator.parser._schema_reading import (
     _MISSING_JSON_POINTER,
     _fragment_value,
     _get_model_by_decoded_path,
-    _intersect_dumps,
+    _intersect_parts,
     _is_plain_name_fragment,
     _ref_edge_child_entries,
     _without_contains_keywords,
@@ -1289,14 +1289,14 @@ def intersect_ref_siblings(  # noqa: PLR0913
     siblings are parts of a ``conjunction`` the document writes around the $ref (``_CONJUNCTION_PARTS_KEY``).
     """
     legacy_rows = parser._legacy_intersection  # noqa: SLF001
-    intersection = _intersect_dumps(
+    intersection = _intersect_parts(
+        parser,
         [target, siblings],
         concatenating_row(target, siblings),
+        where=where,
         ref_siblings_are_parts=siblings_are_parts,
         legacy_rows=legacy_rows - {"legacy-merge-row"} if conjunction else legacy_rows,
-        removes_enum_outside_type="legacy-enum-outside-type-kept" not in parser._legacy_intersection,  # noqa: SLF001
     )
-    parser._warn_intersection(where, intersection)  # noqa: SLF001
     return intersection.keywords, intersection.unsatisfiable
 
 

@@ -54,11 +54,12 @@ from datamodel_code_generator.parser._schema_reading import (
     _LIGHTWEIGHT_MAX_UNION_ELEMENTS,
     _AllOfItemGroups,
     _enum_without_positions,
-    _intersect_dumps,
+    _intersect_parts,
     _is_object_only_type,
     _merges_ref_siblings,
     _numeric_type_domain,
     _schema_dump,
+    _with_ref_siblings,
 )
 from datamodel_code_generator.reference import Reference, _is_special_path
 
@@ -664,14 +665,8 @@ def intersect_all_of_value_parts(
         const_part := next((dump for dump in dumps if "const" in dump.get(extras_key, {})), None)
     ):
         row_extras["const"] = added["const"] = const_part[extras_key]["const"]
-    intersection = _intersect_dumps(
-        dumps,
-        row,
-        removes_enum_outside_type="legacy-enum-outside-type-kept" not in parser._legacy_intersection,  # noqa: SLF001
-    )
+    intersection = _intersect_parts(parser, dumps, row, where=where, parts=(_ALL_OF_PARTS,))
     keywords = intersection.keywords
-    if where is not None:
-        parser._warn_intersection(where, intersection, _ALL_OF_PARTS)  # noqa: SLF001
     dropped = set(intersection.unsatisfiable)
     if "array" not in declared_types(keywords.get("type")):
         dropped.update(_ALL_OF_VALUE_ITEM_KEYWORDS)
@@ -1561,11 +1556,7 @@ def unsatisfiable_value_keywords(parser: AllOfValuesHost, parts: Sequence[JsonSc
         return ()
     dumps = [part.model_dump(exclude_unset=True, by_alias=True) for part in parts]
     row = {keyword: value for dump in dumps for keyword, value in dump.items()}
-    return _intersect_dumps(
-        dumps,
-        row,
-        removes_enum_outside_type="legacy-enum-outside-type-kept" not in parser._legacy_intersection,  # noqa: SLF001
-    ).unsatisfiable
+    return _intersect_parts(parser, dumps, row).unsatisfiable
 
 
 class SchemaRefReader(Protocol):
@@ -2017,8 +2008,8 @@ def site_schema(
     With ``merge_ref_siblings``, a ``$ref`` whose sibling keywords are parts of it is merged with them first.
     """
     site = array_all_of_site_schema(parser, obj)
-    if merge_ref_siblings and _merges_ref_siblings(site):
-        site = parser._merge_ref_with_schema(site)  # noqa: SLF001
+    if merge_ref_siblings:
+        site = _with_ref_siblings(parser, site)
     return parser._read_false_all_of_values(site)  # noqa: SLF001
 
 

@@ -73,6 +73,7 @@ from datamodel_code_generator.parser._schema_reading import (
     _RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY,
     _get_json_value_type,
     _intersect_dumps,
+    _intersect_parts,
     _schema_dump,
     _without_contains_keywords,
 )
@@ -1236,13 +1237,13 @@ def inherited_override_schema(
         return merged_schema
     parent_dict = parent.model_dump(exclude_unset=True, by_alias=True)
     child_dict = child.model_dump(exclude_unset=True, by_alias=True)
-    intersection = _intersect_dumps(
+    intersection = _intersect_parts(
+        parser,
         [parent_dict, child_dict],
         override_row(parser, parent_dict, child_dict),
+        where=where,
         legacy_rows=parser._legacy_intersection,  # noqa: SLF001
-        removes_enum_outside_type="legacy-enum-outside-type-kept" not in parser._legacy_intersection,  # noqa: SLF001
     )
-    parser._warn_intersection(where, intersection)  # noqa: SLF001
     merged_property = parser._schema_object(intersection.keywords)  # noqa: SLF001
     parser._mark_reported_value_conflict(merged_property, intersection.unsatisfiable)  # noqa: SLF001
     merged_property.__dict__[_RAW_SCHEMA_EXPLICIT_FIELD_EXTRAS_KEY] = frozenset(parser.get_field_extras(child))
@@ -1707,15 +1708,14 @@ def _conjoined_declarations(
     stands at the first declaration.
     """
     dumps = [declared.model_dump(exclude_unset=True, by_alias=True) for declared in declarations]
-    intersection = _intersect_dumps(
+    location = declarations[0].schema_location
+    intersection = _intersect_parts(
+        parser,
         dumps,
         reduce(all_of_member_row, dumps[1:], dumps[0]),
-        removes_enum_outside_type="legacy-enum-outside-type-kept" not in parser._legacy_intersection,  # noqa: SLF001
+        where=named_location(location, f"property {stable_repr(name)}"),
+        parts=("the allOf members that declare it",),
         own_last=False,
-    )
-    location = declarations[0].schema_location
-    parser._warn_intersection(  # noqa: SLF001
-        named_location(location, f"property {stable_repr(name)}"), intersection, "the allOf members that declare it"
     )
     merged = parser._schema_object(intersection.keywords).with_schema_location(location)  # noqa: SLF001
     parser._mark_reported_value_conflict(merged, intersection.unsatisfiable)  # noqa: SLF001
@@ -1965,12 +1965,7 @@ def get_inherited_required_names(parser: InheritedSchemasHost, base_classes: lis
     linearized_refs = linearize_inherited_schema_refs(parser, base_classes)
     if linearized_refs in parser._inherited_required_cache:  # noqa: SLF001
         return parser._inherited_required_cache[linearized_refs]  # noqa: SLF001
-    result = parser._inherited_required_cache[linearized_refs] = frozenset(  # noqa: SLF001
-        name
-        for ref in linearized_refs
-        for source in inline_all_of_parts(parser, load_inherited_schema_object(parser, ref))
-        for name in source.required
-    )
+    result = parser._inherited_required_cache[linearized_refs] = _required_names(parser, linearized_refs)  # noqa: SLF001
     return result
 
 
@@ -1979,10 +1974,16 @@ def required_names_at(parser: InheritedSchemasHost, resolved_ref: str) -> frozen
 
     These are the names ``get_inherited_required_names`` reads for the model of that schema as a base.
     """
+    return _required_names(parser, (resolved_ref, *get_inherited_schema_ancestor_paths(parser, resolved_ref)))
+
+
+def _required_names(parser: InheritedSchemasHost, refs: Iterable[str]) -> frozenset[str]:
+    """Return the names the schemas at reference keys ``refs`` require, with their inline allOf members."""
     return frozenset(
         name
-        for path in (resolved_ref, *get_inherited_schema_ancestor_paths(parser, resolved_ref))
-        for name in get_inline_required_names(parser, load_inherited_schema_object(parser, path))
+        for ref in refs
+        for source in inline_all_of_parts(parser, load_inherited_schema_object(parser, ref))
+        for name in source.required
     )
 
 
