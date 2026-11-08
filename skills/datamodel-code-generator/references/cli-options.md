@@ -442,6 +442,6 @@ Server and client generation alongside the models (experimental).
 - `--client-operations`: Settings per operation reference, such as /paths/~1pets/get, as inline JSON or a JSON file path; their body_arguments overrides --client-body-arguments (experimental).
 - `--client-default-base-url`: Server URL of the operations that declare no servers (experimental).
 - `--client-server-base-url`: Base URL that relative server URLs of the document resolve against (experimental).
-- `--client-deep-object-brackets`: Write a deepObject query parameter whose value is an array as name[]=value for each item, and one whose value is a scalar as name=value, as Stripe documents them, instead of leaving its operation out (experimental).
-- `--no-client-deep-object-brackets`: Write a deepObject query parameter whose value is an array as name[]=value for each item, and one whose value is a scalar as name=value, as Stripe documents them, instead of leaving its operation out (experimental).
+- `--client-deep-object-brackets`: Write a deepObject query parameter or URL-encoded form member whose value is an array as name[]=value for each item, and one whose value is a scalar as name=value, as Stripe documents them, instead of leaving its operation out (experimental).
+- `--no-client-deep-object-brackets`: Write a deepObject query parameter or URL-encoded form member whose value is an array as name[]=value for each item, and one whose value is a scalar as name=value, as Stripe documents them, instead of leaving its operation out (experimental).
 - `--client-protocols`: Pagination, polling, stream, WebSocket, cache, upload, and webhook helpers by name, as inline JSON or a JSON file path (experimental).

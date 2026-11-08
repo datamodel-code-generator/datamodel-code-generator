@@ -1535,12 +1535,13 @@ against the document's URL when it is read from one.""",
                 options=["--client-deep-object-brackets"],
                 option_description="""Write deepObject arrays as name[]=v per item, scalars as name=v (experimental).
 
-OpenAPI defines `style: deepObject` for objects alone, so an operation whose deepObject query parameter takes an array
-or a scalar is left out with a warning. With this option the client writes an array as `name[]=value` for each item,
-such as `expand[]=a&expand[]=b`, and a scalar as `name=value`, with the brackets percent-encoded as those of an
-object's `name[key]` pairs are. A parameter that takes one item or an array of them is written by the value a call
-gives: an item alone as `name=value`, an array as `name[]=value` for each item. `--no-client-deep-object-brackets`
-turns off the `client-deep-object-brackets` key of pyproject.toml.""",
+OpenAPI defines `style: deepObject` for objects alone, so an operation whose deepObject query parameter, or member of
+an `application/x-www-form-urlencoded` body, takes an array or a scalar is left out with a warning. With this option
+the client writes an array as `name[]=value` for each item, such as `expand[]=a&expand[]=b`, and a scalar as
+`name=value`, with the brackets percent-encoded as those of an object's `name[key]` pairs are. A parameter that takes
+one item or an array of them is written by the value a call gives: an item alone as `name=value`, an array as
+`name[]=value` for each item. `--no-client-deep-object-brackets` turns off the `client-deep-object-brackets` key of
+pyproject.toml.""",
                 input_schema="generation_platform/client/cli/options-deep-object.yaml",
                 cli_args=[*DOC_OPTIONS, "--client-deep-object-brackets"],
                 golden_output=f"{DOC_OUTPUT}/deep-object-brackets/_operations.py",

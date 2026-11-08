@@ -10450,7 +10450,7 @@ Client: whether the generated Python client (`--generate-client`) supports the f
 | `http security schemes` | OAS 3.0 | ❌ Not Supported | ⚠️ Partial | HTTP authentication schemes; the client sends `basic` and `bearer` only |
 | `mutualTLS` | OAS 3.1 | ❌ Not Supported | ❌ Not Supported | Mutual TLS security scheme |
 | `style: cookie` | OAS 3.2 | ✅ Supported | ✅ Supported | Cookie parameter style; earlier versions do not declare it |
-| `style: deepObject` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Query parameters written as `name[key]=value`; the client writes objects, and arrays and scalars, which OpenAPI leaves undefined, as `name[]=value` and `name=value` only with `--client-deep-object-brackets` |
+| `style: deepObject` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Query parameters written as `name[key]=value`; the client writes objects, and arrays and scalars, which OpenAPI leaves undefined, of query parameters and URL-encoded form members as `name[]=value` and `name=value` only with `--client-deep-object-brackets` |
 | `Structured style values` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style; the client writes a parameter outside a header that takes one item or an array of them only |
 | `Binary strings in text media` | OAS 3.0 | ✅ Supported | ❌ Not Supported | `format: binary` strings inside a JSON, URL-encoded or text body, a parameter or a header |
 | `multipart media types` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema, or a union of objects that agree on the parts of each property, only, such as not `multipart/related` |
@@ -10994,7 +10994,7 @@ Client: whether the generated Python client (`--generate-client`) supports the f
 | `http security schemes` | OAS 3.0 | ❌ Not Supported | ⚠️ Partial | HTTP authentication schemes; the client sends `basic` and `bearer` only |
 | `mutualTLS` | OAS 3.1 | ❌ Not Supported | ❌ Not Supported | Mutual TLS security scheme |
 | `style: cookie` | OAS 3.2 | ✅ Supported | ✅ Supported | Cookie parameter style; earlier versions do not declare it |
-| `style: deepObject` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Query parameters written as `name[key]=value`; the client writes objects, and arrays and scalars, which OpenAPI leaves undefined, as `name[]=value` and `name=value` only with `--client-deep-object-brackets` |
+| `style: deepObject` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Query parameters written as `name[key]=value`; the client writes objects, and arrays and scalars, which OpenAPI leaves undefined, of query parameters and URL-encoded form members as `name[]=value` and `name=value` only with `--client-deep-object-brackets` |
 | `Structured style values` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Parameter and form member values that are no single scalar kind, such as nested objects, unions and `allOf`, written with a style; the client writes a parameter outside a header that takes one item or an array of them only |
 | `Binary strings in text media` | OAS 3.0 | ✅ Supported | ❌ Not Supported | `format: binary` strings inside a JSON, URL-encoded or text body, a parameter or a header |
 | `multipart media types` | OAS 3.0 | ✅ Supported | ⚠️ Partial | Multipart bodies; the client maps the parts of `multipart/form-data` with an object schema, or a union of objects that agree on the parts of each property, only, such as not `multipart/related` |
@@ -23337,12 +23337,12 @@ that names it: a tag mapped to `default`, or an operation whose `resource` is `d
 name.
 
 OpenAPI defines `style: deepObject` for objects alone, which the client writes as `name[key]=value` pairs; an
-operation whose deepObject query parameter takes an array or a scalar is left out. `--client-deep-object-brackets`
-writes such a parameter in the bracket form some APIs, such as Stripe, document instead: an array as `name[]=value`
-for each item, such as `expand[]=a&expand[]=b`, and a scalar as `name=value`. The brackets are percent-encoded in the
-query, as those of an object's pairs are (`expand%5B%5D=a`), which servers decode to the same names. The setting
-changes only how the client writes these parameters; `--no-client-deep-object-brackets` turns off one that a
-`pyproject.toml` key sets.
+operation whose deepObject query parameter, or `application/x-www-form-urlencoded` body member, takes an array or a
+scalar is left out. `--client-deep-object-brackets` writes such a parameter or member in the bracket form some APIs,
+such as Stripe, document instead: an array as `name[]=value` for each item, such as `expand[]=a&expand[]=b`, and a
+scalar as `name=value`. The brackets are percent-encoded in the query or the form, as those of an object's pairs are
+(`expand%5B%5D=a`), which servers decode to the same names. The setting changes only how the client writes these
+parameters and members; `--no-client-deep-object-brackets` turns off one that a `pyproject.toml` key sets.
 
 `--generate-client` requires `--client-output`, `--client-package`, and `--client-model-package`, and a `--client-*`
 option given on the command line requires `--generate-client`; both stop with `Error:` and exit code 2.
@@ -70436,12 +70436,13 @@ overrides it for that operation.
 
 Write deepObject arrays as name[]=v per item, scalars as name=v (experimental).
 
-OpenAPI defines `style: deepObject` for objects alone, so an operation whose deepObject query parameter takes an array
-or a scalar is left out with a warning. With this option the client writes an array as `name[]=value` for each item,
-such as `expand[]=a&expand[]=b`, and a scalar as `name=value`, with the brackets percent-encoded as those of an
-object's `name[key]` pairs are. A parameter that takes one item or an array of them is written by the value a call
-gives: an item alone as `name=value`, an array as `name[]=value` for each item. `--no-client-deep-object-brackets`
-turns off the `client-deep-object-brackets` key of pyproject.toml.
+OpenAPI defines `style: deepObject` for objects alone, so an operation whose deepObject query parameter, or member of
+an `application/x-www-form-urlencoded` body, takes an array or a scalar is left out with a warning. With this option
+the client writes an array as `name[]=value` for each item, such as `expand[]=a&expand[]=b`, and a scalar as
+`name=value`, with the brackets percent-encoded as those of an object's `name[key]` pairs are. A parameter that takes
+one item or an array of them is written by the value a call gives: an item alone as `name=value`, an array as
+`name[]=value` for each item. `--no-client-deep-object-brackets` turns off the `client-deep-object-brackets` key of
+pyproject.toml.
 
 **Option relationships:**
 

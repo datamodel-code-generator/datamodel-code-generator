@@ -58,3 +58,33 @@ paths:
       responses:
         '204':
           description: The customers.
+    post:
+      operationId: PostCustomers
+      tags: [customers]
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            encoding:
+              balance: {style: deepObject, explode: true}
+              expand: {style: deepObject, explode: true}
+              metadata: {style: deepObject, explode: true}
+              tax_rates: {style: deepObject, explode: true}
+            schema:
+              type: object
+              properties:
+                balance: {type: integer}
+                email: {type: string}
+                expand:
+                  type: array
+                  items: {type: string}
+                metadata:
+                  type: object
+                  additionalProperties: {type: string}
+                tax_rates:
+                  anyOf:
+                    - type: array
+                      items: {type: string}
+                    - {type: string, enum: ['']}
+      responses:
+        '204':
+          description: The customer.

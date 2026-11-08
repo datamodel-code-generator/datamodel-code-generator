@@ -9,8 +9,10 @@ from typing import Final
 
 from ._generated import model_bindings
 from ._runtime.client.operations import (
+    BodyMedia,
     OperationPlan,
     ParameterSpec,
+    RequestBody,
     ResponseDecoder,
     ServerPlan,
     empty_branch,
@@ -18,7 +20,7 @@ from ._runtime.client.operations import (
 from ._runtime.model_codecs.media import FieldPlan
 from ._runtime.model_codecs.parameters import ParameterPlan
 from .types.charges import GetChargesChargeResponse
-from .types.customers import GetCustomersResponse
+from .types.customers import GetCustomersResponse, PostCustomersResponse
 
 _SERVERS_0: Final = (ServerPlan(url='https://api.example.com'),)
 
@@ -38,4 +40,13 @@ OPERATION_1: Final[OperationPlan[GetCustomersResponse]] = OperationPlan(
     servers=_SERVERS_0,
     responses=ResponseDecoder((empty_branch('204'),), ()),
     parameters=(ParameterSpec(plan=ParameterPlan(location='query', name='expand[]', style='form', explode=True, shape='array', reserved_names=('expand', 'ids')), codec=model_bindings.codec_4), ParameterSpec(plan=ParameterPlan(location='query', name='ids[]', style='form', explode=True, shape='array', reserved_names=('expand', 'ids'), single=True, item_name='ids'), codec=model_bindings.codec_5)),
+)
+
+OPERATION_2: Final[OperationPlan[PostCustomersResponse]] = OperationPlan(
+    operation_id='PostCustomers',
+    method='POST',
+    path='/v1/customers',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder((empty_branch('204'),), ()),
+    body=RequestBody(media=(BodyMedia(media_type='application/x-www-form-urlencoded', kind='form', codec=model_bindings.codec_6, fields=(FieldPlan('email', 'string'),), additional=FieldPlan('', 'string'), encoded=(ParameterPlan(location='query', name='balance', style='form', explode=True, kind='integer', reserved_names=('email', 'expand', 'metadata', 'tax_rates')), ParameterPlan(location='query', name='expand[]', style='form', explode=True, shape='array', reserved_names=('balance', 'email', 'metadata', 'tax_rates'), item_name='expand'), ParameterPlan(location='query', name='metadata', style='deepObject', explode=True, shape='object', additional=FieldPlan('', 'string'), reserved_names=('balance', 'email', 'expand', 'tax_rates')), ParameterPlan(location='query', name='tax_rates[]', style='form', explode=True, shape='array', reserved_names=('balance', 'email', 'expand', 'metadata'), single=True, item_name='tax_rates'))),), default='application/x-www-form-urlencoded'),
 )

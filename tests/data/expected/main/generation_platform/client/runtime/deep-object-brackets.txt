@@ -14,3 +14,9 @@
   > GET https://api.example.com/v1/customers?ids%5B%5D=cus_1&ids%5B%5D=cus_2
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   ids = None
+  > POST https://api.example.com/v1/customers
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 132] b'balance=5&email=a%40b.c&expand%5B%5D=data.source&expand%5B%5D=tax&metadata%5Bplan%5D=pro&tax_rates%5B%5D=txr_1&tax_rates%5B%5D=txr_2'
+  form = None
+  > POST https://api.example.com/v1/customers
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/x-www-form-urlencoded, content-length: 10] b'tax_rates='
+  cleared = None
