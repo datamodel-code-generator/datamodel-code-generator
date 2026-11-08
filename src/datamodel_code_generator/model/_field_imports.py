@@ -24,7 +24,7 @@ from datamodel_code_generator._container_kinds import container_shape
 from datamodel_code_generator._internal_utils import to_hashable
 from datamodel_code_generator._target_unicode import host_identifiers
 from datamodel_code_generator.imports import IMPORT_ANNOTATED, IMPORT_ANY, IMPORT_OPTIONAL, IMPORT_UNION, Import
-from datamodel_code_generator.model._decisions.nullability import field_renders_none
+from datamodel_code_generator.model._decisions.nullability import field_renders_none, takes_member_null
 from datamodel_code_generator.model._rendered_names import _names_of
 
 if TYPE_CHECKING:
@@ -484,7 +484,11 @@ def write_pre_render_nullability(field: FieldImportsHost[_D], data_type: _D) -> 
     if data_type.dict_key:
         field._write_pre_render_nullability(data_type.dict_key)  # noqa: SLF001
 
-    if not data_type.is_union or data_type.preserve_union_member_order or data_type._is_container:  # noqa: SLF001
+    if not takes_member_null(
+        is_container=data_type._is_container,  # noqa: SLF001
+        keeps_member_order=data_type.preserve_union_member_order,
+        member_count=len(data_type.data_types),
+    ):
         return
     if any(field._data_type_renders_none(child) for child in data_type.data_types):  # noqa: SLF001
         data_type._materialize_render_state("member-null")  # noqa: SLF001

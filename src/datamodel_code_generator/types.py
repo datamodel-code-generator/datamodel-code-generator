@@ -1103,7 +1103,10 @@ class DataType(_BaseModel):  # noqa: PLR0904
         names one where a member does and every other member does or is None, an alias where the value of its field,
         which writes the value and nothing else (no annotation, no call), does or is None.
         """
-        pending: list[tuple[DataType, tuple[Reference, ...], tuple[_NoneAliasRead, ...] | None]] = [(self, chain, None)]
+        if isinstance(read := self._none_alias_parts(chain), bool):
+            return read
+        pending: list[tuple[DataType, tuple[Reference, ...], tuple[_NoneAliasRead, ...] | None]] = [(self, chain, read)]
+        pending.extend((part, part_chain, None) for part, part_chain in reversed(read))
         names: list[bool] = []
         while pending:
             data_type, data_type_chain, parts = pending.pop()
@@ -2372,15 +2375,13 @@ class DataTypeManager(ABC):
         """Yield the type path of each value of a ``Literal`` other than ``None``, or ``""`` for an unclassified one."""
         from datamodel_code_generator._python_type_annotation import (  # noqa: PLC0415
             PythonTypeLiteralValue,
-            is_literal_python_type_expr,
+            literal_values,
             python_type_expr_arguments,
             python_type_expr_base_name,
         )
 
-        for argument in python_type_expr_arguments(expression):
-            if is_literal_python_type_expr(argument):
-                yield from DataTypeManager._literal_value_paths(argument)
-            elif python_type_expr_base_name(argument) != NONE:
+        for argument in literal_values(python_type_expr_arguments(expression)):
+            if python_type_expr_base_name(argument) != NONE:
                 yield (
                     _LITERAL_VALUE_TYPE_PATHS.get(type(argument.value), "")
                     if isinstance(argument, PythonTypeLiteralValue)
