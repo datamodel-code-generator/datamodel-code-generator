@@ -23285,6 +23285,10 @@ client does not support: /paths/~1certificates/get: The security of GET /certifi
 'clientCertificate'
 ```
 
+A security alternative that needs such a scheme is left out instead while the operation declares another one, such as
+a `bearer` alternative beside a `digest` one: the operation is generated, and a call sends the credentials of an
+alternative the client keeps.
+
 The generated client has no method, type, or documentation for it. The client package omits only its client code:
 the model files are generated from the whole document, so they can still hold the types the left-out operation used,
 such as the model of its request body or of a parameter's schema. Generation still stops with `Error:` and exit

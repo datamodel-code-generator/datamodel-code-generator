@@ -12,7 +12,7 @@ from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...options import RequestOptions
 from ...responses import RawResponse, Response
-from ...types.default import GetHealthResponse
+from ...types.default import GetHealthResponse, ListSignedResponse
 
 
 class DefaultResource:
@@ -51,6 +51,20 @@ class DefaultResource:
             options=options,
         ).data
 
+    def list_signed(
+        self,
+        *,
+        options: RequestOptions | None = None,
+    ) -> ListSignedResponse:
+        """
+        Call GET /signed.
+        """
+        return self._core.execute(
+            _operations.OPERATION_1,
+            (),
+            options=options,
+        ).data
+
 
 class DefaultWithResponse:
     """The default operations, returning each result with its response metadata."""
@@ -69,6 +83,20 @@ class DefaultWithResponse:
         """
         return self._core.execute(
             _operations.OPERATION_0,
+            (),
+            options=options,
+        )
+
+    def list_signed(
+        self,
+        *,
+        options: RequestOptions | None = None,
+    ) -> Response[ListSignedResponse]:
+        """
+        Call GET /signed.
+        """
+        return self._core.execute(
+            _operations.OPERATION_1,
             (),
             options=options,
         )
@@ -95,6 +123,20 @@ class DefaultWithRawResponse:
             options=options,
         )
 
+    def list_signed(
+        self,
+        *,
+        options: RequestOptions | None = None,
+    ) -> RawResponse:
+        """
+        Call GET /signed.
+        """
+        return self._core.execute_raw(
+            _operations.OPERATION_1,
+            (),
+            options=options,
+        )
+
 
 class DefaultWithStreamingResponse:
     """The default operations, returning blocks that send each call on entry and stream its response."""
@@ -113,6 +155,20 @@ class DefaultWithStreamingResponse:
         """
         return self._core.stream(
             _operations.OPERATION_0,
+            (),
+            options=options,
+        )
+
+    def list_signed(
+        self,
+        *,
+        options: RequestOptions | None = None,
+    ) -> AbstractContextManager[RawResponse]:
+        """
+        Call GET /signed.
+        """
+        return self._core.stream(
+            _operations.OPERATION_1,
             (),
             options=options,
         )

@@ -24,6 +24,22 @@ paths:
         - {digestAuth: []}
       responses:
         '204': {description: No digests.}
+  /signed:
+    get:
+      operationId: listSigned
+      security:
+        - {digestAuth: []}
+        - {bearerAuth: []}
+      responses:
+        '204': {description: No signed items.}
+  /devices:
+    get:
+      operationId: listDevices
+      security:
+        - {digestAuth: []}
+        - {clientCertificate: []}
+      responses:
+        '204': {description: No devices.}
   /expanded:
     get:
       operationId: listExpanded
@@ -84,3 +100,4 @@ components:
   securitySchemes:
     clientCertificate: {type: mutualTLS}
     digestAuth: {type: http, scheme: digest}
+    bearerAuth: {type: http, scheme: bearer}

@@ -34,7 +34,7 @@ from datamodel_code_generator._target_operations import declared_in, operation_r
 from datamodel_code_generator.python_literal import stable_repr
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Iterable, Iterator, Mapping
 
     from datamodel_code_generator._openapi_features import ClientFeature
     from datamodel_code_generator._runtime.client.security import SecuritySchemeEntry
@@ -228,8 +228,21 @@ class SecurityPlanner:
             )
         )
 
+    def unavailable(
+        self, operation: OperationContract, name: object, declared: Mapping[str, WireDeclaration]
+    ) -> ClientFeature | None:
+        """Return the feature an unavailable scheme uses that the client does not support, or refuse the operation."""
+        if (feature := None if (found := declared.get(name)) is None else _feature(found)) is None:
+            self.problem(operation, f"requires the unavailable scheme {stable_repr(name)}")
+        return feature
+
     def binding(self, operation: OperationContract) -> SecurityBinding | None:
-        """Preserve absent, empty, and ordered AND/OR requirements, naming schemes of the using document."""
+        """Preserve absent, empty, and ordered AND/OR requirements, naming schemes of the using document.
+
+        An alternative that names a scheme using a feature the client does not support is left out while another
+        alternative remains, as a call can authenticate with that one; with none left, each such scheme refuses the
+        operation by its feature.
+        """
         value = operation_literal(operation, "security")
         if value is None:
             return None
@@ -239,15 +252,18 @@ class SecurityPlanner:
             self.problem(operation, "must be an array of requirement objects")
             return None
         alternatives: list[tuple[SecurityRequirement, ...]] = []
+        unsupported: dict[str, ClientFeature] = {}
         for alternative in declared:
             if alternative is None:
                 self.problem(operation, "must contain only requirement objects")
                 continue
             owners: dict[tuple[str, str], list[SecurityRequirement]] = {}
+            left_out = False
             for name, scopes in alternative:
                 if not isinstance(name, str) or not isinstance(scheme := schemes.get(name), SecurityScheme):
-                    feature = None if (found := declared_schemes.get(name)) is None else _feature(found)
-                    self.problem(operation, f"requires the unavailable scheme {stable_repr(name)}", feature=feature)
+                    if (feature := self.unavailable(operation, name, declared_schemes)) is not None:
+                        unsupported.setdefault(stable_repr(name), feature)
+                        left_out = True
                     continue
                 declaration = declared_schemes[name]
                 version = self.versions.of(operation.id.use_site)
@@ -261,5 +277,9 @@ class SecurityPlanner:
                         operation, f"has overlapping {scheme.location} ownership in one AND alternative", conflict=True
                     )
                 owner.append(SecurityRequirement(scheme=scheme, required_scopes=required))
-            alternatives.extend(_shared(owners.values()))
+            if not left_out:
+                alternatives.extend(_shared(owners.values()))
+        if not alternatives:
+            for named, feature in unsupported.items():
+                self.problem(operation, f"requires the unavailable scheme {named}", feature=feature)
         return SecurityBinding(schemes=tuple(schemes.values()), alternatives=tuple(alternatives))
