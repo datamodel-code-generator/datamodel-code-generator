@@ -76,12 +76,19 @@ def generate_dynamic_module(
     config: GenerateConfig | None = None,
     cache_size: int = 128,
     module_name: str | None = None,
+    register_module: bool = False,
 ) -> DynamicModule:
 ```
 
 Generates the classes like `generate_dynamic_models()` and also tells which class the document itself became and
 which class each schema location became. The parameters are those of `generate_dynamic_models()` without
-`target_model_names`. See [Root Class and Schema Locations](#root-class-and-schema-locations).
+`target_model_names`, and:
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `register_module` | `bool` | `False` | Keep the module of the classes registered in `sys.modules`, so that pickle finds them. Without `module_name`, the name is derived from the schema and the config. See [Picklable Models](#picklable-models-registered-modules) |
+
+See [Root Class and Schema Locations](#root-class-and-schema-locations).
 
 **Returns:** `DynamicModule` - a frozen object with these attributes:
 
@@ -316,6 +323,86 @@ the class a `$ref` to it names. These locations have no key:
 type alias (`use_type_alias`). In split output, `models` holds one of two classes that share a name in different
 modules, while `models_by_source_ref` keys both.
 
+## Picklable Models (Registered Modules)
+
+Pickle stores a class, and the class of an instance, by its module and name, and loads them by importing the module.
+With `register_module=True`, `generate_dynamic_module()` keeps the module of the classes registered in `sys.modules`,
+so their classes and instances pickle, for example to restore checkpoints or to send them to worker processes:
+
+```python
+import pickle
+
+from datamodel_code_generator import generate_dynamic_module
+
+schema = {"title": "Task", "type": "object", "properties": {"name": {"type": "string"}}}
+
+module = generate_dynamic_module(schema, register_module=True)
+Task = module.root_class
+data = pickle.dumps(Task(name="build"))
+
+# In another process, run the same generation first, then load:
+module = generate_dynamic_module(schema, register_module=True)
+task = pickle.loads(data)
+assert type(task) is module.root_class
+```
+
+Without `module_name`, the module is named `_dcg_dynamic_` and a digest of the schema and the config, which is the same
+in every process that passes an equal schema and config: the keys of the schema in the same order, and the same
+settings (the values of set-valued settings in any order). A schema with its keys in another order, a config that dumps
+otherwise after a dcg upgrade, or `Path` settings spelled otherwise give another name. To keep one name across such
+changes, pass `module_name` yourself, for example your own digest of the schema. A dotted name needs a parent package
+that can be imported, because pickle imports it. Like import, registration binds each module below a package to it,
+so `package.module` reaches the registered module.
+
+A call with the name of a registered module and the same schema and config returns the registered classes, also with
+`cache_size=0` and without `register_module`. A call without `register_module` that passes the name with another schema
+or config, or with a schema or config that cannot be serialized as JSON (which no call can be matched to), builds a
+second set of classes in a module of that name; they cannot be pickled, because pickle finds the registered classes
+under their names. Registered modules are no cache entries: `cache_size`, eviction and
+`clear_dynamic_models_cache()` leave them alone, and each one stays, like an imported module, until you remove it from
+`sys.modules`. Register a bounded set of schemas, such as the schemas of tools or workers, and remove a module you no
+longer need:
+
+```python
+import sys
+
+name = module.module_name
+for key in [key for key in sys.modules if key == name or key.startswith(f"{name}.")]:
+    del sys.modules[key]
+parent, _, leaf = name.rpartition(".")
+if parent:
+    vars(sys.modules[parent]).pop(leaf, None)
+```
+
+After that, the same call registers new classes; pickles of the old instances no longer load into the old classes.
+
+`register_module=True` raises `datamodel_code_generator.Error` and replaces nothing when:
+
+- the name holds the classes of another schema or other settings;
+- the name holds classes registered for a schema or config that cannot be serialized as JSON, or this call's cannot be,
+  so the two cannot be compared: keep the `DynamicModule` the registering call returned;
+- the name holds a module that `generate_dynamic_module()` did not register;
+- `sys.modules` holds modules below the name, for example the modules of split output whose package alone was
+  removed: remove the modules the message names;
+- a module of the name can be imported, which the registered module would hide;
+- the parent package of a dotted name cannot be imported;
+- no `module_name` is given and the schema or the config cannot be serialized as JSON, for example a config with
+  `custom_class_name_generator`.
+
+What does not work:
+
+- Loading in a process that has not run the same generation fails with `ModuleNotFoundError`. Workers started with
+  the `spawn` or `forkserver` method (the Linux default since Python 3.14) do not inherit `sys.modules`: run the
+  generation in their initializer, and before loading in other threads.
+- Files and URLs that `$ref`s read are not part of the derived name, and can differ between processes.
+- After a dcg upgrade that renames or changes classes, loading fails or gives instances with stale fields, as Pydantic
+  does not validate pickled state. For long-lived storage, use `model_dump()` and `model_validate()`.
+- Classes from `generate_dynamic_models()` cannot be pickled, as it does not look at registered modules. A
+  `generate_dynamic_module()` call without `register_module=True` returns the classes of a registered module of its
+  `module_name` for the same schema and config, which pickle; otherwise its classes cannot be pickled either.
+- Under `use_root_model_type_alias`, Pydantic shares one class per parametrization in the process, so an alias class
+  belongs to the module that made that parametrization first.
+
 ## Caching
 
 Models are cached by schema content, configuration, and `module_name` to avoid regeneration.
@@ -397,7 +484,7 @@ assert all(r is results[0] for r in results)
 | Limitation | Details |
 |------------|---------|
 | Pydantic v2 only | Pydantic v2 is the only supported output |
-| Not pickle-able | Use `model_dump()` to serialize instances |
+| Pickling | Only for classes of a registered module (`generate_dynamic_module()` with `register_module=True`, or a later call with its name, schema and config), after the same generation in the loading process; otherwise use `model_dump()` |
 | Dict input only | Schema must be a `dict`, not a file path or string |
 
 ## Comparison with `generate()`
