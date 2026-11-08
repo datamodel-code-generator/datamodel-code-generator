@@ -380,24 +380,11 @@ class ValueKeywordsHost(Protocol):
     ) -> tuple[bool, ...] | None:
         """Return whether the field keeps each value (``kept``), None when it keeps all."""
 
-    def _get_data_type_from_json_value(self, value: object) -> DataType:
-        """Infer a normal Python type from a JSON value."""
-
     def _get_fixed_length_homogeneous_tuple_length(self, obj: JsonSchemaObject) -> int | None:
         """Return the length of an opted-in homogeneous fixed-length tuple."""
 
-    def _get_fixed_positional_items(
-        self,
-        obj: JsonSchemaObject,
-        canonical_ref: Callable[[str], str] | None = None,
-    ) -> list[JsonSchemaObject | bool] | None:
-        """Return the positions of a positional array written as a tuple, or None when it is written as a list."""
-
     def _get_type_with_mappings(self, type_: str, format_: str | None = None) -> Types:
         """Get the Types enum for a given type and format, applying custom type mappings."""
-
-    def _is_fixed_length_tuple(self, obj: JsonSchemaObject) -> bool:
-        """Check if an array field represents a fixed-length tuple."""
 
     def _literal_values_type(self, values: list[Any]) -> DataType:
         """Return the Literal type of enum values, joined with the types of values no Literal holds."""
@@ -419,11 +406,6 @@ class ValueKeywordsHost(Protocol):
 
     def _resolve_external_ref_mapping(self, ref: str) -> tuple[str, str] | None:
         """Return the package and fragment ``--external-ref-mapping`` maps a reference to, if any."""
-
-    def _split_constraint_values(
-        self, obj: JsonSchemaObject, data_type: DataType | None = None
-    ) -> tuple[dict[str, Any], dict[str, Any]]:
-        """Return the constraint values of the type-dependent keywords that a field takes, and those it leaves out."""
 
 
 def should_parse_enum_as_literal(
@@ -590,7 +572,7 @@ def literal_written(
     ):
         return NO_KEYWORDS
     return (
-        frozenset(parser._split_constraint_values(obj, parser._literal_values_type(values))[0])  # noqa: SLF001
+        frozenset(split_constraint_values(parser, obj, parser._literal_values_type(values))[0])  # noqa: SLF001
         & LITERAL_DECIDABLE_KEYWORDS
     )
 
@@ -824,7 +806,7 @@ def get_constraint_values(
     parser: ValueKeywordsHost, obj: JsonSchemaObject, data_type: DataType | None = None
 ) -> dict[str, Any]:
     """Return JSON Schema constraint values, with the type-dependent keywords that the field takes."""
-    return parser._split_constraint_values(obj, data_type)[0]  # noqa: SLF001
+    return split_constraint_values(parser, obj, data_type)[0]
 
 
 def split_constraint_values(
@@ -907,7 +889,7 @@ def mark_type_dependent_constraints(
 def is_fixed_length_tuple(parser: ValueKeywordsHost, obj: JsonSchemaObject) -> bool:
     """Check if an array field represents a fixed-length tuple."""
     return (
-        parser._get_fixed_positional_items(obj) is not None  # noqa: SLF001
+        get_fixed_positional_items(parser, obj) is not None
         or parser._get_fixed_length_homogeneous_tuple_length(obj) is not None  # noqa: SLF001
     )
 
@@ -956,7 +938,7 @@ def get_array_item_schemas(
     force_prefix_items: bool = False,
 ) -> tuple[list[JsonSchemaObject | bool], bool, bool, int | None]:
     """Return item schemas plus tuple/constraint flags and homogeneous tuple length."""
-    if (fixed_items := parser._get_fixed_positional_items(obj)) is not None:  # noqa: SLF001
+    if (fixed_items := get_fixed_positional_items(parser, obj)) is not None:
         return fixed_items, True, True, None
     if (
         isinstance(item_schema := obj.items, JsonSchemaObject)
@@ -1238,7 +1220,7 @@ def suppress_array_length_constraints(
 ) -> None:
     if not constraints:
         return
-    if parser._is_fixed_length_tuple(obj):  # noqa: SLF001
+    if is_fixed_length_tuple(parser, obj):
         constraints.pop("minItems", None)
         constraints.pop("maxItems", None)
 
@@ -1269,13 +1251,13 @@ def get_data_type_from_json_value(parser: ValueKeywordsHost, value: object) -> D
     if scalar_type is not None:
         return scalar_type
     if isinstance(value, list):
-        item_types = [parser._get_data_type_from_json_value(item) for item in value]  # noqa: SLF001
+        item_types = [get_data_type_from_json_value(parser, item) for item in value]
         return parser.data_type(
             data_types=item_types or [parser.data_type(type=ANY, import_=IMPORT_ANY)],
             is_list=True,
         )
     if isinstance(value, dict):
-        value_types = [parser._get_data_type_from_json_value(item) for item in value.values()]  # noqa: SLF001
+        value_types = [get_data_type_from_json_value(parser, item) for item in value.values()]
         return parser.data_type(
             data_types=value_types or [parser.data_type(type=ANY, import_=IMPORT_ANY)],
             is_dict=True,
@@ -1306,7 +1288,7 @@ def get_const_data_type(parser: ValueKeywordsHost, const: object, obj: JsonSchem
         if obj is not None:
             check_literal_const(parser, obj, const)
         return parser.data_type(literals=[const])
-    return parser._get_data_type_from_json_value(const)  # noqa: SLF001
+    return get_data_type_from_json_value(parser, const)
 
 
 def partition_enum_values(

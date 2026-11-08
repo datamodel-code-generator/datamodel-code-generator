@@ -198,17 +198,6 @@ class ObjectMapsHost(Protocol):
     def _null_facts(self, obj: JsonSchemaObject, site: NullSite) -> NullFacts:
         """Return the null facts of a schema at a site."""
 
-    def _object_map_key_type(
-        self,
-        property_names: JsonSchemaObject | bool | None,  # ruff: ignore[boolean-type-hint-positional-argument]
-        row: Literal["pattern-map", "property-names-map", "extra-field"],
-        *,
-        pattern: str | None = None,
-        name: str = "",
-        path: Sequence[str] = (),
-    ) -> DataType | None:
-        """Return the key type of the dict of an object map, ``None`` for ``str`` keys."""
-
     def _parse_additional_properties_value(
         self,
         name: str,
@@ -346,7 +335,7 @@ def get_typed_additional_properties_field(
                 constrained_name=additional_property_name,
             )
         )
-    dict_key = parser._object_map_key_type(obj.propertyNames, "extra-field")  # noqa: SLF001
+    dict_key = object_map_key_type(parser, obj.propertyNames, "extra-field")
 
     location = additional_props.schema_location
     field = parser.data_model_type.create_typed_extra_field(
@@ -644,8 +633,8 @@ def pattern_map_type(
     return parser.data_type(
         data_types=value_types,
         is_dict=True,
-        dict_key=parser._object_map_key_type(  # noqa: SLF001
-            property_names, "pattern-map", pattern="|".join(patterns) if joins_patterns else None
+        dict_key=object_map_key_type(
+            parser, property_names, "pattern-map", pattern="|".join(patterns) if joins_patterns else None
         ),
     )
 
@@ -850,7 +839,7 @@ def parse_property_names(  # noqa: PLR0913, PLR0917
     else:
         value_type = parser.data_type_manager.get_data_type(Types.any)
 
-    key_type = parser._object_map_key_type(property_names, "property-names-map", name=name, path=path)  # noqa: SLF001
+    key_type = object_map_key_type(parser, property_names, "property-names-map", name=name, path=path)
 
     dict_flags = parser._container_flags(parent_obj, "dict") if parent_obj else {"is_dict": True}  # noqa: SLF001
 
@@ -907,7 +896,7 @@ def get_additional_properties_root_field(
     }
     if parser._has_pattern_properties_validator(obj):  # noqa: SLF001
         if "legacy-validated-pattern-maps" not in parser._legacy_object_maps:  # noqa: SLF001
-            key_type = parser._object_map_key_type(obj.propertyNames, "pattern-map")  # noqa: SLF001
+            key_type = object_map_key_type(parser, obj.propertyNames, "pattern-map")
             counts["patternProperties"] = obj.patternProperties
     else:
         match obj.additionalProperties:
