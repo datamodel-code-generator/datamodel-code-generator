@@ -6174,6 +6174,11 @@
     "modules": [
       [
         "client",
+        "_generated",
+        "security.py"
+      ],
+      [
+        "client",
         "resources",
         "default",
         "_sync.py"
