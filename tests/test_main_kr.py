@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import errno
 import json
 import os
 import shlex
 import shutil
 import stat
+import subprocess
 import sys
 from argparse import Namespace
 from pathlib import Path
@@ -23,7 +25,7 @@ if sys.version_info >= (3, 11):
 else:
     import tomli as tomllib
 
-from datamodel_code_generator import MIN_VERSION, Error, chdir, inferred_message
+from datamodel_code_generator import MIN_VERSION, Error, Formatter, InputFileType, chdir, generate, inferred_message
 from datamodel_code_generator import __main__ as main_module
 from datamodel_code_generator import _publication as publication_module
 from datamodel_code_generator.__main__ import (
@@ -55,6 +57,7 @@ from tests.conftest import (
 
 if TYPE_CHECKING:
     import tempfile
+    from collections.abc import Iterator
 from tests.main.conftest import (
     DATA_PATH,
     JSON_SCHEMA_DATA_PATH,
@@ -3209,6 +3212,189 @@ def test_pyproject_jobs_publish_reports_failed_rollback(tmp_path: Path, monkeypa
         _publish_staged_files([(staged_file, target)])
 
     assert target.read_text(encoding="utf-8") == "stale\n"
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="batch publication anchors use directory descriptors on POSIX")
+@pytest.mark.abnormal_path("the open-file limit runs out only when the process holds every descriptor it may open")
+@pytest.mark.allow_direct_assert("checks that the stale target is rolled back after the publication error")
+def test_pyproject_jobs_publish_reports_open_file_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Name the open-file limit, not a changed destination, when the check after a replacement cannot open (#6591)."""
+    staged_file = tmp_path / "generated.py"
+    target = tmp_path / "target.py"
+    staged_file.write_text("generated\n", encoding="utf-8")
+    target.write_text("stale\n", encoding="utf-8")
+
+    def exhausted(_path: Path) -> int:
+        raise OSError(errno.EMFILE, os.strerror(errno.EMFILE))
+
+    monkeypatch.setattr(publication_module, "_open_target_directory", exhausted)
+
+    with pytest.raises(OSError, match=os.strerror(errno.EMFILE)):
+        _publish_staged_files([(staged_file, target)])
+
+    assert target.read_text(encoding="utf-8") == "stale\n"
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the open-file limit is a POSIX resource limit")
+@pytest.mark.allow_direct_assert("checks the exit code and modules of a run with a lowered open-file limit")
+def test_pyproject_jobs_publish_more_files_than_the_open_file_limit(tmp_path: Path) -> None:
+    """Publish more modules than the process may open files, as one descriptor serves each directory (#6591).
+
+    The hard limit is lowered too, so that the command line cannot raise the soft one.
+    """
+    resource = pytest.importorskip("resource")
+    schemas = tmp_path / "schemas"
+    schemas.mkdir()
+    for index in range(160):
+        (schemas / f"item{index}.json").write_text(
+            json.dumps({"title": f"Item{index}", "type": "object", "properties": {"name": {"type": "string"}}}),
+            encoding="utf-8",
+        )
+    (tmp_path / "pyproject.toml").write_text(
+        """
+[tool.datamodel-codegen]
+disable-timestamp = true
+input-file-type = "jsonschema"
+
+[tool.datamodel-codegen.jobs.models]
+input = "schemas"
+output = "models"
+""",
+        encoding="utf-8",
+    )
+
+    def limit_open_files() -> None:
+        resource.setrlimit(resource.RLIMIT_NOFILE, (64, 64))
+
+    result = subprocess.run(
+        [sys.executable, "-m", "datamodel_code_generator", "--all-jobs", "--formatters", "builtin"],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=tmp_path,
+        preexec_fn=limit_open_files,
+    )
+
+    assert (result.returncode, len(list((tmp_path / "models").glob("*.py")))) == (0, 161), result.stderr
+
+
+@pytest.fixture
+def lowered_open_file_limit() -> Iterator[int]:
+    """Lower the soft limit on open files of the test process below the hard limit, and put the limits back after."""
+    resource = pytest.importorskip("resource")
+    saved = resource.getrlimit(resource.RLIMIT_NOFILE)
+    hard = saved[1]
+    lowered = 4096 if hard == resource.RLIM_INFINITY else min(hard - 1, 4096)
+    set_limit = resource.setrlimit
+    set_limit(resource.RLIMIT_NOFILE, (lowered, hard))
+    try:
+        yield lowered
+    finally:
+        set_limit(resource.RLIMIT_NOFILE, saved)
+
+
+def _soft_open_file_limit() -> int:
+    import resource
+
+    return resource.getrlimit(resource.RLIMIT_NOFILE)[0]
+
+
+def _run_command_line(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Exit:
+    """Run the command line as a shell does, reading ``sys.argv``, on a one-model schema."""
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "datamodel-codegen",
+            "--input",
+            str(JSON_SCHEMA_DATA_PATH / "person.json"),
+            "--input-file-type",
+            "jsonschema",
+            "--output",
+            str(tmp_path / "model.py"),
+            "--formatters",
+            "builtin",
+            "--disable-timestamp",
+        ],
+    )
+    return main_module.main()
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the open-file limit is a POSIX resource limit")
+@pytest.mark.allow_direct_assert("checks the open-file limits of the process after a command-line run")
+def test_command_line_raises_the_open_file_limit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, lowered_open_file_limit: int
+) -> None:
+    """Raise the soft limit on open files to the hard limit when the command line starts, as Go does (#6591)."""
+    assert _run_command_line(tmp_path, monkeypatch) == Exit.OK
+    assert _soft_open_file_limit() > lowered_open_file_limit
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the open-file limit is a POSIX resource limit")
+@pytest.mark.allow_direct_assert("checks the open-file limits of the process after a generate() call")
+def test_generate_keeps_the_open_file_limit(tmp_path: Path, lowered_open_file_limit: int) -> None:
+    """Leave the open-file limits of a process that calls ``generate()`` as they are (#6591)."""
+    generate(
+        JSON_SCHEMA_DATA_PATH / "person.json",
+        input_file_type=InputFileType.JsonSchema,
+        output=tmp_path / "model.py",
+        formatters=[Formatter.BUILTIN],
+    )
+    assert _soft_open_file_limit() == lowered_open_file_limit
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the open-file limit is a POSIX resource limit")
+@pytest.mark.abnormal_path(
+    "limits and a kernel that refuses the hard limit, as macOS refuses an unlimited one, are not Linux"
+)
+@pytest.mark.allow_direct_assert("checks the limits the command line asks the kernel for")
+@pytest.mark.parametrize(
+    ("limits", "refused", "asked"),
+    [
+        pytest.param((256, 1048576), (), [1048576], id="hard"),
+        pytest.param((256, 1048576), (1048576,), [1048576, 10240], id="open_max_where_the_hard_limit_is_refused"),
+        pytest.param((256, 1048576), (1048576, 10240), [1048576, 10240], id="kept_where_every_limit_is_refused"),
+        pytest.param((256, 4096), (), [4096], id="hard_within_open_max"),
+        pytest.param((256, "unlimited"), ("unlimited",), ["unlimited", 10240], id="unlimited_hard"),
+        pytest.param(("unlimited", "unlimited"), (), [], id="unlimited_soft"),
+        pytest.param((4096, 4096), (), [], id="soft_at_hard"),
+        pytest.param((20000, 1048576), (), [1048576], id="soft_past_open_max"),
+    ],
+)
+def test_command_line_asks_for_the_hard_open_file_limit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    limits: tuple[int | str, int | str],
+    refused: tuple[int | str, ...],
+    asked: list[int | str],
+) -> None:
+    """Ask for the hard limit, then ``OPEN_MAX`` (10240) where the kernel refuses it, each above the soft limit."""
+    import resource
+
+    def spelled(limit: int | str) -> int:
+        return resource.RLIM_INFINITY if limit == "unlimited" else cast("int", limit)
+
+    asked_limits: list[int | str] = []
+
+    def ask(_which: int, new_limits: tuple[int, int]) -> None:
+        soft = "unlimited" if new_limits[0] == resource.RLIM_INFINITY else new_limits[0]
+        asked_limits.append(soft)
+        if soft in refused:
+            msg = "current limit exceeds maximum limit"
+            raise ValueError(msg)
+
+    monkeypatch.setattr(resource, "getrlimit", lambda _which: tuple(map(spelled, limits)))
+    monkeypatch.setattr(resource, "setrlimit", ask)
+    assert _run_command_line(tmp_path, monkeypatch) == Exit.OK
+    assert asked_limits == asked
+
+
+@pytest.mark.abnormal_path("an interpreter without the resource module (Windows) is not the test platform")
+@pytest.mark.allow_direct_assert("checks the exit code of a command-line run without the resource module")
+def test_command_line_runs_without_the_resource_module(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Run the command line where the ``resource`` module is unavailable, leaving the limits alone (#6591)."""
+    monkeypatch.setitem(sys.modules, "resource", None)
+    assert _run_command_line(tmp_path, monkeypatch) == Exit.OK
 
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX permission modes are unsupported on Windows")
