@@ -7,6 +7,8 @@
 [test_fastapi_render]
 argument-errors	main/generation_platform/fastapi/argument-errors.txt
 argument-errors	main/generation_platform/fastapi/packages/argument-errors/
+auth-parameters	main/generation_platform/fastapi/auth-parameters.txt
+auth-parameters	main/generation_platform/fastapi/packages/auth-parameters/
 backend-errors	main/generation_platform/fastapi/backend-errors.txt
 backend-errors	main/generation_platform/fastapi/packages/backend-errors/
 binary-allowed	main/generation_platform/fastapi/binary-allowed.txt

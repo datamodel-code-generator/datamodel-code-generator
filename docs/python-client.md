@@ -1107,6 +1107,11 @@ optional operation sends a credential given for a listed scheme and, with none, 
 `missing_credentials` before sending, unless the HTTP client has an Auth of its own, which it then uses. The client
 authorizes no scopes: the resource server decides, and a 403 is terminal.
 
+An operation may also declare a parameter at an API key's position, with the same location and name, as Trello's
+`key` and `token` query parameters are. The parameter comes first, and the method takes it as optional: a request that
+carries a value there, from that parameter or from a client, view, or call header or query, sends that value and no
+credential for the scheme, which it satisfies; a request that carries none sends the credential.
+
 `auth` of the client, a view, or a call's `RequestOptions` takes any `httpx2.Auth`, which replaces the credentials
 for those calls, and `auth=None` sends without an Auth; it cannot make a required operation anonymous. Unset, the
 credentials apply, or else the HTTP client's own `auth`. Credentials given beside `Client(auth=...)` or an injected

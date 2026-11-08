@@ -24,7 +24,7 @@ from typing_extensions import Self
 
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.media import ERROR_STATUSES, SWITCHING_PROTOCOLS, fields_without, is_token, normalized
-from ..model_codecs.parameters import pairs, path_text, query_pairs, querystring
+from ..model_codecs.parameters import pairs, parameter_key, path_text, query_pairs, querystring
 from ..model_codecs.shared import identity_cached
 from ..model_codecs.unset import UNSET
 from .content import EncodedAttempt
@@ -56,7 +56,7 @@ from .native import (
 from .operations import ResponseDecoder, request_errors
 from .options import DEFAULT_SERVER, DEFAULT_TIMEOUT, RequestOptions, Settings, layered, phases
 from .paths import dot_segment, dotted_route, filled, path_segments
-from .positions import credentialed, positional, secret_names
+from .positions import carries, credentialed, positional, secret_names, unfilled
 from .raw import AsyncRawResponse, RawResponse, ReceivedBody, buffered, is_raw, released, settled
 from .responses import HeadersView, Response, ResponseInfo
 from .retry import (
@@ -294,6 +294,19 @@ def _dot_parameter(template: str, path: dict[str, str]) -> str | None:
             if dot_segment(segment, path)
         ),
         None,
+    )
+
+
+def _given(operation: OperationPlan[object], request: httpx2.Request) -> frozenset[tuple[str, str]]:
+    """Return the positions, by `parameter_key`, of the operation's credential parameters that a request fills.
+
+    A credential parameter goes where an apiKey credential of its operation goes, and its value comes first: a request
+    that carries one there, as the parameter or the call's extra query, headers or cookies put it, takes no credential.
+    """
+    return frozenset(
+        key
+        for spec in operation.parameters
+        if spec.plan.credential and carries(request, *(key := parameter_key(spec.plan.location, spec.plan.name)))
     )
 
 
@@ -912,10 +925,11 @@ class Core(Generic[AdapterT, HandleT]):
             return self._settings
         return layered(self._settings, options, view=False, operation_id=operation_id)
 
-    def _bind_auth(self, call: Call) -> None:
+    def _bind_auth(self, call: Call, request: httpx2.Request) -> None:
         """Select the generated credentials an operation's call places, refusing a required call none authenticates.
 
-        A call with its own Auth places none; one without a satisfied alternative takes the HTTP client's Auth.
+        A call with its own Auth places none; one without a satisfied alternative takes the HTTP client's Auth. A
+        scheme whose position the request fills where a credential parameter goes takes no credential (`_given`).
         """
         operation = call.operation
         assert operation is not None
@@ -924,11 +938,13 @@ class Core(Generic[AdapterT, HandleT]):
         explicit = call.settings.auth
         if isinstance(explicit, httpx2.Auth):
             return
+        given = _given(operation, request)
         placements: tuple[Placement, ...] | None
         if explicit is None or (credentials := self._shared.credentials) is None:
-            placements = None if security.alternatives and all(security.alternatives) else ()
+            alternatives = security.alternatives
+            placements = None if alternatives and all(unfilled(item, given) for item in alternatives) else ()
         else:
-            placements = credentials.selected(security)
+            placements = credentials.selected(security, given)
         native = self._shared.http_client.auth
         if placements is None and (explicit is None or native is None):
             raise ConfigurationError(field_path=("auth",), reason="missing_credentials", operation_id=call.operation_id)
@@ -1166,10 +1182,10 @@ class Core(Generic[AdapterT, HandleT]):
             entry = None if bodies is None else bodies.capture(body)
 
             call.bind()
-            if call.operation is not None and call.operation.security is not None:
-                self._bind_auth(call)
-
             request, deferred = prepare()
+            if call.operation is not None and call.operation.security is not None:
+                self._bind_auth(call, request)
+
             request = call.prepared(request)
             request, coding = _compressed(call, request, deferred, self._shared.request_coding)
 

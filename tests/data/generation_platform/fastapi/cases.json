@@ -381,6 +381,9 @@
   "security-errors": {
     "input": "security-errors.yaml"
   },
+  "auth-parameters": {
+    "input": "auth-parameters.yaml"
+  },
   "security-roles": {
     "input": "auth-roles.yaml"
   },

@@ -230,3 +230,18 @@ def auth_shared_wire(package: ModuleType, lines: list[str]) -> None:
             record(lines, "flows", api.auth.flows)
             record(lines, "keyed flows", api.auth.keyed_flows)
             record(lines, "keys", api.auth.keys)
+
+
+def auth_parameters(package: ModuleType, lines: list[str]) -> None:
+    """Send a parameter written where an apiKey credential goes instead of the credential, and else the credential."""
+    exchange = Exchange(lines)
+    for credentials in ({"header": "header-secret", "query": "query-secret", "cookie": "cookie-secret"}, {}):
+        lines.append(f"credentials {tuple(credentials)}")
+        with exchange.client() as http, package.Client(http_client=http, **credentials) as api:
+            exchange.respond(*(_ACCEPTED,) * (6 if credentials else 3))
+            record(lines, "header given", lambda: api.auth.header(x_key="given"))
+            record(lines, "header", api.auth.header)
+            record(lines, "query given", lambda: api.auth.query(key="given"))
+            record(lines, "query", api.auth.query)
+            record(lines, "cookie given", lambda: api.auth.cookie(session="given"))
+            record(lines, "cookie", api.auth.cookie)

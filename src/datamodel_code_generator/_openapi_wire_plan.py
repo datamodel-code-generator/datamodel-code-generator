@@ -663,9 +663,25 @@ def _parameters(
         for declaration in declarations
         if (plan := _planned(planner, operation.id, declaration, names, written=planner.writes)) is not None
     ]
+    if planner.writes:
+        planned = [
+            (place, replace(plan, required=False, credential=True) if _credentialed(plan, auth) else plan)
+            for place, plan in planned
+        ]
     plans = [plan for _, plan in planned]
     planner.diagnostics.extend(parameter_collisions(operation, plans, auth, writes=planner.writes))
     return tuple((place, _reserving(plan, plans)) for place, plan in planned)
+
+
+def _credentialed(plan: ParameterPlan, auth: Sequence[tuple[object, str]]) -> bool:
+    """Return whether a parameter is written whole at the position where an apiKey credential of its operation goes.
+
+    The parameter comes first: a call that gives it sends its value, and one that leaves it out sends the credential,
+    so the call need not give it, and the two do not collide.
+    """
+    return not _spread(plan) and parameter_key(plan.location, plan.name) in {
+        parameter_key(str(kind), name) for kind, name in auth
+    }
 
 
 def parameter_collisions(
@@ -680,13 +696,23 @@ def parameter_collisions(
     Names that two parameters always write, as their declarations name them, collide wherever they are read or
     written. Each exploded object that takes other properties writes the pairs of its own members, so several of them,
     or one beside a `deepObject`, collide only when the names they take are read back, which no pair tells apart:
-    parameters that are only written (`writes`) keep them.
+    parameters that are only written (`writes`) keep them. A parameter written whole where an apiKey credential goes
+    does not collide with it (`_credentialed`).
     """
     found: list[CodecDiagnostic] = []
     for location in API_KEY_LOCATIONS.values():
+        given = {
+            parameter_key(location, plan.name)[1]
+            for plan in plans
+            if plan.location == location and _credentialed(plan, auth)
+        }
         claimed = [
             *_claimed(plans, location),
-            *{parameter_key(location, name)[1] for kind, name in auth if kind == location},
+            *{
+                key
+                for kind, name in auth
+                if kind == location and (key := parameter_key(location, name)[1]) not in given
+            },
         ]
         absorbing = [
             plan

@@ -65,6 +65,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/f
         "argument-errors",
         "security",
         "security-errors",
+        "auth-parameters",
         "security-roles",
         "security-roles-30",
         "parameter-ref-loop-30",
