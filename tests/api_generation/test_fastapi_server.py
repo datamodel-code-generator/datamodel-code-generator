@@ -154,6 +154,7 @@ def test_fastapi_server(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPat
         "ref_siblings",
         "ref_siblings_30",
         "ref_siblings_30_ignored",
+        "binary_json",
     ],
 )
 def test_generated_client(case: str, tmp_path: Path) -> None:

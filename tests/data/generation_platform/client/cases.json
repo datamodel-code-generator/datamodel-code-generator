@@ -2539,6 +2539,19 @@
       ]
     ]
   },
+  "binary-json-bodies": {
+    "input": "binary-json-bodies.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
   "auth-shared-wire": {
     "input": "auth-shared-wire.yaml",
     "modules": [

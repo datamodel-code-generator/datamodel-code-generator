@@ -850,9 +850,10 @@ See app/server/README.md.
 <!-- END AUTO-GENERATED DOC EXAMPLE: fastapi-server.howto.notice -->
 
 A `format: binary` string is raw bytes, which only a whole body, such as `application/octet-stream`, `image/png` or
-`text/csv`, or a file part of a multipart form can carry; a `text/*` body whose model types its whole value as one
-binary string travels as its raw bytes, without a charset decoding or base64, as an `application/octet-stream` one
-does. The model type decides: the schema is such a string, or reaches one through a `$ref`, a single `allOf`, `anyOf` or
+`text/csv`, or a file part of a multipart form can carry; a `text/*` or JSON body whose model types its whole value as
+one binary string travels as its raw bytes, without a charset decoding, JSON or base64, as an `application/octet-stream`
+one does, since a whole body written as a binary string is the raw octets of its media type (OpenAPI 3.1 writes it as
+`contentMediaType` set to that type). The model type decides: the schema is such a string, or reaches one through a `$ref`, a single `allOf`, `anyOf` or
 `oneOf` branch, or `allOf` branches that merge into one, such as `allOf: [{type: string}, {format: binary}]`, also
 beside a `null`, a length limit or other binary strings. The method takes and returns such a body as `bytes`, which its
 model validates when it constrains them, such as `maxLength: 16` as `conbytes(max_length=16)`: a request body the model
@@ -862,8 +863,8 @@ out `type: string`, is text in the models, so a body of one, also an `applicatio
 as text by its model, such as an `Enum`.
 Generation stops with an error that names the operation, the media or parameter, and where the schema declares the
 string, when a binary string, at any depth of its schema and through references, `$dynamicRef` and `allOf`, would be
-read or sent as text: inside a JSON or URL-encoded body or response, also one whose model types its whole value as
-bytes, a `text/*` body whose schema is an object, an array, or an `anyOf` or `oneOf` with a branch that is not a binary
+read or sent as text: inside a JSON or URL-encoded body or response, a URL-encoded body whose model types its whole
+value as bytes, a `text/*` body whose schema is an object, an array, or an `anyOf` or `oneOf` with a branch that is not a binary
 string, a binary body, such as `application/octet-stream`, whose model types its whole value as bytes only in part,
 such as `type: [string, integer]` or an `anyOf` of a binary string and an integer (`bytes | int`), a multipart part
 that is not a file, an item of a streamed response, or a parameter or header. Pydantic writes `bytes` in JSON as

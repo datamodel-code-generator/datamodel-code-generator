@@ -138,8 +138,13 @@ binary-allowed	main/generation_platform/client/packages/binary-allowed/msgspec_S
 binary-allowed	main/generation_platform/client/packages/binary-allowed/pydantic_v2_BaseModel//*.py
 binary-allowed	main/generation_platform/client/packages/binary-allowed/pydantic_v2_dataclass//*.py
 binary-allowed	main/generation_platform/client/packages/binary-allowed/typing_TypedDict//*.py
+binary-json-bodies	main/generation_platform/client/binary-json-bodies.txt
+binary-json-bodies	main/generation_platform/client/packages/binary-json-bodies/msgspec_Struct//*.py	= main/generation_platform/client/packages/binary-json-bodies/pydantic_v2_BaseModel//*.py
+binary-json-bodies	main/generation_platform/client/packages/binary-json-bodies/pydantic_v2_BaseModel//*.py
 binary-mapped	main/generation_platform/client/binary-mapped.txt
 binary-text	main/generation_platform/client/binary-text.txt
+binary-text	main/generation_platform/client/packages/binary-text/dataclasses_dataclass//*.py
+binary-text	main/generation_platform/client/packages/binary-text/pydantic_v2_BaseModel//*.py
 caching	main/generation_platform/client/caching.txt
 caching	main/generation_platform/client/packages/caching/pydantic_v2_BaseModel//*.py
 child-collision	main/generation_platform/client/child-collision.txt
