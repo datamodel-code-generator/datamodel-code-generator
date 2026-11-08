@@ -59,6 +59,29 @@ post_images
   post_images(body=ImagesPostRequest(image=b'\x89PNG\r\n', thumbnails=[b'\x00one', b'\xfftwo'], caption='*café*'))
   < 204 -
   = None
+post_images without filenames
+  > POST /images [multipart/form-data; boundary=<boundary>]
+  post_images(body=ImagesPostRequest(image=b'\xff\xd8', thumbnails=[b'\x80', b'caf\xc3\xa9'], caption=None))
+  < 204 -
+  = None
+post_attachments without filenames
+  > POST /attachments [multipart/form-data; boundary=<boundary>]
+  post_attachments(body=AttachmentsPostRequest(title='t', a=b'\xff', b=b'\x00\xfe'))
+  < 204 -
+  = None
+/images text part not UTF-8
+  > POST /images [multipart/form-data; boundary=<boundary>]
+  post_images(body=ImagesPostRequest(image=b'\xfe', thumbnails=None, caption='ÿ'))
+  < 204 -
+  = (204, None)
+/images media type in capitals
+  > POST /images [Multipart/Form-Data; boundary=<boundary>]
+  < 422 application/json
+  = (422, [('missing', ['body', 'image'])])
+/images without a boundary
+  > POST /images [multipart/form-data]
+  < 400 application/json
+  = (400, None)
 post_styled_parts
   > POST /styled-parts [multipart/form-data; boundary=<boundary>]
   post_styled_parts(body=StyledPartsPostRequest(point=Point(x=1, y=-2), corner=Point(x=3, y=4), deep=Named(name='d&e=f [x]'), spaced=['a', 'b+c,d'], piped=[1, 2], listed=['a b', '%41|'], path='a/b?c', meta=Named(name='café')))

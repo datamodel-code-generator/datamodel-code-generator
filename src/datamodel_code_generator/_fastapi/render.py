@@ -30,6 +30,7 @@ from datamodel_code_generator._fastapi.packages import (
 )
 from datamodel_code_generator._fastapi.plan import (
     Default,
+    FilePartSpec,
     JsonPartSpec,
     MemberDefault,
     ParameterDefault,
@@ -1371,6 +1372,12 @@ def _json_part(module: Module, part: JsonPartSpec) -> str:
     )
 
 
+def _file_part(module: Module, part: FilePartSpec) -> str:
+    """Return the FilePart constructor of one multipart member holding files, whose parts are read as their octets."""
+    repeated = (keyword_argument("repeated", "True"),) if part.repeated else ()
+    return call_text(module.local("_runtime.server.requests", "FilePart"), (stable_repr(part.name), *repeated))
+
+
 def _body_media(module: Module, body: BodySpec) -> str:
     """Return the BodyMedia constructors of an adapter body, as one tuple."""
     media: list[str] = []
@@ -1382,12 +1389,16 @@ def _body_media(module: Module, body: BodySpec) -> str:
             entries.append(f"fields={tuple_display(member_plan(module.local, plan) for plan in fields)}")
         if parts := item.json_parts:
             entries.append(f"json_parts={tuple_display(_json_part(module, part) for part in parts)}")
+        if files := item.file_parts:
+            entries.append(f"file_parts={tuple_display(_file_part(module, part) for part in files)}")
         if (additional := item.additional) is not None:
-            plan = (
-                _json_part(module, additional)
-                if isinstance(additional, JsonPartSpec)
-                else member_plan(module.local, additional)
-            )
+            match additional:
+                case JsonPartSpec():
+                    plan = _json_part(module, additional)
+                case FilePartSpec():
+                    plan = _file_part(module, additional)
+                case _:
+                    plan = member_plan(module.local, additional)
             entries.append(f"additional={plan}")
         if (checked := item.checked) is not None:
             type_adapter = module.name("pydantic", "TypeAdapter")
