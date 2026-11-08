@@ -249,6 +249,15 @@ def _target_problem(operation: OperationContract, target: Mapping[str, Any]) -> 
     return None if present else f"{_label(operation)} has no {location} parameter {stable_repr(name)}"
 
 
+def helper_calls(protocols: Protocols | None) -> frozenset[OperationId]:
+    """Return every operation an enabled helper sends; a disabled helper generates no code that calls one."""
+    if protocols is None:
+        return frozenset()
+    return frozenset(
+        protocols.operations[link.ref].id for helper in protocols.helpers if helper.enabled for link in helper.links
+    )
+
+
 def helper_operations(protocols: Protocols | None) -> frozenset[OperationId]:
     """Return the operations an enabled sending helper calls, whose methods also take the helper's arguments."""
     if protocols is None:

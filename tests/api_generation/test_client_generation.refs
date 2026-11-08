@@ -354,6 +354,9 @@ skip-operations-every	main/generation_platform/client/skip-operations-every.txt
 skip-operations-features	main/generation_platform/client/packages/skip-operations-features/pydantic_v2_BaseModel//*.py
 skip-operations-features	main/generation_platform/client/skip-operations-features.txt
 skip-operations-helper	main/generation_platform/client/skip-operations-helper.txt
+skip-operations-helper-disabled	main/generation_platform/client/packages/skip-operations-helper-disabled/pydantic_v2_BaseModel//*.py
+skip-operations-helper-disabled	main/generation_platform/client/skip-operations-helper-disabled.txt
+skip-operations-helper-later	main/generation_platform/client/skip-operations-helper-later.txt
 skip-operations-resources	main/generation_platform/client/skip-operations-resources.txt
 sockets	main/generation_platform/client/packages/sockets/pydantic_v2_BaseModel//*.py
 sockets	main/generation_platform/client/sockets.txt

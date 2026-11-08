@@ -1534,9 +1534,12 @@ client does not support: /paths/~1certificates/get: The security of GET /certifi
 'clientCertificate'
 ```
 
-The generated client has no method, type, or documentation for it. Generation still stops with `Error:` and exit
-code 2 when every operation would be left out, when an operation that a [helper](python-client-helpers.md) calls
-would be, and for any other refusal, such as a setting that cannot apply or a server URL that does not resolve.
+The generated client has no method, type, or documentation for it. The client package omits only its client code:
+the model files are generated from the whole document, so they can still hold the types the left-out operation used,
+such as the model of its request body or of a parameter's schema. Generation still stops with `Error:` and exit
+code 2 when every operation would be left out, when an operation that an enabled [helper](python-client-helpers.md)
+calls would be, and for any other refusal, such as a setting that cannot apply or a server URL that does not resolve;
+the error also names the operations left out before that refusal was found.
 
 ### Generator options
 

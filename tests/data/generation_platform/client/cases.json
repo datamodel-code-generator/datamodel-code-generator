@@ -6115,5 +6115,23 @@
     "config": {
       "protocols": "protocols/skip-operations-helper.json"
     }
+  },
+  "skip-operations-helper-disabled": {
+    "input": "skip-operations-helper.yaml",
+    "references": [
+      "protocols/skip-operations-disabled.json"
+    ],
+    "config": {
+      "protocols": "protocols/skip-operations-disabled.json"
+    }
+  },
+  "skip-operations-helper-later": {
+    "input": "skip-operations-helper.yaml",
+    "references": [
+      "protocols/skip-operations-later.json"
+    ],
+    "config": {
+      "protocols": "protocols/skip-operations-later.json"
+    }
   }
 }

@@ -196,6 +196,8 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "skip-operations-every",
         "skip-operations-features",
         "skip-operations-helper",
+        "skip-operations-helper-disabled",
+        "skip-operations-helper-later",
         "multipart-media-text",
         "parameter-item-or-array",
         "parameter-item-or-array-errors",
