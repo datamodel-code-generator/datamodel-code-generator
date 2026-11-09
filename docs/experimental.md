@@ -20,7 +20,6 @@ This page lists features that are available but still experimental.
 | `cli-option.use-type-alias` | cli-option | `--use-type-alias` | 0.36.0 | - |
 | `cli-option.use-type-alias-type` | cli-option | `--use-type-alias-type` | 0.71.1 | - |
 | `extra.httpx2` | extra | `datamodel-code-generator[httpx2]` | 0.71.1 | - |
-| `formatter.builtin` | formatter | `--formatters builtin` | 0.59.0 | - |
 | `input-format.asyncapi` | input-format | `--input-file-type asyncapi` | 0.59.0 | - |
 | `input-format.avro` | input-format | `--input-file-type avro` | 0.59.0 | - |
 | `input-format.mcp-tools` | input-format | `--input-file-type mcp-tools` | 0.60.0 | - |
@@ -169,16 +168,6 @@ The option implies --use-type-alias and selects TypeAliasType for Python 3.10 an
 The HTTPX2-backed HTTP client is experimental and may change as compatibility is validated.
 
 `datamodel-code-generator[http]` remains the stable HTTPX backend and is not deprecated; `datamodel-code-generator[httpx2]` is experimental. The default HTTP backend policy is auto: stable httpx is selected when its client module is installed, including when both pairs are installed, and experimental httpx2 is selected only when that module is absent. Use `--http-backend httpx2` or `HTTPBackend.HTTPX2` to require the experimental pair. Explicit selections and paired dependency errors do not fall back.
-
-### `formatter.builtin`
-
-- **Kind:** formatter
-- **Target:** `--formatters builtin`
-- **Since:** 0.59.0
-
-The internal formatter is experimental and may change as generated-output coverage is expanded.
-
-The formatter is designed for generated model modules and is not a general-purpose Python formatter.
 
 ### `input-format.asyncapi`
 
