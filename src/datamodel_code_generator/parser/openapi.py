@@ -358,9 +358,11 @@ class _DiscriminatorScan:
     ``#/components/schemas/<name>`` as written and an invalid one is located under the current root path components.
     ``string_refs`` (the api scope) takes each string ``$ref`` of an ``allOf`` for a parent, the empty one too, instead
     of each truthy one. ``components_only`` (AsyncAPI) reads the component schemas as ``_iter_asyncapi_schemas`` does,
-    where a value that is no object holds no schema, and reads no discriminator at the root and no subtypes.
+    where a value that is no object holds no schema, and reads no discriminator at the root.
     ``string_discriminators`` (AsyncAPI) reads a string ``discriminator``, the AsyncAPI Schema Object's form, as the
-    Discriminator Object that names the same property, ``{"propertyName": <name>}``; OpenAPI requires the object.
+    Discriminator Object that names the same property, ``{"propertyName": <name>}``; OpenAPI requires the object. Only
+    such a discriminator takes the component schemas whose ``allOf`` references it for its subtypes, as OpenAPI's does;
+    an object one, which AsyncAPI does not define, keeps none.
     """
 
     canonical_keys: bool = False
@@ -541,6 +543,7 @@ class OpenAPIParser(JsonSchemaParser):
         self._discriminator_documents: set[str] = set()
         self._discriminator_schemas: dict[str, dict[str, Any]] = {}
         self._discriminator_subtypes: dict[str, list[str]] = defaultdict(list)
+        self._string_discriminators: set[str] = set()
         self._parameter_models: list[tuple[DataModel, tuple[str, ...]]] = []
         self._specification_documents: set[str] = set()
 
@@ -787,7 +790,11 @@ class OpenAPIParser(JsonSchemaParser):
         where schemas don't use allOf inheritance but have explicit discriminator mappings.
         """
         current_document = self.model_resolver.current_document
-        subtypes = self._discriminator_subtypes.get(ref, [])
+        subtypes = (
+            self._discriminator_subtypes.get(ref, [])
+            if not self._discriminator_scan.string_discriminators or ref in self._string_discriminators
+            else []
+        )
         if not subtypes:
             discriminator = self._discriminator_schemas[ref]
             mapping = discriminator.get("mapping", {})
@@ -1427,6 +1434,7 @@ class OpenAPIParser(JsonSchemaParser):
         self._discriminator_documents.clear()
         self._discriminator_schemas.clear()
         self._discriminator_subtypes.clear()
+        self._string_discriminators.clear()
         self._parameter_models.clear()
         with self._parsing_session(self._resolve_specification_targets):
             for source, path_parts in _schema_documents.get_context_source_path_parts(self):
@@ -1581,7 +1589,7 @@ class OpenAPIParser(JsonSchemaParser):
                 else f"#/components/schemas/{schema_name}"
             )
             self._register_discriminator_schema(local_ref, schema)
-            if not scan.components_only and isinstance(all_of := schema.get("allOf"), list):
+            if isinstance(all_of := schema.get("allOf"), list):
                 refs = [ref for item in all_of if isinstance(item, dict) and kept(ref := item.get("$ref"))]
                 if refs:
                     potential_subtypes.append((local_ref, schema, refs))
@@ -1612,9 +1620,11 @@ class OpenAPIParser(JsonSchemaParser):
         """
         discriminator = schema.get("discriminator")
         if discriminator and not schema.get("oneOf") and not schema.get("anyOf"):
+            key = self._schema_key(schema, ref, "discriminator")
             if self._discriminator_scan.string_discriminators and isinstance(discriminator, str):
                 discriminator = {"propertyName": discriminator}
-            self._discriminator_schemas[self._schema_key(schema, ref, "discriminator")] = discriminator
+                self._string_discriminators.add(key)
+            self._discriminator_schemas[key] = discriminator
 
     def _schema_key(self, schema: object, ref: str, keyword: str) -> str:
         """Return the key of a schema of a loaded document, with the edge of ``ref``, which names it from its document.

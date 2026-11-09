@@ -166,14 +166,30 @@ def test_main_asyncapi_output_model_types(
     )
 
 
-@pytest.mark.parametrize("version", ["v2", "v3"])
-def test_main_asyncapi_string_discriminator(version: str, output_file: Path) -> None:
-    """Read a string discriminator, the AsyncAPI Schema Object's form, as the object naming that property (#6638)."""
+@pytest.mark.parametrize(
+    ("version", "model_name"),
+    [("v2", "AdoptionsPublishPayload"), ("v3", "PetsAdoptionPayload")],
+    ids=["v2", "v3"],
+)
+def test_main_asyncapi_string_discriminator(version: str, model_name: str, output_file: Path) -> None:
+    """Read a string discriminator, the AsyncAPI Schema Object's form, as the object naming that property (#6638).
+
+    A reference to its schema is the union of the schemas whose ``allOf`` references it, tagged by their names.
+    """
     run_main_and_assert(
         input_path=ASYNC_API_DATA_PATH / "string_discriminator" / f"{version}.yaml",
         output_path=output_file,
         input_file_type="asyncapi",
         extra_args=PY310_TARGET_ARGS,
+    )
+    assert_generated_model_json_validation(
+        output_file,
+        module_name=f"asyncapi_string_discriminator_{version}",
+        model_name=model_name,
+        valid_json=json.dumps({"pet": {"petType": "Cat", "meows": True}}),
+        invalid_json=json.dumps({"pet": {"petType": "Bird"}}),
+        expected_error_type="union_tag_invalid",
+        expected_repr=f"{model_name}(pet=Cat(petType='Cat', meows=True))",
     )
 
 

@@ -336,6 +336,7 @@ class AsyncAPIParser(OpenAPIParser):
         self._discriminator_documents.clear()
         self._discriminator_schemas.clear()
         self._discriminator_subtypes.clear()
+        self._string_discriminators.clear()
         self._collect_discriminator_document(self.raw_obj)
 
     @override

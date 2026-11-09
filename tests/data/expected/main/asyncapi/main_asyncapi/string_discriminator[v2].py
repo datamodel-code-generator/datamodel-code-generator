@@ -4,7 +4,9 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, RootModel
+from typing import Literal
+
+from pydantic import BaseModel, Field, RootModel
 
 
 class Pet(BaseModel):
@@ -13,15 +15,17 @@ class Pet(BaseModel):
 
 class Cat(Pet):
     meows: bool | None = None
+    petType: Literal['Cat']
 
 
 class Dog(Pet):
     barks: bool | None = None
+    petType: Literal['Dog']
 
 
-class PetsSubscribePayload(RootModel[Pet]):
-    root: Pet
+class PetsSubscribePayload(RootModel[Cat | Dog]):
+    root: Cat | Dog
 
 
 class AdoptionsPublishPayload(BaseModel):
-    pet: Pet
+    pet: Cat | Dog = Field(..., discriminator='petType')
