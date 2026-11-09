@@ -113,7 +113,10 @@ Known differences from Black and isort:
   parameters (`def f[T]`), are not laid out.
 - Quote normalization leaves triple-quoted strings and string prefixes as written: Black also drops a `u`/`U` prefix
   (`u'x'` -> `"x"`) and lowercases `F`/`B` (`F'x'` -> `f"x"`).
-- `--wrap-string-literal` splits only long keyword string arguments; Black's preview string processing does more.
+- `--wrap-string-literal` lays out strings as Black's preview string processing does (the `string_processing` and
+  `wrap_long_dict_values_in_parens` features that the option turns on for Black) in the statements listed above,
+  except a string after a conditional expression's `else`, which is not put on its own line. With
+  `--use-double-quotes` too, implicitly joined strings written with different quotes can be split at other spaces.
 - Comment placement beyond preserving commented import lines.
 - Import section rules beyond the simple groups listed above.
 

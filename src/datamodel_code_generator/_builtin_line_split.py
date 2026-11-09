@@ -1,15 +1,17 @@
 """Lay out one logical line of generated Python as black's line splitting lays it out.
 
 A port of black's right-hand split, delimiter split and optional-parentheses rules for the simple statements dcg
-generates: assignments, annotated assignments, expression statements, class headers and decorators. The tree facts
-black reads from its parse tree (what a bracket opens, which operators are unary, which commas separate arguments)
-are read from the tokens instead. A line the port does not cover (comments, multi-line strings, backslash
-continuations, slices, power operators, lambdas with parameters) gives ``None`` and is left as it is.
+generates: assignments, annotated assignments, expression statements, class headers and decorators. With
+``wrap_string_literal`` it also ports the string transformers of black's preview string processing (merge, paren
+strip, split, paren wrap) and the parentheses black's ``wrap_long_dict_values_in_parens`` puts around dictionary
+values. The tree facts black reads from its parse tree (what a bracket opens, which operators are unary, which commas
+separate arguments, which leaves a string transformer took out of the tree) are read from the tokens instead. A line
+the port does not cover (comments, multi-line strings, backslash continuations, slices, power operators, lambdas with
+parameters) gives ``None`` and is left as it is.
 """
 
 from __future__ import annotations
 
-import ast
 import keyword
 import re
 import token
@@ -18,11 +20,10 @@ from bisect import bisect_right
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from functools import cache, partial
-from itertools import takewhile
+from itertools import accumulate, takewhile
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._python_decorator import string_token_spans
-from datamodel_code_generator._target_unicode import NEWEST_TARGET, string_repr
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Iterator, Sequence
@@ -110,11 +111,16 @@ class _Leaf:
     __slots__ = (
         "annotation",
         "arglist",
+        "assign_like",
         "bracket_depth",
         "comparator",
+        "dict_entry",
+        "dict_value",
+        "in_annotation",
         "kind",
         "logic",
         "opening_bracket",
+        "orphaned",
         "parameter_default",
         "prefix",
         "priority_name",
@@ -123,6 +129,7 @@ class _Leaf:
         "unary",
         "value",
         "whitespace",
+        "wrap_element",
     )
 
     def __init__(self, type_: int, value: str) -> None:
@@ -139,6 +146,12 @@ class _Leaf:
         self.priority_name = 0
         self.synthetic = False
         self.parameter_default = False
+        self.assign_like = ""
+        self.wrap_element = False
+        self.dict_entry = False
+        self.dict_value = False
+        self.in_annotation = False
+        self.orphaned = False
         self.opening_bracket: _Leaf | None = None
         self.bracket_depth = 0
 
@@ -155,6 +168,11 @@ class _Leaf:
         leaf.priority_name = self.priority_name
         leaf.synthetic = self.synthetic
         leaf.parameter_default = self.parameter_default
+        leaf.assign_like = self.assign_like
+        leaf.wrap_element = self.wrap_element
+        leaf.dict_entry = self.dict_entry
+        leaf.dict_value = self.dict_value
+        leaf.in_annotation = self.in_annotation
         return leaf
 
     def __str__(self) -> str:
@@ -479,9 +497,12 @@ def _is_one_sequence_between(
 
 @dataclass(frozen=True)
 class _Mode:
+    """How a line is laid out; ``custom_splits`` holds where merged strings were joined, by the merged value."""
+
     line_length: int
     wrap_string_literal: bool
     restore: Callable[[str], str] = str
+    custom_splits: dict[tuple[int, str], tuple[_CustomSplit, ...]] = field(default_factory=dict, compare=False)
 
 
 def _is_line_short_enough(line: _Line, mode: _Mode, line_str: str = "") -> bool:
@@ -646,6 +667,8 @@ def _can_omit_invisible_parens(rhs: _RHSResult, line_length: int) -> bool:  # no
 
 
 def _prefer_split_rhs_oop_over_rhs(rhs_oop: _RHSResult, rhs: _RHSResult, mode: _Mode) -> bool:  # noqa: PLR0911
+    if rhs.opening_bracket.dict_value and rhs.body.bracket_tracker.delimiters:
+        return any(leaf.type == token.COLON for leaf in rhs_oop.tail.leaves)
     if not (len(rhs.head.leaves) >= 2 and rhs.head.leaves[-2].type == token.EQUAL):  # noqa: PLR2004
         return True
     if not any(leaf.type in BRACKETS for leaf in rhs.head.leaves[:-1]):
@@ -695,6 +718,7 @@ def _maybe_split_omitting_optional_parens(
                 not line.is_chained_assignment
                 and not _can_be_split(rhs.body)
                 and not _is_line_short_enough(rhs.body, mode)
+                and not rhs.opening_bracket.dict_value
             ):
                 msg = "Splitting failed, body is still too long and can't be split."
                 raise CannotSplitError(msg) from error
@@ -841,67 +865,613 @@ def _delimiter_split(line: _Line, _mode: _Mode, _features: Collection[_Feature])
         yield current_line
 
 
-def _wrapped_string_lines(line: _Line, mode: _Mode, _features: Collection[_Feature]) -> Iterator[_Line]:
-    """Wrap a too long ``name='text'`` argument into parenthesized implicitly joined strings.
+_STRING_OPERATORS: Final = frozenset({
+    token.EQEQUAL,
+    token.GREATER,
+    token.GREATEREQUAL,
+    token.LESS,
+    token.LESSEQUAL,
+    token.NOTEQUAL,
+    token.PERCENT,
+    token.PLUS,
+    token.STAR,
+})
+_SPLIT_SAFE_CHARS: Final = frozenset(map(chr, (0x3001, 0x3002, 0xFF0C)))
+_MIN_SUBSTR_SIZE: Final = 6
+_STRING_PREFIX_CHARS: Final = "furbFURB"
+_BREAK_MARK: Final = "@@@@@ BLACK BREAKPOINT MARKER @@@@@"
+_EVEN_BACKSLASHES: Final = r"(?:(?<!\\)(?:\\\\)*)"
+_DEBUG_EXPRESSION: Final = re.compile(r".*[\'\"].*(?<![!:=])={1}(?!=)(?![^\s:])")
 
-    Implicitly joined strings are wrapped as one. A bytes literal or an f-string stays whole, and so do a parameter's
-    default and a piece of a split at another delimiter than a comma, which is one operand of an expression.
+
+@dataclass(frozen=True)
+class _CustomSplit:
+    """Where a merged string was joined: black re-splits it there when every piece fits."""
+
+    has_prefix: bool
+    break_idx: int
+
+
+def _count_chars_in_width(text: str, max_width: int) -> int:
+    """Return how many leading characters of ``text`` fit in ``max_width`` columns."""
+    widths = accumulate(map(_char_width, text))
+    return next((index for index, width in enumerate(widths) if width > max_width), len(text))
+
+
+def _string_prefix(value: str) -> str:
+    return value[: len(value) - len(value.lstrip(_STRING_PREFIX_CHARS))]
+
+
+def _has_triple_quotes(value: str) -> bool:
+    return value.lstrip(_STRING_PREFIX_CHARS)[:3] in {'"""', "'''"}
+
+
+def _is_empty_par(leaf: _Leaf) -> bool:
+    return leaf.type in {token.LPAR, token.RPAR} and not leaf.value
+
+
+def _iter_fexpr_spans(text: str) -> Iterator[tuple[int, int]]:
+    """Yield the half-open spans of the replacement fields of an f-string (black's ``iter_fexpr_spans``)."""
+    stack: list[int] = []
+    index = 0
+    while index < len(text):
+        char = text[index]
+        if char == "{":
+            if not stack and text[index + 1 : index + 2] == "{":
+                index += 2
+                continue
+            stack.append(index)
+        elif char == "}":
+            if stack and (start := stack.pop()) is not None and not stack:
+                yield start, index + 1
+        elif stack and (
+            delimiter := text[index : index + 3] if text[index : index + 3] in {"'''", '"""'} else char
+        ) in {
+            "'''",
+            '"""',
+            "'",
+            '"',
+        }:
+            index += len(delimiter)
+            while index < len(text) and text[index : index + len(delimiter)] != delimiter:
+                index += 1
+            index += len(delimiter)
+            continue
+        index += 1
+
+
+def _toggle_fexpr_quotes(text: str, old_quote: str) -> str:
+    new_quote = "'" if old_quote == '"' else '"'
+    parts: list[str] = []
+    previous = 0
+    for start, end in _iter_fexpr_spans(text):
+        parts.extend((text[previous:start], text[start:end].replace(old_quote, new_quote)))
+        previous = end
+    parts.append(text[previous:])
+    return "".join(parts)
+
+
+_TRAILER_START, _TRAILER_DOT, _TRAILER_NAME, _TRAILER_PERCENT, _TRAILER_ARGUMENT, _TRAILER_LPAR, _TRAILER_RPAR = range(
+    7
+)
+_TRAILER_DONE: Final = -1
+_TRAILER_ANY: Final = -1
+_TRAILER_GOTO: Final = {
+    (_TRAILER_START, token.DOT): _TRAILER_DOT,
+    (_TRAILER_START, token.PERCENT): _TRAILER_PERCENT,
+    (_TRAILER_START, _TRAILER_ANY): _TRAILER_DONE,
+    (_TRAILER_DOT, token.NAME): _TRAILER_NAME,
+    (_TRAILER_NAME, token.LPAR): _TRAILER_LPAR,
+    (_TRAILER_NAME, _TRAILER_ANY): _TRAILER_DONE,
+    (_TRAILER_PERCENT, token.LPAR): _TRAILER_LPAR,
+    (_TRAILER_PERCENT, _TRAILER_ANY): _TRAILER_ARGUMENT,
+    (_TRAILER_ARGUMENT, _TRAILER_ANY): _TRAILER_DONE,
+    (_TRAILER_RPAR, _TRAILER_ANY): _TRAILER_DONE,
+}
+
+
+def _string_trailer_end(leaves: Sequence[_Leaf], string_idx: int) -> int:
+    """Return the index after the trailer of the string at ``string_idx``: ``% args``, ``.name`` or ``.name(...)``.
+
+    Black's ``StringParser``; invisible parentheses are skipped.
+    """
+    state = _TRAILER_START
+    unmatched = 0
+    index = string_idx + 1
+    while index < len(leaves):
+        leaf = leaves[index]
+        if not _is_empty_par(leaf):
+            unmatched += leaf.type == token.LPAR
+            if state == _TRAILER_LPAR:
+                if leaf.type == token.RPAR and not (unmatched := unmatched - 1):
+                    state = _TRAILER_RPAR
+            elif (state := _TRAILER_GOTO.get((state, leaf.type), _TRAILER_GOTO.get((state, _TRAILER_ANY)))) in {
+                _TRAILER_DONE,
+                None,
+            }:
+                break
+        index += 1
+    return index
+
+
+def _append_copies(line: _Line, leaves: Iterable[_Leaf]) -> None:
+    """Append a copy of each leaf with the whitespace black gives it in its new place (black's ``append_leaves``).
+
+    The copy takes the leaf's place in black's tree, which leaves the leaf without a parent: ``orphaned``.
+    """
+    for leaf in leaves:
+        copied = leaf.copy()
+        copied.prefix = copied.whitespace if line.leaves else ""
+        line.append(copied)
+        leaf.orphaned = True
+
+
+def _new_string(value: str, like: _Leaf) -> _Leaf:
+    """Return a string leaf that takes the place of ``like``."""
+    leaf = _Leaf(token.STRING, value)
+    leaf.whitespace = like.whitespace
+    leaf.in_annotation = like.in_annotation
+    return leaf
+
+
+def _string_merge(line: _Line, mode: _Mode, _features: Collection[_Feature]) -> Iterator[_Line]:
+    """Merge each group of implicitly joined strings into one string and record where it was joined (StringMerger)."""
+    leaves = line.leaves
+    merged: dict[int, tuple[int, _Leaf]] = {}
+    index = 0
+    while index < len(leaves):
+        end = index
+        while end < len(leaves) and leaves[end].type == token.STRING:
+            end += 1
+        if (
+            end - index > 1
+            and not leaves[index].in_annotation
+            and (group := _merged_string_group(leaves[index:end], mode))
+        ):
+            merged[index] = (end - index, group)
+        index = max(end, index + 1)
+    if not merged:
+        msg = "No string group is merged"
+        raise CannotSplitError(msg)
+    new_line = line.clone()
+    index = 0
+    while index < len(leaves):
+        if index in merged:
+            count, string_leaf = merged[index]
+            string_leaf.prefix = string_leaf.whitespace if new_line.leaves else ""
+            new_line.append(string_leaf)
+            index += count
+            continue
+        _append_copies(new_line, leaves[index : index + 1])
+        index += 1
+    yield new_line
+
+
+def _has_other_quotes(value: str, prefix: str, quote: str) -> bool:
+    """Return whether ``value`` is an f-string with other quotes than ``quote`` and quotes inside."""
+    body = value[len(prefix) + 1 : -1]
+    return "f" in prefix and value[-1] != quote and ("'" in body or '"' in body)
+
+
+def _merged_string_group(group: Sequence[_Leaf], mode: _Mode) -> _Leaf | None:
+    """Return the strings of ``group`` merged into one, or None when black does not merge them."""
+    quote = group[0].value[-1]
+    prefixes: set[str] = set()
+    for leaf in group:
+        prefix = _string_prefix(leaf.value).lower()
+        if _has_triple_quotes(leaf.value) or "r" in prefix or _has_other_quotes(leaf.value, prefix, quote):
+            return None
+        prefixes.add(prefix)
+    if len(prefixes) > 1 and prefixes != {"", "f"}:
+        return None
+    prefix = next((value for leaf in group if (value := _string_prefix(leaf.value).lower())), "")
+
+    def make_naked(text: str, text_prefix: str) -> str:
+        if "f" in text_prefix and not any(
+            _DEBUG_EXPRESSION.search(text[start + 1 : end - 1]) for start, end in _iter_fexpr_spans(text)
+        ):
+            text = _toggle_fexpr_quotes(text, quote)
+        return re.sub(f"({_EVEN_BACKSLASHES}){quote}", rf"\1\\{quote}", text[len(text_prefix) + 1 : -1])
+
+    merged = ""
+    naked = ""
+    has_prefixes: list[bool] = []
+    for leaf in group:
+        value = leaf.value
+        next_prefix = _string_prefix(value).lower()
+        if "f" in prefix and "f" not in next_prefix:
+            value = re.sub(r"(\{|\})", r"\1\1", value)
+        has_prefixes.append(bool(next_prefix))
+        merged = f"{prefix}{quote}{naked}{make_naked(value, next_prefix)}{_BREAK_MARK}{quote}"
+        naked = make_naked(merged, prefix)
+    custom_splits: list[_CustomSplit] = []
+    rest = merged[len(prefix) + 1 : -1]
+    for has_prefix in has_prefixes:
+        mark = rest.find(_BREAK_MARK)
+        rest = rest[mark + len(_BREAK_MARK) :]
+        custom_splits.append(_CustomSplit(has_prefix, mark + (len(prefix) if has_prefix else 0) + 1))
+    leaf = _new_string(merged.replace(_BREAK_MARK, ""), group[0])
+    leaf.wrap_element = group[0].wrap_element
+    leaf.dict_entry = group[0].dict_entry
+    mode.custom_splits[id(leaf.value), leaf.value] = tuple(custom_splits)
+    return leaf
+
+
+_HIGHER_THAN_PERCENT_BEFORE: Final = frozenset({
+    token.STAR,
+    token.AT,
+    token.SLASH,
+    token.DOUBLESLASH,
+    token.PERCENT,
+    token.TILDE,
+    token.DOUBLESTAR,
+    token.LSQB,
+    token.LPAR,
+})
+_HIGHER_THAN_PERCENT_AFTER: Final = frozenset({token.DOUBLESTAR, token.LSQB, token.LPAR, token.DOT})
+
+
+def _string_paren_strip(line: _Line, _mode: _Mode, _features: Collection[_Feature]) -> Iterator[_Line]:
+    """Remove parentheses around a string that do not call, index or hold a dictionary value (StringParenStripper)."""
+    leaves = line.leaves
+    strip: list[int] = []
+    index = 0
+    while index < len(leaves):
+        leaf = leaves[index]
+        if (
+            leaf.type == token.STRING
+            and index >= 1
+            and (lpar := leaves[index - 1]).type == token.LPAR
+            and lpar.value
+            and not (
+                index >= 2  # noqa: PLR2004
+                and (leaves[index - 2].type in {token.COLON, token.NAME} or leaves[index - 2].type in CLOSING_BRACKETS)
+            )
+        ):
+            end = _string_trailer_end(leaves, index)
+            before = leaves[index - 2] if index >= 2 else None  # noqa: PLR2004
+            if not (
+                before is not None
+                and any(item.type == token.PERCENT for item in leaves[index - 1 : end])
+                and (
+                    before.type in _HIGHER_THAN_PERCENT_BEFORE
+                    or (before.unary and before.type in {token.PLUS, token.MINUS})
+                )
+            ) and (
+                end < len(leaves)
+                and (rpar := leaves[end]).type == token.RPAR
+                and rpar.value
+                and not (end + 1 < len(leaves) and leaves[end + 1].type in _HIGHER_THAN_PERCENT_AFTER)
+            ):
+                strip.extend((index - 1, end))
+        index += 1
+    if not strip:
+        msg = "This line has no strings wrapped in parens."
+        raise CannotSplitError(msg)
+    new_line = line.clone()
+    removed = set(strip)
+    for index, leaf in enumerate(leaves):
+        leaf.orphaned = True
+        if index in removed:
+            continue
+        if index - 1 in removed and leaves[index - 1].type == token.LPAR and leaf.type == token.STRING:
+            string_leaf = _new_string(leaf.value, leaves[index - 1])
+            string_leaf.wrap_element = leaves[index - 1].wrap_element
+            string_leaf.prefix = string_leaf.whitespace if new_line.leaves else ""
+            new_line.append(string_leaf)
+            continue
+        _append_copies(new_line, (leaf,))
+    yield new_line
+
+
+def _max_string_length(line: _Line, string_idx: int, mode: _Mode) -> int:
+    """Return the length above which the string at ``string_idx`` is what makes the line too long."""
+    leaves = line.leaves
+    offset = line.depth * 4
+    if string_idx >= 1:
+        previous_idx = string_idx - 1
+        if _is_empty_par(leaves[previous_idx]) and leaves[previous_idx].type == token.LPAR and string_idx >= 2:  # noqa: PLR2004
+            previous_idx -= 1
+        previous = leaves[previous_idx]
+        if previous.type in _STRING_OPERATORS:
+            offset += len(str(previous)) + 1
+        else:
+            offset += 1
+            for leaf in reversed(leaves[: previous_idx + 1]):
+                offset += len(str(leaf))
+                if leaf.type in CLOSING_BRACKETS:
+                    break
+    if string_idx + 1 < len(leaves):
+        following = leaves[string_idx + 1]
+        if following.type == token.RPAR and not following.value and len(leaves) > string_idx + 2:
+            following = leaves[string_idx + 2]
+        offset += following.type == token.COMMA
+        if string_idx + 2 < len(leaves) and following.type == token.DOT and leaves[string_idx + 2].type == token.NAME:
+            offset += 1 + (string_idx + 3 < len(leaves) and leaves[string_idx + 3].type == token.LPAR)
+            offset += len(leaves[string_idx + 2].value)
+    return _count_chars_in_width(mode.restore(f"{line}\n"), mode.line_length - offset)
+
+
+def _validate_split_string(line: _Line, string_idx: int, mode: _Mode) -> None:
+    """Raise unless the string at ``string_idx`` makes the line too long and can be split (BaseStringSplitter)."""
+    value = line.leaves[string_idx].value
+    if len(value) <= _max_string_length(line, string_idx, mode) or _has_triple_quotes(value):
+        msg = "The string itself is not what is causing this line to be too long."
+        raise CannotSplitError(msg)
+
+
+def _prefers_paren_wrap(leaves: Sequence[_Leaf]) -> bool:
+    """Return whether the line starts with a string that is a whole element of a list, set or tuple."""
+    return (
+        leaves[0].type == token.STRING
+        and leaves[0].wrap_element
+        and not (len(leaves) > 1 and leaves[1].type == token.STRING)
+    )
+
+
+def _string_split(line: _Line, mode: _Mode, _features: Collection[_Feature]) -> Iterator[_Line]:  # noqa: PLR0912, PLR0914, PLR0915
+    """Split a line that is one string, with an operator before it or a comma after it, at spaces (StringSplitter)."""
+    leaves = line.leaves
+    if _prefers_paren_wrap(leaves):
+        msg = "Line needs to be wrapped in parens first."
+        raise CannotSplitError(msg)
+    index = 0
+    if len(leaves) > 1 and _is_name(leaves[0], "not") and _is_name(leaves[1], "in"):
+        index = 2
+    elif leaves[0].type in _STRING_OPERATORS or _is_name(leaves[0], "in"):
+        index = 1
+    if index >= len(leaves) or leaves[index].type != token.STRING:
+        msg = "Line does not start with a string."
+        raise CannotSplitError(msg)
+    string_idx = index
+    index = _string_trailer_end(leaves, string_idx)
+    if index < len(leaves) and leaves[index].type == token.COMMA:
+        index += 1
+    if index < len(leaves):
+        msg = "This line does not end with a string."
+        raise CannotSplitError(msg)
+    _validate_split_string(line, string_idx, mode)
+
+    string_leaf = leaves[string_idx]
+    string_leaf.orphaned = True
+    quote = string_leaf.value[-1]
+    prefix = _string_prefix(string_leaf.value).lower()
+    drop_pointless_f_prefix = "f" in prefix and any(_iter_fexpr_spans(string_leaf.value))
+    operators = []
+    while leaves[len(operators)].type in _STRING_OPERATORS or leaves[len(operators)].type == token.NAME:
+        operators.append(leaves[len(operators)])
+    operators_length = sum(len(str(leaf).strip()) for leaf in operators) + 1 if operators else 0
+    ends_with_comma = string_idx + 1 < len(leaves) and leaves[string_idx + 1].type == token.COMMA
+    max_last_string_column = mode.line_length - line.depth * 4 - ends_with_comma - operators_length
+    if (max_break_width := mode.line_length - 1 - line.depth * 4) < 0:
+        msg = "Unable to split at such high of a line depth."
+        raise CannotSplitError(msg)
+    custom_splits = list(mode.custom_splits.pop((id(string_leaf.value), string_leaf.value), ()))
+    use_custom = bool(custom_splits) and all(split.break_idx <= max_break_width for split in custom_splits)
+    rest = string_leaf.value
+    first = True
+
+    def piece_line(value: str) -> _Line:
+        piece = line.clone()
+        if first:
+            _append_copies(piece, operators)
+        piece_leaf = _new_string(value, string_leaf)
+        piece_leaf.prefix = piece_leaf.whitespace if piece.leaves else ""
+        piece.append(piece_leaf)
+        return piece
+
+    pieces: list[_Line] = []
+    while len(custom_splits) > 1 if use_custom else str_width(mode.restore(rest)) > max_last_string_column:
+        split: _CustomSplit | None = None
+        if use_custom:
+            split = custom_splits.pop(0)
+            break_idx = split.break_idx
+        else:
+            max_break_idx = _count_chars_in_width(mode.restore(rest), max_break_width) - operators_length
+            if (found := _break_index(rest, max_break_idx)) is None:
+                if custom_splits:
+                    rest, pieces, first, use_custom = string_leaf.value, [], True, True
+                    continue
+                break
+            break_idx = found
+        next_value = rest[:break_idx] + quote
+        if (
+            split is not None
+            and not split.has_prefix
+            and (next_value == prefix + quote or next_value != _normalized_f_string(next_value, prefix))
+        ):
+            break_idx += 1
+            next_value = rest[:break_idx] + quote
+        if drop_pointless_f_prefix:
+            next_value = _normalized_f_string(next_value, prefix)
+        pieces.append(piece_line(next_value))
+        rest = prefix + quote + rest[break_idx:]
+        first = False
+    yield from pieces
+    if drop_pointless_f_prefix:
+        rest = _normalized_f_string(rest, prefix)
+    last = piece_line(rest)
+    trailing = leaves[string_idx + 1 :]
+    if not trailing:
+        yield last
+        return
+    following = rest
+    for leaf in trailing:
+        following += str(leaf)
+        if leaf.type == token.LPAR:
+            break
+    if str_width(mode.restore(following)) <= max_last_string_column or trailing[0].type == token.COMMA:
+        _append_copies(last, trailing)
+        yield last
+        return
+    yield last
+    rest_line = line.clone()
+    _append_copies(rest_line, trailing)
+    yield rest_line
+
+
+def _normalized_f_string(value: str, prefix: str) -> str:
+    """Drop the ``f`` prefix of a piece without replacement fields and undouble its braces."""
+    if "f" not in prefix or any(_iter_fexpr_spans(value)):
+        return value
+    body = value[len(prefix) :].replace("{{", "{").replace("}}", "}")
+    return f"{prefix.replace('f', '')}{body}"
+
+
+def _illegal_split_indices(value: str) -> set[int]:
+    r"""Return the indices inside a replacement field or a ``\\N{...}`` escape, where a string must not be split."""
+    spans = list(_iter_fexpr_spans(value)) if "f" in _string_prefix(value).lower() else []
+    unescaped_backslash = False
+    characters = iter(enumerate(value))
+    for index, char in characters:
+        if char == "\\":
+            unescaped_backslash = not unescaped_backslash
+            continue
+        if not unescaped_backslash or char != "N":
+            unescaped_backslash = False
+            continue
+        unescaped_backslash = False
+        end = next((end for end, closing in characters if closing == "}"), len(value))
+        spans.append((index - 1, end))
+    return {index for start, end in spans for index in range(start, end)}
+
+
+def _break_index(value: str, max_break_idx: int) -> int | None:
+    """Return where black splits ``value``: at the last space or East Asian stop up to ``max_break_idx``, else after.
+
+    A piece is never shorter than six characters and never ends in an escaping backslash.
+    """
+    illegal = _illegal_split_indices(value)
+
+    def allowed(index: int) -> bool:
+        escapes = len(value[:index]) - len(value[:index].rstrip("\\"))
+        return (
+            (value[index] == " " or (index >= 1 and value[index - 1] in _SPLIT_SAFE_CHARS))
+            and not escapes % 2
+            and len(value) - index >= _MIN_SUBSTR_SIZE
+            and index >= _MIN_SUBSTR_SIZE
+            and index not in illegal
+        )
+
+    index = max_break_idx
+    while index - 1 >= 0 and not allowed(index):
+        index -= 1
+    if allowed(index):
+        return index
+    index = max_break_idx + 1
+    while index + 1 < len(value) and not allowed(index):
+        index += 1
+    return index if index < len(value) and allowed(index) else None
+
+
+def _string_paren_wrap_index(line: _Line) -> int | None:
+    """Return the string that black wraps in parentheses on its own line, or None (StringParenWrapper's matches)."""
+    leaves = line.leaves
+    if leaves[0].assign_like:
+        for index, leaf in enumerate(leaves):
+            if (
+                leaf.type in {token.EQUAL, token.PLUSEQUAL}
+                and (found := _string_ends_line(leaves, index, comma=leaves[0].assign_like == "argument")) is not None
+            ):
+                return found
+    if leaves[0].dict_entry:
+        for index, leaf in enumerate(leaves[:-1]):
+            if leaf.type == token.COLON and (found := _string_ends_line(leaves, index, comma=True)) is not None:
+                return found
+    return 0 if _prefers_paren_wrap(leaves) else None
+
+
+def _string_ends_line(leaves: Sequence[_Leaf], index: int, *, comma: bool) -> int | None:
+    """Return the string after ``leaves[index]`` when it, its trailer and maybe a comma end the line."""
+    string_idx = index + 2 if index + 1 < len(leaves) and _is_empty_par(leaves[index + 1]) else index + 1
+    if string_idx >= len(leaves) or leaves[string_idx].type != token.STRING:
+        return None
+    end = _string_trailer_end(leaves, string_idx)
+    if comma and end < len(leaves) and leaves[end].type == token.COMMA:
+        end += 1
+    return string_idx if end >= len(leaves) else None
+
+
+def _closes_lambda_value(left: Sequence[_Leaf], right: Sequence[_Leaf]) -> bool:
+    """Return whether ``right`` ends with the parenthesis around a dictionary value that is a lambda."""
+    if not (right and right[-1].type == token.RPAR and (opening := right[-1].opening_bracket) in left[1:-1]):
+        return False
+    index = left.index(opening)
+    return left[index - 1].type == token.COLON and _is_name(left[index + 1], "lambda")
+
+
+def _string_paren_wrap(line: _Line, mode: _Mode, _features: Collection[_Feature]) -> Iterator[_Line]:
+    """Put a string that ends an assignment, an argument or a dictionary entry on its own line in parentheses.
+
+    Black's StringParenWrapper: the parentheses replace any around the string, and the leaves after it go inside
+    them, except a trailing comma.
     """
     leaves = line.leaves
-    trailing_comma = leaves[-1].type == token.COMMA
-    strings = leaves[2 : len(leaves) - trailing_comma]
-    if not (
-        line.split_priority in {0, COMMA_PRIORITY}
-        and len(leaves) - trailing_comma > 2  # noqa: PLR2004
-        and leaves[0].type == token.NAME
-        and leaves[1].type == token.EQUAL
-        and not leaves[1].parameter_default
-        and all(leaf.type == token.STRING and leaf.value.lstrip("rRuU")[0] not in "bBfF" for leaf in strings)
-        and str_width(mode.restore(str(line).removesuffix(","))) > mode.line_length
-    ):
-        msg = "Not a long keyword string argument"
+    if leaves[-1].type in OPENING_BRACKETS or (string_idx := _string_paren_wrap_index(line)) is None:
+        msg = "This line does not contain any non-atomic strings."
         raise CannotSplitError(msg)
-    value_repr = string_repr(mode.restore(ast.literal_eval(" ".join(leaf.value for leaf in strings))), NEWEST_TARGET)
-    quote = value_repr[0]
-    escaped = value_repr[1:-1] if quote in {"'", '"'} and value_repr.endswith(quote) else value_repr
-    head = _Line(depth=line.depth)
-    for leaf in (*leaves[:2], _Leaf(token.LPAR, "(")):
-        head.leaves.append(leaf)
+    string_leaf = leaves[string_idx]
+    if (
+        not any(char == " " or char in _SPLIT_SAFE_CHARS for char in string_leaf.value)
+        and str_width(mode.restore(string_leaf.value)) > mode.line_length - (line.depth + 1) * 4
+        and (id(string_leaf.value), string_leaf.value) not in mode.custom_splits
+    ):
+        msg = "The string would stay too long on its own line."
+        raise CannotSplitError(msg)
+    _validate_split_string(line, string_idx, mode)
+    for leaf in leaves:
+        leaf.orphaned = True
+    ends_with_comma = leaves[-1].type == token.COMMA
+    left = leaves[:string_idx]
+    old_parens = bool(left) and left[-1].type == token.LPAR
+    lpar = _Leaf(token.LPAR, "(")
+    lpar.whitespace = (left.pop() if old_parens else string_leaf).whitespace
+    head = line.clone()
+    _append_copies(head, left)
+    lpar.prefix = lpar.whitespace if head.leaves else ""
+    head.append(lpar)
     yield head
-    max_content_length = mode.line_length - 4 * (line.depth + 1) - 2
-    for chunk in split_escaped_string_literal(escaped, max_content_length):
-        chunk_line = _Line(depth=line.depth + 1)
-        chunk_line.leaves.append(_Leaf(token.STRING, f"{quote}{chunk}{quote}"))
-        yield chunk_line
-    tail = _Line(depth=line.depth)
-    tail.leaves.append(_Leaf(token.RPAR, ")"))
-    if trailing_comma:
-        tail.leaves.append(leaves[-1])
+    right = leaves[string_idx + 1 : len(leaves) - ends_with_comma]
+    if old_parens or _closes_lambda_value(left, right):
+        right = right[:-1]
+    body = _Line(
+        depth=line.depth + 1,
+        inside_brackets=True,
+        should_split_rhs=line.should_split_rhs,
+        magic_trailing_comma=line.magic_trailing_comma,
+    )
+    body.append(_new_string(string_leaf.value, string_leaf))
+    _append_copies(body, right)
+    yield body
+    tail = line.clone()
+    tail.bracket_tracker = head.bracket_tracker
+    tail.append(_Leaf(token.RPAR, ")"))
+    if ends_with_comma:
+        tail.append(_Leaf(token.COMMA, ","))
     yield tail
 
 
 def _transform_line(line: _Line, mode: _Mode, features: Collection[_Feature] = ()) -> Iterator[_Line]:
     line_str = str(line)
-    if not line.should_split_rhs and not line.magic_trailing_comma and _is_line_short_enough(line, mode, line_str):
-        yield line
-        return
     transforms: list[Callable[[_Line, _Mode, Collection[_Feature]], Iterator[_Line]]]
-    if line.inside_brackets:
-        transforms = (
-            [_wrapped_string_lines, _delimiter_split, _rhs]
-            if mode.wrap_string_literal
-            else [
-                _delimiter_split,
-                _rhs,
-            ]
-        )
+    if not line.should_split_rhs and not line.magic_trailing_comma and _is_line_short_enough(line, mode, line_str):
+        if not mode.wrap_string_literal:
+            yield line
+            return
+        transforms = [_string_merge, _string_paren_strip]
     elif line.is_def and not _should_split_funcdef_with_rhs(line):
         transforms = [_left_hand_split]
+    elif mode.wrap_string_literal:
+        transforms = (
+            [_string_merge, _string_paren_strip, _string_split, _delimiter_split, _string_paren_wrap, _rhs]
+            if line.inside_brackets
+            else [_string_merge, _string_paren_strip, _string_split, _string_paren_wrap, _rhs]
+        )
     else:
-        transforms = [_rhs]
+        transforms = [_delimiter_split, _rhs] if line.inside_brackets else [_rhs]
     for transform in transforms:
         try:
-            result = _run_transformer(line, transform, mode, features)
+            result = _run_transformer(line, transform, mode, features, line_str)
         except CannotSplitError:
             continue
         yield from result
@@ -914,63 +1484,32 @@ def _run_transformer(
     transform: Callable[[_Line, _Mode, Collection[_Feature]], Iterator[_Line]],
     mode: _Mode,
     features: Collection[_Feature],
+    line_str: str = "",
 ) -> list[_Line]:
-    result = [
-        result_line
-        for transformed_line in transform(line, mode, features)
-        for result_line in _transform_line(transformed_line, mode, features)
-    ]
+    line_str = line_str or str(line)
+    result: list[_Line] = []
+    for transformed_line in transform(line, mode, features):
+        if str(transformed_line) == line_str:
+            msg = "Line transformer returned an unchanged result"
+            raise CannotSplitError(msg)
+        result.extend(_transform_line(transformed_line, mode, features))
     if (
         _Feature.FORCE_OPTIONAL_PARENTHESES in features  # noqa: PLR0916
         or transform is not _rhs
         or not line.bracket_tracker.invisible
         or any(bracket.value for bracket in line.bracket_tracker.invisible)
         or _is_line_short_enough(result[0], mode)
-        or any(leaf.synthetic for leaf in line.leaves)
+        or any(leaf.synthetic or leaf.orphaned for leaf in line.leaves)
     ):
         return result
     line_copy = line.clone()
-    for index, leaf in enumerate(line.leaves):
-        copied = leaf.copy()
-        copied.prefix = copied.whitespace if index else ""
-        line_copy.append(copied)
-    second_opinion = _run_transformer(line_copy, transform, mode, {*features, _Feature.FORCE_OPTIONAL_PARENTHESES})
+    _append_copies(line_copy, line.leaves)
+    second_opinion = _run_transformer(
+        line_copy, transform, mode, {*features, _Feature.FORCE_OPTIONAL_PARENTHESES}, line_str
+    )
     if all(_is_line_short_enough(second_line, mode) for second_line in second_opinion):
         return second_opinion
     return result
-
-
-_ESCAPE_UNIT = re.compile(r"\\(?:x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8}|.)|.", re.DOTALL)
-_LONGEST_ESCAPE_UNIT = 10
-
-
-def _escape_boundary(text: str, limit: int) -> int:
-    """Return the end of the last whole character or escape sequence of ``text`` within ``limit``.
-
-    The first one is returned when it is longer than ``limit``, so that a split always makes progress.
-    """
-    ends = [unit.end() for unit in _ESCAPE_UNIT.finditer(text[: limit + _LONGEST_ESCAPE_UNIT])]
-    return max((end for end in ends if end <= limit), default=ends[0])
-
-
-def split_escaped_string_literal(content: str, max_length: int) -> list[str]:
-    """Split the escaped content of a string literal at spaces, else between characters and escape sequences.
-
-    A literal is left whole when ``max_length`` leaves no room for any content.
-    """
-    if max_length < 1:
-        return [content]
-    chunks: list[str] = []
-    remaining = content
-    while len(remaining) > max_length:
-        split_index = remaining.rfind(" ", 0, max_length + 1)
-        if split_index <= 0:
-            split_index = _escape_boundary(remaining, max_length)
-        chunks.append(remaining[:split_index])
-        remaining = remaining[split_index:]
-    if remaining or not chunks:
-        chunks.append(remaining)
-    return chunks
 
 
 class _Unsupported(Exception):  # noqa: N818
@@ -1068,6 +1607,87 @@ def _read_leaves(tokens: Iterable[tokenize.TokenInfo]) -> tuple[list[_Leaf], int
     return leaves, previous_row
 
 
+_LISTMAKER: Final = frozenset({token.COMMA, "for"})
+_DICTSETMAKER: Final = frozenset({token.COMMA, token.COLON, token.DOUBLESTAR, "for"})
+
+
+def _mark_element_facts(leaves: list[_Leaf]) -> None:  # noqa: PLR0912
+    """Mark the facts black's string transformers read from the parents and siblings of a leaf.
+
+    ``assign_like`` names the parent of a name that black may find an assigned string after: ``"argument"`` for a
+    keyword argument, ``"expr"`` for the target that starts an assignment and ``"power"`` for the name a call, index
+    or attribute starts with. ``wrap_element`` marks a string, or a parenthesized atom, that is a whole element of a
+    list, set or tuple display; ``dict_entry`` the first leaf of a dictionary entry.
+    """
+    closers: dict[int, int] = {}
+    contents: dict[int, set[int | str]] = {}
+    stack: list[int] = []
+    for index, leaf in enumerate(leaves):
+        if leaf.type in OPENING_BRACKETS:
+            stack.append(index)
+            contents[index] = set()
+        elif leaf.type in CLOSING_BRACKETS:
+            closers[stack.pop()] = index
+        elif stack and leaf.type in {token.COMMA, token.COLON, token.DOUBLESTAR}:
+            contents[stack[-1]].add(leaf.type)
+        elif stack and _is_name(leaf, "for"):
+            contents[stack[-1]].add("for")
+    starts = {opener + 1 for opener in closers} | {
+        index + 1 for index, leaf in enumerate(leaves) if leaf.type == token.COMMA
+    }
+    stack = []
+    for index, leaf in enumerate(leaves):
+        opener = stack[-1] if stack else None
+        if leaf.type in OPENING_BRACKETS:
+            stack.append(index)
+        elif leaf.type in CLOSING_BRACKETS:
+            stack.pop()
+        following = leaves[index + 1] if index + 1 < len(leaves) else None
+        if leaf.type == token.NAME and following is not None:
+            if (
+                following.type == token.EQUAL
+                and opener is not None
+                and leaves[opener].kind
+                in {
+                    _Kind.TRAILER,
+                    _Kind.CLASSDEF,
+                }
+            ):
+                leaf.assign_like = "argument"
+            elif index == 0 and (
+                following.type in {token.EQUAL, token.COLON} or following.type in _AUGMENTED_ASSIGNMENTS
+            ):
+                leaf.assign_like = "expr"
+            elif (following.type == token.DOT or following.kind is _Kind.TRAILER) and not (
+                index and leaves[index - 1].type == token.DOT
+            ):
+                leaf.assign_like = "power"
+        if (
+            opener is None
+            or index not in starts
+            or leaf.type in CLOSING_BRACKETS
+            or leaves[opener].kind is not _Kind.ATOM
+            or not contents[opener] & (_DICTSETMAKER if leaves[opener].type == token.LBRACE else _LISTMAKER)
+        ):
+            continue
+        kinds = contents[opener]
+        leaf.dict_entry = leaves[opener].type == token.LBRACE and token.COLON in kinds
+        end = index
+        if leaf.type == token.STRING:
+            while end + 1 < len(leaves) and leaves[end + 1].type == token.STRING:
+                end += 1
+        elif leaf.type == token.LPAR:
+            end = closers[index]
+        else:
+            continue
+        leaf.wrap_element = end + 1 < len(leaves) and (
+            leaves[end + 1].type == token.COMMA or end + 1 == closers[opener]
+        )
+    for leaf in leaves:
+        if _is_name(leaf, "lambda"):
+            leaf.dict_entry = True
+
+
 def _set_whitespace(leaves: list[_Leaf]) -> None:
     """Give each leaf the whitespace black puts before it.
 
@@ -1076,9 +1696,12 @@ def _set_whitespace(leaves: list[_Leaf]) -> None:
     """
     stack: list[_Leaf] = []
     annotated = False
+    returned = False
     previous: _Leaf | None = None
     for leaf in leaves:
         enclosing = stack[-1] if stack else None
+        returned = returned or (leaf.type == token.RARROW and not stack)
+        leaf.in_annotation = returned or (annotated and any(item.kind is _Kind.PARAMETERS for item in stack))
         in_parameters = enclosing is not None and enclosing.kind is _Kind.PARAMETERS
         if in_parameters and leaf.type == token.COMMA:
             annotated = False
@@ -1149,8 +1772,11 @@ def _statement_children(leaves: list[_Leaf]) -> list[tuple[int, int]]:
 
 def _is_parenthesized_atom(leaves: list[_Leaf], start: int, end: int) -> bool:
     """Return whether the balanced ``leaves[start:end]`` is an atom in parentheses that close at its end."""
-    if not (leaves[start].type == token.LPAR and leaves[start].kind is _Kind.ATOM):
-        return False
+    return leaves[start].type == token.LPAR and leaves[start].kind is _Kind.ATOM and _closes_at_end(leaves, start, end)
+
+
+def _closes_at_end(leaves: list[_Leaf], start: int, end: int) -> bool:
+    """Return whether the bracket that opens the balanced ``leaves[start:end]`` closes at its end."""
     depth = 0
     for leaf in leaves[start : end - 1]:
         if leaf.type in OPENING_BRACKETS:
@@ -1247,6 +1873,71 @@ def _wrap(leaves: list[_Leaf], start: int, end: int) -> list[_Leaf]:
     return [*leaves[:start], lpar, *leaves[start:end], rpar, *leaves[end:]]
 
 
+def _dict_value_spans(leaves: list[_Leaf]) -> list[tuple[int, int]]:
+    """Return the spans of the values of the dictionary displays in ``leaves``."""
+    spans: list[tuple[int, int]] = []
+    stack: list[tuple[int, int | None]] = []
+    for index, leaf in enumerate(leaves):
+        if leaf.type in OPENING_BRACKETS:
+            stack.append((index, None))
+            continue
+        if not stack:
+            continue
+        opener, value_start = stack[-1]
+        ends_value = (
+            leaf.type in CLOSING_BRACKETS
+            or leaf.type == token.COMMA
+            or _is_name(leaf, "for")
+            or _is_name(leaf, "async")
+        )
+        if value_start is not None and ends_value:
+            spans.append((value_start, index))
+            stack[-1] = (opener, None)
+        if leaf.type in CLOSING_BRACKETS:
+            stack.pop()
+        elif (
+            leaf.type == token.COLON
+            and value_start is None
+            and leaves[opener].type == token.LBRACE
+            and leaves[opener].kind is _Kind.ATOM
+            and not any(_is_name(item, "lambda") for item in leaves[opener + 1 : index])
+        ):
+            stack[-1] = (opener, index + 1)
+    return spans
+
+
+def _wrap_dict_values(leaves: list[_Leaf]) -> list[_Leaf]:
+    """Put each dictionary value in invisible parentheses, or make its own parentheses invisible.
+
+    Black's preview ``wrap_long_dict_values_in_parens``, which ``--wrap-string-literal`` turns on; a value that is a
+    list, set or dictionary display stays as it is.
+    """
+    before: dict[int, list[_Leaf]] = {}
+    after: dict[int, list[_Leaf]] = {}
+    for start, end in sorted(_dict_value_spans(leaves), key=lambda span: (span[1], -span[0])):
+        first = leaves[start]
+        if _is_parenthesized_atom(leaves, start, end):
+            _make_parens_invisible(leaves, start, end)
+            first.dict_value = not first.value
+            continue
+        if first.type in OPENING_BRACKETS and first.kind is _Kind.ATOM and _closes_at_end(leaves, start, end):
+            continue
+        lpar = _Leaf(token.LPAR, "")
+        lpar.whitespace = lpar.prefix = first.whitespace
+        lpar.dict_value = True
+        first.whitespace = first.prefix = ""
+        before.setdefault(start, []).append(lpar)
+        after.setdefault(end - 1, []).append(_Leaf(token.RPAR, ""))
+    if not before:
+        return leaves
+    result: list[_Leaf] = []
+    for index, leaf in enumerate(leaves):
+        result.extend(reversed(before.get(index, [])))
+        result.append(leaf)
+        result.extend(after.get(index, []))
+    return result
+
+
 def _joined_token(lines: list[str], span: tuple[tokenize.TokenInfo, tokenize.TokenInfo]) -> tokenize.TokenInfo:
     """Return the token of ``span``, an f-string from its start token to its end token as one STRING token."""
     first, last = span
@@ -1314,6 +2005,9 @@ def _lay_out_logical_line(
             leaves = _wrap_spans(leaves, _definition_annotation_spans(leaves))
         elif assignment and not (_is_name(leaves[0], "type") and len(leaves) > 1 and leaves[1].type == token.NAME):
             leaves = _wrap_spans(leaves, _statement_children(leaves))
+        if wrap_string_literal:
+            _mark_element_facts(leaves)
+            leaves = _wrap_dict_values(leaves)
     except (_Unsupported, tokenize.TokenError, SyntaxError):
         return None
     line = _Line(depth=indent // 4)

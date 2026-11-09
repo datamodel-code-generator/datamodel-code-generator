@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 
 def test_wrap_string_literal_keeps_escape_sequences_whole(output_file: Path) -> None:
-    r"""Split a long description between characters and escape sequences, so that the pieces join to the same text.
+    r"""Split a long description only at spaces outside escape sequences, as black does, so the pieces join alike.
 
     A split used to fall inside ``\\`` and ``\x7f``, which wrote a literal that does not parse.
     """
@@ -56,8 +56,8 @@ def test_wrap_string_literal_keeps_escape_sequences_whole(output_file: Path) -> 
 def test_wrap_string_literal_with_a_line_length_that_leaves_no_room(output_file: Path, line_length: int) -> None:
     """Finish when the line length leaves no room for content, or room for less than one escape sequence.
 
-    The literal stays whole when the content width is zero or less; otherwise each piece takes at least one character
-    or escape sequence, so wrapping ends. It used to loop for ever, or raise IndexError.
+    Each piece takes at least one word, as black splits only at spaces, so wrapping ends. It used to loop for ever,
+    or raise IndexError.
     """
     input_path = JSON_SCHEMA_DATA_PATH / "builtin_wrap_string_narrow.json"
     run_generate_file_and_assert(
@@ -443,6 +443,93 @@ def test_use_double_quotes_chooses_the_quotes_black_chooses(output_file: Path, f
             "--output-model-type",
             "pydantic_v2.BaseModel",
             "--use-double-quotes",
+            "--formatters",
+            *formatters,
+            "--disable-timestamp",
+        ],
+    )
+
+
+@pytest.mark.parametrize("quotes", [[], ["--use-double-quotes"]], ids=["as-written", "double-quotes"])
+@pytest.mark.parametrize("formatters", [["black", "isort"], ["builtin"]], ids=["black", "builtin"])
+def test_wrap_string_literal_splits_strings_like_black(
+    output_file: Path, formatters: list[str], quotes: list[str]
+) -> None:
+    r"""Wrap and split long strings as black's string processing does (#6651).
+
+    A string just over the width in a keyword argument goes into parentheses; a word without spaces, such as a URL,
+    stays whole past the width; strings with ``\\n`` escapes, field defaults, enum values, list elements and
+    dictionary values are split at the spaces black picks. The builtin formatter left most of them on one line and
+    broke a URL inside a word.
+    """
+    (input_path := output_file.parent / "long_strings.json").write_text(
+        json.dumps({
+            "title": "Wrapped",
+            "type": "object",
+            "required": ["category"],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "The name of the custom property that is included in the OIDC token",
+                },
+                "secret": {
+                    "type": "string",
+                    "description": (
+                        "If provided, the `secret` will be used as the `key` to generate the HMAC hex digest value"
+                        " for [delivery signature headers](https://docs.github.com/webhooks/event-payloads/#delivery-headers)."
+                    ),
+                },
+                "conduct": {
+                    "type": "string",
+                    "examples": [
+                        (
+                            "# Contributor Covenant Code of Conduct\n\n## Our Pledge\n\nIn the interest of fostering"
+                            " an open and welcoming environment, we as contributors and maintainers"
+                        )
+                    ],
+                },
+                "category": {
+                    "type": "string",
+                    "description": "The category of reference to an external resource this reference refers to.",
+                    "examples": ["PACKAGE-MANAGER"],
+                },
+                "body": {
+                    "type": "string",
+                    "default": (
+                        "It looks like the new widget form is broken on Safari. When I try and create the widget,"
+                        " Safari crashes. This is reproducible on 10.8, but not 10.9. Maybe a browser bug?"
+                    ),
+                },
+                "labels": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "examples": [
+                        ["The first label of a long list of labels that the issue tracker shows next to it", "bug"]
+                    ],
+                },
+                "meta": {
+                    "type": "object",
+                    "examples": [
+                        {"summary": "A summary of the change that the reviewers read before they open the pull request"}
+                    ],
+                },
+                "level": {
+                    "type": "string",
+                    "enum": ["A level whose name is a long sentence that goes past the width of the line", "low"],
+                },
+            },
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=[
+            "--output-model-type",
+            "pydantic_v2.BaseModel",
+            "--wrap-string-literal",
+            *quotes,
             "--formatters",
             *formatters,
             "--disable-timestamp",

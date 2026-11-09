@@ -1,0 +1,85 @@
+dict-value-with-operator 60
+x = {'key': first_function_name(argument_one) + second_function_name(argument_two)}
+
+---CASE---
+f-string-fields 50
+x = f'{{literal}} {name} and }} a text that is long enough {data["key"]} to be split at spaces'
+
+---CASE---
+format-trailer 50
+x = 'a text with {} that goes on and on until it is split'.format(value)
+y = 'a text with {} that goes on and on until it is split'.format(f(value), (b))
+z = Field(None, title='a text with {} that goes on and on until it is split'.upper())
+w = 'a text with {} that goes on and on until it is split'.format(a_long_argument_name, another_argument)
+
+---CASE---
+format-trailer-own-line 40
+x = 'word word word word word word word word word wor with {} goes'.format(value)
+
+---CASE---
+percent-trailer 50
+x = call(argument, 'a text with %s that goes on and on until it is split' % (value, other))
+y = 'a text with %s that goes on and on until it is split again here' % value
+
+---CASE---
+unmerged-groups 40
+x = f(argument, r'a raw string that is long' r' and another raw part')
+y = f(argument, u'a string with a prefix' 'and one without')
+z = f(argument, f'an f-string {a["k"]} that' "is joined")
+
+---CASE---
+parenthesized-strings 40
+x = f(argument, (r'a raw string that is long' r' and another raw part'))
+y = f(argument, ('a string in parentheses that is long'))
+z = f(argument, b * ('a text %s with percent' % value))
+w = f(argument, ('a string that has a method').upper())
+
+---CASE---
+string-operators 40
+x = first_value + 'a string after a plus that goes on'
+y = first_value not in 'a string after not in that goes on'
+z = first_value in 'a string after in that goes on and on'
+
+---CASE---
+dict-entries 40
+x = {'first': 'a string value of the first entry', 'second': some_long_variable_name_here, 'third': [1, 2]}
+
+---CASE---
+not-responsible 40
+x = Field(a_very_long_keyword_argument_name='short')
+
+---CASE---
+wide-string 40
+x = Field(None, description='数据的时间戳使用格式时间')
+
+---CASE---
+positional-argument 40
+x = f('a long positional string argument that goes on', other_argument)
+
+---CASE---
+high-depth 7
+class A:
+    x = f(g('a string at a depth that leaves no room'))
+
+---CASE---
+name-escapes 40
+x = Field(None, description='a text with \N{BULLET} escapes \N{EM DASH} that goes on and on')
+
+---CASE---
+lambda-value 60
+x = {'key': lambda: 'a long string value returned by the lambda that goes on and on', 'b': 1}
+
+---CASE---
+list-elements 40
+x = ['a string element of a list', name, 'first' ' second joined part', 'last element of the list']
+y = ['a string in a comprehension that goes on' for item in items]
+z = ('a string element of a tuple that goes on', 'b')
+w = {'a string element of a set that goes on', 'b'}
+
+---CASE---
+augmented-assignment 40
+x += 'a string that is added to x and goes on'
+
+---CASE---
+short-joined 88
+x = 'a joined' ' short string'

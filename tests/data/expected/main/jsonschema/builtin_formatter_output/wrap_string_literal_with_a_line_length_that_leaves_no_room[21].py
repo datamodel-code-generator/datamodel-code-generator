@@ -18,24 +18,12 @@ class NarrowWrap(
         Field(
             ...,
             description=(
-                'hel'
-                'lo'
-                ' wo'
-                'rld'
-                ' an'
-                'd'
-                ' th'
-                'en'
-                ' a'
-                ' re'
-                'all'
-                'y'
-                ' lo'
-                'ng'
-                ' de'
-                'scr'
-                'ipt'
-                'ion'
+                'hello'
+                ' world'
+                ' and then'
+                ' a really'
+                ' long'
+                ' description'
             ),
         )
     )

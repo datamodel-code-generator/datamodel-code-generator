@@ -18,15 +18,18 @@ class NarrowWrap(
         Field(
             ...,
             description=(
-                'hello world and then a really long description'
+                'hello'
+                ' world'
+                ' and then'
+                ' a really'
+                ' long'
+                ' description'
             ),
         )
     )
     hex: str = (
         Field(
             ...,
-            description=(
-                'abc\x7f'
-            ),
+            description='abc\x7f',
         )
     )

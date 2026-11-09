@@ -5,9 +5,8 @@ class Model(BaseModel):
     text: str = Field(
         ...,
         description=(
-            'joined\u200dword joined\u200dword joined\u200dword joined\u200dword'
-            ' joined\u200dword joined\u200dword joined\u200dword joined\u200dword'
-            ' joined\u200dword joined\u200dword joined\u200dword joined\u200dword '
+            'joined‍word joined‍word joined‍word joined‍word joined‍word joined‍word'
+            ' joined‍word joined‍word joined‍word joined‍word joined‍word joined‍word '
         ),
     )
 
