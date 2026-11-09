@@ -17773,7 +17773,8 @@ The built-in formatter is not run before external formatters.
 ## Line length
 
 The built-in formatter uses line length for wrapping `from ... import ...` statements, docstrings and the
-statements listed above.
+statements listed above. It measures a line in display columns, as Black does: a wide East Asian character counts as
+two.
 
 Set it in `pyproject.toml`:
 

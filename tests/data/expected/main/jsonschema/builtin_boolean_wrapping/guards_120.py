@@ -82,7 +82,10 @@ class Model(BaseModel):
         日本語の長い入力フィールド名, expected
     ) -> "Literal[True, False, ')']":
         return (
-            (isinstance(日本語の長い入力フィールド名, dict) or isinstance(日本語の長い入力フィールド名, _collections_abc.Mapping))
+            (
+                isinstance(日本語の長い入力フィールド名, dict)
+                or isinstance(日本語の長い入力フィールド名, _collections_abc.Mapping)
+            )
             and 日本語の長い入力フィールド名 == expected
         )
 

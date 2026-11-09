@@ -388,3 +388,25 @@ def test_msgspec_convert_default_factory_has_one_space_before_its_type(
         input_file_type="jsonschema",
         extra_args=["--output-model-type", "msgspec.Struct", "--formatters", *formatters, "--disable-timestamp"],
     )
+
+
+@pytest.mark.parametrize("formatters", [["black", "isort"], ["builtin"]], ids=["black", "builtin"])
+def test_wide_characters_count_twice_toward_the_line_length(output_file: Path, formatters: list[str]) -> None:
+    """Split a field line of 77 characters that is 89 columns wide, as black measures it (#6648).
+
+    Each CJK character takes two columns; the builtin formatter counted characters and kept the line whole.
+    """
+    (input_path := output_file.parent / "wide_description.json").write_text(
+        json.dumps({
+            "title": "A",
+            "type": "object",
+            "properties": {"timestamp": {"type": "string", "description": "数据的时间戳\uff0c使用 ISO 8601 格式。"}},
+        }),
+        encoding="utf-8",
+    )
+    run_main_and_assert(
+        input_path=input_path,
+        output_path=output_file,
+        input_file_type="jsonschema",
+        extra_args=["--output-model-type", "pydantic_v2.BaseModel", "--formatters", *formatters, "--disable-timestamp"],
+    )
