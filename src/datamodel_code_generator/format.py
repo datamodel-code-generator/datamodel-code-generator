@@ -394,20 +394,12 @@ def _get_isort() -> Any:
 
 def _is_formatter_available(formatter: Formatter) -> bool:
     """Return True if the external package required by *formatter* can be imported."""
-    if formatter.value == "black":
-        try:
-            import black  # noqa: F401, PLC0415
-        except ModuleNotFoundError as exc:
-            if exc.name != "black":
-                raise
-            return False
-    elif formatter.value == "isort":
-        try:
-            import isort  # noqa: F401, PLC0415
-        except ModuleNotFoundError as exc:
-            if exc.name != "isort":
-                raise
-            return False
+    try:
+        import_module(formatter.value)
+    except ModuleNotFoundError as exc:
+        if exc.name != formatter.value:
+            raise
+        return False
     return True
 
 
@@ -538,15 +530,16 @@ class CodeFormatter:
                 formatter_name = missing_formatters[0].value
                 msg = (
                     f"{formatter_name} is not installed but was requested as an output formatter. "
-                    f"Install {formatter_name}, or use the built-in formatter with --formatters builtin "
-                    "(formatters=[Formatter.BUILTIN] in the Python API)."
+                    f"Install it (datamodel-code-generator[{formatter_name}]), or use the built-in formatter "
+                    "with --formatters builtin (formatters=[Formatter.BUILTIN] in the Python API)."
                 )
             else:
                 formatter_names = " and ".join(formatter.value for formatter in missing_formatters)
+                extras = ",".join(formatter.value for formatter in missing_formatters)
                 msg = (
                     f"{formatter_names} are not installed but were requested as output formatters. "
-                    f"Install {formatter_names}, or use the built-in formatter with --formatters builtin "
-                    "(formatters=[Formatter.BUILTIN] in the Python API)."
+                    f"Install them (datamodel-code-generator[{extras}]), or use the built-in formatter "
+                    "with --formatters builtin (formatters=[Formatter.BUILTIN] in the Python API)."
                 )
             raise ImportError(msg)
 

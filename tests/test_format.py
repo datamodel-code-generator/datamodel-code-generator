@@ -2928,75 +2928,67 @@ def test_code_formatter_no_warning_when_formatters_empty(tmp_path: Path, monkeyp
 # ---------------------------------------------------------------------------
 
 
-def test_black_not_installed_raises_actionable_error(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """When black is requested but not installed, raise with a CLI suggestion."""
-    monkeypatch.chdir(tmp_path)
-
-    with (
-        mock.patch.object(
-            format_module,
-            "_is_formatter_available",
-            side_effect=lambda formatter: formatter is not Formatter.BLACK,
+@pytest.mark.abnormal_path("black and isort are required dependencies, so an e2e test cannot run without them")
+@pytest.mark.parametrize(
+    ("missing", "formatters", "message"),
+    [
+        (
+            ("black",),
+            [Formatter.BLACK, Formatter.ISORT],
+            (
+                r"black is not installed.*Install it \(datamodel-code-generator\[black\]\)"
+                r".*--formatters builtin.*formatters=\[Formatter\.BUILTIN\]"
+            ),
         ),
-        pytest.raises(ImportError, match=r"black is not installed.*Install black.*--formatters builtin"),
-    ):
-        CodeFormatter(PythonVersionMin, formatters=[Formatter.BLACK, Formatter.ISORT])
-
-
-def test_isort_not_installed_raises_actionable_error(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """When isort is requested but not installed, raise with a CLI suggestion."""
-    monkeypatch.chdir(tmp_path)
-
-    with (
-        mock.patch.object(
-            format_module,
-            "_is_formatter_available",
-            side_effect=lambda formatter: formatter is not Formatter.ISORT,
+        (
+            ("isort",),
+            [Formatter.BLACK, Formatter.ISORT],
+            r"isort is not installed.*Install it \(datamodel-code-generator\[isort\]\).*--formatters builtin",
         ),
-        pytest.raises(ImportError, match=r"isort is not installed.*Install isort.*--formatters builtin"),
-    ):
-        CodeFormatter(PythonVersionMin, formatters=[Formatter.BLACK, Formatter.ISORT])
-
-
-def test_default_black_and_isort_not_installed_raises_actionable_error(
+        (
+            ("black", "isort"),
+            [Formatter.BLACK, Formatter.ISORT],
+            (
+                r"black and isort are not installed.*Install them \(datamodel-code-generator\[black,isort\]\)"
+                r".*--formatters builtin"
+            ),
+        ),
+    ],
+)
+def test_missing_formatter_raises_actionable_error(
+    missing: tuple[str, ...],
+    formatters: list[Formatter],
+    message: str,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Default black/isort formatting also reports how to opt into builtin."""
+    """A selected black or isort that cannot be imported names the extras and the builtin formatter."""
     monkeypatch.chdir(tmp_path)
+    for name in missing:
+        monkeypatch.setitem(sys.modules, name, None)
+
+    with pytest.raises(ImportError, match=message):
+        CodeFormatter(PythonVersionMin, formatters=formatters)
+
+
+@pytest.mark.abnormal_path("black and isort are required dependencies, so an e2e test cannot run without them")
+def test_default_formatters_missing_raises_actionable_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The implicit default of black and isort reports the same remedies."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setitem(sys.modules, "black", None)
+    monkeypatch.setitem(sys.modules, "isort", None)
 
     with (
-        mock.patch.object(format_module, "_is_formatter_available", return_value=False),
         pytest.warns(FutureWarning, match="Default formatters will change to builtin"),
-        pytest.raises(
-            ImportError,
-            match=r"black and isort are not installed.*Install black and isort.*--formatters builtin",
-        ),
+        pytest.raises(ImportError, match=r"black and isort are not installed.*--formatters builtin"),
     ):
         CodeFormatter(PythonVersionMin)
 
 
-def test_black_unimportable_real_helper_raises_actionable_error(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """The real availability check reports a missing black with both remedies."""
-    monkeypatch.chdir(tmp_path)
-    monkeypatch.setitem(sys.modules, "black", None)
-
-    with pytest.raises(
-        ImportError,
-        match=r"black is not installed.*--formatters builtin.*formatters=\[Formatter\.BUILTIN\]",
-    ):
-        CodeFormatter(PythonVersionMin, formatters=[Formatter.BLACK])
-
-
+@pytest.mark.abnormal_path("a broken transitive dependency of black or isort cannot be installed in an e2e environment")
 @pytest.mark.parametrize("formatter", [Formatter.BLACK, Formatter.ISORT])
 def test_formatter_transitive_import_error_is_not_reported_as_missing(
     formatter: Formatter,
@@ -3005,19 +2997,15 @@ def test_formatter_transitive_import_error_is_not_reported_as_missing(
 ) -> None:
     """A dependency missing inside an installed formatter is re-raised, not reported as the formatter missing."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delitem(sys.modules, formatter.value)
-    real_import = __import__
 
-    def fake_import(name: str, *args: object, **kwargs: object) -> object:
-        if name == formatter.value:
-            msg = "No module named 'formatter_dependency'"
-            raise ModuleNotFoundError(msg, name="formatter_dependency")
-        return real_import(name, *args, **kwargs)
+    def fake_import_module(_name: str) -> object:
+        msg = "No module named 'formatter_dependency'"
+        raise ModuleNotFoundError(msg, name="formatter_dependency")
 
-    monkeypatch.setattr("builtins.__import__", fake_import)
+    monkeypatch.setattr(format_module, "import_module", fake_import_module)
 
     with pytest.raises(ModuleNotFoundError, match="formatter_dependency"):
-        format_module._is_formatter_available(formatter)
+        CodeFormatter(PythonVersionMin, formatters=[formatter])
 
 
 def test_both_installed_no_missing_formatter_error(
@@ -3036,19 +3024,21 @@ def test_both_installed_no_missing_formatter_error(
     assert not cf.use_builtin_formatter
 
 
-def test_explicit_builtin_formatter_no_warning(
+@pytest.mark.abnormal_path("black and isort are required dependencies, so an e2e test cannot run without them")
+def test_explicit_builtin_formatter_needs_no_external_package(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Explicit BUILTIN formatter does not require external packages."""
+    """The builtin formatter works while black and isort cannot be imported."""
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setitem(sys.modules, "black", None)
+    monkeypatch.setitem(sys.modules, "isort", None)
 
-    with warnings.catch_warnings(), mock.patch.object(format_module, "_is_formatter_available") as availability_checker:
+    with warnings.catch_warnings():
         warnings.simplefilter("error")
         cf = CodeFormatter(PythonVersionMin, formatters=[Formatter.BUILTIN])
 
     assert cf.use_builtin_formatter
-    availability_checker.assert_not_called()
 
 
 BLACK_LAYOUT_CASES: tuple[tuple[str, int], ...] = (
