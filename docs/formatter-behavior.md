@@ -68,7 +68,8 @@ output with a custom template, please open an issue with a small reproducer.
 The built-in formatter is intentionally small. It is not a general Python formatter. For the code generated from
 the standard templates it writes what the current Black release writes in its stable style, with isort's default
 ordering, so that it can become the default formatter. It reads only the settings in
-[Line length](#line-length), [String normalization](#string-normalization) and `[tool.isort].known_first_party`.
+[Line length](#line-length), [String normalization](#string-normalization), `[tool.isort].known_first_party` and
+`--wrap-string-literal`.
 It ignores other isort options (such as `profile` and `force_single_line`) and Black's `target-version`, `preview`
 and `skip-magic-trailing-comma`, and it does not follow the layout of older Black releases. Output differs from
 Black/isort where those settings or releases matter, and in the cases listed under "Known differences".
